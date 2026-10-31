@@ -58,7 +58,16 @@ body{background:var(--night);color:var(--bone);font-family:var(--body);overflow:
 .card button:disabled{background:#3a463e;color:#8a958d;cursor:default}
 .card .ghostbtn{background:transparent;border:2px solid #2f4a35;color:var(--bone);font-size:18px}
 .keyhint{margin-top:2px}
-#minimap{display:block;width:120px;height:120px;margin:6px 0 0 auto;border-radius:8px;border:2px solid rgba(243,234,214,.35)}
+#minimap{display:block;width:120px;height:120px;margin:6px 0 0 auto;border-radius:8px;border:2px solid rgba(243,234,214,.35);pointer-events:auto;cursor:zoom-in}
+#cross{position:fixed;left:50%;top:46%;width:22px;height:22px;margin:-11px 0 0 -11px;z-index:5;pointer-events:none;background:linear-gradient(#f3ead6,#f3ead6) center/2px 22px no-repeat,linear-gradient(#f3ead6,#f3ead6) center/22px 2px no-repeat;filter:drop-shadow(0 0 2px #000);opacity:.85}
+#cross[hidden]{display:none}
+#bigMap{position:fixed;inset:0;z-index:20;background:rgba(6,8,6,.72);display:grid;place-items:center;padding:12px}
+#bigMap[hidden]{display:none}
+.bmBox{background:#241d16;border:3px solid #8a6a44;border-radius:16px;padding:10px;box-shadow:0 10px 40px rgba(0,0,0,.6);color:#f3ead6;max-width:100%}
+.bmHead{display:flex;align-items:center;gap:12px;font-size:18px;margin-bottom:8px}.bmHead span{flex:1;font-size:13px;opacity:.8}
+.bmHead button{border:0;background:rgba(243,234,214,.15);color:#f3ead6;font-size:18px;width:36px;height:36px;border-radius:10px;cursor:pointer}
+#bigMapCv{display:block;width:min(86vw,82vh,700px);height:min(86vw,82vh,700px);border-radius:10px;border:2px solid rgba(243,234,214,.25)}
+.bmFoot{font-size:12px;opacity:.75;margin-top:6px;text-align:center}
 @media (max-width:600px){#minimap{width:90px;height:90px}}
 .lvl{font-size:13px;color:var(--ember)}
 @media (pointer:coarse){.keyhint{display:none}
@@ -137,10 +146,13 @@ body.touchui #prompt{margin-bottom:0;bottom:calc(60px + env(safe-area-inset-bott
     <div id="phase">☀️ Dag 1</div>
     <div class="sub">Netter overlevd: <b id="nights">0</b></div>
     <div class="sub" id="biome">🌲 Skogen</div>
-    <div class="sub keyhint">B = bygg 🔨 · C = kamera 🎥</div>
-    <canvas id="minimap" width="140" height="140" aria-label="Kart"></canvas>
+    <div class="sub keyhint">B = bygg 🔨 · C = kamera 🎥 · M = kart 🗺️</div>
+    <canvas id="minimap" width="140" height="140" aria-label="Kart (trykk for stort kart)" title="Trykk for stort kart (M)"></canvas>
   </div>
 </div>
+
+<div id="cross" hidden></div>
+<div id="bigMap" hidden><div class="bmBox"><div class="bmHead"><b>🗺️ Kart</b><span id="bigMapPct"></span><button id="bigMapX" aria-label="Lukk kartet">✕</button></div><canvas id="bigMapCv" width="700" height="700"></canvas><div class="bmFoot">Det mørke er land du ikke har utforsket ennå. Trykk hvor som helst (eller M) for å lukke.</div></div></div>
 
 <div id="touch" hidden>
   <div class="pad"></div>
@@ -163,7 +175,7 @@ body.touchui #prompt{margin-bottom:0;bottom:calc(60px + env(safe-area-inset-bott
 
 <div class="overlay" id="startScreen">
   <div class="card">
-    <div class="ver">EVN Studios · 3D · Versjon 5.2</div>
+    <div class="ver">EVN Studios · 3D · Versjon 5.4</div>
     <h1>Mørkeskogen 3D</h1>
     <p>Du har gått deg vill i en mørk skog. Klarer du å overleve nettene?</p>
     <ul>
@@ -1231,7 +1243,7 @@ function newGame() {
   try { newGameGen(); } finally { Math.random = r0; pondOn = true; townBig = true; }
   g.chests.push({ x: tX(-210), y: tY(300), open: false }, { x: tX(220), y: tY(-160), open: false });   // skattekister i Kaktusbyen
   g.buildings = (world.buildings || []).filter(b => BUILDINGS[b.type]).map(b => ({ type: b.type, x: b.x, y: b.y }));
-  for (const b of g.buildings) { const r = BUILDINGS[b.type].r + 10; for (const t of g.trees) if (Math.hypot(t.x - b.x, t.y - b.y) < r) t.alive = false; }   // ingen trær inni bygningene dine
+  for (const b of g.buildings) { const r = BUILDINGS[b.type].r + 10; g.trees = g.trees.filter(t => Math.hypot(t.x - b.x, t.y - b.y) >= r); }   // ingen trær inni bygningene dine (fjernes helt, så de ikke vokser opp igjen)
   dcSetup();                                                                       // Dinoverdenen og Beinslottet
   pondSetup();                                                                     // Haidammen
   { const off = o => !townNear(o.x, o.y, 520); g.trees = g.trees.filter(off); g.rocks = g.rocks.filter(off); g.bushes = g.bushes.filter(off); g.tufts = g.tufts.filter(off); }   // plass til den store byen
@@ -1834,8 +1846,16 @@ function nearestEnemyInCone(x, y, ang, half, range) {
 }
 // Siktet: musa (PC) eller hjelp til å treffe nærmeste fiende i retningen du ser
 const MOUSE = { on: false, down: false, sx: 0, sy: 0, wx: null, wy: null };
+// Musestyring som i et skytespill (v5.3, PC): klikk i spillet, så styrer musa hvilken vei du ser. Esc gir deg pekeren tilbake.
+const MLOOK = { fail: false, forced: false, told: false, sens: 0.35 };
+const PLOCK = () => MLOOK.forced || (!!document.pointerLockElement && document.pointerLockElement === cv);
+const camAim = () => (R3 ? R3.camYaw : 0) + Math.PI;                  // retningen kameraet ser (i spillets vinkel)
 function aimAngle(W, o) {
   const p = g.p;
+  if (PLOCK()) {                                                       // sikt dit du ser – med litt hjelp mot en fiende rett foran trådkorset
+    const a = camAim(); if (o && Math.abs(angDiff(Math.atan2(o.x - p.x, o.y - p.y), a)) < 0.45) return Math.atan2(o.x - p.x, o.y - p.y);
+    const tg = nearestEnemyInCone(p.x, p.y, a, 0.22, W.range || W.reach + 50); return tg ? Math.atan2(tg.o.x - p.x, tg.o.y - p.y) : a;
+  }
   if (MOUSE.on && MOUSE.wx !== null && (W.kind !== 'melee' || MOUSE.down)) return Math.atan2(MOUSE.wx - p.x, MOUSE.wy - p.y);
   if (o) return Math.atan2(o.x - p.x, o.y - p.y);
   const base = Math.atan2(p.ix, p.iy), tg = nearestEnemyInCone(p.x, p.y, base, 0.7, W.range || W.reach + 50);
@@ -1942,7 +1962,7 @@ function actNow(t) {
     const o = t.o; p.face = o.x >= p.x ? 1 : -1;
     o.hp -= AXES[g.axe].p; o.shake = 0.2; p.view = 'side';
     burst(o.x, o.y - 8, '#c08a55', 4);
-    if (o.hp <= 0) { o.alive = false; o.regrow = o.giant ? 180 : 90; const n = addRes('wood', o.giant ? 10 : 3); if (n) floatText(o.x, o.y - 30, `+${n} 🪵`); if (o.giant) toast('Tømmer! Kjempegrana falt! 🌲'); }
+    if (o.hp <= 0) { o.alive = false; o.regrow = o.giant ? TREE_REGROW * 2 : TREE_REGROW; const n = addRes('wood', o.giant ? 10 : 3); if (n) floatText(o.x, o.y - 30, `+${n} 🪵`); if (o.giant) toast('Tømmer! Kjempegrana falt! 🌲'); }
   } else if (t.k === 'rock') {
     const o = t.o; p.face = o.x >= p.x ? 1 : -1; p.view = 'side';
     o.hp -= AXES[g.axe].p; burst(o.x, o.y - 8, '#a9ada6', 5);
@@ -2177,10 +2197,10 @@ function update(dt) {
     g.parts.push({ x: FX + rand(-6, 6), y: FY - 30, vx: rand(-6, 10), vy: rand(-30, -20), t: 2.6, smoke: true });
   }
 
-  // Trær og busker vokser tilbake
+  // Trær og busker vokser tilbake (trær: tidligst etter TREE_REGROW sekunder, og bare når du ikke ser det)
   for (const t of g.trees) {
     t.shake = Math.max(0, t.shake - dt);
-    if (!t.alive && (t.regrow -= dt) <= 0) { t.alive = true; t.hp = t.max; }
+    if (!t.alive && (t.regrow -= dt) <= 0 && Math.hypot(t.x - g.p.x, t.y - g.p.y) > 1400) { t.alive = true; t.hp = t.max; }   // vokser bare opp igjen når du er langt unna
   }
   for (const r of g.rocks) if (!r.alive && (r.regrow -= dt) <= 0) { r.alive = true; r.hp = r.max; }
   for (const b of g.bushes) if (b.berries < 3 && (b.t += dt) > 25) { b.berries++; b.t = 0; }
@@ -3097,6 +3117,7 @@ function treeVariant(kind, i) {
 }
 
 // Trestørrelse i forhold til helten (v4.7): vanlige trær er nå ca. 3 ganger så høye som Even-figuren
+const TREE_REGROW = 600;                                // sekunder før et hugget tre kan vokse opp igjen (10 minutter)
 const TREE_H = 1.9, TREE_W = 1.5, GIANT_H = 1.3, GIANT_W = 1.2;
 const treeHK = t => t.giant ? GIANT_H : TREE_H, treeWK = t => t.giant ? GIANT_W : TREE_W;
 function makeTree(t) {
@@ -4220,6 +4241,7 @@ function dcPath(ax, ay, bx, by) {      // samme slags slyngete sti som stiene fr
   return pts;
 }
 // ---------- Logikk ----------
+function dcSaveProg(k, v) { hero.dcSave = hero.dcSave || {}; hero.dcSave[k] = v; saveHero(); }
 function newDino() {
   const sk = [];
   for (let i = 0; i < 25; i++) {                                    // 25 skjeletter står oppstilt som en hær, med front mot porten
@@ -4227,9 +4249,14 @@ function newDino() {
     sk.push({ x, y, hx: x, hy: y, hp: DC_HP.sk, max: DC_HP.sk, hit: 0, walk: 0, spd: 0, atk: 0, cd: rand(0, 1), awake: false, wake: rand(0.1, 1.6) });
   }
   const tri = [[-150, -40], [150, -40], [0, -230]].map(([x, y]) => ({ x: DCX + x, y: DCY + y, hx: DCX + x, hy: DCY + y, hp: DC_HP.tri, max: DC_HP.tri, st: 'idle', t: rand(.3, 1.2), dx: 0, dy: 1, hit: 0, walk: 0, spd: 0, hitP: false, ang: 0 }));
-  return { found: false, pf: -1, told: [false, false, false], sk, tri, lock1: true, lock2: true, waves: [],
+  // Lagret fremgang (v5.3): etasjer du har ryddet og kongen du har beseiret, er fortsatt ryddet neste gang – også etter at du har dødd
+  const S = hero.dcSave || {};
+  if (S.f1) sk.length = 0; if (S.f2) tri.length = 0;
+  const D0 = { found: false, pf: -1, told: [false, false, false], sk, tri, lock1: !S.f1, lock2: !S.f2, waves: [],
     boss: { x: DCX, y: DCY - 200, hp: DC_HP.boss, max: DC_HP.boss, st: 'sleep', t: 0, hit: 0, walk: 0, spd: 0, alive: true, seen: false, hitP: false, stompT: 6, fall: 0 },
     chests: [-120, 0, 120].map(x => ({ x: DCX + x, y: DCY - 205 - Math.abs(x) * .1, show: false, open: false })) };
+  if (S.boss) { D0.boss.alive = false; D0.boss.hp = 0; D0.boss.fall = 1; D0.chests.forEach((c, i) => { c.show = true; c.open = !!(S.chests && S.chests[i]); }); }
+  return D0;
 }
 // Kjøres i newGame: rydder plass til slottet og legger en sti fra bålet dit
 function dcSetup() {
@@ -4302,7 +4329,7 @@ function updateDino(dt) {
     if (e2 < 576 && e2 > 0.01) { const e = Math.sqrt(e2), k = (24 - e) * .5; a.x += ex / e * k; a.y += ey / e * k; b.x -= ex / e * k; b.y -= ey / e * k; }
   }
   for (const s of D.sk) { dcPush(s, 11, DC_F[0]); dcKeepIn(s, 0, 12); }
-  if (D.lock1 && !D.sk.length) { D.lock1 = false; toast('🔓 Alle 25 skjelettene er knust! Bein-porten ved trappa er åpen – gå opp til 2. etasje!'); sfx('levelup'); }
+  if (D.lock1 && !D.sk.length) { D.lock1 = false; dcSaveProg('f1', true); toast('🔓 Alle 25 skjelettene er knust! Bein-porten ved trappa er åpen – gå opp til 2. etasje! 💾 Lagret: 1. etasje er ryddet.'); sfx('levelup'); }
   // --- 2. etasje: triceratopsene stanger ---
   const s1 = sameF(1);
   for (const t of D.tri) {
@@ -4326,7 +4353,7 @@ function updateDino(dt) {
     if (t.st === 'charge' && hitWall) { t.st = 'stun'; t.t = 2.4; g.shake = Math.max(g.shake, 0.3); burst(t.x, t.y - 50, '#ece6d2', 14); floatText(t.x, t.y - 150, 'BONK! Svimmel 💫'); sfx('boom'); }
   }
   for (let i = 0; i < D.tri.length; i++) for (let j = i + 1; j < D.tri.length; j++) { const a = D.tri[i], b = D.tri[j], ex = a.x - b.x, ey = a.y - b.y, e = Math.hypot(ex, ey); if (e < 90 && e > .01) { const k = (90 - e) * .5; a.x += ex / e * k; a.y += ey / e * k; b.x -= ex / e * k; b.y -= ey / e * k; } }
-  if (D.lock2 && !D.tri.length) { D.lock2 = false; toast('🔓 Alle triceratopsene er beseiret! Porten til taket er åpen. Kongen venter der oppe … 👑'); sfx('levelup'); }
+  if (D.lock2 && !D.tri.length) { D.lock2 = false; dcSaveProg('f2', true); toast('🔓 Alle triceratopsene er beseiret! Porten til taket er åpen. Kongen venter der oppe … 👑 💾 Lagret: 2. etasje er ryddet.'); sfx('levelup'); }
   // --- Taket: Skjelett-T-rex-kongen ---
   const B = D.boss, s2 = sameF(2);
   if (B.alive) {
@@ -4383,7 +4410,7 @@ function dcDamage(k, o, dmg, src) {
     if (B.hp <= B.max / 2 && !B.raged) { B.raged = true; floatText(B.x, B.y - 280, 'Kongen blir rasende! 😡'); sfx('roar'); g.shake = 0.5; }
     if (B.hp <= 0) {
       B.alive = false; B.hp = 0; D.waves = []; g.shake = 0.8; burst(B.x, B.y - 80, '#ece6d2', 60); burst(B.x, B.y - 80, '#ffd36b', 30);
-      D.chests.forEach(c => c.show = true); sfx('fall');
+      D.chests.forEach(c => c.show = true); sfx('fall'); dcSaveProg('boss', true);
       const newBow = giveWeapon('beinbue', true);
       toast(`🏆 DU KLARTE DET! Du beseiret hele Beinslottet!` + (newBow ? ` Du fikk 💀 SKJELETTBUEN (tast ${slotKey('beinbue')})!` : '') + ' Og se – tre skjelettkister foran tronen! 💀📦');
       if (newBow) burst(g.p.x, g.p.y - 40, '#ece6d2', 30);
@@ -4393,7 +4420,7 @@ function dcDamage(k, o, dmg, src) {
 }
 function dcOpenChest(C) {
   if (!C || !C.show || C.open) return;
-  C.open = true; burst(C.x, C.y - 20, '#ece6d2', 30); burst(C.x, C.y - 20, '#ffd36b', 20); g.shake = 0.2;
+  C.open = true; dcSaveProg('chests', g.dc.chests.map(c => c.open)); burst(C.x, C.y - 20, '#ece6d2', 30); burst(C.x, C.y - 20, '#ffd36b', 20); g.shake = 0.2;
   const a = addRes('iron', 4), b = addRes('stone', 4); g.cooked += 2; addXP(50, C.x, C.y);
   openLootChest();
   const left = g.dc.chests.filter(c => !c.open).length;
@@ -5743,6 +5770,7 @@ function draw(time) {
   let want = P.ang;
   if (keys.left || keys.right || keys.up || keys.down) want = Math.atan2(p.ix, p.iy);
   else if (p.spd > 12) want = Math.atan2(p.vx, p.vy);
+  else if (PLOCK()) want = camAim();                                    // musestyring: står du stille, ser du dit musa peker
   if (p.swing > 0 || p.draw > 0 || p.bowT > 0 || (p.fish && curW() === 'stang')) want = p.fish ? Math.atan2(p.fish.x - p.x, p.fish.y - p.y) : p.aim;                          // helten snur seg mot det han sikter på
   P.ang = turn(P.ang, want, Math.min(1, dt * (p.swing > 0 || p.draw > 0 ? 22 : 11 + 5 * amt)));   // myk vending i bevegelsesretningen
   P.grp.position.set(p.x, p.h !== undefined ? p.h : surfaceH(p.x, p.y), p.y); P.grp.rotation.y = P.ang;
@@ -6214,45 +6242,96 @@ function draw(time) {
 }
 
 let mapT = 0;
-function drawMinimap() {
-  const S = 140, cv2 = $('minimap'), c = cv2.getContext('2d'), k = S / W;
-  if (!g.mapImg) {
-    const im = document.createElement('canvas'); im.width = im.height = S;
-    const x = im.getContext('2d'), d = x.createImageData(S, S);
-    const COL = { skog: [58, 92, 48], sno: [225, 233, 240], jungel: [34, 110, 40], lava: [70, 40, 34], orken: [222, 192, 130] };
-    for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) {
-      const w = biomeW((i + .5) / S * W, (j + .5) / S * H), o = (j * S + i) * 4;
-      for (let ch = 0; ch < 3; ch++) d.data[o + ch] = COL.skog[ch] * w.skog + COL.sno[ch] * w.sno + COL.jungel[ch] * w.jungel + COL.lava[ch] * w.lava + COL.orken[ch] * w.orken;
-      d.data[o + 3] = 255;
-    }
-    x.putImageData(d, 0, 0);
-    x.lineWidth = 2;
-    for (let i = 0; i < RIVER.length - 1; i++) {
-      x.strokeStyle = biomeW(RIVER[i][0], RIVER[i][1]).lava > .5 ? '#ff6a1a' : '#4aa3d8';
-      x.beginPath(); x.moveTo(RIVER[i][0] * k, RIVER[i][1] * k); x.lineTo(RIVER[i + 1][0] * k, RIVER[i + 1][1] * k); x.stroke();
-    }
-    x.fillStyle = '#4aa3d8'; x.beginPath(); x.arc(LAKE_X * k, LAKE_Y * k, LAKE_R * k, 0, 7); x.fill(); x.beginPath(); x.arc(POND_X * k, POND_Y * k, POND_R * k, 0, 7); x.fill();
-    x.strokeStyle = '#5a4030'; x.lineWidth = 1.5; x.beginPath(); TRACK.forEach((q, i) => i ? x.lineTo(q[0] * k, q[1] * k) : x.moveTo(q[0] * k, q[1] * k)); x.stroke();   // jernbanen
-    x.fillStyle = '#b8864a'; x.fillRect(TOWNX * k - 4, TOWNY * k - 5, 8, 10);
-    x.fillStyle = '#2a1e1c'; x.beginPath(); x.arc(VX * k, VY * k, VR * k, 0, 7); x.fill(); x.fillStyle = '#ff8a2a'; x.beginPath(); x.arc(VX * k, VY * k, 2.5, 0, 7); x.fill();
-    x.fillStyle = '#ff6a1a'; for (const l of g.lavaPools) { x.beginPath(); x.arc(l.x * k, l.y * k, Math.max(1, l.r * k), 0, 7); x.fill(); }
-    g.mapImg = im;
-  }
-  c.drawImage(g.mapImg, 0, 0);
-  c.fillStyle = '#ffb347'; c.beginPath(); c.arc(FX * k, FY * k, 3.5, 0, 7); c.fill();
-  for (const b of g.buildings) { c.fillStyle = '#f3ead6'; c.fillRect(b.x * k - 1, b.y * k - 1, 2, 2); }
-  c.fillStyle = '#f3ead6'; for (const cb of g.cabins) if (cb.known) c.fillRect(cb.x * k - 2.5, cb.y * k - 2.5, 5, 5);
-  { c.font = '11px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.globalAlpha = g.gh && g.gh.found ? 1 : .55; c.fillText('👻', GHX * k, GHY * k); c.globalAlpha = g.dc && g.dc.found ? 1 : .55; c.fillText('🦖', DCX * k, DCY * k); c.globalAlpha = g.shark && g.shark.found ? 1 : .55; c.fillText('🦈', POND_X * k, POND_Y * k); c.globalAlpha = 1; if (hero.lassoTalk && g.lparts) for (const P of g.lparts) if (!lassoHas(P.id)) c.fillText(LPARTS.find(q => q.id === P.id).icon, P.x * k, P.y * k); c.globalAlpha = 1; c.fillText('🤠', TOWNX * k, TOWNY * k); const sa = trackPos(ST_A); c.fillText('🚉', sa.x * k, sa.y * k); }   // spøkelseshuset
-  c.fillStyle = '#c8a070'; for (const Bd of g.bridges) { c.save(); c.translate(Bd.x * k, Bd.y * k); c.rotate(Math.atan2(Bd.ny, Bd.nx)); c.fillRect(-4, -1.5, 8, 3); c.restore(); }
-  for (const B of g.bases) if (B.known) {
-    const x = B.x * k, y = B.y * k;
-    c.fillStyle = B.cleared ? '#5aa8ff' : '#e5484d'; c.strokeStyle = '#fff'; c.lineWidth = 1.5;
-    c.beginPath(); c.arc(x, y, 4.5, 0, 7); c.fill(); c.stroke();
-  }
-  const px = g.p.x * k, py = g.p.y * k;
-  c.fillStyle = '#ffffff'; c.strokeStyle = '#000'; c.lineWidth = 1.5;
-  c.beginPath(); c.arc(px, py, 3.5, 0, 7); c.fill(); c.stroke();
+function initMapUi() {
+  const mm = $('minimap'), stop = e => { e.stopPropagation(); };
+  for (const ev of ['pointerdown', 'touchstart', 'mousedown']) mm.addEventListener(ev, stop, { passive: true });
+  mm.addEventListener('click', e => { e.stopPropagation(); openMap(); });
+  const bm = $('bigMap'); for (const ev of ['pointerdown', 'touchstart', 'mousedown']) bm.addEventListener(ev, stop, { passive: true });
+  bm.addEventListener('click', e => { e.stopPropagation(); closeMap(); });
 }
+setTimeout(initMapUi, 0);
+// ---------- Kartet (v5.3): du ser bare de områdene du har utforsket. Trykk på kartet (eller M) for å se det stort. ----------
+const FOG_N = 112, FOG_C = W / FOG_N, FOG_R = 650, FOG_KEY = 'mork3d.kart';   // rutenett 112 × 112 (100 × 100 per rute), du ser 650 rundt deg
+let fog = null;
+function fogLoad() {
+  fog = { seed: world.seed, a: new Uint8Array(FOG_N * FOG_N), dirty: false, saveT: 0, cv: document.createElement('canvas') };
+  fog.cv.width = fog.cv.height = FOG_N;
+  try { const s2 = JSON.parse(localStorage.getItem(FOG_KEY)); if (s2 && s2.seed === world.seed) { const b = atob(s2.d); for (let i = 0; i < b.length && i < fog.a.length; i++) fog.a[i] = b.charCodeAt(i); } } catch (e) {}
+  const x = fog.cv.getContext('2d'); x.fillStyle = '#fff';
+  for (let i = 0; i < fog.a.length; i++) if (fog.a[i]) x.fillRect(i % FOG_N, (i / FOG_N) | 0, 1, 1);
+}
+function fogSave() { try { let b = ''; for (let i = 0; i < fog.a.length; i++) b += String.fromCharCode(fog.a[i]); localStorage.setItem(FOG_KEY, JSON.stringify({ seed: fog.seed, d: btoa(b) })); fog.dirty = false; } catch (e) {} }
+const fogSeen = (x, y) => { if (!fog) return true; const i = clamp(Math.floor(x / FOG_C), 0, FOG_N - 1), j = clamp(Math.floor(y / FOG_C), 0, FOG_N - 1); return fog.a[j * FOG_N + i] > 0; };
+function fogReveal(dt) {
+  if (!fog || fog.seed !== world.seed) fogLoad();
+  const p = g.p, r = FOG_R / FOG_C, ci = p.x / FOG_C, cj = p.y / FOG_C, x = fog.cv.getContext('2d'); x.fillStyle = '#fff';
+  for (let j = Math.max(0, Math.floor(cj - r)); j <= Math.min(FOG_N - 1, Math.ceil(cj + r)); j++)
+    for (let i = Math.max(0, Math.floor(ci - r)); i <= Math.min(FOG_N - 1, Math.ceil(ci + r)); i++) {
+      const k2 = j * FOG_N + i; if (fog.a[k2] || Math.hypot(i + .5 - ci, j + .5 - cj) > r) continue;
+      fog.a[k2] = 1; fog.dirty = true; x.fillRect(i, j, 1, 1);
+    }
+  if (fog.dirty && (fog.saveT -= dt) <= 0) { fog.saveT = 4; fogSave(); }
+}
+// Selve kartbildet (biomer, elv, innsjø, jernbane, vulkan) i ønsket størrelse
+function mapBase(S) {
+  g.mapImgs = g.mapImgs || {}; if (g.mapImgs[S]) return g.mapImgs[S];
+  const k = S / W, im = document.createElement('canvas'); im.width = im.height = S;
+  const x = im.getContext('2d'), R0 = Math.min(S, 280), d = x.createImageData(R0, R0);
+  const COL = { skog: [58, 92, 48], sno: [225, 233, 240], jungel: [34, 110, 40], lava: [70, 40, 34], orken: [222, 192, 130] };
+  for (let j = 0; j < R0; j++) for (let i = 0; i < R0; i++) {
+    const w = biomeW((i + .5) / R0 * W, (j + .5) / R0 * H), o = (j * R0 + i) * 4;
+    for (let ch = 0; ch < 3; ch++) d.data[o + ch] = COL.skog[ch] * w.skog + COL.sno[ch] * w.sno + COL.jungel[ch] * w.jungel + COL.lava[ch] * w.lava + COL.orken[ch] * w.orken;
+    d.data[o + 3] = 255;
+  }
+  { const t = document.createElement('canvas'); t.width = t.height = R0; t.getContext('2d').putImageData(d, 0, 0); x.imageSmoothingEnabled = true; x.drawImage(t, 0, 0, S, S); }
+  const L = S / 140;
+  x.lineWidth = 2 * L; x.lineCap = 'round';
+  for (let i = 0; i < RIVER.length - 1; i++) {
+    x.strokeStyle = biomeW(RIVER[i][0], RIVER[i][1]).lava > .5 ? '#ff6a1a' : '#4aa3d8';
+    x.beginPath(); x.moveTo(RIVER[i][0] * k, RIVER[i][1] * k); x.lineTo(RIVER[i + 1][0] * k, RIVER[i + 1][1] * k); x.stroke();
+  }
+  x.fillStyle = '#4aa3d8'; x.beginPath(); x.arc(LAKE_X * k, LAKE_Y * k, LAKE_R * k, 0, 7); x.fill(); x.beginPath(); x.arc(POND_X * k, POND_Y * k, POND_R * k, 0, 7); x.fill();
+  if (S > 200) { x.strokeStyle = 'rgba(120,90,60,.8)'; x.lineWidth = 1.2 * L * .6; for (const P of g.paths) { x.beginPath(); P.forEach((q, i) => i ? x.lineTo(q[0] * k, q[1] * k) : x.moveTo(q[0] * k, q[1] * k)); x.stroke(); } }   // stiene på det store kartet
+  x.strokeStyle = '#5a4030'; x.lineWidth = 1.5 * L; x.beginPath(); TRACK.forEach((q, i) => i ? x.lineTo(q[0] * k, q[1] * k) : x.moveTo(q[0] * k, q[1] * k)); x.stroke();   // jernbanen
+  x.fillStyle = '#b8864a'; x.fillRect(TOWNX * k - 4 * L, (TOWNY + TOWN_OY) * k - 5 * L, 8 * L, 10 * L);
+  x.fillStyle = '#2a1e1c'; x.beginPath(); x.arc(VX * k, VY * k, VR * k, 0, 7); x.fill(); x.fillStyle = '#ff8a2a'; x.beginPath(); x.arc(VX * k, VY * k, 2.5 * L, 0, 7); x.fill();
+  x.fillStyle = '#ff6a1a'; for (const l of g.lavaPools) { x.beginPath(); x.arc(l.x * k, l.y * k, Math.max(1, l.r * k), 0, 7); x.fill(); }
+  x.fillStyle = '#6a6460'; x.fillRect((DCX - DC_HX) * k, (DCY - DC_HX) * k, DC_HX * 2 * k, DC_HX * 2 * k);   // Beinslottet
+  return (g.mapImgs[S] = im);
+}
+// Tegner kartet med tåke over det du ikke har utforsket. big = det store kartet.
+function drawMapView(cv2, S, big) {
+  const c = cv2.getContext('2d'), k = S / W, L = S / 140, seen = fogSeen;
+  if (!fog || fog.seed !== world.seed) fogLoad();
+  const tmp = drawMapView.tmp || (drawMapView.tmp = document.createElement('canvas')); if (tmp.width !== S) { tmp.width = tmp.height = S; }
+  const t = tmp.getContext('2d'); t.globalCompositeOperation = 'source-over'; t.clearRect(0, 0, S, S); t.drawImage(mapBase(S), 0, 0);
+  t.globalCompositeOperation = 'destination-in'; t.imageSmoothingEnabled = true; t.filter = big ? 'blur(3px)' : 'none'; t.drawImage(fog.cv, 0, 0, S, S); t.filter = 'none'; t.globalCompositeOperation = 'source-over';
+  c.fillStyle = '#16130f'; c.fillRect(0, 0, S, S);                                           // tåke: mørkt, ukjent land
+  c.strokeStyle = 'rgba(243,234,214,.06)'; c.lineWidth = 1; for (let a = 0; a <= S; a += S / 8) { c.beginPath(); c.moveTo(a, 0); c.lineTo(a, S); c.moveTo(0, a); c.lineTo(S, a); c.stroke(); }
+  c.drawImage(tmp, 0, 0);
+  c.fillStyle = '#ffb347'; c.beginPath(); c.arc(FX * k, FY * k, 3.5 * L, 0, 7); c.fill();
+  for (const b of g.buildings) { c.fillStyle = '#f3ead6'; c.fillRect(b.x * k - L, b.y * k - L, 2 * L, 2 * L); }
+  c.fillStyle = '#f3ead6'; for (const cb of g.cabins) if (cb.known) c.fillRect(cb.x * k - 2.5 * L, cb.y * k - 2.5 * L, 5 * L, 5 * L);
+  c.fillStyle = '#c8a070'; for (const Bd of g.bridges) if (seen(Bd.x, Bd.y)) { c.save(); c.translate(Bd.x * k, Bd.y * k); c.rotate(Math.atan2(Bd.ny, Bd.nx)); c.fillRect(-4 * L, -1.5 * L, 8 * L, 3 * L); c.restore(); }
+  for (const B of g.bases) if (B.known) { c.fillStyle = B.cleared ? '#5aa8ff' : '#e5484d'; c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.beginPath(); c.arc(B.x * k, B.y * k, 4.5 * L * (big ? .6 : 1), 0, 7); c.fill(); c.stroke(); }
+  c.font = `${Math.round(11 * (big ? L * .55 : 1))}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle';
+  const icon = (ic, x, y, name) => { if (!seen(x, y)) return; c.fillText(ic, x * k, y * k); if (big && name) { c.save(); c.font = `bold ${Math.round(11 * L * .32)}px system-ui`; c.fillStyle = '#000'; c.fillText(name, x * k + 1, y * k + 15 * L * .32 * 1.6 + 1); c.fillStyle = '#f3ead6'; c.fillText(name, x * k, y * k + 15 * L * .32 * 1.6); c.restore(); } };
+  icon('👻', GHX, GHY, 'Spøkelseshuset'); icon('🦖', DCX, DCY, 'Beinslottet'); icon('🦈', POND_X, POND_Y, 'Haidammen'); icon('🤠', TOWNX, TOWNY + TOWN_OY, 'Kaktusbyen');
+  { const sa = trackPos(ST_A); icon('🚉', sa.x, sa.y, 'Stasjonen'); } icon('🌋', VX, VY, 'Vulkanen'); icon('🔺', PYX, PYY, 'Pyramiden');
+  if (hero.lassoTalk && g.lparts) for (const P of g.lparts) if (!lassoHas(P.id)) c.fillText(LPARTS.find(q => q.id === P.id).icon, P.x * k, P.y * k);   // oppdragsmerker vises alltid
+  // deg selv: en pil som peker dit du går
+  const px = g.p.x * k, py = g.p.y * k, a = Math.atan2(g.p.ix, g.p.iy), r = (big ? 9 : 4.5) * (big ? L * .45 : 1);
+  c.save(); c.translate(px, py); c.rotate(-a); c.fillStyle = '#ffffff'; c.strokeStyle = '#000'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(0, r * 1.5); c.lineTo(r, -r); c.lineTo(0, -r * .4); c.lineTo(-r, -r); c.closePath(); c.fill(); c.stroke(); c.restore();
+}
+function drawMinimap() { drawMapView($('minimap'), 140, false); }
+function openMap() {
+  if (state !== 'play' || !g) return;
+  state = 'map'; resetPointers(); $('bigMap').hidden = false; $('prompt').hidden = true;
+  const cv2 = $('bigMapCv'); drawMapView(cv2, cv2.width, true);
+  const n = fog ? fog.a.reduce((s2, v) => s2 + v, 0) : 0; $('bigMapPct').textContent = `Du har utforsket ${Math.round(n / fog.a.length * 100)} % av verden`;
+}
+function closeMap() { if (state !== 'map') return; $('bigMap').hidden = true; state = 'play'; resetPointers(); if (g) g.p.cool = Math.max(g.p.cool, 0.3); }
 function fishHud() {
   const F = g.p.fish, ui = $('fishUI');
   if (!F || curW() !== 'stang' || F.st === 'land') { if (!ui.hidden) ui.hidden = true; return; }
@@ -6264,7 +6343,7 @@ function fishHud() {
 }
 function updateHud() {
   fishHud();
-  if (performance.now() - mapT > 200) { mapT = performance.now(); drawMinimap(); }
+  if (performance.now() - mapT > 200) { fogReveal((performance.now() - mapT) / 1000); mapT = performance.now(); drawMinimap(); }
   $('bHp').style.width = Math.max(0, g.hp) + '%';
   $('bFood').style.width = g.food + '%';
   $('bFire').style.width = g.fuel + '%';
@@ -6341,6 +6420,8 @@ const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', Arr
 window.addEventListener('keydown', e => {
   if (DEV_TOOLS && (e.code === 'F9' || e.code === 'Backquote') && !e.repeat) { e.preventDefault(); devToggle(); return; }   // utviklerverktøy: lys-test
   const k = KEYMAP[e.code];
+  if (state === 'map') { if (e.code === 'Escape' || e.code === 'KeyM') { closeMap(); e.preventDefault(); } return; }
+  if (state === 'play' && e.code === 'KeyM' && !e.repeat) { openMap(); e.preventDefault(); return; }
   if (state === 'menu') { if (e.code === 'Escape' || e.code === 'KeyB' || (menuKind === 'weapons' && (e.code === 'KeyI' || e.code === 'Tab'))) { closeMenu(); e.preventDefault(); } return; }
   if (state === 'play' && e.code === 'KeyC' && !e.repeat && R3) { R3.camMode = R3.camMode === 'near' ? 'far' : 'near'; toast(R3.camMode === 'near' ? '🎥 Kamera bak helten' : '🎥 Kamera ovenfra'); e.preventDefault(); return; }
   if (state === 'play' && (e.code === 'KeyB' || e.code === 'Escape')) {
@@ -6381,7 +6462,7 @@ function joyIdle() { joyShow(Math.max(84, VW * 0.13), VH - (VW > VH ? 110 : 130)
 function joyRelease() { JOY.id = null; JOY.dx = JOY.dy = JOY.mag = 0; joyIdle(); }
 function camRotate(dx, dy) { if (!R3) return; R3.camYaw -= dx * 0.0085; R3.camPitch = clamp(R3.camPitch + dy * 0.004, -0.35, 0.45); }
 function camZoom(f) { if (R3) R3.camZoom = clamp(R3.camZoom * f, 0.55, 1.7); }
-function resetPointers() { joyRelease(); CAMT.clear(); CAMDRAG.id = null; MOUSE.down = false; for (const k in keys) keys[k] = false; }
+function resetPointers() { if (document.pointerLockElement && document.exitPointerLock) document.exitPointerLock(); joyRelease(); CAMT.clear(); CAMDRAG.id = null; MOUSE.down = false; for (const k in keys) keys[k] = false; }
 cv.addEventListener('pointerdown', e => {
   if (state !== 'play') return;
   if (e.pointerType === 'mouse') { if (e.button === 2) { CAMDRAG.id = e.pointerId; CAMDRAG.x = e.clientX; CAMDRAG.y = e.clientY; } return; }
@@ -6407,8 +6488,21 @@ cv.addEventListener('pointerup', joyEnd); cv.addEventListener('pointercancel', j
 cv.addEventListener('contextmenu', e => e.preventDefault());
 window.addEventListener('blur', resetPointers); document.addEventListener('visibilitychange', () => { if (document.hidden) resetPointers(); });
 // Mus på PC: venstre knapp = angrip/gjør (som E), musehjulet bytter våpen, pekeren sikter med bue og stav
-cv.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; MOUSE.on = true; MOUSE.sx = e.clientX; MOUSE.sy = e.clientY; });
-cv.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse' || e.button !== 0 || state !== 'play') return; MOUSE.on = true; MOUSE.down = true; MOUSE.sx = e.clientX; MOUSE.sy = e.clientY; });
+cv.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse' || PLOCK()) return; MOUSE.on = true; MOUSE.sx = e.clientX; MOUSE.sy = e.clientY; });
+cv.addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'mouse' || e.button !== 0 || state !== 'play') return;
+  if (!PLOCK() && !MLOOK.fail && cv.requestPointerLock) {             // første klikk: musa begynner å styre retningen (ikke et slag)
+    try { const r = cv.requestPointerLock(); if (r && r.catch) r.catch(() => { MLOOK.fail = true; }); } catch (er) { MLOOK.fail = true; }
+    return;
+  }
+  MOUSE.on = !PLOCK(); MOUSE.down = true; MOUSE.sx = e.clientX; MOUSE.sy = e.clientY; });
+document.addEventListener('pointerlockerror', () => { MLOOK.fail = true; toast('Musestyring er ikke tillatt her. Hold inne høyre musknapp og dra for å snu kameraet.'); });
+document.addEventListener('pointerlockchange', () => {
+  const on = PLOCK(); $('cross').hidden = !on; MOUSE.down = false;
+  if (on) { MOUSE.on = false; MOUSE.wx = null; if (R3) R3.camMode = 'near'; if (!MLOOK.told) { MLOOK.told = true; toast('🖱️ Nå styrer musa hvilken vei du ser! Venstre knapp = angrip. Esc = få pekeren tilbake.'); } }
+});
+document.addEventListener('mousemove', e => { if (PLOCK() && state === 'play') camRotate(e.movementX * MLOOK.sens, e.movementY * MLOOK.sens); });
+window.addEventListener('mouseup', e => { if (PLOCK() && e.button === 0) MOUSE.down = false; });
 window.addEventListener('pointerup', e => { if (e.pointerType === 'mouse' && e.button === 0) MOUSE.down = false; if (e.pointerType === 'mouse' && e.pointerId === CAMDRAG.id && e.button === 2) CAMDRAG.id = null; });
 cv.addEventListener('pointerleave', () => { MOUSE.on = false; MOUSE.wx = null; });
 window.addEventListener('wheel', e => { if (state === 'play') camZoom(Math.exp(clamp(e.deltaY, -120, 120) * 0.0015)); }, { passive: true });   // musehjulet zoomer
