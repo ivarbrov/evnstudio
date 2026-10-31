@@ -25,6 +25,9 @@ body{background:var(--night);color:var(--bone);font-family:var(--body);overflow:
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
   -webkit-user-select:none;user-select:none}
 #game,#ov{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+/* v5.5.1: ingen dobbelttrykk-zoom noe sted; spillflate, HUD, kart og knapper styres av spillet (knip/zoom bare i menyer) */
+html,body{touch-action:manipulation}
+#hud,#hud *,#hotbar,#hotbar *,#touch,#touch *,#joy,#minimap,#bigMap,#bigMap *{touch-action:none}
 #ov{pointer-events:none}
 #hud{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));
   display:flex;justify-content:space-between;align-items:flex-start;gap:10px;pointer-events:none}
@@ -197,7 +200,7 @@ addEventListener('keydown',function(){t(false);},true);})();
 
 <div class="overlay" id="startScreen">
   <div class="card">
-    <div class="ver">EVN Studio · 3D · Versjon 5.5</div>
+    <div class="ver">EVN Studio · 3D · Versjon 5.5.1</div>
     <h1>Mørkeskogen</h1>
     <p>Du har gått deg vill i en mørk skog. Klarer du å overleve natten?</p>
     <ul class="maal">
@@ -5335,7 +5338,7 @@ function buildWorld() {
   }
   gg.computeVertexNormals();
   // Farge for hvert punkt på bakken: biom, flekker, gjørme ved bekken, jord ved bålet, svart skorpe ved lava
-  const nrm = gg.attributes.normal, pathAt = (x, z) => { let m = 1e9; for (const P of g.paths) for (let j = 0; j < P.length - 1; j++) { const [ax, ay] = P[j], [bx, by] = P[j + 1]; if (Math.abs(x - ax) > 140 && Math.abs(x - bx) > 140) continue; const dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - ay) * dy) / (dx * dx + dy * dy))); m = Math.min(m, Math.hypot(x - ax - dx * t, z - ay - dy * t)); } return m; };
+  const nrm = gg.attributes.normal, pathAt = (x, z) => { let m = 1e9; for (const P of g.paths) { if (P.box && (x < P.box[0] - 40 || x > P.box[1] + 40 || z < P.box[2] - 40 || z > P.box[3] + 40)) continue; for (let j = 0; j < P.length - 1; j++) { const [ax, ay] = P[j], [bx, by] = P[j + 1]; if (Math.abs(x - ax) > 140 && Math.abs(x - bx) > 140) continue; if ((z - ay > 40 && z - by > 40) || (ay - z > 40 && by - z > 40)) continue; const dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - ay) * dy) / (dx * dx + dy * dy))); m = Math.min(m, Math.hypot(x - ax - dx * t, z - ay - dy * t)); } } return m; };
   const cols = new Float32Array(gp.count * 3), C3 = { skog: [.24, .37, .19], sno: [.9, .93, .96], jungel: [.15, .33, .12], lava: [.16, .12, .11], orken: [.8, .67, .44] };
   for (let i = 0; i < gp.count; i++) {
     const x = gp.getX(i), z = gp.getZ(i), w = biomeW(x, z);
@@ -6276,10 +6279,16 @@ function draw(time) {
 let mapT = 0;
 function initMapUi() {
   const mm = $('minimap'), stop = e => { e.stopPropagation(); };
-  for (const ev of ['pointerdown', 'touchstart', 'mousedown']) mm.addEventListener(ev, stop, { passive: true });
-  mm.addEventListener('click', e => { e.stopPropagation(); openMap(); });
-  const bm = $('bigMap'); for (const ev of ['pointerdown', 'touchstart', 'mousedown']) bm.addEventListener(ev, stop, { passive: true });
-  bm.addEventListener('click', e => { e.stopPropagation(); closeMap(); });
+  for (const ev of ['touchstart', 'mousedown', 'click']) mm.addEventListener(ev, stop, { passive: true });
+  // v5.5.1: åpne/lukke på pointerup (ett trykk holder, også når spillet er travelt), ikke på click
+  let mmNed = false, bmNed = false;
+  mm.addEventListener('pointerdown', e => { e.stopPropagation(); mmNed = true; }, { passive: true });
+  mm.addEventListener('pointerup', e => { e.stopPropagation(); if (mmNed) { mmNed = false; openMap(); } });
+  mm.addEventListener('pointercancel', () => { mmNed = false; });
+  const bm = $('bigMap'); for (const ev of ['touchstart', 'mousedown', 'click']) bm.addEventListener(ev, stop, { passive: true });
+  bm.addEventListener('pointerdown', e => { e.stopPropagation(); bmNed = true; }, { passive: true });
+  bm.addEventListener('pointerup', e => { e.stopPropagation(); if (bmNed) { bmNed = false; closeMap(); } });
+  bm.addEventListener('pointercancel', () => { bmNed = false; });
 }
 setTimeout(initMapUi, 0);
 // ---------- Kartet (v5.3): du ser bare de områdene du har utforsket. Trykk på kartet (eller M) for å se det stort. ----------
@@ -6352,7 +6361,8 @@ function drawMapView(cv2, S, big) {
   { const sa = trackPos(ST_A); icon('🚉', sa.x, sa.y, 'Stasjonen'); } icon('🌋', VX, VY, 'Vulkanen'); icon('🔺', PYX, PYY, 'Pyramiden');
   if (hero.lassoTalk && g.lparts) for (const P of g.lparts) if (!lassoHas(P.id)) c.fillText(LPARTS.find(q => q.id === P.id).icon, P.x * k, P.y * k);   // oppdragsmerker vises alltid
   // deg selv: en pil som peker dit du går
-  const px = g.p.x * k, py = g.p.y * k, a = Math.atan2(g.p.ix, g.p.iy), r = (big ? 9 : 4.5) * (big ? L * .45 : 1);
+  const px = g.p.x * k, py = g.p.y * k, a = Math.atan2(g.p.ix, g.p.iy), r = (big ? 9 : 8) * (big ? L * .45 : 1);
+  if (!big) { c.save(); c.strokeStyle = '#ffd34d'; c.lineWidth = 3; c.beginPath(); c.arc(px, py, r * 1.9, 0, 7); c.stroke(); c.restore(); }   // v5.5.1: gul ring rundt deg på det lille kartet
   c.save(); c.translate(px, py); c.rotate(-a); c.fillStyle = '#ffffff'; c.strokeStyle = '#000'; c.lineWidth = 1.5;
   c.beginPath(); c.moveTo(0, r * 1.5); c.lineTo(r, -r); c.lineTo(0, -r * .4); c.lineTo(-r, -r); c.closePath(); c.fill(); c.stroke(); c.restore();
 }
@@ -6433,8 +6443,10 @@ function loop(ts) {
   requestAnimationFrame(loop);
 }
 
+let bakgrunnFersk = false;
 function start() {
-  newGame(); state = 'play';
+  if (bakgrunnFersk) bakgrunnFersk = false; else newGame();
+  state = 'play'; nullstillZoom();
   $('startScreen').hidden = true; $('overScreen').hidden = true; $('hud').hidden = false;
   $('touch').hidden = !isTouch; $('joy').hidden = !isTouch; resetPointers(); joyIdle(); $('hotbar').hidden = false; document.body.classList.toggle('touchui', isTouch); hotbarKey = '';
   toast('Samle ved og bær før natten kommer!');
@@ -6517,6 +6529,26 @@ cv.addEventListener('pointermove', e => {
 });
 const joyEnd = e => { if (e.pointerId === JOY.id) joyRelease(); CAMT.delete(e.pointerId); if (e.pointerId === CAMDRAG.id) CAMDRAG.id = null; };
 cv.addEventListener('pointerup', joyEnd); cv.addEventListener('pointercancel', joyEnd); cv.addEventListener('lostpointercapture', joyEnd);
+// v5.5.1: sikkerhetsnett – slippes fingeren et annet sted, eller er ingen fingre igjen på skjermen, slipper vi alt (ellers kan helten «gå av seg selv»)
+window.addEventListener('pointerup', joyEnd, true); window.addEventListener('pointercancel', joyEnd, true);
+window.addEventListener('touchend', e => { if (e.touches.length === 0 && (state === 'play' || state === 'map')) resetPointers(); }, { passive: true, capture: true });
+window.addEventListener('touchcancel', e => { if (e.touches.length === 0) resetPointers(); }, { passive: true, capture: true });
+// v5.5.1: har siden blitt zoomet inn (f.eks. i en meny), zoomes den ut igjen når du rører spillflaten
+function nullstillZoom() {
+  const v = window.visualViewport, m = document.querySelector('meta[name=viewport]');
+  if (!v || !m || v.scale <= 1.01) return;
+  const o = m.getAttribute('content'); m.setAttribute('content', o + ', maximum-scale=1.0'); setTimeout(() => m.setAttribute('content', o), 400);
+}
+cv.addEventListener('pointerdown', nullstillZoom, true);
+// v5.5.1: to tomler samtidig (styrespak + knapp) tolkes av iPhone som knip-zoom. Under spilling sperres knip
+// når siden ikke er zoomet; i menyer og på startskjermen kan man fortsatt zoome.
+const iSpill = () => state === 'play' || state === 'map';
+const erZoomet = () => !!(window.visualViewport && visualViewport.scale > 1.01);
+['gesturestart', 'gesturechange'].forEach(t => document.addEventListener(t, e => { if (iSpill() && !erZoomet()) e.preventDefault(); }, { passive: false }));
+document.addEventListener('touchmove', e => { if (e.touches.length > 1 && iSpill() && !erZoomet()) e.preventDefault(); }, { passive: false });
+window.addEventListener('touchend', () => { if (iSpill() && erZoomet()) nullstillZoom(); }, { passive: true });
+// v5.5.1: er siden zoomet inn, kan du knipe deg ut igjen på spillflaten (ellers sperrer spillflaten knip)
+if (window.visualViewport) visualViewport.addEventListener('resize', () => { cv.style.touchAction = visualViewport.scale > 1.01 ? 'manipulation' : ''; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
 window.addEventListener('blur', resetPointers); document.addEventListener('visibilitychange', () => { if (document.hidden) resetPointers(); });
 // Mus på PC: venstre knapp = angrip/gjør (som E), musehjulet bytter våpen, pekeren sikter med bue og stav
@@ -6565,7 +6597,7 @@ function devClock() {
 $('againBtn').addEventListener('click', start);
 
 if (!window.THREE) $('no3d').hidden = false;
-newGame(); // bakgrunn bak startskjermen
+newGame(); bakgrunnFersk = true; // bakgrunn bak startskjermen (v5.5.1: brukes direkte ved første Start, så verden ikke bygges to ganger)
 requestAnimationFrame(loop);
 })();
 </script>

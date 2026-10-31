@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Fossil Zoo v0.6.3 – EVN Studio</title>
+<title>Fossil Zoo v0.6.4 – EVN Studio</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;touch-action:manipulation}
 #cv,#pad button,#mini{touch-action:none}
@@ -133,7 +133,7 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
   <h1>⛏️ Fossil Zoo</h1>
   <p>Reis gjennom jordas tre store tidsepoker og let etter fossiler! 🦴<br>Når du har funnet hele skjelettet til et dyr, blir det <b>levende</b> og flytter inn i dyreparken din.<br><br>⌨️ Piltaster eller WASD: gå og grav<br>🧗 Hold pil opp inntil en vegg for å klatre<br>✨ Glitrende stein gjemmer et fossil!<br>⏳ Jo dypere du graver, jo lenger tilbake i tiden kommer du!</p>
   <button class="btn bigbtn" id="startBtn">Start!</button>
-  <div class="ver">Versjon 0.6.3 • 3 tidsepoker • 13 dyr å vekke</div>
+  <div class="ver">Versjon 0.6.4 • 3 tidsepoker • 13 dyr å vekke</div>
 </div>
 
 <div class="overlay" id="celebrate">
@@ -1623,10 +1623,13 @@ document.getElementById('fakta').onclick=()=>document.getElementById('fakta').cl
 setTimeout(()=>{ const h=document.getElementById('help'); if('ontouchstart' in window || navigator.maxTouchPoints>0) h.style.display='none'; },15000);
 // ingen zoom ved dobbeltklikk, knip eller Ctrl+hjul
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
-['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+// v0.6.4: er siden likevel blitt zoomet inn (iOS), skal det gå an å knipe seg ut igjen
+const zoomet=()=>!!(window.visualViewport&&visualViewport.scale>1.01);
+['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>{ if(!zoomet()) e.preventDefault(); },{passive:false}));
+if(window.visualViewport) visualViewport.addEventListener('resize',()=>{ const z=zoomet()?'manipulation':''; for(const el of [document.documentElement,document.body,document.getElementById('cv'),document.getElementById('pad')]) if(el) el.style.touchAction=z; });
 let lastTouchEnd=0;
 document.addEventListener('touchend',e=>{ const n=Date.now(); if(n-lastTouchEnd<350 && !e.target.closest('button,a,summary,input')) e.preventDefault(); lastTouchEnd=n; },{passive:false});
-document.addEventListener('touchmove',e=>{ if(e.touches.length>1) e.preventDefault(); },{passive:false});
+document.addEventListener('touchmove',e=>{ if(e.touches.length>1 && !zoomet()) e.preventDefault(); },{passive:false});
 document.addEventListener('wheel',e=>{ if(e.ctrlKey) e.preventDefault(); },{passive:false});
 addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey) && ['+','-','=','0'].includes(e.key)) e.preventDefault(); });
 document.getElementById('startBtn').onclick=()=>{ sound('find'); openLevels(); };
