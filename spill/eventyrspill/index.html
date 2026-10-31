@@ -1,0 +1,1939 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Evens Eventyrspill – v0.15</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="ikoner/ikon-192.png">
+<link rel="apple-touch-icon" href="ikoner/apple-touch-icon.png">
+<meta name="theme-color" content="#141a2a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Eventyrspill">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  html, body { margin: 0; height: 100%; background: #10180f; overflow: hidden; font-family: system-ui, sans-serif; }
+  canvas { display: block; width: 100%; height: 100%; cursor: none; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  #baseKnapp { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); padding: 10px 16px; font-size: 16px; font-weight: bold;
+    background: #6b4a2b; color: #ffe9b0; border: 3px solid #3d2a17; border-radius: 10px; cursor: pointer; display: none; }
+  #baseKnapp:hover { background: #7d5833; transform: translateX(-50%); }
+  #base { position: fixed; inset: 0; display: none; background: rgba(15,10,5,0.88); color: #fff; overflow: auto; }
+  #base .innhold { max-width: 900px; margin: 30px auto; padding: 0 20px 110px; }
+  #base h1 { color: #ffd54a; margin: 0 0 4px; font-size: 34px; }
+  #base .info { color: #ddd; margin-bottom: 18px; font-size: 17px; }
+  #base .kort-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .kort { background: linear-gradient(#4a3520, #2e2013); border: 3px solid #6b4a2b; border-radius: 14px; padding: 14px; }
+  .kort.last { opacity: 0.55; filter: grayscale(0.7); }
+  .kort .ikon { font-size: 40px; }
+  .kort h3 { margin: 4px 0; color: #ffe9b0; }
+  .kort p { margin: 4px 0 10px; color: #ccc; font-size: 14px; min-height: 36px; }
+  .kort .niva { color: #7fd4ff; font-size: 14px; margin-bottom: 8px; }
+  .kort button { width: 100%; padding: 9px; font-size: 15px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer;
+    background: #ffc107; color: #3d2a17; }
+  .kort button:disabled { background: #666; color: #bbb; cursor: default; }
+  @media (max-width: 600px) {
+    #base .innhold { margin: 14px auto; padding: 0 10px 100px; }
+    #base h1 { font-size: 24px; }
+    #base .info { font-size: 14px; margin-bottom: 10px; }
+    #base .kort-liste { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .kort { padding: 8px; border-width: 2px; }
+    .kort .ikon { font-size: 26px; }
+    .kort h3 { font-size: 15px; margin: 2px 0; }
+    .kort p { font-size: 11px; min-height: 0; margin: 2px 0 6px; }
+    .kort .niva { font-size: 11px; margin-bottom: 6px; }
+    .kort button { font-size: 13px; padding: 8px 4px; }
+  }
+  #nyttSpillKnapp { margin-top: 24px; padding: 8px 14px; font-size: 13px; border-radius: 8px; border: 2px solid #7a2a2a;
+    background: transparent; color: #ff8a80; cursor: pointer; }
+  #tilbake { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(420px, calc(100% - 32px));
+    padding: 16px 22px; font-size: 20px; font-weight: bold; border-radius: 14px; border: 3px solid #1f3f80;
+    background: #3a6fd8; color: #fff; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.6); z-index: 10; }
+</style>
+</head>
+<body>
+<canvas id="spill"></canvas>
+<button id="baseKnapp">🏰 Basen (B)</button>
+<div id="base"><div class="innhold">
+  <h1>🏰 Basen din</h1>
+  <div class="info" id="baseInfo"></div>
+  <div class="kort-liste" id="kortListe"></div>
+  <button id="nyttSpillKnapp">🗑️ Start helt på nytt</button>
+  <button id="tilbake">⚔️ Tilbake til kampen (B)</button>
+</div></div>
+<script>
+// ===================== INNSTILLINGER (prøv å endre tallene!) =====================
+const START_FART = 3;         // hvor fort helten løper i starten
+const START_SVERD_SKADE = 2;  // hvor mye sverdet skader i starten
+const START_MAGI_SKADE = 2;   // hvor mye magien skader i starten
+const MAGI_KOSTER = 20;       // hvor mye mana én magikule koster
+const VERDEN_BREDDE = 1800;
+const VERDEN_HOYDE = 1300;
+function murMaks() { return 100 * antallBygget('mur'); } // muren tåler 100 per nivå
+const TARN_MAKS = 30;         // hvor mye hvert vakttårn tåler
+const PORTAL_BOLGE = 10;      // etter denne bølgen åpner portalen til romstasjonen seg
+const BOSS_HVER = 5;          // en boss kommer hver 5. bølge
+
+// ===================== TING DU KAN BYGGE I BASEN =====================
+// laasesOpp = hvilket nivå du må ha for å kunne bygge den
+const BYGNINGER = [
+  { id: 'smie',    ikon: '⚒️', navn: 'Smie',          tekst: 'Sterkere sverd: +1 sverdskade',          laasesOpp: 1, priser: [20, 40, 70, 110, 160, 220, 290, 370, 460, 560] },
+  { id: 'bronn',   ikon: '⛲', navn: 'Livsbrønn',     tekst: 'Mer liv: +3 maks liv',                    laasesOpp: 1, priser: [15, 30, 55, 85, 120, 160, 210, 270, 340, 420] },
+  { id: 'mur',     ikon: '🧱', navn: 'Steinmur',      tekst: 'Mur rundt basen. Fiendene må slå den ned for å komme inn. +100 murliv per nivå', laasesOpp: 1, priser: [50, 120, 250, 400] },
+  { id: 'vakttarn',ikon: '🏹', navn: 'Vakttårn',      tekst: 'Tårn som skyter piler på fiender. Ett nytt tårn for hver oppgradering', laasesOpp: 2, priser: [40, 70, 110, 160] },
+  { id: 'reparer', ikon: '🔧', navn: 'Reparer',       tekst: 'Fiks muren og tårnene etter at en boss har knust dem', laasesOpp: 1, priser: [25], kanKjopesMange: true },
+  { id: 'alkymist',ikon: '🧪', navn: 'Alkymist',      tekst: 'Kjøp en livsdrikk. Trykk Q for å drikke (+6 liv)', laasesOpp: 2, priser: [15], kanKjopesMange: true },
+  { id: 'magitarn',ikon: '🔮', navn: 'Magitårn',      tekst: 'Sterkere magi: +1 magiskade og +20 mana', laasesOpp: 2, priser: [30, 60, 100, 150, 210, 280, 360, 450, 550, 660] },
+  { id: 'skomaker',ikon: '👢', navn: 'Skomaker',      tekst: 'Raskere støvler: helten løper fortere',   laasesOpp: 3, priser: [40, 90, 150] },
+  { id: 'trippel', ikon: '✨', navn: 'Trippelmagi',   tekst: 'Magien skyter 3 kuler samtidig!',         laasesOpp: 5, priser: [150] },
+  { id: 'pilskade',ikon: '🎯', navn: 'Skarpere piler', tekst: 'Vakttårnene gjør +1 skade per oppgradering', laasesOpp: 8, priser: [100, 200, 300, 400, 500] },
+  { id: 'kanon',   ikon: '💣', navn: 'Kanontårn',     tekst: 'Stor kanon i basen som skyter eksploderende kuler', laasesOpp: 1, kreverVerden: 4, priser: [200, 350, 500] },
+  { id: 'tempel',  ikon: '🏛️', navn: 'Helbredelsestempel', tekst: 'Helten får litt liv tilbake hele tiden',   laasesOpp: 15, priser: [250, 450] },
+  { id: 'drage',   ikon: '🐉', navn: 'Kjæledrage',    tekst: 'En drage som følger deg og sprer ild på fiender!', laasesOpp: 20, priser: [400, 700, 1000] },
+  { id: 'lyn',     ikon: '⚡', navn: 'Lynstorm',      tekst: 'Lynet slår ned i de 3 nærmeste fiendene hvert 4. sekund', laasesOpp: 25, priser: [600, 900] },
+  // Bare på piratskipet (verden 4)
+  { id: 'skattekiste', ikon: '💎', navn: 'Skattekiste', tekst: 'Fiendene slipper 50 % flere penger', laasesOpp: 1, kreverVerden: 4, priser: [300] },
+  // Bare på romstasjonen (verden 5)
+  { id: 'pistol',  ikon: '🔫', navn: 'Piratpistol',   tekst: 'Din egen pistol! Skyt med F eller høyreklikk. Sterkere for hver oppgradering', laasesOpp: 1, kreverVerden: 4, priser: [80, 160, 260] },
+  { id: 'laserpistol', ikon: '💥', navn: 'Laserpistol', tekst: 'Bygger om piratpistolen til laser: skyter raskere, sterkere og rett gjennom fiender', laasesOpp: 1, kreverVerden: 5, kreverBygg: 'pistol', priser: [300, 500] },
+  { id: 'laser',   ikon: '📡', navn: 'Laserkanoner',  tekst: 'Vakttårnene skyter laser – mye mer skade!', laasesOpp: 1, kreverVerden: 5, priser: [120] },
+  { id: 'skjold',  ikon: '🛡️', navn: 'Energiskjold',  tekst: 'Helten tar 1 mindre skade per slag',        laasesOpp: 1, kreverVerden: 5, priser: [80, 160] },
+  // Pynt – havner et tilfeldig sted i basen
+  { id: 'blomster',ikon: '🌷', navn: 'Blomsterbed',   tekst: 'Pynt: fine blomster i basen',  laasesOpp: 1, priser: [5],  kanKjopesMange: true, pynt: true },
+  { id: 'fakkel',  ikon: '🔥', navn: 'Fakkel',        tekst: 'Pynt: en fakkel som lyser',    laasesOpp: 1, priser: [8],  kanKjopesMange: true, pynt: true },
+  { id: 'flagg',   ikon: '🚩', navn: 'Flagg',         tekst: 'Pynt: et flagg som vaier',     laasesOpp: 2, priser: [10], kanKjopesMange: true, pynt: true },
+  { id: 'statue',  ikon: '🗿', navn: 'Statue',        tekst: 'Pynt: en statue av helten!',   laasesOpp: 3, priser: [25], kanKjopesMange: true, pynt: true }
+];
+
+// Hvor byggene står i basen (i forhold til midten av basen)
+const BASE_X = VERDEN_BREDDE / 2, BASE_Y = VERDEN_HOYDE / 2, BASE_RADIUS = 270;
+const BYGGEPLASS = {
+  smie:     { x: -170, y: -80 },
+  bronn:    { x: -60,  y: -170 },
+  alkymist: { x: 170,  y: -80 },
+  magitarn: { x: -110, y: 150 },
+  skomaker: { x: 110,  y: 150 },
+  trippel:  { x: 70,   y: -170 },
+  kanon:    { x: -195, y: 40 },
+  tempel:   { x: 195,  y: 40 }
+};
+
+// Hvor vakttårnene står på muren (vinkler rundt basen)
+const TARN_VINKLER = [Math.PI * 0.25, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75];
+function tarnPlass(i) {
+  return { x: BASE_X + Math.cos(TARN_VINKLER[i]) * BASE_RADIUS, y: BASE_Y + Math.sin(TARN_VINKLER[i]) * BASE_RADIUS * 0.92 };
+}
+
+// ===================== OPPSETT =====================
+const canvas = document.getElementById('spill');
+const ctx = canvas.getContext('2d');
+let zoom = 1; // på små skjermer zoomer vi litt ut så du ser mer
+function tilpassStorrelse() {
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  zoom = Math.max(0.6, Math.min(1, Math.min(canvas.width, canvas.height) / 600));
+}
+window.addEventListener('resize', tilpassStorrelse);
+tilpassStorrelse();
+
+const taster = {};
+let tilstand = 'start'; // start, spill, base, slutt
+let mus = { x: 0, y: 0, brukt: false }; // hvor musepila er
+let piler = [];
+let helt, fiender, kuler, mynter, tekster, partikler, traer, bolge, kamera, tid, risting, bakke;
+const bakker = {}; // ferdig tegnet bakke for hver verden
+let kanonkuler = [], lyn = [];
+// ===================== VERDENENE (tidsepoker) =====================
+// Rekkefølgen følger tiden: portalen er en tidsmaskin
+const VERDENER = [null,
+  { navn: 'Steinalderen 🦴', ikon: '🦴', fiender: ['huleboer', 'sabeltann', 'trex'], bossTekst: '⚠️ T-rex kommer! 🦖',
+    bakke: 'stein', hinder: 'stein', base: ['rgba(140,110,70,0.9)', 'rgba(120,95,60,0.75)'], vignett: 'rgba(25,12,0,0.5)', naer: 'kølle', avstand: 'slynge' },
+  { navn: 'Oldtiden 🏛️', ikon: '🏛️', fiender: ['mumie', 'gladiator', 'farao'], bossTekst: '⚠️ Faraoen kommer! 👑',
+    bakke: 'orken', hinder: 'soyle', base: ['rgba(200,180,140,0.95)', 'rgba(180,160,120,0.85)'], vignett: 'rgba(40,20,0,0.45)', naer: 'spyd', avstand: 'bue' },
+  { navn: 'Monsterskogen 🌲', ikon: '🌲', fiender: ['skjelett', 'troll', 'trollkonge'], bossTekst: '⚠️ Trollkongen kommer! 👑',
+    bakke: 'skog', hinder: 'tre', base: ['rgba(150,115,70,0.9)', 'rgba(130,100,60,0.75)'], vignett: 'rgba(0,10,0,0.55)', naer: 'sverd', avstand: 'magi' },
+  { navn: 'Piratskipet 🏴‍☠️', ikon: '🏴‍☠️', fiender: ['pirat', 'blekksprut', 'piratkaptein'], bossTekst: '⚠️ Piratkapteinen kommer! 🏴‍☠️',
+    bakke: 'skip', hinder: 'tonne', base: ['rgba(140,95,55,0.95)', 'rgba(120,80,45,0.85)'], vignett: 'rgba(0,15,35,0.55)', naer: 'sverd', avstand: 'magi' },
+  { navn: 'Romstasjonen 🚀', ikon: '🚀', fiender: ['robot', 'romvesen', 'robotkonge'], bossTekst: '⚠️ Robotkongen kommer! 🤖',
+    bakke: 'rom', hinder: 'kasse', base: ['rgba(70,85,110,0.95)', 'rgba(55,68,90,0.85)'], vignett: 'rgba(0,0,25,0.65)', naer: 'sverd', avstand: 'magi' }
+];
+const SISTE_VERDEN = VERDENER.length - 1;
+const VERDENSNAVN = VERDENER.map(v => v ? v.navn : '');
+const VERDENSIKON = VERDENER.map(v => v ? v.ikon : '');
+const VAAPENNAVN = { 'kølle': 'kølle', spyd: 'spyd', sverd: 'sverd', slynge: 'slynge', bue: 'pil og bue', magi: 'magi' };
+const VAAPENIKON = { 'kølle': '🪵', spyd: '🔱', sverd: '⚔️', slynge: '🪨', bue: '🏹', magi: '🔮' };
+function epoke() { return VERDENER[helt.verden]; }
+const PORTAL = { x: BASE_X, y: BASE_Y - 70 };
+
+// Lager bakken én gang per verden, så den ser fin ut
+function lagBakke(verden) {
+  if (bakker[verden]) { bakke = bakker[verden]; return; }
+  bakke = document.createElement('canvas');
+  bakke.width = VERDEN_BREDDE; bakke.height = VERDEN_HOYDE;
+  bakker[verden] = bakke;
+  const b = bakke.getContext('2d');
+  const type = VERDENER[verden].bakke;
+  if (type === 'skip') { lagSkipBakke(b); return; }
+  if (type === 'rom') { lagRomBakke(b); return; }
+  if (type === 'orken') { lagOrkenBakke(b); return; }
+  const stein = type === 'stein';
+  b.fillStyle = stein ? '#7a7a3a' : '#3b6b2e'; b.fillRect(0, 0, VERDEN_BREDDE, VERDEN_HOYDE);
+  // gressflekker i ulike grønnfarger (gulere i steinalderen)
+  const gronn = stein ? ['#86803f', '#6f6a33', '#8f8a48', '#5f6b2e', '#99914f'] : ['#3f7232', '#36622a', '#447a36', '#325c27', '#4a8239'];
+  for (let i = 0; i < 2500; i++) {
+    b.fillStyle = gronn[i % gronn.length];
+    b.globalAlpha = 0.5;
+    b.beginPath();
+    b.ellipse(Math.random() * VERDEN_BREDDE, Math.random() * VERDEN_HOYDE, 10 + Math.random() * 40, 6 + Math.random() * 20, Math.random() * 3, 0, Math.PI * 2);
+    b.fill();
+  }
+  b.globalAlpha = 1;
+  // jordsti
+  b.strokeStyle = '#7a5c3a'; b.lineWidth = 46; b.lineCap = 'round'; b.globalAlpha = 0.75;
+  b.beginPath(); b.moveTo(0, 700);
+  b.bezierCurveTo(500, 500, 1100, 900, 1800, 600); b.stroke();
+  b.beginPath(); b.moveTo(900, 0); b.bezierCurveTo(800, 400, 1000, 900, 850, 1300); b.stroke();
+  b.globalAlpha = 1;
+  // gresstrå
+  for (let i = 0; i < 4000; i++) {
+    const x = Math.random() * VERDEN_BREDDE, y = Math.random() * VERDEN_HOYDE;
+    b.strokeStyle = Math.random() < 0.5 ? '#5a9447' : '#2d5422'; b.lineWidth = 1.5;
+    b.beginPath(); b.moveTo(x, y); b.lineTo(x + Math.random() * 4 - 2, y - 5 - Math.random() * 5); b.stroke();
+  }
+  // blomster
+  const blomsterFarger = ['#ffe066', '#ff8fab', '#ffffff', '#a0c4ff'];
+  for (let i = 0; i < 260; i++) {
+    const x = Math.random() * VERDEN_BREDDE, y = Math.random() * VERDEN_HOYDE;
+    b.fillStyle = blomsterFarger[i % 4];
+    for (let k = 0; k < 4; k++) { b.beginPath(); b.arc(x + Math.cos(k * 1.57) * 2.5, y + Math.sin(k * 1.57) * 2.5, 2, 0, 7); b.fill(); }
+    b.fillStyle = '#e09f3e'; b.beginPath(); b.arc(x, y, 1.5, 0, 7); b.fill();
+  }
+  // bein som ligger strødd (bare i steinalderen)
+  if (stein) for (let i = 0; i < 40; i++) {
+    const x = Math.random() * VERDEN_BREDDE, y = Math.random() * VERDEN_HOYDE, v = Math.random() * 3;
+    b.save(); b.translate(x, y); b.rotate(v);
+    b.fillStyle = '#efe6d0'; b.fillRect(-8, -2, 16, 4);
+    for (const sx of [-8, 8]) { b.beginPath(); b.arc(sx, -2, 3, 0, 7); b.arc(sx, 2, 3, 0, 7); b.fill(); }
+    b.restore();
+  }
+  // steiner
+  for (let i = 0; i < (stein ? 140 : 60); i++) {
+    const x = Math.random() * VERDEN_BREDDE, y = Math.random() * VERDEN_HOYDE, r = 5 + Math.random() * 10;
+    b.fillStyle = 'rgba(0,0,0,0.25)'; b.beginPath(); b.ellipse(x + 3, y + 3, r, r * 0.7, 0, 0, 7); b.fill();
+    const g = b.createRadialGradient(x - r / 3, y - r / 3, 1, x, y, r);
+    g.addColorStop(0, '#b5b5b5'); g.addColorStop(1, '#6d6d6d');
+    b.fillStyle = g; b.beginPath(); b.ellipse(x, y, r, r * 0.7, 0, 0, 7); b.fill();
+  }
+}
+
+// Ørkenen i oldtiden: sand, sanddyner og en brolagt vei
+function lagOrkenBakke(b) {
+  b.fillStyle = '#d9b77a'; b.fillRect(0, 0, VERDEN_BREDDE, VERDEN_HOYDE);
+  for (let i = 0; i < 1500; i++) {
+    b.fillStyle = ['#e2c38a', '#cfa968', '#e8cc96', '#c79f5e'][i % 4]; b.globalAlpha = 0.45;
+    b.beginPath(); b.ellipse(Math.random() * VERDEN_BREDDE, Math.random() * VERDEN_HOYDE, 20 + Math.random() * 60, 6 + Math.random() * 14, -0.2, 0, Math.PI * 2); b.fill();
+  }
+  b.globalAlpha = 1;
+  // brolagte veier
+  b.lineCap = 'round';
+  for (const [farge, bredde] of [['#9e8a68', 54], ['#b8a37c', 44]]) {
+    b.strokeStyle = farge; b.lineWidth = bredde;
+    b.beginPath(); b.moveTo(0, 700); b.bezierCurveTo(500, 500, 1100, 900, 1800, 600); b.stroke();
+    b.beginPath(); b.moveTo(900, 0); b.bezierCurveTo(800, 400, 1000, 900, 850, 1300); b.stroke();
+  }
+  // små palmer langt unna og steinbiter
+  for (let i = 0; i < 90; i++) {
+    const x = Math.random() * VERDEN_BREDDE, y = Math.random() * VERDEN_HOYDE, r = 3 + Math.random() * 6;
+    b.fillStyle = 'rgba(0,0,0,0.15)'; b.beginPath(); b.ellipse(x + 2, y + 2, r, r * 0.6, 0, 0, 7); b.fill();
+    b.fillStyle = '#c2a575'; b.beginPath(); b.ellipse(x, y, r, r * 0.6, 0, 0, 7); b.fill();
+  }
+  for (let i = 0; i < 18; i++) {
+    const x = Math.random() * VERDEN_BREDDE, y = Math.random() * VERDEN_HOYDE;
+    b.strokeStyle = '#2e7d32'; b.lineWidth = 3;
+    for (let k = 0; k < 6; k++) { const v = k * 1.05; b.beginPath(); b.moveTo(x, y); b.quadraticCurveTo(x + Math.cos(v) * 10, y + Math.sin(v) * 10 - 4, x + Math.cos(v) * 18, y + Math.sin(v) * 18); b.stroke(); }
+    b.fillStyle = '#6d4c2f'; b.beginPath(); b.arc(x, y, 3, 0, 7); b.fill();
+  }
+}
+
+// Dekket på piratskipet: treplanker, spiker og tau
+function lagSkipBakke(b) {
+  b.fillStyle = '#5a3d22'; b.fillRect(0, 0, VERDEN_BREDDE, VERDEN_HOYDE);
+  for (let rad = 0, y = 0; y < VERDEN_HOYDE; rad++, y += 28) {
+    b.fillStyle = rad % 2 ? '#7a5634' : '#714f30'; b.fillRect(0, y, VERDEN_BREDDE, 26);
+    b.fillStyle = 'rgba(255,255,255,0.04)'; b.fillRect(0, y, VERDEN_BREDDE, 4);
+    for (let x = (rad * 137) % 240; x < VERDEN_BREDDE; x += 240) {
+      b.fillStyle = '#3e2a16'; b.fillRect(x, y, 3, 26);
+      b.fillStyle = '#2b1d0f'; b.fillRect(x + 6, y + 5, 3, 3); b.fillRect(x + 6, y + 18, 3, 3);
+    }
+  }
+  // tauruller
+  for (let i = 0; i < 25; i++) {
+    const x = Math.random() * VERDEN_BREDDE, y = Math.random() * VERDEN_HOYDE;
+    b.strokeStyle = '#c9a66b'; b.lineWidth = 3;
+    for (let r = 4; r < 18; r += 4) { b.beginPath(); b.arc(x, y, r, 0, 7); b.stroke(); }
+  }
+  // rekkverk rundt hele skipet
+  b.strokeStyle = '#3e2a16'; b.lineWidth = 24; b.strokeRect(12, 12, VERDEN_BREDDE - 24, VERDEN_HOYDE - 24);
+  b.strokeStyle = '#8d6238'; b.lineWidth = 6; b.strokeRect(12, 12, VERDEN_BREDDE - 24, VERDEN_HOYDE - 24);
+}
+
+// Gulvet på romstasjonen: metallplater, lysstriper og korridorer
+function lagRomBakke(b) {
+  b.fillStyle = '#1b2130'; b.fillRect(0, 0, VERDEN_BREDDE, VERDEN_HOYDE);
+  for (let x = 0; x < VERDEN_BREDDE; x += 60) for (let y = 0; y < VERDEN_HOYDE; y += 60) {
+    b.fillStyle = Math.random() < 0.15 ? '#252d40' : '#20283a'; b.fillRect(x + 2, y + 2, 56, 56);
+    b.fillStyle = '#323c52'; b.fillRect(x + 6, y + 6, 3, 3); b.fillRect(x + 51, y + 6, 3, 3); b.fillRect(x + 6, y + 51, 3, 3); b.fillRect(x + 51, y + 51, 3, 3);
+  }
+  b.lineCap = 'round';
+  for (const [farge, bredde] of [['#2c3a55', 70], ['#3f5378', 46]]) {
+    b.strokeStyle = farge; b.lineWidth = bredde;
+    b.beginPath(); b.moveTo(0, 700); b.bezierCurveTo(500, 500, 1100, 900, 1800, 600); b.stroke();
+    b.beginPath(); b.moveTo(900, 0); b.bezierCurveTo(800, 400, 1000, 900, 850, 1300); b.stroke();
+  }
+  b.setLineDash([14, 18]); b.strokeStyle = 'rgba(0,229,255,0.7)'; b.lineWidth = 3;
+  b.beginPath(); b.moveTo(0, 700); b.bezierCurveTo(500, 500, 1100, 900, 1800, 600); b.stroke();
+  b.beginPath(); b.moveTo(900, 0); b.bezierCurveTo(800, 400, 1000, 900, 850, 1300); b.stroke();
+  b.setLineDash([]);
+  for (let i = 0; i < 120; i++) {
+    const x = Math.random() * VERDEN_BREDDE, y = Math.random() * VERDEN_HOYDE;
+    const farge = ['#00e5ff', '#ff4081', '#76ff03'][i % 3];
+    const g = b.createRadialGradient(x, y, 0, x, y, 8); g.addColorStop(0, farge); g.addColorStop(1, 'rgba(0,0,0,0)');
+    b.fillStyle = g; b.beginPath(); b.arc(x, y, 8, 0, 7); b.fill();
+  }
+}
+
+function nyttSpill() {
+  const gammel = helt; // det du hadde før du døde
+  helt = {
+    x: VERDEN_BREDDE / 2, y: VERDEN_HOYDE / 2, r: 16,
+    liv: 10, maksLiv: 10, mana: 100, maksMana: 100,
+    fart: START_FART, sverdSkade: START_SVERD_SKADE, magiSkade: START_MAGI_SKADE,
+    penger: 0, xp: 0, niva: 1, drikker: 0,
+    bygget: {},           // hvor mange ganger hver bygning er bygget/oppgradert
+    pynt: [],             // pynt som står i basen
+    tarnNedkjoling: [0, 0, 0, 0],
+    murLiv: 0, tarnLiv: [0, 0, 0, 0],   // hvor hel muren og tårnene er
+    verden: 1, portalApen: false, sjekkpunkt: 0, alleKlart: false,
+    dragePos: { x: VERDEN_BREDDE / 2 - 40, y: VERDEN_HOYDE / 2 }, drageNed: 0, drageFlamme: 0, drageMaal: null,
+    kanonNed: 0, kanonVinkel: 0, lynNed: 0, tempelNed: 0,
+    retning: { x: 1, y: 0 }, gaaTid: 0,
+    sverdTid: 0, sverdNedkjoling: 0, magiNedkjoling: 0, skadetTid: 0, pistolNed: 0
+  };
+  // Ta med pengene, drikkene og alt du har bygget fra forrige gang
+  if (gammel) {
+    helt.niva = gammel.niva;
+    helt.xp = gammel.xp;
+    helt.maksLiv += (helt.niva - 1) * 2; helt.liv = helt.maksLiv;
+    helt.maksMana += (helt.niva - 1) * 10; helt.mana = helt.maksMana;
+    helt.penger = gammel.penger;
+    helt.drikker = gammel.drikker;
+    helt.pynt = gammel.pynt;
+    helt.verden = gammel.verden;
+    helt.portalApen = gammel.portalApen;
+    helt.sjekkpunkt = gammel.sjekkpunkt;
+    helt.alleKlart = gammel.alleKlart;
+    helt.murLiv = gammel.murLiv;
+    helt.tarnLiv = gammel.tarnLiv.slice();
+    for (const id in gammel.bygget) {
+      for (let i = 0; i < gammel.bygget[id]; i++) brukBygning(id);
+      helt.bygget[id] = gammel.bygget[id];
+    }
+  }
+  fiender = []; kuler = []; mynter = []; tekster = []; partikler = []; piler = []; kanonkuler = []; lyn = [];
+  bolge = 0; tid = 0; risting = 0;
+  kamera = { x: 0, y: 0 };
+  traer = [];
+  let frø = 7;
+  function tilfeldig() { frø = (frø * 9301 + 49297) % 233280; return frø / 233280; }
+  for (let i = 0; i < 45; i++) {
+    const t = { x: 60 + tilfeldig() * (VERDEN_BREDDE - 120), y: 60 + tilfeldig() * (VERDEN_HOYDE - 120), r: 24 + tilfeldig() * 18, form: tilfeldig() };
+    if (Math.hypot(t.x - BASE_X, t.y - BASE_Y) > BASE_RADIUS + 50) traer.push(t);
+  }
+  lagBakke(helt.verden);
+  bolge = helt.sjekkpunkt; // start fra siste sjekkpunkt
+  nyBolge();
+}
+
+function xpTilNesteNiva() { return helt.niva * 30; }
+
+// ===================== FIENDER =====================
+const FIENDETYPER = {
+  skjelett: { liv: 3, fart: 0.8, skade: 1, penger: 2, xp: 5,  r: 14 },
+  troll:    { liv: 7, fart: 0.45, skade: 2, penger: 5, xp: 12, r: 24 },
+  trollkonge: { liv: 30, fart: 0.35, skade: 4, penger: 30, xp: 60, r: 40, boss: true },
+  // romstasjonen
+  robot:    { liv: 3, fart: 0.8, skade: 1, penger: 2, xp: 5,  r: 15 },
+  romvesen: { liv: 7, fart: 0.45, skade: 2, penger: 5, xp: 12, r: 22 },
+  robotkonge: { liv: 30, fart: 0.35, skade: 4, penger: 30, xp: 60, r: 40, boss: true },
+  // steinalderen
+  huleboer:   { liv: 3, fart: 0.8, skade: 1, penger: 2, xp: 5,  r: 15 },
+  sabeltann:  { liv: 6, fart: 0.6, skade: 2, penger: 5, xp: 12, r: 22 },
+  trex:       { liv: 30, fart: 0.35, skade: 4, penger: 30, xp: 60, r: 40, boss: true },
+  // oldtiden
+  mumie:      { liv: 3, fart: 0.7, skade: 1, penger: 2, xp: 5,  r: 15 },
+  gladiator:  { liv: 7, fart: 0.5, skade: 2, penger: 5, xp: 12, r: 21 },
+  farao:      { liv: 30, fart: 0.35, skade: 4, penger: 30, xp: 60, r: 40, boss: true },
+  // piratskipet
+  pirat:      { liv: 3, fart: 0.85, skade: 1, penger: 2, xp: 5,  r: 15 },
+  blekksprut: { liv: 7, fart: 0.45, skade: 2, penger: 5, xp: 12, r: 23 },
+  piratkaptein: { liv: 30, fart: 0.35, skade: 4, penger: 30, xp: 60, r: 40, boss: true }
+};
+const PARTIKKELFARGE = { skjelett: '#eee8d5', troll: '#5d8a3a', trollkonge: '#5d8a3a', robot: '#b0bec5', romvesen: '#b388ff', robotkonge: '#ffd54a', huleboer: '#8d6e63', sabeltann: '#ff9800', trex: '#558b2f', mumie: '#efe6d0', gladiator: '#ffb300', farao: '#ffd54a', pirat: '#ef5350', blekksprut: '#ff8a65', piratkaptein: '#ffd54a' };
+
+function lagFiende(type) {
+  const t = FIENDETYPER[type];
+  let x, y;
+  do {
+    x = 40 + Math.random() * (VERDEN_BREDDE - 80);
+    y = 40 + Math.random() * (VERDEN_HOYDE - 80);
+  } while (Math.hypot(x - helt.x, y - helt.y) < 400 || Math.hypot(x - BASE_X, y - BASE_Y) < BASE_RADIUS + 60);
+  // Fiendene blir sterkere for hver bølge – og dobbelt så sterke på romstasjonen
+  const skala = 1 + 0.10 * (bolge - 1);
+  const vf = 1 + 0.6 * (helt.verden - 1); // fiendene blir sterkere for hver epoke
+  const liv = Math.round(t.liv * skala * vf);
+  fiender.push({ type, x, y, r: t.r, liv, maksLiv: liv, fart: t.fart,
+                 skade: t.skade + Math.floor((bolge - 1) / 5) + Math.floor((helt.verden - 1) / 2),
+                 penger: Math.round(t.penger * (1 + 0.1 * (bolge - 1)) * vf * (antallBygget('skattekiste') ? 1.5 : 1)),
+                 xp: Math.round(t.xp * (1 + 0.1 * (bolge - 1)) * vf),
+                 boss: !!t.boss, knuseTid: 0, slagTid: 0, blink: 0, gaaTid: Math.random() * 100 });
+}
+
+// ===================== LAGRING =====================
+// Spillet lagres i nettleseren, så du kan fortsette der du slapp
+const LAGRE_NOKKEL = 'evn-eventyrspill-v1';
+function lagre() {
+  if (!helt) return;
+  try {
+    const d = {};
+    for (const k of ['niva', 'xp', 'penger', 'drikker', 'pynt', 'bygget', 'verden', 'portalApen', 'sjekkpunkt', 'alleKlart', 'murLiv', 'tarnLiv']) d[k] = helt[k];
+    localStorage.setItem(LAGRE_NOKKEL, JSON.stringify(d));
+  } catch (e) { /* lagring er ikke tilgjengelig – spillet virker likevel */ }
+}
+function hentLagring() {
+  try {
+    const t = localStorage.getItem(LAGRE_NOKKEL);
+    if (!t) return null;
+    const d = JSON.parse(t);
+    if (!d || typeof d.bygget !== 'object') return null;
+    const standard = { niva: 1, xp: 0, penger: 0, drikker: 0, pynt: [], bygget: {}, verden: 1, portalApen: false, sjekkpunkt: 0, alleKlart: false, murLiv: 0, tarnLiv: [0, 0, 0, 0] };
+    const h = Object.assign(standard, d);
+    if (!VERDENER[h.verden]) h.verden = 1;
+    return h;
+  } catch (e) { return null; }
+}
+function slettLagring() { try { localStorage.removeItem(LAGRE_NOKKEL); } catch (e) {} }
+
+function nyBolge() {
+  bolge++;
+  const [liten, stor, boss] = epoke().fiender;
+  const antallSmaa = Math.min(40, 2 + bolge * 2);   // maks 40 små
+  const antallStore = Math.min(15, Math.floor(bolge / 2)); // maks 15 store
+  for (let i = 0; i < antallSmaa; i++) lagFiende(liten);
+  for (let i = 0; i < antallStore; i++) lagFiende(stor);
+  visTekst('Bølge ' + bolge + '!', helt.x, helt.y - 50, '#ffd54a', 28);
+  // fullt liv ved starten av hver bølge
+  if (bolge > 1 && helt.liv < helt.maksLiv) { helt.liv = helt.maksLiv; visTekst('❤️ Fullt liv!', helt.x, helt.y + 40, '#7dff8a', 18); }
+  if (bolge % BOSS_HVER === 0) {
+    // sjekkpunkt før bossen: dør du, prøver du bossen på nytt
+    if (bolge - 1 > helt.sjekkpunkt) helt.sjekkpunkt = bolge - 1;
+    lagFiende(boss);
+    visTekst(epoke().bossTekst, helt.x, helt.y - 85, '#ff5252', 26);
+  }
+}
+
+function visTekst(tekst, x, y, farge, storrelse) {
+  tekster.push({ tekst, x, y, farge, storrelse: storrelse || 16, tid: 60 });
+}
+
+function lagPartikler(x, y, farge, antall, fart) {
+  for (let i = 0; i < antall; i++) {
+    const v = Math.random() * Math.PI * 2, f = Math.random() * (fart || 4);
+    partikler.push({ x, y, vx: Math.cos(v) * f, vy: Math.sin(v) * f, liv: 25 + Math.random() * 20, farge, r: 2 + Math.random() * 3 });
+  }
+}
+
+// ===================== BASEN =====================
+function antallBygget(id) { return helt.bygget[id] || 0; }
+
+function apneBase() {
+  if (tilstand !== 'spill') return;
+  tilstand = 'base';
+  visBase();
+  document.getElementById('base').style.display = 'block';
+}
+function lukkBase() {
+  tilstand = 'spill';
+  document.getElementById('base').style.display = 'none';
+  for (const k in taster) taster[k] = false;
+}
+
+function visBase() {
+  document.getElementById('baseInfo').textContent =
+    '💰 ' + helt.penger + ' penger   ⭐ Nivå ' + helt.niva + '   ❤️ ' + helt.liv + '/' + helt.maksLiv + '   🧪 ' + helt.drikker + ' drikker';
+  const liste = document.getElementById('kortListe');
+  liste.innerHTML = '';
+  for (const b of BYGNINGER) {
+    const antall = antallBygget(b.id);
+    const mangler = b.kreverBygg && !antallBygget(b.kreverBygg);
+    const last = helt.niva < b.laasesOpp || (b.kreverVerden && helt.verden < b.kreverVerden) || mangler;
+    const ferdig = !b.kanKjopesMange && antall >= b.priser.length;
+    const pris = b.kanKjopesMange ? b.priser[0] : b.priser[antall];
+    const kort = document.createElement('div');
+    kort.className = 'kort' + (last ? ' last' : '');
+    let nivaTekst = b.id === 'reparer' ? (antallBygget('mur') ? '🧱 Mur ' + helt.murLiv + '/' + murMaks() : 'Du har ingen mur ennå')
+                  : b.pynt ? 'Du har ' + antall + ' i basen'
+                  : b.kanKjopesMange ? 'Du har ' + helt.drikker + ' drikker'
+                  : b.priser.length === 1 ? (antall ? 'Bygget ✅' : 'Ikke bygget')
+                  : 'Nivå ' + antall + ' av ' + b.priser.length;
+    kort.innerHTML = '<div class="ikon">' + b.ikon + '</div><h3>' + b.navn + '</h3><p>' + b.tekst + '</p><div class="niva">' + nivaTekst + '</div>';
+    const knapp = document.createElement('button');
+    if (last) {
+      knapp.textContent = b.kreverVerden && helt.verden < b.kreverVerden ? '🔒 Låses opp i ' + VERDENSNAVN[b.kreverVerden]
+                        : mangler ? '🔒 Krever ' + BYGNINGER.find(x => x.id === b.kreverBygg).navn
+                        : '🔒 Låses opp på nivå ' + b.laasesOpp;
+      knapp.disabled = true;
+    }
+    else if (b.id === 'reparer' && !trengerReparasjon()) { knapp.textContent = 'Alt er helt ✅'; knapp.disabled = true; }
+    else if (ferdig) { knapp.textContent = 'Ferdig oppgradert ⭐'; knapp.disabled = true; }
+    else {
+      knapp.textContent = (b.kanKjopesMange ? 'Kjøp' : antall === 0 ? 'Bygg' : 'Oppgrader') + ' – ' + pris + ' 💰';
+      knapp.disabled = helt.penger < pris;
+      knapp.onclick = () => bygg(b, pris);
+    }
+    kort.appendChild(knapp);
+    liste.appendChild(kort);
+  }
+}
+
+function bygg(b, pris) {
+  if (helt.penger < pris) return;
+  helt.penger -= pris;
+  helt.bygget[b.id] = antallBygget(b.id) + 1;
+  if (b.id === 'alkymist') helt.drikker += 1;
+  else if (b.pynt) settUtPynt(b.id);
+  else if (b.id === 'reparer') reparer();
+  else brukBygning(b.id);
+  if (b.id === 'mur') helt.murLiv = murMaks();
+  if (b.id === 'vakttarn') helt.tarnLiv[antallBygget('vakttarn') - 1] = TARN_MAKS;
+  visBase();
+  lagre();
+}
+
+function trengerReparasjon() {
+  if (antallBygget('mur') && helt.murLiv < murMaks()) return true;
+  for (let i = 0; i < Math.min(antallBygget('vakttarn'), 4); i++) if (helt.tarnLiv[i] < TARN_MAKS) return true;
+  return false;
+}
+function reparer() {
+  if (antallBygget('mur')) helt.murLiv = murMaks();
+  for (let i = 0; i < Math.min(antallBygget('vakttarn'), 4); i++) helt.tarnLiv[i] = TARN_MAKS;
+}
+
+// Finner en ledig plass i basen til pynten
+function settUtPynt(type) {
+  for (let forsok = 0; forsok < 200; forsok++) {
+    const v = Math.random() * Math.PI * 2, a = 60 + Math.random() * (BASE_RADIUS - 95);
+    const x = BASE_X + Math.cos(v) * a, y = BASE_Y + Math.sin(v) * a * 0.92;
+    let ledig = Math.hypot(x - BASE_X, y - BASE_Y - 40) > 45;
+    for (const id in BYGGEPLASS) if (Math.hypot(x - BASE_X - BYGGEPLASS[id].x, y - BASE_Y - BYGGEPLASS[id].y + 15) < 60) ledig = false;
+    for (const p of helt.pynt) if (Math.hypot(x - p.x, y - p.y) < 28) ledig = false;
+    if (ledig) { helt.pynt.push({ type, x, y }); return; }
+  }
+  helt.pynt.push({ type, x: BASE_X + Math.random() * 100 - 50, y: BASE_Y + 100 });
+}
+
+// Hva hver bygning gjør med helten
+function brukBygning(id) {
+  if (id === 'smie') helt.sverdSkade += 1;
+  if (id === 'bronn') { helt.maksLiv += 3; helt.liv += 3; }
+  if (id === 'magitarn') { helt.magiSkade += 1; helt.maksMana += 20; helt.mana += 20; }
+  if (id === 'skomaker') helt.fart += 0.5;
+}
+
+document.getElementById('baseKnapp').onclick = apneBase;
+document.getElementById('tilbake').onclick = lukkBase;
+
+// ===================== KONTROLLER =====================
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) e.preventDefault();
+  if (tilstand === 'base') { if (k === 'b' || k === 'escape') lukkBase(); return; }
+  taster[k] = true;
+  if (tilstand === 'spill') {
+    if (k === ' ') sverdHugg();
+    if (k === 'e') skytMagi(helt.retning.x, helt.retning.y);
+    if (k === 'b') apneBase();
+    if (k === 'q') drikk();
+    if (k === 'f') skytPistol(helt.retning.x, helt.retning.y);
+  } else if (k === 'enter' || k === ' ') {
+    startSpill();
+  }
+});
+window.addEventListener('keyup', e => { taster[e.key.toLowerCase()] = false; });
+canvas.addEventListener('mousemove', e => { mus.x = e.clientX; mus.y = e.clientY; mus.brukt = true; });
+canvas.addEventListener('mousedown', e => {
+  window.focus();
+  if (tilstand === 'start' || tilstand === 'slutt') { startSpill(); return; }
+  if (tilstand !== 'spill') return;
+  mus.x = e.clientX; mus.y = e.clientY; mus.brukt = true;
+  siktMotMus();
+  if (e.button === 2) skytPistol(helt.retning.x, helt.retning.y); // høyreklikk = pistol
+  else skytMagi(helt.retning.x, helt.retning.y);
+});
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// ===================== PISTOLEN =====================
+function skytPistol(rx, ry) {
+  const nivaa = antallBygget('pistol');
+  if (!nivaa || helt.pistolNed > 0) return;
+  const laser = antallBygget('laserpistol');
+  const sx = helt.x + rx * 22, sy = helt.y + ry * 22;
+  if (laser) {
+    piler.push({ x: sx, y: sy, vx: rx * 16, vy: ry * 16, liv: 45, laser: true, farge: '#00e5ff', gjennom: true, truffet: [],
+                 skade: 6 + 3 * nivaa + 5 * laser });
+    helt.pistolNed = 14;
+    lagPartikler(sx, sy, '#00e5ff', 5, 2);
+  } else {
+    piler.push({ x: sx, y: sy, vx: rx * 11, vy: ry * 11, liv: 50, kule: true, skade: 4 + 2 * (nivaa - 1) });
+    helt.pistolNed = 45;
+    lagPartikler(sx, sy, '#ffcc80', 5, 2); lagPartikler(sx, sy, '#9e9e9e', 6, 1.5); // munningsflamme og røyk
+  }
+}
+
+// ===================== MOBIL / BERØRING =====================
+let erTouch = false;
+const SPAK_RADIUS = 60;
+const spak = { aktiv: false, id: null, sx: 0, sy: 0, x: 0, y: 0 };
+const holdtKnapp = { sverd: false, magi: false, pistol: false };
+const knappFinger = {}; // hvilken finger holder hvilken knapp
+
+function mobilKnapper() {
+  const w = canvas.width, h = canvas.height;
+  return [
+    { id: 'sverd', ikon: VAAPENIKON[epoke().naer], x: w - 85,  y: h - 95,  r: 50, farge: 'rgba(230,230,230,0.35)' },
+    { id: 'magi',  ikon: VAAPENIKON[epoke().avstand], x: w - 195, y: h - 65,  r: 40, farge: 'rgba(160,110,255,0.4)' },
+    { id: 'drikk', ikon: '🧪', x: w - 70,  y: h - 210, r: 32, farge: 'rgba(120,255,140,0.3)' },
+    { id: 'pistol', ikon: antallBygget('laserpistol') ? '💥' : '🔫', x: w - 180, y: h - 175, r: 34, farge: 'rgba(255,200,120,0.35)' }
+  ].filter(k => k.id !== 'pistol' || antallBygget('pistol'));
+}
+
+function finnKnapp(x, y) {
+  return mobilKnapper().find(k => Math.hypot(x - k.x, y - k.y) < k.r + 12);
+}
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  erTouch = true; mus.brukt = false;
+  if (tilstand === 'start' || tilstand === 'slutt') { startSpill(); return; }
+  if (tilstand !== 'spill') return;
+  for (const t of e.changedTouches) {
+    const k = finnKnapp(t.clientX, t.clientY);
+    if (k) {
+      knappFinger[t.identifier] = k.id;
+      if (k.id === 'sverd') { holdtKnapp.sverd = true; sverdHugg(); }
+      if (k.id === 'magi') { holdtKnapp.magi = true; skytMagi(helt.retning.x, helt.retning.y); }
+      if (k.id === 'drikk') drikk();
+      if (k.id === 'pistol') { holdtKnapp.pistol = true; skytPistol(helt.retning.x, helt.retning.y); }
+    } else if (!spak.aktiv && t.clientX < canvas.width * 0.6) {
+      spak.aktiv = true; spak.id = t.identifier;
+      spak.sx = spak.x = t.clientX; spak.sy = spak.y = t.clientY;
+    }
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (t.identifier === spak.id) {
+      spak.x = t.clientX; spak.y = t.clientY;
+      // flytt midten etter hvis du drar veldig langt
+      const dx = spak.x - spak.sx, dy = spak.y - spak.sy, d = Math.hypot(dx, dy);
+      if (d > SPAK_RADIUS * 1.5) { spak.sx = spak.x - dx / d * SPAK_RADIUS * 1.5; spak.sy = spak.y - dy / d * SPAK_RADIUS * 1.5; }
+    }
+  }
+}, { passive: false });
+
+function slippFinger(e) {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (t.identifier === spak.id) { spak.aktiv = false; spak.id = null; }
+    const k = knappFinger[t.identifier];
+    if (k) { holdtKnapp[k] = false; delete knappFinger[t.identifier]; }
+  }
+}
+canvas.addEventListener('touchend', slippFinger, { passive: false });
+canvas.addEventListener('touchcancel', slippFinger, { passive: false });
+
+function tegnMobilKontroller() {
+  if (spak.aktiv) {
+    ctx.beginPath(); ctx.arc(spak.sx, spak.sy, SPAK_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 3; ctx.stroke();
+    const dx = spak.x - spak.sx, dy = spak.y - spak.sy, d = Math.hypot(dx, dy), m = Math.min(d, SPAK_RADIUS);
+    sirkel(spak.sx + (d ? dx / d * m : 0), spak.sy + (d ? dy / d * m : 0), 26, 'rgba(255,255,255,0.6)');
+  } else {
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '14px system-ui'; ctx.textAlign = 'left';
+    ctx.fillText('👆 Dra med fingeren her for å gå', 20, canvas.height - 24);
+  }
+  for (const k of mobilKnapper()) {
+    const holdt = holdtKnapp[k.id];
+    sirkel(k.x, k.y, k.r, holdt ? 'rgba(255,255,255,0.55)' : k.farge);
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(k.x, k.y, k.r, 0, Math.PI * 2); ctx.stroke();
+    ctx.font = Math.round(k.r * 0.9) + 'px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff'; ctx.fillText(k.ikon, k.x, k.y + 2);
+    ctx.textBaseline = 'alphabetic';
+    if (k.id === 'drikk') { ctx.font = 'bold 13px system-ui'; ctx.fillText(helt.drikker, k.x + k.r - 4, k.y - k.r + 10); }
+  }
+}
+
+// Helten snur seg mot musepila
+function siktMotMus() {
+  if (!mus.brukt) return;
+  const dx = mus.x / zoom + kamera.x - helt.x, dy = mus.y / zoom + kamera.y - helt.y, len = Math.hypot(dx, dy);
+  if (len > 2) helt.retning = { x: dx / len, y: dy / len };
+}
+
+function startSpill() {
+  if (tilstand === 'slutt') nyttSpill();
+  else { helt = hentLagring(); nyttSpill(); } tilstand = 'spill';
+  lagre();
+  document.getElementById('baseKnapp').style.display = 'block';
+}
+
+function drikk() {
+  if (helt.drikker > 0 && helt.liv < helt.maksLiv) {
+    helt.drikker--; helt.liv = Math.min(helt.maksLiv, helt.liv + 6);
+    visTekst('+6 ❤️', helt.x, helt.y - 30, '#7dff8a', 20);
+    lagPartikler(helt.x, helt.y, '#7dff8a', 20, 3);
+  }
+}
+
+function sverdHugg() {
+  if (helt.sverdNedkjoling > 0) return;
+  helt.sverdTid = 12; helt.sverdNedkjoling = 20;
+  for (const f of fiender) {
+    const dx = f.x - helt.x, dy = f.y - helt.y, avstand = Math.hypot(dx, dy);
+    if (avstand < 60 + f.r) {
+      const prikk = (dx * helt.retning.x + dy * helt.retning.y) / (avstand || 1);
+      if (prikk > -0.2) {
+        f.liv -= helt.sverdSkade; f.blink = 8;
+        f.x += dx / (avstand || 1) * 25; f.y += dy / (avstand || 1) * 25;
+        visTekst('-' + helt.sverdSkade, f.x, f.y - f.r, '#fff');
+        lagPartikler(f.x, f.y, '#fff6c0', 8, 4);
+        risting = 4;
+      }
+    }
+  }
+}
+
+function skytMagi(rx, ry) {
+  if (helt.magiNedkjoling > 0 || helt.mana < MAGI_KOSTER) return;
+  helt.mana -= MAGI_KOSTER; helt.magiNedkjoling = 15;
+  const vinkler = antallBygget('trippel') ? [-0.25, 0, 0.25] : [0];
+  const grunn = Math.atan2(ry, rx);
+  for (const v of vinkler) {
+    kuler.push({ x: helt.x, y: helt.y, vx: Math.cos(grunn + v) * 7, vy: Math.sin(grunn + v) * 7, liv: 70, type: epoke().avstand });
+  }
+}
+
+// ===================== OPPDATERING =====================
+// Skyver fiender ut hvis de prøver å gå gjennom muren
+function holdUtenforMuren(f) {
+  const nx = (f.x - BASE_X) / BASE_RADIUS, ny = (f.y - BASE_Y) / (BASE_RADIUS * 0.92);
+  const e = Math.hypot(nx, ny), grense = 1 + (f.r + 10) / BASE_RADIUS;
+  if (e < grense && e > 0) {
+    f.x = BASE_X + nx / e * grense * BASE_RADIUS;
+    f.y = BASE_Y + ny / e * grense * BASE_RADIUS * 0.92;
+    return true;
+  }
+  return false;
+}
+
+// Fiender slår på muren når de står inntil den. Bossen slår hardest og knuser også tårn.
+function bossKnuser(f, vedMuren) {
+  if (f.knuseTid > 0) { f.knuseTid--; return; }
+  let traff = false;
+  if (vedMuren) {
+    const skade = f.boss ? 10 : f.skade;
+    helt.murLiv = Math.max(0, helt.murLiv - skade); traff = true;
+    if (f.boss) visTekst('🧱 -' + skade, f.x, f.y - f.r - 10, '#bdbdbd', 18);
+    if (helt.murLiv === 0) visTekst('Muren er knust! Reparer den i basen 🔧', helt.x, helt.y - 70, '#ff5252', 20);
+  }
+  if (f.boss) for (let i = 0; i < Math.min(antallBygget('vakttarn'), 4); i++) {
+    const t = tarnPlass(i);
+    if (helt.tarnLiv[i] > 0 && Math.hypot(f.x - t.x, f.y - t.y) < f.r + 45) {
+      helt.tarnLiv[i] = Math.max(0, helt.tarnLiv[i] - 10); traff = true;
+      visTekst('🏹 -10', t.x, t.y - 70, '#bdbdbd', 18);
+      if (helt.tarnLiv[i] === 0) visTekst('Et tårn er knust! 🔧', helt.x, helt.y - 70, '#ff5252', 20);
+    }
+  }
+  if (traff) {
+    f.knuseTid = 60;
+    if (f.boss) risting = 8;
+    lagPartikler(f.x + (f.retning ? f.retning.x * f.r : 0), f.y + (f.retning ? f.retning.y * f.r : 0), '#9e9e9e', f.boss ? 15 : 4, f.boss ? 4 : 2);
+  }
+}
+
+function gaaTilVerden(n) {
+  helt.verden = n;
+  helt.sjekkpunkt = 0;
+  helt.portalApen = false;
+  fiender = []; kuler = []; piler = []; mynter = []; kanonkuler = []; lyn = [];
+  bolge = 0;
+  helt.x = BASE_X; helt.y = BASE_Y + 90;
+  lagBakke(n);
+  lagPartikler(helt.x, helt.y, '#e040fb', 50, 6);
+  nyBolge();
+  visTekst('Velkommen til ' + VERDENSNAVN[n] + '!', helt.x, helt.y - 120, '#00e5ff', 26);
+  lagre();
+  const nye = BYGNINGER.filter(b => b.kreverVerden === n);
+  if (nye.length) visTekst('Nytt i basen: ' + nye.map(b => b.ikon + ' ' + b.navn).join(', '), helt.x, helt.y - 155, '#ffe9b0', 18);
+}
+
+function kolliderMedTraer(o, ignorerTraer) {
+  for (const id in helt.bygget) {
+    const plass = BYGGEPLASS[id]; if (!plass) continue;
+    const bx = BASE_X + plass.x, by = BASE_Y + plass.y - 10;
+    const dx = o.x - bx, dy = o.y - by, d = Math.hypot(dx, dy), min = o.r + 34;
+    if (d < min && d > 0) { o.x = bx + dx / d * min; o.y = by + dy / d * min; }
+  }
+  if (!ignorerTraer) for (const t of traer) {
+    const dx = o.x - t.x, dy = o.y - t.y, d = Math.hypot(dx, dy), min = o.r + t.r * 0.35;
+    if (d < min && d > 0) { o.x = t.x + dx / d * min; o.y = t.y + dy / d * min; }
+  }
+  o.x = Math.max(o.r, Math.min(VERDEN_BREDDE - o.r, o.x));
+  o.y = Math.max(o.r, Math.min(VERDEN_HOYDE - o.r, o.y));
+}
+
+function oppdater() {
+  tid++;
+  let mx = 0, my = 0;
+  if (taster['arrowleft'] || taster['a']) mx -= 1;
+  if (taster['arrowright'] || taster['d']) mx += 1;
+  if (taster['arrowup'] || taster['w']) my -= 1;
+  if (taster['arrowdown'] || taster['s']) my += 1;
+  let styrke = 1;
+  if (spak.aktiv) {
+    // styrespaken på mobil: jo lenger du drar, jo fortere går du
+    const dx = spak.x - spak.sx, dy = spak.y - spak.sy, d = Math.hypot(dx, dy);
+    if (d > 8) { mx = dx / d; my = dy / d; styrke = Math.min(1, d / SPAK_RADIUS); }
+  }
+  if (mx || my) {
+    const len = Math.hypot(mx, my);
+    helt.x += mx / len * helt.fart * styrke; helt.y += my / len * helt.fart * styrke;
+    if (!mus.brukt) helt.retning = { x: mx / len, y: my / len };
+    helt.gaaTid++;
+  }
+  kolliderMedTraer(helt);
+  siktMotMus();
+  if (erTouch) {
+    // på mobil sikter helten automatisk på nærmeste fiende
+    let naermest = null, best = 350;
+    for (const f of fiender) { const d = Math.hypot(f.x - helt.x, f.y - helt.y); if (d < best) { best = d; naermest = f; } }
+    if (naermest) helt.retning = { x: (naermest.x - helt.x) / best, y: (naermest.y - helt.y) / best };
+    if (holdtKnapp.sverd) sverdHugg();
+    if (holdtKnapp.magi) skytMagi(helt.retning.x, helt.retning.y);
+    if (holdtKnapp.pistol) skytPistol(helt.retning.x, helt.retning.y);
+  }
+
+  helt.mana = Math.min(helt.maksMana, helt.mana + 0.35);
+  if (helt.sverdTid > 0) helt.sverdTid--;
+  if (helt.sverdNedkjoling > 0) helt.sverdNedkjoling--;
+  if (helt.magiNedkjoling > 0) helt.magiNedkjoling--;
+  if (helt.pistolNed > 0) helt.pistolNed--;
+  if (helt.skadetTid > 0) helt.skadetTid--;
+  if (risting > 0) risting--;
+
+  for (const k of kuler) {
+    k.x += k.vx; k.y += k.vy; k.liv--;
+    if (tid % 2 === 0 && k.type === 'magi') partikler.push({ x: k.x, y: k.y, vx: 0, vy: 0, liv: 15, farge: '#b388ff', r: 3 });
+    for (const t of traer) if (Math.hypot(k.x - t.x, k.y - t.y) < t.r * 0.35) k.liv = 0;
+    for (const f of fiender) {
+      if (k.liv > 0 && Math.hypot(k.x - f.x, k.y - f.y) < f.r + 6) {
+        f.liv -= helt.magiSkade; f.blink = 8; k.liv = 0;
+        visTekst('-' + helt.magiSkade, f.x, f.y - f.r, k.type === 'magi' ? '#c9a0ff' : '#ffe0b2');
+        lagPartikler(k.x, k.y, '#c9a0ff', 12, 4);
+      }
+    }
+  }
+  kuler = kuler.filter(k => k.liv > 0);
+
+  // Vakttårnene skyter piler
+  const laser = antallBygget('laser') > 0;
+  for (let i = 0; i < Math.min(antallBygget('vakttarn'), 4); i++) {
+    if (helt.tarnLiv[i] <= 0) continue; // knust tårn skyter ikke
+    if (helt.tarnNedkjoling[i] > 0) { helt.tarnNedkjoling[i]--; continue; }
+    const t = tarnPlass(i);
+    let naermest = null, best = 330;
+    for (const f of fiender) { const d = Math.hypot(f.x - t.x, f.y - t.y); if (d < best) { best = d; naermest = f; } }
+    if (naermest) {
+      const dx = naermest.x - t.x, dy = naermest.y - (t.y - 50), d = Math.hypot(dx, dy) || 1;
+      const fart = laser ? 14 : 8;
+      piler.push({ x: t.x, y: t.y - 50, vx: dx / d * fart, vy: dy / d * fart, liv: 60, laser, skade: (laser ? 5 : 2) + antallBygget('pilskade') });
+      helt.tarnNedkjoling[i] = 50;
+    }
+  }
+  for (const pil of piler) {
+    pil.x += pil.vx; pil.y += pil.vy; pil.liv--;
+    for (const f of fiender) {
+      if (pil.liv > 0 && Math.hypot(pil.x - f.x, pil.y - f.y) < f.r + 4) {
+        if (pil.gjennom) { if (pil.truffet.includes(f)) continue; pil.truffet.push(f); } // laserpistolen går gjennom
+        else pil.liv = 0;
+        f.liv -= pil.skade; f.blink = 8;
+        visTekst('-' + pil.skade, f.x, f.y - f.r, pil.farge || (pil.laser ? '#ff80ab' : '#ffcc80'));
+        lagPartikler(pil.x, pil.y, pil.farge || (pil.laser ? '#ff4081' : '#c8a165'), 6, 3);
+      }
+    }
+  }
+  piler = piler.filter(p => p.liv > 0);
+  oppdaterNyeVapen();
+
+  for (const f of fiender) {
+    const dx = helt.x - f.x, dy = helt.y - f.y, d = Math.hypot(dx, dy) || 1;
+    const fx0 = f.x, fy0 = f.y;
+    let mx = dx / d, my = dy / d;
+    if (f.omvei > 0) {
+      // går rundt hindringen den sto fast bak
+      f.omvei--;
+      mx = mx * 0.3 + f.ovx; my = my * 0.3 + f.ovy;
+      const l = Math.hypot(mx, my) || 1; mx /= l; my /= l;
+    }
+    f.x += mx * f.fart; f.y += my * f.fart;
+    f.retning = { x: dx / d, y: dy / d };
+    f.gaaTid++;
+    if (f.klatrer > 0) f.klatrer--;
+    kolliderMedTraer(f, f.boss || f.klatrer > 0); // bossen tramper rett gjennom trærne
+    const vedMuren = antallBygget('mur') && helt.murLiv > 0 && holdUtenforMuren(f);
+    // Står fienden fast bak et tre eller en bygning? Da går den rundt.
+    if (!vedMuren && d > f.r + helt.r + 5) {
+      if (Math.hypot(f.x - fx0, f.y - fy0) < f.fart * 0.3) f.fast = (f.fast || 0) + 1; else f.fast = 0;
+      if (f.fast > 20 && !(f.omvei > 0)) {
+        const side = Math.random() < 0.5 ? 1 : -1;
+        f.ovx = -dy / d * side; f.ovy = dx / d * side; f.omvei = 80; f.fast = 0;
+        f.omveiTeller = (f.omveiTeller || 0) + 1;
+        if (f.omveiTeller >= 3) { f.klatrer = 150; f.omveiTeller = 0; } // klatrer over hvis den står fast flere ganger
+      }
+    }
+    if (f.boss || vedMuren) bossKnuser(f, vedMuren);
+    if (f.blink > 0) f.blink--;
+    if (f.slagTid > 0) f.slagTid--;
+    if (d < f.r + helt.r && f.slagTid === 0 && helt.skadetTid === 0) {
+      const skade = Math.max(1, f.skade - antallBygget('skjold'));
+      helt.liv -= skade; helt.skadetTid = 40; f.slagTid = 50; risting = 10;
+      visTekst('-' + skade, helt.x, helt.y - 25, '#ff5a5a', 20);
+      lagPartikler(helt.x, helt.y, '#ff5a5a', 10, 3);
+    }
+  }
+  for (const f of fiender) {
+    if (f.liv <= 0) {
+      for (let i = 0; i < f.penger; i++) mynter.push({ x: f.x + Math.random() * 20 - 10, y: f.y + Math.random() * 20 - 10, verdi: 1, tid: 0 });
+      gaXp(f.xp);
+      visTekst('+' + f.xp + ' XP', f.x, f.y - 20, '#7fd4ff');
+      lagPartikler(f.x, f.y, PARTIKKELFARGE[f.type], f.boss ? 60 : 25, f.boss ? 8 : 5);
+      if (f.boss) visTekst('Du slo bossen! 🏆', f.x, f.y - 60, '#ffd54a', 28);
+    }
+  }
+  fiender = fiender.filter(f => f.liv > 0);
+
+  for (const m of mynter) {
+    m.tid++;
+    const d = Math.hypot(helt.x - m.x, helt.y - m.y);
+    if (d < 130) { m.x += (helt.x - m.x) * 0.12; m.y += (helt.y - m.y) * 0.12; }
+    if (d < 20) { helt.penger += m.verdi; m.tatt = true; lagPartikler(m.x, m.y, '#ffd54a', 4, 2); }
+  }
+  mynter = mynter.filter(m => !m.tatt);
+
+  for (const p of partikler) { p.x += p.vx; p.y += p.vy; p.vx *= 0.92; p.vy *= 0.92; p.liv--; }
+  partikler = partikler.filter(p => p.liv > 0);
+  for (const t of tekster) { t.y -= 0.6; t.tid--; }
+  tekster = tekster.filter(t => t.tid > 0);
+
+  if (fiender.length === 0) {
+    if (bolge % BOSS_HVER === 0 && bolge > helt.sjekkpunkt) {
+      helt.sjekkpunkt = bolge;
+      visTekst('✅ Sjekkpunkt! Dør du, starter du fra bølge ' + (bolge + 1), helt.x, helt.y - 130, '#7dff8a', 20);
+    }
+    if (helt.verden < SISTE_VERDEN && bolge >= PORTAL_BOLGE && !helt.portalApen) {
+      helt.portalApen = true;
+      visTekst('⏳ En tidsportal til ' + VERDENSNAVN[helt.verden + 1] + ' har åpnet seg i basen!', helt.x, helt.y - 90, '#e040fb', 22);
+    }
+    if (helt.verden === SISTE_VERDEN && bolge >= PORTAL_BOLGE && !helt.alleKlart) {
+      helt.alleKlart = true;
+      visTekst('🏆 Du har klart alle verdenene! Flere tidsepoker kommer snart!', helt.x, helt.y - 90, '#ffd54a', 22);
+    }
+    nyBolge();
+  }
+  // Gå inn i portalen for å reise til neste verden
+  if (helt.verden < SISTE_VERDEN && helt.portalApen && Math.hypot(helt.x - PORTAL.x, helt.y - PORTAL.y) < 26) gaaTilVerden(helt.verden + 1);
+  if (helt.liv <= 0) { helt.liv = 0; tilstand = 'slutt'; document.getElementById('baseKnapp').style.display = 'none'; lagre(); }
+  if (tid % 600 === 0) lagre(); // lagrer hvert 10. sekund
+
+  const vb = canvas.width / zoom, vh = canvas.height / zoom; // hvor mye av verden vi ser
+  kamera.x = Math.max(0, Math.min(VERDEN_BREDDE - vb, helt.x - vb / 2));
+  kamera.y = Math.max(0, Math.min(VERDEN_HOYDE - vh, helt.y - vh / 2));
+  if (vb > VERDEN_BREDDE) kamera.x = (VERDEN_BREDDE - vb) / 2;
+  if (vh > VERDEN_HOYDE) kamera.y = (VERDEN_HOYDE - vh) / 2;
+}
+
+// ===================== NYE VÅPEN: kanon, drage, lyn, tempel =====================
+function naermesteFiende(x, y, maks) {
+  let naermest = null, best = maks;
+  for (const f of fiender) { const d = Math.hypot(f.x - x, f.y - y); if (d < best) { best = d; naermest = f; } }
+  return naermest;
+}
+
+function oppdaterNyeVapen() {
+  // Kanontårn
+  const kanoner = antallBygget('kanon');
+  if (kanoner) {
+    const kx = BASE_X + BYGGEPLASS.kanon.x, ky = BASE_Y + BYGGEPLASS.kanon.y - 20;
+    if (helt.kanonNed > 0) helt.kanonNed--;
+    else {
+      const f = naermesteFiende(kx, ky, 480);
+      if (f) {
+        const dx = f.x - kx, dy = f.y - ky, d = Math.hypot(dx, dy) || 1;
+        kanonkuler.push({ x: kx, y: ky, vx: dx / d * 7, vy: dy / d * 7, igjen: d / 7, skade: 5 * kanoner + 2 * (helt.verden - 1) });
+        helt.kanonVinkel = Math.atan2(dy, dx); helt.kanonNed = 100;
+        lagPartikler(kx + dx / d * 25, ky + dy / d * 25, '#bdbdbd', 8, 2);
+      }
+    }
+  }
+  for (const k of kanonkuler) {
+    k.x += k.vx; k.y += k.vy; k.igjen--;
+    if (k.igjen <= 0) {
+      k.ferdig = true; risting = Math.max(risting, 4);
+      lagPartikler(k.x, k.y, '#ff9800', 25, 6); lagPartikler(k.x, k.y, '#ffeb3b', 10, 4);
+      for (const f of fiender) if (Math.hypot(f.x - k.x, f.y - k.y) < 70 + f.r) {
+        f.liv -= k.skade; f.blink = 8; visTekst('-' + k.skade, f.x, f.y - f.r, '#ffab40');
+      }
+    }
+  }
+  kanonkuler = kanonkuler.filter(k => !k.ferdig);
+
+  // Kjæledrage som følger helten
+  const drager = antallBygget('drage');
+  if (drager) {
+    const d = helt.dragePos;
+    d.x += (helt.x - 45 - d.x) * 0.06; d.y += (helt.y - 45 - d.y) * 0.06;
+    if (helt.drageFlamme > 0) helt.drageFlamme--;
+    if (helt.drageNed > 0) helt.drageNed--;
+    else {
+      const f = naermesteFiende(d.x, d.y, 260);
+      if (f) {
+        const skade = 3 * drager + Math.floor(helt.niva / 5);
+        f.liv -= skade; f.blink = 8;
+        visTekst('-' + skade, f.x, f.y - f.r, '#ff6d00');
+        for (let i = 0; i < 10; i++) {
+          const t = i / 10;
+          partikler.push({ x: d.x + (f.x - d.x) * t, y: d.y + (f.y - d.y) * t, vx: Math.random() - 0.5, vy: Math.random() - 0.5, liv: 18, farge: i % 2 ? '#ff6d00' : '#ffd54a', r: 3 + t * 4 });
+        }
+        helt.drageMaal = { x: f.x, y: f.y }; helt.drageFlamme = 12; helt.drageNed = 35;
+      }
+    }
+  }
+
+  // Lynstorm
+  const lynNiva = antallBygget('lyn');
+  if (lynNiva) {
+    if (helt.lynNed > 0) helt.lynNed--;
+    else {
+      const maal = fiender.filter(f => Math.hypot(f.x - helt.x, f.y - helt.y) < 450)
+        .sort((a, b) => Math.hypot(a.x - helt.x, a.y - helt.y) - Math.hypot(b.x - helt.x, b.y - helt.y)).slice(0, 3);
+      if (maal.length) {
+        const skade = 10 * lynNiva + Math.floor(helt.niva / 2);
+        for (const f of maal) {
+          f.liv -= skade; f.blink = 10;
+          visTekst('⚡-' + skade, f.x, f.y - f.r, '#fff59d', 18);
+          lyn.push({ x: f.x, y: f.y, liv: 12, frø: Math.random() * 100 });
+          lagPartikler(f.x, f.y, '#fff59d', 12, 4);
+        }
+        risting = Math.max(risting, 5);
+        helt.lynNed = 240;
+      }
+    }
+  }
+  for (const l of lyn) l.liv--;
+  lyn = lyn.filter(l => l.liv > 0);
+
+  // Helbredelsestempel
+  const tempel = antallBygget('tempel');
+  if (tempel) {
+    if (helt.tempelNed > 0) helt.tempelNed--;
+    else {
+      if (helt.liv < helt.maksLiv) {
+        helt.liv = Math.min(helt.maksLiv, helt.liv + tempel);
+        lagPartikler(helt.x, helt.y - 10, '#7dff8a', 4, 1.5);
+      }
+      helt.tempelNed = 90;
+    }
+  }
+}
+
+function gaXp(mengde) {
+  helt.xp += mengde;
+  while (helt.xp >= xpTilNesteNiva()) {
+    helt.xp -= xpTilNesteNiva();
+    helt.niva++;
+    helt.maksLiv += 2; helt.liv = helt.maksLiv;
+    helt.maksMana += 10; helt.mana = helt.maksMana;
+    visTekst('NIVÅ OPP! Nivå ' + helt.niva + ' ⭐', helt.x, helt.y - 60, '#ffd54a', 30);
+    lagPartikler(helt.x, helt.y, '#ffd54a', 40, 6);
+    const nye = BYGNINGER.filter(b => b.laasesOpp === helt.niva);
+    if (nye.length) visTekst('Nytt i basen: ' + nye.map(b => b.ikon + ' ' + b.navn).join(', '), helt.x, helt.y - 95, '#ffe9b0', 18);
+  }
+}
+
+// ===================== TEGNING =====================
+function sirkel(x, y, r, farge) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = farge; ctx.fill(); }
+function skygge(x, y, rx, ry) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill(); }
+function kule(x, y, r, lys, mork) {
+  const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
+  g.addColorStop(0, lys); g.addColorStop(1, mork);
+  sirkel(x, y, r, g);
+}
+
+function tegnKampestein(t) {
+  const r = t.r * 0.7;
+  skygge(t.x + 5, t.y + r * 0.5, r, r * 0.5);
+  ctx.beginPath(); ctx.ellipse(t.x, t.y, r, r * 0.8, t.form * 2, 0, Math.PI * 2);
+  const g = ctx.createRadialGradient(t.x - r * 0.4, t.y - r * 0.4, 2, t.x, t.y, r);
+  g.addColorStop(0, '#bdbdbd'); g.addColorStop(1, '#5d5d5d'); ctx.fillStyle = g; ctx.fill();
+  ctx.fillStyle = 'rgba(85,139,47,0.6)'; ctx.beginPath(); ctx.ellipse(t.x + r * 0.2, t.y - r * 0.4, r * 0.4, r * 0.2, 0.3, 0, Math.PI * 2); ctx.fill(); // mose
+}
+
+function tegnSoyle(t) {
+  const r = t.r * 0.45;
+  skygge(t.x + 6, t.y + 6, r + 4, r * 0.7);
+  kule(t.x, t.y, r + 5, '#e0d2b4', '#9e8a68');            // sokkel
+  kule(t.x, t.y, r, '#fff8e7', '#cbb994');                 // søyle sett ovenfra
+  ctx.strokeStyle = 'rgba(150,130,95,0.6)'; ctx.lineWidth = 1.5;
+  for (let k = 0; k < 8; k++) { const v = k * Math.PI / 4; ctx.beginPath(); ctx.moveTo(t.x + Math.cos(v) * r * 0.3, t.y + Math.sin(v) * r * 0.3); ctx.lineTo(t.x + Math.cos(v) * r, t.y + Math.sin(v) * r); ctx.stroke(); }
+  if (t.form > 0.6) { ctx.fillStyle = '#d7c7a3'; ctx.fillRect(t.x + r, t.y + 4, 12, 7); } // nedfalt bit
+}
+
+function tegnHuleboer(f) {
+  const v = Math.atan2(f.retning ? f.retning.y : 0, f.retning ? f.retning.x : 1);
+  const steg = Math.sin(f.gaaTid * 0.35) * 0.5;
+  skygge(f.x, f.y + 13, 14, 5);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  ctx.save(); ctx.translate(4, 12); ctx.rotate(0.6 + steg);
+  ctx.fillStyle = '#8d6238'; ctx.fillRect(0, -2, 18, 4); kule(20, 0, 5, '#a1887f', '#5d4037');
+  ctx.restore();
+  if (f.blink > 0) sirkel(0, 0, 13, '#fff'); else kule(0, 0, 13, '#ff9800', '#8d4f00');
+  sirkel(-4, -5, 2.5, '#4e342e'); sirkel(3, 6, 2.5, '#4e342e'); sirkel(-6, 5, 2, '#4e342e');
+  ctx.restore();
+  kule(f.x, f.y - 4, 8, '#e0b48a', '#a1774f');
+  ctx.fillStyle = '#3e2723';
+  for (let k = 0; k < 7; k++) { ctx.beginPath(); ctx.arc(f.x - 7 + k * 2.3, f.y - 10 + Math.sin(k * 2) * 2, 3, 0, 7); ctx.fill(); }
+  sirkel(f.x - 3, f.y - 4, 1.6, '#111'); sirkel(f.x + 3, f.y - 4, 1.6, '#111');
+}
+
+function tegnSabeltann(f) {
+  const v = Math.atan2(f.retning ? f.retning.y : 0, f.retning ? f.retning.x : 1);
+  const steg = Math.sin(f.gaaTid * 0.3) * 4;
+  skygge(f.x, f.y + 14, 24, 7);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  // bein
+  ctx.fillStyle = '#e65100';
+  for (const [lx, ly, s] of [[10, -12, 1], [10, 12, -1], [-12, -12, -1], [-12, 12, 1]]) ctx.fillRect(lx + steg * s - 3, ly - 3, 7, 6);
+  // hale
+  ctx.strokeStyle = '#ef6c00'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-20, 0); ctx.quadraticCurveTo(-30, Math.sin(f.gaaTid * 0.2) * 8, -36, 4); ctx.stroke();
+  // kropp med striper
+  ctx.beginPath(); ctx.ellipse(0, 0, 22, 13, 0, 0, Math.PI * 2);
+  ctx.fillStyle = f.blink > 0 ? '#fff' : '#fb8c00'; ctx.fill();
+  ctx.fillStyle = '#4e342e'; for (let k = -2; k <= 2; k++) ctx.fillRect(k * 7 - 1, -12, 3, 9);
+  // hode
+  kule(22, 0, 10, '#ffa726', '#e65100');
+  sirkel(24, -4, 2, '#111'); sirkel(24, 4, 2, '#111');
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.moveTo(28, -4); ctx.lineTo(38, -3); ctx.lineTo(29, -1); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(28, 4); ctx.lineTo(38, 3); ctx.lineTo(29, 1); ctx.fill();
+  ctx.restore();
+}
+
+function tegnTrex(f) {
+  const v = Math.atan2(f.retning ? f.retning.y : 0, f.retning ? f.retning.x : 1);
+  const steg = Math.sin(f.gaaTid * 0.15) * 6;
+  skygge(f.x, f.y + 30, 44, 14);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  ctx.fillStyle = '#33691e';
+  ctx.beginPath(); ctx.moveTo(-28, -10); ctx.quadraticCurveTo(-60, Math.sin(f.gaaTid * 0.1) * 12, -72, 0); ctx.quadraticCurveTo(-60, 4, -28, 10); ctx.fill(); // hale
+  ctx.fillStyle = '#2e5016'; ctx.fillRect(-10 + steg, -26, 14, 10); ctx.fillRect(-10 - steg, 16, 14, 10); // bein
+  ctx.beginPath(); ctx.ellipse(0, 0, 34, 22, 0, 0, Math.PI * 2);
+  ctx.fillStyle = f.blink > 0 ? '#fff' : '#689f38'; ctx.fill();
+  ctx.fillStyle = 'rgba(51,105,30,0.7)'; for (let k = -2; k <= 2; k++) sirkel(k * 9 - 4, 0, 4, 'rgba(51,105,30,0.7)');
+  ctx.fillStyle = '#558b2f'; ctx.fillRect(22, -12, 8, 4); ctx.fillRect(22, 8, 8, 4); // små armer
+  // hode
+  ctx.beginPath(); ctx.ellipse(40, 0, 18, 14, 0, 0, Math.PI * 2); ctx.fillStyle = f.blink > 0 ? '#fff' : '#7cb342'; ctx.fill();
+  sirkel(42, -8, 3, '#ffeb3b'); sirkel(42, 8, 3, '#ffeb3b'); sirkel(43, -8, 1.5, '#111'); sirkel(43, 8, 1.5, '#111');
+  ctx.fillStyle = '#fff';
+  for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.moveTo(46 + k * 2.5, -10 + k * 0.2); ctx.lineTo(48 + k * 2.5, -5); ctx.lineTo(50 + k * 2.5, -10); ctx.fill(); }
+  for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.moveTo(46 + k * 2.5, 10); ctx.lineTo(48 + k * 2.5, 5); ctx.lineTo(50 + k * 2.5, 10); ctx.fill(); }
+  ctx.restore();
+}
+
+function tegnMumie(f) {
+  const v = Math.atan2(f.retning ? f.retning.y : 0, f.retning ? f.retning.x : 1);
+  const steg = Math.sin(f.gaaTid * 0.3) * 3;
+  skygge(f.x, f.y + 13, 14, 5);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  ctx.strokeStyle = '#d7ccb0'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(18 + steg, -9); ctx.moveTo(0, 8); ctx.lineTo(18 - steg, 9); ctx.stroke(); // armer fram
+  if (f.blink > 0) sirkel(0, 0, 13, '#fff'); else kule(0, 0, 13, '#f5f0e1', '#bfb497');
+  ctx.strokeStyle = 'rgba(140,125,95,0.7)'; ctx.lineWidth = 1.5;
+  for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(-11, k * 4); ctx.lineTo(11, k * 4 + 2); ctx.stroke(); }
+  ctx.restore();
+  kule(f.x, f.y - 4, 8, '#f5f0e1', '#bfb497');
+  ctx.strokeStyle = 'rgba(140,125,95,0.7)'; ctx.lineWidth = 1.2;
+  for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(f.x - 7, f.y - 4 + k * 3); ctx.lineTo(f.x + 7, f.y - 3 + k * 3); ctx.stroke(); }
+  sirkel(f.x - 3, f.y - 5, 1.8, '#76ff03'); sirkel(f.x + 3, f.y - 5, 1.8, '#76ff03');
+}
+
+function tegnGladiator(f) {
+  const v = Math.atan2(f.retning ? f.retning.y : 0, f.retning ? f.retning.x : 1);
+  const steg = Math.sin(f.gaaTid * 0.25) * 0.4;
+  skygge(f.x, f.y + 18, 20, 7);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  ctx.fillStyle = '#b71c1c'; ctx.beginPath(); ctx.moveTo(-4, -18); ctx.quadraticCurveTo(-30, 0, -4, 18); ctx.fill(); // kappe
+  ctx.save(); ctx.translate(6, 18); ctx.rotate(0.4 + steg);
+  ctx.fillStyle = '#cfd8dc'; ctx.fillRect(0, -2, 22, 4); ctx.fillStyle = '#795548'; ctx.fillRect(-4, -3, 5, 6);
+  ctx.restore();
+  ctx.save(); ctx.translate(6, -19); kule(0, 0, 10, '#ffcc80', '#a1662f'); sirkel(0, 0, 3, '#b71c1c'); ctx.restore(); // skjold
+  if (f.blink > 0) sirkel(0, 0, f.r, '#fff'); else kule(0, 0, f.r, '#e0b48a', '#a1774f');
+  ctx.restore();
+  kule(f.x, f.y - 5, 10, '#ffd180', '#a1662f'); // hjelm
+  ctx.fillStyle = '#c62828'; ctx.fillRect(f.x - 2, f.y - 18, 4, 16); // kam
+  ctx.fillStyle = '#222'; ctx.fillRect(f.x - 5, f.y - 4, 10, 3);
+}
+
+function tegnFaraoHodeplagg(f) {
+  const x = f.x, y = f.y - f.r + 4;
+  ctx.fillStyle = '#ffd54a';
+  ctx.beginPath(); ctx.moveTo(x - 22, y + 26); ctx.lineTo(x - 14, y - 6); ctx.lineTo(x + 14, y - 6); ctx.lineTo(x + 22, y + 26); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#1565c0';
+  for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(x - 20 + k * 1.5, y + 2 + k * 7); ctx.lineTo(x + 20 - k * 1.5, y + 2 + k * 7); ctx.lineTo(x + 20 - k * 1.5, y + 5 + k * 7); ctx.lineTo(x - 20 + k * 1.5, y + 5 + k * 7); ctx.fill(); }
+  sirkel(x, y - 4, 4, '#e53935'); // kobra-smykke
+}
+
+function tegnTonne(t) {
+  const r = t.r * 0.65;
+  skygge(t.x + 4, t.y + r * 0.8, r, r * 0.4);
+  kule(t.x, t.y, r, '#b07d4f', '#5a3d22');
+  ctx.strokeStyle = '#2b1d0f'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(t.x, t.y, r * 0.75, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(t.x, t.y, r * 0.4, 0, Math.PI * 2); ctx.stroke();
+  sirkel(t.x, t.y, 2, '#2b1d0f');
+}
+
+function tegnLyn(l) {
+  ctx.globalAlpha = l.liv / 12;
+  ctx.strokeStyle = '#fffde7'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  let x = l.x + 30, y = l.y - 320; ctx.moveTo(x, y);
+  for (let i = 1; i <= 8; i++) {
+    x = l.x + (Math.sin(l.frø + i * 2.3) * 25) * (1 - i / 8); y = l.y - 320 + i * 40;
+    ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.strokeStyle = '#ffeb3b'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function tegnDrage() {
+  const d = helt.dragePos;
+  const y = d.y + Math.sin(tid * 0.1) * 5;
+  const mot = helt.drageFlamme > 0 && helt.drageMaal ? Math.atan2(helt.drageMaal.y - y, helt.drageMaal.x - d.x) : Math.atan2(helt.retning.y, helt.retning.x);
+  skygge(d.x, d.y + 35, 14, 5);
+  const vinge = Math.sin(tid * 0.4) * 0.6;
+  ctx.save(); ctx.translate(d.x, y);
+  // vinger
+  for (const side of [-1, 1]) {
+    ctx.save(); ctx.scale(1, side); ctx.rotate(vinge);
+    ctx.fillStyle = '#c62828'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-10, -26); ctx.lineTo(8, -20); ctx.lineTo(14, -8); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  ctx.rotate(mot);
+  // hale
+  ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-8, 0); ctx.quadraticCurveTo(-20, Math.sin(tid * 0.2) * 8, -26, 4); ctx.stroke();
+  kule(0, 0, 11, '#81c784', '#1b5e20');      // kropp
+  kule(12, 0, 7, '#a5d6a7', '#2e7d32');      // hode
+  sirkel(14, -3, 1.8, '#ffeb3b'); sirkel(14, 3, 1.8, '#ffeb3b');
+  ctx.fillStyle = '#fffde7'; ctx.beginPath(); ctx.moveTo(8, -6); ctx.lineTo(5, -11); ctx.lineTo(10, -7); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(8, 6); ctx.lineTo(5, 11); ctx.lineTo(10, 7); ctx.fill();
+  ctx.restore();
+  const nivaa = antallBygget('drage');
+  ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#ffd54a';
+  ctx.fillText('⭐'.repeat(nivaa), d.x, y - 22);
+}
+
+function tegnPirat(f) {
+  const v = Math.atan2(f.retning ? f.retning.y : 0, f.retning ? f.retning.x : 1);
+  const steg = Math.sin(f.gaaTid * 0.35) * 0.5;
+  skygge(f.x, f.y + 13, 14, 5);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  // sabel
+  ctx.save(); ctx.translate(4, 12); ctx.rotate(0.5 + steg);
+  ctx.fillStyle = '#cfd8dc'; ctx.beginPath(); ctx.moveTo(0, -2); ctx.quadraticCurveTo(14, -6, 22, 0); ctx.lineTo(0, 2); ctx.fill();
+  ctx.fillStyle = '#ffb300'; ctx.fillRect(-3, -4, 3, 8);
+  ctx.restore();
+  // stripete skjorte
+  if (f.blink > 0) sirkel(0, 0, 13, '#fff');
+  else { kule(0, 0, 13, '#ffffff', '#bdbdbd'); ctx.fillStyle = '#e53935'; ctx.fillRect(-9, -11, 4, 22); ctx.fillRect(-1, -13, 4, 26); ctx.fillRect(6, -10, 3, 20); }
+  ctx.restore();
+  // hode med hatt og klappe
+  kule(f.x, f.y - 4, 8, '#f2c9a0', '#c9976a');
+  ctx.fillStyle = '#212121'; ctx.beginPath(); ctx.ellipse(f.x, f.y - 9, 13, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(f.x, f.y - 12, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
+  sirkel(f.x, f.y - 12, 2, '#fff');
+  ctx.fillStyle = '#111'; ctx.fillRect(f.x - 6, f.y - 5, 5, 4);
+  sirkel(f.x + 3, f.y - 3, 1.6, '#111');
+}
+
+function tegnBlekksprut(f) {
+  skygge(f.x, f.y + 18, 22, 7);
+  ctx.strokeStyle = '#d84315'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4 + 0.2;
+    const w = Math.sin(f.gaaTid * 0.15 + i) * 6;
+    ctx.beginPath(); ctx.moveTo(f.x + Math.cos(a) * 10, f.y + Math.sin(a) * 10);
+    ctx.quadraticCurveTo(f.x + Math.cos(a) * 24 + w, f.y + Math.sin(a) * 24 - w, f.x + Math.cos(a + 0.3) * 32, f.y + Math.sin(a + 0.3) * 32); ctx.stroke();
+  }
+  if (f.blink > 0) sirkel(f.x, f.y, f.r, '#fff'); else kule(f.x, f.y, f.r, '#ffab91', '#bf360c');
+  const fx = f.retning ? f.retning.x * 4 : 0, fy = f.retning ? f.retning.y * 4 : 0;
+  sirkel(f.x - 8 + fx, f.y - 4 + fy, 6, '#fff'); sirkel(f.x + 8 + fx, f.y - 4 + fy, 6, '#fff');
+  sirkel(f.x - 8 + fx * 1.4, f.y - 4 + fy * 1.4, 3, '#111'); sirkel(f.x + 8 + fx * 1.4, f.y - 4 + fy * 1.4, 3, '#111');
+}
+
+function tegnKasse(t) {
+  const s = t.r * 0.75;
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(t.x - s + 6, t.y - s + 8, s * 2, s * 2);
+  const g = ctx.createLinearGradient(t.x - s, t.y - s, t.x + s, t.y + s);
+  g.addColorStop(0, '#78909c'); g.addColorStop(1, '#37474f');
+  ctx.fillStyle = g; ctx.fillRect(t.x - s, t.y - s, s * 2, s * 2);
+  ctx.strokeStyle = '#263238'; ctx.lineWidth = 3; ctx.strokeRect(t.x - s + 4, t.y - s + 4, s * 2 - 8, s * 2 - 8);
+  ctx.beginPath(); ctx.moveTo(t.x - s + 4, t.y - s + 4); ctx.lineTo(t.x + s - 4, t.y + s - 4); ctx.stroke();
+  const lys = Math.sin(tid * 0.1 + t.x) > 0;
+  sirkel(t.x + s - 9, t.y - s + 9, 3, lys ? (t.form > 0.5 ? '#00e5ff' : '#76ff03') : '#1b2130');
+}
+
+function tegnTre(t) {
+  const h = epoke().hinder;
+  if (h === 'tonne') { tegnTonne(t); return; }
+  if (h === 'kasse') { tegnKasse(t); return; }
+  if (h === 'stein') { tegnKampestein(t); return; }
+  if (h === 'soyle') { tegnSoyle(t); return; }
+  // Gjør treet litt gjennomsiktig hvis helten står under det
+  const naer = Math.hypot(helt.x - t.x, helt.y - t.y) < t.r + 10;
+  ctx.globalAlpha = naer ? 0.45 : 1;
+  ctx.fillStyle = '#5b3a1e'; ctx.fillRect(t.x - 5, t.y, 10, t.r * 0.5);
+  const lag = [[0.0, 0.15, 1.0], [-0.35, -0.1, 0.65], [0.35, -0.05, 0.62], [0, -0.4, 0.6]];
+  for (const [ox, oy, s] of lag) kule(t.x + ox * t.r, t.y + oy * t.r, t.r * s, t.form > 0.5 ? '#4f9a3c' : '#5aa443', '#1d4a1a');
+  // små lysflekker
+  sirkel(t.x - t.r * 0.3, t.y - t.r * 0.45, t.r * 0.15, 'rgba(180,230,140,0.35)');
+  ctx.globalAlpha = 1;
+}
+
+function tegnHelt() {
+  const blinker = helt.skadetTid > 0 && Math.floor(helt.skadetTid / 4) % 2 === 0;
+  if (blinker) return;
+  const x = helt.x, y = helt.y + Math.sin(helt.gaaTid * 0.3) * 1.5;
+  const vinkel = Math.atan2(helt.retning.y, helt.retning.x);
+  skygge(helt.x, helt.y + 14, 16, 7);
+  ctx.save(); ctx.translate(x, y); ctx.rotate(vinkel);
+  const naer = epoke().naer;
+  if (naer === 'kølle') {
+    // steinalder-helt: pelskappe, ingen rustning, bustete hår
+    ctx.fillStyle = '#6d4c41';
+    ctx.beginPath(); ctx.moveTo(-4, -13); ctx.quadraticCurveTo(-20 - Math.sin(helt.gaaTid * 0.3) * 3, 0, -4, 13); ctx.closePath(); ctx.fill();
+    kule(0, 0, 14, '#bcaaa4', '#6d4c41');
+    for (let k = -2; k <= 2; k++) sirkel(-4 + Math.abs(k) * 2, k * 4, 2, '#4e342e'); // flekker i pelsen
+    kule(2, 0, 9, '#f2c9a0', '#c9976a');
+    ctx.fillStyle = '#4e342e';
+    for (let k = 0; k < 6; k++) { ctx.beginPath(); ctx.arc(-3 + Math.cos(k) * 3, -6 + k * 2.4, 4, 0, 7); ctx.fill(); }
+    sirkel(7, -3, 1.5, '#222'); sirkel(7, 3, 1.5, '#222');
+  } else if (naer === 'spyd') {
+    // oldtids-helt: rød kappe, bronserustning, rundt skjold, hjelm med kam
+    ctx.fillStyle = '#c62828';
+    ctx.beginPath(); ctx.moveTo(-4, -14); ctx.quadraticCurveTo(-26 - Math.sin(helt.gaaTid * 0.3) * 3, 0, -4, 14); ctx.closePath(); ctx.fill();
+    ctx.save(); ctx.translate(4, -16); kule(0, 0, 10, '#ffcc80', '#a1662f'); sirkel(0, 0, 3, '#c62828'); ctx.restore();
+    kule(0, 0, 14, '#ffe0b2', '#b0793a');
+    kule(2, 0, 9, '#ffd180', '#a1662f');
+    ctx.fillStyle = '#c62828'; ctx.fillRect(-9, -2, 16, 4); // hjelmkam
+    ctx.fillStyle = '#222'; ctx.fillRect(7, -3, 3, 6);
+  } else {
+    // ridder
+    ctx.fillStyle = '#b3261e';
+    ctx.beginPath(); ctx.moveTo(-4, -14); ctx.quadraticCurveTo(-26 - Math.sin(helt.gaaTid * 0.3) * 3, 0, -4, 14); ctx.closePath(); ctx.fill();
+    ctx.save(); ctx.translate(4, -15);
+    kule(0, 0, 8, '#e0b44a', '#8a6414'); sirkel(0, 0, 3, '#b3261e');
+    ctx.restore();
+    kule(0, 0, 14, '#9fb8d9', '#3a5c8a');
+    kule(2, 0, 9, '#e6e6e6', '#7a7a7a');
+    ctx.fillStyle = '#222'; ctx.fillRect(7, -4, 3, 8);
+    ctx.fillStyle = '#d33'; ctx.beginPath(); ctx.ellipse(-6, 0, 7, 3, 0, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+  // sverd
+  ctx.save(); ctx.translate(x, y);
+  if (helt.sverdTid > 0) {
+    const sving = (1 - helt.sverdTid / 12) * 2.4 - 1.2;
+    ctx.rotate(vinkel + sving);
+    ctx.beginPath(); ctx.arc(0, 0, 55, -1.2 - sving, 1.2 - sving);
+    ctx.strokeStyle = 'rgba(255,255,230,0.4)'; ctx.lineWidth = 12; ctx.stroke();
+  } else {
+    ctx.rotate(vinkel + 0.9);
+  }
+  const vaapen = epoke().naer;
+  if (vaapen === 'kølle') {
+    ctx.fillStyle = '#8d6238';
+    ctx.beginPath(); ctx.moveTo(8, -2.5); ctx.lineTo(40, -6); ctx.lineTo(40, 6); ctx.lineTo(8, 2.5); ctx.fill();
+    kule(42, 0, 8, '#a1887f', '#5d4037');
+    sirkel(40, -5, 2, '#4e342e'); sirkel(45, 3, 2, '#4e342e');
+  } else if (vaapen === 'spyd') {
+    ctx.fillStyle = '#8d6238'; ctx.fillRect(-6, -1.5, 56, 3);
+    ctx.fillStyle = '#d4a04a'; ctx.beginPath(); ctx.moveTo(50, -5); ctx.lineTo(62, 0); ctx.lineTo(50, 5); ctx.fill();
+  } else {
+    const g = ctx.createLinearGradient(16, -3, 16, 3); g.addColorStop(0, '#fff'); g.addColorStop(1, '#9a9a9a');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(16, -3); ctx.lineTo(46, -2); ctx.lineTo(50, 0); ctx.lineTo(46, 2); ctx.lineTo(16, 3); ctx.fill();
+    ctx.fillStyle = '#c9a227'; ctx.fillRect(13, -7, 4, 14);
+    ctx.fillStyle = '#5b3a1e'; ctx.fillRect(6, -2, 7, 4);
+  }
+  ctx.restore();
+}
+
+function tegnSkjelett(f) {
+  const v = Math.atan2(f.retning ? f.retning.y : 0, f.retning ? f.retning.x : 1);
+  const steg = Math.sin(f.gaaTid * 0.35) * 4;
+  skygge(f.x, f.y + 12, 13, 5);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  const bein = f.blink > 0 ? '#ffffff' : '#e8e2cf';
+  ctx.strokeStyle = bein; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  // armer som strekker seg fram
+  ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(14 + steg, -12); ctx.moveTo(0, 8); ctx.lineTo(14 - steg, 12); ctx.stroke();
+  // ribbein
+  ctx.lineWidth = 2;
+  for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(-6 + i * 4, -7); ctx.lineTo(-6 + i * 4, 7); ctx.stroke(); }
+  // hodeskalle
+  kule(4, 0, 9, bein, '#a9a28c');
+  ctx.restore();
+  // øyne (alltid oppover så de ser skumle ut)
+  sirkel(f.x - 3 + (f.retning ? f.retning.x * 4 : 0), f.y - 2, 2.5, '#111');
+  sirkel(f.x + 3 + (f.retning ? f.retning.x * 4 : 0), f.y - 2, 2.5, '#111');
+  sirkel(f.x - 3 + (f.retning ? f.retning.x * 4 : 0), f.y - 2, 1, '#ff3b3b');
+  sirkel(f.x + 3 + (f.retning ? f.retning.x * 4 : 0), f.y - 2, 1, '#ff3b3b');
+}
+
+function tegnTroll(f) {
+  const v = Math.atan2(f.retning ? f.retning.y : 0, f.retning ? f.retning.x : 1);
+  const steg = Math.sin(f.gaaTid * 0.2) * 0.3;
+  skygge(f.x, f.y + 20, 24, 9);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  // kølle
+  ctx.save(); ctx.translate(6, 20); ctx.rotate(0.4 + steg);
+  ctx.fillStyle = '#6b4423'; ctx.fillRect(0, -3, 26, 6);
+  kule(28, 0, 8, '#8b5a2b', '#4a2e14');
+  ctx.restore();
+  // kropp
+  if (f.blink > 0) sirkel(0, 0, 24, '#fff'); else kule(0, 0, 24, '#8fbf5a', '#3d6324');
+  // armer
+  kule(8, -20, 7, '#8fbf5a', '#3d6324');
+  ctx.restore();
+  // ansikt
+  const fx = f.x + (f.retning ? f.retning.x * 8 : 0), fy = f.y + (f.retning ? f.retning.y * 8 : 0);
+  kule(fx, fy - 6, 5, '#a3d36b', '#4d7a2c'); // nese
+  sirkel(fx - 8, fy - 10, 4, '#ffeb3b'); sirkel(fx + 8, fy - 10, 4, '#ffeb3b');
+  sirkel(fx - 8, fy - 10, 2, '#222'); sirkel(fx + 8, fy - 10, 2, '#222');
+  ctx.fillStyle = '#fffbe6';
+  ctx.beginPath(); ctx.moveTo(fx - 9, fy + 4); ctx.lineTo(fx - 6, fy + 12); ctx.lineTo(fx - 4, fy + 4); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(fx + 9, fy + 4); ctx.lineTo(fx + 6, fy + 12); ctx.lineTo(fx + 4, fy + 4); ctx.fill();
+}
+
+function tegnRobot(f) {
+  const v = Math.atan2(f.retning ? f.retning.y : 0, f.retning ? f.retning.x : 1);
+  skygge(f.x, f.y + 14, 15, 5);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  ctx.fillStyle = '#263238'; ctx.fillRect(-12, -16, 24, 6); ctx.fillRect(-12, 10, 24, 6);
+  const g = ctx.createLinearGradient(-12, -12, 12, 12); g.addColorStop(0, f.blink > 0 ? '#fff' : '#cfd8dc'); g.addColorStop(1, f.blink > 0 ? '#fff' : '#607d8b');
+  ctx.fillStyle = g; ctx.fillRect(-11, -11, 22, 22);
+  ctx.fillStyle = '#ff1744'; ctx.fillRect(6, -7, 4, 14);
+  ctx.restore();
+  ctx.strokeStyle = '#90a4ae'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(f.x, f.y - 8); ctx.lineTo(f.x, f.y - 22); ctx.stroke();
+  sirkel(f.x, f.y - 23, 3, Math.floor(tid / 15) % 2 ? '#ff1744' : '#ffcdd2');
+}
+
+function tegnRomvesen(f) {
+  skygge(f.x, f.y + 18, 20, 7);
+  ctx.strokeStyle = '#7b1fa2'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  for (let i = 0; i < 5; i++) {
+    const a = Math.PI * 0.2 + i * Math.PI * 0.15;
+    const w = Math.sin(f.gaaTid * 0.2 + i) * 5;
+    ctx.beginPath(); ctx.moveTo(f.x + Math.cos(a) * 12, f.y + Math.sin(a) * 12);
+    ctx.quadraticCurveTo(f.x + Math.cos(a) * 22 + w, f.y + Math.sin(a) * 22, f.x + Math.cos(a) * 28, f.y + Math.sin(a) * 26 + w); ctx.stroke();
+  }
+  if (f.blink > 0) sirkel(f.x, f.y, f.r, '#fff'); else kule(f.x, f.y, f.r, '#b9f6ca', '#6a1b9a');
+  const fx = f.retning ? f.retning.x * 5 : 0, fy = f.retning ? f.retning.y * 5 : 0;
+  for (const [ox, oy, r] of [[-8, -5, 5], [8, -5, 5], [0, -13, 4]]) {
+    sirkel(f.x + ox + fx, f.y + oy + fy, r, '#fff'); sirkel(f.x + ox + fx * 1.3, f.y + oy + fy * 1.3, r * 0.5, '#111');
+  }
+}
+
+function tegnKrone(x, y, farge) {
+  ctx.fillStyle = farge;
+  ctx.beginPath(); ctx.moveTo(x - 16, y + 8); ctx.lineTo(x - 16, y - 6); ctx.lineTo(x - 8, y + 2); ctx.lineTo(x, y - 10);
+  ctx.lineTo(x + 8, y + 2); ctx.lineTo(x + 16, y - 6); ctx.lineTo(x + 16, y + 8); ctx.closePath(); ctx.fill();
+  sirkel(x, y + 2, 2.5, '#e53935');
+}
+
+function tegnStor(f, tegnFunksjon, skala) {
+  ctx.save(); ctx.translate(f.x, f.y); ctx.scale(skala, skala); ctx.translate(-f.x, -f.y);
+  tegnFunksjon(f);
+  ctx.restore();
+}
+
+function tegnFiende(f) {
+  if (f.type === 'skjelett') tegnSkjelett(f);
+  else if (f.type === 'troll') tegnTroll(f);
+  else if (f.type === 'robot') tegnRobot(f);
+  else if (f.type === 'romvesen') tegnRomvesen(f);
+  else if (f.type === 'trollkonge') { tegnStor(f, tegnTroll, 1.7); tegnKrone(f.x, f.y - f.r - 4, '#ffd54a'); }
+  else if (f.type === 'robotkonge') { tegnStor(f, tegnRobot, 2.6); tegnKrone(f.x, f.y - f.r - 22, '#ffd54a'); }
+  else if (f.type === 'huleboer') tegnHuleboer(f);
+  else if (f.type === 'sabeltann') tegnSabeltann(f);
+  else if (f.type === 'trex') tegnTrex(f);
+  else if (f.type === 'mumie') tegnMumie(f);
+  else if (f.type === 'gladiator') tegnGladiator(f);
+  else if (f.type === 'farao') { tegnStor(f, tegnMumie, 2.6); tegnFaraoHodeplagg(f); }
+  else if (f.type === 'pirat') tegnPirat(f);
+  else if (f.type === 'blekksprut') tegnBlekksprut(f);
+  else if (f.type === 'piratkaptein') { tegnStor(f, tegnPirat, 2.6); tegnKrone(f.x, f.y - f.r - 18, '#ffd54a'); }
+  if (f.liv < f.maksLiv) {
+    ctx.fillStyle = '#400'; ctx.fillRect(f.x - f.r, f.y - f.r - 12, f.r * 2, 5);
+    ctx.fillStyle = '#e33'; ctx.fillRect(f.x - f.r, f.y - f.r - 12, f.r * 2 * (f.liv / f.maksLiv), 5);
+  }
+}
+
+// ===================== BASEN I SKOGEN =====================
+function tegnBaseBakke() {
+  // jordplass
+  const g = ctx.createRadialGradient(BASE_X, BASE_Y, 50, BASE_X, BASE_Y, BASE_RADIUS);
+  const [indre, ytre] = epoke().base;
+  g.addColorStop(0, indre); g.addColorStop(0.85, ytre); g.addColorStop(1, 'rgba(0,0,0,0)');
+  sirkel(BASE_X, BASE_Y, BASE_RADIUS, g);
+  if (helt.verden < SISTE_VERDEN && helt.portalApen) tegnPortal();
+  // tomme byggeplasser
+  for (const id in BYGGEPLASS) {
+    if (helt.bygget[id]) continue;
+    const p = BYGGEPLASS[id];
+    ctx.setLineDash([6, 6]); ctx.strokeStyle = 'rgba(255,240,200,0.35)'; ctx.lineWidth = 2;
+    ctx.strokeRect(BASE_X + p.x - 32, BASE_Y + p.y - 40, 64, 50);
+    ctx.setLineDash([]);
+  }
+  if (antallBygget('mur')) { tegnMur(); } else
+  // palisade (tregjerde) med åpninger der stiene går
+  for (let v = 0; v < Math.PI * 2; v += 0.055) {
+    const nærÅpning = [0, Math.PI / 2, Math.PI, Math.PI * 1.5, Math.PI * 2].some(a => Math.abs(v - a) < 0.2);
+    if (nærÅpning) continue;
+    const x = BASE_X + Math.cos(v) * BASE_RADIUS, y = BASE_Y + Math.sin(v) * BASE_RADIUS * 0.92;
+    ctx.fillStyle = '#5b3a1e'; ctx.fillRect(x - 4, y - 18, 8, 20);
+    ctx.fillStyle = '#7a5230'; ctx.beginPath(); ctx.moveTo(x - 4, y - 18); ctx.lineTo(x, y - 25); ctx.lineTo(x + 4, y - 18); ctx.fill();
+  }
+  // bål i midten
+  sirkel(BASE_X, BASE_Y + 40, 16, '#555');
+  sirkel(BASE_X, BASE_Y + 40, 12, '#3a2a1a');
+  for (let i = 0; i < 3; i++) {
+    const h = 14 + Math.sin(tid * 0.3 + i * 2) * 4;
+    ctx.fillStyle = ['#ff6d00', '#ffab00', '#ffe082'][i];
+    ctx.beginPath(); ctx.ellipse(BASE_X, BASE_Y + 40 - h / 2 + i * 2, 8 - i * 2, h - i * 3, 0, 0, 7); ctx.fill();
+  }
+  // skilt
+  ctx.fillStyle = '#6b4a2b'; ctx.fillRect(BASE_X - 3, BASE_Y + BASE_RADIUS * 0.92 - 46, 6, 30);
+  ctx.fillStyle = '#8a5f36'; ctx.fillRect(BASE_X - 55, BASE_Y + BASE_RADIUS * 0.92 - 66, 110, 26);
+  ctx.fillStyle = '#ffe9b0'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText('🏰 Evens base', BASE_X, BASE_Y + BASE_RADIUS * 0.92 - 48);
+}
+
+function tegnPortal() {
+  const { x, y } = PORTAL;
+  const glo = ctx.createRadialGradient(x, y, 2, x, y, 60);
+  glo.addColorStop(0, 'rgba(255,255,255,0.9)'); glo.addColorStop(0.3, 'rgba(224,64,251,0.6)'); glo.addColorStop(1, 'rgba(124,77,255,0)');
+  sirkel(x, y, 60, glo);
+  for (let i = 0; i < 4; i++) {
+    ctx.strokeStyle = ['#e040fb', '#7c4dff', '#00e5ff', '#ffffff'][i]; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(x, y, 30 - i * 6, 22 - i * 4, tid * 0.05 * (i % 2 ? 1 : -1) + i, 0.3, Math.PI * 1.6); ctx.stroke();
+  }
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText('⏳ Tidsmaskin til ' + VERDENSNAVN[helt.verden + 1], x, y - 40);
+}
+
+function tegnMur() {
+  if (helt.murLiv <= 0) {
+    for (let v = 0; v < Math.PI * 2; v += 0.09) {
+      const x = BASE_X + Math.cos(v) * BASE_RADIUS, y = BASE_Y + Math.sin(v) * BASE_RADIUS * 0.92;
+      ctx.fillStyle = '#6d6d6d'; ctx.fillRect(x - 5 + Math.sin(v * 13) * 4, y - 6, 9, 7);
+      ctx.fillStyle = '#8a8a8a'; ctx.fillRect(x + 2, y - 3 + Math.cos(v * 7) * 3, 6, 5);
+    }
+    return;
+  }
+  // steinmur hele veien rundt, med treporter der stiene går
+  for (let v = 0; v < Math.PI * 2; v += 0.04) {
+    const x = BASE_X + Math.cos(v) * BASE_RADIUS, y = BASE_Y + Math.sin(v) * BASE_RADIUS * 0.92;
+    const port = [0, Math.PI / 2, Math.PI, Math.PI * 1.5, Math.PI * 2].some(a => Math.abs(v - a) < 0.13);
+    if (port) {
+      ctx.fillStyle = '#6b4423'; ctx.fillRect(x - 6, y - 26, 12, 28);
+      ctx.fillStyle = '#3d2a17'; ctx.fillRect(x - 6, y - 16, 12, 3);
+    } else {
+      ctx.fillStyle = '#5f5f5f'; ctx.fillRect(x - 7, y - 22, 14, 24);
+      ctx.fillStyle = (Math.floor(v * 25) % 2) ? '#9e9e9e' : '#8a8a8a'; ctx.fillRect(x - 6, y - 21, 12, 10);
+      ctx.fillStyle = (Math.floor(v * 25) % 2) ? '#858585' : '#9e9e9e'; ctx.fillRect(x - 6, y - 10, 12, 10);
+      if (Math.floor(v * 25) % 2) { ctx.fillStyle = '#9e9e9e'; ctx.fillRect(x - 6, y - 28, 12, 6); }
+    }
+  }
+}
+
+function tegnTarn(i) {
+  const { x, y } = tarnPlass(i);
+  if (helt.tarnLiv[i] <= 0) {
+    ctx.fillStyle = '#6d6d6d'; ctx.beginPath(); ctx.moveTo(x - 22, y + 2); ctx.lineTo(x - 10, y - 16); ctx.lineTo(x + 4, y - 10);
+    ctx.lineTo(x + 14, y - 20); ctx.lineTo(x + 22, y + 2); ctx.fill();
+    ctx.fillStyle = '#8a8a8a'; ctx.fillRect(x - 12, y - 8, 10, 8); ctx.fillRect(x + 6, y - 6, 8, 6);
+    return;
+  }
+  ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(x + 5, y + 3, 24, 9, 0, 0, 7); ctx.fill();
+  const g = ctx.createLinearGradient(x - 18, 0, x + 18, 0); g.addColorStop(0, '#a5a5a5'); g.addColorStop(1, '#5c5c5c');
+  ctx.fillStyle = g; ctx.fillRect(x - 18, y - 55, 36, 57);
+  // tinder på toppen
+  ctx.fillStyle = '#8a8a8a';
+  for (let k = 0; k < 4; k++) ctx.fillRect(x - 20 + k * 11, y - 64, 7, 10);
+  ctx.fillStyle = '#7a7a7a'; ctx.fillRect(x - 21, y - 56, 42, 5);
+  ctx.fillStyle = '#222'; ctx.fillRect(x - 3, y - 40, 6, 12); // skyteskår
+  // bueskytter
+  sirkel(x, y - 62, 7, antallBygget('laser') ? '#d81b60' : '#2e7d32'); sirkel(x, y - 64, 4, '#f2c9a0');
+  if (helt.tarnLiv[i] < TARN_MAKS) {
+    ctx.fillStyle = '#400'; ctx.fillRect(x - 18, y + 6, 36, 4);
+    ctx.fillStyle = '#bdbdbd'; ctx.fillRect(x - 18, y + 6, 36 * helt.tarnLiv[i] / TARN_MAKS, 4);
+  }
+  ctx.fillStyle = '#ffe9b0'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
+}
+
+function tegnPynt(p) {
+  const { x, y } = p;
+  if (p.type === 'blomster') {
+    ctx.fillStyle = '#5b3a1e'; ctx.beginPath(); ctx.ellipse(x, y, 16, 7, 0, 0, 7); ctx.fill();
+    const f = ['#ff5c8a', '#ffd54a', '#ffffff', '#b388ff', '#ff8a65'];
+    for (let k = 0; k < 7; k++) {
+      const bx = x - 11 + (k * 7) % 22, by = y - 3 - (k % 3) * 3;
+      ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(bx, y); ctx.lineTo(bx, by); ctx.stroke();
+      sirkel(bx, by, 3.5, f[k % 5]); sirkel(bx, by, 1.2, '#e09f3e');
+    }
+  }
+  if (p.type === 'fakkel') {
+    const glo = ctx.createRadialGradient(x, y - 30, 1, x, y - 30, 45);
+    glo.addColorStop(0, 'rgba(255,190,90,0.45)'); glo.addColorStop(1, 'rgba(255,150,50,0)');
+    sirkel(x, y - 30, 45, glo);
+    ctx.fillStyle = '#5b3a1e'; ctx.fillRect(x - 2, y - 26, 4, 28);
+    const h = 10 + Math.sin(tid * 0.4 + x) * 3;
+    ctx.fillStyle = '#ff6d00'; ctx.beginPath(); ctx.ellipse(x, y - 30, 5, h, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#ffe082'; ctx.beginPath(); ctx.ellipse(x, y - 28, 2.5, h * 0.5, 0, 0, 7); ctx.fill();
+  }
+  if (p.type === 'flagg') {
+    ctx.fillStyle = '#ccc'; ctx.fillRect(x - 1.5, y - 55, 3, 57);
+    ctx.fillStyle = '#c62828';
+    ctx.beginPath(); ctx.moveTo(x + 1.5, y - 55);
+    for (let k = 0; k <= 10; k++) ctx.lineTo(x + 1.5 + k * 3, y - 55 + Math.sin(tid * 0.15 + k * 0.6) * 2);
+    for (let k = 10; k >= 0; k--) ctx.lineTo(x + 1.5 + k * 3, y - 37 + Math.sin(tid * 0.15 + k * 0.6) * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffd54a'; ctx.font = 'bold 9px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('EVN', x + 17, y - 43 + Math.sin(tid * 0.15 + 3) * 2);
+  }
+  if (p.type === 'statue') {
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(x + 4, y + 2, 18, 6, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#7a7a7a'; ctx.fillRect(x - 15, y - 12, 30, 14);
+    kule(x, y - 26, 11, '#d0d0d0', '#707070');
+    kule(x, y - 42, 7, '#e0e0e0', '#808080');
+    ctx.fillStyle = '#bbb'; ctx.fillRect(x + 9, y - 52, 3, 30);
+  }
+}
+
+function hus(x, y, b, h, vegg, tak) {
+  ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x - b / 2 + 6, y - 4, b, 10);
+  ctx.fillStyle = vegg; ctx.fillRect(x - b / 2, y - h, b, h);
+  ctx.fillStyle = tak; ctx.beginPath(); ctx.moveTo(x - b / 2 - 8, y - h); ctx.lineTo(x, y - h - 28); ctx.lineTo(x + b / 2 + 8, y - h); ctx.fill();
+  ctx.fillStyle = '#3d2a17'; ctx.fillRect(x - 7, y - 20, 14, 20); // dør
+}
+
+function tegnBygning(id) {
+  const x = BASE_X + BYGGEPLASS[id].x, y = BASE_Y + BYGGEPLASS[id].y;
+  const niva = helt.bygget[id];
+  if (id === 'smie') {
+    hus(x, y, 64, 38, '#8d8d8d', '#5b3a1e');
+    ctx.fillStyle = '#555'; ctx.fillRect(x + 14, y - 80, 10, 30); // pipe
+    for (let i = 0; i < 3; i++) sirkel(x + 19 + Math.sin(tid * 0.05 + i) * 4, y - 88 - ((tid * 0.5 + i * 15) % 45), 5 + i, 'rgba(200,200,200,0.35)');
+    ctx.fillStyle = '#ff9800'; ctx.fillRect(x - 25, y - 28, 10, 8); // glødende vindu
+    ctx.fillStyle = '#333'; ctx.fillRect(x + 36, y - 12, 16, 8); ctx.fillRect(x + 40, y - 4, 8, 6); // ambolt
+  }
+  if (id === 'bronn') {
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(x + 5, y + 2, 30, 10, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#8f8f8f'; ctx.fillRect(x - 28, y - 22, 56, 22);
+    ctx.fillStyle = '#a8a8a8'; ctx.beginPath(); ctx.ellipse(x, y - 22, 28, 10, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#29b6f6'; ctx.beginPath(); ctx.ellipse(x, y - 22, 21, 6, 0, 0, 7); ctx.fill();
+    sirkel(x - 6 + Math.sin(tid * 0.1) * 5, y - 23, 2, 'rgba(255,255,255,0.8)');
+    ctx.fillStyle = '#5b3a1e'; ctx.fillRect(x - 26, y - 60, 5, 40); ctx.fillRect(x + 21, y - 60, 5, 40);
+    ctx.fillStyle = '#b3261e'; ctx.beginPath(); ctx.moveTo(x - 34, y - 58); ctx.lineTo(x, y - 76); ctx.lineTo(x + 34, y - 58); ctx.fill();
+  }
+  if (id === 'alkymist') {
+    hus(x, y, 60, 36, '#c8a97a', '#2e7d32');
+    ctx.fillStyle = '#7dff8a'; ctx.fillRect(x + 14, y - 28, 10, 8);
+    // drikkeflasker utenfor
+    for (let i = 0; i < Math.min(helt.drikker, 5); i++) {
+      sirkel(x - 40 + i * 9, y - 5, 4, '#e53935'); ctx.fillStyle = '#ddd'; ctx.fillRect(x - 41 + i * 9, y - 12, 2, 4);
+    }
+  }
+  if (id === 'magitarn') {
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x - 16, y - 4, 40, 10);
+    const h = 70 + niva * 10;
+    const g = ctx.createLinearGradient(x - 20, 0, x + 20, 0); g.addColorStop(0, '#5e4b8b'); g.addColorStop(1, '#2e2347');
+    ctx.fillStyle = g; ctx.fillRect(x - 20, y - h, 40, h);
+    ctx.fillStyle = '#4527a0'; ctx.beginPath(); ctx.moveTo(x - 26, y - h); ctx.lineTo(x, y - h - 34); ctx.lineTo(x + 26, y - h); ctx.fill();
+    const glo = ctx.createRadialGradient(x, y - h - 42, 1, x, y - h - 42, 16 + Math.sin(tid * 0.1) * 3);
+    glo.addColorStop(0, '#fff'); glo.addColorStop(0.4, '#c9a0ff'); glo.addColorStop(1, 'rgba(120,60,255,0)');
+    sirkel(x, y - h - 42, 20, glo);
+    ctx.fillStyle = '#ffd54a'; ctx.fillRect(x - 5, y - h + 15, 10, 12);
+    ctx.fillStyle = '#3d2a17'; ctx.fillRect(x - 7, y - 20, 14, 20);
+  }
+  if (id === 'skomaker') {
+    hus(x, y, 56, 34, '#b07d4f', '#8d3b2a');
+    ctx.font = '22px system-ui'; ctx.textAlign = 'center'; ctx.fillText('👢', x + 40, y - 30);
+  }
+  if (id === 'trippel') {
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(x + 4, y + 2, 22, 7, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#777'; ctx.fillRect(x - 18, y - 10, 36, 10);
+    for (let i = -1; i <= 1; i++) {
+      const hy = y - 30 - Math.abs(i) * -6 + Math.sin(tid * 0.08 + i) * 4;
+      ctx.fillStyle = ['#b388ff', '#e1bee7', '#7c4dff'][i + 1];
+      ctx.beginPath(); ctx.moveTo(x + i * 12, hy - 18); ctx.lineTo(x + i * 12 + 7, hy); ctx.lineTo(x + i * 12, hy + 14); ctx.lineTo(x + i * 12 - 7, hy); ctx.fill();
+    }
+  }
+  if (id === 'kanon') {
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(x + 5, y + 2, 32, 10, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#6b4423'; ctx.fillRect(x - 28, y - 18, 56, 18);
+    ctx.fillStyle = '#4a2e14'; ctx.fillRect(x - 28, y - 18, 56, 4);
+    ctx.save(); ctx.translate(x, y - 22); ctx.rotate(helt.kanonVinkel);
+    ctx.fillStyle = '#212121'; ctx.fillRect(-6, -8, 38, 16);
+    ctx.fillStyle = '#424242'; ctx.fillRect(28, -10, 6, 20);
+    ctx.restore();
+    kule(x - 16, y - 4, 7, '#8d6238', '#3e2a16'); kule(x + 16, y - 4, 7, '#8d6238', '#3e2a16');
+  }
+  if (id === 'tempel') {
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x - 30, y - 2, 66, 8);
+    ctx.fillStyle = '#e0e0e0'; ctx.fillRect(x - 32, y - 8, 64, 8);
+    for (let k = 0; k < 4; k++) { ctx.fillStyle = '#f5f5f5'; ctx.fillRect(x - 26 + k * 16, y - 44, 7, 36); }
+    ctx.fillStyle = '#eeeeee'; ctx.beginPath(); ctx.moveTo(x - 36, y - 44); ctx.lineTo(x, y - 66); ctx.lineTo(x + 36, y - 44); ctx.fill();
+    const puls = 1 + Math.sin(tid * 0.1) * 0.15;
+    ctx.font = Math.round(16 * puls) + 'px system-ui'; ctx.textAlign = 'center'; ctx.fillText('💚', x, y - 47);
+  }
+  // navneskilt med nivå
+  const b = BYGNINGER.find(b => b.id === id);
+  const tekst = b.navn + (b.priser.length > 1 ? ' ' + '⭐'.repeat(niva) : '');
+  ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x - ctx.measureText(tekst).width / 2 - 5, y + 6, ctx.measureText(tekst).width + 10, 17);
+  ctx.fillStyle = '#ffe9b0'; ctx.fillText(tekst, x, y + 19);
+}
+
+function tegnMynt(m) {
+  const b = Math.abs(Math.cos(m.tid / 10)) * 6 + 1;
+  const y = m.y + Math.sin(m.tid / 8) * 2;
+  skygge(m.x, m.y + 7, 5, 2);
+  ctx.beginPath(); ctx.ellipse(m.x, y, b, 7, 0, 0, 7); ctx.fillStyle = '#e0a800'; ctx.fill();
+  ctx.beginPath(); ctx.ellipse(m.x, y, b * 0.7, 5, 0, 0, 7); ctx.fillStyle = '#ffd54a'; ctx.fill();
+}
+
+function tegnLinje(x, y, b, verdi, maks, farge, tekst) {
+  ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(x, y, b, 20);
+  ctx.fillStyle = farge; ctx.fillRect(x + 2, y + 2, (b - 4) * Math.max(0, Math.min(1, verdi / maks)), 16);
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'left';
+  ctx.fillText(tekst, x + 8, y + 15);
+}
+
+function tegnPanel() {
+  tegnLinje(16, 16, 240, helt.liv, helt.maksLiv, '#e53935', '❤️ Liv ' + helt.liv + '/' + helt.maksLiv);
+  tegnLinje(16, 42, 240, helt.mana, helt.maksMana, '#7e57c2', VAAPENIKON[epoke().avstand] + ' Kraft ' + Math.floor(helt.mana));
+  tegnLinje(16, 68, 240, helt.xp, xpTilNesteNiva(), '#29b6f6', '⭐ Nivå ' + helt.niva + '  (' + helt.xp + '/' + xpTilNesteNiva() + ' XP)');
+  ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(16, 94, 240, 24);
+  ctx.fillStyle = '#ffd54a'; ctx.font = 'bold 15px system-ui'; ctx.textAlign = 'left';
+  ctx.fillText('💰 ' + helt.penger + '   🧪 ' + helt.drikker + '   ' + VERDENSIKON[helt.verden] + ' Bølge ' + bolge, 24, 111);
+  if (antallBygget('mur')) tegnLinje(16, 122, 240, helt.murLiv, murMaks(), '#9e9e9e', '🧱 Mur ' + helt.murLiv + '/' + murMaks() + (helt.murLiv === 0 ? '  KNUST!' : ''));
+  ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '13px system-ui';
+  if (!erTouch) ctx.fillText('Piler/WASD: gå   Mellomrom: ' + VAAPENNAVN[epoke().naer] + '   E/klikk: ' + VAAPENNAVN[epoke().avstand] + (antallBygget('pistol') ? '   F/høyreklikk: pistol' : '') + '   Q: livsdrikk   B: basen', canvas.width - 16, canvas.height - 16);
+}
+
+const logoBilde = new Image();
+logoBilde.src = 'ikoner/logo.png';
+function tegnMeny(tittel, linjer) {
+  ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (tilstand === 'start' && logoBilde.complete && logoBilde.naturalWidth) {
+    // EVN Studio-logo på et hvitt kort øverst
+    const h = Math.min(90, canvas.height * 0.17), b = h * logoBilde.naturalWidth / logoBilde.naturalHeight;
+    const kx = canvas.width / 2 - b / 2 - 14, ky = 12;
+    ctx.fillStyle = '#ffffff'; ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(kx, ky, b + 28, h + 16, 12); else ctx.rect(kx, ky, b + 28, h + 16);
+    ctx.fill();
+    ctx.drawImage(logoBilde, kx + 14, ky + 8, b, h);
+  }
+  ctx.textAlign = 'center'; ctx.fillStyle = '#ffd54a'; ctx.font = 'bold ' + Math.min(44, canvas.width / 11) + 'px system-ui';
+  ctx.fillText(tittel, canvas.width / 2, canvas.height / 2 - 90);
+  ctx.fillStyle = '#fff'; ctx.font = Math.min(20, canvas.width / 24) + 'px system-ui';
+  linjer.forEach((l, i) => ctx.fillText(l, canvas.width / 2, canvas.height / 2 - 30 + i * 32));
+}
+
+// Pil på kanten av skjermen som viser vei til portalen
+function tegnPortalPil() {
+  if (!(helt.verden < SISTE_VERDEN && helt.portalApen)) return;
+  const sx = (PORTAL.x - kamera.x) * zoom, sy = (PORTAL.y - kamera.y) * zoom;
+  if (sx > 30 && sx < canvas.width - 30 && sy > 30 && sy < canvas.height - 30) return;
+  const cx = canvas.width / 2, cy = canvas.height / 2, v = Math.atan2(sy - cy, sx - cx);
+  const px = Math.max(50, Math.min(canvas.width - 50, sx)), py = Math.max(150, Math.min(canvas.height - 50, sy));
+  ctx.save(); ctx.translate(px, py); ctx.rotate(v);
+  ctx.fillStyle = '#e040fb'; ctx.beginPath(); ctx.moveTo(22, 0); ctx.lineTo(-10, -14); ctx.lineTo(-4, 0); ctx.lineTo(-10, 14); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
+  ctx.fillText('🌀 Portal', px - Math.cos(v) * 30, py - Math.sin(v) * 30 + 4);
+}
+
+function tegnSikte() {
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(mus.x, mus.y, 12, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(mus.x - 18, mus.y); ctx.lineTo(mus.x - 6, mus.y);
+  ctx.moveTo(mus.x + 6, mus.y); ctx.lineTo(mus.x + 18, mus.y);
+  ctx.moveTo(mus.x, mus.y - 18); ctx.lineTo(mus.x, mus.y - 6);
+  ctx.moveTo(mus.x, mus.y + 6); ctx.lineTo(mus.x, mus.y + 18);
+  ctx.stroke();
+  sirkel(mus.x, mus.y, 2, '#ff4040');
+}
+
+function tegn() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  const rx = risting ? (Math.random() - 0.5) * risting : 0, ry = risting ? (Math.random() - 0.5) * risting : 0;
+  ctx.scale(zoom, zoom);
+  ctx.translate(-kamera.x + rx, -kamera.y + ry);
+  ctx.drawImage(bakke, 0, 0);
+  tegnBaseBakke();
+  for (const m of mynter) tegnMynt(m);
+  // tegn figurer sortert etter y, så de som står lengst ned er foran
+  const figurer = fiender.slice();
+  figurer.push({ erHelt: true, y: helt.y });
+  for (const id in helt.bygget) if (BYGGEPLASS[id]) figurer.push({ erBygning: id, y: BASE_Y + BYGGEPLASS[id].y });
+  for (let i = 0; i < Math.min(antallBygget('vakttarn'), 4); i++) figurer.push({ erTarn: i, y: tarnPlass(i).y });
+  for (const p of helt.pynt) figurer.push({ erPynt: p, y: p.y });
+  figurer.sort((a, b) => a.y - b.y);
+  for (const f of figurer) {
+    if (f.erHelt) tegnHelt();
+    else if (f.erBygning) tegnBygning(f.erBygning);
+    else if (f.erTarn !== undefined) tegnTarn(f.erTarn);
+    else if (f.erPynt) tegnPynt(f.erPynt);
+    else tegnFiende(f);
+  }
+  for (const pil of piler) {
+    const v = Math.atan2(pil.vy, pil.vx);
+    if (pil.kule) { sirkel(pil.x, pil.y, 4, '#212121'); sirkel(pil.x - 1, pil.y - 1, 1.5, '#9e9e9e'); continue; }
+    if (pil.laser) {
+      ctx.strokeStyle = pil.farge || 'rgba(255,64,129,0.9)'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(pil.x - pil.vx * 2, pil.y - pil.vy * 2); ctx.lineTo(pil.x, pil.y); ctx.stroke();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+      continue;
+    }
+    ctx.save(); ctx.translate(pil.x, pil.y); ctx.rotate(v);
+    ctx.fillStyle = '#6b4423'; ctx.fillRect(-12, -1, 18, 2);
+    ctx.fillStyle = '#ccc'; ctx.beginPath(); ctx.moveTo(6, -3); ctx.lineTo(11, 0); ctx.lineTo(6, 3); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillRect(-14, -3, 4, 6);
+    ctx.restore();
+  }
+  for (const k of kanonkuler) { skygge(k.x, k.y + 10, 6, 3); kule(k.x, k.y, 7, '#757575', '#111'); }
+  for (const l of lyn) tegnLyn(l);
+  if (antallBygget('drage')) tegnDrage();
+  for (const p of partikler) { ctx.globalAlpha = Math.min(1, p.liv / 15); sirkel(p.x, p.y, p.r, p.farge); }
+  ctx.globalAlpha = 1;
+  for (const k of kuler) {
+    if (k.type === 'slynge') { skygge(k.x, k.y + 8, 5, 2); kule(k.x, k.y, 5, '#bdbdbd', '#616161'); continue; }
+    if (k.type === 'bue') {
+      ctx.save(); ctx.translate(k.x, k.y); ctx.rotate(Math.atan2(k.vy, k.vx));
+      ctx.fillStyle = '#8d6238'; ctx.fillRect(-14, -1, 22, 2);
+      ctx.fillStyle = '#cfa968'; ctx.beginPath(); ctx.moveTo(8, -3); ctx.lineTo(13, 0); ctx.lineTo(8, 3); ctx.fill();
+      ctx.fillStyle = '#e53935'; ctx.fillRect(-16, -3, 4, 6);
+      ctx.restore(); continue;
+    }
+    const g = ctx.createRadialGradient(k.x, k.y, 1, k.x, k.y, 16);
+    g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.3, 'rgba(200,150,255,0.9)'); g.addColorStop(1, 'rgba(120,60,255,0)');
+    sirkel(k.x, k.y, 16, g);
+  }
+  for (const t of traer) tegnTre(t);
+  for (const t of tekster) {
+    ctx.globalAlpha = Math.min(1, t.tid / 20);
+    ctx.font = 'bold ' + t.storrelse + 'px system-ui'; ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillText(t.tekst, t.x + 2, t.y + 2);
+    ctx.fillStyle = t.farge; ctx.fillText(t.tekst, t.x, t.y);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+  // mørke kanter, som i en skog
+  const v = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) * 0.35,
+                                     canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.75);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, epoke().vignett);
+  ctx.fillStyle = v; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  tegnPanel();
+  if (tilstand === 'spill') tegnPortalPil();
+  if (mus.brukt && !erTouch) tegnSikte();
+  if (erTouch && tilstand === 'spill') tegnMobilKontroller();
+
+  if (tilstand === 'start') tegnMeny(VERDENSNAVN[helt.verden], [
+    ...(helt.niva > 1 || helt.verden > 1 ? ['💾 Fortsetter lagret spill: nivå ' + helt.niva] : []),
+    'Reis gjennom tiden – fra steinalderen til verdensrommet!',
+    'Piler eller WASD: gå   •   Mellomrom: slå ' + VAAPENIKON[epoke().naer],
+    'E eller klikk med musa: skyt ' + VAAPENIKON[epoke().avstand],
+    'B: åpne basen og bygg ting 🏰',
+    '📱 Mobil: dra fingeren for å gå, trykk ' + VAAPENIKON[epoke().naer] + ' og ' + VAAPENIKON[epoke().avstand],
+    'Trykk her for å starte'
+  ]);
+  if (tilstand === 'slutt') tegnMeny('💀 Du ble slått ut!', [
+    'Du kom til bølge ' + bolge + '. Du starter igjen på bølge ' + (helt.sjekkpunkt + 1),
+    'Du beholder nivå ' + helt.niva + ', ' + helt.penger + ' 💰 og alt i basen 🏰',
+    'Trykk her for å prøve igjen'
+  ]);
+}
+
+function lokke() {
+  if (tilstand === 'spill') oppdater();
+  tegn();
+  requestAnimationFrame(lokke);
+}
+// Ta vare på knappen «Start helt på nytt» (må trykkes to ganger)
+let slettTimer = null;
+document.getElementById('nyttSpillKnapp').onclick = () => {
+  const knapp = document.getElementById('nyttSpillKnapp');
+  if (!slettTimer) {
+    knapp.textContent = '⚠️ Trykk igjen for å slette alt';
+    slettTimer = setTimeout(() => { knapp.textContent = '🗑️ Start helt på nytt'; slettTimer = null; }, 3000);
+    return;
+  }
+  clearTimeout(slettTimer); slettTimer = null; knapp.textContent = '🗑️ Start helt på nytt';
+  slettLagring();
+  document.getElementById('base').style.display = 'none';
+  document.getElementById('baseKnapp').style.display = 'none';
+  helt = null; nyttSpill(); tilstand = 'start';
+};
+
+// Gjør spillet installerbart som app (virker når det ligger på en vanlig nettside)
+try {
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+} catch (e) {}
+
+helt = hentLagring(); // fortsett lagret spill hvis det finnes
+nyttSpill();
+lokke();
+</script>
+</body>
+</html>

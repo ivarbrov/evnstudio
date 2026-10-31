@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EVN Studio – spill</title>
+<meta name="description" content="Spill laget i EVN Studio.">
+<link rel="icon" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<style>
+  :root { --mork: #141a2a; --kort: #1d2438; --cyan: #00c6ff; --lilla: #7b2ff7; --tekst: #e8ecf5; --dempet: #9aa4bd; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font-family: system-ui, -apple-system, Segoe UI, sans-serif; color: var(--tekst);
+    background: radial-gradient(ellipse at top, #22305a 0%, var(--mork) 60%); }
+  header { text-align: center; padding: 48px 20px 24px; }
+  .logo { display: inline-block; background: #fff; border-radius: 18px; padding: 18px 26px; box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+  .logo img { display: block; height: 110px; width: auto; }
+  h1 { margin: 28px 0 6px; font-size: 30px; letter-spacing: 0.5px; }
+  .undertittel { margin: 0; color: var(--dempet); font-size: 17px; }
+  main { max-width: 960px; margin: 0 auto; padding: 20px 20px 60px; display: grid; gap: 22px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .spill { background: var(--kort); border-radius: 18px; overflow: hidden; text-decoration: none; color: inherit;
+    border: 2px solid transparent; transition: transform .15s, border-color .15s; display: flex; flex-direction: column; }
+  .spill:hover { transform: translateY(-4px); border-color: var(--cyan); }
+  .spill img { width: 100%; aspect-ratio: 55 / 39; object-fit: cover; display: block; }
+  .spill .innhold { padding: 16px 18px 20px; flex: 1; display: flex; flex-direction: column; }
+  .spill h2 { margin: 0 0 6px; font-size: 21px; }
+  .spill p { margin: 0 0 16px; color: var(--dempet); font-size: 15px; line-height: 1.45; flex: 1; }
+  .knapp { align-self: flex-start; padding: 10px 20px; border-radius: 10px; font-weight: 700; color: #fff;
+    background: linear-gradient(90deg, var(--cyan), var(--lilla)); }
+  .kommer { display: flex; align-items: center; justify-content: center; text-align: center; min-height: 260px;
+    border: 2px dashed #34405e; background: transparent; color: var(--dempet); }
+  .kommer:hover { transform: none; border-color: #34405e; }
+  .kommer p { flex: none; margin: 0; font-size: 17px; }
+  footer { text-align: center; color: var(--dempet); font-size: 13px; padding: 0 20px 30px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><img src="logo.png" alt="EVN Studio"></div>
+  <h1>Spill fra EVN Studio</h1>
+  <p class="undertittel">Velg et spill og trykk på det for å spille</p>
+</header>
+
+<main>
+  <!-- Hvert spill er ett kort. Kopier et kort for å legge til et nytt spill. -->
+  <a class="spill" href="spill/eventyrspill/">
+    <img src="spill/eventyrspill/forsidebilde.jpg" alt="Skjermbilde fra Evens Eventyrspill">
+    <div class="innhold">
+      <h2>⚔️ Evens Eventyrspill</h2>
+      <p>Reis gjennom tiden fra steinalderen til verdensrommet. Slåss mot monstre, bygg basen din og lås opp nye våpen.</p>
+      <span class="knapp">▶ Spill nå</span>
+    </div>
+  </a>
+
+  <div class="spill kommer">
+    <p>🎮 Flere spill kommer snart!</p>
+  </div>
+</main>
+
+<footer>
+  Tips: Åpne et spill i Safari eller Chrome og velg «Legg til på Hjem-skjerm» for å få det som app.<br>
+  © EVN Studio
+</footer>
+</body>
+</html>
