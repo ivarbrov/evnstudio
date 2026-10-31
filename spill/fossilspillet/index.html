@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>Fossilspillet v0.3 – EVN Studios</title>
+<title>Fossilspillet v0.4 – EVN Studios</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"Segoe UI",Roboto,sans-serif;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -44,6 +44,21 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
 #pad.show{display:grid}
 #pad button{font-size:28px;border-radius:16px;border:none;background:rgba(255,255,255,.7);color:#2b1700;touch-action:none}
 #pad button:active{background:#ffb703}
+#fakta{position:fixed;left:50%;bottom:64px;transform:translate(-50%,20px);width:min(600px,92vw);background:rgba(255,248,228,.97);color:#3b2200;border-radius:16px;padding:12px 40px 12px 16px;box-shadow:0 6px 0 rgba(0,0,0,.25);z-index:4;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s}
+#fakta.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#fakta b{display:block;font-size:17px;margin-bottom:4px}
+#fakta span{font-size:16px;line-height:1.4}
+#fakta button{position:absolute;top:8px;right:8px;border:none;background:none;font-size:20px;cursor:pointer;color:#3b2200}
+.profil{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;text-align:left;font-size:14px;background:rgba(255,255,255,.55);border-radius:10px;padding:8px 10px;margin:8px auto;max-width:460px;color:#2b1700}
+.profil dt{font-weight:800;white-space:nowrap}
+.profil dd{margin:0}
+#celebrate small{display:block;font-size:16px;margin-top:4px}
+.card details{width:100%;text-align:left;font-size:14px}
+.card summary{cursor:pointer;font-weight:800;padding:4px 0}
+.card ul{padding-left:18px;margin:4px 0}
+.card ul.clues{list-style:none;padding:0;text-align:left;font-size:14px;width:100%}
+.card ul.clues li{background:#fff4cf;border-radius:8px;padding:5px 8px;margin:4px 0}
+.card .gjett{font-weight:800;color:#8a4a00}
 #help{position:fixed;bottom:12px;left:12px;font-size:14px;background:rgba(0,0,0,.55);padding:6px 10px;border-radius:10px;pointer-events:none;z-index:2;max-width:60vw}
 </style>
 </head>
@@ -58,6 +73,7 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
   <a class="btn gray" id="evnAvslutt" href="../../" style="display:none;pointer-events:auto;text-decoration:none">✕ Avslutt</a>
 </div>
 <div id="msg"></div>
+<div id="fakta"><b id="fTitle"></b><span id="fText"></span><button id="fClose" aria-label="Lukk">✕</button></div>
 <div id="help">Piltaster/WASD: gå og grav • Hold ⬆️ inntil en vegg for å klatre</div>
 <div id="pad">
   <span></span><button data-d="up">⬆️</button><span></span>
@@ -67,15 +83,15 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
 <div class="overlay show" id="start">
   <div class="studio">EVN STUDIOS PRESENTERER</div>
   <h1>⛏️ Fossilspillet</h1>
-  <p>Grav deg ned gjennom jordlagene og let etter fossiler! 🦴<br>Når du har funnet hele skjelettet til et dyr, blir det <b>levende</b> og flytter inn i dyreparken din.<br><br>⌨️ Piltaster eller WASD: gå og grav<br>🧗 Hold pil opp inntil en vegg for å klatre<br>✨ Glitrende stein gjemmer et fossil!</p>
+  <p>Grav deg ned gjennom jordlagene og let etter fossiler! 🦴<br>Når du har funnet hele skjelettet til et dyr, blir det <b>levende</b> og flytter inn i dyreparken din.<br><br>⌨️ Piltaster eller WASD: gå og grav<br>🧗 Hold pil opp inntil en vegg for å klatre<br>✨ Glitrende stein gjemmer et fossil!<br>⏳ Jo dypere du graver, jo lenger tilbake i tiden kommer du!</p>
   <button class="btn bigbtn" id="startBtn">Start!</button>
-  <div class="ver">Versjon 0.3 • 8 dyr å vekke!</div>
+  <div class="ver">Versjon 0.4 • 8 dyr å vekke – og mye å lære!</div>
 </div>
 
 <div class="overlay" id="celebrate">
   <canvas id="cCanvas" width="560" height="300"></canvas>
   <h2 id="cTitle"></h2>
-  <p id="cText"></p>
+  <div id="cText" style="font-size:19px;color:#3b1700;font-weight:700;max-width:540px"></div>
   <div class="row">
     <button class="btn green" id="cHelper">🤝 Ta med som hjelper</button>
     <button class="btn" id="cPark">🏞️ Se dyreparken</button>
@@ -103,36 +119,119 @@ const W = 30, H = 100;          // bredde og dybde på fjellet (i ruter)
 const SKY = 2;                 // rad 0-1 er himmel, rad 2 er stien på toppen
 const EMPTY=0, DIRT=1, STONE=2, HARD=3, BED=4, SKYT=5;
 const HARDNESS = {1:1, 2:3, 3:5};   // hvor mange slag hver steintype tåler
-const SAVE_KEY = 'evn-fossilspillet-v03';
+const SAVE_KEY = 'evn-fossilspillet-v04', OLD_KEYS = ['evn-fossilspillet-v03'];
 const TEX = 36;                // oppløsning på fjell-teksturen per rute
 const FALL_FIRST = 120, FALL_FAST = 55, CLIMB_CD = 230;
 
 const ANIMALS = [
   { id:'ulv', navn:'Ulven', kort:'ulven', kraft:'snus', box:[-0.95,0.88,1.05], plass:'land', str:0.55,
-    deler:['hodeskallen','ribbeina','beina','halen'], dybde:[4,18],
+    deler:['hodeskallen','ribbeina','beina','halen'], dybde:[3,19],
     evne:'Snuser opp fossiler langt unna.' },
   { id:'love', navn:'Løven', kort:'løven', kraft:'fart', box:[-0.98,0.95,1.05], plass:'land', str:0.65,
-    deler:['hodeskallen','ribbeina','beina','halen'], dybde:[8,24],
+    deler:['hodeskallen','ribbeina','beina','halen'], dybde:[3,19],
     evne:'Løper dobbelt så fort og klatrer kjapt.' },
   { id:'elefant', navn:'Elefanten', kort:'elefanten', kraft:'stein', box:[-0.75,1.02,1.32], plass:'land', str:1.0,
-    deler:['hodeskallen','støttennene','ribbeina','beina','halen'], dybde:[16,34],
+    deler:['hodeskallen','støttennene','ribbeina','beina','halen'], dybde:[6,19],
     evne:'Knuser kampestein med ett slag.' },
   { id:'mammut', navn:'Mammuten', kort:'mammuten', kraft:'alstein', box:[-0.78,1.3,1.42], plass:'land', str:1.05,
-    deler:['hodeskallen','støttennene','ribbeina','beina','halen'], dybde:[26,46],
+    deler:['hodeskallen','støttennene','ribbeina','beina','halen'], dybde:[21,34],
     evne:'Knuser all stein med ett eneste slag.' },
   { id:'flyg', navn:'Flygeøglen', kort:'flygeøglen', kraft:'fly', box:[-0.8,0.66,1.15], plass:'luft', str:0.7,
-    deler:['hodeskallen','vingene','ribbeina','beina'], dybde:[38,58],
+    deler:['hodeskallen','vingene','ribbeina','beina'], dybde:[65,78],
     evne:'Lar deg fly opp uten å klatre, og du faller aldri.' },
   { id:'trex', navn:'T-rexen', kort:'T-rexen', kraft:'bred', box:[-1.42,1.0,1.25], plass:'land', str:1.1,
-    deler:['hodeskallen','ribbeina','armene','beina','halen'], dybde:[50,72],
+    deler:['hodeskallen','ribbeina','armene','beina','halen'], dybde:[51,62],
     evne:'Graver kjempebrede tunneler, tre ruter om gangen.' },
   { id:'langhals', navn:'Langhalsen', kort:'langhalsen', kraft:'lang', box:[-1.55,0.92,1.72], plass:'land', str:1.3,
-    deler:['hodeskallen','halsen','ribbeina','beina','halen'], dybde:[62,84],
+    deler:['hodeskallen','halsen','ribbeina','beina','halen'], dybde:[81,96],
     evne:'Graver to ruter langt om gangen.' },
   { id:'hval', navn:'Hvalen', kort:'hvalen', kraft:'ekko', box:[-1.62,1.0,0.9], plass:'sjo', str:0.9,
-    deler:['hodeskallen','ryggraden','ribbeina','luffene','halen'], dybde:[80,96],
+    deler:['hodeskallen','ryggraden','ribbeina','luffene','halen'], dybde:[37,48],
     evne:'Bruker ekkolodd og finner fossiler skikkelig langt unna.' }
 ];
+// =====================================================
+//  LÆRING: tidsaldre, ledetråder og faktakort
+//  Ledetrådene sier «dette dyret», så man kan gjette hvilket dyr det er.
+// =====================================================
+const ZONES = [
+  { fra:0,  ikon:'🌳', navn:'Nåtiden', tekst:'Her ligger dyr som lever i dag.' },
+  { fra:20, ikon:'❄️', navn:'Istiden', tekst:'For 2,6 millioner til 12 000 år siden var det mye kaldere. Is dekket nesten hele Norge.' },
+  { fra:36, ikon:'🌊', navn:'Urtidshavet', tekst:'For rundt 40 millioner år siden var det hav mange steder som i dag er land. Her svømte tidlige hvaler.' },
+  { fra:50, ikon:'☄️', navn:'Slutten av krittiden', tekst:'For rundt 66 millioner år siden. Like etter traff en stor asteroide jorda, og dinosaurene døde ut.' },
+  { fra:64, ikon:'🦴', navn:'Krittiden', tekst:'For rundt 85 millioner år siden. Flygeøgler seilte over havet og fanget fisk.' },
+  { fra:80, ikon:'🌿', navn:'Juratiden', tekst:'For rundt 150 millioner år siden. Nå er du helt nede blant de aller største dinosaurene!' }
+];
+function zoneAt(d){ let z=0; ZONES.forEach((Z,i)=>{ if(d>=Z.fra) z=i; }); return z; }
+const LAER = {
+  ulv:{ fakta:[
+    'Dette dyret lever i flokk, og flokken jakter sammen.',
+    'Dette dyret kan hyle så høyt at andre i flokken hører det flere kilometer unna.',
+    'Dette dyret lever i skogene i Norge i dag. Det levde også her i istiden.',
+    'Alle hunder stammer fra dette dyret!'],
+    levde:'I dag, og også i istiden', hvor:'Europa, Asia og Nord-Amerika, også i Norge', str:'30–60 kg', mat:'Elg, hjort og rådyr' },
+  love:{ fakta:[
+    'Brølet til dette dyret kan høres opptil 8 kilometer unna.',
+    'Dette er det eneste kattedyret som lever i flokk.',
+    'I flokken er det hunnene som gjør det meste av jaktingen.',
+    'I istiden levde en slektning av dette dyret, huleløven, også i Europa.'],
+    levde:'I dag', hvor:'Afrika, og en liten gruppe i India', str:'Hannen veier rundt 190 kg', mat:'Sebraer, gnuer og antiloper' },
+  elefant:{ fakta:[
+    'Dette er det største dyret som lever på land i dag.',
+    'Dette dyret kan spise rundt 150 kg planter på én dag.',
+    'Snabelen til dette dyret har titusenvis av muskler, men ikke ett eneste bein.',
+    'Støttennene til dette dyret er egentlig veldig lange tenner.',
+    'Mammuten var i nær slekt med dette dyret.'],
+    levde:'I dag', hvor:'Afrika og Asia', str:'Opptil 6 tonn', mat:'Gress, blader, bark og frukt' },
+  mammut:{ fakta:[
+    'Dette dyret hadde tykk, lang pels for å holde varmen i istiden.',
+    'Støttennene til dette dyret kunne bli opptil 4 meter lange.',
+    'Noen av disse dyrene er funnet frosset i bakken i Sibir, med hår og hud.',
+    'De siste av disse dyrene levde på en øy i Nordishavet for rundt 4000 år siden. Da var pyramidene i Egypt allerede bygget!',
+    'Dette dyret var i slekt med elefantene som lever i dag.'],
+    levde:'Istiden, til for rundt 4000 år siden', hvor:'Europa, Asia og Nord-Amerika', str:'Omtrent like stor som en afrikansk elefant', mat:'Gress og urter' },
+  flyg:{ fakta:[
+    'Dette dyret var ikke en dinosaur, men en nær slektning av dem.',
+    'Dette dyret var blant de første dyrene med ryggrad som kunne fly, lenge før fuglene.',
+    'Vingene til dette dyret var hud som var spent ut fra én superlang finger.',
+    'Den største arten av dette dyret hadde vinger på over 10 meter, like bredt som et lite fly.'],
+    levde:'Krittiden, for rundt 85 millioner år siden', hvor:'Over havet i Nord-Amerika', str:'Vingespenn på 6–7 meter', mat:'Fisk' },
+  trex:{ fakta:[
+    'Dette dyret levde for 68–66 millioner år siden, helt på slutten av dinosaurenes tid.',
+    'Tennene til dette dyret kunne bli 30 cm lange når man regner med roten.',
+    'Dette dyret hadde det kraftigste bittet av alle dyr vi vet om som har levd på land.',
+    'Armene til dette dyret var bare rundt 1 meter lange, men veldig sterke.',
+    'Fuglene i hagen din er i slekt med dette dyret!'],
+    levde:'Slutten av krittiden, for 68–66 millioner år siden', hvor:'Nord-Amerika', str:'Rundt 12 meter lang og 8 tonn tung', mat:'Kjøtt, for eksempel andre dinosaurer' },
+  langhals:{ fakta:[
+    'Dette dyret levde for rundt 150 millioner år siden, i juratiden.',
+    'Dette dyret kunne løfte hodet rundt 12 meter opp, høyere enn et hus med tre etasjer.',
+    'Dette dyret spiste bare planter, og måtte spise enormt mye hver dag.',
+    'Mange av beina i ryggen til dette dyret var fylt med luft, så kroppen ble lettere.',
+    'Noen av disse dyrene var de største dyrene som noen gang har gått på land.'],
+    levde:'Juratiden, for rundt 150 millioner år siden', hvor:'Nord-Amerika', str:'Over 20 meter lang og over 30 tonn tung', mat:'Blader fra høye trær' },
+  hval:{ fakta:[
+    'Dette dyret er et pattedyr og må opp til overflaten for å puste luft.',
+    'For rundt 50 millioner år siden gikk forfedrene til dette dyret på land, på fire bein!',
+    'I luffen til dette dyret finnes det fingerbein, akkurat som i hånden din.',
+    'Én art av dette dyret er det største dyret som noen gang har levd, større enn alle dinosaurene!',
+    'Fossiler av dette dyret er funnet i ørkener og på fjell, fordi det en gang var hav der.'],
+    levde:'Fra rundt 50 millioner år siden til i dag', hvor:'Alle verdenshavene', str:'Blåhvalen blir opptil 30 meter lang', mat:'Krill og fisk' }
+};
+const FIRST_FOSSIL_FACT='Et fossil er rester av et dyr som levde for lenge siden. Beinet ble dekket av sand og slam, og over veldig lang tid ble det til stein.';
+function cluesFor(ai){ const n=found[ai].filter(Boolean).length; return LAER[ANIMALS[ai].id].fakta.slice(0,n); }
+function cap(t){ return t.charAt(0).toUpperCase()+t.slice(1); }
+function esc(t){ return String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function profilHTML(ai){ const L=LAER[ANIMALS[ai].id];
+  return `<dl class="profil"><dt>⏳ Levde</dt><dd>${esc(L.levde)}</dd><dt>🌍 Hvor</dt><dd>${esc(L.hvor)}</dd><dt>📏 Størrelse</dt><dd>${esc(L.str)}</dd><dt>🍽️ Mat</dt><dd>${esc(L.mat)}</dd></dl>`; }
+
+// faktaboks nederst på skjermen
+let factTimer=null;
+function showFact(title,text,ms=10000){
+  const b=document.getElementById('fakta');
+  document.getElementById('fTitle').textContent=title; document.getElementById('fText').textContent=text;
+  b.classList.add('show'); clearTimeout(factTimer); factTimer=setTimeout(()=>b.classList.remove('show'),ms);
+}
+
 function hasPower(k){ return helper>=0 && ANIMALS[helper].kraft===k; }
 function fitAnimal(ai,bx,bw,bh){ const b=ANIMALS[ai].box; const sc=Math.min(bh/b[2], bw/(b[1]-b[0])); return [bx+bw/2-(b[0]+b[1])/2*sc, sc]; }
 
@@ -199,6 +298,17 @@ function newWorld(){
   helper = -1;
   px = Math.floor(W/2); py = SKY; face = 1;
   resetDrawPos();
+}
+// legger ufunne fossilbiter i riktig tidsalder (brukes når en eldre lagring lastes)
+function placeMissingFossils(clear){
+  if(clear) fossils={};
+  ANIMALS.forEach((a,ai)=>a.deler.forEach((_,pi)=>{
+    if(found[ai][pi]) return;
+    for(let tries=0;tries<800;tries++){
+      const x=rnd(1,W-2), y=rnd(a.dybde[0]+SKY,a.dybde[1]+SKY), i=idx(x,y), t=grid[i];
+      if(t!==EMPTY && t!==BED && !fossils[i]){ fossils[i]={a:ai,p:pi}; return; }
+    }
+  }));
 }
 function resetDrawPos(){ pdx=px; pdy=py; hx=px; hy=py; trail=[{x:px,y:py}]; falling=false; fallDist=0; }
 
@@ -283,13 +393,16 @@ function save(){
 }
 function load(){
   try{
-    const s = JSON.parse(localStorage.getItem(SAVE_KEY));
+    let s = JSON.parse(localStorage.getItem(SAVE_KEY)), migrate=false;
+    if(!s){ for(const k of OLD_KEYS){ const o=JSON.parse(localStorage.getItem(k)); if(o){ s=o; migrate=true; break; } } }
     if(!s||!s.g||s.g.length!==W*H) return false;
     grid = new Uint8Array(W*H); for(let i=0;i<W*H;i++) grid[i]=+s.g[i];
     dmg = new Float32Array(W*H);
     fossils = {}; s.fos.forEach(f=>fossils[f[0]]={a:f[1],p:f[2]});
     found=s.found; alive=s.alive; helper=s.helper; px=s.px; py=s.py; face=1;
+    if(found.length!==ANIMALS.length || found.some((f,i)=>f.length!==ANIMALS[i].deler.length)) return false;
     resetDrawPos();
+    if(migrate){ placeMissingFossils(true); save(); }
     return true;
   }catch(e){ return false; }
 }
@@ -760,8 +873,13 @@ function collect(ai,pi,x,y){
   found[ai][pi]=true;
   const n=found[ai].filter(Boolean).length;
   stars(x,y); sound('find');
-  msg(`🦴 Du fant ${a.deler[pi]} til ${a.kort}! (${n}/${a.deler.length})`, 2600);
-  if(n===a.deler.length && !alive[ai]){ alive[ai]=true; setTimeout(()=>celebrate(ai),900); }
+  const first = found.flat().filter(Boolean).length===1;
+  if(n===a.deler.length && !alive[ai]){
+    alive[ai]=true; msg(`🦴 Du fant ${a.deler[pi]}! Skjelettet er komplett!`,2400); setTimeout(()=>celebrate(ai),900);
+  } else {
+    const clue=LAER[a.id].fakta[n-1];
+    showFact(`🦴 Du fant ${a.deler[pi]}! (${n} av ${a.deler.length} biter av et ukjent dyr)`, first ? FIRST_FOSSIL_FACT+' 💡 Ledetråd: '+clue : '💡 Ledetråd: '+clue);
+  }
   updateHUD(); save();
 }
 
@@ -797,7 +915,8 @@ function celebrate(ai){
   const a=ANIMALS[ai]; celebrating=ai; paused=true; heldDir=null;
   sound('alive');
   document.getElementById('cTitle').textContent=`🎉 ${a.navn.toUpperCase()} ER LEVENDE! 🎉`;
-  document.getElementById('cText').textContent=`Du fant hele skjelettet, og nå lever ${a.kort} igjen! Som hjelper kan den: ${a.evne}`;
+  document.getElementById('cText').innerHTML=`Du fant hele skjelettet, og nå lever ${esc(a.kort)} igjen!`+profilHTML(ai)+`<small>🤝 Som hjelper: ${esc(a.evne)}</small>`;
+  document.getElementById('fakta').classList.remove('show');
   show('celebrate'); celStart=performance.now(); cancelAnimationFrame(celRAF); celRAF=requestAnimationFrame(celLoop);
 }
 function celLoop(now){
@@ -831,7 +950,7 @@ function openPark(){
     if(a.plass==='sjo'){ p.min=720; p.max=820; p.x=770; p.y=300; p.speed=18; }
     return p; }).filter(Boolean);
   const cards=document.getElementById('cards'); cards.innerHTML='';
-  ANIMALS.forEach((a,i)=>{
+  ANIMALS.map((a,i)=>i).sort((x,y)=>ANIMALS[x].dybde[0]-ANIMALS[y].dybde[0]).forEach(i=>{ const a=ANIMALS[i];
     const c=document.createElement('div'); c.className='card';
     const n=found[i].filter(Boolean).length;
     const cvs=document.createElement('canvas'); cvs.width=492; cvs.height=276; c.appendChild(cvs);
@@ -840,17 +959,20 @@ function openPark(){
     if(alive[i]) drawAnimal(cc,i,fx,252,s,0.6); else drawSkeleton(cc,i,fx,252,s,found[i]);
     const info=document.createElement('div'); info.style.display='contents';
     if(alive[i]){
-      info.innerHTML=`<h3>${a.navn}</h3><div class="ab">${a.evne}</div>`; c.appendChild(info);
+      info.innerHTML=`<h3>${a.navn}</h3>`+profilHTML(i)+`<details><summary>📖 Visste du? (${LAER[a.id].fakta.length} fakta)</summary><ul>${LAER[a.id].fakta.map(f=>'<li>'+esc(cap(f.replace(/dette dyret/gi,a.kort)))+'</li>').join('')}</ul></details><div class="ab">🤝 ${esc(a.evne)}</div>`; c.appendChild(info);
       if(helper===i){ const m=document.createElement('div'); m.className='med'; m.textContent='✔ Er med deg nå'; c.appendChild(m);
         const b=document.createElement('button'); b.className='btn gray'; b.textContent='La den hvile i parken'; b.onclick=()=>{helper=-1;save();updateHUD();openPark();}; c.appendChild(b); }
       else { const b=document.createElement('button'); b.className='btn green'; b.textContent='🤝 Ta med som hjelper'; b.onclick=()=>{helper=i;save();updateHUD();openPark();}; c.appendChild(b); }
     } else {
       const missing=a.deler.filter((_,p)=>!found[i][p]);
-      info.innerHTML=`<h3>Ukjent dyr ❓</h3><div class="ab">Fossiler funnet: ${n} av ${a.deler.length}<br><small>Mangler: ${missing.join(', ')}</small></div>`; c.appendChild(info);
+      const cl=cluesFor(i), z=ZONES[zoneAt(a.dybde[0])];
+      info.innerHTML=`<h3>Ukjent dyr ❓</h3><div class="ab">Fossiler funnet: ${n} av ${a.deler.length}<br><small>Ligger i: ${z.ikon} ${z.navn} • Mangler: ${missing.join(', ')}</small></div>`
+        + (cl.length ? `<ul class="clues">${cl.map(f=>'<li>💡 '+esc(f)+'</li>').join('')}</ul><div class="gjett">Hvilket dyr tror du det er? 🤔</div>` : `<div class="ab"><small>Finn en fossilbit for å få den første ledetråden!</small></div>`);
+      c.appendChild(info);
     }
     cards.appendChild(c);
   });
-  if(alive.every(Boolean)){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<div style="font-size:56px">🏆</div><h3>Alle dyrene lever!</h3><div class="ab">Du har vekket alle dyrene i fjellet. Flere dyr kommer i neste versjon!</div>'; cards.appendChild(c); }
+  if(alive.every(Boolean)){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<div style="font-size:56px">🏆</div><h3>Alle dyrene lever!</h3><div class="ab">Du har vekket alle dyrene i fjellet. Kan du huske hvilken tidsalder hvert dyr levde i?</div>'; cards.appendChild(c); }
   show('park'); cancelAnimationFrame(parkRAF); let lastT=performance.now();
   const step=(now)=>{ if(!document.getElementById('park').classList.contains('show')) return; const dt=Math.min(0.05,(now-lastT)/1000); lastT=now; drawPark(dt,now); parkRAF=requestAnimationFrame(step); };
   parkRAF=requestAnimationFrame(step);
@@ -1046,7 +1168,7 @@ function draw(now){
 // =====================================================
 //  SPILL-LØKKEN
 // =====================================================
-let last=performance.now();
+let last=performance.now(), curZone=-1;
 function loop(now){
   const dt=Math.min(0.05,(now-last)/1000); last=now;
   if(!paused){
@@ -1063,7 +1185,9 @@ function loop(now){
   particles.forEach(p=>{ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=(p.g!==undefined?p.g:(p.star?200:700))*dt; p.life-=dt; });
   particles=particles.filter(p=>p.life>0);
   saveTimer+=dt; if(dirty&&saveTimer>2){ save(); dirty=false; saveTimer=0; }
-  document.getElementById('pDepth').textContent=`📏 ${Math.max(0,py-SKY)} m`;
+  const dm=Math.max(0,py-SKY), zi=zoneAt(dm);
+  if(zi!==curZone){ if(curZone>=0 && zi>curZone) showFact(`${ZONES[zi].ikon} Du har gravd deg ned til ${ZONES[zi].navn}!`, ZONES[zi].tekst, 8000); curZone=zi; }
+  document.getElementById('pDepth').textContent=`📏 ${dm} m · ${ZONES[zi].ikon} ${ZONES[zi].navn}`;
   draw(now);
   requestAnimationFrame(loop);
 }
@@ -1107,6 +1231,7 @@ document.querySelectorAll('#pad button').forEach(b=>{
 });
 if('ontouchstart' in window || navigator.maxTouchPoints>0){ document.getElementById('pad').classList.add('show'); document.getElementById('help').textContent='Trykk der du vil gå og grave • Hold ⬆️ inntil en vegg for å klatre'; }
 
+document.getElementById('fClose').onclick=()=>document.getElementById('fakta').classList.remove('show');
 document.getElementById('startBtn').onclick=()=>{ sound('find'); hideAll(); };
 document.getElementById('parkBtn').onclick=()=>openPark();
 document.getElementById('parkBack').onclick=()=>hideAll();
