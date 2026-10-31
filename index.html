@@ -12,7 +12,6 @@
 <meta name="theme-color" content="#080c1a">
 <link rel="icon" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
-<link rel="preload" as="image" href="bilder/eventyr-hero.jpg">
 <link rel="stylesheet" href="fonter/fonter.css">
 <style>
   /* ===== Fargepalett: mørk marine med blå og lilla fra logoen ===== */
@@ -208,6 +207,23 @@
     .inn { opacity: 1; transform: none; }
     html { scroll-behavior: auto; }
   }
+
+  /* ===== Velg et spill (tre likeverdige kort øverst) ===== */
+  .velg { margin: 28px 0 18px; }
+  .velg h1 { font-family: var(--tittel); font-weight: 900; font-size: clamp(30px, 4vw, 44px); margin: 0 0 4px; letter-spacing: -.01em; }
+  .velg p { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+  .velg .gratis { color: var(--dempet); font-weight: 700; font-size: 15px; }
+  #spill .spill-liste { grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  @media (max-width: 980px) and (min-width: 681px) { #spill .spill-liste { grid-template-columns: repeat(3, 1fr); gap: 14px; } .spillkort .tekst { padding: 0 14px 16px; } .spillkort p { font-size: 14px; } }
+  @media (max-width: 680px) {
+    .velg { margin: 16px 0 12px; }
+    #spill .spill-liste { grid-template-columns: 1fr; gap: 12px; }
+    .spillkort { min-height: 0; }
+    .spillkort .bilde { width: 38%; }
+    .spillkort .tekst { padding: 12px 12px 12px 10px; gap: 5px; }
+    .spillkort p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .spillkort .knapp { min-height: 44px; }
+  }
 </style>
 </head>
 <body>
@@ -226,45 +242,17 @@
 
 <main class="bredde">
 
-  <!-- ===== Hovedattraksjon ===== -->
-  <section class="hero" aria-labelledby="hovedspill">
-    <img class="bakgrunn" src="bilder/eventyr-hero.jpg" alt="" fetchpriority="high">
-    <div class="innhold">
-      <div>
-        <div class="merker">
-          <span class="merke">⭐ Utvalgt spill</span>
-        </div>
-        <h1 id="hovedspill">Era <span>Defenders</span></h1>
-        <p>Forsvar basen og reis gjennom tiden – fra steinalderen helt til tidens ende. Slåss mot monstre, bygg og lås opp nye våpen.</p>
-        <a class="knapp stor" href="spill/eventyrspill/"><span class="trekant" aria-hidden="true"></span>SPILL NÅ</a>
-        <div class="under">Laget av barn. For barn. · Gratis · Ingen innlogging</div>
-      </div>
-      <div class="epoker">
-        <h2>7 tidsepoker å utforske</h2>
-        <ol>
-          <li><img src="bilder/eventyr-epoke1.jpg" alt="" loading="lazy">Steinalderen</li>
-          <li><img src="bilder/eventyr-epoke2.jpg" alt="" loading="lazy">Oldtiden</li>
-          <li><img src="bilder/eventyr-epoke3.jpg" alt="" loading="lazy">Monsterskogen</li>
-          <li><img src="bilder/eventyr-epoke4.jpg" alt="" loading="lazy">Piratskipet</li>
-          <li><img src="bilder/eventyr-epoke5.jpg" alt="" loading="lazy">Robotfabrikken</li>
-          <li><img src="bilder/eventyr-epoke6.jpg" alt="" loading="lazy">Romstasjonen</li>
-          <li><img src="bilder/eventyr-epoke7.jpg" alt="" loading="lazy">Tidsvirvelen</li>
-        </ol>
-      </div>
-    </div>
-  </section>
-
   <!-- ===== Spill ===== -->
   <section id="spill" aria-labelledby="spill-tittel">
-    <div class="seksjonstopp inn">
-      <h2 id="spill-tittel">Våre spill</h2>
-      <p>Trykk på et spill for å starte</p>
+    <div class="velg">
+      <h1 id="spill-tittel">Velg et spill</h1>
+      <p><span class="slagord"><b>Laget av barn.</b> For barn.</span> <span class="gratis">Gratis · Ingen innlogging</span></p>
     </div>
     <div class="spill-liste">
       <!-- Nytt spill? Kopier et spillkort og bytt lenke, bilde, navn, stikkord og tekst. -->
-      <a class="spillkort inn" href="spill/eventyrspill/">
+      <a class="spillkort" href="spill/eventyrspill/">
         <div class="bilde">
-          <img src="bilder/eventyr-kort.jpg" alt="Skjermbilde fra Era Defenders: piratskipet med basen og Piratkapteinen" loading="lazy">
+          <img src="bilder/eventyr-kort.jpg" alt="Skjermbilde fra Era Defenders: piratskipet med basen og Piratkapteinen">
           <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
@@ -275,9 +263,9 @@
         </div>
       </a>
 
-      <a class="spillkort inn" href="spill/morkeskogen/">
+      <a class="spillkort" href="spill/morkeskogen/">
         <div class="bilde">
-          <img src="bilder/morkeskogen.jpg" alt="Skjermbilde fra Mørkeskogen: spilleren ved bålet i skogen" loading="lazy">
+          <img src="bilder/morkeskogen.jpg" alt="Skjermbilde fra Mørkeskogen: spilleren ved bålet i skogen">
           <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
@@ -288,9 +276,9 @@
         </div>
       </a>
 
-      <a class="spillkort inn" href="spill/fossilspillet/">
+      <a class="spillkort" href="spill/fossilspillet/">
         <div class="bilde">
-          <img src="bilder/fossilspillet.jpg" alt="Skjermbilde fra Fossil Zoo: graveren i en tunnel med mammuten som hjelper og glitrende fossiler i jorda" loading="lazy">
+          <img src="bilder/fossilspillet.jpg" alt="Skjermbilde fra Fossil Zoo: graveren i en tunnel med mammuten som hjelper og glitrende fossiler i jorda">
           <span class="merke klar">Nytt</span>
           <span class="avspill" aria-hidden="true"></span>
         </div>
