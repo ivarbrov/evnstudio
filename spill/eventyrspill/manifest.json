@@ -1,7 +1,7 @@
 {
-  "name": "Evens Eventyrspill – EVN Studio",
-  "short_name": "Eventyrspill",
-  "description": "Reis gjennom tiden fra steinalderen til verdensrommet, slåss mot monstre og bygg basen din.",
+  "name": "Era Defenders – EVN Studio",
+  "short_name": "Era Defenders",
+  "description": "Forsvar basen og reis gjennom tiden – fra steinalderen helt til tidens ende.",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
@@ -10,8 +10,21 @@
   "theme_color": "#141a2a",
   "lang": "no",
   "icons": [
-    { "src": "ikoner/ikon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "ikoner/ikon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "ikoner/ikon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "ikoner/ikon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "ikoner/ikon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "ikoner/ikon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

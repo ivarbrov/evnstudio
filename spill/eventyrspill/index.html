@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Evens Eventyrspill – v0.17</title>
+<title>Era Defenders – v0.18</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="ikoner/ikon-192.png">
 <link rel="apple-touch-icon" href="ikoner/apple-touch-icon.png">
@@ -19,7 +19,7 @@
     background: #6b4a2b; color: #ffe9b0; border: 3px solid #3d2a17; border-radius: 10px; cursor: pointer; display: none; }
   #avsluttKnapp { position: fixed; top: 16px; right: 16px; padding: 10px 14px; font-size: 15px; font-weight: bold;
     background: rgba(0,0,0,0.6); color: #fff; border: 2px solid rgba(255,255,255,0.4); border-radius: 10px;
-    text-decoration: none; display: none; z-index: 5; }
+    text-decoration: none; display: none; z-index: 25; }
   #avsluttKnapp:hover { background: rgba(0,0,0,0.8); }
   #baseKnapp:hover { background: #7d5833; transform: translateX(-50%); }
   #base { position: fixed; inset: 0; display: none; background: rgba(15,10,5,0.88); color: #fff; overflow: auto; }
@@ -50,14 +50,67 @@
   }
   #nyttSpillKnapp { margin-top: 24px; padding: 8px 14px; font-size: 13px; border-radius: 8px; border: 2px solid #7a2a2a;
     background: transparent; color: #ff8a80; cursor: pointer; }
+  /* Start- og sluttskjerm (E1, E2) */
+  #meny { position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 16px;
+    background: rgba(0,0,0,0.62); color: #fff; overflow-y: auto; }
+  #meny .boks { width: min(460px, 100%); background: rgba(20,26,40,0.92); border: 2px solid rgba(255,255,255,0.18); border-radius: 18px;
+    padding: 20px 22px; display: grid; gap: 12px; text-align: center; margin: auto; }
+  #meny img { height: 56px; justify-self: center; background: #fff; border-radius: 10px; padding: 6px 10px; }
+  #meny h1 { margin: 0; font-size: 30px; color: #ffd54a; line-height: 1.15; }
+  #meny .epoke { font-size: 17px; color: #ffe9b0; font-weight: bold; }
+  #meny .maal { font-size: 19px; font-weight: bold; }
+  #meny ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 16px; color: #e8ecf5; }
+  #meny .lagret { font-size: 14px; color: #9fe6a0; }
+  #meny .start { font-size: 26px; font-weight: bold; padding: 16px; border-radius: 14px; border: 0; cursor: pointer;
+    background: linear-gradient(90deg, #22c3ff, #7b4dff); color: #fff; box-shadow: 0 6px 20px rgba(60,120,255,0.45); }
+  #meny .start:focus-visible, #evnSporsmal button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+  html.mus .bare-touch, html.touch .bare-pc { display: none !important; }
+  @media (max-height: 500px) { #meny img { display: none !important; } #meny .boks { gap: 6px; padding: 12px 18px; }
+    #meny h1 { font-size: 22px; } #meny ul { font-size: 14px; gap: 2px; } #meny .maal { font-size: 16px; } #meny .start { padding: 10px; font-size: 22px; } }
+  /* Spørsmål før man avslutter (E3) */
+  #evnSporsmal { position: fixed; inset: 0; z-index: 30; display: none; place-items: center; background: rgba(0,0,0,0.7); padding: 16px; }
+  #evnSporsmal .boks { background: #1c2436; border: 2px solid rgba(255,255,255,0.2); border-radius: 16px; padding: 22px; max-width: 340px;
+    display: grid; gap: 14px; text-align: center; color: #fff; font-size: 19px; font-weight: bold; }
+  #evnSporsmal button { font-size: 20px; font-weight: bold; padding: 13px; border-radius: 12px; cursor: pointer; }
+  #evnBli { background: #3a6fd8; color: #fff; border: 0; }
+  #evnGaa { background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.35); }
+  /* Mobil: Basen-knappen under livslinjene i stedet for oppå dem (E5) */
+  @media (max-width: 700px) { #baseKnapp { top: 128px; left: 16px; transform: none; padding: 8px 12px; font-size: 15px; }
+    #baseKnapp:hover { transform: none; } }
   #tilbake { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(420px, calc(100% - 32px));
     padding: 16px 22px; font-size: 20px; font-weight: bold; border-radius: 14px; border: 3px solid #1f3f80;
     background: #3a6fd8; color: #fff; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.6); z-index: 10; }
 </style>
 </head>
 <body>
+<script>
+(function(){var h=document.documentElement,t=function(x){h.classList.toggle('touch',x);h.classList.toggle('mus',!x);};
+try{t(matchMedia('(pointer: coarse)').matches);}catch(e){t(false);}
+addEventListener('touchstart',function(){t(true);},{passive:true,capture:true});
+addEventListener('keydown',function(){t(false);},true);})();
+</script>
 <canvas id="spill"></canvas>
-<button id="baseKnapp">🏰 Basen (B)</button>
+<button id="baseKnapp">🏰 Basen<span class="bare-pc"> (B)</span></button>
+<div id="meny"><div class="boks">
+  <img src="ikoner/logo.png" alt="EVN Studio">
+  <h1 id="menyTittel">Era Defenders</h1>
+  <div class="epoke" id="menyEpoke"></div>
+  <div class="lagret" id="menyLagret"></div>
+  <div class="maal" id="menyMaal">Slå monstrene, samle mynter og bygg basen din!</div>
+  <ul id="menyStyring">
+    <li class="bare-pc">⌨️ Gå: <b>W A S D</b> eller pilene</li>
+    <li class="bare-pc">⚔️ Slå: <b>mellomrom</b> · Skyt: <b>klikk</b> eller <b>E</b></li>
+    <li class="bare-pc">🏰 Basen: <b>B</b></li>
+    <li class="bare-touch">👆 Gå: dra med fingeren på venstre side</li>
+    <li class="bare-touch">⚔️ Slå og skyt: knappene nede til høyre</li>
+    <li class="bare-touch">🏰 Bygg: trykk på «Basen»-knappen</li>
+  </ul>
+  <button class="start" id="menyStart">▶ Start</button>
+</div></div>
+<div id="evnSporsmal" role="dialog" aria-modal="true"><div class="boks">
+  <div>Vil du avslutte og gå tilbake til forsiden? Spillet ditt er lagret.</div>
+  <button id="evnBli">Nei, spill videre</button><button id="evnGaa">Ja, avslutt</button>
+</div></div>
 <a id="avsluttKnapp" href="../../">✕ Avslutt</a>
 <div id="base"><div class="innhold">
   <h1>🏰 Basen din</h1>
@@ -87,7 +140,7 @@ const BYGNINGER = [
   { id: 'mur',     ikon: '🧱', navn: 'Steinmur',      tekst: 'Mur rundt basen. Fiendene må slå den ned for å komme inn. +100 murliv per nivå', laasesOpp: 1, priser: [50, 120, 250, 400] },
   { id: 'vakttarn',ikon: '🏹', navn: 'Vakttårn',      tekst: 'Tårn som skyter piler på fiender. Ett nytt tårn for hver oppgradering', laasesOpp: 2, priser: [40, 70, 110, 160] },
   { id: 'reparer', ikon: '🔧', navn: 'Reparer',       tekst: 'Fiks muren og tårnene etter at en boss har knust dem', laasesOpp: 1, priser: [25], kanKjopesMange: true },
-  { id: 'alkymist',ikon: '🧪', navn: 'Alkymist',      tekst: 'Kjøp en livsdrikk. Trykk Q for å drikke (+6 liv)', laasesOpp: 2, priser: [15], kanKjopesMange: true },
+  { id: 'alkymist',ikon: '🧪', navn: 'Alkymist',      tekst: 'Kjøp en livsdrikk (+6 liv). Drikk den med 🧪-knappen eller Q', laasesOpp: 2, priser: [15], kanKjopesMange: true },
   { id: 'magitarn',ikon: '🔮', navn: 'Magitårn',      tekst: 'Sterkere magi: +1 magiskade og +20 mana', laasesOpp: 2, priser: [30, 60, 100, 150, 210, 280, 360, 450, 550, 660] },
   { id: 'skomaker',ikon: '👢', navn: 'Skomaker',      tekst: 'Raskere støvler: helten løper fortere',   laasesOpp: 3, priser: [40, 90, 150] },
   { id: 'trippel', ikon: '✨', navn: 'Trippelmagi',   tekst: 'Magien skyter 3 kuler samtidig!',         laasesOpp: 5, priser: [150] },
@@ -638,7 +691,7 @@ window.addEventListener('keydown', e => {
     if (k === 'b') apneBase();
     if (k === 'q') drikk();
     if (k === 'f') skytPistol(helt.retning.x, helt.retning.y);
-  } else if (k === 'enter' || k === ' ') {
+  } else if ((k === 'enter' || k === ' ') && (tilstand === 'start' || tilstand === 'slutt') && !sporsmalApent()) {
     startSpill();
   }
 });
@@ -674,7 +727,7 @@ function skytPistol(rx, ry) {
 }
 
 // ===================== MOBIL / BERØRING =====================
-let erTouch = false;
+let erTouch = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })(); // berøringsskjerm? (oppdateres ved første trykk)
 const SPAK_RADIUS = 60;
 const spak = { aktiv: false, id: null, sx: 0, sy: 0, x: 0, y: 0 };
 const holdtKnapp = { sverd: false, magi: false, pistol: false };
@@ -746,7 +799,7 @@ function tegnMobilKontroller() {
     sirkel(spak.sx + (d ? dx / d * m : 0), spak.sy + (d ? dy / d * m : 0), 26, 'rgba(255,255,255,0.6)');
   } else {
     ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '14px system-ui'; ctx.textAlign = 'left';
-    ctx.fillText('👆 Dra med fingeren her for å gå', 20, canvas.height - 24);
+    ctx.fillText('👆 Dra her for å gå', 20, canvas.height - 130);
   }
   for (const k of mobilKnapper()) {
     const holdt = holdtKnapp[k.id];
@@ -2218,21 +2271,47 @@ function tegn() {
   if (mus.brukt && !erTouch) tegnSikte();
   if (erTouch && tilstand === 'spill') tegnMobilKontroller();
 
-  if (tilstand === 'start') tegnMeny(VERDENSNAVN[helt.verden], [
-    ...(helt.niva > 1 || helt.verden > 1 ? ['💾 Fortsetter lagret spill: nivå ' + helt.niva] : []),
-    'Reis gjennom tiden – fra steinalderen til verdensrommet!',
-    'Piler eller WASD: gå   •   Mellomrom: slå ' + VAAPENIKON[epoke().naer],
-    'E eller klikk med musa: skyt ' + VAAPENIKON[epoke().avstand],
-    'B: åpne basen og bygg ting 🏰',
-    '📱 Mobil: dra fingeren for å gå, trykk ' + VAAPENIKON[epoke().naer] + ' og ' + VAAPENIKON[epoke().avstand],
-    'Trykk her for å starte'
-  ]);
-  if (tilstand === 'slutt') tegnMeny('💀 Du ble slått ut!', [
-    'Du kom til bølge ' + bolge + '. Du starter igjen på bølge ' + (helt.sjekkpunkt + 1),
-    'Du beholder nivå ' + helt.niva + ', ' + helt.penger + ' 💰 og alt i basen 🏰',
-    'Trykk her for å prøve igjen'
-  ]);
+  oppdaterMeny();
 }
+
+// Start- og sluttskjerm som ekte knapper (fungerer likt på PC og mobil)
+let menyVist = '';
+function oppdaterMeny() {
+  const vis = tilstand === 'start' || tilstand === 'slutt' ? tilstand + helt.verden + helt.niva + bolge : '';
+  if (vis === menyVist) return;
+  menyVist = vis;
+  const m = document.getElementById('meny');
+  if (!vis) { m.style.display = 'none'; return; }
+  m.style.display = 'flex';
+  const start = tilstand === 'start';
+  document.getElementById('menyTittel').textContent = start ? 'Era Defenders' : '💀 Du ble slått ut!';
+  document.getElementById('menyEpoke').textContent = start ? VERDENSNAVN[helt.verden] : 'Du kom til bølge ' + bolge + '. Du starter igjen på bølge ' + (helt.sjekkpunkt + 1) + '.';
+  document.getElementById('menyLagret').textContent = start ? (helt.niva > 1 || helt.verden > 1 ? '💾 Fortsetter der du slapp: nivå ' + helt.niva : '')
+    : 'Du beholder nivå ' + helt.niva + ', ' + helt.penger + ' 💰 og alt i basen 🏰';
+  document.getElementById('menyMaal').textContent = start ? 'Slå monstrene, samle mynter og bygg basen din!' : 'Tips: Bygg i basen for å bli sterkere.';
+  document.getElementById('menyStyring').style.display = start ? '' : 'none';
+  document.getElementById('menyStart').textContent = start ? '▶ Start' : '▶ Prøv igjen';
+  document.querySelector('#meny img').style.display = start ? '' : 'none';
+}
+document.getElementById('meny').addEventListener('click', () => { if (tilstand === 'start' || tilstand === 'slutt') startSpill(); });
+document.getElementById('meny').addEventListener('touchstart', () => { erTouch = true; mus.brukt = false; }, { passive: true });
+
+// Avslutt spør først (spillet står stille så lenge spørsmålet vises)
+let foerSporsmal = null;
+function sporsmalApent() { return document.getElementById('evnSporsmal').style.display === 'grid'; }
+document.getElementById('avsluttKnapp').addEventListener('click', e => {
+  e.preventDefault();
+  lagre();
+  foerSporsmal = tilstand;
+  if (tilstand === 'spill') tilstand = 'pause';
+  document.getElementById('evnSporsmal').style.display = 'grid';
+  document.getElementById('evnBli').focus();
+});
+document.getElementById('evnBli').addEventListener('click', () => {
+  document.getElementById('evnSporsmal').style.display = 'none';
+  if (tilstand === 'pause' && foerSporsmal === 'spill') { for (const k in taster) taster[k] = false; tilstand = 'spill'; }
+});
+document.getElementById('evnGaa').addEventListener('click', () => { lagre(); location.href = '../../'; });
 
 function lokke() {
   if (tilstand === 'spill') oppdater();
@@ -2265,7 +2344,6 @@ try {
   if (location.pathname.indexOf('/spill/') !== -1) {
     const avslutt = document.getElementById('avsluttKnapp');
     avslutt.style.display = 'block';
-    avslutt.addEventListener('click', () => lagre()); // lagre før vi går tilbake til forsiden
   }
 } catch (e) {}
 
