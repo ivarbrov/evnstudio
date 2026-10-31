@@ -101,7 +101,7 @@
   .seksjonstopp p { margin: 0; color: var(--dempet); font-weight: 700; }
 
   /* ===== Spillkort ===== */
-  .spill-liste { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px; }
+  .spill-liste { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 26px; }
   .spillkort { position: relative; display: flex; flex-direction: column; border-radius: var(--radius); overflow: hidden;
     background: var(--flate); border: 1px solid var(--kant); transition: transform .25s, box-shadow .25s, border-color .25s; }
   .spillkort:hover { transform: translateY(-6px); border-color: rgba(25,195,255,.55); box-shadow: 0 26px 50px -14px rgba(25,195,255,.28); }
@@ -264,6 +264,20 @@
           <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill</span>
         </div>
       </a>
+
+      <a class="spillkort inn" href="spill/fossilspillet/" aria-label="Spill Fossilspillet">
+        <div class="bilde">
+          <img src="bilder/fossilspillet.jpg" alt="Skjermbilde fra Fossilspillet: graveren i en tunnel med mammuten som hjelper og glitrende fossiler i jorda" loading="lazy">
+          <span class="merke klar">Nytt</span>
+          <span class="avspill" aria-hidden="true"></span>
+        </div>
+        <div class="tekst">
+          <h3>Fossilspillet</h3>
+          <div class="stikkord"><span>Graving</span><span>Dinosaurer</span><span>Dyr</span><span>2D</span></div>
+          <p>Grav deg ned i fjellet, finn skjeletter og vekk åtte dyr til live – fra ulv til T-rex og hval.</p>
+          <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill</span>
+        </div>
+      </a>
     </div>
   </section>
 
@@ -276,6 +290,12 @@
     </div>
     <div class="nytt">
       <article class="nyhet inn">
+        <span class="ikon" aria-hidden="true">🦴</span>
+        <time datetime="2026-10-31">31. oktober 2026</time>
+        <h3>Nytt spill: Fossilspillet</h3>
+        <p>Grav etter fossiler, sett sammen skjelettene og vekk åtte dyr til live. Dyrene blir med deg som hjelpere!</p>
+      </article>
+      <article class="nyhet inn">
         <span class="ikon" aria-hidden="true">⏳</span>
         <time datetime="2026-10-31">31. oktober 2026</time>
         <h3>Eventyrspillet har fått sju tidsepoker</h3>
@@ -286,12 +306,6 @@
         <time datetime="2026-10-31">31. oktober 2026</time>
         <h3>Mørkeskogen 3D er ute</h3>
         <p>Overlevelsesspillet i 3D kan nå spilles rett her på nettsiden, også på mobil.</p>
-      </article>
-      <article class="nyhet inn">
-        <span class="ikon" aria-hidden="true">🚀</span>
-        <time datetime="2026-10-31">31. oktober 2026</time>
-        <h3>EVN Studio har fått egen nettside</h3>
-        <p>Alle spillene samles på evnstudio.no. Legg et spill på hjemskjermen, så starter det som en app.</p>
       </article>
     </div>
   </section>

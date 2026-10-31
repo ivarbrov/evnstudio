@@ -69,6 +69,13 @@
         var k = e.target && e.target.closest && e.target.closest('#startBtn, #againBtn');
         if (k) spillStartet();
       }, true);
+    },
+    // Fossilspillet: knappen «Start!» / «Fortsett!»
+    fossilspillet: function () {
+      document.addEventListener('click', function (e) {
+        var k = e.target && e.target.closest && e.target.closest('#startBtn');
+        if (k) spillStartet();
+      }, true);
     }
   };
   if (oppdagere[spill]) oppdagere[spill]();
