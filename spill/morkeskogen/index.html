@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="icon" href="../../favicon.png">
-<title>Mørkeskogen 3D</title>
+<title>Mørkeskogen</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800&display=swap">
 <style>
@@ -39,7 +39,7 @@ body{background:var(--night);color:var(--bone);font-family:var(--body);overflow:
 #toast{position:fixed;left:50%;top:calc(96px + env(safe-area-inset-top,0px));transform:translateX(-50%);font-family:var(--display);font-size:22px;
   color:var(--bone);text-shadow:0 2px 0 rgba(0,0,0,.6);opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;max-width:90vw}
 #toast.show{opacity:1}
-.overlay{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;background:rgba(5,10,8,.72);padding:16px}
+.overlay{position:fixed;inset:0;z-index:10;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;background:rgba(5,10,8,.72);padding:16px}
 .overlay>.card{margin:auto}
 .card{max-width:440px;width:100%;background:#13201a;border:2px solid #2f4a35;border-radius:16px;padding:24px 22px;display:grid;gap:14px}
 .card h1{font-family:var(--display);font-size:44px;line-height:1;margin:0;color:var(--ember);text-wrap:balance;font-weight:400}
@@ -55,6 +55,14 @@ body{background:var(--night);color:var(--bone);font-family:var(--body);overflow:
 .mtext{display:grid;gap:2px;min-width:0;font-size:14px}.mtext b{font-size:16px}
 .mcost{display:flex;gap:10px;font-weight:800}.mcost .short{color:#ff7b7b}
 .card .mrow button{font-size:17px;padding:8px 14px}
+.card .maal{list-style:none;padding:0;display:grid;gap:6px;font-size:17px}
+#startBtn{font-size:26px;padding:14px}
+.tips summary{cursor:pointer;font-weight:800;opacity:.85;padding:6px 0}
+.tips ul{margin-top:8px;font-size:14px}
+html.mus .bare-touch,html.touch .bare-pc{display:none}
+@media (max-height:500px){#startScreen .card{padding:12px 18px;gap:8px} #startScreen .card h1{font-size:30px} #startScreen .ver{display:none}
+  #startScreen .card p{font-size:14px} #startScreen .maal{font-size:14px;gap:2px} #startBtn{padding:10px;font-size:22px}}
+.menux{justify-self:end;padding:6px 14px!important;font-size:16px!important;position:sticky;top:0;z-index:2}
 .card button:disabled{background:#3a463e;color:#8a958d;cursor:default}
 .card .ghostbtn{background:transparent;border:2px solid #2f4a35;color:var(--bone);font-size:18px}
 .keyhint{margin-top:2px}
@@ -109,6 +117,10 @@ body.touchui #hotbar{bottom:calc(8px + env(safe-area-inset-bottom,0px));gap:3px;
 body.touchui #hotbar button{width:38px;height:38px;font-size:19px}
 body.touchui #prompt{margin-bottom:0;bottom:calc(60px + env(safe-area-inset-bottom,0px))}
 @media (orientation:portrait){body.touchui #hotbar{bottom:calc(236px + env(safe-area-inset-bottom,0px))} body.touchui #prompt{bottom:calc(290px + env(safe-area-inset-bottom,0px))}}
+@media (orientation:landscape) and (max-height:500px){body.touchui .acts{grid-template-columns:auto auto;align-items:end}
+  body.touchui .acts .small{flex-direction:column;grid-row:1;grid-column:1}
+  body.touchui .acts .big{grid-row:1;grid-column:2}
+  body.touchui #hotbar{left:calc(50% - 40px)}}
 .card .qrow{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:12px;font-size:14px;opacity:.9}
 .card .qrow button{font-family:inherit;font-size:14px;padding:5px 12px;border-radius:8px;background:rgba(243,234,214,.14);color:var(--bone)}
 .card .qrow button.on{background:var(--ember);color:#2a1606}
@@ -130,6 +142,12 @@ body.touchui #prompt{margin-bottom:0;bottom:calc(60px + env(safe-area-inset-bott
 #devClk{min-width:15em;opacity:.85;font-variant-numeric:tabular-nums}
 </style>
 
+<script>
+(function(){var h=document.documentElement,t=function(x){h.classList.toggle('touch',x);h.classList.toggle('mus',!x);};
+try{t(matchMedia('(pointer: coarse)').matches);}catch(e){t(false);}
+addEventListener('touchstart',function(){t(true);},{passive:true,capture:true});
+addEventListener('keydown',function(){t(false);},true);})();
+</script>
 <canvas id="game"></canvas>
 <canvas id="ov"></canvas>
 
@@ -138,7 +156,7 @@ body.touchui #prompt{margin-bottom:0;bottom:calc(60px + env(safe-area-inset-bott
     <div class="stat"><span>❤️</span><div class="bar"><i id="bHp"></i></div></div>
     <div class="stat"><span>🍓</span><div class="bar"><i id="bFood"></i></div></div>
     <div class="stat" id="waterStat" style="display:none"><span>💧</span><div class="bar"><i id="bWater"></i></div></div>
-    <div class="stat"><span>🔥</span><div class="bar"><i id="bFire"></i></div><b class="lvl">Nv <span id="fireLvl">1</span></b></div>
+    <div class="stat"><span>🔥</span><div class="bar"><i id="bFire"></i></div><b class="lvl">Nivå <span id="fireLvl">1</span></b></div>
     <div class="inv"><span>🪵 <b id="wood">0</b></span><span>🪨 <b id="stone">0</b></span><span>🔩 <b id="iron">0</b></span><span><span id="wIcon">🪓</span> <b id="axe">Vanlig øks</b></span><span>⭐ <b id="lvl">1</b></span></div>
     <div class="inv"><span>🥩 <b id="raw">0</b></span><span>🍗 <b id="cooked">0</b></span><span>🟫 <b id="skin">0</b> skinn</span></div>
   </div>
@@ -175,9 +193,18 @@ body.touchui #prompt{margin-bottom:0;bottom:calc(60px + env(safe-area-inset-bott
 
 <div class="overlay" id="startScreen">
   <div class="card">
-    <div class="ver">EVN Studios · 3D · Versjon 5.4</div>
-    <h1>Mørkeskogen 3D</h1>
-    <p>Du har gått deg vill i en mørk skog. Klarer du å overleve nettene?</p>
+    <div class="ver">EVN Studio · 3D · Versjon 5.5</div>
+    <h1>Mørkeskogen</h1>
+    <p>Du har gått deg vill i en mørk skog. Klarer du å overleve natten?</p>
+    <ul class="maal">
+      <li>🪵 <b>Samle ved</b> og legg den på bålet.</li>
+      <li>🔥 <b>Hold bålet i gang.</b> Om natten kommer monstrene, og de tåler ikke lys.</li>
+      <li class="bare-pc">⌨️ <b>Gå:</b> W A S D eller pilene · <b>Hugg og gjør ting:</b> klikk eller E</li>
+      <li class="bare-touch">👆 <b>Gå:</b> dra med fingeren · <b>Hugg:</b> trykk 🪓 · <b>Bruk:</b> trykk ✋</li>
+    </ul>
+    <p id="no3d" hidden>3D-motoren lastet ikke. Sjekk internett og last siden på nytt.</p>
+    <button id="startBtn">▶ Start spillet</button>
+    <details class="tips"><summary>Tips og styring</summary>
     <ul>
       <li><b>Gå:</b> piltastene eller W A S D</li>
       <li><b>Gjør ting:</b> E. Hugg trær, plukk bær, åpne kister og legg ved på bålet.</li>
@@ -190,21 +217,21 @@ body.touchui #prompt{margin-bottom:0;bottom:calc(60px + env(safe-area-inset-bott
       <li><b>Utforsk!</b> Snø ❄️ i nord, jungel 🌴 i øst, ørken 🏜️ i sør og lava 🌋 i vest. I jungelen bor en sint T-rex 🦖, og i ørkenen står en pyramide med skatt! Ikke gå i lavaen! Kartet øverst til høyre viser hvor du er.</li>
       <li><b>Vulkanen 🌋:</b> i lavaverdenen står en vulkan med fem kister. Pass deg for den slemme geita! 🐐</li>
       <li><b>Kamera 🎥:</b> trykk C for å bytte mellom kamera bak helten og kamera ovenfra.</li>
-      <li><b>Hytter 🛖:</b> gamle hytter er trygge om natten, har vanntønne og forsyninger.</li>
+      <li><b>Hytter 🛖:</b> gamle hytter er trygge om natten og har forsyninger.</li>
       <li><b>Broer og troll 🌉:</b> under broene bor det troll. Slå dem, så plumper de i bekken!</li>
       <li><b>Slott 🏰:</b> knus skjelettene med øksa, så kan du åpne skattekisten. Du kan hoppe over muren!</li>
       <li><b>Våpen ⚔️:</b> tast 1–6 bytter våpen, I åpner ryggsekken. Venstre musknapp angriper, høyre musknapp snur kameraet, musehjulet zoomer. Finn sverd, bue, spyd, magisk stav og flammehammer! Hold musknappen for å trekke buen.</li>
       <li><b>Fisking 🎣 og ryggsekk 🎒:</b> åpne ryggsekken (I) og lag en fiskestang og en sekk. Velg stanga (tast 7), kast mot vannet, vent på napp og sveiv inn! Det er en innsjø sørvest for bålet.</li>
       <li><b>Bygg en landsby:</b> trykk B. Du trenger ved 🪵 og stein 🪨. Der kan du også gi bålet høyere nivå, helt opp til 10!</li>
     </ul>
-    <p id="no3d" hidden>3D-motoren lastet ikke. Sjekk internett og last siden på nytt.</p>
-    <button id="startBtn">Start spillet</button>
     <div class="qrow" id="qrow">Grafikk: <button data-q="lav">Lav</button><button data-q="middels">Middels</button><button data-q="hoy">Høy</button></div>
+    </details>
   </div>
 </div>
 
 <div class="overlay" id="menu" hidden>
   <div class="card">
+    <button id="menuX" class="ghostbtn menux" aria-label="Lukk menyen">✕ Lukk</button>
     <h2 id="menuTitle">Bygg</h2>
     <div id="menuList" class="mlist"></div>
     <button id="menuClose" class="ghostbtn">Lukk</button>
@@ -1577,6 +1604,7 @@ function menuAction(act) {
     toast(`${WEAPONS[id].icon} ${WEAPONS[id].n} er nå nivå ${hero.wlvl[id]}!`); renderMenu();
   } else if (act.startsWith('sel:')) { selectWeapon(act.slice(4)); renderMenu(); }
   else if (act === 'cap') { hero.cap = hero.cap === false; saveHero(); if (R3 && R3.player && R3.player.head.userData.cap) setCap(R3.player.head); toast(hero.cap !== false ? '🧢 Capsen er på!' : 'Du tok av capsen.'); renderMenu(); }
+  else if (act === 'newworld' && !(g._nyVerden && performance.now() - g._nyVerden < 6000)) { g._nyVerden = performance.now(); toast('⚠️ Det du har bygd blir borte! Trykk «Ny verden» en gang til for å bekrefte.'); }
   else if (act === 'newworld') { world = { v: 1, seed: (Math.random() * 1e9) | 0, buildings: [] }; try { localStorage.setItem(WORLD_KEY, JSON.stringify(world)); } catch (e) {} toast('🌍 Neste gang du starter et nytt spill, får du en helt ny verden!'); renderMenu(); }
 }
 
@@ -1629,7 +1657,7 @@ function skipTime(toP) {
   const p = phaseInfo(g.time).p; g.time += ((toP - p) % CYCLE + CYCLE) % CYCLE; g.lastPhase = phaseInfo(g.time).p;
   if (!phaseInfo(g.time).night) g.monsters.forEach(m => m.leave = true);
 }
-const DEV_TOOLS = true;                                   // false = utviklerverktøyet er helt borte
+const DEV_TOOLS = false;                                   // false = utviklerverktøyet er helt borte
 const DEV = { on: false, scale: 1 };
 const DEV_TIMES = { morgen: SUNRISE_P + 14, middag: (SUNRISE_P + SUNSET_P) / 2, kveld: SUNSET_P - 9, natt: DAY + DUSK + NIGHT * 0.5 };
 // Bålnivå 1–10: høyere nivå gir større lys og lengre brenntid
@@ -6358,7 +6386,7 @@ function updateHud() {
     const key = [hero.sel, hero.owned.join(), lv.L].join('|');
     if (key !== hotbarKey) {                                   // hurtiglinja tegnes bare på nytt når noe er endret
       hotbarKey = key;
-      $('hotbar').innerHTML = WEAPON_SLOTS.map((wid, i) => { const Wv = WEAPONS[wid], own = hero.owned.includes(wid), ok = own && lv.L >= Wv.lvl;
+      $('hotbar').innerHTML = WEAPON_SLOTS.map((wid, i) => { if (!hero.owned.includes(wid)) return ''; const Wv = WEAPONS[wid], own = hero.owned.includes(wid), ok = own && lv.L >= Wv.lvl;
         return `<button data-w="${wid}" class="${!own ? 'no' : !ok ? 'lock' : ''} ${hero.sel === wid ? 'on' : ''}" title="${i + 1}: ${Wv.n}${own ? (ok ? '' : ` (nivå ${Wv.lvl})`) : ' (ikke funnet)'}"><span class="k">${(i + 1) % 10}</span>${Wv.icon}${own && !ok ? '<span class="lk">🔒</span>' : ''}</button>`; }).join('')
         + '<button id="invBtn" title="Våpenlager (I)">🎒</button>';
     } }
@@ -6382,7 +6410,7 @@ function updateHud() {
   if (isTouch) { const ub = $('useBtn'), want = !!useT; if (ub.hidden === want) ub.hidden = !want; }   // Bruk-knappen vises bare når det er noe å bruke
   const labels = {
     animal: 'Angrip dyret', water: 'Drikk vann',
-    fire: g.wood > 0 ? 'Legg ved på bålet' : 'Bålet trenger ved',
+    fire: g.fuel >= 99 ? 'Bålet brenner for fullt 🔥' : g.wood > 0 ? 'Legg ved på bålet' : 'Hent ved – bålet trenger mer',
     tree: 'Hugg treet', villain: 'Angrip skjelettet', troll: 'Angrip trollet', goat: 'Angrip geita', trex: 'Angrip T-rexen', dskel: 'Angrip skjelettet', dtri: 'Angrip triceratopsen', dboss: 'Angrip T-rex-kongen', shark: 'Angrip haien', dchest: 'Åpne skjelettkisten 💀📦', barrel: 'Drikk fra vanntønna', cabin: 'Let i hytta', pack: 'Ta på sekken', board: 'Gå om bord på toget 🚂', npc: 'Snakk', bed: 'Sov i halmsenga 😴', wand: 'Ta heksas tryllestav 🪄', bush: 'Plukk bær', chest: 'Åpne kisten', rock: 'Hent stein', workshop: 'Bruk verkstedet'
   };
   if (t) {
@@ -6438,7 +6466,7 @@ window.addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k]
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 $('camBtn').addEventListener('pointerdown', e => { e.preventDefault(); if (state === 'play' && R3) R3.camMode = R3.camMode === 'near' ? 'far' : 'near'; });
 $('buildBtn').addEventListener('pointerdown', e => { e.preventDefault(); if (state !== 'play') return; if (g.build) g.build = null; else openMenu('build'); });
-$('menuClose').addEventListener('click', closeMenu);
+$('menuClose').addEventListener('click', closeMenu); $('menuX').addEventListener('click', closeMenu);
 $('menuList').addEventListener('click', e => { const b = e.target.closest('button[data-act]'); if (b && !b.disabled && b.dataset.act) menuAction(b.dataset.act); });
 $('eatBtn').addEventListener('pointerdown', e => { e.preventDefault(); if (state === 'play') eat(); });
 document.querySelectorAll('#touch button[data-k]').forEach(b => {
@@ -6538,16 +6566,40 @@ requestAnimationFrame(loop);
 })();
 </script>
 
-<!-- EVN Studio: knapp tilbake til forsiden (vises bare på evnstudio.no) -->
+<!-- EVN Studio: avslutt-knapp (vises bare på evnstudio.no/spill/...) og spørsmål før man går -->
 <style>
-#evnAvslutt{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:99999;
-  padding:7px 14px;border-radius:999px;background:rgba(10,18,14,.82);color:#f3ead6;font:800 14px 'Nunito',system-ui,sans-serif;
-  text-decoration:none;border:1px solid rgba(243,234,214,.35);display:none}
-#evnAvslutt:hover{background:rgba(40,60,45,.9)}
+#evnAvslutt{display:none;margin:8px 0 0 auto;width:max-content;pointer-events:auto;padding:7px 12px;border-radius:999px;background:rgba(10,18,14,.82);color:#f3ead6;
+  font:800 14px 'Nunito',system-ui,sans-serif;text-decoration:none;border:1px solid rgba(243,234,214,.35);cursor:pointer}
+@media (orientation:landscape) and (max-height:500px){#evnAvslutt{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);margin:0;z-index:6}}
+#evnTilbake{display:none;text-align:center;color:#f3ead6;opacity:.8;font-weight:800;text-decoration:underline}
+#evnSporsmal{position:fixed;inset:0;z-index:100000;display:none;place-items:center;background:rgba(5,10,8,.75);padding:16px}
+#evnSporsmal .boks{background:#13201a;border:2px solid #2f4a35;border-radius:16px;padding:22px;max-width:340px;display:grid;gap:14px;text-align:center;color:#f3ead6;font:800 18px 'Nunito',system-ui,sans-serif}
+#evnSporsmal button{font:400 22px 'Lilita One',system-ui,sans-serif;border:0;border-radius:12px;padding:12px;cursor:pointer}
+#evnBli{background:#ff9a3c;color:#2a1606}#evnGaa{background:transparent;color:#f3ead6;border:2px solid #2f4a35!important}
 </style>
 <a id="evnAvslutt" href="../../">✕ Avslutt</a>
+<div id="evnSporsmal" role="dialog" aria-modal="true" aria-labelledby="evnSpTekst"><div class="boks">
+  <div id="evnSpTekst">Vil du avslutte og gå tilbake til forsiden?</div>
+  <button id="evnBli">Nei, spill videre</button><button id="evnGaa">Ja, avslutt</button></div></div>
 <script>
-try { if (location.pathname.indexOf('/spill/') !== -1) document.getElementById('evnAvslutt').style.display = 'block'; } catch (e) {}
+try {
+  if (location.pathname.indexOf('/spill/') !== -1) {
+    var av = document.getElementById('evnAvslutt'), sp = document.getElementById('evnSporsmal');
+    var kol = document.querySelector('#hud .clock'); if (kol) kol.appendChild(av);
+    av.style.display = 'block';
+    var card = document.querySelector('#startScreen .card');
+    if (card) { var t = document.createElement('a'); t.id = 'evnTilbake'; t.href = '../../'; t.textContent = '← Tilbake til EVN Studio'; t.style.display = 'block'; card.appendChild(t); }
+    av.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      if (document.exitPointerLock && document.pointerLockElement) document.exitPointerLock();
+      sp.style.display = 'grid'; document.getElementById('evnBli').focus();
+    });
+    av.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+    sp.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+    document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; });
+    document.getElementById('evnGaa').addEventListener('click', function () { location.href = '../../'; });
+  }
+} catch (e) {}
 </script>
 
 <script src="../../statistikk.js" data-spill="morkeskogen" defer></script>
