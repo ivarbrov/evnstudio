@@ -2,236 +2,339 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>EVN Studio – spill</title>
-<meta name="description" content="Spill fra EVN Studio. Spill gratis rett i nettleseren på PC, nettbrett og mobil.">
-<meta name="theme-color" content="#0a0f1f">
+<meta name="description" content="Spill fra EVN Studio. Gratis, uten innlogging, rett i nettleseren på PC, nettbrett og mobil.">
+<meta name="theme-color" content="#080c1a">
 <link rel="icon" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
+<link rel="preload" as="image" href="bilder/eventyr-hero.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Nunito:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@600;800;900&family=Nunito:wght@500;700;800&display=swap">
 <style>
+  /* ===== Fargepalett: mørk marine med blå og lilla fra logoen ===== */
   :root {
-    --bg: #0a0f1f; --bg2: #111833; --kort: #151d3b; --kant: #26305a;
-    --cyan: #00c6ff; --bla: #2563ff; --lilla: #7b2ff7;
-    --tekst: #eef2ff; --dempet: #9aa6cc;
-    --gradient: linear-gradient(90deg, var(--cyan), var(--bla) 50%, var(--lilla));
+    --bg: #080c1a; --bg2: #0e1430; --flate: #131a3a; --flate2: #1a2350; --kant: rgba(140,160,255,.14);
+    --cyan: #19c3ff; --bla: #2f6bff; --lilla: #8a3dff;
+    --tekst: #f1f4ff; --dempet: #a3add3;
+    --gradient: linear-gradient(100deg, var(--cyan) 0%, var(--bla) 45%, var(--lilla) 100%);
     --tittel: 'Rubik', system-ui, sans-serif; --brod: 'Nunito', system-ui, sans-serif;
+    --radius: 22px;
   }
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body { margin: 0; font-family: var(--brod); color: var(--tekst); background: var(--bg);
-    background-image: radial-gradient(1200px 600px at 15% -10%, rgba(37,99,255,.25), transparent 60%),
-                      radial-gradient(900px 500px at 100% 0%, rgba(123,47,247,.22), transparent 60%); min-height: 100vh; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body { margin: 0; font-family: var(--brod); color: var(--tekst); background: var(--bg); line-height: 1.5;
+    background-image:
+      radial-gradient(900px 520px at 8% -6%, rgba(47,107,255,.28), transparent 62%),
+      radial-gradient(800px 480px at 100% 4%, rgba(138,61,255,.24), transparent 60%);
+    background-repeat: no-repeat; min-height: 100vh; }
   a { color: inherit; text-decoration: none; }
-  .bredde { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+  img { display: block; max-width: 100%; }
+  .bredde { max-width: 1220px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 32px); }
+  :focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; border-radius: 10px; }
 
-  /* ---------- Navigasjon ---------- */
-  nav { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    background: rgba(10,15,31,.75); border-bottom: 1px solid rgba(255,255,255,.06); }
-  nav .bredde { display: flex; align-items: center; gap: 28px; height: 68px; }
-  nav .logo img { height: 40px; display: block; }
-  nav ul { list-style: none; display: flex; gap: 6px; margin: 0; padding: 0; }
-  nav ul a { padding: 8px 14px; border-radius: 10px; font-weight: 700; color: var(--dempet); transition: .15s; }
-  nav ul a:hover, nav ul a.aktiv { color: var(--tekst); background: rgba(255,255,255,.07); }
-  nav .spillknapp { margin-left: auto; }
+  /* ===== Topplinje ===== */
+  header { position: sticky; top: 0; z-index: 20; padding-top: env(safe-area-inset-top);
+    background: rgba(8,12,26,.72); backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border-bottom: 1px solid var(--kant); }
+  header .bredde { display: flex; align-items: center; gap: 22px; height: 76px; }
+  .logo { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .logo img { height: 50px; filter: drop-shadow(0 4px 18px rgba(47,107,255,.45)); transition: transform .25s; }
+  .logo:hover img { transform: scale(1.04); }
+  nav { display: flex; gap: 4px; }
+  nav a { padding: 10px 16px; border-radius: 12px; font-weight: 800; color: var(--dempet); transition: color .15s, background .15s; }
+  nav a:hover { color: var(--tekst); background: rgba(255,255,255,.06); }
+  header .knapp { margin-left: auto; }
 
-  /* ---------- Knapper ---------- */
-  .knapp { display: inline-flex; align-items: center; gap: 8px; font-family: var(--tittel); font-weight: 700;
-    border-radius: 12px; padding: 14px 26px; font-size: 18px; color: #fff; background: var(--gradient);
-    box-shadow: 0 8px 24px rgba(37,99,255,.35); transition: transform .15s, box-shadow .15s; border: 0; cursor: pointer; }
-  .knapp:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(123,47,247,.45); }
-  .knapp.liten { padding: 9px 16px; font-size: 15px; border-radius: 10px; }
+  /* ===== Knapper ===== */
+  .knapp { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    font-family: var(--tittel); font-weight: 800; letter-spacing: .02em; color: #fff; border-radius: 16px;
+    padding: 14px 24px; font-size: 17px; background: var(--gradient); box-shadow: 0 10px 28px rgba(47,107,255,.38);
+    transition: transform .18s, box-shadow .18s; }
+  .knapp:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(138,61,255,.5); }
+  .knapp:active { transform: translateY(0) scale(.98); }
+  .knapp::after { content: ""; position: absolute; inset: 0; transform: translateX(-120%);
+    background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%); transition: transform .6s; }
+  .knapp:hover::after { transform: translateX(120%); }
+  .knapp.stor { font-size: clamp(20px, 2.6vw, 26px); padding: 20px 40px; border-radius: 20px; min-height: 68px; }
+  .knapp .trekant { width: 0; height: 0; border-left: 16px solid #fff; border-top: 10px solid transparent; border-bottom: 10px solid transparent; }
 
-  /* ---------- Hovedspill ---------- */
-  .hero { position: relative; margin-top: 28px; border-radius: 24px; overflow: hidden; min-height: 460px;
-    display: flex; align-items: flex-end; border: 1px solid var(--kant); box-shadow: 0 30px 60px rgba(0,0,0,.45); }
-  .hero img.bakgrunn { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.02); }
-  .hero::after { content: ""; position: absolute; inset: 0;
-    background: linear-gradient(90deg, rgba(10,15,31,.95) 0%, rgba(10,15,31,.75) 38%, rgba(10,15,31,.1) 75%),
-                linear-gradient(0deg, rgba(10,15,31,.8) 0%, transparent 45%); }
-  .hero .innhold { position: relative; z-index: 1; padding: 44px; max-width: 560px; }
-  .merker { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-  .merke { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 6px 10px;
-    border-radius: 999px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); }
-  .merke.klar { background: rgba(0,198,255,.15); border-color: rgba(0,198,255,.5); color: #7fe3ff; }
-  .hero h1 { font-family: var(--tittel); font-weight: 800; font-size: clamp(36px, 6vw, 58px); line-height: 1.02; margin: 0 0 14px; }
-  .hero p { font-size: 18px; line-height: 1.5; color: #cfd6f2; margin: 0 0 22px; }
-  .fakta { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 26px; color: #cfd6f2; font-weight: 700; font-size: 15px; }
+  /* ===== Hovedspill ===== */
+  .hero { position: relative; margin-top: 26px; border-radius: 28px; overflow: hidden; isolation: isolate;
+    min-height: clamp(520px, 74vh, 700px); display: flex; align-items: flex-end;
+    border: 1px solid var(--kant); box-shadow: 0 40px 80px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(47,107,255,.08); }
+  .hero .bakgrunn { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover;
+    animation: drift 30s ease-in-out infinite alternate; will-change: transform; }
+  @keyframes drift { from { transform: scale(1.04) translate(0, 0); } to { transform: scale(1.1) translate(-1.5%, -1%); } }
+  .hero::before { content: ""; position: absolute; inset: 0; z-index: -1;
+    background:
+      linear-gradient(90deg, rgba(8,12,26,.96) 0%, rgba(8,12,26,.82) 34%, rgba(8,12,26,.18) 70%, rgba(8,12,26,.05) 100%),
+      linear-gradient(0deg, rgba(8,12,26,.92) 0%, rgba(8,12,26,0) 42%); }
+  .hero .innhold { width: 100%; padding: clamp(24px, 5vw, 56px); display: grid; grid-template-columns: minmax(0, 560px) 1fr; gap: 32px; align-items: end; }
+  .merker { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .merke { font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; padding: 7px 12px; border-radius: 999px;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  .merke.klar { background: rgba(25,195,255,.16); border-color: rgba(25,195,255,.55); color: #8fe6ff; }
+  .merke.klar::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #39d98a;
+    margin-right: 7px; vertical-align: 1px; box-shadow: 0 0 0 0 rgba(57,217,138,.6); animation: puls 2.2s infinite; }
+  @keyframes puls { 70% { box-shadow: 0 0 0 8px rgba(57,217,138,0); } 100% { box-shadow: 0 0 0 0 rgba(57,217,138,0); } }
+  .hero h1 { font-family: var(--tittel); font-weight: 900; font-size: clamp(42px, 7.4vw, 84px); line-height: .95; margin: 0 0 16px;
+    letter-spacing: -.02em; text-shadow: 0 6px 30px rgba(0,0,0,.5); }
+  .hero h1 span { background: var(--gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { font-size: clamp(16px, 1.8vw, 20px); color: #d6dcf5; margin: 0 0 26px; max-width: 34em; }
+  .hero .under { margin-top: 14px; color: var(--dempet); font-size: 14px; font-weight: 700; }
 
-  /* ---------- Spill-liste ---------- */
-  section { scroll-margin-top: 80px; }
-  .seksjonstopp { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 56px 0 20px; }
-  h2 { font-family: var(--tittel); font-weight: 800; font-size: 30px; margin: 0; }
-  .filter { display: flex; gap: 8px; flex-wrap: wrap; }
-  .filter button { font-family: var(--brod); font-weight: 700; font-size: 15px; color: var(--dempet); background: var(--kort);
-    border: 1px solid var(--kant); padding: 8px 16px; border-radius: 999px; cursor: pointer; transition: .15s; }
-  .filter button:hover { color: var(--tekst); }
-  .filter button.aktiv { color: #fff; background: var(--gradient); border-color: transparent; }
-  .rutenett { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 22px; }
-  .spill { background: var(--kort); border: 1px solid var(--kant); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column;
-    transition: transform .2s, box-shadow .2s, border-color .2s; }
-  a.spill:hover { transform: translateY(-6px); border-color: rgba(0,198,255,.6); box-shadow: 0 18px 40px rgba(0,198,255,.15); }
-  .spill .bilde { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--bg2); }
-  .spill .bilde img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s; }
-  a.spill:hover .bilde img { transform: scale(1.06); }
-  .spill .bilde .merke { position: absolute; top: 12px; left: 12px; background: rgba(10,15,31,.75); }
-  .spill .tekst { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
-  .spill h3 { font-family: var(--tittel); font-size: 21px; margin: 0; }
-  .spill .sjanger { color: var(--dempet); font-size: 14px; font-weight: 700; }
-  .spill .bunn { margin-top: auto; padding-top: 12px; display: flex; align-items: center; justify-content: space-between; }
-  .spill .status { color: #7fe3ff; font-size: 13px; font-weight: 800; }
-  .kommer { border-style: dashed; align-items: center; justify-content: center; text-align: center; min-height: 300px; padding: 24px;
-    background: linear-gradient(160deg, rgba(37,99,255,.08), rgba(123,47,247,.08)); }
-  .kommer .ikon { font-size: 44px; margin-bottom: 10px; }
-  .kommer p { color: var(--dempet); margin: 6px 0 0; }
-  .skjult { display: none !important; }
+  /* Fem tidsepoker – ekte skjermbilder */
+  .epoker { justify-self: end; align-self: end; background: rgba(8,12,26,.55); border: 1px solid var(--kant); border-radius: 18px;
+    padding: 14px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); max-width: 430px; }
+  .epoker h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--dempet); margin: 0 0 10px; font-family: var(--brod); }
+  .epoker ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .epoker li { text-align: center; font-size: 12px; font-weight: 800; color: #d6dcf5; }
+  .epoker img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 2px solid rgba(255,255,255,.12);
+    margin-bottom: 6px; transition: transform .2s, border-color .2s; }
+  .epoker li:hover img { transform: translateY(-3px); border-color: var(--cyan); }
 
-  /* ---------- Om ---------- */
-  .om { margin: 64px 0 40px; display: grid; grid-template-columns: 1.3fr 1fr; gap: 22px; }
-  .boks { background: var(--kort); border: 1px solid var(--kant); border-radius: 18px; padding: 26px; }
-  .boks p { color: #cfd6f2; line-height: 1.6; margin: 10px 0 0; }
-  .boks ol { color: #cfd6f2; line-height: 1.7; margin: 10px 0 0; padding-left: 20px; }
-  footer { border-top: 1px solid rgba(255,255,255,.06); color: var(--dempet); font-size: 14px; }
-  footer .bredde { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 24px 20px 34px; }
+  /* ===== Seksjoner ===== */
+  section { scroll-margin-top: 92px; }
+  .seksjonstopp { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 72px 0 22px; }
+  .seksjonstopp h2 { font-family: var(--tittel); font-weight: 800; font-size: clamp(28px, 3.4vw, 38px); margin: 0; letter-spacing: -.01em; }
+  .seksjonstopp p { margin: 0; color: var(--dempet); font-weight: 700; }
 
-  @media (max-width: 760px) {
-    nav .bredde { gap: 10px; }
-    nav ul a { padding: 8px 10px; }
-    nav .lang, nav .spillknapp { display: none; }
-    .hero { min-height: 520px; }
-    .hero::after { background: linear-gradient(0deg, rgba(10,15,31,.97) 0%, rgba(10,15,31,.75) 50%, rgba(10,15,31,.15) 100%); }
-    .hero .innhold { padding: 26px; }
-    .hero p { font-size: 16px; }
-    .om { grid-template-columns: 1fr; }
+  /* ===== Spillkort ===== */
+  .spill-liste { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px; }
+  .spillkort { position: relative; display: flex; flex-direction: column; border-radius: var(--radius); overflow: hidden;
+    background: var(--flate); border: 1px solid var(--kant); transition: transform .25s, box-shadow .25s, border-color .25s; }
+  .spillkort:hover { transform: translateY(-6px); border-color: rgba(25,195,255,.55); box-shadow: 0 26px 50px -14px rgba(25,195,255,.28); }
+  .spillkort .bilde { position: relative; aspect-ratio: 16 / 10; overflow: hidden; }
+  .spillkort .bilde img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
+  .spillkort:hover .bilde img { transform: scale(1.06); }
+  .spillkort .bilde::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(19,26,58,.95) 0%, rgba(19,26,58,0) 45%); }
+  .spillkort .merke { position: absolute; top: 14px; left: 14px; z-index: 1; background: rgba(8,12,26,.65); }
+  .spillkort .avspill { position: absolute; z-index: 1; left: 50%; top: 45%; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%;
+    background: var(--gradient); display: grid; place-items: center; box-shadow: 0 12px 30px rgba(0,0,0,.45);
+    opacity: 0; transform: scale(.85); transition: opacity .25s, transform .25s; }
+  .spillkort .avspill::before { content: ""; border-left: 26px solid #fff; border-top: 16px solid transparent; border-bottom: 16px solid transparent; margin-left: 6px; }
+  .spillkort:hover .avspill { opacity: 1; transform: scale(1); }
+  .spillkort .tekst { position: relative; margin-top: -64px; z-index: 1; padding: 0 24px 24px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .spillkort h3 { font-family: var(--tittel); font-weight: 800; font-size: clamp(24px, 2.6vw, 32px); margin: 0; text-shadow: 0 3px 16px rgba(0,0,0,.6); }
+  .spillkort .stikkord { display: flex; flex-wrap: wrap; gap: 6px; }
+  .spillkort .stikkord span { font-size: 13px; font-weight: 800; color: #c9d1f5; background: rgba(255,255,255,.07); border: 1px solid var(--kant);
+    padding: 4px 10px; border-radius: 999px; }
+  .spillkort p { margin: 0; color: var(--dempet); }
+  .spillkort .knapp { margin-top: auto; width: 100%; padding: 16px; font-size: 19px; }
+
+  /* ===== Siste nytt ===== */
+  .nytt { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .nyhet { background: var(--flate); border: 1px solid var(--kant); border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 8px;
+    transition: transform .2s, border-color .2s; }
+  .nyhet:hover { transform: translateY(-3px); border-color: rgba(138,61,255,.5); }
+  .nyhet time { font-size: 13px; font-weight: 800; color: var(--cyan); letter-spacing: .04em; }
+  .nyhet h3 { font-family: var(--tittel); font-size: 20px; margin: 0; }
+  .nyhet p { margin: 0; color: var(--dempet); }
+  .nyhet .ikon { font-size: 30px; line-height: 1; }
+
+  /* ===== Om ===== */
+  .om { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; }
+  .boks { background: linear-gradient(160deg, var(--flate2), var(--flate)); border: 1px solid var(--kant); border-radius: 18px; padding: 26px; }
+  .boks h3 { font-family: var(--tittel); font-size: 22px; margin: 0 0 6px; }
+  .boks p, .boks ol { color: #cdd4f2; margin: 8px 0 0; }
+  .boks ol { padding-left: 20px; }
+  .boks .liten { font-size: 14px; color: var(--dempet); }
+
+  footer { margin-top: 72px; border-top: 1px solid var(--kant); color: var(--dempet); font-size: 14px; padding-bottom: env(safe-area-inset-bottom); }
+  footer .bredde { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 26px; padding-bottom: 32px; }
+  footer img { height: 34px; opacity: .85; }
+
+  /* Diskret inntoning når seksjoner kommer til syne */
+  .inn { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .inn.synlig { opacity: 1; transform: none; }
+
+  /* ===== Nettbrett ===== */
+  @media (max-width: 980px) {
+    .hero .innhold { grid-template-columns: 1fr; }
+    .epoker { justify-self: start; max-width: 520px; }
+    .nytt { grid-template-columns: 1fr 1fr; }
+    .nytt .nyhet:last-child { grid-column: 1 / -1; }
+  }
+  /* ===== Mobil ===== */
+  @media (max-width: 680px) {
+    header .bredde { height: 64px; gap: 10px; }
+    .logo img { height: 40px; }
+    nav a { padding: 8px 10px; }
+    header .knapp { display: none; }
+    .hero { margin-top: 14px; border-radius: 22px; min-height: 0; }
+    .hero::before { background: linear-gradient(0deg, rgba(8,12,26,.98) 0%, rgba(8,12,26,.86) 46%, rgba(8,12,26,.2) 82%); }
+    .hero .innhold { padding-top: 190px; }
+    .hero .knapp.stor { width: 100%; }
+    .epoker { padding: 10px; }
+    .epoker ol { gap: 6px; }
+    .epoker li { font-size: 11px; }
+    .spill-liste, .nytt, .om { grid-template-columns: 1fr; }
+    .nytt .nyhet:last-child { grid-column: auto; }
+    .spillkort .avspill { opacity: 1; transform: scale(.8); }
+    .seksjonstopp { margin-top: 52px; flex-direction: column; gap: 4px; }
+  }
+  /* Berøringsskjermer: vis alltid avspillingsknappen */
+  @media (hover: none) { .spillkort .avspill { opacity: 1; transform: scale(.85); } }
+  /* Respekter ønske om mindre bevegelse */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .inn { opacity: 1; transform: none; }
+    html { scroll-behavior: auto; }
   }
 </style>
 </head>
 <body>
 
-<nav>
+<header>
   <div class="bredde">
-    <a class="logo" href="#hjem" aria-label="EVN Studio – hjem"><img src="logo-lys.png" alt="EVN Studio"></a>
-    <ul>
-      <li><a href="#hjem" class="aktiv">Hjem</a></li>
-      <li><a href="#spill">Spill</a></li>
-      <li><a href="#om">Om<span class="lang"> EVN Studio</span></a></li>
-    </ul>
-    <a class="knapp liten spillknapp" href="spill/eventyrspill/">▶ Spill nå</a>
+    <a class="logo" href="#" aria-label="EVN Studio – til toppen"><img src="logo-lys.png" alt="EVN Studio" width="67" height="50"></a>
+    <nav aria-label="Hovedmeny">
+      <a href="#spill">Spill</a>
+      <a href="#nytt">Nytt</a>
+      <a href="#om">Om</a>
+    </nav>
+    <a class="knapp" href="spill/eventyrspill/"><span class="trekant" aria-hidden="true"></span>Spill nå</a>
   </div>
-</nav>
+</header>
 
 <main class="bredde">
-  <!-- Hovedspillet -->
-  <section id="hjem" class="hero">
-    <img class="bakgrunn" src="spill/eventyrspill/forsidebilde-stor.jpg" alt="Skjermbilde fra Evens Eventyrspill: basen med tårn, mur og monstre">
+
+  <!-- ===== Hovedattraksjon ===== -->
+  <section class="hero" aria-labelledby="hovedspill">
+    <img class="bakgrunn" src="bilder/eventyr-hero.jpg" alt="" fetchpriority="high">
     <div class="innhold">
-      <div class="merker">
-        <span class="merke">⭐ Utvalgt spill</span>
-        <span class="merke klar">● Spill klart</span>
+      <div>
+        <div class="merker">
+          <span class="merke">⭐ Utvalgt spill</span>
+          <span class="merke klar">Klar til å spille</span>
+        </div>
+        <h1 id="hovedspill">Evens <span>Eventyrspill</span></h1>
+        <p>Reis gjennom tiden fra steinalderen til verdensrommet. Bekjemp monstre, bygg din egen base og lås opp nye våpen.</p>
+        <a class="knapp stor" href="spill/eventyrspill/"><span class="trekant" aria-hidden="true"></span>SPILL NÅ</a>
+        <div class="under">Gratis · Ingen innlogging · PC, nettbrett og mobil</div>
       </div>
-      <h1>Evens Eventyrspill</h1>
-      <p>Reis gjennom tiden fra steinalderen til verdensrommet. Bekjemp monstre, bygg din egen base og lås opp nye våpen.</p>
-      <div class="fakta">
-        <span>⏳ 5 tidsepoker</span>
-        <span>🏰 Bygg basen</span>
-        <span>📱 PC og mobil</span>
+      <div class="epoker">
+        <h2>5 tidsepoker å utforske</h2>
+        <ol>
+          <li><img src="bilder/eventyr-epoke1.jpg" alt="" loading="lazy">Steinalder</li>
+          <li><img src="bilder/eventyr-epoke2.jpg" alt="" loading="lazy">Oldtiden</li>
+          <li><img src="bilder/eventyr-epoke3.jpg" alt="" loading="lazy">Skogen</li>
+          <li><img src="bilder/eventyr-epoke4.jpg" alt="" loading="lazy">Pirater</li>
+          <li><img src="bilder/eventyr-epoke5.jpg" alt="" loading="lazy">Rommet</li>
+        </ol>
       </div>
-      <a class="knapp" href="spill/eventyrspill/">▶ Spill nå</a>
     </div>
   </section>
 
-  <!-- Alle spill -->
-  <section id="spill">
-    <div class="seksjonstopp">
-      <h2>Oppdag spill</h2>
-      <div class="filter" role="tablist">
-        <button class="aktiv" data-filter="alle">Alle spill</button>
-        <button data-filter="eventyr">Eventyr</button>
-        <button data-filter="overlevelse">Overlevelse</button>
-        <button data-filter="snart">Kommer snart</button>
-      </div>
+  <!-- ===== Spill ===== -->
+  <section id="spill" aria-labelledby="spill-tittel">
+    <div class="seksjonstopp inn">
+      <h2 id="spill-tittel">Våre spill</h2>
+      <p>Trykk på et spill for å starte</p>
     </div>
-
-    <div class="rutenett">
-      <!-- Nytt spill? Kopier et kort og bytt navn, bilde, kategori og lenke. -->
-      <a class="spill" href="spill/eventyrspill/" data-kategori="eventyr">
+    <div class="spill-liste">
+      <!-- Nytt spill? Kopier et spillkort og bytt lenke, bilde, navn, stikkord og tekst. -->
+      <a class="spillkort inn" href="spill/eventyrspill/" aria-label="Spill Evens Eventyrspill">
         <div class="bilde">
-          <img src="spill/eventyrspill/forsidebilde-stor.jpg" alt="" loading="lazy">
+          <img src="bilder/eventyr-epoke4.jpg" alt="Skjermbilde fra Evens Eventyrspill: piratskipet med basen og Piratkapteinen" loading="lazy">
           <span class="merke klar">Spillbart</span>
+          <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
           <h3>Evens Eventyrspill</h3>
-          <span class="sjanger">Eventyr · Kamp · Basebygging</span>
-          <div class="bunn"><span class="status">2D · PC og mobil</span><span class="knapp liten">▶ Spill</span></div>
+          <div class="stikkord"><span>Eventyr</span><span>Kamp</span><span>Basebygging</span><span>2D</span></div>
+          <p>Slåss mot monstre, bygg tårn og murer, og reis gjennom fem tidsepoker.</p>
+          <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill</span>
         </div>
       </a>
 
-      <a class="spill" href="spill/morkeskogen/" data-kategori="overlevelse">
+      <a class="spillkort inn" href="spill/morkeskogen/" aria-label="Spill Mørkeskogen 3D">
         <div class="bilde">
-          <img src="spill/morkeskogen/forsidebilde.jpg" alt="" loading="lazy">
+          <img src="bilder/morkeskogen.jpg" alt="Skjermbilde fra Mørkeskogen 3D: spilleren ved bålet i skogen" loading="lazy">
           <span class="merke klar">Spillbart</span>
+          <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
           <h3>Mørkeskogen 3D</h3>
-          <span class="sjanger">Overlevelse · Utforskning · 3D</span>
-          <div class="bunn"><span class="status">3D · PC og mobil</span><span class="knapp liten">▶ Spill</span></div>
+          <div class="stikkord"><span>Overlevelse</span><span>Utforskning</span><span>3D</span></div>
+          <p>Du har gått deg vill i en mørk skog. Hold bålet i gang og overlev nettene.</p>
+          <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill</span>
         </div>
       </a>
-
-      <div class="spill kommer" data-kategori="snart">
-        <div class="ikon">🎮</div>
-        <h3>Neste spill kommer snart!</h3>
-        <p>Nye verdener og eventyr er på vei.</p>
-      </div>
     </div>
   </section>
 
-  <!-- Om -->
-  <section id="om" class="om">
-    <div class="boks">
-      <h2>Om EVN Studio</h2>
-      <p>EVN Studio er et lite spillstudio som lager spill du kan spille rett i nettleseren, på PC, nettbrett og mobil. Hvert spill starter som en idé, blir testet og bygget videre på steg for steg.</p>
-      <p>Alle spillene er gratis, uten reklame og uten kjøp.</p>
-      <p id="personvern"><b>Personvern:</b> Vi teller anonymt hvor mange som besøker siden, starter et spill og omtrent hvor lenge det spilles, med GoatCounter. Vi bruker ingen informasjonskapsler og samler ikke inn navn, e-post eller annen informasjon om hvem du er.</p>
+  <!-- ===== Siste nytt =====
+       Ny nyhet: kopier en <article> og legg den øverst. Behold maks tre. -->
+  <section id="nytt" aria-labelledby="nytt-tittel">
+    <div class="seksjonstopp inn">
+      <h2 id="nytt-tittel">Siste nytt</h2>
+      <p>Fra spillstudioet</p>
     </div>
-    <div class="boks">
-      <h2>Spill som app</h2>
-      <ol>
-        <li>Åpne et spill i Safari eller Chrome.</li>
-        <li>Velg <b>Del → Legg til på Hjem-skjerm</b> (iPhone) eller <b>Installer app</b> (Android).</li>
-        <li>Spillet starter i fullskjerm, og fremgangen lagres.</li>
-      </ol>
+    <div class="nytt">
+      <article class="nyhet inn">
+        <span class="ikon" aria-hidden="true">⏳</span>
+        <time datetime="2026-10-31">31. oktober 2026</time>
+        <h3>Eventyrspillet har fått fem tidsepoker</h3>
+        <p>Start i steinalderen og reis via oldtiden, monsterskogen og piratskipet helt til romstasjonen.</p>
+      </article>
+      <article class="nyhet inn">
+        <span class="ikon" aria-hidden="true">🌲</span>
+        <time datetime="2026-10-31">31. oktober 2026</time>
+        <h3>Mørkeskogen 3D er ute</h3>
+        <p>Overlevelsesspillet i 3D kan nå spilles rett her på nettsiden, også på mobil.</p>
+      </article>
+      <article class="nyhet inn">
+        <span class="ikon" aria-hidden="true">🚀</span>
+        <time datetime="2026-10-31">31. oktober 2026</time>
+        <h3>EVN Studio har fått egen nettside</h3>
+        <p>Alle spillene samles på evnstudio.no. Legg et spill på hjemskjermen, så starter det som en app.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===== Om ===== -->
+  <section id="om" aria-labelledby="om-tittel">
+    <div class="seksjonstopp inn">
+      <h2 id="om-tittel">Om EVN Studio</h2>
+    </div>
+    <div class="om">
+      <div class="boks inn">
+        <h3>Et lite spillstudio</h3>
+        <p>EVN Studio lager spill du kan spille rett i nettleseren, på PC, nettbrett og mobil. Hvert spill starter som en idé og blir testet og bygget videre steg for steg.</p>
+        <p>Alle spillene er gratis, uten reklame og uten kjøp.</p>
+        <p id="personvern" class="liten"><b>Personvern:</b> Vi teller anonymt hvor mange som besøker siden, starter et spill og omtrent hvor lenge det spilles, med GoatCounter. Vi bruker ingen informasjonskapsler og samler ikke inn navn, e-post eller annen informasjon om hvem du er.</p>
+      </div>
+      <div class="boks inn">
+        <h3>📱 Spill som app</h3>
+        <ol>
+          <li>Åpne et spill i Safari eller Chrome.</li>
+          <li>Velg <b>Del → Legg til på Hjem-skjerm</b> (iPhone) eller <b>Installer app</b> (Android).</li>
+          <li>Spillet starter i fullskjerm, og fremgangen lagres.</li>
+        </ol>
+      </div>
     </div>
   </section>
 </main>
 
 <footer>
   <div class="bredde">
-    <span>© EVN Studio</span>
-    <span>Laget for spillglede 🎮</span>
+    <img src="logo-lys.png" alt="EVN Studio" width="45" height="34" loading="lazy">
+    <span>© EVN Studio · Laget for spillglede 🎮</span>
   </div>
 </footer>
 
 <script>
-  // Filtrer spillkortene etter kategori
-  document.querySelectorAll('.filter button').forEach(knapp => {
-    knapp.addEventListener('click', () => {
-      document.querySelectorAll('.filter button').forEach(k => k.classList.toggle('aktiv', k === knapp));
-      const valgt = knapp.dataset.filter;
-      document.querySelectorAll('.rutenett > [data-kategori]').forEach(kort => {
-        kort.classList.toggle('skjult', valgt !== 'alle' && kort.dataset.kategori !== valgt);
-      });
-    });
-  });
-  // Marker aktiv menylenke mens man ruller
-  const lenker = document.querySelectorAll('nav ul a');
-  const seksjoner = ['hjem', 'spill', 'om'].map(id => document.getElementById(id));
-  addEventListener('scroll', () => {
-    let aktiv = 'hjem';
-    for (const s of seksjoner) if (s.getBoundingClientRect().top < 120) aktiv = s.id;
-    lenker.forEach(a => a.classList.toggle('aktiv', a.getAttribute('href') === '#' + aktiv));
-  }, { passive: true });
+  // Tone inn seksjoner diskret når de rulles fram (bruker IntersectionObserver, ingen rulle-lytter)
+  (function () {
+    var deler = document.querySelectorAll('.inn');
+    if (!('IntersectionObserver' in window)) { deler.forEach(function (d) { d.classList.add('synlig'); }); return; }
+    var obs = new IntersectionObserver(function (oppf) {
+      oppf.forEach(function (o) { if (o.isIntersecting) { o.target.classList.add('synlig'); obs.unobserve(o.target); } });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    deler.forEach(function (d) { obs.observe(d); });
+  })();
 </script>
 <script src="statistikk.js" defer></script>
 </body>
