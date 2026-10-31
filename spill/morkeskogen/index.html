@@ -3380,10 +3380,12 @@ const hm = (geo, mat, x = 0, y = 0, z = 0, shadow = true) => { const m = new THR
 
 function heroMats() {
   HERO_RIM.value = HERO_RIM.value || new THREE.Color(0);
-  // NEW YORK-trykket (eget buet bånd, så teksten blir skarp)
+  // EVN STUDIO-trykket (eget buet bånd, så teksten blir skarp). Før 5.5.2 sto det NEW YORK.
   const tex = cTex(512, 128, x => {
-    x.fillStyle = '#1d2943'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = 'bold 74px Georgia, "Times New Roman", serif';
-    const txt = 'NEW YORK', wds = [...txt].map(ch => x.measureText(ch).width), tot = wds.reduce((a, b) => a + b, 0) + 6 * (txt.length - 1);
+    x.fillStyle = '#1d2943'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = 'bold 74px Georgia, "Times New Roman", serif';
+    { const ref = x.measureText('NEW YORK').width + 6 * 7, sq = Math.min(1, 0.9 * ref / (x.measureText('EVN STUDIO').width + 6 * 9)); x.translate(256, 0); x.scale(sq, 1); x.translate(-256, 0); }   // høye bokstaver, klemt litt sammen så teksten får plass på brystet
+    const txt = 'EVN STUDIO', wds = [...txt].map(ch => x.measureText(ch).width), tot = wds.reduce((a, b) => a + b, 0) + 6 * (txt.length - 1);
     let cx = 256 - tot / 2;
     [...txt].forEach((ch, i) => { const mid = cx + wds[i] / 2, k = (mid - 256) / 256; x.save(); x.translate(mid, 70 + k * k * 26); x.rotate(k * 0.18); x.fillText(ch, 0, 0); x.restore(); cx += wds[i] + 6; });
     x.globalCompositeOperation = 'destination-out'; grain(x, 512, 128, 2500, .5, 1, 2);       // litt slitt trykk
@@ -3726,10 +3728,12 @@ function heroBodyMats(HM) {
     x.strokeStyle = 'rgba(60,64,70,.5)'; x.lineWidth = 2; x.setLineDash([5, 4]); x.stroke(); x.setLineDash([]);
     x.fillStyle = 'rgba(30,34,40,.26)'; x.fillRect(L, T - 3, R - L, 3);
     for (const [a, b] of [[L, L2], [R, R2]]) { x.strokeStyle = 'rgba(40,44,50,.45)'; x.lineWidth = 3; x.beginPath(); x.moveTo(a, T); x.lineTo(b + (a < w / 2 ? 6 : -6), B + 8); x.stroke(); }
-    // NEW YORK-trykk (tegnet opp-ned fordi lerretets topp er genserens nederste kant)
+    // EVN STUDIO-trykk (tegnet opp-ned fordi lerretets topp er genserens nederste kant). Før 5.5.2 sto det NEW YORK.
     x.save(); x.translate(w / 2, TV(50.6) * h); x.scale(1, -1);
-    x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = 'bold 92px Rockwell, "Roboto Slab", "Courier New", Georgia, serif'; x.lineJoin = 'round';
-    const txt = 'NEW YORK', wds = [...txt].map(ch => ch === ' ' ? 26 : x.measureText(ch).width * 0.92), tot = wds.reduce((a, b) => a + b, 0) + 3 * (txt.length - 1);
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
+    { const F = ' Rockwell, "Roboto Slab", "Courier New", Georgia, serif', bredde = t => [...t].reduce((a, ch) => a + (ch === ' ' ? 26 : x.measureText(ch).width * 0.92) + 3, -3);
+      x.font = '900 92px' + F; const ref = bredde('NEW YORK'); x.scale(Math.min(1, 0.86 * ref / bredde('EVN STUDIO')), 1); }   // høye, tykke bokstaver, klemt litt sammen så teksten får plass på brystet
+    const txt = 'EVN STUDIO', wds = [...txt].map(ch => ch === ' ' ? 26 : x.measureText(ch).width * 0.92), tot = wds.reduce((a, b) => a + b, 0) + 3 * (txt.length - 1);
     for (const pass of [0, 1]) { let cx = -tot / 2; [...txt].forEach((ch, i) => { const mid = cx + wds[i] / 2, k = mid / (tot / 2); x.save(); x.translate(mid, -k * k * 22); x.rotate(-k * 0.2); x.scale(0.92, 1);
       if (pass === 0) { x.strokeStyle = '#f4f2ec'; x.lineWidth = 9; x.strokeText(ch, 0, 0); } else { x.fillStyle = '#1b2440'; x.fillText(ch, 0, 0); } x.restore(); cx += wds[i] + 3; }); }   // collegebuen: hvit kant, så mørkeblå bokstaver
     x.restore();
