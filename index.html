@@ -2,6 +2,10 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
+<!-- EVN-SIKKERHET start: gjelder bare evnstudio.no (se /sikkerhet/). Tas ut i Claude-artefaktene. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://gc.zgo.at; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://evnstudio.goatcounter.com; connect-src 'self' https://evnstudio.goatcounter.com; media-src 'self' data: blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>EVN Studio – Laget av barn. For barn.</title>
 <meta name="description" content="EVN Studio – Laget av barn. For barn. Gratis spill rett i nettleseren på PC, nettbrett og mobil.">
@@ -9,8 +13,7 @@
 <link rel="icon" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
 <link rel="preload" as="image" href="bilder/eventyr-hero.jpg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@600;800;900&family=Nunito:wght@500;700;800&display=swap">
+<link rel="stylesheet" href="fonter/fonter.css">
 <style>
   /* ===== Fargepalett: mørk marine med blå og lilla fra logoen ===== */
   :root {
@@ -146,6 +149,8 @@
   footer { margin-top: 72px; border-top: 1px solid var(--kant); color: var(--dempet); font-size: 14px; padding-bottom: env(safe-area-inset-bottom); }
   footer .bredde { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 26px; padding-bottom: 32px; }
   footer img { height: 34px; opacity: .85; }
+  footer a { text-decoration: underline; text-underline-offset: 3px; }
+  footer a:hover { color: var(--tekst); }
 
   @media (max-height: 500px) and (orientation: landscape) {
     .hero { min-height: 0; margin-top: 12px; } .hero .innhold { padding: 18px 24px; grid-template-columns: 1fr; }
@@ -356,7 +361,7 @@
 <footer>
   <div class="bredde">
     <img src="logo-lys.png" alt="EVN Studio" width="45" height="34" loading="lazy">
-    <span>© EVN Studio · Laget av barn. For barn. 🎮</span>
+    <span>© EVN Studio · Laget av barn. For barn. 🎮 · <a href="personvern/">Personvern</a> · <a href="sikkerhet/">Sikkerhet</a></span>
   </div>
 </footer>
 
