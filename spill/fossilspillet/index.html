@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>Fossil Zoo v0.4 – EVN Studio</title>
+<title>Fossil Zoo v0.6 – EVN Studio</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"Segoe UI",Roboto,sans-serif;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -17,6 +17,11 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
 .btn.gray{background:#e4e4e4;box-shadow:0 3px 0 #999}
 .btn.red{background:#ff8a80;box-shadow:0 3px 0 #b5463c}
 #parkBtn{margin-left:auto;pointer-events:auto}
+#ropeBtn{margin-left:auto}
+#lvlBtn{margin-left:auto}
+#ropeBtn[style*="inline-block"]+#lvlBtn{margin-left:0}
+#parkBtn{margin-left:0!important}
+#fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .35s;z-index:4}
 #msg{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);padding:10px 18px;border-radius:12px;font-size:18px;font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;max-width:92vw;z-index:3}
 .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:20px;z-index:5;overflow:auto}
 .overlay.show{display:flex}
@@ -31,6 +36,21 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
 #celebrate h2{font-size:clamp(26px,6vw,46px);color:#3b1700;text-shadow:0 2px 0 #fff6}
 #celebrate p{font-size:19px;color:#3b1700;font-weight:700;max-width:540px}
 .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+#levels{background:radial-gradient(circle at 50% 0%,#3b5b8a,#141a33 70%);justify-content:flex-start}
+#levels h2{font-size:clamp(28px,6vw,44px);margin-top:10px}
+#levels .lvintro{max-width:620px;font-size:17px;opacity:.9}
+#lvcards{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;width:min(960px,96vw)}
+.lvcard{background:rgba(255,255,255,.95);color:#2b1700;border-radius:18px;padding:16px;width:290px;display:flex;flex-direction:column;gap:8px;align-items:center;box-shadow:0 5px 0 rgba(0,0,0,.3)}
+.lvcard .big{font-size:52px;line-height:1}
+.lvcard h3{font-size:22px}
+.lvcard .fag{font-weight:800;color:#6a4a00}
+.lvcard .ar{font-size:14px;opacity:.8}
+.lvcard p{font-size:15px}
+.lvcard.locked{background:rgba(200,205,215,.9)}
+.lvcard.locked .big{filter:grayscale(1)}
+.lvcard .sone{font-size:13px;text-align:left;width:100%;background:rgba(0,0,0,.05);border-radius:10px;padding:6px 10px}
+.card .tag{font-size:13px;font-weight:800;color:#6a4a00}
+#lvwait{display:none;font-size:22px;font-weight:800;margin-top:10px}
 #park{background:linear-gradient(#8fd3ff 0%,#c8ecff 30%,#9cc96a 31%,#5f9a3a 100%);justify-content:flex-start}
 #park h2{font-size:clamp(28px,6vw,44px);text-shadow:0 3px 0 #2f6b1f;margin-top:6px}
 #field{width:min(900px,96vw);height:auto;aspect-ratio:900/320;flex-shrink:0;border-radius:20px;box-shadow:0 0 0 6px #8b5a2b}
@@ -69,12 +89,15 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
   <span class="pill" id="pDepth">📏 0 m</span>
   <span id="pAnimals" style="display:contents"></span>
   <span class="pill" id="pHelper">Hjelper: ingen</span>
+  <button class="btn" id="ropeBtn" style="display:none;pointer-events:auto">🪢 Tau opp</button>
+  <button class="btn" id="lvlBtn" style="pointer-events:auto">⏳ Tidsepoker</button>
   <button class="btn green" id="parkBtn">🏞️ Dyreparken</button>
   <a class="btn gray" id="evnAvslutt" href="../../" style="display:none;pointer-events:auto;text-decoration:none">✕ Avslutt</a>
 </div>
 <div id="msg"></div>
+<div id="fade"></div>
 <div id="fakta"><b id="fTitle"></b><span id="fText"></span><button id="fClose" aria-label="Lukk">✕</button></div>
-<div id="help">Piltaster/WASD: gå og grav • Hold ⬆️ inntil en vegg for å klatre</div>
+<div id="help">Piltaster/WASD: gå og grav • Hold en pil inntil en vegg for å klatre</div>
 <div id="pad">
   <span></span><button data-d="up">⬆️</button><span></span>
   <button data-d="left">⬅️</button><button data-d="down">⬇️</button><button data-d="right">➡️</button>
@@ -83,9 +106,9 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
 <div class="overlay show" id="start">
   <div class="studio">EVN STUDIOS PRESENTERER</div>
   <h1>⛏️ Fossil Zoo</h1>
-  <p>Grav deg ned gjennom jordlagene og let etter fossiler! 🦴<br>Når du har funnet hele skjelettet til et dyr, blir det <b>levende</b> og flytter inn i dyreparken din.<br><br>⌨️ Piltaster eller WASD: gå og grav<br>🧗 Hold pil opp inntil en vegg for å klatre<br>✨ Glitrende stein gjemmer et fossil!<br>⏳ Jo dypere du graver, jo lenger tilbake i tiden kommer du!</p>
+  <p>Reis gjennom jordas tre store tidsepoker og let etter fossiler! 🦴<br>Når du har funnet hele skjelettet til et dyr, blir det <b>levende</b> og flytter inn i dyreparken din.<br><br>⌨️ Piltaster eller WASD: gå og grav<br>🧗 Hold pil opp inntil en vegg for å klatre<br>✨ Glitrende stein gjemmer et fossil!<br>⏳ Jo dypere du graver, jo lenger tilbake i tiden kommer du!</p>
   <button class="btn bigbtn" id="startBtn">Start!</button>
-  <div class="ver">Versjon 0.4 • 8 dyr å vekke – og mye å lære!</div>
+  <div class="ver">Versjon 0.6 • 3 tidsepoker • 13 dyr å vekke</div>
 </div>
 
 <div class="overlay" id="celebrate">
@@ -97,6 +120,13 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
     <button class="btn" id="cPark">🏞️ Se dyreparken</button>
     <button class="btn gray" id="cBack">⛏️ Grav videre</button>
   </div>
+</div>
+
+<div class="overlay" id="levels">
+  <h2>⏳ Velg tidsepoke</h2>
+  <p class="lvintro">Jordas historie deles i tre store tidsepoker. Vekk alle dyrene i én tidsepoke for å låse opp den neste!</p>
+  <div id="lvcards"></div>
+  <div id="lvwait">⏳ Reiser i tid ...</div>
 </div>
 
 <div class="overlay" id="park">
@@ -115,53 +145,85 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
 // =====================================================
 //  INNSTILLINGER
 // =====================================================
-const W = 30, H = 100;          // bredde og dybde på fjellet (i ruter)
+const W = 30, H = 80;           // bredde og dybde på fjellet (i ruter)
 const SKY = 2;                 // rad 0-1 er himmel, rad 2 er stien på toppen
 const EMPTY=0, DIRT=1, STONE=2, HARD=3, BED=4, SKYT=5;
 const HARDNESS = {1:1, 2:3, 3:5};   // hvor mange slag hver steintype tåler
-const SAVE_KEY = 'evn-fossilspillet-v04', OLD_KEYS = ['evn-fossilspillet-v03'];
+const SAVE_KEY = 'evn-fossilspillet-v04', OLD_KEYS = ['evn-fossilspillet-v05','evn-fossilspillet-v03']; // nøkkelen v04 skal aldri endres
 const TEX = 36;                // oppløsning på fjell-teksturen per rute
 const FALL_FIRST = 120, FALL_FAST = 55, CLIMB_CD = 230;
 
 const ANIMALS = [
   { id:'ulv', navn:'Ulven', kort:'ulven', kraft:'snus', box:[-0.95,0.88,1.05], plass:'land', str:0.55,
-    deler:['hodeskallen','ribbeina','beina','halen'], dybde:[3,19],
+    niva:2, deler:['hodeskallen','ribbeina','beina','halen'], dybde:[3,12],
     evne:'Snuser opp fossiler langt unna.' },
   { id:'love', navn:'Løven', kort:'løven', kraft:'fart', box:[-0.98,0.95,1.05], plass:'land', str:0.65,
-    deler:['hodeskallen','ribbeina','beina','halen'], dybde:[3,19],
+    niva:2, deler:['hodeskallen','ribbeina','beina','halen'], dybde:[3,12],
     evne:'Løper dobbelt så fort og klatrer kjapt.' },
   { id:'elefant', navn:'Elefanten', kort:'elefanten', kraft:'stein', box:[-0.75,1.02,1.32], plass:'land', str:1.0,
-    deler:['hodeskallen','støttennene','ribbeina','beina','halen'], dybde:[6,19],
+    deler:['hodeskallen','støttennene','ribbeina','beina','halen'], niva:2, dybde:[4,12],
     evne:'Knuser kampestein med ett slag.' },
   { id:'mammut', navn:'Mammuten', kort:'mammuten', kraft:'alstein', box:[-0.78,1.3,1.42], plass:'land', str:1.05,
-    deler:['hodeskallen','støttennene','ribbeina','beina','halen'], dybde:[21,34],
+    deler:['hodeskallen','støttennene','ribbeina','beina','halen'], niva:2, dybde:[14,30],
     evne:'Knuser all stein med ett eneste slag.' },
   { id:'flyg', navn:'Flygeøglen', kort:'flygeøglen', kraft:'fly', box:[-0.8,0.66,1.15], plass:'luft', str:0.7,
-    deler:['hodeskallen','vingene','ribbeina','beina'], dybde:[65,78],
+    deler:['hodeskallen','vingene','ribbeina','beina'], niva:1, dybde:[14,24],
     evne:'Lar deg fly opp uten å klatre, og du faller aldri.' },
   { id:'trex', navn:'T-rexen', kort:'T-rexen', kraft:'bred', box:[-1.42,1.0,1.25], plass:'land', str:1.1,
-    deler:['hodeskallen','ribbeina','armene','beina','halen'], dybde:[51,62],
+    deler:['hodeskallen','ribbeina','armene','beina','halen'], niva:1, dybde:[3,12],
     evne:'Graver kjempebrede tunneler, tre ruter om gangen.' },
   { id:'langhals', navn:'Langhalsen', kort:'langhalsen', kraft:'lang', box:[-1.55,0.92,1.72], plass:'land', str:1.3,
-    deler:['hodeskallen','halsen','ribbeina','beina','halen'], dybde:[81,96],
+    deler:['hodeskallen','halsen','ribbeina','beina','halen'], niva:1, dybde:[27,56],
     evne:'Graver to ruter langt om gangen.' },
   { id:'hval', navn:'Hvalen', kort:'hvalen', kraft:'ekko', box:[-1.62,1.0,0.9], plass:'sjo', str:0.9,
-    deler:['hodeskallen','ryggraden','ribbeina','luffene','halen'], dybde:[37,48],
-    evne:'Bruker ekkolodd og finner fossiler skikkelig langt unna.' }
+    deler:['hodeskallen','ryggraden','ribbeina','luffene','halen'], niva:2, dybde:[35,74],
+    evne:'Bruker ekkolodd og finner fossiler skikkelig langt unna.' },
+  { id:'dimetrodon', navn:'Dimetrodonen', kort:'dimetrodonen', kraft:'kraft', box:[-1.38,0.9,0.95], plass:'land', str:0.75,
+    niva:0, deler:['hodeskallen','seilet','ribbeina','beina','halen'], dybde:[3,13],
+    evne:'Varmer deg opp med seilet, så du slår dobbelt så hardt.' },
+  { id:'meganeura', navn:'Kjempeøyenstikkeren', kort:'kjempeøyenstikkeren', kraft:'kompass', box:[-0.8,0.4,1.05], plass:'luft', str:0.55,
+    niva:0, deler:['vingene','kroppen','hodet'], dybde:[16,28],
+    evne:'Ser langt og viser vei til nærmeste fossil med en pil.' },
+  { id:'dunkle', navn:'Panserfisken', kort:'panserfisken', kraft:'bitt', box:[-1.38,0.96,0.95], plass:'sjo', str:0.6,
+    niva:0, deler:['hodepanseret','kjeveplatene','brystpanseret'], dybde:[31,44],
+    evne:'Knuser granitt med ett eneste bitt.' },
+  { id:'trilobitt', navn:'Trilobitten', kort:'trilobitten', kraft:'syn', box:[-0.52,0.7,0.55], plass:'sjo', str:0.4,
+    niva:0, deler:['hodeskjoldet','kroppsleddene','haleskjoldet'], dybde:[46,76],
+    evne:'Har gode øyne: det blir aldri mørkt nede i fjellet.' },
+  { id:'ammonitt', navn:'Ammonitten', kort:'ammonitten', kraft:'flyt', box:[-0.4,0.68,0.9], plass:'sjo', str:0.5,
+    niva:1, deler:['skallet','kamrene','kjevene'], dybde:[26,56],
+    evne:'Skallet er fylt med gass, så du faller sakte.' }
 ];
 // =====================================================
 //  LÆRING: tidsaldre, ledetråder og faktakort
 //  Ledetrådene sier «dette dyret», så man kan gjette hvilket dyr det er.
 // =====================================================
-const ZONES = [
-  { fra:0,  ikon:'🌳', navn:'Nåtiden', tekst:'Her ligger dyr som lever i dag.' },
-  { fra:20, ikon:'❄️', navn:'Istiden', tekst:'For 2,6 millioner til 12 000 år siden var det mye kaldere. Is dekket nesten hele Norge.' },
-  { fra:36, ikon:'🌊', navn:'Urtidshavet', tekst:'For rundt 40 millioner år siden var det hav mange steder som i dag er land. Her svømte tidlige hvaler.' },
-  { fra:50, ikon:'☄️', navn:'Slutten av krittiden', tekst:'For rundt 66 millioner år siden. Like etter traff en stor asteroide jorda, og dinosaurene døde ut.' },
-  { fra:64, ikon:'🦴', navn:'Krittiden', tekst:'For rundt 85 millioner år siden. Flygeøgler seilte over havet og fanget fisk.' },
-  { fra:80, ikon:'🌿', navn:'Juratiden', tekst:'For rundt 150 millioner år siden. Nå er du helt nede blant de aller største dinosaurene!' }
+const LEVELS = [
+  { navn:'Jordas oldtid', fag:'Paleozoikum', ar:'ca. 541–252 millioner år siden', ikon:'🐚', tint:[1.02,0.9,0.88], himmel:['#6aa7c4','#dcefdc'],
+    tekst:'Livet utviklet seg eksplosivt i havet, og senere krøp de første dyrene opp på land.',
+    soner:[
+      { fra:0,  ikon:'🦎', navn:'Permtiden', tekst:'For 299–252 millioner år siden. Perm sluttet med den største masseutryddelsen i jordas historie: rundt 9 av 10 arter i havet forsvant.' },
+      { fra:15, ikon:'🌿', navn:'Karbontiden', tekst:'For 359–299 millioner år siden. Tette sumpskoger med kjempebregner og enorme insekter. Kullet vi bruker i dag, ble laget av disse skogene.' },
+      { fra:30, ikon:'🐟', navn:'Devontiden', tekst:'For 419–359 millioner år siden, «fiskenes tidsalder». Store panserfisker svømte i havet, og de første amfibiene krøp opp på land.' },
+      { fra:45, ikon:'🪸', navn:'Ordovicium og silur', tekst:'For 485–419 millioner år siden. Havet var fullt av koraller, graptolitter og de første fiskene uten kjever. I silur kom de første enkle plantene på land.' },
+      { fra:60, ikon:'🐚', navn:'Kambrium', tekst:'For 541–485 millioner år siden. Den kambriske eksplosjonen: plutselig dukket det opp masse nye dyr i havet, blant annet trilobitter.' } ] },
+  { navn:'Jordas mellomalder', fag:'Mesozoikum', ar:'ca. 252–66 millioner år siden', ikon:'🦖', tint:[1.1,0.93,0.78], himmel:['#5aa0d8','#ffe6c2'],
+    tekst:'Dinosaurenes tidsalder.',
+    soner:[
+      { fra:0,  ikon:'🌸', navn:'Krittiden', tekst:'For 145–66 millioner år siden. Dinosaurenes høydepunkt, og de første blomstene. Den sluttet brått da en enorm meteoritt traff jorda.' },
+      { fra:25, ikon:'🌿', navn:'Juratiden', tekst:'For 201–145 millioner år siden. Dinosaurene ble enorme, og havet var fullt av ammonitter, svaneøgler og fiskeøgler.' },
+      { fra:58, ikon:'🦕', navn:'Triasen', tekst:'For 252–201 millioner år siden. Her kom de første små dinosaurene og de aller første pattedyrene.' } ] },
+  { navn:'Jordas nytid', fag:'Kenozoikum', ar:'ca. 66 millioner år siden til i dag', ikon:'🐘', tint:[1,1,1], himmel:['#4a9fe0','#cdeeff'],
+    tekst:'Etter dinosaurene tok pattedyrene og fuglene over verden.',
+    soner:[
+      { fra:0,  ikon:'🌳', navn:'Kvartær: vår tid', tekst:'Her ligger dyr som lever i dag.' },
+      { fra:13, ikon:'❄️', navn:'Kvartær: istidene', tekst:'Fra 2,6 millioner år siden. Is dekket ofte hele Norge. Her levde mammuter, ullhårete neshorn og kjempehjorter.' },
+      { fra:32, ikon:'🌊', navn:'Paleogen og neogen', tekst:'For 66 til 2,6 millioner år siden. Etter dinosaurene utviklet pattedyrene seg i rekordfart, og forfedrene til hvalene gikk fra land ut i havet.' } ] }
 ];
-function zoneAt(d){ let z=0; ZONES.forEach((Z,i)=>{ if(d>=Z.fra) z=i; }); return z; }
+let lvl=0, worlds={}, unlocked=[true,false,false];
+function zones(l=lvl){ return LEVELS[l].soner; }
+function zoneAt(d,l=lvl){ let z=0; zones(l).forEach((Z,i)=>{ if(d>=Z.fra) z=i; }); return z; }
+function levelDone(l){ return ANIMALS.every((a,i)=>a.niva!==l||alive[i]); }
 const LAER = {
   ulv:{ fakta:[
     'Dette dyret lever i flokk, og flokken jakter sammen.',
@@ -217,6 +279,43 @@ const LAER = {
     'Fossiler av dette dyret er funnet i ørkener og på fjell, fordi det en gang var hav der.'],
     levde:'Fra rundt 50 millioner år siden til i dag', hvor:'Alle verdenshavene', str:'Blåhvalen blir opptil 30 meter lang', mat:'Krill og fisk' }
 };
+Object.assign(LAER,{
+  dimetrodon:{ fakta:[
+    'Dette dyret hadde et stort seil på ryggen, laget av lange pigger med hud mellom.',
+    'Dette dyret var ikke en dinosaur. Det levde over 40 millioner år før de første dinosaurene!',
+    'Dette dyret er faktisk mer i slekt med pattedyr, og med deg, enn med dinosaurene.',
+    'Navnet betyr «to slags tenner», fordi det hadde både store og små tenner.',
+    'Forskere er ikke enige om hva seilet var til. Kanskje for å vise seg frem, eller for å styre varmen.'],
+    levde:'Permtiden, ca. 295–272 millioner år siden', hvor:'Nord-Amerika og Europa', str:'Opptil rundt 4 meter lang', mat:'Kjøtt: fisk, amfibier og andre dyr' },
+  meganeura:{ fakta:[
+    'Dette dyret var et insekt med vinger på rundt 70 cm fra tupp til tupp.',
+    'Dette dyret levde i karbontiden, for rundt 300 millioner år siden.',
+    'Dette dyret var et rovdyr som fanget andre insekter i lufta.',
+    'Forskere tror at det var mer oksygen i lufta den gangen, og at det hjalp insekter å bli så store.'],
+    levde:'Karbontiden, ca. 300 millioner år siden', hvor:'Europa (fossilene er funnet i Frankrike)', str:'Vingespenn på rundt 70 cm', mat:'Andre insekter' },
+  dunkle:{ fakta:[
+    'Dette dyret var en fisk med hodet dekket av tykke beinplater, som en rustning.',
+    'Dette dyret hadde ikke tenner, men skarpe kanter på kjevebeina som virket som en saks.',
+    'Bare rustningen på hodet og forkroppen er funnet som fossiler. Resten av kroppen var brusk, som sjelden blir bevart.',
+    'Dette dyret levde i devontiden, for rundt 370 millioner år siden.',
+    'Dette dyret hadde et av de kraftigste bittene av alle fisker vi kjenner.'],
+    levde:'Devontiden, ca. 372–358 millioner år siden', hvor:'I havet. Fossiler er funnet i Nord-Amerika, Europa og Marokko', str:'Rundt 4 meter lang, kanskje mer', mat:'Fisk og andre havdyr' },
+  trilobitt:{ fakta:[
+    'Dette dyret levde på havbunnen og hadde et hardt skall. Det er i slekt med insekter, krabber og edderkopper.',
+    'Dette dyret hadde noen av de første avanserte øynene, med linser av krystallstein (kalkspat).',
+    'Fossiler av dette dyret er funnet mange steder i Norge, for eksempel rundt Oslo.',
+    'Det fantes over 20 000 arter av dette dyret, og de levde i nesten 300 millioner år.',
+    'De største av disse dyrene ble over 70 cm lange.'],
+    levde:'Fra kambrium til slutten av perm, ca. 521–252 millioner år siden', hvor:'I havet over hele jorda, også i Norge', str:'Fra noen millimeter til over 70 cm', mat:'Små dyr og rester på havbunnen' },
+  ammonitt:{ fakta:[
+    'Dette dyret bodde i et spiralformet skall og var i slekt med blekkspruter.',
+    'Skallet til dette dyret var delt i kamre fylt med gass, så det kunne sveve i vannet.',
+    'Fossiler av dette dyret er så vanlige at forskere bruker dem til å finne ut hvor gamle steinlagene er.',
+    'Noen av disse dyrene hadde skall som var nesten 2 meter brede!',
+    'Dette dyret døde ut samtidig med dinosaurene, for 66 millioner år siden.',
+    'Fossiler av dette dyret er funnet på Svalbard.'],
+    levde:'Devon til kritt, ca. 400–66 millioner år siden', hvor:'I alle hav', str:'Fra noen centimeter til nesten 2 meter', mat:'Plankton og små havdyr' }
+});
 const FIRST_FOSSIL_FACT='Et fossil er rester av et dyr som levde for lenge siden. Beinet ble dekket av sand og slam, og over veldig lang tid ble det til stein.';
 function cluesFor(ai){ const n=found[ai].filter(Boolean).length; return LAER[ANIMALS[ai].id].fakta.slice(0,n); }
 function cap(t){ return t.charAt(0).toUpperCase()+t.slice(1); }
@@ -264,7 +363,12 @@ const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 // =====================================================
 //  LAG FJELLET
 // =====================================================
-function newWorld(){
+function freshGame(){
+  found = ANIMALS.map(a=>a.deler.map(()=>false));
+  alive = ANIMALS.map(()=>false);
+  helper = -1; worlds = {}; unlocked = [true,false,false]; lvl = 0;
+}
+function newWorld(l){
   grid = new Uint8Array(W*H); dmg = new Float32Array(W*H); fossils = {};
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
     let t;
@@ -273,42 +377,54 @@ function newWorld(){
     else if(x===0||x===W-1||y===H-1) t=BED;
     else {
       const d=y-SKY, r=Math.random();
-      if(d<18) t = r<0.12?STONE:DIRT;
-      else if(d<52) t = r<0.05?HARD:(r<0.42?STONE:DIRT);
+      if(d<15) t = r<0.12?STONE:DIRT;
+      else if(d<42) t = r<0.05?HARD:(r<0.42?STONE:DIRT);
       else t = r<0.45?HARD:(r<0.78?STONE:DIRT);
     }
     grid[idx(x,y)]=t;
   }
-  for(let i=0;i<20;i++){                      // noen små huler
+  for(let i=0;i<16;i++){                      // noen små huler
     const cx=rnd(3,W-4), cy=rnd(9,H-5), r=rnd(1,2);
     for(let y=cy-r;y<=cy+r;y++) for(let x=cx-r;x<=cx+r;x++)
       if(x>0&&x<W-1&&y>SKY+3&&y<H-1&&(x-cx)**2+(y-cy)**2<=r*r+1) grid[idx(x,y)]=EMPTY;
   }
-  ANIMALS.forEach((a,ai)=>{                   // gjem fossilene
-    a.deler.forEach((_,pi)=>{
-      for(let tries=0;tries<500;tries++){
-        const x=rnd(1,W-2), y=rnd(a.dybde[0]+SKY,a.dybde[1]+SKY), i=idx(x,y);
-        const t=grid[i];
-        if(t!==EMPTY && t!==BED && !fossils[i]){ fossils[i]={a:ai,p:pi}; break; }
-      }
-    });
-  });
-  found = ANIMALS.map(a=>a.deler.map(()=>false));
-  alive = ANIMALS.map(()=>false);
-  helper = -1;
+  placeMissingFossils(false);
   px = Math.floor(W/2); py = SKY; face = 1;
   resetDrawPos();
 }
-// legger ufunne fossilbiter i riktig tidsalder (brukes når en eldre lagring lastes)
+// legger ufunne fossilbiter for nivået i riktig tidsperiode
 function placeMissingFossils(clear){
   if(clear) fossils={};
-  ANIMALS.forEach((a,ai)=>a.deler.forEach((_,pi)=>{
+  ANIMALS.forEach((a,ai)=>{ if(a.niva!==lvl) return; a.deler.forEach((_,pi)=>{
     if(found[ai][pi]) return;
     for(let tries=0;tries<800;tries++){
       const x=rnd(1,W-2), y=rnd(a.dybde[0]+SKY,a.dybde[1]+SKY), i=idx(x,y), t=grid[i];
       if(t!==EMPTY && t!==BED && !fossils[i]){ fossils[i]={a:ai,p:pi}; return; }
     }
-  }));
+  }); });
+}
+function storeWorld(){
+  if(!grid) return;
+  worlds[lvl]={ g:Array.from(grid).join(''), fos:Object.keys(fossils).map(k=>[+k,fossils[k].a,fossils[k].p]), px, py };
+}
+function loadWorld(w){
+  grid=new Uint8Array(W*H); for(let i=0;i<W*H;i++) grid[i]=+w.g[i];
+  dmg=new Float32Array(W*H); fossils={}; w.fos.forEach(f=>fossils[f[0]]={a:f[1],p:f[2]});
+  px=w.px; py=w.py; face=1; resetDrawPos();
+}
+function enterLevel(l){
+  storeWorld(); lvl=l;
+  if(worlds[l] && worlds[l].g && worlds[l].g.length===W*H) loadWorld(worlds[l]); else newWorld(l);
+  buildTextures(); curZone=-1; save(); updateHUD();
+}
+// Tau opp: tar graveren trygt tilbake til overflaten
+let roping=false;
+function ropeUp(){
+  if(roping||paused||py<=SKY) return;
+  roping=true; heldDir=null; pressed.length=0;
+  const f=document.getElementById('fade'); f.style.opacity=1; sound('find');
+  setTimeout(()=>{ py=SKY; resetDrawPos(); dirty=true; save(); f.style.opacity=0; roping=false;
+    msg('🪢 Du klatret opp tauet til overflaten! Tunnelene dine er der fortsatt.',3000); },400);
 }
 function resetDrawPos(){ pdx=px; pdy=py; hx=px; hy=py; trail=[{x:px,y:py}]; falling=false; fallDist=0; }
 
@@ -327,7 +443,8 @@ function sediment(wx,wy){
   const base = LAYERS[li];
   let k = 0.85 + 0.3*fbm(wx*0.9,wy*0.9);
   if(frac<0.05) k*=0.72;                      // tynn mørk strek mellom lagene
-  return [base[0]*k, base[1]*k, base[2]*k];
+  const tn=LEVELS[lvl].tint;
+  return [base[0]*k*tn[0], base[1]*k*tn[1], base[2]*k*tn[2]];
 }
 function buildTextures(){
   const w=W*TEX, h=H*TEX;
@@ -387,24 +504,35 @@ function buildTextures(){
 // =====================================================
 function save(){
   try{
-    const fos = Object.keys(fossils).map(k=>[+k,fossils[k].a,fossils[k].p]);
-    localStorage.setItem(SAVE_KEY, JSON.stringify({g:Array.from(grid).join(''),fos,found,alive,helper,px,py}));
+    storeWorld();
+    localStorage.setItem(SAVE_KEY, JSON.stringify({v:5,lvl,unlocked,worlds,found,alive,helper}));
   }catch(e){}
 }
+function validProgress(f){ return Array.isArray(f) && f.length===ANIMALS.length && f.every((x,i)=>Array.isArray(x)&&x.length===ANIMALS[i].deler.length); }
+function readSave(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
 function load(){
   try{
-    let s = JSON.parse(localStorage.getItem(SAVE_KEY)), migrate=false;
-    if(!s){ for(const k of OLD_KEYS){ const o=JSON.parse(localStorage.getItem(k)); if(o){ s=o; migrate=true; break; } } }
-    if(!s||!s.g||s.g.length!==W*H) return false;
-    grid = new Uint8Array(W*H); for(let i=0;i<W*H;i++) grid[i]=+s.g[i];
-    dmg = new Float32Array(W*H);
-    fossils = {}; s.fos.forEach(f=>fossils[f[0]]={a:f[1],p:f[2]});
-    found=s.found; alive=s.alive; helper=s.helper; px=s.px; py=s.py; face=1;
-    if(found.length!==ANIMALS.length || found.some((f,i)=>f.length!==ANIMALS[i].deler.length)) return false;
-    resetDrawPos();
-    if(migrate){ placeMissingFossils(true); save(); }
-    return true;
-  }catch(e){ return false; }
+    for(const k of [SAVE_KEY, ...OLD_KEYS]){
+      const s=readSave(k); if(!s) continue;
+      // nytt format (v0.6+): flere verdener
+      if(s.worlds && validProgress(s.found)){
+        found=s.found; alive=s.alive; helper=s.helper; worlds=s.worlds; unlocked=s.unlocked||[true,false,false]; lvl=s.lvl||0;
+        if(worlds[lvl] && worlds[lvl].g && worlds[lvl].g.length===W*H) loadWorld(worlds[lvl]); else newWorld(lvl);
+        if(k!==SAVE_KEY) save();
+        return true;
+      }
+      // eldre format (v0.3–v0.5.1): de 8 første dyrene har samme rekkefølge
+      if(Array.isArray(s.found)){
+        freshGame();
+        s.found.forEach((f,i)=>{ if(i<ANIMALS.length && Array.isArray(f) && f.length===ANIMALS[i].deler.length){ found[i]=f; alive[i]=!!(s.alive&&s.alive[i]); } });
+        helper = (typeof s.helper==='number' && s.helper>=0 && s.helper<8 && alive[s.helper]) ? s.helper : -1;
+        for(let l=1;l<3;l++) unlocked[l] = ANIMALS.some((a,i)=>a.niva===l && found[i].some(Boolean));
+        newWorld(0); save();
+        return true;
+      }
+    }
+  }catch(e){}
+  return false;
 }
 
 // =====================================================
@@ -784,6 +912,144 @@ function drawWhaleBody(c,ph){
   c.fillStyle='#34526a'; c.save(); c.translate(0.25,-0.3); c.rotate(0.5+Math.sin(ph*0.6)*0.15); c.beginPath(); c.ellipse(0,0.08,0.06,0.2,0,0,7); c.fill(); c.restore();
 }
 
+// ---------- TRILOBITT ----------
+const SK_TRILO={
+  haleskjoldet:(c,st,u)=>bShape(c,()=>{c.beginPath();c.ellipse(-0.38,-0.25,0.12,0.14,0,0,7);},st,u),
+  kroppsleddene:(c,st,u)=>{ for(let x=-0.27;x<=0.15;x+=0.06) bLine(c,[x,-0.42+Math.abs(x)*0.12,x+0.01,-0.25,x,-0.08-Math.abs(x)*0.12],0.045,st,u); },
+  hodeskjoldet:(c,st,u)=>{ bShape(c,()=>{c.beginPath();c.ellipse(0.32,-0.25,0.17,0.22,0,0,7);},st,u);
+    bLine(c,[0.2,-0.42,0.0,-0.5],0.025,st,u); bLine(c,[0.2,-0.08,0.0,0.0],0.025,st,u);
+    bHole(c,0.3,-0.36,0.035,0.025,st); bHole(c,0.3,-0.14,0.035,0.025,st); }
+};
+function drawTriloBody(c,ph){
+  c.strokeStyle='#5e4a36'; c.lineWidth=0.018; c.lineCap='round';
+  for(let k=0;k<8;k++){ const x=-0.3+k*0.07, w=Math.sin(ph*2+k)*0.03;
+    c.beginPath(); c.moveTo(x,-0.08); c.lineTo(x+w,-0.01); c.moveTo(x,-0.42); c.lineTo(x+w,-0.49); c.stroke(); }
+  c.beginPath(); c.moveTo(0.45,-0.3); c.quadraticCurveTo(0.62,-0.4,0.68,-0.47+Math.sin(ph)*0.02); c.moveTo(0.45,-0.2); c.quadraticCurveTo(0.62,-0.1,0.68,-0.03); c.stroke();
+  const g=c.createLinearGradient(0,-0.45,0,-0.05); g.addColorStop(0,'#9a8468'); g.addColorStop(0.5,'#b89e7c'); g.addColorStop(1,'#8a7458');
+  c.fillStyle=g; c.beginPath(); c.ellipse(0,-0.25,0.5,0.2,0,0,7); c.fill();
+  c.fillStyle='#8f785c'; c.beginPath(); c.ellipse(-0.38,-0.25,0.12,0.14,0,0,7); c.fill();
+  c.strokeStyle='rgba(60,45,30,.6)'; c.lineWidth=0.012;
+  for(let x=-0.27;x<=0.15;x+=0.06){ c.beginPath(); c.moveTo(x,-0.42+Math.abs(x)*0.12); c.quadraticCurveTo(x+0.02,-0.25,x,-0.08-Math.abs(x)*0.12); c.stroke(); }
+  c.fillStyle='rgba(215,195,160,.55)'; c.beginPath(); c.ellipse(-0.05,-0.25,0.4,0.055,0,0,7); c.fill();
+  c.fillStyle='#7d6850'; c.beginPath(); c.ellipse(0.32,-0.25,0.17,0.22,0,0,7); c.fill();
+  c.fillStyle='#a08a6c'; c.beginPath(); c.ellipse(0.37,-0.25,0.08,0.07,0,0,7); c.fill();
+  c.fillStyle='#2a2018'; for(const ey of [-0.36,-0.14]){ c.beginPath(); c.ellipse(0.3,ey,0.035,0.025,0,0,7); c.fill(); }
+  c.strokeStyle='#6d5a44'; c.lineWidth=0.025; c.beginPath(); c.moveTo(0.2,-0.42); c.lineTo(0.0,-0.5); c.moveTo(0.2,-0.08); c.lineTo(0.0,0.0); c.stroke();
+}
+
+// ---------- KJEMPEØYENSTIKKER ----------
+const MEG_ABD=[0.08,-0.61,-0.2,-0.61,-0.5,-0.6,-0.76,-0.58];
+function megWingPath(c,a,len){ const cx=0.15-Math.cos(a)*len/2, cy=-0.63-Math.sin(a)*len/2; c.beginPath(); c.ellipse(cx,cy,len/2,0.065,a,0,7); }
+function megWing(c,a,len,alpha){
+  megWingPath(c,a,len); c.globalAlpha=alpha; c.fillStyle='#cfe0d6'; c.fill(); c.globalAlpha=1;
+  c.strokeStyle='rgba(50,60,50,.55)'; c.lineWidth=0.007; c.stroke();
+  c.beginPath(); c.moveTo(0.15,-0.63); c.lineTo(0.15-Math.cos(a)*len,-0.63-Math.sin(a)*len); c.stroke();
+}
+const SK_MEG={
+  vingene:(c,st,u)=>{ for(const [a,l] of [[0.45,0.7],[0.18,0.64]]) bShape(c,()=>megWingPath(c,a,l),st,u); },
+  kroppen:(c,st,u)=>{ bVert(c,MEG_ABD,11,0.035,0.022,st,u); bShape(c,()=>{c.beginPath();c.ellipse(0.16,-0.61,0.1,0.07,0,0,7);},st,u); },
+  hodet:(c,st,u)=>{ bShape(c,()=>{c.beginPath();c.arc(0.3,-0.62,0.065,0,7);},st,u); bHole(c,0.32,-0.64,0.035,0.035,st); }
+};
+function drawMegBody(c,ph){
+  const f=Math.sin(ph*3)*0.5;
+  megWing(c,0.5+f*0.7,0.72,0.45); megWing(c,0.3+f*0.7,0.66,0.45);
+  for(let i=10;i>=0;i--){ const q=bez(MEG_ABD,i/10); c.fillStyle=i%2?'#2f5a66':'#3f7482'; c.beginPath(); c.ellipse(q[0],q[1],0.045,lerp(0.035,0.022,i/10),0,0,7); c.fill(); }
+  c.strokeStyle='#1f3a40'; c.lineWidth=0.012; c.lineCap='round';
+  for(const [x,o] of [[0.12,0],[0.17,0.02],[0.22,0.04]]){ c.beginPath(); c.moveTo(x,-0.57); c.lineTo(x+0.03,-0.5+o); c.lineTo(x+0.05,-0.46+o); c.stroke(); }
+  c.fillStyle='#2a4a52'; c.beginPath(); c.ellipse(0.16,-0.61,0.1,0.075,0,0,7); c.fill();
+  c.fillStyle='#355860'; c.beginPath(); c.arc(0.3,-0.62,0.065,0,7); c.fill();
+  c.fillStyle='#8a3a2a'; c.beginPath(); c.arc(0.32,-0.645,0.045,0,7); c.fill();
+  c.fillStyle='rgba(255,255,255,.5)'; c.beginPath(); c.arc(0.335,-0.66,0.012,0,7); c.fill();
+  megWing(c,0.15+f*0.8,0.7,0.55); megWing(c,-0.05+f*0.8,0.64,0.55);
+}
+
+// ---------- PANSERFISK (DUNKLEOSTEUS) ----------
+function dunkHead(c){ c.beginPath(); c.moveTo(0.15,-0.8); c.quadraticCurveTo(0.6,-0.88,0.86,-0.63); c.lineTo(0.95,-0.48); c.lineTo(0.62,-0.46); c.lineTo(0.15,-0.42); c.closePath(); }
+function dunkJaw(c,o){ c.beginPath(); c.moveTo(0.5,-0.45); c.lineTo(0.94,-0.46+o); c.lineTo(0.88,-0.36+o); c.quadraticCurveTo(0.6,-0.28+o*0.5,0.32,-0.3); c.closePath(); }
+function dunkChest(c){ c.beginPath(); c.moveTo(0.16,-0.79); c.lineTo(0.05,-0.74); c.lineTo(0.05,-0.24); c.quadraticCurveTo(0.3,-0.18,0.42,-0.3); c.lineTo(0.3,-0.43); c.lineTo(0.16,-0.43); c.closePath(); }
+const SK_DUNK={
+  brystpanseret:(c,st,u)=>bShape(c,()=>dunkChest(c),st,u),
+  hodepanseret:(c,st,u)=>{ bShape(c,()=>dunkHead(c),st,u); bHole(c,0.6,-0.66,0.05,0.05,st);
+    if(st.holes){ c.strokeStyle='#8a7a5a'; c.lineWidth=0.01; c.beginPath(); c.moveTo(0.35,-0.84); c.lineTo(0.42,-0.5); c.moveTo(0.7,-0.78); c.lineTo(0.62,-0.6); c.stroke(); } },
+  kjeveplatene:(c,st,u)=>bShape(c,()=>dunkJaw(c,0.04),st,u)
+};
+function drawDunkBody(c,ph){
+  const o=Math.max(0,Math.sin(ph*0.8))*0.07, t=Math.sin(ph)*0.06;
+  c.fillStyle='#34404a'; c.beginPath(); c.moveTo(-1.0,-0.5+t); c.lineTo(-1.36,-0.86+t); c.lineTo(-1.22,-0.48+t); c.lineTo(-1.3,-0.26+t); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(-0.3,-0.79); c.lineTo(-0.46,-0.97); c.lineTo(-0.56,-0.76); c.fill();
+  const g=c.createLinearGradient(0,-0.85,0,-0.18); g.addColorStop(0,'#3b4956'); g.addColorStop(0.6,'#5d6d79'); g.addColorStop(1,'#b3bcc3');
+  c.fillStyle=g; c.beginPath(); c.moveTo(0.2,-0.8); c.quadraticCurveTo(-0.5,-0.84,-1.05,-0.52+t*0.6); c.lineTo(-1.05,-0.44+t*0.6); c.quadraticCurveTo(-0.5,-0.17,0.2,-0.2); c.closePath(); c.fill();
+  c.fillStyle='#46525c'; c.beginPath(); c.ellipse(-0.05,-0.27,0.17,0.05,0.4,0,7); c.fill();
+  c.fillStyle='#6e7378'; dunkChest(c); c.fill();
+  const g2=c.createLinearGradient(0,-0.88,0,-0.42); g2.addColorStop(0,'#868b90'); g2.addColorStop(1,'#5a5f64');
+  c.fillStyle=g2; dunkHead(c); c.fill();
+  c.strokeStyle='rgba(40,45,50,.6)'; c.lineWidth=0.012; c.beginPath(); c.moveTo(0.35,-0.84); c.lineTo(0.42,-0.47); c.moveTo(0.72,-0.78); c.lineTo(0.62,-0.6); c.moveTo(0.16,-0.6); c.lineTo(0.42,-0.62); c.stroke();
+  c.fillStyle='#64696e'; dunkJaw(c,o); c.fill();
+  c.strokeStyle='#d8dcdf'; c.lineWidth=0.012; c.beginPath(); c.moveTo(0.62,-0.455); c.lineTo(0.94,-0.465); c.moveTo(0.62,-0.445+o); c.lineTo(0.92,-0.455+o); c.stroke();
+  c.fillStyle='#1d2226'; c.beginPath(); c.arc(0.6,-0.66,0.052,0,7); c.fill();
+  c.fillStyle='#d98a2b'; c.beginPath(); c.arc(0.6,-0.66,0.03,0,7); c.fill();
+  c.fillStyle='#111'; c.beginPath(); c.arc(0.605,-0.66,0.013,0,7); c.fill();
+}
+
+// ---------- DIMETRODON ----------
+function dimSail(c){ c.beginPath(); c.moveTo(-0.4,-0.46); c.quadraticCurveTo(-0.05,-1.35,0.4,-0.48); c.closePath(); }
+function dimSpineTop(x){ return -0.47-0.44*(1-(x/0.42)**2); }
+function dimHead(c){ c.beginPath(); c.moveTo(0.4,-0.5); c.quadraticCurveTo(0.62,-0.64,0.88,-0.45); c.lineTo(0.88,-0.36); c.quadraticCurveTo(0.65,-0.29,0.42,-0.32); c.closePath(); }
+const DIM_TAIL=[-0.45,-0.38,-0.8,-0.3,-1.1,-0.2,-1.36,-0.12];
+const DIM_SPINE=[-0.45,-0.42,-0.15,-0.47,0.15,-0.47,0.42,-0.44];
+const SK_DIM={
+  halen:(c,st,u)=>bVert(c,DIM_TAIL,18,0.028,0.012,st,u),
+  beina:(c,st,u)=>{ bShape(c,()=>{c.beginPath();c.ellipse(-0.33,-0.4,0.08,0.05,0,0,7);},st,u); bShape(c,()=>{c.beginPath();c.ellipse(0.28,-0.42,0.05,0.07,0,0,7);},st,u);
+    for(const [x,o] of [[-0.33,0],[-0.27,0.03],[0.28,0],[0.34,0.03]]) bLine(c,[x,-0.38,x-0.08+o,-0.2,x-0.02+o,-0.02,x+0.06+o,0],0.035,st,u); },
+  ribbeina:(c,st,u)=>{ ribsAlong(c,DIM_SPINE,0.2,0.8,8,-0.26,0.02,st,u); bVert(c,DIM_SPINE,14,0.028,0.026,st,u); },
+  seilet:(c,st,u)=>{ for(let k=0;k<10;k++){ const x=-0.36+k*0.08; bLine(c,[x,-0.47,x+0.01,dimSpineTop(x)],0.018,st,u); } },
+  hodeskallen:(c,st,u)=>{ bShape(c,()=>dimHead(c),st,u); bHole(c,0.62,-0.49,0.035,0.03,st); bHole(c,0.5,-0.44,0.05,0.035,st);
+    if(st.holes){ c.fillStyle='#fffaf0'; for(let x=0.5;x<0.86;x+=0.05){ const big=Math.abs(x-0.66)<0.03; c.beginPath(); c.moveTo(x,-0.37); c.lineTo(x+0.012,big?-0.31:-0.34); c.lineTo(x+0.024,-0.37); c.fill(); } } }
+};
+function drawDimBody(c,ph){
+  const sw=0.32, tw=Math.sin(ph*0.5)*0.03;
+  leg(c,-0.27,-0.36,Math.sin(ph+Math.PI)*sw,0.38,0.09,0.06,'#5a4026',0.05);
+  leg(c,0.34,-0.37,Math.sin(ph)*sw,0.38,0.085,0.06,'#5a4026',0.05);
+  const g=c.createLinearGradient(0,-0.55,0,-0.22); g.addColorStop(0,'#7a5a38'); g.addColorStop(1,'#c4a47a');
+  c.fillStyle=g; c.beginPath(); c.moveTo(-0.45,-0.45); c.quadraticCurveTo(-0.9,-0.34+tw,-1.36,-0.12+tw*2); c.quadraticCurveTo(-0.9,-0.24,-0.45,-0.28); c.closePath(); c.fill();
+  const gs=c.createLinearGradient(0,-1.0,0,-0.45); gs.addColorStop(0,'#d77a46'); gs.addColorStop(1,'#8e4424');
+  c.fillStyle=gs; dimSail(c); c.fill();
+  c.strokeStyle='#5a2a14'; c.lineWidth=0.016; c.lineCap='round';
+  for(let k=0;k<10;k++){ const x=-0.36+k*0.08; c.beginPath(); c.moveTo(x,-0.47); c.lineTo(x+0.01,dimSpineTop(x)); c.stroke(); }
+  c.fillStyle=g; c.beginPath(); c.ellipse(0,-0.38,0.5,0.14,0,0,7); c.fill();
+  c.fillStyle='rgba(60,40,20,.35)'; for(let k=0;k<5;k++){ c.beginPath(); c.ellipse(-0.3+k*0.15,-0.44,0.04,0.02,0,0,7); c.fill(); }
+  c.fillStyle='#7a5a38'; dimHead(c); c.fill();
+  c.strokeStyle='#3a2410'; c.lineWidth=0.012; c.beginPath(); c.moveTo(0.88,-0.4); c.quadraticCurveTo(0.65,-0.36,0.48,-0.39); c.stroke();
+  c.fillStyle='#fff8e8'; for(let x=0.56;x<0.86;x+=0.06){ c.beginPath(); c.moveTo(x,-0.395); c.lineTo(x+0.01,-0.37); c.lineTo(x+0.02,-0.395); c.fill(); }
+  c.fillStyle='#e8b030'; c.beginPath(); c.arc(0.62,-0.49,0.022,0,7); c.fill(); c.fillStyle='#111'; c.beginPath(); c.arc(0.624,-0.49,0.01,0,7); c.fill();
+  leg(c,-0.33,-0.35,Math.sin(ph)*sw,0.36,0.1,0.065,'#7a5a38',0.055);
+  leg(c,0.28,-0.36,Math.sin(ph+Math.PI)*sw,0.36,0.095,0.065,'#7a5a38',0.055);
+}
+
+// ---------- AMMONITT ----------
+const AM_C=[0,-0.5];
+function amOuter(c){ c.beginPath(); c.arc(AM_C[0],AM_C[1],0.35,0,7); }
+function amWhorls(c){ c.beginPath(); c.arc(-0.06,-0.5,0.23,0,7); c.moveTo(-0.08+0.15,-0.5); c.arc(-0.08,-0.5,0.15,0,7); c.moveTo(-0.07+0.09,-0.5); c.arc(-0.07,-0.5,0.09,0,7); }
+const SK_AMMO={
+  skallet:(c,st,u)=>{ bShape(c,()=>amOuter(c),st,u);
+    if(st.holes){ c.strokeStyle='#8a7a5a'; c.lineWidth=0.012; for(let k=0;k<24;k++){ const a=k/24*Math.PI*2; c.beginPath(); c.moveTo(Math.cos(a)*0.24-0.04,-0.5+Math.sin(a)*0.24); c.lineTo(Math.cos(a)*0.34,-0.5+Math.sin(a)*0.34); c.stroke(); } } },
+  kamrene:(c,st,u)=>{ bShape(c,()=>{c.beginPath();c.arc(-0.06,-0.5,0.23,0,7);},st,u);
+    if(st.holes){ c.strokeStyle='#8a7a5a'; c.lineWidth=0.01; amWhorls(c); c.stroke();
+      for(let k=0;k<12;k++){ const a=k/12*Math.PI*2; c.beginPath(); for(let j=0;j<=6;j++){ const r=0.1+j*0.022, aa=a+(j%2?0.08:-0.08); const X=-0.06+Math.cos(aa)*r, Y=-0.5+Math.sin(aa)*r; j?c.lineTo(X,Y):c.moveTo(X,Y);} c.stroke(); } } },
+  kjevene:(c,st,u)=>{ bShape(c,()=>{c.beginPath();c.ellipse(0.46,-0.32,0.06,0.04,0.4,0,7);},st,u); bShape(c,()=>{c.beginPath();c.ellipse(0.47,-0.24,0.055,0.035,-0.3,0,7);},st,u); }
+};
+function drawAmmoBody(c,ph){
+  c.strokeStyle='#b07a5a'; c.lineCap='round';
+  for(let k=0;k<7;k++){ const yy=-0.36+k*0.03, w=Math.sin(ph*2+k)*0.04; c.lineWidth=0.022; c.beginPath(); c.moveTo(0.3,yy); c.quadraticCurveTo(0.5,yy+0.03+w,0.66,yy+0.08-w); c.stroke(); }
+  c.fillStyle='#b47e5c'; c.beginPath(); c.ellipse(0.32,-0.3,0.09,0.1,0,0,7); c.fill();
+  c.fillStyle='#111'; c.beginPath(); c.arc(0.35,-0.34,0.018,0,7); c.fill();
+  const g=c.createRadialGradient(-0.08,-0.58,0.05,0,-0.5,0.38); g.addColorStop(0,'#e8cc94'); g.addColorStop(1,'#9a7444');
+  c.fillStyle=g; amOuter(c); c.fill();
+  c.strokeStyle='rgba(90,60,30,.55)'; c.lineWidth=0.012;
+  for(let k=0;k<26;k++){ const a=k/26*Math.PI*2; c.beginPath(); c.moveTo(Math.cos(a)*0.24-0.04,-0.5+Math.sin(a)*0.24); c.lineTo(Math.cos(a)*0.345,-0.5+Math.sin(a)*0.345); c.stroke(); }
+  c.lineWidth=0.016; c.strokeStyle='rgba(80,50,25,.65)'; amWhorls(c); c.stroke();
+}
+
 const REG={
   ulv:[drawWolfBody,SK_WOLF,['halen','beina','ribbeina','hodeskallen']],
   love:[drawLionBody,SK_LION,['halen','beina','ribbeina','hodeskallen']],
@@ -792,7 +1058,12 @@ const REG={
   flyg:[drawPteroBody,SK_PTERO,['beina','vingene','ribbeina','hodeskallen']],
   trex:[drawTrexBody,SK_TREX,['halen','beina','ribbeina','armene','hodeskallen']],
   langhals:[drawSauBody,SK_SAU,['halen','beina','ribbeina','halsen','hodeskallen']],
-  hval:[drawWhaleBody,SK_WHALE,['halen','ryggraden','ribbeina','luffene','hodeskallen']]
+  hval:[drawWhaleBody,SK_WHALE,['halen','ryggraden','ribbeina','luffene','hodeskallen']],
+  dimetrodon:[drawDimBody,SK_DIM,['halen','beina','ribbeina','seilet','hodeskallen']],
+  meganeura:[drawMegBody,SK_MEG,['vingene','kroppen','hodet']],
+  dunkle:[drawDunkBody,SK_DUNK,['brystpanseret','hodepanseret','kjeveplatene']],
+  trilobitt:[drawTriloBody,SK_TRILO,['haleskjoldet','kroppsleddene','hodeskjoldet']],
+  ammonitt:[drawAmmoBody,SK_AMMO,['skallet','kamrene','kjevene']]
 };
 const BODIES=ANIMALS.map(a=>REG[a.id][0]), SKELETONS=ANIMALS.map(a=>REG[a.id][1]), SK_ORDER=ANIMALS.map(a=>REG[a.id][2]);
 
@@ -813,12 +1084,13 @@ function drawAnimal(c,ai,x,y,s,phase=0,flip=false){
 // =====================================================
 //  GRAVING, GÅING, KLATRING OG FALL
 // =====================================================
-function hintRadius(){ return hasPower('ekko') ? 9 : hasPower('snus') ? 5 : 2; }
+function hintRadius(){ return hasPower('ekko') ? 9 : hasPower('snus') ? 5 : hasPower('syn') ? 3 : 2; }
 function moveCd(){ return hasPower('fart') ? 75 : 140; }
 function solidAt(x,y){ if(x<0||x>=W||y>=H) return true; if(y<0) return false; const t=grid[idx(x,y)]; return t!==EMPTY && t!==SKYT; }
 function supported(){ return hasPower('fly') || solidAt(px,py+1); }
-function canCling(){ return py>SKY && (solidAt(px-1,py)||solidAt(px+1,py)); }
-function climbing(){ return !supported() && heldDir==='up' && canCling(); }
+function canCling(){ return py>SKY && (solidAt(px-1,py)||solidAt(px+1,py)||solidAt(px-1,py-1)||solidAt(px+1,py-1)); }
+// graveren henger på veggen så lenge en piltast (ikke ned) holdes inne
+function climbing(){ return !supported() && heldDir!==null && heldDir!=='down' && canCling(); }
 
 function moveTo(nx,ny){ trail.unshift({x:px,y:py}); if(trail.length>4) trail.pop(); px=nx; py=ny; dirty=true; if(helper>=0) helperPhase+=1.2; }
 
@@ -833,7 +1105,7 @@ function act(dir){
   if(t===EMPTY){
     if(dir==='up'){
       if(!canCling() && !supported()){ cooldown=200;
-        if(performance.now()-lastClimbMsg>3000){ msg('🧗 Du trenger en vegg ved siden av deg for å klatre!'); lastClimbMsg=performance.now(); }
+        if(performance.now()-lastClimbMsg>3000){ msg('🧗 Ingen vegg å klatre i her. Trykk på 🪢 Tau opp for å komme deg til overflaten!',3500); lastClimbMsg=performance.now(); }
         return; }
       moveTo(nx,ny); cooldown=hasPower('fart')?120:(hasPower('fly')?150:CLIMB_CD); return;
     }
@@ -845,14 +1117,14 @@ function act(dir){
     return;
   }
   if(dir==='up' && !supported() && !canCling()){ cooldown=150; return; }
-  const power = hasPower('alstein') ? 99 : (hasPower('stein')&&t===STONE ? 99 : 1);
+  const power = hasPower('alstein') ? 99 : ((hasPower('stein')&&t===STONE)||(hasPower('bitt')&&t===HARD)) ? 99 : (hasPower('kraft') ? 2 : 1);
   dmg[i]+=power; swing=1; cooldown=170;
   chips(nx,ny,t,3);
   if(dmg[i]>=HARDNESS[t]){
     breakTile(nx,ny);
     if(hasPower('lang')){ const bx=nx+dx, by=ny+dy;
       if(by>SKY && bx>0 && bx<W-1 && by<H-1){ const bt=grid[idx(bx,by)]; if(bt!==EMPTY&&bt!==BED) breakTile(bx,by); } }
-    if(hasPower('bred')){
+    if(hasPower('bred') && dy>=0){
       const side = dx ? [[0,-1],[0,1]] : [[-1,0],[1,0]];
       side.forEach(([sx,sy])=>{ const bx=nx+sx, by=ny+sy;
         if(by>SKY && bx>0 && bx<W-1 && by<H-1){ const bt=grid[idx(bx,by)]; if(bt!==EMPTY&&bt!==BED) breakTile(bx,by); } });
@@ -875,7 +1147,10 @@ function collect(ai,pi,x,y){
   stars(x,y); sound('find');
   const first = found.flat().filter(Boolean).length===1;
   if(n===a.deler.length && !alive[ai]){
-    alive[ai]=true; msg(`🦴 Du fant ${a.deler[pi]}! Skjelettet er komplett!`,2400); setTimeout(()=>celebrate(ai),900);
+    alive[ai]=true; msg(`🦴 Du fant ${a.deler[pi]}! Skjelettet er komplett!`,2400);
+    let unlockTxt=''; const l=a.niva;
+    if(l<LEVELS.length-1 && levelDone(l) && !unlocked[l+1]){ unlocked[l+1]=true; unlockTxt=`🔓 Du har vekket alle dyrene i ${LEVELS[l].navn.toLowerCase()}! Nå er ${LEVELS[l+1].navn.toLowerCase()} (${LEVELS[l+1].fag}) låst opp. Trykk på ⏳ Tidsepoker for å reise dit.`; }
+    setTimeout(()=>celebrate(ai,unlockTxt),900);
   } else {
     const clue=LAER[a.id].fakta[n-1];
     showFact(`🦴 Du fant ${a.deler[pi]}! (${n} av ${a.deler.length} biter av et ukjent dyr)`, first ? FIRST_FOSSIL_FACT+' 💡 Ledetråd: '+clue : '💡 Ledetråd: '+clue);
@@ -889,7 +1164,7 @@ function updatePhysics(dt){
     fallDist=0; fallT=FALL_FIRST; return;
   }
   falling=true; fallT-=dt*1000;
-  if(fallT<=0){ moveTo(px,py+1); fallDist++; fallT=FALL_FAST; }
+  if(fallT<=0){ moveTo(px,py+1); fallDist++; fallT=hasPower('flyt')?230:FALL_FAST; if(hasPower('flyt')) fallDist=Math.min(fallDist,1); }
 }
 
 // =====================================================
@@ -911,11 +1186,11 @@ function dust(){
 //  FEIRING: skjelettet settes sammen og blir levende
 // =====================================================
 let celebrating=-1, celStart=0, celRAF=0;
-function celebrate(ai){
+function celebrate(ai,unlockTxt=''){
   const a=ANIMALS[ai]; celebrating=ai; paused=true; heldDir=null;
   sound('alive');
   document.getElementById('cTitle').textContent=`🎉 ${a.navn.toUpperCase()} ER LEVENDE! 🎉`;
-  document.getElementById('cText').innerHTML=`Du fant hele skjelettet, og nå lever ${esc(a.kort)} igjen!`+profilHTML(ai)+`<small>🤝 Som hjelper: ${esc(a.evne)}</small>`;
+  document.getElementById('cText').innerHTML=`Du fant hele skjelettet, og nå lever ${esc(a.kort)} igjen!`+profilHTML(ai)+`<small>🤝 Som hjelper: ${esc(a.evne)}</small>`+(unlockTxt?`<div style="margin-top:8px;background:#fff;border-radius:12px;padding:8px 12px;color:#2f6b1f">${esc(unlockTxt)}</div>`:'');
   document.getElementById('fakta').classList.remove('show');
   show('celebrate'); celStart=performance.now(); cancelAnimationFrame(celRAF); celRAF=requestAnimationFrame(celLoop);
 }
@@ -946,17 +1221,18 @@ function openPark(){
   parkAnimals=ANIMALS.map((a,i)=>{ if(!alive[i]) return null;
     const p={ai:i,dir:Math.random()<0.5?1:-1,ph:Math.random()*6,wait:0};
     if(a.plass==='land'){ p.min=90; p.max=560; p.x=lerp(p.min,p.max,Math.random()); p.y=215+Math.random()*95; p.speed=30+a.str*15; }
-    if(a.plass==='luft'){ p.min=80; p.max=820; p.x=lerp(p.min,p.max,Math.random()); p.y=135; p.speed=80; }
-    if(a.plass==='sjo'){ p.min=720; p.max=820; p.x=770; p.y=300; p.speed=18; }
+    if(a.plass==='luft'){ p.min=80; p.max=820; p.x=lerp(p.min,p.max,Math.random()); p.y=120+Math.random()*30; p.speed=a.id==='meganeura'?110:80; }
+    if(a.plass==='sjo'){ const big=a.id==='hval'; p.min=big?700:665; p.max=big?820:855; p.x=lerp(p.min,p.max,Math.random()); p.y=a.id==='trilobitt'?314:(big?298:272+Math.random()*20); p.speed=big?18:26; }
     return p; }).filter(Boolean);
   const cards=document.getElementById('cards'); cards.innerHTML='';
-  ANIMALS.map((a,i)=>i).sort((x,y)=>ANIMALS[x].dybde[0]-ANIMALS[y].dybde[0]).forEach(i=>{ const a=ANIMALS[i];
+  ANIMALS.map((a,i)=>i).sort((x,y)=>(ANIMALS[x].niva-ANIMALS[y].niva)||(ANIMALS[x].dybde[0]-ANIMALS[y].dybde[0])).forEach(i=>{ const a=ANIMALS[i];
     const c=document.createElement('div'); c.className='card';
     const n=found[i].filter(Boolean).length;
     const cvs=document.createElement('canvas'); cvs.width=492; cvs.height=276; c.appendChild(cvs);
     const cc=cvs.getContext('2d'); const [fx,s]=fitAnimal(i,20,452,225);
     cc.fillStyle='rgba(120,80,40,.18)'; cc.fillRect(0,250,492,26);
     if(alive[i]) drawAnimal(cc,i,fx,252,s,0.6); else drawSkeleton(cc,i,fx,252,s,found[i]);
+    const tag=document.createElement('div'); tag.className='tag'; tag.textContent=`${LEVELS[a.niva].ikon} ${LEVELS[a.niva].fag}`; c.appendChild(tag);
     const info=document.createElement('div'); info.style.display='contents';
     if(alive[i]){
       info.innerHTML=`<h3>${a.navn}</h3>`+profilHTML(i)+`<details><summary>📖 Visste du? (${LAER[a.id].fakta.length} fakta)</summary><ul>${LAER[a.id].fakta.map(f=>'<li>'+esc(cap(f.replace(/dette dyret/gi,a.kort)))+'</li>').join('')}</ul></details><div class="ab">🤝 ${esc(a.evne)}</div>`; c.appendChild(info);
@@ -965,14 +1241,14 @@ function openPark(){
       else { const b=document.createElement('button'); b.className='btn green'; b.textContent='🤝 Ta med som hjelper'; b.onclick=()=>{helper=i;save();updateHUD();openPark();}; c.appendChild(b); }
     } else {
       const missing=a.deler.filter((_,p)=>!found[i][p]);
-      const cl=cluesFor(i), z=ZONES[zoneAt(a.dybde[0])];
+      const cl=cluesFor(i), z=zones(a.niva)[zoneAt(a.dybde[0],a.niva)];
       info.innerHTML=`<h3>Ukjent dyr ❓</h3><div class="ab">Fossiler funnet: ${n} av ${a.deler.length}<br><small>Ligger i: ${z.ikon} ${z.navn} • Mangler: ${missing.join(', ')}</small></div>`
         + (cl.length ? `<ul class="clues">${cl.map(f=>'<li>💡 '+esc(f)+'</li>').join('')}</ul><div class="gjett">Hvilket dyr tror du det er? 🤔</div>` : `<div class="ab"><small>Finn en fossilbit for å få den første ledetråden!</small></div>`);
       c.appendChild(info);
     }
     cards.appendChild(c);
   });
-  if(alive.every(Boolean)){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<div style="font-size:56px">🏆</div><h3>Alle dyrene lever!</h3><div class="ab">Du har vekket alle dyrene i fjellet. Kan du huske hvilken tidsalder hvert dyr levde i?</div>'; cards.appendChild(c); }
+  if(alive.every(Boolean)){ const c=document.createElement('div'); c.className='card'; c.innerHTML='<div style="font-size:56px">🏆</div><h3>Alle dyrene lever!</h3><div class="ab">Du har vekket alle dyrene i alle tre tidsepokene. Kan du huske når hvert dyr levde?</div>'; cards.appendChild(c); }
   show('park'); cancelAnimationFrame(parkRAF); let lastT=performance.now();
   const step=(now)=>{ if(!document.getElementById('park').classList.contains('show')) return; const dt=Math.min(0.05,(now-lastT)/1000); lastT=now; drawPark(dt,now); parkRAF=requestAnimationFrame(step); };
   parkRAF=requestAnimationFrame(step);
@@ -984,8 +1260,8 @@ function drawPark(dt,now){
   g=c.createLinearGradient(0,140,0,320); g.addColorStop(0,'#b9c86a'); g.addColorStop(1,'#6f9a3c'); c.fillStyle=g; c.fillRect(0,140,900,180);
   // innsjø til hvalen
   g=c.createLinearGradient(0,215,0,320); g.addColorStop(0,'#4aa3d8'); g.addColorStop(1,'#1f5f8f');
-  c.fillStyle='#c9b77a'; c.beginPath(); c.ellipse(770,272,138,52,0,0,7); c.fill();
-  c.fillStyle=g; c.beginPath(); c.ellipse(770,272,128,45,0,0,7); c.fill();
+  c.fillStyle='#c9b77a'; c.beginPath(); c.ellipse(765,272,148,54,0,0,7); c.fill();
+  c.fillStyle=g; c.beginPath(); c.ellipse(765,272,138,47,0,0,7); c.fill();
   c.strokeStyle='rgba(255,255,255,.35)'; c.lineWidth=2;
   for(let k=0;k<5;k++){ const wx=680+k*40+Math.sin(now/700+k)*8; c.beginPath(); c.moveTo(wx,250+k*9); c.lineTo(wx+18,250+k*9); c.stroke(); }
   for(const [tx,ts] of [[70,1],[480,1.15],[610,0.85]]){
@@ -1013,19 +1289,40 @@ function drawPark(dt,now){
 }
 
 function show(id){
-  ['start','celebrate','park'].forEach(o=>document.getElementById(o).classList.toggle('show',o===id));
+  ['start','celebrate','park','levels'].forEach(o=>document.getElementById(o).classList.toggle('show',o===id));
   if(id!=='celebrate') celebrating = id===null ? celebrating : celebrating;
 }
 function hideAll(){ show(null); paused=false; }
+function openLevels(){
+  paused=true; heldDir=null;
+  const box=document.getElementById('lvcards'); box.innerHTML='';
+  LEVELS.forEach((L,l)=>{
+    const ids=ANIMALS.map((a,i)=>i).filter(i=>ANIMALS[i].niva===l), na=ids.filter(i=>alive[i]).length;
+    const c=document.createElement('div'); c.className='lvcard'+(unlocked[l]?'':' locked');
+    c.innerHTML=`<div class="big">${unlocked[l]?L.ikon:'🔒'}</div><h3>${L.navn}</h3><div class="fag">${L.fag}</div><div class="ar">${L.ar}</div><p>${L.tekst}</p>`
+      +`<div class="sone">${L.soner.map(z=>z.ikon+' '+z.navn).join('<br>')}</div><div><b>🐾 ${na} av ${ids.length} dyr vekket</b></div>`;
+    const b=document.createElement('button');
+    if(unlocked[l]){ b.className='btn'+(l===lvl?' green':''); b.textContent= l===lvl ? '⛏️ Grav videre her' : '⏳ Reis hit!';
+      b.onclick=()=>{ if(l===lvl){ hideAll(); return; }
+        document.getElementById('lvwait').style.display='block';
+        setTimeout(()=>{ enterLevel(l); document.getElementById('lvwait').style.display='none'; hideAll();
+          showFact(`${L.ikon} Velkommen til ${L.navn}!`, `${L.fag}, ${L.ar}. ${L.tekst}`, 9000); },60); };
+    } else { b.className='btn gray'; b.disabled=true; b.textContent=`🔒 Vekk alle dyrene i ${LEVELS[l-1].navn.toLowerCase()} først`; }
+    c.appendChild(b); box.appendChild(c);
+  });
+  show('levels');
+}
 
 // =====================================================
 //  HUD
 // =====================================================
 function updateHUD(){
   const box=document.getElementById('pAnimals'); box.innerHTML='';
-  const nf=found.flat().filter(Boolean).length, tot=found.flat().length, na=alive.filter(Boolean).length;
-  const s1=document.createElement('span'); s1.className='pill'; s1.textContent=`🦴 Fossiler: ${nf}/${tot}`; box.appendChild(s1);
-  const s2=document.createElement('span'); s2.className='pill'+(na===ANIMALS.length?' done':''); s2.textContent=`🐾 Dyr vekket: ${na}/${ANIMALS.length}`; box.appendChild(s2);
+  const ids=ANIMALS.map((a,i)=>i).filter(i=>ANIMALS[i].niva===lvl);
+  const nf=ids.reduce((n,i)=>n+found[i].filter(Boolean).length,0), tot=ids.reduce((n,i)=>n+found[i].length,0), na=ids.filter(i=>alive[i]).length;
+  const s0=document.createElement('span'); s0.className='pill'; s0.textContent=`${LEVELS[lvl].ikon} ${LEVELS[lvl].fag}`; box.appendChild(s0);
+  const s1=document.createElement('span'); s1.className='pill'; s1.textContent=`🦴 ${nf}/${tot}`; box.appendChild(s1);
+  const s2=document.createElement('span'); s2.className='pill'+(na===ids.length?' done':''); s2.textContent=`🐾 ${na}/${ids.length} dyr`; box.appendChild(s2);
   document.getElementById('pHelper').textContent = 'Hjelper: ' + (helper>=0 ? ANIMALS[helper].navn : 'ingen');
 }
 
@@ -1112,7 +1409,7 @@ function draw(now){
   ctx.fillStyle='#120a06'; ctx.fillRect(0,0,vw,vh);
   // himmel med fjell i bakgrunnen
   if(surf>0){
-    const g=ctx.createLinearGradient(0,0,0,surf); g.addColorStop(0,'#4a9fe0'); g.addColorStop(1,'#cdeeff');
+    const g=ctx.createLinearGradient(0,0,0,surf); g.addColorStop(0,LEVELS[lvl].himmel[0]); g.addColorStop(1,LEVELS[lvl].himmel[1]);
     ctx.fillStyle=g; ctx.fillRect(0,0,vw,surf);
     ctx.fillStyle='#ffe58a'; ctx.beginPath(); ctx.arc(vw*0.82,surf-T*3.4,T*0.75,0,7); ctx.fill();
     ctx.fillStyle='#8496ad';
@@ -1149,8 +1446,13 @@ function draw(now){
   if(helper>=0){ const a=ANIMALS[helper], s=Math.min(T*0.95/a.box[2], T*2.4/(a.box[1]-a.box[0]));
     drawAnimal(ctx,helper,hx*T+T/2-camX,hy*T+T-camY,s,helperPhase,(px-hx)<-0.05); }
   drawPlayer(pdx*T-camX,pdy*T-camY,now);
+  if(hasPower('kompass')){ let best=null, bd=1e9;
+    for(const k in fossils){ const fx=k%W, fy=Math.floor(k/W), d=(fx-px)**2+(fy-py)**2; if(d<bd){ bd=d; best=[fx,fy]; } }
+    if(best && bd>2){ const a=Math.atan2(best[1]-py,best[0]-px), cx=pdx*T+T/2-camX, cy=pdy*T+T/2-camY;
+      ctx.save(); ctx.translate(cx+Math.cos(a)*T*0.95,cy+Math.sin(a)*T*0.95); ctx.rotate(a);
+      ctx.fillStyle='#ffd54a'; ctx.strokeStyle='#5a3a00'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(T*0.25,0); ctx.lineTo(-T*0.12,-T*0.15); ctx.lineTo(-T*0.04,0); ctx.lineTo(-T*0.12,T*0.15); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); } }
   // mørke dypt nede, med lys fra hodelykta
-  const depth=Math.max(0,pdy-SKY), dark=Math.min(0.82,depth/42);
+  const depth=Math.max(0,pdy-SKY), dark=hasPower('syn') ? 0 : Math.min(0.82,depth/36);
   if(dark>0.02){
     const cx=pdx*T+T/2-camX, cy=pdy*T+T/2-camY;
     const g=ctx.createRadialGradient(cx,cy,T*1.4,cx,cy,T*(5.5+(hasPower('snus')||hasPower('ekko')?1:0)));
@@ -1186,8 +1488,10 @@ function loop(now){
   particles=particles.filter(p=>p.life>0);
   saveTimer+=dt; if(dirty&&saveTimer>2){ save(); dirty=false; saveTimer=0; }
   const dm=Math.max(0,py-SKY), zi=zoneAt(dm);
-  if(zi!==curZone){ if(curZone>=0 && zi>curZone) showFact(`${ZONES[zi].ikon} Du har gravd deg ned til ${ZONES[zi].navn}!`, ZONES[zi].tekst, 8000); curZone=zi; }
-  document.getElementById('pDepth').textContent=`📏 ${dm} m · ${ZONES[zi].ikon} ${ZONES[zi].navn}`;
+  const Z=zones();
+  if(zi!==curZone){ if(curZone>=0 && zi>curZone) showFact(`${Z[zi].ikon} Du har gravd deg ned til ${Z[zi].navn}!`, Z[zi].tekst, 9000); curZone=zi; }
+  const dTxt=`📏 ${dm} m · ${Z[zi].ikon} ${Z[zi].navn}`; const pd=document.getElementById('pDepth'); if(pd.textContent!==dTxt) pd.textContent=dTxt;
+  const rb=document.getElementById('ropeBtn'), showR=dm>=3; if((rb.style.display!=='none')!==showR) rb.style.display=showR?'inline-block':'none';
   draw(now);
   requestAnimationFrame(loop);
 }
@@ -1229,11 +1533,13 @@ document.querySelectorAll('#pad button').forEach(b=>{
   b.addEventListener('pointerup',()=>heldDir=null);
   b.addEventListener('pointerleave',()=>heldDir=null);
 });
-if('ontouchstart' in window || navigator.maxTouchPoints>0){ document.getElementById('pad').classList.add('show'); document.getElementById('help').textContent='Trykk der du vil gå og grave • Hold ⬆️ inntil en vegg for å klatre'; }
+if('ontouchstart' in window || navigator.maxTouchPoints>0){ document.getElementById('pad').classList.add('show'); document.getElementById('help').textContent='Trykk der du vil gå og grave • Hold en pil inntil en vegg for å klatre'; }
 
 document.getElementById('fClose').onclick=()=>document.getElementById('fakta').classList.remove('show');
-document.getElementById('startBtn').onclick=()=>{ sound('find'); hideAll(); };
+document.getElementById('startBtn').onclick=()=>{ sound('find'); openLevels(); };
+document.getElementById('lvlBtn').onclick=()=>openLevels();
 document.getElementById('parkBtn').onclick=()=>openPark();
+document.getElementById('ropeBtn').onclick=()=>ropeUp();
 document.getElementById('parkBack').onclick=()=>hideAll();
 document.getElementById('cHelper').onclick=()=>{ helper=celebrating; save(); updateHUD(); hideAll(); msg(`${ANIMALS[helper].navn} er med deg nå!`); };
 document.getElementById('cPark').onclick=()=>openPark();
@@ -1241,7 +1547,7 @@ document.getElementById('cBack').onclick=()=>hideAll();
 document.getElementById('resetBtn').onclick=e=>{
   if(!resetArmed){ resetArmed=true; e.target.textContent='Sikker? Trykk igjen!'; return; }
   try{ localStorage.removeItem(SAVE_KEY); }catch(_){}
-  newWorld(); buildTextures(); save(); updateHUD(); hideAll(); msg('Nytt fjell! Lykke til med gravingen ⛏️');
+  freshGame(); grid=null; newWorld(0); buildTextures(); curZone=-1; save(); updateHUD(); openLevels();
 };
 
 // =====================================================
@@ -1249,15 +1555,32 @@ document.getElementById('resetBtn').onclick=e=>{
 // =====================================================
 resize();
 if(load()) document.getElementById('startBtn').textContent='Fortsett!';
-else { newWorld(); save(); }
+else { freshGame(); newWorld(0); save(); }
 buildTextures();
 updateHUD();
 requestAnimationFrame(loop);
 })();
 </script>
 <!-- EVN Studio: knapp tilbake til forsiden (vises bare under /spill/) -->
+<style>
+#evnSporsmal{position:fixed;inset:0;z-index:100000;display:none;place-items:center;background:rgba(0,0,0,.7);padding:16px}
+#evnSporsmal .boks{background:#2b1d10;border:3px solid #ffb703;border-radius:16px;padding:22px;max-width:340px;display:grid;gap:14px;text-align:center;color:#fff;font:800 19px system-ui,sans-serif}
+</style>
+<div id="evnSporsmal" role="dialog" aria-modal="true"><div class="boks">
+  <div>Vil du avslutte og gå tilbake til forsiden? Funnene dine er lagret.</div>
+  <button class="btn bigbtn" id="evnBli">Nei, spill videre</button><button class="btn gray" id="evnGaa">Ja, avslutt</button>
+</div></div>
 <script>
-try { if (location.pathname.indexOf('/spill/') !== -1) document.getElementById('evnAvslutt').style.display = 'inline-block'; } catch (e) {}
+try {
+  if (location.pathname.indexOf('/spill/') !== -1) {
+    var av = document.getElementById('evnAvslutt'), sp = document.getElementById('evnSporsmal');
+    av.style.display = 'inline-block';
+    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); sp.style.display = 'grid'; document.getElementById('evnBli').focus(); });
+    ['pointerdown', 'mousedown', 'touchstart'].forEach(function (ev) { sp.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); av.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
+    document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; });
+    document.getElementById('evnGaa').addEventListener('click', function () { location.href = '../../'; });
+  }
+} catch (e) {}
 </script>
 
 <script src="../../statistikk.js" data-spill="fossilspillet" defer></script>
