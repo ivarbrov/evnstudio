@@ -13,6 +13,7 @@
 <link rel="icon" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
 <link rel="stylesheet" href="fonter/fonter.css">
+<script>document.documentElement.classList.add('js');</script>
 <style>
   /* ===== Fargepalett: mørk marine med blå og lilla fra logoen ===== */
   :root {
@@ -28,7 +29,9 @@
   body { margin: 0; font-family: var(--brod); color: var(--tekst); background: var(--bg); line-height: 1.5;
     background-image:
       radial-gradient(900px 520px at 8% -6%, rgba(47,107,255,.28), transparent 62%),
-      radial-gradient(800px 480px at 100% 4%, rgba(138,61,255,.24), transparent 60%);
+      radial-gradient(800px 480px at 100% 4%, rgba(138,61,255,.24), transparent 60%),
+      radial-gradient(700px 520px at 85% 62%, rgba(255,92,170,.10), transparent 62%),
+      radial-gradient(760px 520px at 0% 88%, rgba(25,195,255,.12), transparent 60%);
     background-repeat: no-repeat; min-height: 100vh; }
   a { color: inherit; text-decoration: none; }
   img { display: block; max-width: 100%; }
@@ -156,8 +159,8 @@
     .hero { min-height: 0; margin-top: 12px; } .hero .innhold { padding: 18px 24px; grid-template-columns: 1fr; }
     .epoker { display: none; } .hero .merker { display: none; } .hero h1 { font-size: 34px; margin-bottom: 8px; } .hero p { display: none; } }
   /* Diskret inntoning når seksjoner kommer til syne */
-  .inn { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
-  .inn.synlig { opacity: 1; transform: none; }
+  .js .inn { opacity: 0; transform: translateY(26px); }
+  .js .inn.synlig { opacity: 1; transform: none; transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.25,1); transition-delay: calc(var(--i, 0) * 110ms); }
 
   /* ===== Nettbrett ===== */
   @media (max-width: 980px) {
@@ -205,7 +208,7 @@
   /* Respekter ønske om mindre bevegelse */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
-    .inn { opacity: 1; transform: none; }
+    .js .inn { opacity: 1; transform: none; }
     html { scroll-behavior: auto; }
   }
 
@@ -231,6 +234,78 @@
     .spillkort .stikkord span { font-size: 12px; padding: 2px 9px; }
     .spillkort p { font-size: 15px; line-height: 1.35; }
     .spillkort .knapp { min-height: 52px; font-size: 19px; margin-top: 4px; }
+  }
+
+  /* ===== Designrunde 1.11.2026: mer liv i kort, nyheter og footer ===== */
+  .seksjonstopp h2 { position: relative; padding-bottom: 8px; }
+  .seksjonstopp h2::after { content: ""; position: absolute; left: 0; bottom: 0; width: 56px; height: 4px; border-radius: 4px; background: var(--gradient); }
+
+  /* Spillkort: hver spill har sin egen aksentfarge */
+  .spillkort { --aksent: 25,195,255; transition: transform .3s cubic-bezier(.2,.8,.25,1.2), box-shadow .3s, border-color .3s; }
+  .spillkort.k-era { --aksent: 255,176,46; }
+  .spillkort.k-mork { --aksent: 255,122,47; }
+  .spillkort.k-fossil { --aksent: 120,214,120; }
+  .spillkort::before { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none;
+    box-shadow: inset 0 0 0 2px rgba(var(--aksent), 0); transition: box-shadow .3s; }
+  .spillkort:hover, .spillkort:focus-visible { transform: translateY(-10px) scale(1.025); border-color: rgba(var(--aksent), .7);
+    box-shadow: 0 32px 60px -16px rgba(var(--aksent), .45), 0 0 46px -6px rgba(var(--aksent), .35); }
+  .spillkort:hover::before, .spillkort:focus-visible::before { box-shadow: inset 0 0 0 2px rgba(var(--aksent), .65); }
+  .spillkort .bilde img { transition: transform .6s cubic-bezier(.2,.8,.25,1), filter .4s; }
+  .spillkort:hover .bilde img { transform: scale(1.08); filter: saturate(1.2) brightness(1.06); }
+  .spillkort:active { transform: translateY(-4px) scale(.99); }
+  .boks a { text-decoration: underline; text-underline-offset: 3px; color: var(--tekst); }
+  /* Stikkord: større og fargerike */
+  .spillkort .stikkord { gap: 8px; }
+  .spillkort .stikkord span { --t: 160,175,255; font-size: 14.5px; padding: 5px 12px; color: rgb(var(--t)); background: rgba(var(--t), .14);
+    border: 1px solid rgba(var(--t), .45); filter: brightness(1.25); }
+  .spillkort .stikkord .t-kamp { --t: 255,120,110; }
+  .spillkort .stikkord .t-bygg { --t: 110,170,255; }
+  .spillkort .stikkord .t-overlev { --t: 255,160,80; }
+  .spillkort .stikkord .t-utforsk { --t: 110,220,140; }
+  .spillkort .stikkord .t-grav { --t: 240,190,90; }
+  .spillkort .stikkord .t-laer { --t: 190,150,255; }
+
+  /* Siste nytt: farge per nyhet, ikon i fargesirkel, hele kortet er klikkbart */
+  .nyhet { --f: 138,61,255; position: relative; overflow: hidden; padding: 24px 22px 20px;
+    background: linear-gradient(165deg, rgba(var(--f), .16) 0%, var(--flate) 48%);
+    transition: transform .3s cubic-bezier(.2,.8,.25,1.2), border-color .3s, box-shadow .3s; }
+  .nyhet::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: linear-gradient(90deg, rgb(var(--f)), rgba(var(--f), .2)); }
+  .nyhet.n1 { --f: 25,195,255; } .nyhet.n2 { --f: 120,214,120; } .nyhet.n3 { --f: 255,176,46; }
+  .nyhet .ikon { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 16px; font-size: 30px;
+    background: rgba(var(--f), .18); border: 1px solid rgba(var(--f), .45); transition: transform .35s cubic-bezier(.2,.8,.25,1.4); }
+  .nyhet time { color: rgb(var(--f)); filter: brightness(1.2); }
+  .nyhet h3 a::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+  .nyhet h3 a:focus-visible { outline: none; }
+  .nyhet:focus-within { outline: 3px solid var(--cyan); outline-offset: 3px; }
+  .nyhet .mer { margin-top: auto; padding-top: 6px; font-weight: 800; color: rgb(var(--f)); filter: brightness(1.25); }
+  .nyhet .mer::after { content: " →"; display: inline-block; transition: transform .25s; }
+  .nyhet:hover { transform: translateY(-6px); border-color: rgba(var(--f), .65); box-shadow: 0 24px 46px -18px rgba(var(--f), .5); }
+  .nyhet:hover .ikon { transform: rotate(-8deg) scale(1.12); }
+  .nyhet:hover .mer::after { transform: translateX(5px); }
+
+  /* Footer */
+  footer { margin-top: 84px; position: relative; background: linear-gradient(180deg, rgba(19,26,58,.0), rgba(19,26,58,.75)); border-top: 0; }
+  footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--gradient); opacity: .7; }
+  footer .bredde { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 18px 32px; padding-top: 34px; padding-bottom: 36px; }
+  footer .fot-merke { display: flex; align-items: center; gap: 14px; }
+  footer .fot-merke img { height: 42px; opacity: 1; }
+  footer .fot-merke p { margin: 0; color: var(--dempet); font-size: 14px; }
+  footer .fot-merke b { color: var(--tekst); font-family: var(--tittel); font-size: 16px; }
+  footer ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  footer ul a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 16px; border-radius: 12px; text-decoration: none;
+    font-weight: 800; color: var(--tekst); background: rgba(255,255,255,.06); border: 1px solid var(--kant); transition: background .2s, border-color .2s, transform .2s; }
+  footer ul a:hover { background: rgba(47,107,255,.18); border-color: rgba(25,195,255,.5); transform: translateY(-2px); }
+  footer .copy { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--dempet); }
+  @media (max-width: 680px) {
+    footer .bredde { grid-template-columns: 1fr; }
+    footer ul a { padding: 8px 12px; }
+    .spillkort .stikkord span { font-size: 13px; padding: 3px 10px; }
+  }
+  /* Berøringsskjermer: ingen «hengende» hover-løft etter et trykk */
+  @media (hover: none) {
+    .spillkort:hover, .nyhet:hover { transform: none; }
+    .spillkort:hover .bilde img { transform: none; }
+    .spillkort:active { transform: scale(.98); box-shadow: 0 0 40px -6px rgba(var(--aksent), .45); }
   }
 </style>
 </head>
@@ -258,41 +333,41 @@
     </div>
     <div class="spill-liste">
       <!-- Nytt spill? Kopier et spillkort og bytt lenke, bilde, navn, stikkord og tekst. -->
-      <a class="spillkort" href="spill/eventyrspill/">
+      <a class="spillkort k-era inn" style="--i:0" href="spill/eventyrspill/">
         <div class="bilde">
           <img src="bilder/eventyr-kort.jpg" alt="Skjermbilde fra Era Defenders: piratskipet med basen og Piratkapteinen">
           <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
           <h3>Era Defenders</h3>
-          <div class="stikkord"><span><i aria-hidden="true">⚔️</i> Kamp</span><span><i aria-hidden="true">🏰</i> Bygging</span></div>
+          <div class="stikkord"><span class="t-kamp"><i aria-hidden="true">⚔️</i> Kamp</span><span class="t-bygg"><i aria-hidden="true">🏰</i> Bygging</span></div>
           <p>Slåss mot monstre og bygg basen din.</p>
           <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill nå</span>
         </div>
       </a>
 
-      <a class="spillkort" href="spill/morkeskogen/">
+      <a class="spillkort k-mork inn" style="--i:1" href="spill/morkeskogen/">
         <div class="bilde">
           <img src="bilder/morkeskogen.jpg" alt="Skjermbilde fra Mørkeskogen: spilleren ved bålet i skogen">
           <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
           <h3>Mørkeskogen</h3>
-          <div class="stikkord"><span><i aria-hidden="true">🔥</i> Overlevelse</span><span><i aria-hidden="true">🌲</i> Utforsking</span></div>
+          <div class="stikkord"><span class="t-overlev"><i aria-hidden="true">🔥</i> Overlevelse</span><span class="t-utforsk"><i aria-hidden="true">🌲</i> Utforsking</span></div>
           <p>Samle ved og overlev natten i skogen.</p>
           <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill nå</span>
         </div>
       </a>
 
-      <a class="spillkort" href="spill/fossilspillet/">
+      <a class="spillkort k-fossil inn" style="--i:2" href="spill/fossilspillet/">
         <div class="bilde">
-          <img src="bilder/fossilspillet.jpg" alt="Skjermbilde fra Fossil Zoo: graveren i en tunnel med ulven som hjelper og et glitrende fossilbein i jorda">
+          <img src="bilder/fossilspillet.jpg" srcset="bilder/fossilspillet.jpg 800w, bilder/fossilspillet-1200.jpg 1200w" sizes="(max-width: 680px) 100vw, 400px" alt="Skjermbilde fra Fossil Zoo: graveren i en tunnel med ulven som hjelper og et glitrende fossilbein i jorda">
           <span class="merke klar">Nytt</span>
           <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
           <h3>Fossil Zoo</h3>
-          <div class="stikkord"><span><i aria-hidden="true">⛏️</i> Graving</span><span><i aria-hidden="true">🦴</i> Læring</span></div>
+          <div class="stikkord"><span class="t-grav"><i aria-hidden="true">⛏️</i> Graving</span><span class="t-laer"><i aria-hidden="true">🦴</i> Læring</span></div>
           <p>Grav fram fossiler og vekk dyrene til live.</p>
           <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill nå</span>
         </div>
@@ -308,23 +383,26 @@
       <p>Fra spillstudioet</p>
     </div>
     <div class="nytt">
-      <article class="nyhet inn">
+      <article class="nyhet n1 inn" style="--i:0">
         <span class="ikon" aria-hidden="true">✨</span>
         <time datetime="2026-10-31">31. oktober 2026</time>
-        <h3>Nye navn og enklere start</h3>
+        <h3><a href="#spill">Nye navn og enklere start</a></h3>
         <p>Spillene heter nå Era Defenders, Mørkeskogen og Fossil Zoo. Alle har fått en startskjerm som viser målet og hvordan du styrer.</p>
+        <span class="mer" aria-hidden="true">Se spillene</span>
       </article>
-      <article class="nyhet inn">
+      <article class="nyhet n2 inn" style="--i:1">
         <span class="ikon" aria-hidden="true">🦴</span>
         <time datetime="2026-10-31">31. oktober 2026</time>
-        <h3>Fossil Zoo: tre tidsepoker og 13 dyr</h3>
+        <h3><a href="spill/fossilspillet/">Fossil Zoo: tre tidsepoker og 13 dyr</a></h3>
         <p>Grav deg ned gjennom jordas oldtid, mellomalder og nytid. Hver fossilbit gir en ledetråd – klarer du å gjette dyret før det våkner?</p>
+        <span class="mer" aria-hidden="true">Spill Fossil Zoo</span>
       </article>
-      <article class="nyhet inn">
+      <article class="nyhet n3 inn" style="--i:2">
         <span class="ikon" aria-hidden="true">⏳</span>
         <time datetime="2026-10-31">31. oktober 2026</time>
-        <h3>Era Defenders: sju tidsepoker</h3>
+        <h3><a href="spill/eventyrspill/">Era Defenders: sju tidsepoker</a></h3>
         <p>Reis fra steinalderen helt til tidens ende. Nye steder er Robotfabrikken og Tidsvirvelen, med våpen som fryser fiendene.</p>
+        <span class="mer" aria-hidden="true">Spill Era Defenders</span>
       </article>
     </div>
   </section>
@@ -342,7 +420,7 @@
         <p>Spillene er gratis, og alle kan prøve dem!</p>
         <p id="personvern" class="liten">For voksne: Vi samler ikke inn navn eller e-post, og bruker ingen informasjonskapsler. Les mer om <a href="personvern/">personvern</a> og <a href="sikkerhet/">sikkerhet</a>.</p>
       </div>
-      <div class="boks inn">
+      <div class="boks inn" style="--i:1">
         <h3>📱 Spill som app</h3>
         <ol>
           <li>Åpne et spill i Safari eller Chrome.</li>
@@ -357,8 +435,19 @@
 
 <footer>
   <div class="bredde">
-    <img src="logo-lys.png" alt="EVN Studio" width="45" height="34" loading="lazy">
-    <span>© EVN Studio · Laget av barn. For barn. 🎮 · <a href="personvern/">Personvern</a> · <a href="sikkerhet/">Sikkerhet</a></span>
+    <div class="fot-merke">
+      <img src="logo-lys.png" alt="" width="56" height="42" loading="lazy">
+      <p><b>EVN Studio</b><br>Laget av barn. For barn. 🎮</p>
+    </div>
+    <nav aria-label="Bunnmeny">
+      <ul>
+        <li><a href="#spill"><span aria-hidden="true">🎮</span> Alle spill</a></li>
+        <li><a href="personvern/"><span aria-hidden="true">🔒</span> Personvern</a></li>
+        <li><a href="sikkerhet/"><span aria-hidden="true">🛡️</span> Sikkerhet</a></li>
+        <li><a href="mailto:kontakt@evnstudio.no"><span aria-hidden="true">✉️</span> Kontakt (for voksne)</a></li>
+      </ul>
+    </nav>
+    <p class="copy">© 2026 EVN Studio · Gratis · Ingen innlogging · Ingen informasjonskapsler</p>
   </div>
 </footer>
 
@@ -368,7 +457,12 @@
     var deler = document.querySelectorAll('.inn');
     if (!('IntersectionObserver' in window)) { deler.forEach(function (d) { d.classList.add('synlig'); }); return; }
     var obs = new IntersectionObserver(function (oppf) {
-      oppf.forEach(function (o) { if (o.isIntersecting) { o.target.classList.add('synlig'); obs.unobserve(o.target); } });
+      oppf.forEach(function (o) {
+        if (!o.isIntersecting) return;
+        var el = o.target; el.classList.add('synlig'); obs.unobserve(el);
+        // Når inntoningen er ferdig, fjernes klassene, så hover-løftet ikke arver forsinkelsen
+        setTimeout(function () { el.classList.remove('inn', 'synlig'); }, 900 + 110 * (parseInt(el.style.getPropertyValue('--i')) || 0));
+      });
     }, { rootMargin: '0px 0px -8% 0px' });
     deler.forEach(function (d) { obs.observe(d); });
   })();
