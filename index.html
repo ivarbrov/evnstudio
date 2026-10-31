@@ -12,7 +12,6 @@
 <meta name="theme-color" content="#080c1a">
 <link rel="icon" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
-<link rel="preload" as="image" href="bilder/eventyr-hero.jpg">
 <link rel="stylesheet" href="fonter/fonter.css">
 <style>
   /* ===== Fargepalett: mørk marine med blå og lilla fra logoen ===== */
@@ -123,6 +122,7 @@
   .spillkort .tekst { position: relative; margin-top: -64px; z-index: 1; padding: 0 24px 24px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
   .spillkort h3 { font-family: var(--tittel); font-weight: 800; font-size: clamp(24px, 2.6vw, 32px); margin: 0; text-shadow: 0 3px 16px rgba(0,0,0,.6); }
   .spillkort .stikkord { display: flex; flex-wrap: wrap; gap: 6px; }
+  .spillkort .stikkord i { font-style: normal; }
   .spillkort .stikkord span { font-size: 13px; font-weight: 800; color: #c9d1f5; background: rgba(255,255,255,.07); border: 1px solid var(--kant);
     padding: 4px 10px; border-radius: 999px; }
   .spillkort p { margin: 0; color: var(--dempet); }
@@ -208,6 +208,30 @@
     .inn { opacity: 1; transform: none; }
     html { scroll-behavior: auto; }
   }
+
+  /* ===== Velg et spill (tre likeverdige kort øverst) ===== */
+  .velg { margin: 28px 0 18px; }
+  .velg h1 { font-family: var(--tittel); font-weight: 900; font-size: clamp(30px, 4vw, 44px); margin: 0 0 4px; letter-spacing: -.01em; }
+  .velg p { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+  .velg .gratis { color: var(--dempet); font-weight: 700; font-size: 15px; }
+  #spill .spill-liste { grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  #spill .spillkort .avspill { display: none; } /* «Spill nå»-knappen er nok; runde ikonet dekket navnet på nettbrett */
+  @media (max-width: 980px) and (min-width: 681px) { #spill .spill-liste { grid-template-columns: repeat(3, 1fr); gap: 14px; } .spillkort .tekst { padding: 0 14px 16px; } .spillkort p { font-size: 14px; } }
+  @media (max-width: 680px) {
+    .velg { margin: 14px 0 12px; }
+    .velg h1 { font-size: 30px; margin-bottom: 2px; }
+    .velg p { gap: 2px 10px; font-size: 14px; }
+    .velg .gratis { font-size: 14px; }
+    #spill .spill-liste { grid-template-columns: 1fr; gap: 14px; }
+    .spillkort { flex-direction: column; min-height: 0; }
+    .spillkort .bilde { width: 100%; aspect-ratio: 2 / 1; }
+    .spillkort .bilde::after { background: linear-gradient(0deg, rgba(19,26,58,.95) 0%, rgba(19,26,58,0) 50%); }
+    .spillkort .tekst { margin-top: -40px; padding: 0 14px 14px; gap: 6px; }
+    .spillkort h3 { font-size: 28px; line-height: 1.05; }
+    .spillkort .stikkord span { font-size: 12px; padding: 2px 9px; }
+    .spillkort p { font-size: 15px; line-height: 1.35; }
+    .spillkort .knapp { min-height: 52px; font-size: 19px; margin-top: 4px; }
+  }
 </style>
 </head>
 <body>
@@ -226,78 +250,50 @@
 
 <main class="bredde">
 
-  <!-- ===== Hovedattraksjon ===== -->
-  <section class="hero" aria-labelledby="hovedspill">
-    <img class="bakgrunn" src="bilder/eventyr-hero.jpg" alt="" fetchpriority="high">
-    <div class="innhold">
-      <div>
-        <div class="merker">
-          <span class="merke">⭐ Utvalgt spill</span>
-        </div>
-        <h1 id="hovedspill">Era <span>Defenders</span></h1>
-        <p>Forsvar basen og reis gjennom tiden – fra steinalderen helt til tidens ende. Slåss mot monstre, bygg og lås opp nye våpen.</p>
-        <a class="knapp stor" href="spill/eventyrspill/"><span class="trekant" aria-hidden="true"></span>SPILL NÅ</a>
-        <div class="under">Laget av barn. For barn. · Gratis · Ingen innlogging</div>
-      </div>
-      <div class="epoker">
-        <h2>7 tidsepoker å utforske</h2>
-        <ol>
-          <li><img src="bilder/eventyr-epoke1.jpg" alt="" loading="lazy">Steinalderen</li>
-          <li><img src="bilder/eventyr-epoke2.jpg" alt="" loading="lazy">Oldtiden</li>
-          <li><img src="bilder/eventyr-epoke3.jpg" alt="" loading="lazy">Monsterskogen</li>
-          <li><img src="bilder/eventyr-epoke4.jpg" alt="" loading="lazy">Piratskipet</li>
-          <li><img src="bilder/eventyr-epoke5.jpg" alt="" loading="lazy">Robotfabrikken</li>
-          <li><img src="bilder/eventyr-epoke6.jpg" alt="" loading="lazy">Romstasjonen</li>
-          <li><img src="bilder/eventyr-epoke7.jpg" alt="" loading="lazy">Tidsvirvelen</li>
-        </ol>
-      </div>
-    </div>
-  </section>
-
   <!-- ===== Spill ===== -->
   <section id="spill" aria-labelledby="spill-tittel">
-    <div class="seksjonstopp inn">
-      <h2 id="spill-tittel">Våre spill</h2>
-      <p>Trykk på et spill for å starte</p>
+    <div class="velg">
+      <h1 id="spill-tittel">Velg et spill</h1>
+      <p><span class="slagord"><b>Laget av barn.</b> For barn.</span> <span class="gratis">Gratis · Ingen innlogging</span></p>
     </div>
     <div class="spill-liste">
       <!-- Nytt spill? Kopier et spillkort og bytt lenke, bilde, navn, stikkord og tekst. -->
-      <a class="spillkort inn" href="spill/eventyrspill/">
+      <a class="spillkort" href="spill/eventyrspill/">
         <div class="bilde">
-          <img src="bilder/eventyr-kort.jpg" alt="Skjermbilde fra Era Defenders: piratskipet med basen og Piratkapteinen" loading="lazy">
+          <img src="bilder/eventyr-kort.jpg" alt="Skjermbilde fra Era Defenders: piratskipet med basen og Piratkapteinen">
           <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
           <h3>Era Defenders</h3>
-          <div class="stikkord"><span>Kamp</span><span>Bygging</span><span>2D</span></div>
-          <p>Forsvar basen. Reis gjennom tiden. Slåss mot monstre og bygg basen din gjennom sju tidsepoker.</p>
+          <div class="stikkord"><span><i aria-hidden="true">⚔️</i> Kamp</span><span><i aria-hidden="true">🏰</i> Bygging</span></div>
+          <p>Slåss mot monstre og bygg basen din.</p>
           <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill nå</span>
         </div>
       </a>
 
-      <a class="spillkort inn" href="spill/morkeskogen/">
+      <a class="spillkort" href="spill/morkeskogen/">
         <div class="bilde">
-          <img src="bilder/morkeskogen.jpg" alt="Skjermbilde fra Mørkeskogen: spilleren ved bålet i skogen" loading="lazy">
+          <img src="bilder/morkeskogen.jpg" alt="Skjermbilde fra Mørkeskogen: spilleren ved bålet i skogen">
           <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
           <h3>Mørkeskogen</h3>
-          <div class="stikkord"><span>Overlevelse</span><span>Utforsking</span><span>3D</span></div>
-          <p>Hold bålet i gang. Samle ved, bygg og overlev natten – monstrene tåler ikke lys.</p>
+          <div class="stikkord"><span><i aria-hidden="true">🔥</i> Overlevelse</span><span><i aria-hidden="true">🌲</i> Utforsking</span></div>
+          <p>Samle ved og overlev natten i skogen.</p>
           <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill nå</span>
         </div>
       </a>
 
-      <a class="spillkort inn" href="spill/fossilspillet/">
+      <a class="spillkort" href="spill/fossilspillet/">
         <div class="bilde">
-          <img src="bilder/fossilspillet.jpg" alt="Skjermbilde fra Fossil Zoo: graveren i en tunnel med mammuten som hjelper og glitrende fossiler i jorda" loading="lazy">
+          <img src="bilder/fossilspillet.jpg" alt="Skjermbilde fra Fossil Zoo: graveren i en tunnel med mammuten som hjelper og glitrende fossiler i jorda">
           <span class="merke klar">Nytt</span>
           <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
           <h3>Fossil Zoo</h3>
-          <div class="stikkord"><span>Graving</span><span>Læring</span><span>2D</span></div>
-          <p>Grav. Finn. Vekk dem til live. Finn fossiler gjennom jordlagene, så våkner dyret i din egen dyrepark.</p>
+          <div class="stikkord"><span><i aria-hidden="true">⛏️</i> Graving</span><span><i aria-hidden="true">🦴</i> Læring</span></div>
+          <p>Grav fram fossiler og vekk dyrene til live.</p>
           <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill nå</span>
         </div>
       </a>
