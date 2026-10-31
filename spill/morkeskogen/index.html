@@ -63,7 +63,23 @@ html,body{touch-action:manipulation}
 .mcost{display:flex;gap:10px;font-weight:800}.mcost .short{color:#ff7b7b}
 .card .mrow button{font-size:17px;padding:8px 14px}
 .card .maal{list-style:none;padding:0;display:grid;gap:6px;font-size:17px}
-#startBtn{font-size:26px;padding:14px}
+#startBtn{font-size:26px;padding:14px;--evn-glod:rgba(255,154,60,.55)}
+/* ===== EVN-startkort (felles oppbygging i alle EVN Studio-spill, fra 1.11.2026) =====
+   Rekkefølge: EVN STUDIO-merke → spillnavn → mål → styring → Start (pulserer) → Tilbake til EVN Studio → versjon.
+   Hvert spill beholder sine egne farger via --evn-knapp og --evn-glod. */
+.evn-merke{display:inline-flex;align-items:center;justify-self:center;align-self:center;padding:6px 14px;border-radius:999px;
+  font:800 12px/1 system-ui,-apple-system,sans-serif;letter-spacing:.18em;color:#fff;text-shadow:none;
+  background:linear-gradient(100deg,#19c3ff,#2f6bff 45%,#8a3dff);box-shadow:0 4px 16px rgba(47,107,255,.45)}
+.evn-start{animation:evnPuls 2.4s ease-in-out infinite;transition:transform .15s}
+.evn-start:hover,.evn-start:focus-visible{animation-play-state:paused;transform:scale(1.05)}
+.evn-start:active{transform:scale(.97)}
+@keyframes evnPuls{0%,100%{transform:scale(1);box-shadow:0 6px 18px var(--evn-glod,rgba(0,0,0,.4))}
+  50%{transform:scale(1.045);box-shadow:0 8px 30px var(--evn-glod,rgba(0,0,0,.4)),0 0 0 6px rgba(255,255,255,.08)}}
+.evn-tilbake{display:block;text-align:center;font-weight:800;text-decoration:underline;text-underline-offset:3px;color:inherit;opacity:.85;padding:10px 0;min-height:44px}
+.evn-tilbake:hover{opacity:1}
+.evn-ver{font-size:12px;opacity:.7;text-align:center}
+@media (prefers-reduced-motion:reduce){.evn-start{animation:none}}
+
 .tips summary{cursor:pointer;font-weight:800;opacity:.85;padding:6px 0}
 .tips ul{margin-top:8px;font-size:14px}
 html.mus .bare-touch,html.touch .bare-pc{display:none}
@@ -200,7 +216,7 @@ addEventListener('keydown',function(){t(false);},true);})();
 
 <div class="overlay" id="startScreen">
   <div class="card">
-    <div class="ver">EVN Studio · 3D · Versjon 5.5.1</div>
+    <span class="evn-merke">EVN STUDIO</span>
     <h1>Mørkeskogen</h1>
     <p>Du har gått deg vill i en mørk skog. Klarer du å overleve natten?</p>
     <ul class="maal">
@@ -210,7 +226,8 @@ addEventListener('keydown',function(){t(false);},true);})();
       <li class="bare-touch">👆 <b>Gå:</b> dra med fingeren · <b>Hugg:</b> trykk 🪓 · <b>Bruk:</b> trykk ✋</li>
     </ul>
     <p id="no3d" hidden>3D-motoren lastet ikke. Sjekk internett og last siden på nytt.</p>
-    <button id="startBtn">▶ Start spillet</button>
+    <button id="startBtn" class="evn-start">▶ Start spillet</button>
+    <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
     <details class="tips"><summary>Tips og styring</summary>
     <ul>
       <li><b>Gå:</b> piltastene eller W A S D</li>
@@ -233,6 +250,7 @@ addEventListener('keydown',function(){t(false);},true);})();
     </ul>
     <div class="qrow" id="qrow">Grafikk: <button data-q="lav">Lav</button><button data-q="middels">Middels</button><button data-q="hoy">Høy</button></div>
     </details>
+    <div class="ver evn-ver">Versjon 5.5.2 · 3D</div>
   </div>
 </div>
 
@@ -6607,7 +6625,7 @@ requestAnimationFrame(loop);
 #evnAvslutt{display:none;margin:8px 0 0 auto;width:max-content;pointer-events:auto;padding:7px 12px;border-radius:999px;background:rgba(10,18,14,.82);color:#f3ead6;
   font:800 14px 'Nunito',system-ui,sans-serif;text-decoration:none;border:1px solid rgba(243,234,214,.35);cursor:pointer}
 @media (orientation:landscape) and (max-height:500px){#evnAvslutt{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);margin:0;z-index:6}}
-#evnTilbake{display:none;text-align:center;color:#f3ead6;opacity:.8;font-weight:800;text-decoration:underline}
+#evnTilbake{color:#f3ead6}
 #evnSporsmal{position:fixed;inset:0;z-index:100000;display:none;place-items:center;background:rgba(5,10,8,.75);padding:16px}
 #evnSporsmal .boks{background:#13201a;border:2px solid #2f4a35;border-radius:16px;padding:22px;max-width:340px;display:grid;gap:14px;text-align:center;color:#f3ead6;font:800 18px 'Nunito',system-ui,sans-serif}
 #evnSporsmal button{font:400 22px 'Lilita One',system-ui,sans-serif;border:0;border-radius:12px;padding:12px;cursor:pointer}
@@ -6624,7 +6642,7 @@ try {
     var kol = document.querySelector('#hud .clock'); if (kol) kol.appendChild(av);
     av.style.display = 'block';
     var card = document.querySelector('#startScreen .card');
-    if (card) { var t = document.createElement('a'); t.id = 'evnTilbake'; t.href = '../../'; t.textContent = '← Tilbake til EVN Studio'; t.style.display = 'block'; card.appendChild(t); }
+    var t = document.getElementById('evnTilbake'); if (t) t.hidden = false;
     av.addEventListener('click', function (e) {
       e.preventDefault(); e.stopPropagation();
       if (document.exitPointerLock && document.pointerLockElement) document.exitPointerLock();
