@@ -1,6 +1,6 @@
 // Service worker: gjør at spillet kan spilles uten internett etter første gang.
 // Øk versjonsnummeret når spillet oppdateres, så mobilen henter den nye versjonen.
-const CACHE = 'eventyrspill-v0.16';
+const CACHE = 'eventyrspill-v0.17';
 const FILER = ['./', 'index.html', 'manifest.json', 'ikoner/logo.png', 'ikoner/ikon-192.png', 'ikoner/ikon-512.png', 'ikoner/ikon-maskable-512.png', 'ikoner/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -12,6 +12,7 @@ self.addEventListener('activate', e => {
 // Nett først (så oppdateringer kommer med en gang), lagret kopi hvis man er uten nett
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  if (new URL(e.request.url).origin !== location.origin) return; // ikke ta med statistikk eller andre nettsider
   e.respondWith(
     fetch(e.request).then(svar => {
       const kopi = svar.clone();
