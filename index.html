@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>EVN Studio – spill</title>
-<meta name="description" content="Spill fra EVN Studio. Gratis, uten innlogging, rett i nettleseren på PC, nettbrett og mobil.">
+<title>EVN Studio – Laget av barn. For barn.</title>
+<meta name="description" content="EVN Studio – Laget av barn. For barn. Gratis spill rett i nettleseren på PC, nettbrett og mobil.">
 <meta name="theme-color" content="#080c1a">
 <link rel="icon" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
@@ -61,7 +61,7 @@
 
   /* ===== Hovedspill ===== */
   .hero { position: relative; margin-top: 26px; border-radius: 28px; overflow: hidden; isolation: isolate;
-    min-height: clamp(520px, 74vh, 700px); display: flex; align-items: flex-end;
+    min-height: clamp(400px, 52vh, 560px); display: flex; align-items: flex-end;
     border: 1px solid var(--kant); box-shadow: 0 40px 80px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(47,107,255,.08); }
   .hero .bakgrunn { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover;
     animation: drift 30s ease-in-out infinite alternate; will-change: transform; }
@@ -78,7 +78,7 @@
   .merke.klar::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #39d98a;
     margin-right: 7px; vertical-align: 1px; box-shadow: 0 0 0 0 rgba(57,217,138,.6); animation: puls 2.2s infinite; }
   @keyframes puls { 70% { box-shadow: 0 0 0 8px rgba(57,217,138,0); } 100% { box-shadow: 0 0 0 0 rgba(57,217,138,0); } }
-  .hero h1 { font-family: var(--tittel); font-weight: 900; font-size: clamp(42px, 7.4vw, 84px); line-height: .95; margin: 0 0 16px;
+  .hero h1 { font-family: var(--tittel); font-weight: 900; font-size: clamp(40px, 5vw, 68px); white-space: nowrap; line-height: .95; margin: 0 0 16px;
     letter-spacing: -.02em; text-shadow: 0 6px 30px rgba(0,0,0,.5); }
   .hero h1 span { background: var(--gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .hero p { font-size: clamp(16px, 1.8vw, 20px); color: #d6dcf5; margin: 0 0 26px; max-width: 34em; }
@@ -89,13 +89,15 @@
     padding: 14px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); max-width: 430px; }
   .epoker h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--dempet); margin: 0 0 10px; font-family: var(--brod); }
   .epoker ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .epoker li { text-align: center; font-size: 12px; font-weight: 800; color: #d6dcf5; }
+  .epoker li { text-align: center; font-size: 12px; overflow-wrap: anywhere; hyphens: auto; font-weight: 800; color: #d6dcf5; }
   .epoker img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 2px solid rgba(255,255,255,.12);
-    margin-bottom: 6px; transition: transform .2s, border-color .2s; }
-  .epoker li:hover img { transform: translateY(-3px); border-color: var(--cyan); }
+    margin-bottom: 6px; }
 
   /* ===== Seksjoner ===== */
   section { scroll-margin-top: 92px; }
+  #spill .seksjonstopp { margin-top: 28px; }
+  .slagord { font-family: var(--tittel); font-weight: 800; font-size: 15px; color: var(--dempet); letter-spacing: .01em; white-space: nowrap; }
+  .slagord b { background: var(--gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .seksjonstopp { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 72px 0 22px; }
   .seksjonstopp h2 { font-family: var(--tittel); font-weight: 800; font-size: clamp(28px, 3.4vw, 38px); margin: 0; letter-spacing: -.01em; }
   .seksjonstopp p { margin: 0; color: var(--dempet); font-weight: 700; }
@@ -145,6 +147,9 @@
   footer .bredde { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 26px; padding-bottom: 32px; }
   footer img { height: 34px; opacity: .85; }
 
+  @media (max-height: 500px) and (orientation: landscape) {
+    .hero { min-height: 0; margin-top: 12px; } .hero .innhold { padding: 18px 24px; grid-template-columns: 1fr; }
+    .epoker { display: none; } .hero .merker { display: none; } .hero h1 { font-size: 34px; margin-bottom: 8px; } .hero p { display: none; } }
   /* Diskret inntoning når seksjoner kommer til syne */
   .inn { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
   .inn.synlig { opacity: 1; transform: none; }
@@ -164,7 +169,23 @@
     header .knapp { display: none; }
     .hero { margin-top: 14px; border-radius: 22px; min-height: 0; }
     .hero::before { background: linear-gradient(0deg, rgba(8,12,26,.98) 0%, rgba(8,12,26,.86) 46%, rgba(8,12,26,.2) 82%); }
-    .hero .innhold { padding-top: 190px; }
+    .hero .innhold { padding-top: 84px; }
+    .hero p { font-size: 15px; }
+    .hero .merker { margin-bottom: 10px; }
+    .hero p { margin-bottom: 18px; }
+    .epoker { display: none; }
+    header .slagord { display: none; }
+    #spill .seksjonstopp { margin-top: 22px; }
+    .spill-liste { gap: 14px; }
+    .spillkort { flex-direction: row; min-height: 150px; }
+    .spillkort .bilde { width: 40%; aspect-ratio: auto; flex-shrink: 0; }
+    .spillkort .bilde::after { background: linear-gradient(270deg, rgba(19,26,58,.9) 0%, rgba(19,26,58,0) 40%); }
+    .spillkort .tekst { margin-top: 0; padding: 14px 14px 14px 12px; gap: 6px; }
+    .spillkort h3 { font-size: 22px; }
+    .spillkort p { font-size: 14px; line-height: 1.35; }
+    .spillkort .stikkord span { font-size: 11px; padding: 2px 8px; }
+    .spillkort .knapp { padding: 10px; font-size: 16px; }
+    .spillkort .avspill { display: none; }
     .hero .knapp.stor { width: 100%; }
     .epoker { padding: 10px; }
     .epoker ol { gap: 6px; }
@@ -190,11 +211,11 @@
   <div class="bredde">
     <a class="logo" href="#" aria-label="EVN Studio – til toppen"><img src="logo-lys.png" alt="EVN Studio" width="67" height="50"></a>
     <nav aria-label="Hovedmeny">
-      <a href="#spill">Spill</a>
+      <a href="#spill">Alle spill</a>
       <a href="#nytt">Nytt</a>
       <a href="#om">Om</a>
     </nav>
-    <a class="knapp" href="spill/eventyrspill/"><span class="trekant" aria-hidden="true"></span>Spill nå</a>
+    <span class="slagord" style="margin-left:auto"><b>Laget av barn.</b> For barn.</span>
   </div>
 </header>
 
@@ -207,22 +228,21 @@
       <div>
         <div class="merker">
           <span class="merke">⭐ Utvalgt spill</span>
-          <span class="merke klar">Klar til å spille</span>
         </div>
-        <h1 id="hovedspill">Evens <span>Eventyrspill</span></h1>
-        <p>Reis gjennom tiden fra steinalderen til verdensrommet. Bekjemp monstre, bygg din egen base og lås opp nye våpen.</p>
+        <h1 id="hovedspill">Era <span>Defenders</span></h1>
+        <p>Forsvar basen og reis gjennom tiden – fra steinalderen helt til tidens ende. Slåss mot monstre, bygg og lås opp nye våpen.</p>
         <a class="knapp stor" href="spill/eventyrspill/"><span class="trekant" aria-hidden="true"></span>SPILL NÅ</a>
-        <div class="under">Gratis · Ingen innlogging · PC, nettbrett og mobil</div>
+        <div class="under">Laget av barn. For barn. · Gratis · Ingen innlogging</div>
       </div>
       <div class="epoker">
         <h2>7 tidsepoker å utforske</h2>
         <ol>
-          <li><img src="bilder/eventyr-epoke1.jpg" alt="" loading="lazy">Steinalder</li>
+          <li><img src="bilder/eventyr-epoke1.jpg" alt="" loading="lazy">Steinalderen</li>
           <li><img src="bilder/eventyr-epoke2.jpg" alt="" loading="lazy">Oldtiden</li>
-          <li><img src="bilder/eventyr-epoke3.jpg" alt="" loading="lazy">Skogen</li>
-          <li><img src="bilder/eventyr-epoke4.jpg" alt="" loading="lazy">Pirater</li>
-          <li><img src="bilder/eventyr-epoke5.jpg" alt="" loading="lazy">Robotene</li>
-          <li><img src="bilder/eventyr-epoke6.jpg" alt="" loading="lazy">Rommet</li>
+          <li><img src="bilder/eventyr-epoke3.jpg" alt="" loading="lazy">Monsterskogen</li>
+          <li><img src="bilder/eventyr-epoke4.jpg" alt="" loading="lazy">Piratskipet</li>
+          <li><img src="bilder/eventyr-epoke5.jpg" alt="" loading="lazy">Robotfabrikken</li>
+          <li><img src="bilder/eventyr-epoke6.jpg" alt="" loading="lazy">Romstasjonen</li>
           <li><img src="bilder/eventyr-epoke7.jpg" alt="" loading="lazy">Tidsvirvelen</li>
         </ol>
       </div>
@@ -237,45 +257,43 @@
     </div>
     <div class="spill-liste">
       <!-- Nytt spill? Kopier et spillkort og bytt lenke, bilde, navn, stikkord og tekst. -->
-      <a class="spillkort inn" href="spill/eventyrspill/" aria-label="Spill Evens Eventyrspill">
+      <a class="spillkort inn" href="spill/eventyrspill/" aria-label="Spill Era Defenders">
         <div class="bilde">
-          <img src="bilder/eventyr-epoke4.jpg" alt="Skjermbilde fra Evens Eventyrspill: piratskipet med basen og Piratkapteinen" loading="lazy">
-          <span class="merke klar">Spillbart</span>
+          <img src="bilder/eventyr-epoke4.jpg" alt="Skjermbilde fra Era Defenders: piratskipet med basen og Piratkapteinen" loading="lazy">
           <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
-          <h3>Evens Eventyrspill</h3>
-          <div class="stikkord"><span>Eventyr</span><span>Kamp</span><span>Basebygging</span><span>2D</span></div>
-          <p>Slåss mot monstre, bygg tårn og murer, og reis gjennom sju tidsepoker.</p>
-          <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill</span>
+          <h3>Era Defenders</h3>
+          <div class="stikkord"><span>Kamp</span><span>Bygging</span><span>2D</span></div>
+          <p>Forsvar basen. Reis gjennom tiden. Slåss mot monstre og bygg basen din gjennom sju tidsepoker.</p>
+          <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill nå</span>
         </div>
       </a>
 
-      <a class="spillkort inn" href="spill/morkeskogen/" aria-label="Spill Mørkeskogen 3D">
+      <a class="spillkort inn" href="spill/morkeskogen/" aria-label="Spill Mørkeskogen">
         <div class="bilde">
-          <img src="bilder/morkeskogen.jpg" alt="Skjermbilde fra Mørkeskogen 3D: spilleren ved bålet i skogen" loading="lazy">
-          <span class="merke klar">Spillbart</span>
+          <img src="bilder/morkeskogen.jpg" alt="Skjermbilde fra Mørkeskogen: spilleren ved bålet i skogen" loading="lazy">
           <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
-          <h3>Mørkeskogen 3D</h3>
-          <div class="stikkord"><span>Overlevelse</span><span>Utforskning</span><span>3D</span></div>
-          <p>Du har gått deg vill i en mørk skog. Hold bålet i gang og overlev nettene.</p>
-          <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill</span>
+          <h3>Mørkeskogen</h3>
+          <div class="stikkord"><span>Overlevelse</span><span>Utforsking</span><span>3D</span></div>
+          <p>Hold bålet i gang. Samle ved, bygg og overlev natten – monstrene tåler ikke lys.</p>
+          <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill nå</span>
         </div>
       </a>
 
-      <a class="spillkort inn" href="spill/fossilspillet/" aria-label="Spill Fossilspillet">
+      <a class="spillkort inn" href="spill/fossilspillet/" aria-label="Spill Fossil Zoo">
         <div class="bilde">
-          <img src="bilder/fossilspillet.jpg" alt="Skjermbilde fra Fossilspillet: graveren i en tunnel med mammuten som hjelper og glitrende fossiler i jorda" loading="lazy">
+          <img src="bilder/fossilspillet.jpg" alt="Skjermbilde fra Fossil Zoo: graveren i en tunnel med mammuten som hjelper og glitrende fossiler i jorda" loading="lazy">
           <span class="merke klar">Nytt</span>
           <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
-          <h3>Fossilspillet</h3>
-          <div class="stikkord"><span>Lærespill</span><span>Graving</span><span>Dinosaurer</span><span>2D</span></div>
-          <p>Grav deg bakover i tiden, finn skjeletter, løs ledetrådene og lær om åtte dyr – fra ulv til T-rex og langhals.</p>
-          <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill</span>
+          <h3>Fossil Zoo</h3>
+          <div class="stikkord"><span>Graving</span><span>Læring</span><span>2D</span></div>
+          <p>Grav. Finn. Vekk dem til live. Finn fossiler gjennom jordlagene, så våkner dyret i din egen dyrepark.</p>
+          <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill nå</span>
         </div>
       </a>
     </div>
@@ -290,9 +308,15 @@
     </div>
     <div class="nytt">
       <article class="nyhet inn">
+        <span class="ikon" aria-hidden="true">✨</span>
+        <time datetime="2026-10-31">31. oktober 2026</time>
+        <h3>Nye navn og enklere start</h3>
+        <p>Eventyrspillet heter nå Era Defenders, og fossilspillet heter Fossil Zoo. Alle spillene har fått en tydeligere startskjerm.</p>
+      </article>
+      <article class="nyhet inn">
         <span class="ikon" aria-hidden="true">🦴</span>
         <time datetime="2026-10-31">31. oktober 2026</time>
-        <h3>Nytt spill: Fossilspillet</h3>
+        <h3>Nytt spill: Fossil Zoo</h3>
         <p>Grav etter fossiler gjennom istiden, krittiden og juratiden. Hver bit gir en ledetråd – klarer du å gjette dyret før det våkner?</p>
       </article>
       <article class="nyhet inn">
@@ -301,12 +325,6 @@
         <h3>Eventyrspillet har fått sju tidsepoker</h3>
         <p>Nytt: Robotfabrikken med EMP-kaster og Tidsvirvelen med tidsvåpen som fryser fiendene. Reis fra steinalderen helt til tidens ende!</p>
       </article>
-      <article class="nyhet inn">
-        <span class="ikon" aria-hidden="true">🌲</span>
-        <time datetime="2026-10-31">31. oktober 2026</time>
-        <h3>Mørkeskogen 3D er ute</h3>
-        <p>Overlevelsesspillet i 3D kan nå spilles rett her på nettsiden, også på mobil.</p>
-      </article>
     </div>
   </section>
 
@@ -314,12 +332,13 @@
   <section id="om" aria-labelledby="om-tittel">
     <div class="seksjonstopp inn">
       <h2 id="om-tittel">Om EVN Studio</h2>
+      <p class="slagord"><b>Laget av barn.</b> For barn.</p>
     </div>
     <div class="om">
       <div class="boks inn">
-        <h3>Et lite spillstudio</h3>
-        <p>EVN Studio lager spill du kan spille rett i nettleseren, på PC, nettbrett og mobil. Hvert spill starter som en idé og blir testet og bygget videre steg for steg.</p>
-        <p>Alle spillene er gratis, uten reklame og uten kjøp.</p>
+        <h3>Hvem står bak?</h3>
+        <p>EVN Studio er et spillstudio startet av Even, 9 år. Her lager vi spill med spennende verdener, morsomme utfordringer og nye eventyr. Even finner på ideene, bestemmer hvordan spillene skal være og tester dem selv. Han får hjelp av KI til å bygge spillene.</p>
+        <p>Spillene er gratis, og alle kan prøve dem!</p>
         <p id="personvern" class="liten"><b>Personvern:</b> Vi teller anonymt hvor mange som besøker siden, starter et spill og omtrent hvor lenge det spilles, med GoatCounter. Vi bruker ingen informasjonskapsler og samler ikke inn navn, e-post eller annen informasjon om hvem du er.</p>
       </div>
       <div class="boks inn">
@@ -337,7 +356,7 @@
 <footer>
   <div class="bredde">
     <img src="logo-lys.png" alt="EVN Studio" width="45" height="34" loading="lazy">
-    <span>© EVN Studio · Laget for spillglede 🎮</span>
+    <span>© EVN Studio · Laget av barn. For barn. 🎮</span>
   </div>
 </footer>
 
