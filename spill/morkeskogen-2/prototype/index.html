@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mørkeskogen 2.0 – grafikkprøve</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1410; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #f3ead6; }
+  #lerret { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  button { font: inherit; cursor: pointer; touch-action: manipulation; }
+  #hud { position: fixed; top: 10px; left: 10px; right: 10px; display: flex; gap: 8px; flex-wrap: wrap; pointer-events: none; }
+  #hud button { pointer-events: auto; min-height: 44px; padding: 0 14px; border-radius: 22px; border: 2px solid rgba(255,255,255,.25); background: rgba(16,26,20,.72); color: #f3ead6; font-weight: 700; font-size: 15px; backdrop-filter: blur(4px); }
+  #hud button:focus-visible, .stilvalg button:focus-visible, #startBtn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  #hjelp { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 13px; background: rgba(16,26,20,.6); padding: 6px 12px; border-radius: 12px; white-space: nowrap; pointer-events: none; }
+  body.touch #hjelp { display: none; }
+  @media (max-width: 760px) { #hjelp { display: none; } }
+  #toast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: rgba(16,26,20,.85); padding: 8px 16px; border-radius: 16px; font-weight: 700; opacity: 0; transition: opacity .25s; pointer-events: none; }
+  #toast.vis { opacity: 1; }
+  #maal { position: fixed; right: 10px; top: 64px; margin: 0; padding: 8px 10px; background: rgba(0,0,0,.65); color: #bfffbf; font: 12px/1.35 ui-monospace, Menlo, monospace; border-radius: 8px; pointer-events: none; }
+  #laster { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8,14,10,.6); font-size: 20px; font-weight: 800; z-index: 20; }
+  #laster[hidden], #startkort[hidden], #joy[hidden] { display: none; }
+  #startkort { position: fixed; inset: 0; display: grid; place-items: center; z-index: 10; background: radial-gradient(ellipse at center, rgba(10,20,14,.55), rgba(5,10,7,.85)); }
+  .kort { width: min(420px, 92vw); max-height: 92vh; overflow: auto; background: #16241b; border: 2px solid #2f4a35; border-radius: 22px; padding: 22px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,.5); box-sizing: border-box; }
+  .evn-merke { font-size: 12px; letter-spacing: .18em; font-weight: 800; color: #9fd6a6; }
+  h1 { margin: 6px 0 2px; font-size: 30px; }
+  .under { margin: 0 0 14px; color: #c9d8c4; }
+  .stilvalg { display: flex; gap: 10px; justify-content: center; margin: 8px 0 14px; }
+  .stilvalg button { min-width: 120px; min-height: 64px; border-radius: 16px; border: 3px solid #2f4a35; background: #213428; color: #f3ead6; font-weight: 800; font-size: 20px; }
+  .stilvalg button.valgt { border-color: #ffd24a; background: #2e4a36; }
+  .styring { font-size: 14px; color: #c9d8c4; margin: 0 0 14px; line-height: 1.5; }
+  .bare-touch { display: none; } body.touch .bare-touch { display: block; } body.touch .bare-pc { display: none; }
+  #startBtn { min-height: 56px; width: 100%; border-radius: 18px; border: 0; background: #ff9a3c; color: #2a1606; font-weight: 900; font-size: 22px; }
+  .evn-ver { margin-top: 10px; font-size: 12px; color: #8aa38d; }
+  #joy { position: fixed; width: 110px; height: 110px; margin: -55px 0 0 -55px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); background: rgba(255,255,255,.08); pointer-events: none; z-index: 5; }
+  #knott { position: absolute; left: 35px; top: 35px; width: 40px; height: 40px; border-radius: 50%; background: #ffd24a; opacity: .9; }
+  #mobil { position: fixed; right: max(12px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); display: none; gap: 12px; align-items: flex-end; z-index: 6; }
+  body.touch #mobil { display: flex; }
+  #mobil button { width: 74px; height: 74px; border-radius: 50%; border: 3px solid rgba(255,255,255,.35); background: rgba(16,26,20,.7); color: #fff; font-size: 30px; }
+  #mobil #mHugg { width: 92px; height: 92px; font-size: 38px; }
+</style>
+</head>
+<body>
+<canvas id="lerret"></canvas>
+<div id="hud">
+  <button id="bStil" title="Bytt stil (G)">🎨 Stil 1</button>
+  <button id="bTid" title="Tid på døgnet (T)">☀️ Dag</button>
+  <button id="bKam" title="Kamera (C)">🎥 Bak helten</button>
+  <button id="bKval" title="Grafikk-kvalitet (Q)">⚙️ Høy</button>
+</div>
+<div id="hjelp">WASD/piler: gå · Mellomrom: hopp · Klikk/E: hugg · C: kamera · Klikk i bildet: se med musa (Esc slipper)</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="joy" hidden><div id="knott"></div></div>
+<div id="mobil"><button id="mKam" aria-label="Kamera">🎥</button><button id="mHopp" aria-label="Hopp">⤴️</button><button id="mHugg" aria-label="Hugg">🪓</button></div>
+<div id="startkort">
+  <div class="kort">
+    <div class="evn-merke">EVN STUDIO</div>
+    <h1>Mørkeskogen 2.0</h1>
+    <p class="under">Grafikkprøve ved bålet. Hvilken skog er finest?</p>
+    <div class="stilvalg"><button data-stil="1">Stil 1</button><button data-stil="2">Stil 2</button></div>
+    <p class="styring bare-pc">Gå med WASD eller piltastene. Hopp med mellomrom.<br>Hugg trær og slå monstre med E eller musa.</p>
+    <p class="styring bare-touch">Dra til venstre for å gå. Dra til høyre for å snu.<br>Trykk 🪓 for å hugge og ⤴️ for å hoppe.</p>
+    <button id="startBtn">▶ Start</button>
+    <div class="evn-ver" id="versjon"></div>
+  </div>
+</div>
+<div id="laster">🌲 Lager skogen …</div>
+<script src="spill.js"></script>
+</body>
+</html>
