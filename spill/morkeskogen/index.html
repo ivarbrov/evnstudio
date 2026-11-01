@@ -113,7 +113,13 @@ html.mus .bare-touch,html.touch .bare-pc{display:none}
   body.touchui #hud .panel{padding:6px 8px;gap:4px}
   body.touchui .stat{font-size:12px;gap:5px} body.touchui .bar{width:min(92px,24vw);height:9px}
   body.touchui #phase{font-size:15px} body.touchui #biome{font-size:11px}
-  body.touchui #minimap{width:78px;height:78px}}
+  body.touchui #minimap{width:78px;height:78px}
+  body.touchui #hud .clock{grid-template-columns:auto auto;grid-template-areas:"ph ph" "bi bi" "knp kart";column-gap:6px;justify-content:end;align-items:start}
+  body.touchui #phase{grid-area:ph} body.touchui #biome{grid-area:bi}
+  body.touchui #minimap{grid-area:kart;margin:2px 0 0}
+  body.touchui #evnRad{grid-area:knp;flex-direction:column;gap:6px;margin-top:2px}
+  body.touchui #evnRad #evnPauseKnapp,body.touchui #evnRad #evnAvslutt{width:44px;min-width:44px;height:44px;min-height:44px;padding:0;display:grid;place-items:center;font-size:17px}
+  body.touchui #evnRad #evnAvslutt .evn-avs-tekst{display:none}}
 #touch{position:fixed;inset:auto 0 0 0;padding:0 max(16px,env(safe-area-inset-left,0px)) calc(16px + env(safe-area-inset-bottom,0px));
   display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none}
 .pad{width:10px}
@@ -143,10 +149,10 @@ html.mus .bare-touch,html.touch .bare-pc{display:none}
 #hotbar button.on{border-color:var(--ember);background:rgba(255,154,60,.28);box-shadow:0 0 0 2px rgba(255,154,60,.35)}
 #hotbar #invBtn{font-size:20px}
 #prompt{margin-bottom:58px}
-body.touchui #hotbar{bottom:calc(8px + env(safe-area-inset-bottom,0px));gap:3px;padding:3px;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 24px)}
+body.touchui #hotbar{bottom:calc(8px + env(safe-area-inset-bottom,0px));gap:3px;padding:3px;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100vw - 24px)}
 body.touchui #hotbar button{width:44px;height:44px;font-size:21px}
-body.touchui #prompt{margin-bottom:0;bottom:calc(60px + env(safe-area-inset-bottom,0px))}
-@media (orientation:portrait){body.touchui #hotbar{bottom:calc(236px + env(safe-area-inset-bottom,0px))} body.touchui #prompt{bottom:calc(290px + env(safe-area-inset-bottom,0px))}}
+body.touchui #prompt{margin-bottom:0;bottom:calc(14px + var(--hbH,50px) + env(safe-area-inset-bottom,0px))}
+@media (orientation:portrait){body.touchui #hotbar{bottom:calc(236px + env(safe-area-inset-bottom,0px))} body.touchui #prompt{bottom:calc(242px + var(--hbH,50px) + env(safe-area-inset-bottom,0px))}}
 @media (orientation:landscape) and (max-height:500px){body.touchui .acts{grid-template-columns:auto auto;align-items:end}
   body.touchui .acts .small{flex-direction:column;grid-row:1;grid-column:1}
   body.touchui .acts .big{grid-row:1;grid-column:2}
@@ -261,7 +267,7 @@ addEventListener('keydown',function(){t(false);},true);})();
     </ul>
     <div class="qrow" id="qrow">Grafikk: <button data-q="lav">Lav</button><button data-q="middels">Middels</button><button data-q="hoy">Høy</button></div>
     </details>
-    <div class="ver evn-ver">Versjon 5.6.1 · 3D</div>
+    <div class="ver evn-ver">Versjon 5.6.2 · 3D</div>
   </div>
 </div>
 
@@ -5611,13 +5617,15 @@ function buildWorld() {
   const CH = 1000;
   // Vind i shaderen: tuppene beveger seg, og bevegelsen dempes med avstand fra spilleren
   R3.windU = R3.windU || { t: { value: 0 }, p: { value: new THREE.Vector2() } };
-  const windy = (mat, amp) => { const m2 = mat.clone(); m2.onBeforeCompile = sh => { FOG_HOOK(sh);
-    sh.uniforms.uTime = R3.windU.t; sh.uniforms.uP = R3.windU.p; sh.uniforms.uAmp = { value: amp };   // vindstyrke som uniform: samme program kan deles
-    sh.vertexShader = 'uniform float uTime; uniform vec2 uP; uniform float uAmp;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+  const windy = (mat, amp, far = 0) => { const m2 = mat.clone(); m2.onBeforeCompile = sh => { FOG_HOOK(sh);
+    sh.uniforms.uTime = R3.windU.t; sh.uniforms.uP = R3.windU.p; sh.uniforms.uAmp = { value: amp }; sh.uniforms.uFar = { value: far };   // vindstyrke som uniform: samme program kan deles
+    sh.vertexShader = 'uniform float uTime; uniform vec2 uP; uniform float uAmp; uniform float uFar;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
       vec3 ip = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
       float wa = uAmp * (1.0 - smoothstep(450.0, 750.0, distance(ip.xz, uP))) * max(0.0, position.y + 0.5) * (0.75 + 0.25 * sin(uTime * 0.4));
       transformed.x += sin(uTime * 1.9 + ip.x * .05 + ip.z * .03) * wa;
-      transformed.z += cos(uTime * 1.5 + ip.z * .04 + ip.x * .02) * wa * .6;`); };
+      transformed.z += cos(uTime * 1.5 + ip.z * .04 + ip.x * .02) * wa * .6;
+      // v5.6.2: små ting (gress, blomster) krymper bort på avstand. Langt unna ble de til fargerik «støy» på mobil.
+      if (uFar > 0.0) transformed *= 1.0 - smoothstep(uFar * 0.65, uFar, distance(ip.xz, uP));`); };
     return m2; };
   // Lager én InstancedMesh per blokk, med egen avgrensningskule så blokker utenfor bildet hoppes over
   const chunked = (geo, mat, items, place, colorOf, shadow = false) => {
@@ -5655,7 +5663,7 @@ function buildWorld() {
   for (const t of g.tufts) if (t.k === 0) for (let i = 0; i < 5; i++) blades.push([t.x + rand(-5, 5), t.y + rand(-4, 4), t.s * rand(.7, 1.2) * (t.j ? 1.5 : 1)]);
   for (let i = 0; i < 16000 * WA; i++) { const x = rand(0, W), z = rand(0, H); if (green(x, z) && waterDist(x, z) > 34 && dist(x, z, FX, FY) > 90 && Math.random() > forestDensity(x, z) * .6) blades.push([x, z, rand(.5, 1) * (biomeAt(x, z) === 'jungel' ? 1.6 : 1)]); }
   const grassItems = blades.filter(([x, z]) => groundN(x, z, R3.tmp).y > .9 && pathD(x, z) > 9 && !inGH(x, z, -12) && !dcFoot(x, z, 30) && trackDist(x, z) > 60 && !townNear(x, z, 400));
-  chunked(GEO.grass, windy(M.grassW, 1.0), grassItems, (d, [x, z, s2]) => { d.position.set(x, groundH(x, z) + 4 * s2, z); d.scale.set(1.5, 9 * s2, 1.5); d.rotation.set((Math.random() - .5) * .5, Math.random() * 6, (Math.random() - .5) * .5); },
+  chunked(GEO.grass, windy(M.grassW, 1.0, 420), grassItems, (d, [x, z, s2]) => { d.position.set(x, groundH(x, z) + 4 * s2, z); d.scale.set(1.5, 9 * s2, 1.5); d.rotation.set((Math.random() - .5) * .5, Math.random() * 6, (Math.random() - .5) * .5); },
     ([x, z], c) => { const j = biomeW(x, z).jungel > .5; return c.setHSL(0.24 + Math.random() * 0.07 + (j ? .03 : 0), 0.35 + Math.random() * 0.2 + (j ? .15 : 0), (0.22 + Math.random() * 0.14) * (j ? .85 : 1)); });
 
   // Bregner i fuktig, tett skog
@@ -5672,9 +5680,9 @@ function buildWorld() {
   // Blomster på enger og i lysninger
   const flowers = sample(6000 * WA, 40000 * WA, (x, z) => { if (!green(x, z) && biomeW(x, z).sno > .4) return null; if (!green(x, z)) return null; if (Math.random() > (1 - forestDensity(x, z)) * .9 || groundN(x, z, R3.tmp).y < .93 || !free(x, z, 1)) return null; return [x, z, rand(.7, 1.2), Math.random()]; });
   const FL = ['#f4f1e6', '#f4d35e', '#b388eb', '#ff8fb1', '#6aa9ff', '#ff7b54'];
-  chunked(GEO.cyl, windy(M.stemM, 4), flowers, (d, [x, z, s2]) => { d.position.set(x, groundH(x, z) + 2.5 * s2, z); d.rotation.set(0, 0, 0); d.scale.set(.25, 5 * s2, .25); });
+  chunked(GEO.cyl, windy(M.stemM, 4, 340), flowers, (d, [x, z, s2]) => { d.position.set(x, groundH(x, z) + 2.5 * s2, z); d.rotation.set(0, 0, 0); d.scale.set(.25, 5 * s2, .25); });
   const head = new THREE.SphereGeometry(1, 6, 4);
-  chunked(head, windy(M.decoW, .6), flowers, (d, [x, z, s2]) => { d.position.set(x, groundH(x, z) + 5.2 * s2, z); d.scale.setScalar(1.3 * s2); }, ([, , , k], c) => c.set(FL[Math.floor(k * FL.length)]));
+  chunked(head, windy(M.decoW, .6, 340), flowers, (d, [x, z, s2]) => { d.position.set(x, groundH(x, z) + 5.2 * s2, z); d.scale.setScalar(1.3 * s2); }, ([, , , k], c) => c.set(FL[Math.floor(k * FL.length)]));
 
   // Mose på bakken i tett skog
   const moss = sample(2600 * WA, 30000 * WA, (x, z) => { if (!green(x, z) || forestDensity(x, z) < .5 || treeDist(x, z) > 70 || !free(x, z, 6)) return null; return [x, z, rand(6, 14)]; });
@@ -6822,6 +6830,8 @@ EVNNullstill({
   plasser: el => document.getElementById('evnTilbake').after(el),
   vis: () => state === 'start'
 });
+// Høyden på hurtiglinja (én eller to rader) brukes til å plassere «Hent ved …»-teksten over den
+try { new ResizeObserver(() => { const h = $('hotbar').offsetHeight; if (h) document.documentElement.style.setProperty('--hbH', h + 'px'); }).observe($('hotbar')); } catch (er) {}
 // Felles pause med spilletid (⏸ / P / Esc). Spilletid lagres i 'evn-spilletid-morkeskogen'.
 // Esc gir pause (nettleseren slipper musa på Esc uansett). B åpner byggemenyen. Fortsett fanger musa igjen hvis den var fanget.
 let laastFoer = false;
@@ -6865,7 +6875,7 @@ requestAnimationFrame(loop);
 #evnSporsmal button{font:400 22px 'Lilita One',system-ui,sans-serif;border:0;border-radius:12px;padding:12px;cursor:pointer}
 #evnBli{background:#ff9a3c;color:#2a1606}#evnGaa{background:transparent;color:#f3ead6;border:2px solid #2f4a35!important}
 </style>
-<a id="evnAvslutt" href="../../">✕ Avslutt</a>
+<a id="evnAvslutt" href="../../" aria-label="Avslutt">✕<span class="evn-avs-tekst"> Avslutt</span></a>
 <div id="evnSporsmal" role="dialog" aria-modal="true" aria-labelledby="evnSpTekst"><div class="boks">
   <div id="evnSpTekst">Vil du avslutte og gå tilbake til forsiden?</div>
   <button id="evnBli">Nei, spill videre</button><button id="evnGaa">Ja, avslutt</button></div></div>
