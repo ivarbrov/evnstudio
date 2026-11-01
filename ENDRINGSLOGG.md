@@ -6,6 +6,7 @@ er små – se på retning over flere uker, ikke på enkeltdager.
 
 | Dato | Hva | Spill | Kan påvirke |
 |---|---|---|---|
+| 2026-11-01 ca. 16:05 | **Era Defenders v0.18.8: navn på basen.** Spilleren skriver navnet sitt i «Basen din», og over basen står «<navn>s base» (uten navn: «Min base», før stod det alltid «Evens base»). Maks 14 tegn, lagres bare på enheten og sendes ikke til statistikken. Commit ec4af3b. | Era Defenders | Ingen forventet effekt |
 | 2026-11-01 ca. 15:45 | **Voksenteksten:** «En forelder har ansvaret …» endret til «Pappaen til Even har ansvaret for nettstedet.» Ingen andre endringer. | Forside | Ingen forventet effekt |
 | 2026-11-01 ca. 15:45 | **Voksenteksten i «Hvem står bak?».** Ny setning «En forelder har ansvaret for nettstedet.» og rettet komma («… navn eller e-post og bruker ingen informasjonskapsler»). Ingen andre endringer. | Forside | Ingen forventet effekt |
 | 2026-11-01 ca. 15:45 | **Nye saker i «Siste nytt» (valgt og godkjent av Even).** «Klarer du å slå Skjelett-T-rex-kongen?» og «Hjelp Lasso-Lars, og få din egen lasso!» (begge lenker til Mørkeskogen), og «Nå kan du ta pause og se kartet!» (lenker til spilloversikten). Datert 1. november 2026. Erstatter de tre sakene fra 31. oktober. Design, spill, lagring og statistikk er uendret. | Forside | Kan gi flere starter av Mørkeskogen fra nyhetene |
