@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Era Defenders – v0.18.7</title>
+<title>Era Defenders – v0.18.8</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="ikoner/ikon-192.png">
 <link rel="apple-touch-icon" href="ikoner/apple-touch-icon.png">
@@ -31,6 +31,13 @@
   #base { position: fixed; inset: 0; display: none; background: rgba(15,10,5,0.88); color: #fff; overflow: auto; }
   #base .innhold { max-width: 900px; margin: 30px auto; padding: 0 20px 110px; }
   #base h1 { color: #ffd54a; margin: 0 0 4px; font-size: 34px; }
+  /* Navn på basen (1.11.2026): lagres bare på enheten */
+  #base .basenavn { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; margin: 6px auto 10px; max-width: 520px; }
+  #base .basenavn label { font-weight: bold; color: #ffe9b0; }
+  #base .basenavn input { font: inherit; font-size: 17px; font-weight: bold; min-height: 44px; width: 13em; max-width: 100%; padding: 6px 12px;
+    border-radius: 12px; border: 2px solid rgba(255,213,74,0.6); background: rgba(0,0,0,0.35); color: #fff; text-align: center; }
+  #base .basenavn input:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  #base .basenavn small { flex-basis: 100%; text-align: center; color: #c9c2b0; font-size: 13px; }
   #base .info { color: #ddd; margin-bottom: 18px; font-size: 17px; }
   #base .kort-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
   .kort { background: linear-gradient(#4a3520, #2e2013); border: 3px solid #6b4a2b; border-radius: 14px; padding: 14px; }
@@ -142,7 +149,7 @@ addEventListener('keydown',function(){t(false);},true);})();
   </ul>
   <button class="start evn-start" id="menyStart">▶ Start</button>
   <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-  <div class="evn-ver">Versjon 0.18.7 · 7 tidsepoker</div>
+  <div class="evn-ver">Versjon 0.18.8 · 7 tidsepoker</div>
 </div></div>
 <div id="evnSporsmal" role="dialog" aria-modal="true"><div class="boks">
   <div>Vil du avslutte og gå tilbake til forsiden? Spillet ditt er lagret.</div>
@@ -151,6 +158,11 @@ addEventListener('keydown',function(){t(false);},true);})();
 <a id="avsluttKnapp" href="../../">✕ Avslutt</a>
 <div id="base"><div class="innhold">
   <h1>🏰 Basen din</h1>
+  <div class="basenavn">
+    <label for="basenavnFelt">✏️ Navn på basen:</label>
+    <input id="basenavnFelt" maxlength="14" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" placeholder="Skriv navnet ditt">
+    <small>Navnet vises over basen i spillet. Det lagres bare på denne enheten.</small>
+  </div>
   <div class="info" id="baseInfo"></div>
   <div class="kort-liste" id="kortListe"></div>
   <button id="tilbake">⚔️ Tilbake til kampen<span class="bare-pc"> (B)</span></button>
@@ -700,7 +712,7 @@ function nyttSpill() {
     pynt: [],             // pynt som står i basen
     tarnNedkjoling: [0, 0, 0, 0],
     murLiv: 0, tarnLiv: [0, 0, 0, 0],   // hvor hel muren og tårnene er
-    verden: 1, portalApen: false, sjekkpunkt: 0, alleKlart: false,
+    verden: 1, portalApen: false, sjekkpunkt: 0, alleKlart: false, basenavn: '',
     dragePos: { x: VERDEN_BREDDE / 2 - 40, y: VERDEN_HOYDE / 2 }, drageNed: 0, drageFlamme: 0, drageMaal: null,
     kanonNed: 0, kanonVinkel: 0, lynNed: 0, tempelNed: 0, empNed: 0,
     retning: { x: 1, y: 0 }, gaaTid: 0,
@@ -719,6 +731,7 @@ function nyttSpill() {
     helt.portalApen = gammel.portalApen;
     helt.sjekkpunkt = gammel.sjekkpunkt;
     helt.alleKlart = gammel.alleKlart;
+    helt.basenavn = gammel.basenavn || '';
     helt.murLiv = gammel.murLiv;
     helt.tarnLiv = gammel.tarnLiv.slice();
     for (const id in gammel.bygget) {
@@ -801,7 +814,7 @@ function lagre() {
   if (!helt) return;
   try {
     const d = {};
-    for (const k of ['niva', 'xp', 'penger', 'drikker', 'pynt', 'bygget', 'verden', 'portalApen', 'sjekkpunkt', 'alleKlart', 'murLiv', 'tarnLiv']) d[k] = helt[k];
+    for (const k of ['niva', 'xp', 'penger', 'drikker', 'pynt', 'bygget', 'verden', 'portalApen', 'sjekkpunkt', 'alleKlart', 'murLiv', 'tarnLiv', 'basenavn']) d[k] = helt[k];
     d.epoker = 7;
     localStorage.setItem(LAGRE_NOKKEL, JSON.stringify(d));
   } catch (e) { /* lagring er ikke tilgjengelig – spillet virker likevel */ }
@@ -812,7 +825,7 @@ function hentLagring() {
     if (!t) return null;
     const d = JSON.parse(t);
     if (!d || typeof d.bygget !== 'object') return null;
-    const standard = { niva: 1, xp: 0, penger: 0, drikker: 0, pynt: [], bygget: {}, verden: 1, portalApen: false, sjekkpunkt: 0, alleKlart: false, murLiv: 0, tarnLiv: [0, 0, 0, 0] };
+    const standard = { niva: 1, xp: 0, penger: 0, drikker: 0, pynt: [], bygget: {}, verden: 1, portalApen: false, sjekkpunkt: 0, alleKlart: false, murLiv: 0, tarnLiv: [0, 0, 0, 0], basenavn: '' };
     const h = Object.assign(standard, d);
     // Før Robotfabrikken kom, var romstasjonen verden 5. Da blir du der du var.
     if (!d.epoker && h.verden >= 5) { h.verden += 1; h.alleKlart = false; }
@@ -854,9 +867,21 @@ function lagPartikler(x, y, farge, antall, fart) {
 // ===================== BASEN =====================
 function antallBygget(id) { return helt.bygget[id] || 0; }
 
+// Navn på basen: «Evens base», «Jonas' base» … Uten navn står det «Min base».
+function rensBasenavn(t) { return String(t || '').replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 14); }
+function basenavnTekst() {
+  const n = rensBasenavn(helt && helt.basenavn);
+  if (!n) return 'Min base';
+  return n + (/[sxzSXZ]$/.test(n) ? "'" : 's') + ' base';
+}
+const basenavnFelt = document.getElementById('basenavnFelt');
+basenavnFelt.addEventListener('input', () => { helt.basenavn = rensBasenavn(basenavnFelt.value); lagre(); });
+basenavnFelt.addEventListener('change', () => { basenavnFelt.value = helt.basenavn = rensBasenavn(basenavnFelt.value); lagre(); });
+
 function apneBase() {
   if (tilstand !== 'spill') return;
   tilstand = 'base';
+  basenavnFelt.value = helt.basenavn || '';
   visBase();
   document.getElementById('base').style.display = 'block';
 }
@@ -954,6 +979,7 @@ document.getElementById('tilbake').onclick = lukkBase;
 
 // ===================== KONTROLLER =====================
 window.addEventListener('keydown', e => {
+  if (e.target === basenavnFelt) { if (e.key === 'Enter' || e.key === 'Escape') basenavnFelt.blur(); return; } // skriver navn på basen
   const k = e.key.toLowerCase();
   if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) e.preventDefault();
   if (tilstand === 'base') { if (k === 'b' || k === 'escape') lukkBase(); return; }
@@ -2203,7 +2229,7 @@ function tegnBaseBakke() {
   ctx.fillStyle = '#6b4a2b'; ctx.fillRect(BASE_X - 3, BASE_Y + BASE_RADIUS * 0.92 - 46, 6, 30);
   ctx.fillStyle = '#8a5f36'; ctx.fillRect(BASE_X - 55, BASE_Y + BASE_RADIUS * 0.92 - 66, 110, 26);
   ctx.fillStyle = '#ffe9b0'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
-  ctx.fillText('🏰 Evens base', BASE_X, BASE_Y + BASE_RADIUS * 0.92 - 48);
+  ctx.fillText('🏰 ' + basenavnTekst(), BASE_X, BASE_Y + BASE_RADIUS * 0.92 - 48);
 }
 
 function tegnPortal() {
