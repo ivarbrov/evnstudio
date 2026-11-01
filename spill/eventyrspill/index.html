@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Era Defenders – v0.18.5</title>
+<title>Era Defenders – v0.18.6</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="ikoner/ikon-192.png">
 <link rel="apple-touch-icon" href="ikoner/apple-touch-icon.png">
@@ -54,8 +54,6 @@
     .kort .niva { font-size: 11px; margin-bottom: 6px; }
     .kort button { font-size: 13px; padding: 8px 4px; }
   }
-  #nyttSpillKnapp { margin-top: 24px; padding: 8px 14px; font-size: 13px; border-radius: 8px; border: 2px solid #7a2a2a;
-    background: transparent; color: #ff8a80; cursor: pointer; }
   /* Start- og sluttskjerm (E1, E2) */
   #meny { position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; padding: 16px;
     background: rgba(0,0,0,0.62); color: #fff; overflow-y: auto; }
@@ -144,7 +142,7 @@ addEventListener('keydown',function(){t(false);},true);})();
   </ul>
   <button class="start evn-start" id="menyStart">▶ Start</button>
   <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-  <div class="evn-ver">Versjon 0.18.5 · 7 tidsepoker</div>
+  <div class="evn-ver">Versjon 0.18.6 · 7 tidsepoker</div>
 </div></div>
 <div id="evnSporsmal" role="dialog" aria-modal="true"><div class="boks">
   <div>Vil du avslutte og gå tilbake til forsiden? Spillet ditt er lagret.</div>
@@ -155,9 +153,68 @@ addEventListener('keydown',function(){t(false);},true);})();
   <h1>🏰 Basen din</h1>
   <div class="info" id="baseInfo"></div>
   <div class="kort-liste" id="kortListe"></div>
-  <button id="nyttSpillKnapp">🗑️ Start helt på nytt</button>
   <button id="tilbake">⚔️ Tilbake til kampen<span class="bare-pc"> (B)</span></button>
 </div></div>
+<script>
+/* EVN-NULLSTILL v1: «Start helt på nytt» på startskjermen (samme kode i alle EVN-spill).
+   Vises bare når det finnes lagring. Spør først i en egen boks. Sletter bare spillets egne lagringsnøkler
+   (ikke grafikkvalg eller spilletid), og laster siden på nytt. */
+window.EVNNullstill = function (cfg) {
+  var t = cfg.tema || {};
+  var harLagring = function () { if (cfg.harLagring) try { return !!cfg.harLagring(); } catch (e) { return false; } try { return cfg.nokler.some(function (k) { return localStorage.getItem(k) !== null; }); } catch (e) { return false; } };
+  var css = document.createElement('style');
+  css.textContent =
+    '#evnNullstill{display:block;margin:-8px auto 0;min-height:44px;padding:8px 14px;background:transparent;border:0;color:inherit;opacity:.75;font:700 15px ' + (t.font || 'system-ui,sans-serif') + ';text-decoration:underline;text-underline-offset:3px;cursor:pointer;touch-action:manipulation}' +
+    '#evnNullstill:hover,#evnNullstill:focus-visible{opacity:1}#evnNullstill[hidden]{display:none!important}' +
+    '#evnNullstillBoks{position:fixed;inset:0;z-index:99995;display:none;place-items:center;padding:16px;background:rgba(0,0,0,.7);touch-action:manipulation}' +
+    '#evnNullstillBoks.vis{display:grid}' +
+    '#evnNullstillBoks .kort{background:' + (t.panel || '#1c2436') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:20px;width:min(340px,100%);text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnNullstillBoks h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:28px;line-height:1.1;margin:0 0 10px;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnNullstillBoks p{margin:0 0 6px;font-size:17px;line-height:1.4;font-weight:700}' +
+    '#evnNullstillBoks button{display:block;width:100%;min-height:52px;margin:10px 0 0;border-radius:12px;font:800 19px ' + (t.font || 'system-ui,sans-serif') + ';cursor:pointer}' +
+    '#evnNullstillNei{background:' + (t.btn || '#ffd54a') + ';color:' + (t.btnInk || '#2b1d00') + ';border:0}' +
+    '#evnNullstillJa{background:transparent;color:inherit;border:2px solid #e05252}' +
+    '#evnNullstillBoks button:focus-visible,#evnNullstill:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}';
+  document.head.appendChild(css);
+
+  var lenke = document.createElement('button');
+  lenke.type = 'button'; lenke.id = 'evnNullstill'; lenke.textContent = '🗑️ Start helt på nytt';
+  cfg.plasser(lenke);
+  var boks = document.createElement('div');
+  boks.id = 'evnNullstillBoks'; boks.setAttribute('role', 'dialog'); boks.setAttribute('aria-modal', 'true'); boks.setAttribute('aria-labelledby', 'evnNullstillTittel');
+  boks.innerHTML = '<div class="kort"><h2 id="evnNullstillTittel">Starte helt på nytt?</h2>' +
+    '<p>' + cfg.tekst + '</p><p>Det kan ikke angres.</p>' +
+    '<button type="button" id="evnNullstillNei">Nei, behold alt</button>' +
+    '<button type="button" id="evnNullstillJa">Ja, slett alt</button></div>';
+  document.body.appendChild(boks);
+  ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (ev) {
+    boks.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+    lenke.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+  });
+  var $ = function (id) { return document.getElementById(id); };
+  var apen = false, forrige = null;
+  function oppdater() { lenke.hidden = !harLagring() || (cfg.vis ? !cfg.vis() : false); }
+  function apne() { apen = true; forrige = document.activeElement; boks.classList.add('vis'); $('evnNullstillNei').focus(); }
+  function lukk() { apen = false; boks.classList.remove('vis'); try { (forrige || lenke).focus(); } catch (e) {} }
+  lenke.addEventListener('click', apne);
+  $('evnNullstillNei').addEventListener('click', lukk);
+  $('evnNullstillJa').addEventListener('click', function () {
+    try {
+      // Spillet lagrer gjerne når siden lukkes (pagehide). Stopp skriving til disse nøklene, så lagringen ikke kommer tilbake.
+      var orig = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) { if (this === window.localStorage && cfg.nokler.indexOf(k) !== -1) return; return orig.call(this, k, v); };
+      cfg.nokler.forEach(function (k) { localStorage.removeItem(k); });
+    } catch (e) {}
+    location.reload();
+  });
+  window.addEventListener('keydown', function (e) {
+    if (!apen) return;
+    e.stopImmediatePropagation();                                    // spillet får ingen taster mens boksen er åpen
+    if (e.key === 'Escape') { e.preventDefault(); lukk(); }
+  }, true);
+  oppdater(); setInterval(oppdater, 500);
+};
+</script>
 <script>
 /* EVN-PAUSE v1: felles pause med spilletid (samme kode i alle EVN-spill).
    Spilletid lagres i localStorage 'evn-spilletid-<mappe>' = {dag, iDag, totalt} (millisekunder).
@@ -2506,22 +2563,6 @@ function lokke(naa) {
 addEventListener('pagehide', () => lagre());
 document.addEventListener('visibilitychange', () => { if (document.hidden) lagre(); });
 addEventListener('blur', () => { for (const k in taster) taster[k] = false; });
-// Ta vare på knappen «Start helt på nytt» (må trykkes to ganger)
-let slettTimer = null;
-document.getElementById('nyttSpillKnapp').onclick = () => {
-  const knapp = document.getElementById('nyttSpillKnapp');
-  if (!slettTimer) {
-    knapp.textContent = '⚠️ Trykk igjen for å slette alt';
-    slettTimer = setTimeout(() => { knapp.textContent = '🗑️ Start helt på nytt'; slettTimer = null; }, 3000);
-    return;
-  }
-  clearTimeout(slettTimer); slettTimer = null; knapp.textContent = '🗑️ Start helt på nytt';
-  slettLagring();
-  document.getElementById('base').style.display = 'none';
-  document.getElementById('baseKnapp').style.display = 'none';
-  helt = null; nyttSpill(); tilstand = 'start';
-};
-
 // Gjør spillet installerbart som app (virker når det ligger på en vanlig nettside)
 try {
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -2548,6 +2589,15 @@ EVNPause({
   fortsett: () => { if (tilstand === 'pause') { for (const k in taster) taster[k] = false; tilstand = 'spill'; } },
   lagre: () => lagre(),
   styring: () => [...document.querySelectorAll('#menyStyring li')].filter(li => getComputedStyle(li).display !== 'none').map(li => li.innerHTML).join('<br>')
+});
+
+// «Start helt på nytt» på startskjermen (felles for alle EVN-spill)
+EVNNullstill({
+  nokler: [LAGRE_NOKKEL],
+  tema: { panel: 'rgba(28,36,54,.98)', ink: '#fff', hi: '#ffd54a', btn: '#ffd54a', btnInk: '#2b1d00' },
+  tekst: 'Nivå, mynter og alt du har bygget i basen blir borte.',
+  plasser: el => document.getElementById('evnTilbake').after(el),
+  vis: () => tilstand === 'start'
 });
 
 helt = hentLagring(); // fortsett lagret spill hvis det finnes
