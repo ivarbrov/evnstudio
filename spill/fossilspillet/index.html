@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Fossil Zoo v0.6.6 – EVN Studio</title>
+<title>Fossil Zoo v0.6.7 – EVN Studio</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;touch-action:manipulation}
 #cv,#pad button,#mini{touch-action:none}
@@ -109,7 +109,7 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
 
 #fakta b{display:block;font-size:17px;margin-bottom:4px}
 #fakta span{font-size:16px;line-height:1.4}
-#fakta button{position:absolute;top:8px;right:8px;border:none;background:none;font-size:20px;cursor:pointer;color:#3b2200}
+#fakta button{position:absolute;top:2px;right:2px;width:44px;height:44px;border:none;background:none;font-size:22px;cursor:pointer;color:#3b2200}
 .profil{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;text-align:left;font-size:14px;background:rgba(255,255,255,.55);border-radius:10px;padding:8px 10px;margin:8px auto;max-width:460px;color:#2b1700}
 .profil dt{font-weight:800;white-space:nowrap}
 .profil dd{margin:0}
@@ -127,11 +127,11 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
   #hud .btn{font-size:13px;padding:6px 9px}
   #mini{width:60px;height:160px}
   #mini.big{width:120px;height:320px}
-  #fakta{left:6px;right:74px;width:auto;transform:translate(0,-14px);padding:8px 30px 8px 10px}
+  #fakta{left:6px;right:74px;width:auto;transform:translate(0,-14px);padding:8px 44px 8px 10px}
   #fakta.show{transform:translate(0,0)}
   #fakta b{font-size:14px}
   #fakta span{font-size:13px}
-  #help{font-size:12px;max-width:calc(100vw - 240px)}
+  #help{font-size:12px;max-width:calc(100vw - 270px)}
   #hud .lvlpill{display:none}
 }
 </style>
@@ -174,7 +174,7 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
   </ul>
   <button class="btn bigbtn evn-start" id="startBtn">Start!</button>
   <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-  <div class="ver evn-ver">Versjon 0.6.6 • 3 tidsepoker • 13 dyr å vekke</div>
+  <div class="ver evn-ver">Versjon 0.6.7 • 3 tidsepoker • 13 dyr å vekke</div>
   </div>
 </div>
 
@@ -1404,7 +1404,7 @@ function updateHUD(){
 //  TEGNING AV FJELLET
 // =====================================================
 function resize(){
-  dpr=window.devicePixelRatio||1;
+  dpr=Math.min(2,window.devicePixelRatio||1);
   cv.width=innerWidth*dpr; cv.height=innerHeight*dpr;
   T=Math.max(36,Math.min(56,Math.floor(Math.min(innerWidth,innerHeight)/11)));
 }
@@ -1576,9 +1576,10 @@ let miniT=0, miniSide='right';
 //  SPILL-LØKKEN
 // =====================================================
 let last=performance.now(), curZone=-1;
+const evnDialog=()=>{ const e=document.getElementById('evnSporsmal'); return !!e && e.style.display==='grid'; };   // «Vil du avslutte?» er åpen
 function loop(now){
   const dt=Math.min(0.05,(now-last)/1000); last=now;
-  if(!paused){
+  if(!paused && !evnDialog()){
     cooldown-=dt*1000;
     if(heldDir && cooldown<=0) act(heldDir);
     updatePhysics(dt);
@@ -1609,7 +1610,7 @@ const KEYMAP={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',
 const pressed=[];
 addEventListener('keydown',e=>{
   const d=KEYMAP[e.key]; if(!d) return; e.preventDefault();
-  if(paused) return;
+  if(paused || evnDialog()) return;
   if(!pressed.includes(d)){ pressed.push(d); heldDir=d; if(cooldown<=0) act(d); }
 });
 addEventListener('keyup',e=>{
@@ -1714,7 +1715,8 @@ try {
     var av = document.getElementById('evnAvslutt'), sp = document.getElementById('evnSporsmal');
     av.style.display = 'inline-block';
     var tb = document.getElementById('evnTilbake'); if (tb) tb.hidden = false;
-    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); sp.style.display = 'grid'; document.getElementById('evnBli').focus(); });
+    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new Event('blur')); sp.style.display = 'grid'; document.getElementById('evnBli').focus(); });
+    addEventListener('keydown', function (e) { if (e.key === 'Escape' && sp.style.display === 'grid') { e.preventDefault(); sp.style.display = 'none'; } });
     ['pointerdown', 'mousedown', 'touchstart'].forEach(function (ev) { sp.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); av.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
     document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; });
     document.getElementById('evnGaa').addEventListener('click', function () { location.href = '../../'; });
