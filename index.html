@@ -283,22 +283,18 @@
   .nyhet:hover .ikon { transform: rotate(-8deg) scale(1.12); }
   .nyhet:hover .mer::after { transform: translateX(5px); }
 
-  /* Footer */
-  footer { margin-top: 84px; position: relative; background: linear-gradient(180deg, rgba(19,26,58,.0), rgba(19,26,58,.75)); border-top: 0; }
-  footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--gradient); opacity: .7; }
-  footer .bredde { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 18px 32px; padding-top: 34px; padding-bottom: 36px; }
-  footer .fot-merke { display: flex; align-items: center; gap: 14px; }
-  footer .fot-merke img { height: 42px; opacity: 1; }
-  footer .fot-merke p { margin: 0; color: var(--dempet); font-size: 14px; }
-  footer .fot-merke b { color: var(--tekst); font-family: var(--tittel); font-size: 16px; }
-  footer ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-  footer ul a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 16px; border-radius: 12px; text-decoration: none;
-    font-weight: 800; color: var(--tekst); background: rgba(255,255,255,.06); border: 1px solid var(--kant); transition: background .2s, border-color .2s, transform .2s; }
-  footer ul a:hover { background: rgba(47,107,255,.18); border-color: rgba(25,195,255,.5); transform: translateY(-2px); }
-  footer .copy { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--dempet); }
+  /* Footer: kompakt og diskret – liten logo og © til venstre, tekstlenker til høyre */
+  footer { margin-top: 84px; position: relative; border-top: 0; }
+  footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--gradient); opacity: .55; }
+  footer .bredde { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 24px; padding-top: 18px; padding-bottom: 20px; }
+  footer .fot-merke { display: flex; align-items: center; gap: 14px; margin: 0; font-size: 14px; color: var(--dempet); }
+  footer .fot-merke img { height: 30px; width: auto; opacity: .9; }
+  footer ul { list-style: none; margin: 0 -10px; padding: 0; display: flex; flex-wrap: wrap; }
+  footer nav a, footer ul a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 10px; border-radius: 8px; background: none;
+    font-weight: 700; font-size: 15px; color: var(--dempet); text-decoration: underline; text-decoration-color: rgba(163,173,211,.4); text-underline-offset: 4px; }
+  footer ul a:hover { color: var(--tekst); text-decoration-color: var(--cyan); background: none; }
   @media (max-width: 680px) {
-    footer .bredde { grid-template-columns: 1fr; }
-    footer ul a { padding: 8px 12px; }
+    footer .bredde { padding-top: 14px; padding-bottom: 16px; }
     .spillkort .stikkord span { font-size: 13px; padding: 3px 10px; }
   }
   /* Berøringsskjermer: ingen «hengende» hover-løft etter et trykk */
@@ -307,6 +303,36 @@
     .spillkort:hover .bilde img { transform: none; }
     .spillkort:active { transform: scale(.98); box-shadow: 0 0 40px -6px rgba(var(--aksent), .45); }
   }
+
+  /* ===== Maskot: stående ved «Hvem står bak?» ===== */
+  .boks.med-maskot { position: relative; display: grid; grid-template-columns: auto 1fr; column-gap: 26px; align-items: end; overflow: visible; }
+  .boks.med-maskot .maskot-hel { grid-row: 1 / span 4; align-self: end; height: 260px; width: auto; margin: 0 0 -26px -6px;
+    filter: drop-shadow(0 12px 24px rgba(0,0,0,.45)) drop-shadow(0 0 30px rgba(47,107,255,.35)); }
+  .boks.med-maskot .maskot-glod { grid-row: 1 / span 4; grid-column: 1; align-self: end; justify-self: center; width: 200px; height: 200px; margin: 0 -50px 10px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(47,107,255,.45), rgba(138,61,255,.18) 55%, transparent 70%); z-index: 0; }
+  .boks.med-maskot .maskot-hel { grid-column: 1; z-index: 1; position: relative; }
+  .boks.med-maskot > :not(.maskot-hel):not(.maskot-glod) { grid-column: 2; }
+  @media (max-width: 680px) {
+    /* Mobil (Evens valg): figuren står til venstre i kortet, som på PC. Teksten flyter ved siden av
+       figuren og fortsetter i full bredde under den, så linjene ikke blir trange. */
+    .boks.med-maskot { display: flow-root; }
+    .boks.med-maskot .maskot-hel { float: left; height: 150px; width: auto; margin: 2px 16px 8px -6px; }
+    .boks.med-maskot .maskot-glod { position: absolute; left: 4px; top: 30px; width: 120px; height: 120px; margin: 0; }
+    #om .seksjonstopp .slagord { white-space: normal; } /* stor tekst: slagordet brytes i stedet for å gå ut av skjermen */
+  }
+  @media (max-width: 359px) { .boks.med-maskot .maskot-hel { height: 128px; margin-right: 12px; } .boks.med-maskot .maskot-glod { width: 104px; height: 104px; } }
+  /* Svært smale skjermer (f.eks. 200 % zoom på mobil): figuren står midt i kortet over overskriften */
+  @media (max-width: 300px) {
+    .boks.med-maskot .maskot-hel { float: none; display: block; height: 120px; margin: 0 auto 10px; }
+    .boks.med-maskot .maskot-glod { left: 50%; top: 14px; width: 110px; height: 110px; margin-left: -55px; }
+  }
+
+  /* ===== Maskot: lite portrett ved «Siste nytt» ===== */
+  .maskot-ansikt { border-radius: 50%; background: radial-gradient(circle at 50% 40%, #2b3a7a, #141b3d 70%); border: 2px solid rgba(25,195,255,.55);
+    box-shadow: 0 0 0 4px rgba(138,61,255,.18), 0 8px 18px rgba(0,0,0,.4); object-fit: cover; }
+  .hilsen { display: flex; align-items: center; gap: 12px; margin: 0; color: var(--dempet); font-weight: 700; }
+  .hilsen .maskot-ansikt { flex-shrink: 0; width: 44px; height: 44px; border-width: 1.5px; box-shadow: 0 0 0 3px rgba(138,61,255,.14), 0 0 18px rgba(47,107,255,.35); }
+  @media (max-width: 680px) { .hilsen .maskot-ansikt { width: 40px; height: 40px; } }
 </style>
 </head>
 <body>
@@ -380,7 +406,7 @@
   <section id="nytt" aria-labelledby="nytt-tittel">
     <div class="seksjonstopp inn">
       <h2 id="nytt-tittel">Siste nytt</h2>
-      <p>Fra spillstudioet</p>
+      <p class="hilsen"><img class="maskot-ansikt" src="bilder/maskot-ansikt-96.webp" srcset="bilder/maskot-ansikt-96.webp 1x, bilder/maskot-ansikt-192.webp 2x" width="96" height="96" alt="" loading="lazy" decoding="async"><span>Fra spillstudioet</span></p>
     </div>
     <div class="nytt">
       <article class="nyhet n1 inn" style="--i:0">
@@ -414,7 +440,9 @@
       <p class="slagord"><b>Laget av barn.</b> For barn.</p>
     </div>
     <div class="om">
-      <div class="boks inn">
+      <div class="boks inn med-maskot">
+        <span class="maskot-glod" aria-hidden="true"></span>
+        <img class="maskot-hel" src="bilder/maskot-staende-260.webp" srcset="bilder/maskot-staende-260.webp 1x, bilder/maskot-staende-520.webp 2x" width="109" height="260" alt="EVN Studio-maskoten: en gutt med caps bak frem, blondt hår og grå hettegenser med EVN Studio-logoen" loading="lazy" decoding="async">
         <h3>Hvem står bak?</h3>
         <p>EVN Studio er spillstudioet til Even, 9 år, og pappaen hans. Even finner på spillene, bestemmer hvordan de skal være og tester dem selv. Sammen bruker de KI til å gjøre ideene til ekte spill som andre barn kan spille.</p>
         <p>Spillene er gratis, og alle kan prøve dem!</p>
@@ -435,19 +463,14 @@
 
 <footer>
   <div class="bredde">
-    <div class="fot-merke">
-      <img src="logo-lys.png" alt="" width="56" height="42" loading="lazy">
-      <p><b>EVN Studio</b><br>Laget av barn. For barn. 🎮</p>
-    </div>
+    <p class="fot-merke"><img src="logo-lys.png" alt="" width="40" height="30" loading="lazy"><span>© 2026 EVN Studio</span></p>
     <nav aria-label="Bunnmeny">
       <ul>
-        <li><a href="#spill"><span aria-hidden="true">🎮</span> Alle spill</a></li>
-        <li><a href="personvern/"><span aria-hidden="true">🔒</span> Personvern</a></li>
-        <li><a href="sikkerhet/"><span aria-hidden="true">🛡️</span> Sikkerhet</a></li>
-        <li><a href="mailto:kontakt@evnstudio.no"><span aria-hidden="true">✉️</span> Kontakt (for voksne)</a></li>
+        <li><a href="personvern/">Personvern</a></li>
+        <li><a href="sikkerhet/">Sikkerhet</a></li>
+        <li><a href="mailto:kontakt@evnstudio.no">Kontakt</a></li>
       </ul>
     </nav>
-    <p class="copy">© 2026 EVN Studio · Gratis · Ingen innlogging · Ingen informasjonskapsler</p>
   </div>
 </footer>
 
