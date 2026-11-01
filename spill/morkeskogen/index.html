@@ -250,6 +250,7 @@ addEventListener('keydown',function(){t(false);},true);})();
       <li><b>Jern 🔩:</b> hugg på de rustbrune steinene. Det er mest jern i lavaverdenen.</li>
       <li><b>Utforsk!</b> Snø ❄️ i nord, jungel 🌴 i øst, ørken 🏜️ i sør og lava 🌋 i vest. I jungelen bor en sint T-rex 🦖, og i ørkenen står en pyramide med skatt! Ikke gå i lavaen! Kartet øverst til høyre viser hvor du er.</li>
       <li><b>Vulkanen 🌋:</b> i lavaverdenen står en vulkan med fem kister. Pass deg for den slemme geita! 🐐</li>
+      <li><b>Pause ⏸:</b> trykk P eller Esc, eller ⏸-knappen øverst til høyre.</li>
       <li><b>Kamera 🎥:</b> trykk C for å bytte mellom kamera bak helten og kamera ovenfra.</li>
       <li><b>Hytter 🛖:</b> gamle hytter er trygge om natten og har forsyninger.</li>
       <li><b>Broer og troll 🌉:</b> under broene bor det troll. Slå dem, så plumper de i bekken!</li>
@@ -260,7 +261,7 @@ addEventListener('keydown',function(){t(false);},true);})();
     </ul>
     <div class="qrow" id="qrow">Grafikk: <button data-q="lav">Lav</button><button data-q="middels">Middels</button><button data-q="hoy">Høy</button></div>
     </details>
-    <div class="ver evn-ver">Versjon 5.5.4 · 3D</div>
+    <div class="ver evn-ver">Versjon 5.6.0 · 3D</div>
   </div>
 </div>
 
@@ -283,6 +284,121 @@ addEventListener('keydown',function(){t(false);},true);})();
 </div>
 
 <script src="../../vendor/three-r128.min.js"></script>
+<script>
+/* EVN-PAUSE v1: felles pause med spilletid (samme kode i alle EVN-spill).
+   Spilletid lagres i localStorage 'evn-spilletid-<mappe>' = {dag, iDag, totalt} (millisekunder).
+   Tiden telles bare når spillet er aktivt, fanen synes, pausen ikke er åpen og noen har rørt tast/mus/skjerm siste 3 min. */
+window.EVNPause = function (cfg) {
+  var NOKKEL = 'evn-spilletid-' + cfg.mappe, LEDIG = 180000, t = cfg.tema || {};
+  var idag = function () { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); };
+  var tid = { dag: idag(), iDag: 0, totalt: 0 };
+  try { var l = JSON.parse(localStorage.getItem(NOKKEL)); if (l && typeof l.totalt === 'number') tid = l; } catch (e) {}
+  function lagreTid() { try { localStorage.setItem(NOKKEL, JSON.stringify(tid)); } catch (e) {} }
+  function fmt(ms) { var m = Math.floor(ms / 60000), h = Math.floor(m / 60); return ms < 60000 ? 'under 1 min' : h ? h + ' t ' + (m % 60) + ' min' : m + ' min'; }
+
+  var css = document.createElement('style');
+  css.textContent =
+    '#evnPauseKnapp{min-width:48px;min-height:48px;border-radius:12px;border:2px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;font:700 20px system-ui,sans-serif;cursor:pointer;touch-action:manipulation;pointer-events:auto;padding:0 10px}' +
+    '#evnPauseKnapp[hidden]{display:none!important}' +
+    '#evnPause{position:fixed;inset:0;z-index:99990;display:none;place-items:center;padding:16px;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);touch-action:manipulation}' +
+    '#evnPause.vis{display:grid}' +
+    '#evnPause .kort{background:' + (t.panel || 'rgba(16,24,15,.95)') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:18px 20px;width:min(320px,100%);max-height:100%;overflow:auto;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnPause h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:38px;line-height:1;margin:0 0 6px;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnPause .tider{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 6px}' +
+    '#evnPause .tid{border-radius:12px;padding:8px 6px;background:rgba(127,127,127,.18)}' +
+    '#evnPause .tid b{display:block;font-size:22px;line-height:1.15}#evnPause .tid small{font-size:13px;font-weight:700;opacity:.85}' +
+    '#evnPause button{display:block;width:100%;min-height:48px;margin:8px 0 0;border-radius:12px;border:0;font:800 18px ' + (t.font || 'system-ui,sans-serif') + ';cursor:pointer}' +
+    '#evnPause .fortsett{background:' + (t.btn || '#ffd54a') + ';color:' + (t.btnInk || '#2b1d00') + ';font-size:22px;min-height:56px' + (t.head ? ';font-family:' + t.head + ';font-weight:' + (t.headW || 800) : '') + '}' +
+    '#evnPause .liten{background:rgba(127,127,127,.25);color:inherit}' +
+    '#evnPause .styr{text-align:left;font-size:15px;line-height:1.45;margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(127,127,127,.15)}' +
+    '#evnPause .tips{font-size:14px;opacity:.85;margin:10px 0 0}' +
+    '#evnPause button:focus-visible,#evnPauseKnapp:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}';
+  document.head.appendChild(css);
+
+  var knapp = document.createElement('button');
+  knapp.id = 'evnPauseKnapp'; knapp.type = 'button'; knapp.textContent = '⏸'; knapp.title = 'Pause (P)'; knapp.setAttribute('aria-label', 'Pause'); knapp.hidden = true;
+  if (cfg.knapp) cfg.knapp(knapp); else document.body.appendChild(knapp);
+
+  var bak = document.createElement('div');
+  bak.id = 'evnPause'; bak.setAttribute('role', 'dialog'); bak.setAttribute('aria-modal', 'true'); bak.setAttribute('aria-labelledby', 'evnPauseTittel');
+  bak.innerHTML = '<div class="kort"><h2 id="evnPauseTittel">Pause</h2>' +
+    '<div class="tider"><div class="tid"><small>I dag</small><b id="evnPauseIdag"></b></div><div class="tid"><small>Totalt</small><b id="evnPauseTot"></b></div></div>' +
+    '<button class="fortsett" id="evnPauseFortsett" type="button">▶ Fortsett</button>' +
+    '<button class="liten" id="evnPauseStyrKnapp" type="button" aria-expanded="false">🎮 Slik styrer du</button>' +
+    '<div class="styr" id="evnPauseStyr" hidden></div>' +
+    '<button class="liten" id="evnPauseAvslutt" type="button">🚪 Avslutt</button>' +
+    '<p class="tips" id="evnPauseTips"></p></div>';
+  document.body.appendChild(bak);
+  var $ = function (id) { return document.getElementById(id); };
+  ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (ev) {
+    bak.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+    knapp.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+  });
+
+  var apen = false, apnetTid = 0, venterAvslutt = false;
+  var avsluttLenke = function () { var a = $(cfg.avsluttId); return a && getComputedStyle(a).display !== 'none' ? a : null; };
+  var sporsmal = function () { return $('evnSporsmal'); };
+  var sporsmalApent = function () { var s = sporsmal(); return !!s && s.style.display === 'grid'; };
+  function kan() { return !apen && !venterAvslutt && !sporsmalApent() && cfg.kanPause(); }
+
+  function apne(grunn) {
+    if (!kan()) return;
+    cfg.pause();
+    apen = true; apnetTid = performance.now();
+    $('evnPauseIdag').textContent = fmt(tid.iDag); $('evnPauseTot').textContent = fmt(tid.totalt);
+    $('evnPauseTips').textContent = grunn || 'Spillet står stille. Ingenting er borte.';
+    $('evnPauseStyr').hidden = true; $('evnPauseStyrKnapp').setAttribute('aria-expanded', 'false');
+    $('evnPauseAvslutt').hidden = !avsluttLenke() || !sporsmal();
+    bak.classList.add('vis'); knapp.hidden = true; lagreTid();
+    try { $('evnPauseFortsett').focus({ preventScroll: true }); } catch (e) {}
+  }
+  function lukk(fraKlikk) {
+    if (!apen) return;
+    apen = false; bak.classList.remove('vis');
+    cfg.fortsett(!!fraKlikk);
+  }
+  knapp.addEventListener('click', function () { apne(); });
+  $('evnPauseFortsett').addEventListener('click', function () { lukk(true); });
+  $('evnPauseStyrKnapp').addEventListener('click', function () {
+    var s = $('evnPauseStyr'); if (s.hidden) s.innerHTML = cfg.styring(); s.hidden = !s.hidden; this.setAttribute('aria-expanded', String(!s.hidden));
+  });
+  // Avslutt fra pausen: spillet står stille mens «Vil du avslutte?» vises. «Nei, spill videre» = fortsett.
+  function visSporsmal() { venterAvslutt = true; var s = sporsmal(); s.style.display = 'grid'; var b = $('evnBli'); if (b) b.focus(); }
+  $('evnPauseAvslutt').addEventListener('click', function () { apen = false; bak.classList.remove('vis'); if (cfg.lagre) cfg.lagre(); visSporsmal(); });
+  // Avslutt-knappen i spillet: spillet stopper også mens spørsmålet vises
+  document.addEventListener('click', function (e) {
+    var a = avsluttLenke(); if (!a || !a.contains(e.target) || venterAvslutt || apen || !cfg.kanPause()) return;
+    cfg.pause(); venterAvslutt = true;
+  }, true);
+  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; cfg.fortsett(false); }
+  document.addEventListener('click', function (e) { var b = $('evnBli'); if (b && b.contains(e.target)) setTimeout(nei, 0); }, true);
+
+  window.addEventListener('keydown', function (e) {
+    var k = e.code || e.key;
+    if (venterAvslutt && sporsmalApent()) { if (k === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); nei(); } return; }
+    if (apen) {
+      e.stopImmediatePropagation();                                  // spillet får ingen taster mens pausen er åpen
+      if ((k === 'Escape' || k === 'KeyP') && !e.repeat && performance.now() - apnetTid > 300) { e.preventDefault(); lukk(k === 'KeyP'); }
+      return;
+    }
+    if ((k === 'KeyP' || (k === 'Escape' && (typeof cfg.escPause === 'function' ? cfg.escPause() : cfg.escPause !== false))) && !e.repeat && kan()) { e.preventDefault(); e.stopImmediatePropagation(); apne(); }
+  }, true);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) { apne('Pause fordi du byttet fane eller app.'); lagreTid(); } });
+  window.addEventListener('blur', function () { apne('Pause fordi du gikk ut av spillet.'); });
+  window.addEventListener('pagehide', lagreTid);
+
+  var sistRort = performance.now(), sist = performance.now(), sistLagret = 0;
+  ['keydown', 'pointerdown', 'pointermove', 'touchstart', 'wheel'].forEach(function (ev) { window.addEventListener(ev, function () { sistRort = performance.now(); }, { passive: true, capture: true }); });
+  setInterval(function () {
+    var naa = performance.now(), dt = Math.min(2000, naa - sist); sist = naa;
+    knapp.hidden = apen || venterAvslutt || !cfg.kanPause();
+    var dag = idag(); if (tid.dag !== dag) { tid.dag = dag; tid.iDag = 0; }
+    if (!apen && !venterAvslutt && !document.hidden && naa - sistRort < LEDIG && cfg.aktiv()) { tid.iDag += dt; tid.totalt += dt; }
+    if (naa - sistLagret > 15000) { sistLagret = naa; lagreTid(); }
+  }, 250);
+  return { apne: apne, lukk: lukk, erApen: function () { return apen; }, tid: function () { return tid; } };
+};
+</script>
 <script>
 (() => {
 const WS = 1.6, W = Math.round(7000 * WS), H = W, FX = W / 2, FY = H / 2;   // stor verden med fem biomer (WS = hvor mye større enn den første 7000 × 7000-verdenen)
@@ -1909,7 +2025,7 @@ function nearestEnemyInCone(x, y, ang, half, range) {
 }
 // Siktet: musa (PC) eller hjelp til å treffe nærmeste fiende i retningen du ser
 const MOUSE = { on: false, down: false, sx: 0, sy: 0, wx: null, wy: null };
-// Musestyring som i et skytespill (v5.3, PC): klikk i spillet, så styrer musa hvilken vei du ser. Esc gir deg pekeren tilbake.
+// Musestyring som i et skytespill (v5.3, PC): klikk i spillet, så styrer musa hvilken vei du ser. Esc gir pause (v5.6).
 const MLOOK = { fail: false, forced: false, told: false, sens: 0.35 };
 const PLOCK = () => MLOOK.forced || (!!document.pointerLockElement && document.pointerLockElement === cv);
 const camAim = () => (R3 ? R3.camYaw : 0) + Math.PI;                  // retningen kameraet ser (i spillets vinkel)
@@ -6604,7 +6720,7 @@ cv.addEventListener('pointerdown', e => {
 document.addEventListener('pointerlockerror', () => { MLOOK.fail = true; toast('Musestyring er ikke tillatt her. Hold inne høyre musknapp og dra for å snu kameraet.'); });
 document.addEventListener('pointerlockchange', () => {
   const on = PLOCK(); $('cross').hidden = !on; MOUSE.down = false;
-  if (on) { MOUSE.on = false; MOUSE.wx = null; if (R3) R3.camMode = 'near'; if (!MLOOK.told) { MLOOK.told = true; toast('🖱️ Nå styrer musa hvilken vei du ser! Venstre knapp = angrip. Esc = få pekeren tilbake.'); } }
+  if (on) { MOUSE.on = false; MOUSE.wx = null; if (R3) R3.camMode = 'near'; if (!MLOOK.told) { MLOOK.told = true; toast('🖱️ Nå styrer musa hvilken vei du ser! Venstre knapp = angrip. Esc = pause.'); } }
 });
 document.addEventListener('mousemove', e => { if (PLOCK() && state === 'play') camRotate(e.movementX * MLOOK.sens, e.movementY * MLOOK.sens); });
 window.addEventListener('mouseup', e => { if (PLOCK() && e.button === 0) MOUSE.down = false; });
@@ -6638,6 +6754,31 @@ function devClock() {
 $('againBtn').addEventListener('click', start);
 
 if (!window.THREE) $('no3d').hidden = false;
+// Felles pause med spilletid (⏸ / P / Esc). Spilletid lagres i 'evn-spilletid-morkeskogen'.
+// Esc gir pause (nettleseren slipper musa på Esc uansett). B åpner byggemenyen. Fortsett fanger musa igjen hvis den var fanget.
+let laastFoer = false;
+const EVNP = EVNPause({
+  mappe: 'morkeskogen', avsluttId: 'evnAvslutt',
+  tema: { panel: 'rgba(10,18,14,.95)', ink: '#f3ead6', hi: '#ff9a3c', btn: '#ff9a3c', btnInk: '#2a1606', font: "'Nunito',system-ui,sans-serif", head: "'Lilita One',system-ui,sans-serif", headW: 400 },
+  knapp: b => { const rad = document.createElement('div'); rad.id = 'evnRad'; rad.appendChild(b); document.querySelector('#hud .clock').appendChild(rad); },
+  escPause: () => !(g && g.build),                          // i byggemodus betyr Esc fortsatt «avbryt»
+  kanPause: () => state === 'play',
+  aktiv: () => state === 'play' || state === 'menu' || state === 'map',
+  pause: () => { laastFoer = laastFoer || PLOCK(); state = 'pause'; resetPointers(); $('prompt').hidden = true; },
+  fortsett: klikk => {
+    if (state !== 'pause') return;
+    state = 'play'; resetPointers(); last = performance.now(); if (g) g.p.cool = Math.max(g.p.cool, 0.3);
+    if (klikk && laastFoer && !isTouch && !MLOOK.fail && !MLOOK.forced) { try { const r = cv.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (er) {} }
+    laastFoer = false;
+  },
+  styring: () => isTouch ? '👆 Gå: dra med fingeren<br>🪓 Hugg: trykk øksa · ✋ Bruk: trykk hånda<br>🔨 Bygg · 🎥 Kamera · 🗺️ Kart: trykk kartet'
+    : '⌨️ Gå: <b>W A S D</b> eller pilene · Hopp: <b>mellomrom</b><br>🪓 Hugg: <b>klikk</b> · Gjør ting: <b>E</b> · Spis: <b>F</b><br>🖱️ Se rundt: flytt musa · Zoom: musehjulet<br>🔨 Bygg: <b>B</b> · 🎒 Sekk: <b>I</b> · 🗺️ Kart: <b>M</b> · 🎥 Kamera: <b>C</b><br>⏸ Pause: <b>P</b> eller <b>Esc</b>'
+});
+document.addEventListener('pointerlockchange', () => {
+  if (PLOCK() || state !== 'play') return;
+  if (g && g.build) { g.build = null; return; }             // Esc i byggemodus: avbryt byggingen
+  laastFoer = true; EVNP.apne('Pause. Trykk Fortsett for å styre med musa igjen.');
+});
 newGame(); bakgrunnFersk = true; // bakgrunn bak startskjermen (v5.5.1: brukes direkte ved første Start, så verden ikke bygges to ganger)
 requestAnimationFrame(loop);
 })();
@@ -6649,6 +6790,8 @@ requestAnimationFrame(loop);
   font:800 14px 'Nunito',system-ui,sans-serif;text-decoration:none;border:1px solid rgba(243,234,214,.35);cursor:pointer}
 @media (orientation:landscape) and (max-height:500px){#evnAvslutt{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);margin:0;z-index:6}}
 #evnTilbake{color:#f3ead6}
+#evnRad{display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-top:8px;pointer-events:auto}#evnRad #evnAvslutt{margin:0}
+#evnRad #evnPauseKnapp{border-radius:999px;background:rgba(10,18,14,.82);border:1px solid rgba(243,234,214,.35);color:#f3ead6;min-height:44px}
 #evnSporsmal{position:fixed;inset:0;z-index:100000;display:none;place-items:center;background:rgba(5,10,8,.75);padding:16px}
 #evnSporsmal .boks{background:#13201a;border:2px solid #2f4a35;border-radius:16px;padding:22px;max-width:340px;display:grid;gap:14px;text-align:center;color:#f3ead6;font:800 18px 'Nunito',system-ui,sans-serif}
 #evnSporsmal button{font:400 22px 'Lilita One',system-ui,sans-serif;border:0;border-radius:12px;padding:12px;cursor:pointer}
@@ -6662,7 +6805,7 @@ requestAnimationFrame(loop);
 try {
   if (location.pathname.indexOf('/spill/') !== -1) {
     var av = document.getElementById('evnAvslutt'), sp = document.getElementById('evnSporsmal');
-    var kol = document.querySelector('#hud .clock'); if (kol) kol.appendChild(av);
+    var kol = document.getElementById('evnRad') || document.querySelector('#hud .clock'); if (kol) kol.appendChild(av);
     av.style.display = 'block';
     var card = document.querySelector('#startScreen .card');
     var t = document.getElementById('evnTilbake'); if (t) t.hidden = false;
