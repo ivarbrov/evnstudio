@@ -96,7 +96,7 @@ html.mus .bare-touch,html.touch .bare-pc{display:none}
 .card button:disabled{background:#3a463e;color:#8a958d;cursor:default}
 .card .ghostbtn{background:transparent;border:2px solid #2f4a35;color:var(--bone);font-size:18px}
 .keyhint{margin-top:2px}
-#minimap{display:block;width:120px;height:120px;margin:6px 0 0 auto;border-radius:8px;border:2px solid rgba(243,234,214,.35);pointer-events:auto;cursor:zoom-in}
+#minimap{display:none!important;width:120px;height:120px;margin:6px 0 0 auto;border-radius:8px;border:2px solid rgba(243,234,214,.35);pointer-events:auto;cursor:zoom-in}
 #cross{position:fixed;left:50%;top:46%;width:22px;height:22px;margin:-11px 0 0 -11px;z-index:5;pointer-events:none;background:linear-gradient(#f3ead6,#f3ead6) center/2px 22px no-repeat,linear-gradient(#f3ead6,#f3ead6) center/22px 2px no-repeat;filter:drop-shadow(0 0 2px #000);opacity:.85}
 #cross[hidden]{display:none}
 #bigMap{position:fixed;inset:0;z-index:20;background:rgba(6,8,6,.72);display:grid;place-items:center;padding:12px}
@@ -114,11 +114,8 @@ html.mus .bare-touch,html.touch .bare-pc{display:none}
   body.touchui .stat{font-size:12px;gap:5px} body.touchui .bar{width:min(92px,24vw);height:9px}
   body.touchui #phase{font-size:15px} body.touchui #biome{font-size:11px}
   body.touchui #minimap{width:78px;height:78px}
-  body.touchui #hud .clock{grid-template-columns:auto auto;grid-template-areas:"ph ph" "bi bi" "knp kart";column-gap:6px;justify-content:end;align-items:start}
-  body.touchui #phase{grid-area:ph} body.touchui #biome{grid-area:bi}
-  body.touchui #minimap{grid-area:kart;margin:2px 0 0}
-  body.touchui #evnRad{grid-area:knp;flex-direction:column;gap:6px;margin-top:2px}
-  body.touchui #evnRad #evnPauseKnapp,body.touchui #evnRad #evnAvslutt{width:44px;min-width:44px;height:44px;min-height:44px;padding:0;display:grid;place-items:center;font-size:17px}
+  body.touchui #evnRad{margin-top:4px}
+  body.touchui #evnRad #evnPauseKnapp,body.touchui #evnRad #evnKartKnapp,body.touchui #evnRad #evnAvslutt{width:44px;min-width:44px;height:44px;min-height:44px;padding:0;display:grid;place-items:center;font-size:17px}
   body.touchui #evnRad #evnAvslutt .evn-avs-tekst{display:none}}
 #touch{position:fixed;inset:auto 0 0 0;padding:0 max(16px,env(safe-area-inset-left,0px)) calc(16px + env(safe-area-inset-bottom,0px));
   display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none}
@@ -200,7 +197,7 @@ addEventListener('keydown',function(){t(false);},true);})();
     <div id="phase">☀️ Dag 1</div>
     <div class="sub">Netter overlevd: <b id="nights">0</b></div>
     <div class="sub" id="biome">🌲 Skogen</div>
-    <div class="sub keyhint">B = bygg 🔨 · C = kamera 🎥 · M = kart 🗺️</div>
+    <div class="sub keyhint">B = bygg 🔨 · C = kamera 🎥 · M = kart 🗺️ · P = pause ⏸</div>
     <canvas id="minimap" width="140" height="140" aria-label="Kart (trykk for stort kart)" title="Trykk for stort kart (M)"></canvas>
   </div>
 </div>
@@ -254,9 +251,9 @@ addEventListener('keydown',function(){t(false);},true);})();
       <li><b>Dyr:</b> hugg dem med øksa for å få kjøtt og skinn. Ulv, villsvin og bjørn kan angripe deg!</li>
       <li><b>Kjøtt:</b> trykk F ved bålet for å steke det, og F igjen for å spise.</li>
       <li><b>Jern 🔩:</b> hugg på de rustbrune steinene. Det er mest jern i lavaverdenen.</li>
-      <li><b>Utforsk!</b> Snø ❄️ i nord, jungel 🌴 i øst, ørken 🏜️ i sør og lava 🌋 i vest. I jungelen bor en sint T-rex 🦖, og i ørkenen står en pyramide med skatt! Ikke gå i lavaen! Kartet øverst til høyre viser hvor du er.</li>
+      <li><b>Utforsk!</b> Snø ❄️ i nord, jungel 🌴 i øst, ørken 🏜️ i sør og lava 🌋 i vest. I jungelen bor en sint T-rex 🦖, og i ørkenen står en pyramide med skatt! Ikke gå i lavaen! Trykk 🗺️ eller M for å se kartet.</li>
       <li><b>Vulkanen 🌋:</b> i lavaverdenen står en vulkan med fem kister. Pass deg for den slemme geita! 🐐</li>
-      <li><b>Pause ⏸:</b> trykk P eller Esc, eller ⏸-knappen øverst til høyre.</li>
+      <li><b>Pause ⏸ og kart 🗺️:</b> trykk P eller Esc for pause og M for kart, eller knappene øverst til høyre.</li>
       <li><b>Kamera 🎥:</b> trykk C for å bytte mellom kamera bak helten og kamera ovenfra.</li>
       <li><b>Hytter 🛖:</b> gamle hytter er trygge om natten og har forsyninger.</li>
       <li><b>Broer og troll 🌉:</b> under broene bor det troll. Slå dem, så plumper de i bekken!</li>
@@ -351,7 +348,8 @@ window.EVNNullstill = function (cfg) {
 };
 </script>
 <script>
-/* EVN-PAUSE v1: felles pause med spilletid (samme kode i alle EVN-spill).
+/* EVN-PAUSE v2: felles pause med spilletid og felles kart (samme kode i alle EVN-spill).
+   Kart (v2): 🗺️-knapp ved siden av ⏸ og tasten M åpner et stort kart. Spillet står stille mens kartet er åpent.
    Spilletid lagres i localStorage 'evn-spilletid-<mappe>' = {dag, iDag, totalt} (millisekunder).
    Tiden telles bare når spillet er aktivt, fanen synes, pausen ikke er åpen og noen har rørt tast/mus/skjerm siste 3 min. */
 window.EVNPause = function (cfg) {
@@ -364,8 +362,17 @@ window.EVNPause = function (cfg) {
 
   var css = document.createElement('style');
   css.textContent =
-    '#evnPauseKnapp{min-width:48px;min-height:48px;border-radius:12px;border:2px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;font:700 20px system-ui,sans-serif;cursor:pointer;touch-action:manipulation;pointer-events:auto;padding:0 10px}' +
-    '#evnPauseKnapp[hidden]{display:none!important}' +
+    '#evnPauseKnapp,#evnKartKnapp{min-width:48px;min-height:48px;border-radius:12px;border:2px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;font:700 20px system-ui,sans-serif;cursor:pointer;touch-action:manipulation;pointer-events:auto;padding:0 10px}' +
+    '#evnPauseKnapp[hidden],#evnKartKnapp[hidden]{display:none!important}' +
+    '#evnKart{position:fixed;inset:0;z-index:99990;display:none;place-items:center;padding:12px;background:rgba(0,0,0,.55);touch-action:manipulation}' +
+    '#evnKart.vis{display:grid}' +
+    '#evnKart .kort{background:' + (t.panel || 'rgba(16,24,15,.95)') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:12px;max-width:100%;max-height:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnKart .topp{display:flex;align-items:center;gap:10px;margin:0 0 8px}' +
+    '#evnKart h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:26px;line-height:1;margin:0;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnKart .info{flex:1;font-size:14px;font-weight:700;opacity:.85;line-height:1.3}' +
+    '#evnKart button{width:44px;height:44px;flex:none;border-radius:12px;border:0;background:rgba(127,127,127,.28);color:inherit;font:800 20px system-ui,sans-serif;cursor:pointer}' +
+    '#evnKart canvas{display:block;border-radius:10px;image-rendering:pixelated}' +
+    '#evnKart button:focus-visible,#evnKartKnapp:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}' +
     '#evnPause{position:fixed;inset:0;z-index:99990;display:none;place-items:center;padding:16px;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);touch-action:manipulation}' +
     '#evnPause.vis{display:grid}' +
     '#evnPause .kort{background:' + (t.panel || 'rgba(16,24,15,.95)') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:18px 20px;width:min(320px,100%);max-height:100%;overflow:auto;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
@@ -383,7 +390,12 @@ window.EVNPause = function (cfg) {
 
   var knapp = document.createElement('button');
   knapp.id = 'evnPauseKnapp'; knapp.type = 'button'; knapp.textContent = '⏸'; knapp.title = 'Pause (P)'; knapp.setAttribute('aria-label', 'Pause'); knapp.hidden = true;
-  if (cfg.knapp) cfg.knapp(knapp); else document.body.appendChild(knapp);
+  var kartKnapp = null;
+  if (cfg.kart) {
+    kartKnapp = document.createElement('button');
+    kartKnapp.id = 'evnKartKnapp'; kartKnapp.type = 'button'; kartKnapp.textContent = '🗺️'; kartKnapp.title = 'Kart (M)'; kartKnapp.setAttribute('aria-label', 'Kart'); kartKnapp.hidden = true;
+  }
+  if (cfg.knapp) cfg.knapp(knapp, kartKnapp); else { if (kartKnapp) document.body.appendChild(kartKnapp); document.body.appendChild(knapp); }
 
   var bak = document.createElement('div');
   bak.id = 'evnPause'; bak.setAttribute('role', 'dialog'); bak.setAttribute('aria-modal', 'true'); bak.setAttribute('aria-labelledby', 'evnPauseTittel');
@@ -396,16 +408,56 @@ window.EVNPause = function (cfg) {
     '<p class="tips" id="evnPauseTips"></p></div>';
   document.body.appendChild(bak);
   var $ = function (id) { return document.getElementById(id); };
-  ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (ev) {
-    bak.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
-    knapp.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+  var kartBak = null;
+  if (cfg.kart) {
+    kartBak = document.createElement('div');
+    kartBak.id = 'evnKart'; kartBak.setAttribute('role', 'dialog'); kartBak.setAttribute('aria-modal', 'true'); kartBak.setAttribute('aria-labelledby', 'evnKartTittel');
+    kartBak.innerHTML = '<div class="kort"><div class="topp"><h2 id="evnKartTittel">🗺️ Kart</h2><span class="info" id="evnKartInfo"></span>' +
+      '<button type="button" id="evnKartLukk" aria-label="Lukk kartet">✕</button></div><canvas id="evnKartCv" role="img" aria-label="Kart over spillverdenen"></canvas></div>';
+    document.body.appendChild(kartBak);
+  }
+  [bak, knapp, kartBak, kartKnapp].forEach(function (el) {
+    if (el) ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (ev) { el.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
   });
 
-  var apen = false, apnetTid = 0, venterAvslutt = false;
+  var apen = false, apnetTid = 0, venterAvslutt = false, kartApen = false;
   var avsluttLenke = function () { var a = $(cfg.avsluttId); return a && getComputedStyle(a).display !== 'none' ? a : null; };
   var sporsmal = function () { return $('evnSporsmal'); };
   var sporsmalApent = function () { var s = sporsmal(); return !!s && s.style.display === 'grid'; };
-  function kan() { return !apen && !venterAvslutt && !sporsmalApent() && cfg.kanPause(); }
+  function kan() { return !apen && !kartApen && !venterAvslutt && !sporsmalApent() && cfg.kanPause(); }
+
+  // ---------- Kart ----------
+  function tegnKart() {
+    if (!kartApen) return;
+    var K = cfg.kart, cv = $('evnKartCv'), f = K.forhold || 1;
+    var maksB = Math.min(innerWidth - 48, 900), maksH = innerHeight - 110;
+    var b = Math.max(120, Math.min(maksB, maksH * f)), h = b / f;
+    var d = Math.min(2, window.devicePixelRatio || 1);
+    cv.style.width = Math.round(b) + 'px'; cv.style.height = Math.round(h) + 'px';
+    cv.width = Math.round(b * d); cv.height = Math.round(h * d);
+    kartBak.querySelector('.kort').style.width = Math.round(b + 24) + 'px';   // kortet like bredt som kartet
+    var c = cv.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
+    try { K.tegn(c, cv.width, cv.height, cv); } catch (e) {}
+    $('evnKartInfo').textContent = K.info ? K.info() : '';
+  }
+  function apneKart() {
+    if (!cfg.kart || !kan()) return;
+    cfg.pause(); kartApen = true; apnetTid = performance.now();
+    kartBak.classList.add('vis'); knapp.hidden = true; kartKnapp.hidden = true;
+    tegnKart();
+    try { $('evnKartLukk').focus({ preventScroll: true }); } catch (e) {}
+  }
+  function lukkKart(fraKlikk) {
+    if (!kartApen) return;
+    kartApen = false; kartBak.classList.remove('vis');
+    cfg.fortsett(!!fraKlikk);
+  }
+  if (cfg.kart) {
+    kartKnapp.addEventListener('click', function () { apneKart(); });
+    $('evnKartLukk').addEventListener('click', function () { lukkKart(true); });
+    kartBak.addEventListener('click', function (e) { if (e.target === kartBak) lukkKart(true); });   // trykk utenfor kartet lukker
+    window.addEventListener('resize', tegnKart);
+  }
 
   function apne(grunn) {
     if (!kan()) return;
@@ -442,6 +494,12 @@ window.EVNPause = function (cfg) {
   window.addEventListener('keydown', function (e) {
     var k = e.code || e.key;
     if (venterAvslutt && sporsmalApent()) { if (k === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); nei(); } return; }
+    if (kartApen) {
+      e.stopImmediatePropagation();                                  // spillet får ingen taster mens kartet er åpent
+      if ((k === 'Escape' || k === 'KeyM') && !e.repeat && performance.now() - apnetTid > 200) { e.preventDefault(); lukkKart(false); }
+      return;
+    }
+    if (k === 'KeyM' && cfg.kart && !e.repeat && kan()) { e.preventDefault(); e.stopImmediatePropagation(); apneKart(); return; }
     if (apen) {
       e.stopImmediatePropagation();                                  // spillet får ingen taster mens pausen er åpen
       if ((k === 'Escape' || k === 'KeyP') && !e.repeat && performance.now() - apnetTid > 300) { e.preventDefault(); lukk(k === 'KeyP'); }
@@ -457,12 +515,13 @@ window.EVNPause = function (cfg) {
   ['keydown', 'pointerdown', 'pointermove', 'touchstart', 'wheel'].forEach(function (ev) { window.addEventListener(ev, function () { sistRort = performance.now(); }, { passive: true, capture: true }); });
   setInterval(function () {
     var naa = performance.now(), dt = Math.min(2000, naa - sist); sist = naa;
-    knapp.hidden = apen || venterAvslutt || !cfg.kanPause();
+    knapp.hidden = apen || kartApen || venterAvslutt || !cfg.kanPause();
+    if (kartKnapp) kartKnapp.hidden = knapp.hidden;
     var dag = idag(); if (tid.dag !== dag) { tid.dag = dag; tid.iDag = 0; }
     if (!apen && !venterAvslutt && !document.hidden && naa - sistRort < LEDIG && cfg.aktiv()) { tid.iDag += dt; tid.totalt += dt; }
     if (naa - sistLagret > 15000) { sistLagret = naa; lagreTid(); }
   }, 250);
-  return { apne: apne, lukk: lukk, erApen: function () { return apen; }, tid: function () { return tid; } };
+  return { apne: apne, lukk: lukk, apneKart: apneKart, lukkKart: lukkKart, erApen: function () { return apen || kartApen; }, tid: function () { return tid; } };
 };
 </script>
 <script>
@@ -6601,7 +6660,7 @@ function fishHud() {
 }
 function updateHud() {
   fishHud();
-  if (performance.now() - mapT > 200) { fogReveal((performance.now() - mapT) / 1000); mapT = performance.now(); drawMinimap(); }
+  if (performance.now() - mapT > 200) { fogReveal((performance.now() - mapT) / 1000); mapT = performance.now(); }
   $('bHp').style.width = Math.max(0, g.hp) + '%';
   $('bFood').style.width = g.food + '%';
   $('bFire').style.width = g.fuel + '%';
@@ -6838,7 +6897,12 @@ let laastFoer = false;
 const EVNP = EVNPause({
   mappe: 'morkeskogen', avsluttId: 'evnAvslutt',
   tema: { panel: 'rgba(10,18,14,.95)', ink: '#f3ead6', hi: '#ff9a3c', btn: '#ff9a3c', btnInk: '#2a1606', font: "'Nunito',system-ui,sans-serif", head: "'Lilita One',system-ui,sans-serif", headW: 400 },
-  knapp: b => { const rad = document.createElement('div'); rad.id = 'evnRad'; rad.appendChild(b); document.querySelector('#hud .clock').appendChild(rad); },
+  knapp: (b, k) => { const rad = document.createElement('div'); rad.id = 'evnRad'; rad.append(b, k); document.querySelector('#hud .clock').appendChild(rad); },
+  kart: {
+    forhold: 1,
+    info: () => { if (!fog) return ''; const n = fog.a.reduce((s2, v) => s2 + v, 0); return `Du har utforsket ${Math.round(n / fog.a.length * 100)} % · det mørke er ukjent land`; },
+    tegn: (c, w, h, cv) => drawMapView(cv, cv.width, true)
+  },
   escPause: () => !(g && g.build),                          // i byggemodus betyr Esc fortsatt «avbryt»
   kanPause: () => state === 'play',
   aktiv: () => state === 'play' || state === 'menu' || state === 'map',
@@ -6869,7 +6933,7 @@ requestAnimationFrame(loop);
 @media (orientation:landscape) and (max-height:500px){#evnAvslutt{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);margin:0;z-index:6}}
 #evnTilbake{color:#f3ead6}
 #evnRad{display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-top:8px;pointer-events:auto}#evnRad #evnAvslutt{margin:0}
-#evnRad #evnPauseKnapp{border-radius:999px;background:rgba(10,18,14,.82);border:1px solid rgba(243,234,214,.35);color:#f3ead6;min-height:44px}
+#evnRad #evnPauseKnapp,#evnRad #evnKartKnapp{border-radius:999px;background:rgba(10,18,14,.82);border:1px solid rgba(243,234,214,.35);color:#f3ead6;min-height:44px}
 #evnSporsmal{position:fixed;inset:0;z-index:100000;display:none;place-items:center;background:rgba(5,10,8,.75);padding:16px}
 #evnSporsmal .boks{background:#13201a;border:2px solid #2f4a35;border-radius:16px;padding:22px;max-width:340px;display:grid;gap:14px;text-align:center;color:#f3ead6;font:800 18px 'Nunito',system-ui,sans-serif}
 #evnSporsmal button{font:400 22px 'Lilita One',system-ui,sans-serif;border:0;border-radius:12px;padding:12px;cursor:pointer}
