@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Era Defenders – v0.18.3</title>
+<title>Era Defenders – v0.18.4</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="ikoner/ikon-192.png">
 <link rel="apple-touch-icon" href="ikoner/apple-touch-icon.png">
@@ -137,14 +137,14 @@ addEventListener('keydown',function(){t(false);},true);})();
   <ul id="menyStyring">
     <li class="bare-pc">⌨️ Gå: <b>W A S D</b> eller pilene</li>
     <li class="bare-pc">⚔️ Slå: <b>mellomrom</b> · Skyt: <b>klikk</b> eller <b>E</b></li>
-    <li class="bare-pc">🏰 Basen: <b>B</b></li>
+    <li class="bare-pc">🏰 Basen: <b>B</b> · ⏸ Pause: <b>P</b></li>
     <li class="bare-touch">👆 Gå: dra med fingeren på venstre side</li>
     <li class="bare-touch">⚔️ Slå og skyt: knappene nede til høyre</li>
     <li class="bare-touch">🏰 Bygg: trykk på «Basen»-knappen</li>
   </ul>
   <button class="start evn-start" id="menyStart">▶ Start</button>
   <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-  <div class="evn-ver">Versjon 0.18.3 · 7 tidsepoker</div>
+  <div class="evn-ver">Versjon 0.18.4 · 7 tidsepoker</div>
 </div></div>
 <div id="evnSporsmal" role="dialog" aria-modal="true"><div class="boks">
   <div>Vil du avslutte og gå tilbake til forsiden? Spillet ditt er lagret.</div>
@@ -158,6 +158,121 @@ addEventListener('keydown',function(){t(false);},true);})();
   <button id="nyttSpillKnapp">🗑️ Start helt på nytt</button>
   <button id="tilbake">⚔️ Tilbake til kampen<span class="bare-pc"> (B)</span></button>
 </div></div>
+<script>
+/* EVN-PAUSE v1: felles pause med spilletid (samme kode i alle EVN-spill).
+   Spilletid lagres i localStorage 'evn-spilletid-<mappe>' = {dag, iDag, totalt} (millisekunder).
+   Tiden telles bare når spillet er aktivt, fanen synes, pausen ikke er åpen og noen har rørt tast/mus/skjerm siste 3 min. */
+window.EVNPause = function (cfg) {
+  var NOKKEL = 'evn-spilletid-' + cfg.mappe, LEDIG = 180000, t = cfg.tema || {};
+  var idag = function () { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); };
+  var tid = { dag: idag(), iDag: 0, totalt: 0 };
+  try { var l = JSON.parse(localStorage.getItem(NOKKEL)); if (l && typeof l.totalt === 'number') tid = l; } catch (e) {}
+  function lagreTid() { try { localStorage.setItem(NOKKEL, JSON.stringify(tid)); } catch (e) {} }
+  function fmt(ms) { var m = Math.floor(ms / 60000), h = Math.floor(m / 60); return ms < 60000 ? 'under 1 min' : h ? h + ' t ' + (m % 60) + ' min' : m + ' min'; }
+
+  var css = document.createElement('style');
+  css.textContent =
+    '#evnPauseKnapp{min-width:48px;min-height:48px;border-radius:12px;border:2px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;font:700 20px system-ui,sans-serif;cursor:pointer;touch-action:manipulation;pointer-events:auto;padding:0 10px}' +
+    '#evnPauseKnapp[hidden]{display:none!important}' +
+    '#evnPause{position:fixed;inset:0;z-index:99990;display:none;place-items:center;padding:16px;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);touch-action:manipulation}' +
+    '#evnPause.vis{display:grid}' +
+    '#evnPause .kort{background:' + (t.panel || 'rgba(16,24,15,.95)') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:18px 20px;width:min(320px,100%);max-height:100%;overflow:auto;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnPause h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:38px;line-height:1;margin:0 0 6px;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnPause .tider{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 6px}' +
+    '#evnPause .tid{border-radius:12px;padding:8px 6px;background:rgba(127,127,127,.18)}' +
+    '#evnPause .tid b{display:block;font-size:22px;line-height:1.15}#evnPause .tid small{font-size:13px;font-weight:700;opacity:.85}' +
+    '#evnPause button{display:block;width:100%;min-height:48px;margin:8px 0 0;border-radius:12px;border:0;font:800 18px ' + (t.font || 'system-ui,sans-serif') + ';cursor:pointer}' +
+    '#evnPause .fortsett{background:' + (t.btn || '#ffd54a') + ';color:' + (t.btnInk || '#2b1d00') + ';font-size:22px;min-height:56px' + (t.head ? ';font-family:' + t.head + ';font-weight:' + (t.headW || 800) : '') + '}' +
+    '#evnPause .liten{background:rgba(127,127,127,.25);color:inherit}' +
+    '#evnPause .styr{text-align:left;font-size:15px;line-height:1.45;margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(127,127,127,.15)}' +
+    '#evnPause .tips{font-size:14px;opacity:.85;margin:10px 0 0}' +
+    '#evnPause button:focus-visible,#evnPauseKnapp:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}';
+  document.head.appendChild(css);
+
+  var knapp = document.createElement('button');
+  knapp.id = 'evnPauseKnapp'; knapp.type = 'button'; knapp.textContent = '⏸'; knapp.title = 'Pause (P)'; knapp.setAttribute('aria-label', 'Pause'); knapp.hidden = true;
+  if (cfg.knapp) cfg.knapp(knapp); else document.body.appendChild(knapp);
+
+  var bak = document.createElement('div');
+  bak.id = 'evnPause'; bak.setAttribute('role', 'dialog'); bak.setAttribute('aria-modal', 'true'); bak.setAttribute('aria-labelledby', 'evnPauseTittel');
+  bak.innerHTML = '<div class="kort"><h2 id="evnPauseTittel">Pause</h2>' +
+    '<div class="tider"><div class="tid"><small>I dag</small><b id="evnPauseIdag"></b></div><div class="tid"><small>Totalt</small><b id="evnPauseTot"></b></div></div>' +
+    '<button class="fortsett" id="evnPauseFortsett" type="button">▶ Fortsett</button>' +
+    '<button class="liten" id="evnPauseStyrKnapp" type="button" aria-expanded="false">🎮 Slik styrer du</button>' +
+    '<div class="styr" id="evnPauseStyr" hidden></div>' +
+    '<button class="liten" id="evnPauseAvslutt" type="button">🚪 Avslutt</button>' +
+    '<p class="tips" id="evnPauseTips"></p></div>';
+  document.body.appendChild(bak);
+  var $ = function (id) { return document.getElementById(id); };
+  ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (ev) {
+    bak.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+    knapp.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+  });
+
+  var apen = false, apnetTid = 0, venterAvslutt = false;
+  var avsluttLenke = function () { var a = $(cfg.avsluttId); return a && getComputedStyle(a).display !== 'none' ? a : null; };
+  var sporsmal = function () { return $('evnSporsmal'); };
+  var sporsmalApent = function () { var s = sporsmal(); return !!s && s.style.display === 'grid'; };
+  function kan() { return !apen && !venterAvslutt && !sporsmalApent() && cfg.kanPause(); }
+
+  function apne(grunn) {
+    if (!kan()) return;
+    cfg.pause();
+    apen = true; apnetTid = performance.now();
+    $('evnPauseIdag').textContent = fmt(tid.iDag); $('evnPauseTot').textContent = fmt(tid.totalt);
+    $('evnPauseTips').textContent = grunn || 'Spillet står stille. Ingenting er borte.';
+    $('evnPauseStyr').hidden = true; $('evnPauseStyrKnapp').setAttribute('aria-expanded', 'false');
+    $('evnPauseAvslutt').hidden = !avsluttLenke() || !sporsmal();
+    bak.classList.add('vis'); knapp.hidden = true; lagreTid();
+    try { $('evnPauseFortsett').focus({ preventScroll: true }); } catch (e) {}
+  }
+  function lukk(fraKlikk) {
+    if (!apen) return;
+    apen = false; bak.classList.remove('vis');
+    cfg.fortsett(!!fraKlikk);
+  }
+  knapp.addEventListener('click', function () { apne(); });
+  $('evnPauseFortsett').addEventListener('click', function () { lukk(true); });
+  $('evnPauseStyrKnapp').addEventListener('click', function () {
+    var s = $('evnPauseStyr'); if (s.hidden) s.innerHTML = cfg.styring(); s.hidden = !s.hidden; this.setAttribute('aria-expanded', String(!s.hidden));
+  });
+  // Avslutt fra pausen: spillet står stille mens «Vil du avslutte?» vises. «Nei, spill videre» = fortsett.
+  function visSporsmal() { venterAvslutt = true; var s = sporsmal(); s.style.display = 'grid'; var b = $('evnBli'); if (b) b.focus(); }
+  $('evnPauseAvslutt').addEventListener('click', function () { apen = false; bak.classList.remove('vis'); if (cfg.lagre) cfg.lagre(); visSporsmal(); });
+  // Avslutt-knappen i spillet: spillet stopper også mens spørsmålet vises
+  document.addEventListener('click', function (e) {
+    var a = avsluttLenke(); if (!a || !a.contains(e.target) || venterAvslutt || apen || !cfg.kanPause()) return;
+    cfg.pause(); venterAvslutt = true;
+  }, true);
+  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; cfg.fortsett(false); }
+  document.addEventListener('click', function (e) { var b = $('evnBli'); if (b && b.contains(e.target)) setTimeout(nei, 0); }, true);
+
+  window.addEventListener('keydown', function (e) {
+    var k = e.code || e.key;
+    if (venterAvslutt && sporsmalApent()) { if (k === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); nei(); } return; }
+    if (apen) {
+      e.stopImmediatePropagation();                                  // spillet får ingen taster mens pausen er åpen
+      if ((k === 'Escape' || k === 'KeyP') && !e.repeat && performance.now() - apnetTid > 300) { e.preventDefault(); lukk(k === 'KeyP'); }
+      return;
+    }
+    if ((k === 'KeyP' || (k === 'Escape' && (typeof cfg.escPause === 'function' ? cfg.escPause() : cfg.escPause !== false))) && !e.repeat && kan()) { e.preventDefault(); e.stopImmediatePropagation(); apne(); }
+  }, true);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) { apne('Pause fordi du byttet fane eller app.'); lagreTid(); } });
+  window.addEventListener('blur', function () { apne('Pause fordi du gikk ut av spillet.'); });
+  window.addEventListener('pagehide', lagreTid);
+
+  var sistRort = performance.now(), sist = performance.now(), sistLagret = 0;
+  ['keydown', 'pointerdown', 'pointermove', 'touchstart', 'wheel'].forEach(function (ev) { window.addEventListener(ev, function () { sistRort = performance.now(); }, { passive: true, capture: true }); });
+  setInterval(function () {
+    var naa = performance.now(), dt = Math.min(2000, naa - sist); sist = naa;
+    knapp.hidden = apen || venterAvslutt || !cfg.kanPause();
+    var dag = idag(); if (tid.dag !== dag) { tid.dag = dag; tid.iDag = 0; }
+    if (!apen && !venterAvslutt && !document.hidden && naa - sistRort < LEDIG && cfg.aktiv()) { tid.iDag += dt; tid.totalt += dt; }
+    if (naa - sistLagret > 15000) { sistLagret = naa; lagreTid(); }
+  }, 250);
+  return { apne: apne, lukk: lukk, erApen: function () { return apen; }, tid: function () { return tid; } };
+};
+</script>
 <script>
 // ===================== INNSTILLINGER (prøv å endre tallene!) =====================
 const START_FART = 3;         // hvor fort helten løper i starten
@@ -2163,7 +2278,7 @@ function tegnPanel() {
   ctx.fillText('💰 ' + helt.penger + '   🧪 ' + helt.drikker + '   ' + VERDENSIKON[helt.verden] + ' Bølge ' + bolge, 24, 111);
   if (antallBygget('mur')) tegnLinje(16, 122, 240, helt.murLiv, murMaks(), '#9e9e9e', '🧱 Mur ' + helt.murLiv + '/' + murMaks() + (helt.murLiv === 0 ? '  KNUST!' : ''));
   ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '13px system-ui';
-  if (!erTouch) ctx.fillText('Piler/WASD: gå   Mellomrom: ' + VAAPENNAVN[epoke().naer] + '   E/klikk: ' + VAAPENNAVN[epoke().avstand] + (antallBygget('pistol') ? '   F/høyreklikk: pistol' : '') + '   Q: livsdrikk   B: basen', canvas.width - 16, canvas.height - 16);
+  if (!erTouch) ctx.fillText('Piler/WASD: gå   Mellomrom: ' + VAAPENNAVN[epoke().naer] + '   E/klikk: ' + VAAPENNAVN[epoke().avstand] + (antallBygget('pistol') ? '   F/høyreklikk: pistol' : '') + '   Q: livsdrikk   B: basen   P: pause', canvas.width - 16, canvas.height - 16);
 }
 
 const logoBilde = new Image();
@@ -2401,6 +2516,19 @@ try {
     tb.addEventListener('click', e => e.stopPropagation()); // menyen starter spillet ved klikk; lenken skal bare gå tilbake
   }
 } catch (e) {}
+
+// Felles pause med spilletid (⏸ / P / Esc). Spilletid lagres i 'evn-spilletid-eventyrspill'.
+EVNPause({
+  mappe: 'eventyrspill', avsluttId: 'avsluttKnapp',
+  tema: { panel: 'rgba(28,36,54,.97)', ink: '#fff', hi: '#ffd54a', btn: '#ffd54a', btnInk: '#2b1d00' },
+  knapp: b => { b.style.cssText = 'position:fixed;top:68px;right:16px;z-index:24'; document.body.appendChild(b); },
+  kanPause: () => tilstand === 'spill',
+  aktiv: () => tilstand === 'spill' || tilstand === 'base',
+  pause: () => { tilstand = 'pause'; for (const k in taster) taster[k] = false; },
+  fortsett: () => { if (tilstand === 'pause') { for (const k in taster) taster[k] = false; tilstand = 'spill'; } },
+  lagre: () => lagre(),
+  styring: () => [...document.querySelectorAll('#menyStyring li')].filter(li => getComputedStyle(li).display !== 'none').map(li => li.innerHTML).join('<br>')
+});
 
 helt = hentLagring(); // fortsett lagret spill hvis det finnes
 nyttSpill();
