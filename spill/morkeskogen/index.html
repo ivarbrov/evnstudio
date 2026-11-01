@@ -143,8 +143,8 @@ html.mus .bare-touch,html.touch .bare-pc{display:none}
 #hotbar button.on{border-color:var(--ember);background:rgba(255,154,60,.28);box-shadow:0 0 0 2px rgba(255,154,60,.35)}
 #hotbar #invBtn{font-size:20px}
 #prompt{margin-bottom:58px}
-body.touchui #hotbar{bottom:calc(8px + env(safe-area-inset-bottom,0px));gap:3px;padding:3px}
-body.touchui #hotbar button{width:38px;height:38px;font-size:19px}
+body.touchui #hotbar{bottom:calc(8px + env(safe-area-inset-bottom,0px));gap:3px;padding:3px;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 24px)}
+body.touchui #hotbar button{width:44px;height:44px;font-size:21px}
 body.touchui #prompt{margin-bottom:0;bottom:calc(60px + env(safe-area-inset-bottom,0px))}
 @media (orientation:portrait){body.touchui #hotbar{bottom:calc(236px + env(safe-area-inset-bottom,0px))} body.touchui #prompt{bottom:calc(290px + env(safe-area-inset-bottom,0px))}}
 @media (orientation:landscape) and (max-height:500px){body.touchui .acts{grid-template-columns:auto auto;align-items:end}
@@ -260,7 +260,7 @@ addEventListener('keydown',function(){t(false);},true);})();
     </ul>
     <div class="qrow" id="qrow">Grafikk: <button data-q="lav">Lav</button><button data-q="middels">Middels</button><button data-q="hoy">Høy</button></div>
     </details>
-    <div class="ver evn-ver">Versjon 5.5.3 · 3D</div>
+    <div class="ver evn-ver">Versjon 5.5.4 · 3D</div>
   </div>
 </div>
 
@@ -6468,9 +6468,18 @@ function updateHud() {
   } else pr.hidden = true;
 }
 
+// Går spillet tregt (under ca. 24 bilder i sekundet i 6 sekunder), senkes grafikken ett trinn – bare hvis spilleren ikke har valgt grafikk selv
+const FPS_AUTO = { t: 0, n: 0, valgt: (() => { try { return !!localStorage.getItem('mork3d.q'); } catch (e) { return false; } })() };
+function fpsWatch(rawDt) {
+  if (FPS_AUTO.valgt || qKey === 'lav' || document.hidden) return;
+  FPS_AUTO.t += rawDt; FPS_AUTO.n++;
+  if (FPS_AUTO.t < 6) return;
+  const fps = FPS_AUTO.n / FPS_AUTO.t; FPS_AUTO.t = 0; FPS_AUTO.n = 0;
+  if (fps < 24) { qKey = qKey === 'hoy' ? 'middels' : 'lav'; Q = QUAL[qKey]; applyQuality(); toast(`🐢 Spillet gikk tregt, så grafikken er satt til «${Q.n}». Du kan endre den på startskjermen.`); }
+}
 function loop(ts) {
-  const dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts;
-  if (state === 'play') { update(dt); updateHud(); }
+  const raw = (ts - last) / 1000 || 0, dt = Math.min(0.05, raw); last = ts;
+  if (state === 'play') { update(dt); updateHud(); if (raw > 0 && raw < 2.5) fpsWatch(raw); }
   if (g) draw(ts / 1000);
   requestAnimationFrame(loop);
 }
@@ -6609,7 +6618,7 @@ function applyQuality() {
   const sh = R3.sun.shadow; if (sh.mapSize.x !== Q.shadow) { sh.mapSize.set(Q.shadow, Q.shadow); if (sh.map) { sh.map.dispose(); sh.map = null; } }
   R3.pool.forEach((l, i) => { l.visible = i < Q.lights; });                                // færre lyskilder på lav kvalitet
 }
-$('qrow').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return;
+$('qrow').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; FPS_AUTO.valgt = true;
   qKey = b.dataset.q; Q = QUAL[qKey]; try { localStorage.setItem('mork3d.q', qKey); } catch (er) {} applyQuality(); b.blur(); });
 function devToggle() { DEV.on = !DEV.on; $('devSky').hidden = !DEV.on; if (!DEV.on) DEV.scale = 1; devBtns(); }
 function devBtns() { $('devPause').classList.toggle('on', DEV.scale === 0); $('devFast').classList.toggle('on', DEV.scale === 20); }
@@ -6636,7 +6645,7 @@ requestAnimationFrame(loop);
 
 <!-- EVN Studio: avslutt-knapp (vises bare på evnstudio.no/spill/...) og spørsmål før man går -->
 <style>
-#evnAvslutt{display:none;margin:8px 0 0 auto;width:max-content;pointer-events:auto;padding:7px 12px;border-radius:999px;background:rgba(10,18,14,.82);color:#f3ead6;
+#evnAvslutt{display:none;margin:8px 0 0 auto;width:max-content;pointer-events:auto;min-height:44px;box-sizing:border-box;line-height:28px;padding:7px 14px;border-radius:999px;background:rgba(10,18,14,.82);color:#f3ead6;
   font:800 14px 'Nunito',system-ui,sans-serif;text-decoration:none;border:1px solid rgba(243,234,214,.35);cursor:pointer}
 @media (orientation:landscape) and (max-height:500px){#evnAvslutt{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);margin:0;z-index:6}}
 #evnTilbake{color:#f3ead6}
