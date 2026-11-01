@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Fossil Zoo v0.6.4 – EVN Studio</title>
+<title>Fossil Zoo v0.6.6 – EVN Studio</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;touch-action:manipulation}
 #cv,#pad button,#mini{touch-action:none}
@@ -41,6 +41,36 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
 #start p{font-size:18px;max-width:540px;background:rgba(0,0,0,.5);padding:12px 16px;border-radius:14px;line-height:1.45}
 #start .bigbtn{font-size:26px;padding:14px 34px}
 #start .ver{font-size:13px;opacity:.8}
+#start .kort{width:min(480px,100%);display:grid;gap:12px;justify-items:center;background:rgba(30,18,8,.72);border:2px solid rgba(255,214,120,.35);
+  border-radius:20px;padding:20px 22px;box-shadow:0 18px 40px rgba(0,0,0,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);margin:auto}
+#start .kort h1{margin:0;line-height:1.05}
+#start .kort .maal{margin:0;font-size:18px;line-height:1.45;font-weight:700;background:none;padding:0}
+#start .kort ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:16px;text-align:left;line-height:1.35}
+#start .bigbtn{width:100%;--evn-glod:rgba(255,190,40,.6)}
+/* maskot */
+/* EVN Studio-maskoten på startkortet (samme oppbygging som Era Defenders, eget spills farger):
+   står til venstre for målet, aldri over tittel eller Start. Skjules i liggende mobil. */
+#start .start-intro{display:flex;align-items:center;justify-content:center;gap:16px;text-align:left}
+#start .start-maskot{flex-shrink:0;height:120px;width:auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45)) drop-shadow(0 0 18px rgba(255,200,80,.45))}
+#start{justify-content:flex-start} #start .kort{margin:auto} /* høyt kort på liten skjerm: start øverst og kan rulles, i stedet for å kuttes */
+@media (max-width:380px){#start .start-maskot{height:96px} #start .start-intro{gap:12px} #start .kort{gap:8px;padding:16px} #start .kort .maal{font-size:15px} #start .kort ul{font-size:14px;gap:3px} #start{padding-top:100px}} /* smale mobiler: tettere kort; plass til «Avslutt» */
+@media (max-height:500px){#start .start-maskot{display:none} #start .start-intro{display:block;text-align:center}}
+@media (max-height:500px){#start .kort{gap:6px;padding:12px 18px} #start h1{font-size:34px} #start .kort ul{font-size:14px;gap:2px} #start .kort .maal{font-size:15px}}
+/* ===== EVN-startkort (felles oppbygging i alle EVN Studio-spill, fra 1.11.2026) =====
+   Rekkefølge: EVN STUDIO-merke → spillnavn → mål → styring → Start (pulserer) → Tilbake til EVN Studio → versjon.
+   Hvert spill beholder sine egne farger via --evn-knapp og --evn-glod. */
+.evn-merke{display:inline-flex;align-items:center;justify-self:center;align-self:center;padding:6px 14px;border-radius:999px;
+  font:800 12px/1 system-ui,-apple-system,sans-serif;letter-spacing:.18em;color:#fff;text-shadow:none;
+  background:linear-gradient(100deg,#19c3ff,#2f6bff 45%,#8a3dff);box-shadow:0 4px 16px rgba(47,107,255,.45)}
+.evn-start{animation:evnPuls 2.4s ease-in-out infinite;transition:transform .15s}
+.evn-start:hover,.evn-start:focus-visible{animation-play-state:paused;transform:scale(1.05)}
+.evn-start:active{transform:scale(.97)}
+@keyframes evnPuls{0%,100%{transform:scale(1);box-shadow:0 6px 18px var(--evn-glod,rgba(0,0,0,.4))}
+  50%{transform:scale(1.045);box-shadow:0 8px 30px var(--evn-glod,rgba(0,0,0,.4)),0 0 0 6px rgba(255,255,255,.08)}}
+.evn-tilbake{display:block;text-align:center;font-weight:800;text-decoration:underline;text-underline-offset:3px;color:inherit;opacity:.85;padding:10px 0;min-height:44px}
+.evn-tilbake:hover{opacity:1}
+.evn-ver{font-size:12px;opacity:.7;text-align:center}
+@media (prefers-reduced-motion:reduce){.evn-start{animation:none}}
 #celebrate{background:radial-gradient(circle,#fff1c9,#f2b45a 55%,#8a4a14)}
 #celebrate canvas{width:min(560px,92vw);height:auto;aspect-ratio:560/300}
 #celebrate h2{font-size:clamp(26px,6vw,46px);color:#3b1700;text-shadow:0 2px 0 #fff6}
@@ -129,11 +159,23 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
 </div>
 
 <div class="overlay show" id="start">
-  <div class="studio">EVN STUDIOS PRESENTERER</div>
+  <div class="kort">
+  <span class="evn-merke">EVN STUDIO</span>
   <h1>⛏️ Fossil Zoo</h1>
-  <p>Reis gjennom jordas tre store tidsepoker og let etter fossiler! 🦴<br>Når du har funnet hele skjelettet til et dyr, blir det <b>levende</b> og flytter inn i dyreparken din.<br><br>⌨️ Piltaster eller WASD: gå og grav<br>🧗 Hold pil opp inntil en vegg for å klatre<br>✨ Glitrende stein gjemmer et fossil!<br>⏳ Jo dypere du graver, jo lenger tilbake i tiden kommer du!</p>
-  <button class="btn bigbtn" id="startBtn">Start!</button>
-  <div class="ver">Versjon 0.6.4 • 3 tidsepoker • 13 dyr å vekke</div>
+  <div class="start-intro">
+  <img class="start-maskot" src="../../bilder/maskot-staende-260.webp" srcset="../../bilder/maskot-staende-260.webp 1x, ../../bilder/maskot-staende-520.webp 2x" width="109" height="260" alt="" decoding="async" onerror="this.remove()">
+  <p class="maal">Reis gjennom jordas tre store tidsepoker og let etter fossiler! 🦴 Når du har funnet hele skjelettet til et dyr, blir det <b>levende</b> og flytter inn i dyreparken din.</p>
+  </div>
+  <ul>
+    <li>⌨️ Piltaster eller WASD: gå og grav</li>
+    <li>🧗 Hold pil opp inntil en vegg for å klatre</li>
+    <li>✨ Glitrende stein gjemmer et fossil!</li>
+    <li>⏳ Jo dypere du graver, jo lenger tilbake i tiden kommer du!</li>
+  </ul>
+  <button class="btn bigbtn evn-start" id="startBtn">Start!</button>
+  <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
+  <div class="ver evn-ver">Versjon 0.6.6 • 3 tidsepoker • 13 dyr å vekke</div>
+  </div>
 </div>
 
 <div class="overlay" id="celebrate">
@@ -1671,6 +1713,7 @@ try {
   if (location.pathname.indexOf('/spill/') !== -1) {
     var av = document.getElementById('evnAvslutt'), sp = document.getElementById('evnSporsmal');
     av.style.display = 'inline-block';
+    var tb = document.getElementById('evnTilbake'); if (tb) tb.hidden = false;
     av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); sp.style.display = 'grid'; document.getElementById('evnBli').focus(); });
     ['pointerdown', 'mousedown', 'touchstart'].forEach(function (ev) { sp.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); av.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
     document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; });

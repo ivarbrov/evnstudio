@@ -63,7 +63,30 @@ html,body{touch-action:manipulation}
 .mcost{display:flex;gap:10px;font-weight:800}.mcost .short{color:#ff7b7b}
 .card .mrow button{font-size:17px;padding:8px 14px}
 .card .maal{list-style:none;padding:0;display:grid;gap:6px;font-size:17px}
-#startBtn{font-size:26px;padding:14px}
+#startBtn{font-size:26px;padding:14px;--evn-glod:rgba(255,154,60,.55)}
+/* EVN Studio-maskoten på startkortet (samme oppbygging som Era Defenders, eget spills farger):
+   står til venstre for målet, aldri over tittel eller Start. Skjules i liggende mobil. */
+#startScreen .start-intro{display:flex;align-items:center;justify-content:center;gap:16px;text-align:left}
+#startScreen .start-maskot{flex-shrink:0;height:120px;width:auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45)) drop-shadow(0 0 18px rgba(255,154,60,.4))}
+@media (max-width:380px){#startScreen .start-maskot{height:100px} #startScreen .start-intro{gap:12px}}
+@media (max-height:500px){#startScreen .start-maskot{display:none} #startScreen .start-intro{display:block;text-align:center}}
+
+/* ===== EVN-startkort (felles oppbygging i alle EVN Studio-spill, fra 1.11.2026) =====
+   Rekkefølge: EVN STUDIO-merke → spillnavn → mål → styring → Start (pulserer) → Tilbake til EVN Studio → versjon.
+   Hvert spill beholder sine egne farger via --evn-knapp og --evn-glod. */
+.evn-merke{display:inline-flex;align-items:center;justify-self:center;align-self:center;padding:6px 14px;border-radius:999px;
+  font:800 12px/1 system-ui,-apple-system,sans-serif;letter-spacing:.18em;color:#fff;text-shadow:none;
+  background:linear-gradient(100deg,#19c3ff,#2f6bff 45%,#8a3dff);box-shadow:0 4px 16px rgba(47,107,255,.45)}
+.evn-start{animation:evnPuls 2.4s ease-in-out infinite;transition:transform .15s}
+.evn-start:hover,.evn-start:focus-visible{animation-play-state:paused;transform:scale(1.05)}
+.evn-start:active{transform:scale(.97)}
+@keyframes evnPuls{0%,100%{transform:scale(1);box-shadow:0 6px 18px var(--evn-glod,rgba(0,0,0,.4))}
+  50%{transform:scale(1.045);box-shadow:0 8px 30px var(--evn-glod,rgba(0,0,0,.4)),0 0 0 6px rgba(255,255,255,.08)}}
+.evn-tilbake{display:block;text-align:center;font-weight:800;text-decoration:underline;text-underline-offset:3px;color:inherit;opacity:.85;padding:10px 0;min-height:44px}
+.evn-tilbake:hover{opacity:1}
+.evn-ver{font-size:12px;opacity:.7;text-align:center}
+@media (prefers-reduced-motion:reduce){.evn-start{animation:none}}
+
 .tips summary{cursor:pointer;font-weight:800;opacity:.85;padding:6px 0}
 .tips ul{margin-top:8px;font-size:14px}
 html.mus .bare-touch,html.touch .bare-pc{display:none}
@@ -200,9 +223,12 @@ addEventListener('keydown',function(){t(false);},true);})();
 
 <div class="overlay" id="startScreen">
   <div class="card">
-    <div class="ver">EVN Studio · 3D · Versjon 5.5.1</div>
+    <span class="evn-merke">EVN STUDIO</span>
     <h1>Mørkeskogen</h1>
+    <div class="start-intro">
+    <img class="start-maskot" src="../../bilder/maskot-staende-260.webp" srcset="../../bilder/maskot-staende-260.webp 1x, ../../bilder/maskot-staende-520.webp 2x" width="109" height="260" alt="" decoding="async" onerror="this.remove()">
     <p>Du har gått deg vill i en mørk skog. Klarer du å overleve natten?</p>
+    </div>
     <ul class="maal">
       <li>🪵 <b>Samle ved</b> og legg den på bålet.</li>
       <li>🔥 <b>Hold bålet i gang.</b> Om natten kommer monstrene, og de tåler ikke lys.</li>
@@ -210,7 +236,8 @@ addEventListener('keydown',function(){t(false);},true);})();
       <li class="bare-touch">👆 <b>Gå:</b> dra med fingeren · <b>Hugg:</b> trykk 🪓 · <b>Bruk:</b> trykk ✋</li>
     </ul>
     <p id="no3d" hidden>3D-motoren lastet ikke. Sjekk internett og last siden på nytt.</p>
-    <button id="startBtn">▶ Start spillet</button>
+    <button id="startBtn" class="evn-start">▶ Start spillet</button>
+    <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
     <details class="tips"><summary>Tips og styring</summary>
     <ul>
       <li><b>Gå:</b> piltastene eller W A S D</li>
@@ -233,6 +260,7 @@ addEventListener('keydown',function(){t(false);},true);})();
     </ul>
     <div class="qrow" id="qrow">Grafikk: <button data-q="lav">Lav</button><button data-q="middels">Middels</button><button data-q="hoy">Høy</button></div>
     </details>
+    <div class="ver evn-ver">Versjon 5.5.3 · 3D</div>
   </div>
 </div>
 
@@ -3362,10 +3390,12 @@ const hm = (geo, mat, x = 0, y = 0, z = 0, shadow = true) => { const m = new THR
 
 function heroMats() {
   HERO_RIM.value = HERO_RIM.value || new THREE.Color(0);
-  // NEW YORK-trykket (eget buet bånd, så teksten blir skarp)
+  // EVN STUDIO-trykket (eget buet bånd, så teksten blir skarp). Før 5.5.2 sto det NEW YORK.
   const tex = cTex(512, 128, x => {
-    x.fillStyle = '#1d2943'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = 'bold 74px Georgia, "Times New Roman", serif';
-    const txt = 'NEW YORK', wds = [...txt].map(ch => x.measureText(ch).width), tot = wds.reduce((a, b) => a + b, 0) + 6 * (txt.length - 1);
+    x.fillStyle = '#1d2943'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = 'bold 74px Georgia, "Times New Roman", serif';
+    { const ref = x.measureText('NEW YORK').width + 6 * 7, sq = Math.min(1, 0.9 * ref / (x.measureText('EVN STUDIO').width + 6 * 9)); x.translate(256, 0); x.scale(sq, 1); x.translate(-256, 0); }   // høye bokstaver, klemt litt sammen så teksten får plass på brystet
+    const txt = 'EVN STUDIO', wds = [...txt].map(ch => x.measureText(ch).width), tot = wds.reduce((a, b) => a + b, 0) + 6 * (txt.length - 1);
     let cx = 256 - tot / 2;
     [...txt].forEach((ch, i) => { const mid = cx + wds[i] / 2, k = (mid - 256) / 256; x.save(); x.translate(mid, 70 + k * k * 26); x.rotate(k * 0.18); x.fillText(ch, 0, 0); x.restore(); cx += wds[i] + 6; });
     x.globalCompositeOperation = 'destination-out'; grain(x, 512, 128, 2500, .5, 1, 2);       // litt slitt trykk
@@ -3708,10 +3738,12 @@ function heroBodyMats(HM) {
     x.strokeStyle = 'rgba(60,64,70,.5)'; x.lineWidth = 2; x.setLineDash([5, 4]); x.stroke(); x.setLineDash([]);
     x.fillStyle = 'rgba(30,34,40,.26)'; x.fillRect(L, T - 3, R - L, 3);
     for (const [a, b] of [[L, L2], [R, R2]]) { x.strokeStyle = 'rgba(40,44,50,.45)'; x.lineWidth = 3; x.beginPath(); x.moveTo(a, T); x.lineTo(b + (a < w / 2 ? 6 : -6), B + 8); x.stroke(); }
-    // NEW YORK-trykk (tegnet opp-ned fordi lerretets topp er genserens nederste kant)
+    // EVN STUDIO-trykk (tegnet opp-ned fordi lerretets topp er genserens nederste kant). Før 5.5.2 sto det NEW YORK.
     x.save(); x.translate(w / 2, TV(50.6) * h); x.scale(1, -1);
-    x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = 'bold 92px Rockwell, "Roboto Slab", "Courier New", Georgia, serif'; x.lineJoin = 'round';
-    const txt = 'NEW YORK', wds = [...txt].map(ch => ch === ' ' ? 26 : x.measureText(ch).width * 0.92), tot = wds.reduce((a, b) => a + b, 0) + 3 * (txt.length - 1);
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
+    { const F = ' Rockwell, "Roboto Slab", "Courier New", Georgia, serif', bredde = t => [...t].reduce((a, ch) => a + (ch === ' ' ? 26 : x.measureText(ch).width * 0.92) + 3, -3);
+      x.font = '900 92px' + F; const ref = bredde('NEW YORK'); x.scale(Math.min(1, 0.86 * ref / bredde('EVN STUDIO')), 1); }   // høye, tykke bokstaver, klemt litt sammen så teksten får plass på brystet
+    const txt = 'EVN STUDIO', wds = [...txt].map(ch => ch === ' ' ? 26 : x.measureText(ch).width * 0.92), tot = wds.reduce((a, b) => a + b, 0) + 3 * (txt.length - 1);
     for (const pass of [0, 1]) { let cx = -tot / 2; [...txt].forEach((ch, i) => { const mid = cx + wds[i] / 2, k = mid / (tot / 2); x.save(); x.translate(mid, -k * k * 22); x.rotate(-k * 0.2); x.scale(0.92, 1);
       if (pass === 0) { x.strokeStyle = '#f4f2ec'; x.lineWidth = 9; x.strokeText(ch, 0, 0); } else { x.fillStyle = '#1b2440'; x.fillText(ch, 0, 0); } x.restore(); cx += wds[i] + 3; }); }   // collegebuen: hvit kant, så mørkeblå bokstaver
     x.restore();
@@ -6607,7 +6639,7 @@ requestAnimationFrame(loop);
 #evnAvslutt{display:none;margin:8px 0 0 auto;width:max-content;pointer-events:auto;padding:7px 12px;border-radius:999px;background:rgba(10,18,14,.82);color:#f3ead6;
   font:800 14px 'Nunito',system-ui,sans-serif;text-decoration:none;border:1px solid rgba(243,234,214,.35);cursor:pointer}
 @media (orientation:landscape) and (max-height:500px){#evnAvslutt{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);margin:0;z-index:6}}
-#evnTilbake{display:none;text-align:center;color:#f3ead6;opacity:.8;font-weight:800;text-decoration:underline}
+#evnTilbake{color:#f3ead6}
 #evnSporsmal{position:fixed;inset:0;z-index:100000;display:none;place-items:center;background:rgba(5,10,8,.75);padding:16px}
 #evnSporsmal .boks{background:#13201a;border:2px solid #2f4a35;border-radius:16px;padding:22px;max-width:340px;display:grid;gap:14px;text-align:center;color:#f3ead6;font:800 18px 'Nunito',system-ui,sans-serif}
 #evnSporsmal button{font:400 22px 'Lilita One',system-ui,sans-serif;border:0;border-radius:12px;padding:12px;cursor:pointer}
@@ -6624,7 +6656,7 @@ try {
     var kol = document.querySelector('#hud .clock'); if (kol) kol.appendChild(av);
     av.style.display = 'block';
     var card = document.querySelector('#startScreen .card');
-    if (card) { var t = document.createElement('a'); t.id = 'evnTilbake'; t.href = '../../'; t.textContent = '← Tilbake til EVN Studio'; t.style.display = 'block'; card.appendChild(t); }
+    var t = document.getElementById('evnTilbake'); if (t) t.hidden = false;
     av.addEventListener('click', function (e) {
       e.preventDefault(); e.stopPropagation();
       if (document.exitPointerLock && document.pointerLockElement) document.exitPointerLock();
