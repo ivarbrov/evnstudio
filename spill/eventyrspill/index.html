@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Era Defenders – v0.18.2</title>
+<title>Era Defenders – v0.18.3</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="ikoner/ikon-192.png">
 <link rel="apple-touch-icon" href="ikoner/apple-touch-icon.png">
@@ -23,7 +23,7 @@
   canvas { display: block; width: 100%; height: 100%; cursor: none; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   #baseKnapp { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); padding: 10px 16px; font-size: 16px; font-weight: bold;
     background: #6b4a2b; color: #ffe9b0; border: 3px solid #3d2a17; border-radius: 10px; cursor: pointer; display: none; }
-  #avsluttKnapp { position: fixed; top: 16px; right: 16px; padding: 10px 14px; font-size: 15px; font-weight: bold;
+  #avsluttKnapp { position: fixed; top: 16px; right: 16px; min-height: 44px; box-sizing: border-box; padding: 10px 14px; font-size: 15px; font-weight: bold;
     background: rgba(0,0,0,0.6); color: #fff; border: 2px solid rgba(255,255,255,0.4); border-radius: 10px;
     text-decoration: none; display: none; z-index: 25; }
   #avsluttKnapp:hover { background: rgba(0,0,0,0.8); }
@@ -43,7 +43,7 @@
     background: #ffc107; color: #3d2a17; }
   .kort button:disabled { background: #666; color: #bbb; cursor: default; }
   @media (max-width: 600px) {
-    #base .innhold { margin: 14px auto; padding: 0 10px 100px; }
+    #base .innhold { margin: 14px auto; padding: 56px 10px 100px; }
     #base h1 { font-size: 24px; }
     #base .info { font-size: 14px; margin-bottom: 10px; }
     #base .kort-liste { grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -109,7 +109,7 @@
   #evnBli { background: #3a6fd8; color: #fff; border: 0; }
   #evnGaa { background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.35); }
   /* Mobil: Basen-knappen under livslinjene i stedet for oppå dem (E5) */
-  @media (max-width: 700px) { #baseKnapp { top: 128px; left: 16px; transform: none; padding: 8px 12px; font-size: 15px; }
+  @media (max-width: 700px) { #baseKnapp { top: 150px; left: 16px; transform: none; padding: 8px 12px; font-size: 15px; min-height: 44px; }
     #baseKnapp:hover { transform: none; } }
   #tilbake { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(420px, calc(100% - 32px));
     padding: 16px 22px; font-size: 20px; font-weight: bold; border-radius: 14px; border: 3px solid #1f3f80;
@@ -144,7 +144,7 @@ addEventListener('keydown',function(){t(false);},true);})();
   </ul>
   <button class="start evn-start" id="menyStart">▶ Start</button>
   <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-  <div class="evn-ver">Versjon 0.18.2 · 7 tidsepoker</div>
+  <div class="evn-ver">Versjon 0.18.3 · 7 tidsepoker</div>
 </div></div>
 <div id="evnSporsmal" role="dialog" aria-modal="true"><div class="boks">
   <div>Vil du avslutte og gå tilbake til forsiden? Spillet ditt er lagret.</div>
@@ -156,7 +156,7 @@ addEventListener('keydown',function(){t(false);},true);})();
   <div class="info" id="baseInfo"></div>
   <div class="kort-liste" id="kortListe"></div>
   <button id="nyttSpillKnapp">🗑️ Start helt på nytt</button>
-  <button id="tilbake">⚔️ Tilbake til kampen (B)</button>
+  <button id="tilbake">⚔️ Tilbake til kampen<span class="bare-pc"> (B)</span></button>
 </div></div>
 <script>
 // ===================== INNSTILLINGER (prøv å endre tallene!) =====================
@@ -730,7 +730,7 @@ window.addEventListener('keydown', e => {
     if (k === 'b') apneBase();
     if (k === 'q') drikk();
     if (k === 'f') skytPistol(helt.retning.x, helt.retning.y);
-  } else if ((k === 'enter' || k === ' ') && (tilstand === 'start' || tilstand === 'slutt') && !sporsmalApent()) {
+  } else if ((k === 'enter' || k === ' ') && !e.repeat && (tilstand === 'start' || tilstand === 'slutt') && !sporsmalApent()) {
     startSpill();
   }
 });
@@ -859,7 +859,9 @@ function siktMotMus() {
   if (len > 2) helt.retning = { x: dx / len, y: dy / len };
 }
 
+let sluttTid = 0;                                      // når helten ble slått ut (dødsskjermen kan ikke hoppes over det første sekundet)
 function startSpill() {
+  if (tilstand === 'slutt' && performance.now() - sluttTid < 1200) return;
   if (tilstand === 'slutt') nyttSpill();
   else { helt = hentLagring(); nyttSpill(); } tilstand = 'spill';
   lagre();
@@ -1158,7 +1160,7 @@ function oppdater() {
   }
   // Gå inn i portalen for å reise til neste verden
   if (helt.verden < SISTE_VERDEN && helt.portalApen && Math.hypot(helt.x - PORTAL.x, helt.y - PORTAL.y) < 26) gaaTilVerden(helt.verden + 1);
-  if (helt.liv <= 0) { helt.liv = 0; tilstand = 'slutt'; document.getElementById('baseKnapp').style.display = 'none'; lagre(); }
+  if (helt.liv <= 0) { helt.liv = 0; tilstand = 'slutt'; sluttTid = performance.now(); document.getElementById('baseKnapp').style.display = 'none'; lagre(); }
   if (tid % 600 === 0) lagre(); // lagrer hvert 10. sekund
 
   const vb = canvas.width / zoom, vh = canvas.height / zoom; // hvor mye av verden vi ser
@@ -2353,11 +2355,22 @@ document.getElementById('evnBli').addEventListener('click', () => {
 });
 document.getElementById('evnGaa').addEventListener('click', () => { lagre(); location.href = '../../'; });
 
-function lokke() {
-  if (tilstand === 'spill') oppdater();
+// Fast tidssteg: spillet oppdateres 60 ganger i sekundet, også på skjermer med 90/120 Hz (da gikk alt fortere før)
+const STEG = 1000 / 60;
+let sisteTid = 0, tidIgjen = 0;
+function lokke(naa) {
+  if (typeof naa !== 'number') naa = performance.now();
+  if (!sisteTid) sisteTid = naa;
+  tidIgjen = Math.min(tidIgjen + (naa - sisteTid), STEG * 5); sisteTid = naa;   // maks 5 steg etter en pause eller treg ramme
+  if (tilstand === 'spill') { while (tidIgjen >= STEG) { oppdater(); tidIgjen -= STEG; if (tilstand !== 'spill') { tidIgjen = 0; break; } } }
+  else tidIgjen = 0;
   tegn();
   requestAnimationFrame(lokke);
 }
+// Lagre når fanen skjules eller siden lukkes, og slipp taster som var holdt inne når vinduet mister fokus
+addEventListener('pagehide', () => lagre());
+document.addEventListener('visibilitychange', () => { if (document.hidden) lagre(); });
+addEventListener('blur', () => { for (const k in taster) taster[k] = false; });
 // Ta vare på knappen «Start helt på nytt» (må trykkes to ganger)
 let slettTimer = null;
 document.getElementById('nyttSpillKnapp').onclick = () => {
