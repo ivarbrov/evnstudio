@@ -37,6 +37,17 @@
   body.touch #mobil { display: flex; }
   #mobil button { width: 74px; height: 74px; border-radius: 50%; border: 3px solid rgba(255,255,255,.35); background: rgba(16,26,20,.7); color: #fff; font-size: 30px; }
   #mobil #mHugg { width: 92px; height: 92px; font-size: 38px; }
+  .voksen { margin-top: 14px; padding-top: 12px; border-top: 1px solid #2f4a35; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; font-size: 14px; }
+  .voksen button, .rad button { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 2px solid #2f4a35; background: #213428; color: #f3ead6; font-weight: 700; }
+  .kvalvalg { width: 100%; display: flex; gap: 6px; justify-content: center; align-items: center; }
+  .kvalvalg button.valgt { border-color: #ffd24a; }
+  #teststatus { position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); background: rgba(16,26,20,.85); padding: 8px 14px; border-radius: 14px; font-weight: 700; z-index: 8; }
+  #teststatus[hidden], #testkort[hidden] { display: none; }
+  #testkort { position: fixed; inset: 0; display: grid; place-items: center; z-index: 15; background: rgba(5,10,7,.7); }
+  #testkort table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 8px 0; }
+  #testkort td, #testkort th { border-bottom: 1px solid #2f4a35; padding: 4px; text-align: left; }
+  #testTekst { width: 100%; box-sizing: border-box; font: 11px ui-monospace, monospace; background: #0d1410; color: #bfffbf; border: 1px solid #2f4a35; border-radius: 8px; }
+  .rad { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -60,9 +71,20 @@
     <p class="styring bare-pc">Gå med WASD eller piltastene. Hopp med mellomrom.<br>Hugg trær og slå monstre med E eller musa.</p>
     <p class="styring bare-touch">Dra til venstre for å gå. Dra til høyre for å snu.<br>Trykk 🪓 for å hugge og ⤴️ for å hoppe.</p>
     <button id="startBtn">▶ Start</button>
+    <div class="voksen">
+      <div class="kvalvalg">Grafikk: <button data-kval="lav">Lav</button><button data-kval="middels">Middels</button><button data-kval="hoy">Høy</button></div>
+      <button id="bTest">📊 Ytelsestest (1 min)</button><button id="bVarme">🔥 Varmetest (10 min)</button>
+    </div>
     <div class="evn-ver" id="versjon"></div>
   </div>
 </div>
+<div id="teststatus" hidden></div>
+<div id="testkort" hidden><div class="kort">
+  <h2>Resultat av ytelsestesten</h2><p id="testInfo"></p>
+  <table id="testTabell"></table>
+  <textarea id="testTekst" readonly rows="6"></textarea>
+  <div class="rad"><button id="bKopier">📋 Kopier resultat</button><button id="bLukkTest">Lukk</button></div>
+</div></div>
 <div id="laster">🌲 Lager skogen …</div>
 <script src="spill.js"></script>
 </body>

@@ -18,8 +18,9 @@ import { lagHeltLogikk, oppdaterHelt, lagHeltFigur, OKS } from './helt.js';
 import { lagKamera } from './kamera.js';
 import { lagStyring } from './styring.js';
 import { lagMaaling } from './maal.js';
+import { lagYtelsestest } from './ytelsestest.js';
 
-export const VERSJON = '2.0-proto.1';
+export const VERSJON = '2.0-proto.2';
 const $ = id => document.getElementById(id);
 const q = new URLSearchParams(location.search), hash = location.hash.slice(1);
 const berøring = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
@@ -30,8 +31,8 @@ const KVAL = {
 };
 const KV_REKKE = ['lav', 'middels', 'hoy'];
 const valg = {
-  stil: +(q.get('stil') || (/stil2/.test(hash) ? 2 : /stil1/.test(hash) ? 1 : 1)),
-  kval: q.get('kvalitet') || (berøring ? 'middels' : 'hoy'),
+  stil: +(q.get('stil') || (/stil1/.test(hash) ? 1 : 2)),          // stil 2 er valgt retning (1.11.2026)
+  kval: q.get('kvalitet') || (/lav/.test(hash) ? 'lav' : /middels/.test(hash) ? 'middels' : /hoy/.test(hash) ? 'hoy' : berøring ? 'middels' : 'hoy'),
   maal: q.get('maal') === '1' || /maal/.test(hash),
   tid: q.get('tid') || 'dag', autoTid: q.get('auto') === '1',
   frø: +(q.get('fro') || 424242),
@@ -136,10 +137,11 @@ function slagTreff() {
 }
 function loop(nå) {
   requestAnimationFrame(loop);
-  const dt = Math.min(0.05, (nå - sist) / 1000); sist = nå;
+  const rå = nå - sist, dt = Math.min(0.05, rå / 1000); sist = nå;
   if (!V || bygger) return;
   klokke += dt; if (autoTid) tid = (tid + dt) % DOGN_LENGDE;
-  if (startet) oppdaterHelt(helt, styr.les(), dt, verden, K.yaw);
+  const testInp = yt.steg(rå);
+  if (startet) oppdaterHelt(helt, testInp ? Object.assign({ hopp: false, slag: false, mengde: 1 }, testInp) : styr.les(), dt, verden, K.yaw);
   if (helt.slagT >= OKS.impact && !helt.slagTruffet) { helt.slagTruffet = true; slagTreff(); }
   oppdaterKamera(dt, helt, verden, innerWidth < 600);
   kamera.updateMatrixWorld();
@@ -156,6 +158,28 @@ function loop(nå) {
   maaling.sluttBilde(() => ({ stil: valg.stil, kvalitet: kvalitet().navn, dpr: renderer.getPixelRatio(), traerNaer: V.skog.info().tegnetNær, traerLangt: V.skog.info().tegnetLangt, treTriNaer: V.skog.info().triNær, treTriLangt: V.skog.info().triLangt, gressTri: V.gress.tri(), byggMs: V.byggMs, mork: +L.mork.toFixed(2), versjon: VERSJON }));
 }
 addEventListener('resize', settStorrelse);
+
+// ---------- Ytelsestest ----------
+const yt = lagYtelsestest({
+  renderer, versjon: VERSJON, stil: () => valg.stil, kvalitet: () => kvalitet().navn,
+  forbered(S) {
+    autoTid = false; tid = TIDER[S.tid]; tidValg = TIDNAVN.findIndex(x => x[0] === S.tid);
+    helt.x = S.x; helt.z = S.z; helt.vx = helt.vz = 0; K.yaw = 0; K.pitch = 0; K.modus = S.modus; K.mål.set(S.x, 0, S.z);
+    for (let i = 0; i < S.monstre; i++) { const a = i * 2.1, m = V.monstre.nytt(S.x + Math.cos(a) * 380, S.z + Math.sin(a) * 380); m.synlig = 1; }
+    startet = true; $('startkort').hidden = true; oppdaterHud();
+  },
+  status(t) { const el = $('teststatus'); el.textContent = t; el.hidden = !t; },
+  vis(r) {
+    const tekst = JSON.stringify(r, null, 1);
+    $('testTabell').innerHTML = '<tr><th>Scene</th><th>FPS</th><th>1 % lav</th><th>Tegnekall</th><th>Trekanter</th></tr>' + r.resultater.map(x => `<tr><td>${x.scene}</td><td>${x.fps}</td><td>${x.fps1lav}</td><td>${x.tegnekall ?? '–'}</td><td>${x.trekanter ? (x.trekanter / 1e6).toFixed(2) + ' M' : '–'}</td></tr>` + (x.perMinutt ? `<tr><td colspan="5">FPS per minutt: ${x.perMinutt.join(' · ')}</td></tr>` : '')).join('');
+    $('testInfo').textContent = `Stil ${r.stil} · ${r.kvalitet} · DPR ${r.dprBrukt} · ${r.enhet.gpu}`;
+    $('testTekst').value = tekst; $('testkort').hidden = false;
+  },
+});
+$('bTest').onclick = () => yt.kjør(false); $('bVarme').onclick = () => yt.kjør(true);
+$('bKopier').onclick = async () => { const t = $('testTekst'); try { await navigator.clipboard.writeText(t.value); $('bKopier').textContent = '✅ Kopiert'; } catch (_) { t.focus(); t.select(); $('bKopier').textContent = 'Merk og kopier teksten'; } };
+$('bLukkTest').onclick = () => { $('testkort').hidden = true; };
+document.querySelectorAll('[data-kval]').forEach(b => { b.classList.toggle('valgt', b.dataset.kval === valg.kval); b.onclick = async () => { document.querySelectorAll('[data-kval]').forEach(x => x.classList.toggle('valgt', x === b)); if (b.dataset.kval !== valg.kval) { valg.kval = b.dataset.kval; await bygg(); } }; });
 
 // Testgrensesnitt for automatiske tester og faste kameraposisjoner
 window.__proto = {
@@ -182,4 +206,4 @@ $('versjon').textContent = 'v' + VERSJON;
 document.querySelectorAll('[data-stil]').forEach(b => b.onclick = async () => { document.querySelectorAll('[data-stil]').forEach(x => x.classList.toggle('valgt', x === b)); if (+b.dataset.stil !== valg.stil) { valg.stil = +b.dataset.stil; await bygg(); } });
 document.querySelector(`[data-stil="${valg.stil}"]`)?.classList.add('valgt');
 $('startBtn').onclick = () => { startet = true; $('startkort').hidden = true; };
-bygg().then(() => requestAnimationFrame(loop));
+bygg().then(() => { requestAnimationFrame(loop); if (/ytelsestest/.test(hash)) yt.kjør(false); if (/varmetest/.test(hash)) yt.kjør(true); });

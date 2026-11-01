@@ -99,7 +99,7 @@ const EZ = {   // lod 0 = nær (ca. 4–7 k trekanter), lod 1 = langt unna (ca. 
   gran: { preset: 'Pine Large', bark: 'pine', blad: 'pine', tilpass(o, lod) { if (lod) { o.branch.levels = 1; o.branch.children[0] = 30; o.leaves.count = 4; o.leaves.size *= 4; } else { o.branch.children[0] = 60; o.leaves.count = 13; o.leaves.size *= 2.3; } } },
   furu: { preset: 'Pine Medium', bark: 'pine', blad: 'pine', tilpass(o, lod) { o.branch.start[1] = .55; o.branch.angle[1] = 80; o.branch.length[1] *= .9; o.bark.tint = 0xffd2b0; if (lod) { o.branch.levels = 1; o.branch.children[0] = 16; o.leaves.count = 5; o.leaves.size *= 4; } else { o.branch.children[0] = 34; o.leaves.count = 14; o.leaves.size *= 2.2; } } },
   bjork: { preset: 'Aspen Medium', bark: 'birch', blad: 'ash', tilpass(o, lod) { o.leaves.tint = 0xd8f0a8; if (lod) { o.branch.levels = Math.min(o.branch.levels, 2); o.branch.children[1] = Math.ceil(o.branch.children[1] * .5); o.leaves.count = Math.ceil(o.leaves.count * .4); o.leaves.size *= 2.4; } else { o.leaves.count = Math.ceil(o.leaves.count * .8); o.leaves.size *= 1.35; } } },
-  lov: { preset: 'Oak Medium', bark: 'oak', blad: 'oak', tilpass(o, lod) { if (lod) { o.branch.levels = Math.min(o.branch.levels, 2); o.branch.children[1] = Math.ceil(o.branch.children[1] * .4); o.leaves.count = Math.ceil(o.leaves.count * .35); o.leaves.size *= 2.6; } else { o.leaves.count = Math.ceil(o.leaves.count * .5); o.leaves.size *= 1.6; } } },
+  lov: { preset: 'Oak Medium', bark: 'oak', blad: 'oak', tilpass(o, lod) { if (lod) { o.branch.levels = Math.min(o.branch.levels, 2); o.branch.children[1] = Math.ceil(o.branch.children[1] * .4); o.leaves.count = Math.ceil(o.leaves.count * .35); o.leaves.size *= 2.6; } else { o.leaves.count = Math.ceil(o.leaves.count * .32); o.leaves.size *= 1.9; } } },
 };
 export const EZ_TEKSTURER = { gran: ['pine', 'pine'], furu: ['pine', 'pine'], bjork: ['birch', 'ash'], lov: ['oak', 'oak'] };
 
@@ -111,8 +111,8 @@ function naturTre(art, variant, lod) {
     for (const k of Object.keys(o.branch.sections)) o.branch.sections[k] = Math.max(3, Math.round(o.branch.sections[k] * .4));
     for (const k of Object.keys(o.branch.segments)) o.branch.segments[k] = 3;
   } else {
-    for (const k of Object.keys(o.branch.sections)) o.branch.sections[k] = Math.max(4, Math.round(o.branch.sections[k] * .65));
-    for (const k of Object.keys(o.branch.segments)) o.branch.segments[k] = Math.max(3, Math.round(o.branch.segments[k] * .75));
+    for (const k of Object.keys(o.branch.sections)) o.branch.sections[k] = Math.max(k >= '2' ? 3 : 4, Math.round(o.branch.sections[k] * (k >= '2' ? .45 : .65)));
+    for (const k of Object.keys(o.branch.segments)) o.branch.segments[k] = k === '0' ? Math.max(5, Math.round(o.branch.segments[k] * .75)) : 3;   // tynne greiner: 3 sider holder
   }
   t.loadFromJson(o);
   let st = t.branchesMesh.geometry, kr = t.leavesMesh.geometry;
@@ -135,7 +135,10 @@ export function lagBuskGeo(stil, variant) {
     const g = slå(kl.map(x => myke(x, V(0, 10, 0), .7))); farge(g, v => blandK(lin('#2e6a2c'), lin('#7fae4a'), Math.min(1, v.y / 30)));
     return { stamme: null, krone: vind(g, 30, 1), h: 30 };
   }
-  const t = new Tree(), o = JSON.parse(JSON.stringify(loadPreset('Bush 2'))); o.seed = 99 + variant; o.leaves.size *= 1.3; t.loadFromJson(o);
+  const t = new Tree(), o = JSON.parse(JSON.stringify(loadPreset('Bush 2'))); o.seed = 99 + variant; o.leaves.size *= 1.5; o.leaves.count = Math.ceil(o.leaves.count * .7);
+  for (const k of Object.keys(o.branch.sections)) o.branch.sections[k] = Math.max(3, Math.round(o.branch.sections[k] * .5));
+  for (const k of Object.keys(o.branch.segments)) o.branch.segments[k] = 3;
+  t.loadFromJson(o);
   const st = t.branchesMesh.geometry, kr = t.leavesMesh.geometry; st.computeBoundingBox();
   const k = 34 / Math.max(st.boundingBox.max.y, 1); st.scale(k, k, k); kr.scale(k, k, k); myke(kr, V(0, 14, 0), .7);
   farge(st, () => [1, 1, 1]); farge(kr, () => [.85, 1, .8]);
@@ -143,7 +146,7 @@ export function lagBuskGeo(stil, variant) {
 }
 
 export function lagSteinGeo(stil, variant) {
-  const g = stil === 1 ? new THREE.IcosahedronGeometry(1, 1) : glatt(new THREE.IcosahedronGeometry(1, 3)), p = g.attributes.position, v = new THREE.Vector3();
+  const g = stil === 1 ? new THREE.IcosahedronGeometry(1, 1) : glatt(new THREE.IcosahedronGeometry(1, 2)), p = g.attributes.position, v = new THREE.Vector3();
   for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i); const d = 1 + (hash3(v.x * 2 + variant, v.y * 2, v.z * 2) - .5) * (stil === 1 ? .35 : .5) + (stil === 2 ? (hash3(v.x * 7, v.y * 7, v.z * 7) - .5) * .08 : 0); p.setXYZ(i, v.x * 22 * d, Math.max(-.3, v.y) * 15 * d, v.z * 18 * d); }
   const ut = g; ut.computeVertexNormals();
   const p2 = ut.attributes.position, uv = new Float32Array(p2.count * 2);

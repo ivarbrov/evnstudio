@@ -30,7 +30,7 @@ const URL = process.env.URL || 'http://localhost:8765/spill/morkeskogen-2/protot
   ok('monster tåler ett slag', mon[0]); ok('monster forsvinner etter to slag', mon[1]);
   // Stilbytte beholder felt tre og heltens posisjon
   const før = await p.evaluate(() => [__proto.helt.x, __proto.helt.z]);
-  await p.evaluate(() => __proto.settStil(2)); await p.waitForFunction(() => __proto.klar(), null, { timeout: 120000 });
+  await p.evaluate(() => __proto.settStil(1)); await p.waitForFunction(() => __proto.klar(), null, { timeout: 120000 });
   const etter = await p.evaluate(() => [__proto.helt.x, __proto.helt.z]);
   ok('stilbytte beholder posisjon', Math.hypot(før[0] - etter[0], før[1] - etter[1]) < 30);
   ok('stilbytte beholder felt tre', await p.evaluate(id => !__proto.verden.traer[id].levende, tre));

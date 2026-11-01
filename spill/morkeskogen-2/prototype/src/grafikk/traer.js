@@ -58,21 +58,19 @@ export function lagSkog(scene, verden, stil, kval, tex) {
     for (const del of ['stamme', 'krone']) { const m = new THREE.InstancedMesh(g[del], gjennom[art][del], 8); m.count = 0; m.frustumCulled = false; m.renderOrder = 2; scene.add(m); f[del] = m; }
     fade[art + v] = f;
   }
-  // Busker og steiner (statiske instanser)
-  const busker = [], steiner = [];
+  // Busker og steiner: sorteres som trærne (synsfelt + tåke), og bare de nære kaster skygge
+  const småSett = [];
+  function lagSmåSett(liste, deler, maksAvst, skyggeAvst, y0) {
+    const ms = deler.map(([geo, m]) => { const im = new THREE.InstancedMesh(geo, m, Math.max(1, liste.length)); im.count = 0; im.frustumCulled = false; im.castShadow = true; im.receiveShadow = true; im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(im); return im; });
+    const mats = liste.map(o => { const e2 = new THREE.Euler(0, o.rot, 0), m4 = new THREE.Matrix4(); m4.compose(new THREE.Vector3(o.x, bakkeH(o.x, o.z) + y0 * o.s, o.z), new THREE.Quaternion().setFromEuler(e2), new THREE.Vector3(o.s, o.s, o.s)); return m4; });
+    småSett.push({ liste, ms, mats, maksAvst, skyggeAvst });
+  }
   for (const v of [0, 1]) {
     const bg = lagBuskGeo(stil, v), liste = verden.busker.filter((_, i) => i % 2 === v);
-    const deler = stil === 1 ? [['krone', mat.lov.krone]] : [['stamme', mat.lov.stamme], ['krone', mat.lov.krone]];
-    for (const [del, m] of deler) {
-      const im = new THREE.InstancedMesh(bg[del], m, liste.length), M = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
-      liste.forEach((b, i) => { e.set(0, b.rot, 0); q.setFromEuler(e); M.compose(new THREE.Vector3(b.x, bakkeH(b.x, b.z) - 2, b.z), q, new THREE.Vector3(b.s, b.s, b.s)); im.setMatrixAt(i, M); });
-      im.castShadow = true; im.receiveShadow = true; im.computeBoundingSphere(); scene.add(im); busker.push(im);
-    }
-    const sg = lagSteinGeo(stil, v), sl = verden.steiner.filter(s => s.var === v);
+    lagSmåSett(liste, stil === 1 ? [[bg.krone, mat.lov.krone]] : [[bg.stamme, mat.lov.stamme], [bg.krone, mat.lov.krone]], 900, 0, -2);
+    const sg = lagSteinGeo(stil, v), sl = verden.steiner.filter(o => o.var === v);
     const sm = new THREE.MeshStandardMaterial({ map: tex.stein.farge, normalMap: tex.stein.normal, roughness: stil === 1 ? .85 : .9, flatShading: stil === 1, color: stil === 1 ? 0xd8dce4 : 0xffffff });
-    const im = new THREE.InstancedMesh(sg, sm, sl.length), M = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
-    sl.forEach((s, i) => { e.set(0, s.rot, 0); q.setFromEuler(e); M.compose(new THREE.Vector3(s.x, bakkeH(s.x, s.z) - 3 * s.s, s.z), q, new THREE.Vector3(s.s, s.s, s.s)); im.setMatrixAt(i, M); });
-    im.castShadow = true; im.receiveShadow = true; im.computeBoundingSphere(); scene.add(im); steiner.push(im);
+    lagSmåSett(sl, [[sg, sm]], 1100, 0, -3);
   }
   // Stubber
   const stubbGeo = new THREE.CylinderGeometry(6, 7.5, 8, 9); stubbGeo.translate(0, 3, 0);
@@ -119,6 +117,17 @@ export function lagSkog(scene, verden, stil, kval, tex) {
     }
     for (const k in sett) { const s = sett[k]; if (s.stamme.count) s.stamme.instanceMatrix.needsUpdate = true; if (s.krone.count) s.krone.instanceMatrix.needsUpdate = true; }
     for (const k in fade) { const f = fade[k]; if (f.krone.count) { f.stamme.instanceMatrix.needsUpdate = true; f.krone.instanceMatrix.needsUpdate = true; } }
+    for (const S of småSett) {                                      // busker og steiner
+      for (const im of S.ms) im.count = 0;
+      const maksS = Math.min(S.maksAvst, maks);
+      S.liste.forEach((o, i) => {
+        const dk = Math.hypot(o.x - cx, o.z - cz); if (dk > maksS) return;
+        kule.center.set(o.x, bakkeH(o.x, o.z) + 15, o.z); kule.radius = 40 * o.s;
+        if (!frustum.intersectsSphere(kule) && Math.hypot(o.x - helt.x, o.z - helt.z) > 200) return;
+        for (const im of S.ms) im.setMatrixAt(im.count++, S.mats[i]);
+      });
+      for (const im of S.ms) if (im.count) im.instanceMatrix.needsUpdate = true;
+    }
     // Trær som faller
     for (let i = fallende.length - 1; i >= 0; i--) {
       const f = fallende[i]; f.t += dt;
