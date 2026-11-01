@@ -317,13 +317,18 @@
   .boks.med-maskot .maskot-hel { grid-column: 1; z-index: 1; position: relative; }
   .boks.med-maskot > :not(.maskot-hel):not(.maskot-glod) { grid-column: 2; }
   @media (max-width: 680px) {
-    /* Mobil: figuren står på kortets overkant, litt inn mot midten. Den ligger helt over kortet,
-       så den kan ikke dekke overskrift eller tekst uansett skjermbredde eller tekststørrelse. */
-    .boks.med-maskot { display: block; }
-    .boks.med-maskot .maskot-hel { position: absolute; right: 22%; top: -146px; height: 150px; margin: 0; }
-    .boks.med-maskot .maskot-glod { position: absolute; right: calc(22% - 34px); top: -136px; width: 130px; height: 130px; margin: 0; }
-    #om .om { margin-top: 150px; }
+    /* Mobil (Evens valg): figuren står til venstre i kortet, som på PC. Teksten flyter ved siden av
+       figuren og fortsetter i full bredde under den, så linjene ikke blir trange. */
+    .boks.med-maskot { display: flow-root; }
+    .boks.med-maskot .maskot-hel { float: left; height: 150px; width: auto; margin: 2px 16px 8px -6px; }
+    .boks.med-maskot .maskot-glod { position: absolute; left: 4px; top: 30px; width: 120px; height: 120px; margin: 0; }
     #om .seksjonstopp .slagord { white-space: normal; } /* stor tekst: slagordet brytes i stedet for å gå ut av skjermen */
+  }
+  @media (max-width: 359px) { .boks.med-maskot .maskot-hel { height: 128px; margin-right: 12px; } .boks.med-maskot .maskot-glod { width: 104px; height: 104px; } }
+  /* Svært smale skjermer (f.eks. 200 % zoom på mobil): figuren står midt i kortet over overskriften */
+  @media (max-width: 300px) {
+    .boks.med-maskot .maskot-hel { float: none; display: block; height: 120px; margin: 0 auto 10px; }
+    .boks.med-maskot .maskot-glod { left: 50%; top: 14px; width: 110px; height: 110px; margin-left: -55px; }
   }
 
   /* ===== Maskot: lite portrett ved «Siste nytt» ===== */
