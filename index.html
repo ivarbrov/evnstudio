@@ -307,6 +307,31 @@
     .spillkort:hover .bilde img { transform: none; }
     .spillkort:active { transform: scale(.98); box-shadow: 0 0 40px -6px rgba(var(--aksent), .45); }
   }
+
+  /* ===== Maskot: stående ved «Hvem står bak?» ===== */
+  .boks.med-maskot { position: relative; display: grid; grid-template-columns: auto 1fr; column-gap: 26px; align-items: end; overflow: visible; }
+  .boks.med-maskot .maskot-hel { grid-row: 1 / span 4; align-self: end; height: 260px; width: auto; margin: 0 0 -26px -6px;
+    filter: drop-shadow(0 12px 24px rgba(0,0,0,.45)) drop-shadow(0 0 30px rgba(47,107,255,.35)); }
+  .boks.med-maskot .maskot-glod { grid-row: 1 / span 4; grid-column: 1; align-self: end; justify-self: center; width: 200px; height: 200px; margin: 0 -50px 10px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(47,107,255,.45), rgba(138,61,255,.18) 55%, transparent 70%); z-index: 0; }
+  .boks.med-maskot .maskot-hel { grid-column: 1; z-index: 1; position: relative; }
+  .boks.med-maskot > :not(.maskot-hel):not(.maskot-glod) { grid-column: 2; }
+  @media (max-width: 680px) {
+    /* Mobil: figuren står på kortets overkant, litt inn mot midten. Den ligger helt over kortet,
+       så den kan ikke dekke overskrift eller tekst uansett skjermbredde eller tekststørrelse. */
+    .boks.med-maskot { display: block; }
+    .boks.med-maskot .maskot-hel { position: absolute; right: 22%; top: -146px; height: 150px; margin: 0; }
+    .boks.med-maskot .maskot-glod { position: absolute; right: calc(22% - 34px); top: -136px; width: 130px; height: 130px; margin: 0; }
+    #om .om { margin-top: 150px; }
+    #om .seksjonstopp .slagord { white-space: normal; } /* stor tekst: slagordet brytes i stedet for å gå ut av skjermen */
+  }
+
+  /* ===== Maskot: lite portrett ved «Siste nytt» ===== */
+  .maskot-ansikt { border-radius: 50%; background: radial-gradient(circle at 50% 40%, #2b3a7a, #141b3d 70%); border: 2px solid rgba(25,195,255,.55);
+    box-shadow: 0 0 0 4px rgba(138,61,255,.18), 0 8px 18px rgba(0,0,0,.4); object-fit: cover; }
+  .hilsen { display: flex; align-items: center; gap: 12px; margin: 0; color: var(--dempet); font-weight: 700; }
+  .hilsen .maskot-ansikt { flex-shrink: 0; width: 44px; height: 44px; border-width: 1.5px; box-shadow: 0 0 0 3px rgba(138,61,255,.14), 0 0 18px rgba(47,107,255,.35); }
+  @media (max-width: 680px) { .hilsen .maskot-ansikt { width: 40px; height: 40px; } }
 </style>
 </head>
 <body>
@@ -380,7 +405,7 @@
   <section id="nytt" aria-labelledby="nytt-tittel">
     <div class="seksjonstopp inn">
       <h2 id="nytt-tittel">Siste nytt</h2>
-      <p>Fra spillstudioet</p>
+      <p class="hilsen"><img class="maskot-ansikt" src="bilder/maskot-ansikt-96.webp" srcset="bilder/maskot-ansikt-96.webp 1x, bilder/maskot-ansikt-192.webp 2x" width="96" height="96" alt="" loading="lazy" decoding="async"><span>Fra spillstudioet</span></p>
     </div>
     <div class="nytt">
       <article class="nyhet n1 inn" style="--i:0">
@@ -414,7 +439,9 @@
       <p class="slagord"><b>Laget av barn.</b> For barn.</p>
     </div>
     <div class="om">
-      <div class="boks inn">
+      <div class="boks inn med-maskot">
+        <span class="maskot-glod" aria-hidden="true"></span>
+        <img class="maskot-hel" src="bilder/maskot-staende-260.webp" srcset="bilder/maskot-staende-260.webp 1x, bilder/maskot-staende-520.webp 2x" width="109" height="260" alt="EVN Studio-maskoten: en gutt med caps bak frem, blondt hår og grå hettegenser med EVN Studio-logoen" loading="lazy" decoding="async">
         <h3>Hvem står bak?</h3>
         <p>EVN Studio er spillstudioet til Even, 9 år, og pappaen hans. Even finner på spillene, bestemmer hvordan de skal være og tester dem selv. Sammen bruker de KI til å gjøre ideene til ekte spill som andre barn kan spille.</p>
         <p>Spillene er gratis, og alle kan prøve dem!</p>
