@@ -64,6 +64,13 @@ html,body{touch-action:manipulation}
 .card .mrow button{font-size:17px;padding:8px 14px}
 .card .maal{list-style:none;padding:0;display:grid;gap:6px;font-size:17px}
 #startBtn{font-size:26px;padding:14px;--evn-glod:rgba(255,154,60,.55)}
+/* EVN Studio-maskoten på startkortet (samme oppbygging som Era Defenders, eget spills farger):
+   står til venstre for målet, aldri over tittel eller Start. Skjules i liggende mobil. */
+#startScreen .start-intro{display:flex;align-items:center;justify-content:center;gap:16px;text-align:left}
+#startScreen .start-maskot{flex-shrink:0;height:120px;width:auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45)) drop-shadow(0 0 18px rgba(255,154,60,.4))}
+@media (max-width:380px){#startScreen .start-maskot{height:100px} #startScreen .start-intro{gap:12px}}
+@media (max-height:500px){#startScreen .start-maskot{display:none} #startScreen .start-intro{display:block;text-align:center}}
+
 /* ===== EVN-startkort (felles oppbygging i alle EVN Studio-spill, fra 1.11.2026) =====
    Rekkefølge: EVN STUDIO-merke → spillnavn → mål → styring → Start (pulserer) → Tilbake til EVN Studio → versjon.
    Hvert spill beholder sine egne farger via --evn-knapp og --evn-glod. */
@@ -218,7 +225,10 @@ addEventListener('keydown',function(){t(false);},true);})();
   <div class="card">
     <span class="evn-merke">EVN STUDIO</span>
     <h1>Mørkeskogen</h1>
+    <div class="start-intro">
+    <img class="start-maskot" src="../../bilder/maskot-staende-260.webp" srcset="../../bilder/maskot-staende-260.webp 1x, ../../bilder/maskot-staende-520.webp 2x" width="109" height="260" alt="" decoding="async" onerror="this.remove()">
     <p>Du har gått deg vill i en mørk skog. Klarer du å overleve natten?</p>
+    </div>
     <ul class="maal">
       <li>🪵 <b>Samle ved</b> og legg den på bålet.</li>
       <li>🔥 <b>Hold bålet i gang.</b> Om natten kommer monstrene, og de tåler ikke lys.</li>
@@ -250,7 +260,7 @@ addEventListener('keydown',function(){t(false);},true);})();
     </ul>
     <div class="qrow" id="qrow">Grafikk: <button data-q="lav">Lav</button><button data-q="middels">Middels</button><button data-q="hoy">Høy</button></div>
     </details>
-    <div class="ver evn-ver">Versjon 5.5.2 · 3D</div>
+    <div class="ver evn-ver">Versjon 5.5.3 · 3D</div>
   </div>
 </div>
 
