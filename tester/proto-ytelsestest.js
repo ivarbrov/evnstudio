@@ -9,6 +9,6 @@ const { chromium } = require('playwright');
   await p.evaluate(() => document.getElementById('bTest').click());
   await p.waitForFunction(() => !document.getElementById('testkort').hidden, null, { timeout: 300000 });
   const r = await p.evaluate(() => JSON.parse(document.getElementById('testTekst').value));
-  console.log(JSON.stringify({ scener: r.resultater.map(x => [x.scene, x.bilder, x.tegnekall]), stil: r.stil, kvalitet: r.kvalitet, gpu: r.enhet.gpu, feil }, null, 1));
+  console.log(JSON.stringify({ status: r.status, begrunnelse: r.begrunnelse, aktiv: r.aktivTestTidS, scener: r.resultater.map(x => [x.scene, x.bilder, x.fps]), hendelser: r.hendelser.length, skjermlås: r.skjermlås, kortVises: await p.isVisible('#testStatus'), feil }, null, 1));
   await b.close();
 })();

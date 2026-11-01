@@ -3,9 +3,11 @@
   "private": true,
   "description": "Mørkeskogen 2.0 – grafikkprototype. Bygg: npm install && npm run bygg",
   "scripts": {
-    "bygg": "esbuild src/main.js --bundle --minify --format=iife --target=es2020 --loader:.json=json --legal-comments=external --outfile=spill.js"
+    "bygg": "esbuild src/main.js --bundle --minify --format=iife --target=es2020 --loader:.json=json --legal-comments=external --outfile=spill.js",
+    "test": "node test/ytelsestest.test.mjs"
   },
   "devDependencies": {
+    "acorn": "^8.19.0",
     "esbuild": "^0.25.0",
     "three": "0.187.0"
   }

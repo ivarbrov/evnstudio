@@ -20,7 +20,7 @@ import { lagStyring } from './styring.js';
 import { lagMaaling } from './maal.js';
 import { lagYtelsestest } from './ytelsestest.js';
 
-export const VERSJON = '2.0-proto.2';
+export const VERSJON = '2.0-proto.3';
 const $ = id => document.getElementById(id);
 const q = new URLSearchParams(location.search), hash = location.hash.slice(1);
 const berøring = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
@@ -120,7 +120,7 @@ styr.knapp($('mHugg'), 'slag'); styr.knapp($('mHopp'), 'hopp'); $('mKam').addEve
 if (berøring) document.body.classList.add('touch');
 
 // ---------- Spill-løkka ----------
-let sist = performance.now(), startet = false;
+let sist = performance.now(), startet = false, sistArbeid = 0;
 const dir = new THREE.Vector2();
 function slagTreff() {
   const rx = Math.sin(helt.retning), rz = Math.cos(helt.retning);
@@ -140,7 +140,7 @@ function loop(nå) {
   const rå = nå - sist, dt = Math.min(0.05, rå / 1000); sist = nå;
   if (!V || bygger) return;
   klokke += dt; if (autoTid) tid = (tid + dt) % DOGN_LENGDE;
-  const testInp = yt.steg(rå);
+  const testInp = yt.steg(rå, sistArbeid);
   if (startet) oppdaterHelt(helt, testInp ? Object.assign({ hopp: false, slag: false, mengde: 1 }, testInp) : styr.les(), dt, verden, K.yaw);
   if (helt.slagT >= OKS.impact && !helt.slagTruffet) { helt.slagTruffet = true; slagTreff(); }
   oppdaterKamera(dt, helt, verden, innerWidth < 600);
@@ -155,6 +155,7 @@ function loop(nå) {
   if (composer && composer.bloom) composer.bloom.strength = (valg.stil === 1 ? .18 : .12) + L.mork * (valg.stil === 1 ? .45 : .35);
   maaling.startBilde();
   if (composer) { composer.render(dt); } else renderer.render(V.scene, kamera);
+  sistArbeid = performance.now() - nå;
   maaling.sluttBilde(() => ({ stil: valg.stil, kvalitet: kvalitet().navn, dpr: renderer.getPixelRatio(), traerNaer: V.skog.info().tegnetNær, traerLangt: V.skog.info().tegnetLangt, treTriNaer: V.skog.info().triNær, treTriLangt: V.skog.info().triLangt, gressTri: V.gress.tri(), byggMs: V.byggMs, mork: +L.mork.toFixed(2), versjon: VERSJON }));
 }
 addEventListener('resize', settStorrelse);
@@ -170,10 +171,14 @@ const yt = lagYtelsestest({
   },
   status(t) { const el = $('teststatus'); el.textContent = t; el.hidden = !t; },
   vis(r) {
-    const tekst = JSON.stringify(r, null, 1);
-    $('testTabell').innerHTML = '<tr><th>Scene</th><th>FPS</th><th>1 % lav</th><th>Tegnekall</th><th>Trekanter</th></tr>' + r.resultater.map(x => `<tr><td>${x.scene}</td><td>${x.fps}</td><td>${x.fps1lav}</td><td>${x.tegnekall ?? '–'}</td><td>${x.trekanter ? (x.trekanter / 1e6).toFixed(2) + ' M' : '–'}</td></tr>` + (x.perMinutt ? `<tr><td colspan="5">FPS per minutt: ${x.perMinutt.join(' · ')}</td></tr>` : '')).join('');
-    $('testInfo').textContent = `Stil ${r.stil} · ${r.kvalitet} · DPR ${r.dprBrukt} · ${r.enhet.gpu}`;
-    $('testTekst').value = tekst; $('testkort').hidden = false;
+    const fmt = x => x == null ? '–' : x;
+    const rader = r.resultater.map(x => `<tr><td>${x.scene}</td><td>${fmt(x.fps)}</td><td>${fmt(x.fps1lav)}</td><td>${x.sekunder} / ${x.mål} s</td><td>${fmt(x.tegnekall)}</td></tr>` +
+      (x.minutter ? x.minutter.map(m => `<tr class="min"><td>Minutt ${m.minutt}${m.helt ? '' : ' (delvis)'}</td><td>${fmt(m.fps)}</td><td>${fmt(m.fps1lav)}</td><td>${m.sekunder} s</td><td></td></tr>`).join('') : '')).join('');
+    $('testTabell').innerHTML = '<tr><th>Scene</th><th>FPS</th><th>1 % lav</th><th>Aktiv tid</th><th>Tegnekall</th></tr>' + rader;
+    const st = $('testStatus'); st.textContent = r.status; st.className = 'status ' + (r.status === 'BESTÅTT' ? 'ok' : r.status === 'IKKE BESTÅTT' ? 'nei' : 'ugyldig');
+    $('testInfo').textContent = `${r.begrunnelse} Aktiv testtid ${r.aktivTestTidS} av ${r.planlagtTestTidS} s · gyldige målinger: ${r.gyldigeMålinger} · avbrudd: ${r.avbrudd} · mål ${r.mål} FPS · stil ${r.stil} · ${r.kvalitet} · DPR ${r.dprBrukt} · ${r.enhet.gpu}`;
+    $('testMerk').innerHTML = r.merknader.map(m => `<li>${m}</li>`).join('');
+    $('testTekst').value = JSON.stringify(r, null, 1); $('testkort').hidden = false; $('bKopier').textContent = '📋 Kopier resultat';
   },
 });
 $('bTest').onclick = () => yt.kjør(false); $('bVarme').onclick = () => yt.kjør(true);

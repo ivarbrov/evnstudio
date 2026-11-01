@@ -39,6 +39,7 @@
   #mobil #mHugg { width: 92px; height: 92px; font-size: 38px; }
   .voksen { margin-top: 14px; padding-top: 12px; border-top: 1px solid #2f4a35; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; font-size: 14px; }
   .voksen button, .rad button { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 2px solid #2f4a35; background: #213428; color: #f3ead6; font-weight: 700; }
+  .testhjelp { width: 100%; font-size: 12px; color: #a9bfa6; }
   .kvalvalg { width: 100%; display: flex; gap: 6px; justify-content: center; align-items: center; }
   .kvalvalg button.valgt { border-color: #ffd24a; }
   #teststatus { position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); background: rgba(16,26,20,.85); padding: 8px 14px; border-radius: 14px; font-weight: 700; z-index: 8; }
@@ -47,6 +48,10 @@
   #testkort table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 8px 0; }
   #testkort td, #testkort th { border-bottom: 1px solid #2f4a35; padding: 4px; text-align: left; }
   #testTekst { width: 100%; box-sizing: border-box; font: 11px ui-monospace, monospace; background: #0d1410; color: #bfffbf; border: 1px solid #2f4a35; border-radius: 8px; }
+  .status { font-size: 22px; font-weight: 900; padding: 6px 10px; border-radius: 10px; display: inline-block; }
+  .status.ok { background: #1f6b35; } .status.nei { background: #8a5a12; } .status.ugyldig { background: #7a1f1f; }
+  #testInfo, #testMerk { font-size: 13px; color: #c9d8c4; text-align: left; } #testkort .kort { max-width: 560px; width: 94vw; }
+  tr.min td { color: #a9bfa6; font-size: 12px; }
   .rad { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
 </style>
 </head>
@@ -74,13 +79,14 @@
     <div class="voksen">
       <div class="kvalvalg">Grafikk: <button data-kval="lav">Lav</button><button data-kval="middels">Middels</button><button data-kval="hoy">Høy</button></div>
       <button id="bTest">📊 Ytelsestest (1 min)</button><button id="bVarme">🔥 Varmetest (10 min)</button>
+      <div class="testhjelp">Under testen: hold skjermen på, ikke bytt app, og ikke lås telefonen. Sett gjerne «Autolås» til «Aldri».</div>
     </div>
     <div class="evn-ver" id="versjon"></div>
   </div>
 </div>
 <div id="teststatus" hidden></div>
 <div id="testkort" hidden><div class="kort">
-  <h2>Resultat av ytelsestesten</h2><p id="testInfo"></p>
+  <h2>Resultat av ytelsestesten</h2><div id="testStatus" class="status"></div><p id="testInfo"></p><ul id="testMerk"></ul>
   <table id="testTabell"></table>
   <textarea id="testTekst" readonly rows="6"></textarea>
   <div class="rad"><button id="bKopier">📋 Kopier resultat</button><button id="bLukkTest">Lukk</button></div>
