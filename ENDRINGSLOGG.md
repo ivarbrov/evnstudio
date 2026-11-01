@@ -6,6 +6,7 @@ er små – se på retning over flere uker, ikke på enkeltdager.
 
 | Dato | Hva | Spill | Kan påvirke |
 |---|---|---|---|
+| 2026-11-01 ca. 16:25 | **Era Defenders v0.19.0 (godkjent): vanskelighetsgrad, sluttkamp og seiersskjerm.** Valg av Lett (som før), Normal og Vanskelig på startkortet. Normal og Vanskelig: mindre liv tilbake per bølge, saktere mana, sterkere fiender per epoke, raske og skytende fiender, og fiendene spretter ikke unna når du slår. Livsdrikken drikkes av seg selv ved lavt liv (egen knapp fjernet). Sluttkamp mot Tidsherren i Tidsvirvelen, seiersskjerm og valget Fortsett/Ny runde. Gamle lagringer spiller videre på Lett, nye spillere starter på Normal. Commit a9d3f74. | Era Defenders | Kortere økter og flere omstarter i Normal; mulig flere starter etter seier (Ny runde) |
 | 2026-11-01 ca. 16:05 | **Era Defenders v0.18.8: navn på basen.** Spilleren skriver navnet sitt i «Basen din», og over basen står «<navn>s base» (uten navn: «Min base», før stod det alltid «Evens base»). Maks 14 tegn, lagres bare på enheten og sendes ikke til statistikken. Commit ec4af3b. | Era Defenders | Ingen forventet effekt |
 | 2026-11-01 ca. 15:45 | **Voksenteksten:** «En forelder har ansvaret …» endret til «Pappaen til Even har ansvaret for nettstedet.» Ingen andre endringer. | Forside | Ingen forventet effekt |
 | 2026-11-01 ca. 15:45 | **Voksenteksten i «Hvem står bak?».** Ny setning «En forelder har ansvaret for nettstedet.» og rettet komma («… navn eller e-post og bruker ingen informasjonskapsler»). Ingen andre endringer. | Forside | Ingen forventet effekt |
