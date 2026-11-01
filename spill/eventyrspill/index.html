@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Era Defenders – v0.18.4</title>
+<title>Era Defenders – v0.18.5</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="ikoner/ikon-192.png">
 <link rel="apple-touch-icon" href="ikoner/apple-touch-icon.png">
@@ -144,7 +144,7 @@ addEventListener('keydown',function(){t(false);},true);})();
   </ul>
   <button class="start evn-start" id="menyStart">▶ Start</button>
   <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-  <div class="evn-ver">Versjon 0.18.4 · 7 tidsepoker</div>
+  <div class="evn-ver">Versjon 0.18.5 · 7 tidsepoker</div>
 </div></div>
 <div id="evnSporsmal" role="dialog" aria-modal="true"><div class="boks">
   <div>Vil du avslutte og gå tilbake til forsiden? Spillet ditt er lagret.</div>
@@ -944,6 +944,25 @@ function slippFinger(e) {
 canvas.addEventListener('touchend', slippFinger, { passive: false });
 canvas.addEventListener('touchcancel', slippFinger, { passive: false });
 
+// Steinalderkølle på angrepsknappen (samme kølle som helten holder, skrått oppover)
+function tegnKolleIkon(x, y, r) {
+  const s = r / 28;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(-Math.PI / 4); ctx.scale(s, s);
+  ctx.lineJoin = 'round';
+  // tegneseriekølle: langt, smalt håndtak som blir tykkere og ender i en knudrete klump
+  ctx.beginPath();
+  ctx.moveTo(-26, -2.5);
+  ctx.lineTo(0, -5);
+  ctx.quadraticCurveTo(6, -10, 11, -8);  ctx.quadraticCurveTo(14, -12, 19, -9);   // kuler på oversiden
+  ctx.quadraticCurveTo(25, -6, 24, 0);   ctx.quadraticCurveTo(26, 6, 20, 9);       // runde enden
+  ctx.quadraticCurveTo(15, 12, 11, 8);   ctx.quadraticCurveTo(6, 10, 0, 5);        // kuler på undersiden
+  ctx.lineTo(-26, 2.5); ctx.closePath();
+  ctx.fillStyle = '#a0703f'; ctx.fill(); ctx.strokeStyle = '#3e2715'; ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,230,190,0.25)'; ctx.fillRect(-24, -2, 24, 1.6);       // lys kant
+  sirkel(15, -3, 2.2, '#5d3a1e'); sirkel(8, 3, 1.9, '#5d3a1e'); sirkel(19, 4, 1.6, '#5d3a1e');   // knaster
+  ctx.fillStyle = '#5d3a1e'; ctx.fillRect(-27, -3.2, 8, 6.4);                     // grep
+  ctx.restore();
+}
 function tegnMobilKontroller() {
   if (spak.aktiv) {
     ctx.beginPath(); ctx.arc(spak.sx, spak.sy, SPAK_RADIUS, 0, Math.PI * 2);
@@ -961,7 +980,8 @@ function tegnMobilKontroller() {
     ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(k.x, k.y, k.r, 0, Math.PI * 2); ctx.stroke();
     ctx.font = Math.round(k.r * 0.9) + 'px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#fff'; ctx.fillText(k.ikon, k.x, k.y + 2);
+    if (k.id === 'sverd' && epoke().naer === 'kølle') tegnKolleIkon(k.x, k.y, k.r);   // det finnes ingen kølle-emoji (🪵 så ut som tømmerstokker)
+    else { ctx.fillStyle = '#fff'; ctx.fillText(k.ikon, k.x, k.y + 2); }
     ctx.textBaseline = 'alphabetic';
     if (k.id === 'drikk') { ctx.font = 'bold 13px system-ui'; ctx.fillText(helt.drikker, k.x + k.r - 4, k.y - k.r + 10); }
   }
