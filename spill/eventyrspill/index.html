@@ -91,6 +91,16 @@
   @media (prefers-reduced-motion:reduce){.evn-start{animation:none}}
   
   #meny .start { --evn-glod: rgba(60,120,255,0.55); }
+  /* EVN Studio-maskoten på startkortet (bare Era Defenders): står til venstre for målet og styringen,
+     aldri over tittel eller Start-knapp. Vises ikke på «Du ble slått ut»-skjermen eller i liggende mobil. */
+  #meny .meny-intro { display: flex; align-items: center; justify-content: center; gap: 16px; text-align: left; }
+  #meny .meny-intro .maal { max-width: 15em; }
+  #meny .meny-maskot { flex-shrink: 0; height: 120px; width: auto; padding: 0; background: none; border-radius: 0; justify-self: auto;
+    filter: drop-shadow(0 6px 14px rgba(0,0,0,.45)) drop-shadow(0 0 18px rgba(80,120,255,.45)); }
+  #meny.slutt .meny-intro { display: block; text-align: center; }
+  #meny.slutt .meny-maskot { display: none; }
+  @media (max-width: 380px) { #meny .meny-maskot { height: 100px; } #meny .meny-intro { gap: 12px; } }
+  @media (max-height: 500px) { #meny .meny-maskot { display: none; } #meny .meny-intro { display: block; text-align: center; } }
   /* Spørsmål før man avslutter (E3) */
   #evnSporsmal { position: fixed; inset: 0; z-index: 30; display: none; place-items: center; background: rgba(0,0,0,0.7); padding: 16px; }
   #evnSporsmal .boks { background: #1c2436; border: 2px solid rgba(255,255,255,0.2); border-radius: 16px; padding: 22px; max-width: 340px;
@@ -120,7 +130,10 @@ addEventListener('keydown',function(){t(false);},true);})();
   <h1 id="menyTittel">Era Defenders</h1>
   <div class="epoke" id="menyEpoke"></div>
   <div class="lagret" id="menyLagret"></div>
+  <div class="meny-intro">
+  <img class="meny-maskot" src="../../bilder/maskot-staende-260.webp" srcset="../../bilder/maskot-staende-260.webp 1x, ../../bilder/maskot-staende-520.webp 2x" width="109" height="260" alt="" decoding="async" onerror="this.remove()">
   <div class="maal" id="menyMaal">Slå monstrene, samle mynter og bygg basen din!</div>
+  </div>
   <ul id="menyStyring">
     <li class="bare-pc">⌨️ Gå: <b>W A S D</b> eller pilene</li>
     <li class="bare-pc">⚔️ Slå: <b>mellomrom</b> · Skyt: <b>klikk</b> eller <b>E</b></li>
@@ -2318,6 +2331,7 @@ function oppdaterMeny() {
   document.getElementById('menyStyring').style.display = start ? '' : 'none';
   document.getElementById('menyStart').textContent = start ? '▶ Start' : '▶ Prøv igjen';
   document.querySelector('#meny .evn-merke').style.display = start ? '' : 'none';
+  m.classList.toggle('slutt', !start);
 }
 document.getElementById('meny').addEventListener('click', () => { if (tilstand === 'start' || tilstand === 'slutt') startSpill(); });
 document.getElementById('meny').addEventListener('touchstart', () => { erTouch = true; mus.brukt = false; }, { passive: true });
