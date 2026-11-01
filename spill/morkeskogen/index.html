@@ -976,6 +976,10 @@ let VW = 0, VH = 0, DPR = 1, R3 = null;
 const keys = {};
 let g = null, state = 'start', last = 0;
 const isTouch = matchMedia('(pointer: coarse)').matches;
+// ===== GRAFIKK-PROTOTYPE (gren grafikk-prototype) =====
+// A = dagens grafikk (uendret). B = forbedret grafikk, slås på med ?grafikk=b. Alt nytt i B er bak GFX.b, så A går nøyaktig som før.
+// ?maal=1 viser et måleoverlegg (FPS, tegnekall, trekanter, objekter, lastetid) og legger tallene i window.__maal.
+const GFX = { b: /[?&]grafikk=b(&|$)/i.test(location.search), maal: /[?&]maal=1(&|$)/.test(location.search) };
 // Grafikkvalitet: styrer oppløsning, skyggekart, antall lys og partikler (ingen spillmekanikk)
 const QUAL = {
   lav:     { n: 'Lav',     dpr: 1,   shadow: 1024, lights: 4, flames: 2, embers: 60,  lavaP: 90,  smoke: 45, riverMist: 5 },
@@ -3445,7 +3449,8 @@ function makeTree(t) {
 function makeBush(b) {
   const G = new THREE.Group();
   const bm = b.fruit ? M.jungleBush : M.bush;
-  G.add(mk(GEO.sph, bm, 11, 9, 11, -8, 9, 0), mk(GEO.sph, bm, 11, 9, 11, 8, 9, 2), mk(GEO.sph, bm, 12, 11, 12, 0, 15, -3));
+  const kuler = [mk(GEO.sph, bm, 11, 9, 11, -8, 9, 0), mk(GEO.sph, bm, 11, 9, 11, 8, 9, 2), mk(GEO.sph, bm, 12, 11, 12, 0, 15, -3)];
+  if (GFX.b) G.add(gfxMerge(kuler)); else G.add(...kuler);   // B, trinn 1e: de tre kulene i busken er én figur (1 tegnekall i stedet for 3, også i skyggen)
   const berries = [[-8, 14, 9], [7, 10, 11], [2, 23, 6]].map(([x, y, z]) => { const m = b.fruit ? mk(GEO.sph, M.fruit, 4.5, 5.5, 4.5, x, y, z, false) : mk(GEO.sph, M.berry, 3.5, 3.5, 3.5, x, y, z, false); G.add(m); return m; });
   G.position.set(b.x, 0, b.y); G.rotation.y = Math.random() * 6.28;
   return { grp: G, berries };
@@ -5646,7 +5651,11 @@ function buildWorld() {
     const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = R3.renderer.capabilities.getMaxAnisotropy(); return t;
   })();
   const ground = new THREE.Mesh(gg, new THREE.MeshPhongMaterial({ map: detail, vertexColors: true, shininess: 0, specular: 0x000000 }));
-  ground.receiveShadow = true; G.add(ground);
+  ground.receiveShadow = true;
+  if (GFX.b) {   // B, trinn 1d: bakken deles i 12 × 12 biter med nøyaktig de samme punktene, så bare bitene du ser tegnes (før: hele bakken, ca. 460 000 trekanter, hver gang)
+    gfxEgenRandom(() => { for (const bit of gfxGridChunks0(gg, Math.round(300 * WS), 12)) { const m = new THREE.Mesh(bit, ground.material); m.receiveShadow = true; G.add(m); } });
+    for (const k of Object.keys(gg.attributes)) gg.deleteAttribute(k); gg.setIndex(null);   // det store rutenettet brukes ikke mer: frigjør minnet
+  } else G.add(ground);
   const outer = new THREE.Mesh(new THREE.PlaneGeometry(W * 4, H * 4), M.outer);
   outer.rotation.x = -Math.PI / 2; outer.position.set(W / 2, -80, H / 2); G.add(outer);   // langt under bakken, så det ikke stikker opp i groper
   const isLava = (x, z) => biomeW(x, z).lava >= 0.5, isWater = (x, z) => biomeW(x, z).lava < 0.5;
@@ -5927,6 +5936,113 @@ function bar(x, h, z, frac, color) {
   octx.fillStyle = color; octx.fillRect(s.x - 17, s.y, 34 * frac, 6);
 }
 
+// ---------- B, trinn 1a: avstandsutsortering ----------
+// Alt som ligger helt inne i tåka (lenger unna enn tåkas ytterkant) blir likevel tegnet i A. Det koster tegnekall og trekanter uten å synes.
+// B tar slike objekter ut av tegningen med lag (layers), så spillkoden kan fortsette å bruke .visible som før.
+// Unntak: objekter med materialer uten tåke (fog: false), f.eks. lysstrålene over lassodelene, som skal synes langt unna.
+const GCULL = { t: 0, ant: 0, ute: 0 };
+function gfxCullInfo(o) {
+  // Hopp over: lys, og store ting uten tåke (lysstråler o.l. over 150 høye) som er laget for å synes langt unna. Små glødende øyne o.l. teller ikke.
+  let fri = false; o.traverse(c => { if (c.isLight) fri = true; const m = c.material;
+    if (!fri && c.isMesh && m && (Array.isArray(m) ? m.some(x => x.fog === false) : m.fog === false)) { const bb = new THREE.Box3().setFromObject(c), sz = bb.getSize(new THREE.Vector3()); if (Math.max(sz.x, sz.y, sz.z) > 150) fri = true; } });
+  if (fri) return { skip: true };
+  let cx, cz, r;
+  if (o.isInstancedMesh && o.geometry.boundingSphere) { const bs = o.geometry.boundingSphere; cx = bs.center.x; cz = bs.center.z; r = bs.radius; }
+  else { const bb = new THREE.Box3().setFromObject(o); if (bb.isEmpty()) return { skip: true }; cx = (bb.min.x + bb.max.x) / 2; cz = (bb.min.z + bb.max.z) / 2; r = Math.hypot(bb.max.x - bb.min.x, bb.max.z - bb.min.z) / 2; }
+  // Trinn 1b: små deler (bær, nagler, øyne, småstein …) kaster ikke skygge. Skyggene deres er bare noen få piksler, men koster et ekstra tegnekall hver.
+  // Trinn 1c: radius per del, brukt til å skjule deler som blir mindre enn noen få piksler på avstand.
+  const deler = [];
+  o.updateMatrixWorld(true);
+  o.traverse(c => { if (!(c.isMesh && !c.isInstancedMesh && c.geometry)) return;
+    if (!c.geometry.boundingSphere) c.geometry.computeBoundingSphere();
+    const sc = new THREE.Vector3().setFromMatrixScale(c.matrixWorld), rr = c.geometry.boundingSphere.radius * Math.max(sc.x, sc.y, sc.z);
+    if (c.castShadow && rr < 9) c.castShadow = false;
+    deler.push([c, rr, false]); });
+  return { ox: cx - o.position.x, oz: cz - o.position.z, r, off: false, deler: deler.length > 1 ? deler : null };
+}
+// Store samlegrupper (f.eks. alle skjelettene eller alle dyrene i én gruppe) dekker hele kartet. Da sorteres barna deres i stedet,
+// så lenge gruppen selv står i origo uten rotasjon eller skalering (barnas posisjon er da også verdensposisjon).
+const gcIdent = o => !o.isMesh && o.position.lengthSq() === 0 && o.rotation.x === 0 && o.rotation.y === 0 && o.rotation.z === 0 && o.scale.x === 1 && o.scale.y === 1 && o.scale.z === 1;
+function gfxCullNode(o, cp, lim, dyp) {
+  const d = o.userData.gc || (o.userData.gc = gfxCullInfo(o));
+  if (d.skip) return 0;
+  if (d.r > 2500 && dyp < 3 && gcIdent(o)) { let n = 0; for (const c of o.children) n += gfxCullNode(c, cp, lim, dyp + 1); return n; }
+  const avst = Math.hypot(o.position.x + d.ox - cp.x, o.position.z + d.oz - cp.z), far = avst - d.r > lim;
+  if (far !== d.off) { d.off = far; o.traverse(c => { c.layers.mask = far ? 2 : 1; }); if (d.deler) for (const del of d.deler) del[2] = far; }
+  if (!far && d.deler) {                      // deler som er under ca. 5 piksler store (radius/avstand < 0,004) tegnes ikke
+    const grense = Math.max(1, avst) * 0.004;
+    for (const del of d.deler) { const liten = del[1] < grense; if (liten !== del[2]) { del[2] = liten; del[0].layers.mask = liten ? 2 : 1; } }
+  }
+  return far ? 1 : 0;
+}
+function gfxCull() {
+  const now = performance.now(); if (now - GCULL.t < 150) return; GCULL.t = now;
+  const cp = R3.camera.position, lim = R3.scene.fog.far + 150; let ute = 0;
+  for (const o of R3.group.children) ute += gfxCullNode(o, cp, lim, 0);
+  GCULL.ute = ute;
+}
+// Deler et PlaneGeometry-rutenett (seg × seg ruter) i n × n biter. Punkter, normaler, farger og uv kopieres uendret,
+// og trekantene får samme rekkefølge som i PlaneGeometry, så bakken ser helt lik ut og skjøtene ikke synes.
+// three.js bruker Math.random til id-er (uuid) på nye geometrier. Da ville B «bruke opp» tilfeldige tall og få en annen plassering
+// av trær og pynt enn A. Ekstra objekter i B lages derfor med en egen tallrekke, så A og B blir like verdener (rettferdig sammenligning).
+let gfxRng = 987654321;
+function gfxEgenRandom(fn) { const r0 = Math.random; Math.random = () => { gfxRng ^= gfxRng << 13; gfxRng ^= gfxRng >>> 17; gfxRng ^= gfxRng << 5; return (gfxRng >>> 0) / 4294967296; }; try { return fn(); } finally { Math.random = r0; } }
+function gfxGridChunks(geo, seg, n) { return gfxEgenRandom(() => gfxGridChunks0(geo, seg, n)); }
+function gfxGridChunks0(geo, seg, n) {
+  const G1 = seg + 1, attrs = ['position', 'normal', 'color', 'uv'].filter(k => geo.attributes[k]), out = [], step = Math.ceil(seg / n);
+  for (let cy = 0; cy < seg; cy += step) for (let cx = 0; cx < seg; cx += step) {
+    const nx = Math.min(step, seg - cx), ny = Math.min(step, seg - cy), w = nx + 1, h = ny + 1, bg = new THREE.BufferGeometry();
+    for (const k of attrs) {
+      const src = geo.attributes[k], is = src.itemSize, arr = new Float32Array(w * h * is);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const si = ((cy + y) * G1 + cx + x) * is, di = (y * w + x) * is; for (let q = 0; q < is; q++) arr[di + q] = src.array[si + q]; }
+      bg.setAttribute(k, new THREE.BufferAttribute(arr, is, src.normalized));
+    }
+    const idx = [];
+    for (let y = 0; y < ny; y++) for (let x = 0; x < nx; x++) { const a = x + w * y, b = x + w * (y + 1), c = x + 1 + w * (y + 1), d = x + 1 + w * y; idx.push(a, b, d, b, c, d); }
+    bg.setIndex(idx); bg.computeBoundingSphere(); bg.computeBoundingBox(); out.push(bg);
+  }
+  return out;
+}
+// Slår sammen meshes med samme materiale (og egne posisjoner) til ett mesh. Brukes bare for deler spillet aldri flytter eller skjuler hver for seg.
+function gfxMerge(list) { return gfxEgenRandom(() => gfxMerge0(list)); }
+function gfxMerge0(list) {
+  let nv = 0, ni = 0; for (const m of list) { m.updateMatrix(); nv += m.geometry.attributes.position.count; ni += m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count; }
+  const pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), idx = new (nv > 65535 ? Uint32Array : Uint16Array)(ni); let ov = 0, oi = 0;
+  for (const m of list) {
+    const g2 = m.geometry.clone(); g2.applyMatrix4(m.matrix); const c = g2.attributes.position.count;
+    pos.set(g2.attributes.position.array, ov * 3); nor.set(g2.attributes.normal.array, ov * 3);
+    if (g2.index) for (let i = 0; i < g2.index.count; i++) idx[oi + i] = g2.index.array[i] + ov; else for (let i = 0; i < c; i++) idx[oi + i] = ov + i;
+    oi += g2.index ? g2.index.count : c; ov += c; g2.dispose();
+  }
+  const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); bg.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); bg.setIndex(new THREE.BufferAttribute(idx, 1));
+  bg.computeBoundingSphere();
+  const out = new THREE.Mesh(bg, list[0].material); out.castShadow = list.some(m => m.castShadow); out.receiveShadow = list.some(m => m.receiveShadow); return out;
+}
+// ---------- Måleoverlegg (?maal=1) ----------
+const MAAL = { calls: 0, skygge: 0, tris: 0, fps: [], sist: 0, obj: 0, objTegn: 0, objT: 0, forste: 0, el: null };
+function maalFor() {
+  const R = R3.renderer;
+  if (!MAAL.patch) { MAAL.patch = true; const rb = R.renderBufferDirect.bind(R);
+    R.renderBufferDirect = (cam, sc, geo, mat, obj, grp) => { if (cam.isOrthographicCamera || cam === R3.sun.shadow.camera) MAAL.skygge++; else MAAL.calls++; return rb(cam, sc, geo, mat, obj, grp); }; }
+  MAAL.calls = 0; MAAL.skygge = 0;
+}
+function maalEtter() {
+  const now = performance.now(), R = R3.renderer;
+  if (!MAAL.forste && R3.world) MAAL.forste = Math.round(now);              // første bilde med ferdig bygget verden (bakgrunnen bak startskjermen)
+  if (MAAL.sist) { MAAL.fps.push(now - MAAL.sist); while (MAAL.fps.length > 1800) MAAL.fps.shift(); }   // ca. 30 s ved 60 FPS
+  MAAL.sist = now; MAAL.tris = R.info.render.triangles;
+  if (now - MAAL.objT > 1000) { MAAL.objT = now; let n = 0, t = 0;
+    R3.scene.traverse(o => { if (o.isMesh || o.isPoints || o.isSprite || o.isLine) n++; });
+    R3.scene.traverseVisible(o => { if ((o.isMesh || o.isPoints || o.isSprite || o.isLine) && o.layers.test(R3.camera.layers)) t++; });
+    MAAL.obj = n; MAAL.objTegn = t;
+    const f = MAAL.fps.slice().sort((a, b) => b - a), snitt = f.length ? 1000 / (f.reduce((a, b) => a + b, 0) / f.length) : 0, lav = f.length ? 1000 / f[Math.max(0, Math.floor(f.length * 0.01) - 0) ] : 0;
+    window.__maal = { grafikk: GFX.b ? 'B' : 'A', kvalitet: qKey, fps: +snitt.toFixed(1), fps1lav: +lav.toFixed(1), tegnekall: MAAL.calls, skyggekall: MAAL.skygge, tegnekallTotalt: MAAL.calls + MAAL.skygge,
+      trekanter: MAAL.tris, objekter: MAAL.obj, objekterTegnbare: MAAL.objTegn, utsortert: GCULL.ute, forsteBildeMs: MAAL.forste, heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1e6) : null,
+      kamera: [Math.round(R3.camera.position.x), Math.round(R3.camera.position.z)] };
+    if (!MAAL.el) { MAAL.el = document.createElement('pre'); MAAL.el.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:99999;margin:0;padding:6px 8px;background:rgba(0,0,0,.75);color:#9f9;font:11px/1.35 monospace;pointer-events:none;white-space:pre'; document.body.appendChild(MAAL.el); }
+    const m = window.__maal; MAAL.el.textContent = `Grafikk ${m.grafikk} · ${m.kvalitet}\nFPS ${m.fps} (1 % lav ${m.fps1lav})\nTegnekall ${m.tegnekall} + skygge ${m.skyggekall} = ${m.tegnekallTotalt}\nTrekanter ${(m.trekanter / 1e6).toFixed(2)} M\nObjekter ${m.objekter} (tegnbare ${m.objekterTegnbare})\nFørste bilde ${m.forsteBildeMs} ms` + (m.heapMB ? ` · heap ${m.heapMB} MB` : '');
+  }
+}
 function draw(time) {
   if (!window.THREE) return;
   if (!R3) initR3();
@@ -6523,7 +6639,10 @@ function draw(time) {
     const u = c.userData; u.dx += dt * 25; if (u.dx > 6000) u.dx -= 12000;
     c.position.set(cp.x - FWZ * u.dx - FWX * u.dz, u.h, cp.z + FWX * u.dx - FWZ * u.dz);
   }
+  if (GFX.b) gfxCull();
+  if (GFX.maal) maalFor();
   R3.renderer.render(R3.scene, R3.camera);
+  if (GFX.maal) maalEtter();
 
   // Tekst og helsestolper oppå 3D-bildet
   octx.setTransform(DPR, 0, 0, DPR, 0, 0); octx.clearRect(0, 0, VW, VH);
