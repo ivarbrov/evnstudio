@@ -48,7 +48,12 @@ export function oppdaterHelt(p, inp, dt, verden, kamYaw) {
 }
 
 export async function lagHeltFigur(scene, stil) {
-  const gltf = await new GLTFLoader().loadAsync('modeller/helt-robot.glb');
+  const laster = new GLTFLoader();
+  let gltf;
+  if (window.EVN_HELT_B64) {                       // artefakt-kopien: modellen ligger innebygd (ingen nettverkskall)
+    const bin = atob(window.EVN_HELT_B64), buf = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    gltf = await laster.parseAsync(buf.buffer, '');
+  } else gltf = await laster.loadAsync('modeller/helt-robot.glb');
   const rot = new THREE.Group(), modell = gltf.scene;
   const box = new THREE.Box3().setFromObject(modell), k = HOYDE / (box.max.y - box.min.y);
   modell.scale.setScalar(k); modell.position.y = -box.min.y * k; rot.add(modell); scene.add(rot);
