@@ -240,19 +240,29 @@
   .seksjonstopp h2 { position: relative; padding-bottom: 8px; }
   .seksjonstopp h2::after { content: ""; position: absolute; left: 0; bottom: 0; width: 56px; height: 4px; border-radius: 4px; background: var(--gradient); }
 
-  /* Spillkort: hver spill har sin egen aksentfarge */
-  .spillkort { --aksent: 25,195,255; transition: transform .3s cubic-bezier(.2,.8,.25,1.2), box-shadow .3s, border-color .3s; }
-  .spillkort.k-era { --aksent: 255,176,46; }
-  .spillkort.k-mork { --aksent: 255,122,47; }
-  .spillkort.k-fossil { --aksent: 120,214,120; }
-  .spillkort::before { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none;
-    box-shadow: inset 0 0 0 2px rgba(var(--aksent), 0); transition: box-shadow .3s; }
-  .spillkort:hover, .spillkort:focus-visible { transform: translateY(-10px) scale(1.025); border-color: rgba(var(--aksent), .7);
-    box-shadow: 0 32px 60px -16px rgba(var(--aksent), .45), 0 0 46px -6px rgba(var(--aksent), .35); }
-  .spillkort:hover::before, .spillkort:focus-visible::before { box-shadow: inset 0 0 0 2px rgba(var(--aksent), .65); }
-  .spillkort .bilde img { transition: transform .6s cubic-bezier(.2,.8,.25,1), filter .4s; }
-  .spillkort:hover .bilde img { transform: scale(1.08); filter: saturate(1.2) brightness(1.06); }
-  .spillkort:active { transform: translateY(-4px) scale(.99); }
+  /* Spillkort-hover (1.11.2026): løfter seg litt, svak blå/lilla lyskant, «Spill nå» blir tydeligere.
+     Bare transform, opacity og skygge animeres, så layout og ytelse ikke påvirkes. */
+  .spillkort { transition: transform .28s cubic-bezier(.2,.8,.25,1), box-shadow .28s, border-color .28s; }
+  .spillkort::before { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none; padding: 1.5px;
+    background: linear-gradient(135deg, var(--cyan), var(--bla) 45%, var(--lilla));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); opacity: 0; transition: opacity .28s; }
+  .spillkort:hover, .spillkort:focus-visible { transform: translateY(-6px); border-color: transparent;
+    box-shadow: 0 22px 44px -20px rgba(47,107,255,.55), 0 0 30px -10px rgba(138,61,255,.5); }
+  .spillkort:hover::before, .spillkort:focus-visible::before { opacity: 1; }
+  .spillkort .bilde img { transition: transform .5s cubic-bezier(.2,.8,.25,1); }
+  .spillkort:hover .bilde img, .spillkort:focus-visible .bilde img { transform: scale(1.04); }
+  .spillkort .knapp { transition: transform .2s, box-shadow .2s; }
+  .spillkort:hover .knapp, .spillkort:focus-visible .knapp { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(138,61,255,.55), 0 0 0 2px rgba(255,255,255,.18); }
+  .spillkort:hover .knapp::after, .spillkort:focus-visible .knapp::after { transform: translateX(120%); }
+  .spillkort:active { transform: translateY(-2px); }
+  /* Tydelig tastaturfokus: hvit ring utenfor kortet i tillegg til lyskanten */
+  .spillkort:focus-visible { outline: 3px solid #fff; outline-offset: 4px; border-radius: var(--radius); }
+  @media (prefers-reduced-motion: reduce) {
+    .spillkort:hover, .spillkort:focus-visible, .spillkort:active, .spillkort:hover .knapp, .spillkort:focus-visible .knapp { transform: none; }
+    .spillkort:hover .bilde img, .spillkort:focus-visible .bilde img { transform: none; }
+    .spillkort:hover .knapp::after, .spillkort:focus-visible .knapp::after { transform: translateX(-120%); }
+  }
   .boks a { text-decoration: underline; text-underline-offset: 3px; color: var(--tekst); }
   /* Stikkord: større og fargerike */
   .spillkort .stikkord { gap: 8px; }
@@ -301,7 +311,8 @@
   @media (hover: none) {
     .spillkort:hover, .nyhet:hover { transform: none; }
     .spillkort:hover .bilde img { transform: none; }
-    .spillkort:active { transform: scale(.98); box-shadow: 0 0 40px -6px rgba(var(--aksent), .45); }
+    .spillkort:hover::before { opacity: 0; } .spillkort:hover { box-shadow: none; border-color: var(--kant); } .spillkort:hover .knapp { transform: none; box-shadow: 0 10px 28px rgba(47,107,255,.38); }
+    .spillkort:active { transform: scale(.985); box-shadow: 0 0 30px -8px rgba(138,61,255,.5); }
   }
 
   /* ===== Maskot: stående ved «Hvem står bak?» ===== */
