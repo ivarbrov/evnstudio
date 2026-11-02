@@ -76,6 +76,13 @@
         var k = e.target && e.target.closest && e.target.closest('#startBtn');
         if (k) spillStartet();
       }, true);
+    },
+    // Dyrepatruljen: knappen «Start ▶»
+    dyrepatruljen: function () {
+      document.addEventListener('click', function (e) {
+        var k = e.target && e.target.closest && e.target.closest('#startBtn');
+        if (k) spillStartet();
+      }, true);
     }
   };
   if (oppdagere[spill]) oppdagere[spill]();
