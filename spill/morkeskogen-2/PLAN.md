@@ -1,7 +1,24 @@
 # Mørkeskogen 2.0 – plan for full grafisk oppgradering (til godkjenning)
 
-**Versjon:** 1, 1.11.2026. **Status:** Ikke godkjent, og ingen integrering er startet.
-**Gren:** `morkeskogen-2.0` @ 069974a. `main` er uendret (f88263c).
+**Versjon:** 2, 2.11.2026. **Status:** Strategien er godkjent av en voksen 1.11 kl. 22:51. **Fase 0 pågår** (se `claude/morkeskogen-2.0-fase0.md`). Fase 1, full integrering og publisering er **ikke** godkjent.
+
+### Beslutninger 1.11.2026 kl. 22:51 (voksen)
+- **Mål:** Alle funksjoner fra 5.6.2 med vesentlig bedre grafikk. Spillmekanikken redesignes ikke.
+- **B4:** Ubrukt kode fjernes **ikke** nå. Logikken holdes mest mulig uendret til funksjonslikhet er verifisert. Opprydding kan komme senere.
+- **B5:** CC0-modeller kan brukes fra dokumenterte kilder. Kilde og lisens registreres.
+- **B6:** MIT-bladteksturer kan brukes når rettighetshaver og lisens er verifisert og lisens- og krediteringstekst følger med.
+- **B7 (foreløpig):** Minst 30 stabile FPS på relevant mobil og 60 FPS på test-PC. Endelige krav og kvalitetsnivåer bestemmes etter testing på ekte enheter.
+- **Godkjent:** Stil 2 og robotens eksisterende utseende. Modell, farger og logo endres ikke.
+- **5.6.2:** Blir liggende på `main` urørt.
+- **Roller:** Even godkjenner kreative valg og spillopplevelse. En voksen godkjenner tekniske milepæler og publisering.
+
+### Presiseringer til testopplegget (innarbeidet)
+1. Logikktvillingen sammenligner original 5.6.2 med **den faktisk flyttede logikken i 2.0**.
+2. Den sammenligner spilltilstand, posisjoner og kollisjoner, oppdrag, våpen, progresjon og lagringsdata.
+3. Lagringstester bruker bare **kopier** i egne testprofiler.
+4. Alle avvik rapporteres. Endret spillogikk skilles fra rent visuelle forskjeller.
+5. Ny grafikk måles med representative scener og funksjoner, ikke bare startområdet. Måling per biom og sted legges inn i fase 2 og 5.
+**Gren:** `morkeskogen-2.0`. `main` er uendret (f88263c).
 **Grunnlag:**
 - Funksjonsoversikten for 5.6.2
 - Prototypen v2.0-proto.2
@@ -48,8 +65,8 @@ Omfang i arbeidsøkter. Estimatene er usikre, ±50 %.
 
 | Fase | Innhold | Avhenger av | Testkrav før neste fase | Godkjenning |
 |---|---|---|---|---|
-| **0 – Forberedelse** (1–2) | **FPS-måling** av prototypen på enhetene. **Logikktvilling:** automatisk test som kjører 5.6.2-logikken og 2.0-logikken med samme frø og samme tastesekvens i N minutter, og sammenligner `g` og lagring. **Lagringstester** med ekte lagringer fra 5.6.2 (alle fire nøkler). | – | FPS-tall fra minst én telefon. Logikktvillingen finner ingen avvik på 5.6.2 mot seg selv. | **G0 (voksen):** budsjett og minstekrav til enhet |
-| **1 – Skjelett** (4–6) | **Spillogikken:** flyttes ordrett til `logikk.js`, og R3-koblingene byttes til grensesnittet. **Ny grafikkjerne:** terreng for alle biomer, himmel, døgn, tåke, kamera (begge), robot-helten med dagens fem klipp, HUD og startkort. **Overgangsversjon:** alle andre objekter vises med nye materialer. | G0 | Logikktvilling ✔. Gamle lagringer lastes ✔. Funksjonstest for start, pause, kart, avslutt, bygg, sekk og «Start helt på nytt» ✔. Ingen konsoll- eller CSP-feil. | **G1 (voksen):** at grunnmuren holder |
+| **0 – Forberedelse** (1–2) | **FPS-måling** av prototypen på enhetene (ytelsestest v2). **Logikkflytting** ordrett til `kilde/logikk-5x.js`, med byggekontroll. **Logikktvilling:** original mot flyttet 2.0-logikk, samme frø og tastesekvens. **Lagringstester** med kopier. | – | Gyldig varmetest på telefon. Tvillingen er deterministisk, finner ingen avvik mot 2.0, og oppdager en bevisst feil. | **G0 (voksen):** budsjett og minstekrav til enhet |
+| **1 – Skjelett** (4–6) | **Spillogikken:** er flyttet i fase 0. De 12 koblingspunktene byttes til grensesnittet. **Ny grafikkjerne:** terreng for alle biomer, himmel, døgn, tåke, kamera (begge), robot-helten med dagens fem klipp, HUD og startkort. **Overgangsversjon:** alle andre objekter vises med nye materialer. | G0 | Logikktvilling ✔. Gamle lagringer lastes ✔. Funksjonstest for start, pause, kart, avslutt, bygg, sekk og «Start helt på nytt» ✔. Ingen konsoll- eller CSP-feil. | **G1 (voksen):** at grunnmuren holder |
 | **2 – Skogbiomet ferdig** (5–8) | Trær (gran, furu, løv, bjørk, kjempegran), busker, stein og jern, pynt, elv, bekk og innsjø, broer, bål nivå 1–10, hytter og de fire bygningene, nattmonstre, lyktestolper, hugging og felling | G1 | Funksjonstest for hugging, bygging, bål, natt, monstre og søvn. Ytelse innenfor budsjett. Skjermbilder fra faste punkter. | **G2 (Even):** skogen ser og føles riktig. **(Voksen):** ytelse. |
 | **3 – Helt, våpen og animasjoner** (3–6) | Alle 10 våpen festet til hånden, animasjoner (pkt. 6), sekker, fiskeline og lasso fra håndleddet, prosjektiler og magi | G1 (kan gå parallelt med fase 2) | Hvert våpen: slag, treff, nedkjøling og oppgradering til nivå 3. Fiske fra kast til fangst. Lasso temmer dyr (maks 4). | **G3 (Even):** bevegelsene |
 | **4 – Dyr og fiender** (6–10) | 23 dyrearter og tamme dyr. Fiendene: skjeletter, troll, T-rex, geit, heks, skurker, hai og triceratops, med Skjelett-T-rex-kongen som boss. | G1, CC0-ressurser (B5) | Hver art: synlig, animert, treffsone som i 5.6.2, gir kjøtt og skinn. Hver fiende: angrep, skade, nederlag. | **G4 (Even)** |
@@ -168,21 +185,21 @@ Hver linje må ha status «videreført og testet» før G7.
 | B1 | Roboten har ingen caps. Skal caps-valget **(a)** fjernes for roboten, **(b)** beholdes og vise en caps oppå roboten (et tillegg på modellen), eller **(c)** gi noe annet? | Even, deretter voksen | Fase 3 |
 | B2 | Sekker på ryggen (5.6.2 viser dem): godtas de som utstyr, som øksa? | Even | Fase 3 |
 | B3 | Trehøyde. 5.6.2-grana er ca. 137–160 enheter (72–84 × 1,9), prototypen 165. Høyden kan beholdes. | Even | Fase 2 |
-| B4 | Ta ut ubrukt kode (gamle kart, skjult tørst, utviklerverktøy)? | Voksen | Fase 1 |
-| B5 | 3D-modeller av dyr og fiender: CC0-pakker (Quaternius, Kenney) lastes ned av en voksen, fordi nettstedene er sperret her. Alternativet er modeller laget i kode. | Voksen | Fase 4 |
-| B6 | Bladteksturer under MIT (EZ-Tree): godkjennes de, eller skal de byttes? | Voksen | G7 |
-| B7 | Minstekrav til enhet og FPS-mål etter målingene | Voksen | G0 |
+| B4 | ~~Ta ut ubrukt kode?~~ **Besluttet:** nei, ikke nå | Voksen | ✔ |
+| B5 | **Besluttet:** CC0 fra dokumenterte kilder, med kilde og lisens registrert. Quaternius og Kenney er sperret her og må lastes ned av en voksen. | Voksen | ✔ |
+| B6 | **Besluttet:** MIT-bladteksturer kan brukes når rettighetshaver og lisens er verifisert og lisens- og krediteringstekst følger med. Tekst legges i `LISENSER.md` og spillets kredittside før G7. | Voksen | ✔ (gjennomføres før G7) |
+| B7 | **Foreløpig besluttet:** ≥ 30 stabile FPS på mobil og 60 FPS på PC. Det endelige kravet settes etter en gyldig varmetest. | Voksen | G0 |
 
 ## 10. Neste konkrete steg
-1. FPS-test på enhetene (instruks under).
-2. Godkjenning av denne planen. Svar på B4 og B7.
-3. Fase 0: logikktvilling og lagringstester.
+1. Ny varmetest med ytelsestest v2 (instruks under).
+2. Lukke dekningshullene i tvillingen (hugging, hytte, søvn, fiske, lasso, Beinslottet, tog, ny verden).
+3. Gjennomgang og godkjenning av fase 0 (G0).
 
 ---
 ## Vedlegg: slik gjennomføres FPS-testen
-Testkopi: https://claude.ai/artifact/6dmFZKdTZ7p4Gk4rBW5tDL (v2.0-proto.2).
+Testkopi: https://claude.ai/artifact/6dmFZKdTZ7p4Gk4rBW5tDL (v2.0-proto.3, ytelsestest v2).
 
-1. **Forbered enheten:** Lad den til over 50 %, eller sett den i lader. Lukk andre apper. Skru av strømsparing. Telefonen skal ikke være varm fra før.
+1. **Forbered enheten:** Sett den i lader. Lukk andre apper. Skru av strømsparing. Sett **«Autolås» til «Aldri»** (iOS: Innstillinger → Skjerm og lysstyrke). Telefonen skal ikke være varm fra før. Ikke bytt app og ikke lås skjermen under testen, ellers blir testen UGYLDIG.
 2. **Åpne og velg grafikk:** Åpne lenken. Velg Lav, Middels eller Høy under «Grafikk» på startkortet. Stil 2 er forhåndsvalgt.
 3. **Kjør testen:** Trykk **📊 Ytelsestest (1 min)** og ikke rør skjermen. Testen kjører tre scener à 20 s etter 3 s oppvarming:
    - dag ved bålet
@@ -195,7 +212,7 @@ Testkopi: https://claude.ai/artifact/6dmFZKdTZ7p4Gk4rBW5tDL (v2.0-proto.2).
    - Telefon: kjør på **Middels**, deretter **Lav**.
    - PC: kjør på **Høy**.
    - Nettbrett: kjør på **Middels**.
-6. **Varmetest:** Kjør **🔥 Varmetest (10 min)** én gang på telefonen på Middels. Den viser FPS per minutt, slik at vi ser om telefonen blir tregere når den blir varm.
+6. **Varmetest:** Kjør **🔥 Varmetest (10 min)** én gang på telefonen på Middels. Den viser FPS per hele minutt med aktiv tid, og status BESTÅTT, IKKE BESTÅTT eller UGYLDIG TEST.
 7. **Lagring:** Resultatet lagres ikke i spillet. Testen skriver ikke til lagringen.
 
 Måleoverlegg under vanlig spilling: legg `#maal` til i adressen. Det virker der adressen kan endres (for eksempel lokalt eller på GitHub Pages senere). Ytelsestesten trenger ikke dette.

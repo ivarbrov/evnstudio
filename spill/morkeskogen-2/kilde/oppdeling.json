@@ -1,0 +1,75 @@
+{
+ "kilde": "spill/morkeskogen/index.html",
+ "sha256Hovedskript": "10b3783b6a340af9f63c445131c0be2d3d68e51acf8c39eb127224a8aaa08237",
+ "blokker": 499,
+ "logikk": {
+  "blokker": 407,
+  "linjer": 2716
+ },
+ "grafikk": {
+  "blokker": 92,
+  "linjer": 3680
+ },
+ "koblingspunkter": [
+  {
+   "nr": 96,
+   "navn": "VW,VH,DPR,R3",
+   "ref": 1
+  },
+  {
+   "nr": 113,
+   "navn": "resize",
+   "ref": 5
+  },
+  {
+   "nr": 200,
+   "navn": "menuAction",
+   "ref": 4
+  },
+  {
+   "nr": 234,
+   "navn": "camAim",
+   "ref": 2
+  },
+  {
+   "nr": 250,
+   "navn": "update",
+   "ref": 4
+  },
+  {
+   "nr": 405,
+   "navn": "toScreen",
+   "ref": 2
+  },
+  {
+   "nr": 431,
+   "navn": "ExpressionStatement",
+   "ref": 4
+  },
+  {
+   "nr": 434,
+   "navn": "ExpressionStatement",
+   "ref": 3
+  },
+  {
+   "nr": 450,
+   "navn": "camRotate",
+   "ref": 4
+  },
+  {
+   "nr": 451,
+   "navn": "camZoom",
+   "ref": 3
+  },
+  {
+   "nr": 477,
+   "navn": "ExpressionStatement",
+   "ref": 2
+  },
+  {
+   "nr": 483,
+   "navn": "applyQuality",
+   "ref": 3
+  }
+ ]
+}
