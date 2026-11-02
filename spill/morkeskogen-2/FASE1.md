@@ -96,3 +96,31 @@
   - Tvillingen er 12/12 lik (`tvilling-2.0-kontroll.json`).
   - `tester/fargekonvertering.js` er BESTÅTT.
 - **Ved parallelt arbeid senere:** Bruk én `git worktree` og én gren per delarbeid, for eksempel `morkeskogen-2.0-gress`. Hver økt får sin egen mappe. Arbeidet slås sammen til `morkeskogen-2.0` etter at testene er kjørt. Hver gren eies av én økt.
+
+## Målestokk for roboten (2.11.2026, til vurdering – ikke endret)
+`tester/malestokk.js`. Rapport og bilder ligger i `tester/resultater/malestokk/`. Bare grafikken er skalert i testen (`R.rot.scale`).
+
+**Mål i spillenheter:**
+
+| Hva | Mål |
+|---|---|
+| Roboten (kropp uten våpen) | 80 høy; hodet 31 høyt og 48 bredt (39 % av høyden) |
+| Gutten i 5.6.2 | 83 høy; hodet ca. 21 (25 %) |
+| Hytte | vegg 40, takfot 41,5, totalt 72,5; **dør 28 × 16** |
+| Trær (median) | gran 158, furu 145, løv 131, bjørk 139, kjempegran 318 |
+| Dyr (eksempler) | elg 102, hjort 66, ulv 36, bjørn 50, hare 14 |
+
+**Høyde på skjermen** (nært spillkamera, 960 × 540): robot 192 px mot gutten 193 px. Med fast kamera i tett skog: 174 mot 174.
+
+**Vurdering:**
+- **Høyden er ikke økt.** Roboten er like høy som gutten.
+- **Inntrykket av størrelse** kommer av at roboten er mye bredere, særlig hodet.
+- **Hytta er bygd liten i forhold til helten** allerede i 5.6.2. Døra er 28 høy mot en helt på ca. 80.
+- **I tett skog trekkes nært kamera helt inn til helten** (kollisjonssjekk, ned til 16 % av avstanden). Da fyller helten skjermen. Det skjer også med gutten, og hører til kameraarbeidet i fase 1.
+
+**Hvis størrelsen endres, må dette gjøres:**
+- Sett `HOYDE` i `grafikk/helt.js`. Det er én verdi.
+- Våpnene sitter i hånda og krymper sammen med roboten. Skal de beholde størrelsen, må våpenfestet skaleres tilbake (× 1/f).
+- Logikken er uendret: treffsoner, fart, våpenrekkevidde og kollisjon. Rekkevidden til slaget blir da litt lengre enn armen ser ut.
+- Kameraets siktehøyde (+40 til +45) og tekst over helten har faste høyder. De bør kontrolleres.
+- Kjør `robot-animasjon.js`, `malestokk.js` og tvillingen på nytt.
