@@ -1,0 +1,160 @@
+{
+ "mål": {
+  "føtterOverBakken": 0,
+  "øksaLengstUtFraMidten": 8002.5,
+  "robot": {
+   "høyde": 72.1,
+   "bredde": 5683.3,
+   "hodeHøyde": 28,
+   "hodeBredde": 43.4,
+   "hodeAndel": 0.39,
+   "skala": 16.153863550053767
+  },
+  "gutt": {
+   "høyde": 82.6,
+   "bredde": 46.7,
+   "hodeLeddOverBakken": 61.1,
+   "hodeHøyde": 20.5
+  },
+  "hytte": {
+   "vegg": 40,
+   "dørHøyde": 28,
+   "dørBredde": 16,
+   "takfot": 41.5,
+   "total": 72.5,
+   "bredde": 108,
+   "kilde": "makeBuilding('hytte')"
+  },
+  "trær": {
+   "kjempegran": {
+    "antall": 30,
+    "median": 316.1,
+    "min": 237.8,
+    "maks": 393.4
+   },
+   "jungeltre": {
+    "antall": 297,
+    "median": 136.4,
+    "min": 90.8,
+    "maks": 167.4
+   },
+   "palme": {
+    "antall": 214,
+    "median": 135.2,
+    "min": 108.8,
+    "maks": 181.3
+   },
+   "snogran": {
+    "antall": 339,
+    "median": 140.1,
+    "min": 100.2,
+    "maks": 205.3
+   },
+   "kaktus": {
+    "antall": 177,
+    "median": 99.2,
+    "min": 73.4,
+    "maks": 135
+   },
+   "dodtre": {
+    "antall": 218,
+    "median": 100.4,
+    "min": 60.8,
+    "maks": 136.6
+   },
+   "gran": {
+    "antall": 688,
+    "median": 157.7,
+    "min": 117.7,
+    "maks": 209
+   },
+   "furu": {
+    "antall": 328,
+    "median": 144.8,
+    "min": 94.8,
+    "maks": 193.4
+   },
+   "lov": {
+    "antall": 201,
+    "median": 134.4,
+    "min": 93.7,
+    "maks": 185
+   },
+   "bjork": {
+    "antall": 251,
+    "median": 142.8,
+    "min": 97.4,
+    "maks": 180.6
+   }
+  },
+  "dyr": {
+   "orkenrev": 15.2,
+   "rein": 67.6,
+   "ulv": 36.4,
+   "grevling": 10.2,
+   "rev": 19.6,
+   "elefant": 95,
+   "elg": 101.6,
+   "kamel": 87.8,
+   "ape": 26.6,
+   "hjort": 66.3,
+   "polarrev": 18.2,
+   "moskus": 44.6,
+   "isbjorn": 57.2,
+   "villsvin": 25.4,
+   "snohare": 13.5,
+   "tiger": 36.8,
+   "gaupe": 28.6,
+   "villhest": 71.9,
+   "gasell": 45.7,
+   "hare": 13.5,
+   "bjorn": 49.9,
+   "krokodille": 16.7,
+   "panter": 34.2
+  },
+  "bål": null,
+  "kamera": {
+   "fov": 50,
+   "nærBak": 220,
+   "nærOpp": 120,
+   "smalSkjermFaktor": 1.3,
+   "siktehøyde": "+40 over bakken, 160 foran helten"
+  }
+ },
+ "skjermhøydePx": {
+  "hyttedor-forfra": {
+   "gutt": 303,
+   "robot": 270
+  },
+  "hyttedor-spillkamera": {
+   "gutt": 193,
+   "robot": 169
+  },
+  "baal": {
+   "gutt": 325,
+   "robot": 284
+  },
+  "tett-skog": {
+   "gutt": 1472,
+   "robot": 1116
+  },
+  "tett-skog-fast": {
+   "gutt": 174,
+   "robot": 155
+  },
+  "ovenfra-baal": {
+   "gutt": 79,
+   "robot": 70
+  },
+  "kamp-natt": {
+   "gutt": 193,
+   "robot": 171
+  }
+ },
+ "viewport": [
+  960,
+  540
+ ],
+ "tetteSkogenTrærInnen160": 19,
+ "konsoll": []
+}

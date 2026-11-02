@@ -124,3 +124,38 @@
 - Logikken er uendret: treffsoner, fart, våpenrekkevidde og kollisjon. Rekkevidden til slaget blir da litt lengre enn armen ser ut.
 - Kameraets siktehøyde (+40 til +45) og tekst over helten har faste høyder. De bør kontrolleres.
 - Kjør `robot-animasjon.js`, `malestokk.js` og tvillingen på nytt.
+
+## Beslutning: robotens størrelse 90 % (2.11.2026 kl. 20:31)
+Even valgte 90 % etter sammenligningsbildene. Ivar godkjente endringen.
+- **Gjennomført:** `STORRELSE = 0.9` i `grafikk/helt.js`. Roboten er 72 høy (var 80). Gutten i 5.6.2 var 83.
+- **Uendret:** proporsjoner, modell, animasjoner og gulfarge.
+- **Ikke endret i spillogikken:** kollisjon, fart, rekkevidde, interaksjonsavstander og lagring. Tvillingen er 12/12 lik (`tvilling-2.0-robot90.json`).
+- **Kontroller:**
+  - **Føttene:** Laveste punkt ligger 0,0 over bakken.
+  - **Animasjon:** `robot-animasjon.js` BESTÅTT. Ingen rykk, vektsum ca. 1, og øksa sitter fast i hånda.
+  - **Våpnene:** Våpenfestet regnes ut fra håndas verdensskala, så våpnene har samme størrelse som før (krymper ikke med roboten).
+- **Rekkevidde:**
+  - Øksebladet når 37 enheter ut fra heltens midtpunkt i slaget. Logikkens rekkevidde er 95, målt fra midtpunkt til midtpunkt med en bue på 1,3 rad, og den er uendret.
+  - Det kan se ut som øksa treffer litt utenfor armen, særlig mot små mål. Tilsvarende måling for gutten i 5.6.2 er **ikke** gjort.
+  - Logikken er ikke endret. Eventuell justering krever eget mandat.
+- **Tekst over helten** (`g.fx`) starter ca. 115 over bakken, altså over hodet både før og nå. Siktepunktet til nært kamera (+40 foran helten) og startpunktet for kollisjonsstrålen (+45) er beholdt. Begge ligger under hodehøyden til både gutten og roboten.
+
+## Kameraforsøk: trær gjør ikke kameraet kortere (til vurdering, ikke låst)
+- **Bakgrunn:** I 5.6.2 trekkes nært kamera inn mot helten (ned til 16 % av avstanden) når et tre står mellom kameraet og hodet. I tett skog fyller helten da hele skjermen.
+- **Forslaget (`grafikk-2.js`, `EVN2_KAM_TRAER`):**
+  - Trær gjør ikke lenger kameraet kortere. Trær mellom kameraet og helten, og trær rett ved kameraet, tones ned til 30 %.
+  - Terreng, hytter, bygninger, murer, slottet og kjempegraner trekker fortsatt kameraet inn, som før.
+  - Kameramodusene (bak og ovenfra), mus, zoom og C-tasten er uendret.
+- **Kostnad:**
+  - Et tre som noen gang står i veien, får sine egne gjennomsiktige materialkopier én gang. De bruker samme shaderprogram.
+  - Når treet ikke står i veien, får det de vanlige materialene tilbake.
+- **Bryter:** `#kamera=original` i adressen gir 5.6.2-oppførselen.
+- **Resultat** (`tester/resultater/kamera-ny/AB-*.png`, 960 × 540):
+
+  | Kamera | Robotens høyde i tett skog |
+  |---|---|
+  | Som 5.6.2 | 1 257 px (bare bryst og hode synes) |
+  | Nytt | 169 px, samme som på åpen mark |
+
+  Ved hytta, bålet, i nattkamp og ovenfra er det ingen vesentlig forskjell.
+- **Ikke testet:** Følelsen når man spiller (jevnhet når trær tones inn og ut) og ytelse på iPhone.

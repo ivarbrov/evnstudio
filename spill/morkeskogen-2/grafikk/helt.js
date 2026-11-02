@@ -9,6 +9,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 // Hovedfargen (materialet «Main»), sRGB. Even valgte gul 2.11.2026; tre varianter til endelig valg.
 export const FARGER = { A: 0xffe135, B: 0xffcc00, C: 0xf6d35b, gammel: 0xf2c84b };
 export const GUL = FARGER.B;                 // Evens valg 2.11.2026 kl. 11:05: B «klassisk robotgul»
+// Evens valg 2.11.2026 kl. 20:31: roboten skal være 90 % av størrelsen i 2.0-prototypen (målt robothøyde 80 → ca. 72).
+export const STORRELSE = 0.9;
 export const HOYDE = 86;                 // målt: toppen havner på ca. 80, som toppen av hodet til helten i 5.6.2 (modellboksen er litt høyere enn figuren)
 
 function lesGLB(sti = 'modeller/helt-robot.glb') {
@@ -26,8 +28,8 @@ export function lagRobot(P) {
   return lesGLB().then(gltf => {
     const modell = gltf.scene, rot = new THREE.Group();
     modell.traverse(o => { o.userData.evn2 = true; if (o.material) o.material.userData.evn2 = true; });   // ny grafikk: ikke fargekonverter
-    const box = new THREE.Box3().setFromObject(modell), k = HOYDE / (box.max.y - box.min.y);
-    modell.scale.setScalar(k); modell.position.y = -box.min.y * k; rot.add(modell);
+    const box = new THREE.Box3().setFromObject(modell), k = HOYDE * STORRELSE / (box.max.y - box.min.y);
+    modell.scale.setScalar(k); modell.position.y = -box.min.y * k; rot.add(modell);   // føttene på bakken: modellens laveste punkt på y = 0
     modell.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; } });
     // Even (2.11.2026): «jeg vil at karakteren skal være gul». Hovedfargen (Main) er gul; grått og svart er som før.
     settFarge(modell, GUL);

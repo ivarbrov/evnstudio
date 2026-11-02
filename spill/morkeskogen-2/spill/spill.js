@@ -5401,6 +5401,9 @@ function bar(x, h, z, frac, color) {
   octx.fillStyle = color; octx.fillRect(s.x - 17, s.y, 34 * frac, 6);
 }
 
+// 2.0, kameraforsøk (til vurdering): trær som står i veien gjør ikke lenger nært kamera kortere, men blir gjennomsiktige.
+// «#kamera=original» i adressen gir 5.6.2-oppførselen (kameraet trekkes inn mot helten, ned til 16 % av avstanden).
+const EVN2_KAM_TRAER = !(typeof location !== 'undefined' && /kamera=original/.test(location.hash));
 function draw(time) {
   if (!window.THREE) return;
   if (!R3) initR3();
@@ -5439,6 +5442,19 @@ function draw(time) {
         m.grp.rotation.z = Math.sin(time * 1.3 + t.x * .013) * .02 * wind; m.grp.rotation.x = Math.cos(time * 1.1 + t.y * .011) * .012 * wind;
       } else if (m.grp.rotation.z !== 0) { m.grp.rotation.z = 0; m.grp.rotation.x = 0; }
       if (R3.camE > .5 && !t.giant && t.y > p.y + 15 && t.y < p.y + 260 && Math.abs(t.x - p.x) < 34 * t.s * TREE_W + 10) m.grp.visible = false;   // ikke skjul helten
+    }
+    if (EVN2_KAM_TRAER && !t.giant) {   // 2.0: tre mellom kameraet og helten (eller ved kameraet) tones ned til 30 %
+      const mål = m.okk !== undefined && R3.kamBilde - m.okk <= 2 ? 0.3 : 1;
+      if (mål < 1 || (m.fade2 !== undefined && m.fade2 < 1)) {
+        if (!m.fMats) {   // egne kopier av materialene, laget én gang per tre som noen gang står i veien (samme shaderprogram)
+          m.fMats = []; m.oMats = [];
+          m.grp.traverse(o => { if (o.isMesh) { const c = o.material.clone(); if (o.material.onBeforeCompile) { c.onBeforeCompile = o.material.onBeforeCompile; c.customProgramCacheKey = o.material.customProgramCacheKey; } c.transparent = true; c.userData.evn2 = !!o.material.userData.evn2; c.userData.__evnLin = o.material.userData.__evnLin; m.fMats.push([o, c]); m.oMats.push([o, o.material]); } });
+          m.fade2 = 1;
+        }
+        m.fade2 += (mål - m.fade2) * Math.min(1, dt * 8);
+        if (mål === 1 && m.fade2 > .98) { m.fade2 = 1; for (const [o, mt] of m.oMats) o.material = mt; }
+        else for (const [o, c] of m.fMats) { o.material = c; c.opacity = m.fade2; c.depthWrite = false; o.castShadow = true; }
+      }
     }
     if (m.mats) {   // kjempegran blir gjennomsiktig når helten står bak den
       const behind = t.y > p.y - 10 && Math.abs(t.x - p.x) < 50 * t.s * treeWK(t) && t.y - p.y < 70 * t.s * treeHK(t);
@@ -5928,6 +5944,7 @@ function draw(time) {
   R3.moon.intensity = 0;
 
   // Kamera følger spilleren
+  R3.kamBilde = (R3.kamBilde || 0) + 1;
   R3.camT.lerp(R3.tmp.set(p.x, 0, p.y), Math.min(1, dt * 6));
   R3.camE += ((R3.camMode === 'near' ? 1 : 0) - R3.camE) * Math.min(1, dt * 4);
   R3.camLift = (R3.camLift || 0) + (p.z * 0.45 - (R3.camLift || 0)) * Math.min(1, dt * 7);         // kameraet følger hoppet mykt
@@ -5943,7 +5960,10 @@ function draw(time) {
     for (let i = 2; i <= 14 && k === 1; i++) {
       const f = i / 14, x = hx + ex * f, y = hy + ey * f, z = hz + ez * f, gy = groundH(x, z);
       let hit = y < gy + 12;
-      if (!hit) for (const t of trees) { const r = (t.giant ? 34 : 15 * t.s) * treeWK(t), h = (t.giant ? 330 : 125 * t.s) * treeHK(t); if (Math.abs(t.x - x) < r && Math.abs(t.y - z) < r && Math.hypot(t.x - x, t.y - z) < r && y < groundH(t.x, t.y) + h) { hit = true; break; } }
+      if (!hit) for (const t of trees) { const r = (t.giant ? 34 : 15 * t.s) * treeWK(t), h = (t.giant ? 330 : 125 * t.s) * treeHK(t); if (Math.abs(t.x - x) < r && Math.abs(t.y - z) < r && Math.hypot(t.x - x, t.y - z) < r && y < groundH(t.x, t.y) + h) {
+        // 2.0 (til vurdering): trær gjør kameraet ikke kortere; de blir gjennomsiktige i stedet (se treløkka). Hytter, bygninger, terreng og murer som før.
+        if (EVN2_KAM_TRAER && !t.giant && t._m) { t._m.okk = R3.kamBilde; continue; }
+        hit = true; break; } }
       if (!hit) for (const c of huts) if (Math.abs(c.x - x) < 50 && Math.abs(c.y - z) < 42 && y < gy + 85) { hit = true; break; }
       if (!hit) for (const b of blds) if (dist(b.x, b.y, x, z) < BUILDINGS[b.type].r + 6 && y < gy + 75) { hit = true; break; }
       if (!hit && !dcFoot(p.x, p.y) && dcFoot(x, z, 20) && y < dcH0() + 620) hit = true;
@@ -5951,6 +5971,10 @@ function draw(time) {
       if (hit) k = Math.max(0.16, (i - 1.5) / 14);
     }
     R3.camK += (k - R3.camK) * Math.min(1, dt * (k < R3.camK ? 18 : 2.5));                // trekkes raskt inn foran hinderet, glir rolig ut igjen
+    if (EVN2_KAM_TRAER) {   // 2.0: også trær rett ved kameraet blir gjennomsiktige (kameraet står aldri «inni» et synlig tre)
+      const cx = hx + ex * R3.camK, cz = hz + ez * R3.camK;
+      for (const t of g.trees) if (t.alive && !t.giant && t._m && Math.abs(t.x - cx) < 60 && Math.abs(t.y - cz) < 60 && Math.hypot(t.x - cx, t.y - cz) < 22 * t.s * treeWK(t) + 14) t._m.okk = R3.kamBilde;
+    }
     R3.camera.position.set(hx + ex * R3.camK, hy + ey * R3.camK, hz + ez * R3.camK);
   }
   R3.camera.lookAt(ct.x - FWX * lz, ch + ly, ct.z - FWZ * lz);
