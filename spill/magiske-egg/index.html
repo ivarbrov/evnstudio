@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<!-- EVN-SIKKERHET start: gjelder bare evnstudio.no (se /sikkerhet/). Tas ut i Claude-artefaktene. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://gc.zgo.at; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://evnstudio.goatcounter.com; connect-src 'self' https://evnstudio.goatcounter.com; media-src 'self' data: blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- EVN-SIKKERHET slutt -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Magiske egg 0.5.0 – EVN Studio</title>
+<link rel="stylesheet" href="../../fonter/fonter.css">
+<link rel="icon" href="../../favicon.png">
+<style>
+  :root { --gull:#ffc93c; --lilla:#7b5cff; --mork:#1d2440; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#a8d8f0; font-family:'Nunito',system-ui,sans-serif; color:#fff; overscroll-behavior:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
+  canvas#c { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+  button { font-family:inherit; touch-action:manipulation; cursor:pointer; }
+
+  /* HUD */
+  #hud { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); display:flex; gap:8px; z-index:5; flex-wrap:wrap; }
+  .pille { background:rgba(29,36,64,.72); border:2px solid rgba(255,255,255,.25); border-radius:999px; padding:6px 14px; font-weight:800; font-size:18px; min-height:44px; display:flex; align-items:center; gap:6px; color:#fff; }
+  .pille.bump { animation:bump .3s; }
+  @keyframes bump { 50% { transform:scale(1.15); } }
+  #bokKnapp { border-color:rgba(255,201,60,.6); }
+  #hoyre { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; }
+  .rund { width:48px; height:48px; border-radius:50%; background:rgba(29,36,64,.72); border:2px solid rgba(255,255,255,.25); color:#fff; font-size:22px; display:flex; align-items:center; justify-content:center; }
+
+  .kompass { width:48px; height:48px; border-radius:50%; background:rgba(29,36,64,.72); border:2px solid rgba(255,255,255,.25); position:relative; font-weight:800; font-size:11px; color:#fff; flex:none; }
+  .kompass b { position:absolute; line-height:1; }
+  .kompass .n { top:3px; left:50%; transform:translateX(-50%); color:#ff6b6b; font-size:13px; } .kompass .s { bottom:3px; left:50%; transform:translateX(-50%); }
+  .kompass .v { left:5px; top:50%; transform:translateY(-50%); } .kompass .o { right:5px; top:50%; transform:translateY(-50%); }
+  .kompass i { position:absolute; left:50%; top:50%; width:0; height:0; border-left:4px solid transparent; border-right:4px solid transparent; border-bottom:10px solid #ff6b6b; transform:translate(-50%,-100%); }
+  #melding { position:fixed; top:calc(68px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); background:rgba(29,36,64,.88); border:2px solid var(--gull); border-radius:16px; padding:10px 18px; font-weight:800; font-size:18px; max-width:min(92vw,560px); text-align:center; z-index:6; opacity:0; transition:opacity .25s; pointer-events:none; }
+  #melding.vis { opacity:1; }
+
+  #handling { position:fixed; right:calc(16px + env(safe-area-inset-right)); bottom:calc(18px + env(safe-area-inset-bottom)); min-height:72px; min-width:150px; max-width:min(70vw,340px); padding:12px 20px; border-radius:22px; border:3px solid #fff; background:linear-gradient(#ffd75e,#f0a91c); color:#4a2a00; font-weight:800; font-size:19px; box-shadow:0 6px 0 #b8770c, 0 10px 20px rgba(0,0,0,.25); z-index:5; display:none; }
+  #handling.av { background:linear-gradient(#e6e6ee,#b9bccb); color:#3a3d50; box-shadow:0 6px 0 #8a8ea3; }
+  #handling:active { transform:translateY(4px); box-shadow:0 2px 0 #b8770c; }
+  #handling .tast { font-size:13px; opacity:.7; margin-left:6px; }
+  html.touch #handling .tast { display:none; }
+
+  #hjelp { position:fixed; left:calc(12px + env(safe-area-inset-left)); bottom:calc(14px + env(safe-area-inset-bottom)); background:rgba(29,36,64,.6); border-radius:12px; padding:8px 12px; font-size:15px; font-weight:600; z-index:4; max-width:55vw; pointer-events:none; transition:opacity .6s; }
+
+  #joy { position:fixed; width:110px; height:110px; margin:-55px 0 0 -55px; border-radius:50%; border:3px solid rgba(255,255,255,.55); background:rgba(255,255,255,.12); pointer-events:none; display:none; z-index:4; }
+  #joy i { position:absolute; left:50%; top:50%; width:44px; height:44px; margin:-22px 0 0 -22px; border-radius:50%; background:var(--gull); box-shadow:0 2px 8px rgba(0,0,0,.3); }
+
+  /* Overlays */
+  .lag { position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:10; padding:16px; background:rgba(15,20,40,.55); overflow:auto; }
+  .lag.vis { display:flex; }
+  .kort { background:linear-gradient(#2d2a6e,#1d2440); border:3px solid rgba(255,255,255,.2); border-radius:26px; padding:22px 24px; max-width:460px; width:100%; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.4); margin:auto; }
+  .evn-merke { font-family:'Lilita One',sans-serif; letter-spacing:2px; font-size:14px; color:var(--gull); opacity:.9; }
+  h1 { font-family:'Lilita One',sans-serif; font-weight:400; font-size:44px; margin:4px 0 10px; color:#fff; text-shadow:0 4px 0 #5a3dc8; }
+  h2 { font-family:'Lilita One',sans-serif; font-weight:400; font-size:30px; margin:6px 0 10px; }
+  .maal { display:flex; align-items:center; gap:12px; text-align:left; margin:8px 0 12px; }
+  .maal img { width:70px; height:auto; flex:none; }
+  .maal p { margin:0; font-size:19px; font-weight:800; }
+  .styring { font-size:16px; opacity:.9; margin:6px 0 16px; }
+  .bare-touch { display:none; } html.touch .bare-touch { display:block; } html.touch .bare-pc { display:none; }
+  .stor { font-family:'Lilita One',sans-serif; font-size:28px; padding:14px 40px; border-radius:20px; border:3px solid #fff; background:linear-gradient(#ffd75e,#f0a91c); color:#4a2a00; box-shadow:0 6px 0 #b8770c; min-height:60px; }
+  .evn-start { animation:puls 1.6s ease-in-out infinite; }
+  @keyframes puls { 50% { transform:scale(1.05); } }
+  @media (prefers-reduced-motion: reduce) { .evn-start { animation:none; } }
+  .liten { background:transparent; border:2px solid rgba(255,255,255,.35); color:#fff; border-radius:14px; padding:8px 14px; font-size:15px; font-weight:800; min-height:44px; margin-top:12px; }
+  .evn-ver { font-size:13px; opacity:.75; margin-top:12px; }
+  .evn-tilbake { display:block; color:#fff; font-weight:800; text-decoration:underline; text-underline-offset:3px; opacity:.85; padding:10px 0; min-height:44px; margin-top:6px; }
+  .evn-tilbake:hover { opacity:1; }
+  .rad { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+
+  #klekkIkon { font-size:72px; line-height:1.1; margin:6px 0; }
+  .merkelapp { display:inline-block; padding:4px 14px; border-radius:999px; font-weight:800; font-size:15px; color:#1d2440; margin:4px; }
+  .ny { background:#ff5fa8; color:#fff; }
+  #klekkTekst { font-size:18px; margin:10px 0 16px; }
+
+  .bok { max-width:620px; }
+  .rutenett { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:12px 0; }
+  .dyrkort { background:rgba(255,255,255,.08); border:3px solid rgba(255,255,255,.15); border-radius:16px; padding:10px 6px; }
+  .dyrkort .ik { font-size:38px; line-height:1.2; }
+  .dyrkort .nv { font-weight:800; font-size:15px; overflow-wrap:anywhere; }
+  .dyrkort .ik { white-space:nowrap; overflow:hidden; }
+  .dyrkort .sj { font-size:12px; font-weight:800; }
+  .dyrkort.ukjent .ik { filter:grayscale(1) brightness(.4); }
+  .kartkort { max-width:min(560px, calc(100vh - 40px)); padding:14px 16px; }
+  #kartCanvas { width:100%; height:auto; aspect-ratio:1; display:block; margin:4px auto; max-width:calc(100vh - 230px); }
+  .forklaring { font-size:14px; font-weight:800; opacity:.9; margin-top:6px; }
+  .sjanser { font-size:14px; opacity:.85; text-align:left; line-height:1.5; }
+
+  @media (max-width:640px) {
+    .pille { font-size:16px; padding:4px 11px; }
+    h1 { font-size:36px; }
+    .dyrkort .ik { font-size:24px; }
+    .dyrkort .nv { font-size:13px; }
+    .rutenett { gap:6px; }
+    .dyrkort { padding:8px 3px; }
+    #hjelp { font-size:13px; }
+    #handling { font-size:17px; min-width:130px; }
+  }
+  @media (max-width:520px) { .kompass { display:none; } }
+  @media (max-height:460px) {
+    .kartkort h2 { font-size:22px; margin:0 0 4px; }
+    .kartkort .forklaring { display:none; }
+    #kartCanvas { max-width:calc(100vh - 150px); }
+    #lukkKart { font-size:20px; padding:6px 24px; min-height:44px; margin-top:6px !important; }
+    .maal img { display:none; }
+    .kort { padding:14px 18px; }
+    h1 { font-size:30px; margin:2px 0 6px; }
+    .styring { margin:4px 0 10px; }
+  }
+</style>
+<script src="../../statistikk.js" data-spill="magiske-egg" defer></script>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud" hidden>
+  <div class="pille" id="pMynt">🪙 <span id="mynt">0</span></div>
+  <div class="pille" id="pBaer">🍓 <span id="baer">0</span></div>
+  <button class="pille" id="bokKnapp" aria-label="Samleboka">📖 <span id="funnet">0/9</span></button>
+</div>
+<div id="hoyre" hidden>
+  <div class="kompass" role="img" aria-label="Kompass: nord er opp på skjermen"><b class="n">N</b><b class="s">S</b><b class="v">V</b><b class="o">Ø</b><i></i></div>
+  <a class="rund" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none;text-decoration:none">✕</a>
+</div>
+<div id="melding" role="status" aria-live="polite"></div>
+<button id="handling"></button>
+<div id="hjelp"></div>
+<div id="joy"><i></i></div>
+
+<!-- Startkort -->
+<div class="lag vis" id="start">
+  <div class="kort">
+    <div class="evn-merke">EVN STUDIO</div>
+    <h1>Magiske egg</h1>
+    <div class="maal">
+      <img src="../../bilder/maskot-staende-260.webp" alt="" onerror="this.remove()">
+      <p>Klekk egg og samle alle de magiske dyrene! 🥚✨</p>
+    </div>
+    <div class="styring">
+      <div class="bare-pc">Piltaster eller WASD for å gå.<br>E eller mellomrom for å kjøpe og mate. M for kart.</div>
+      <div class="bare-touch">Dra fingeren for å gå.<br>Trykk på den gule knappen for å kjøpe og mate.</div>
+    </div>
+    <button class="stor evn-start" id="startBtn">▶ Start</button>
+    <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
+    <div class="evn-ver" id="versjon"></div>
+  </div>
+</div>
+
+<!-- Klekkekort -->
+<div class="lag" id="klekk">
+  <div class="kort">
+    <div style="font-size:20px;font-weight:800">Egget klekket!</div>
+    <div id="klekkIkon"></div>
+    <h2 id="klekkNavn"></h2>
+    <div id="klekkMerker"></div>
+    <div id="klekkTekst"></div>
+    <button class="stor" id="klekkOk">Så kult! 🎉</button>
+  </div>
+</div>
+
+<!-- Samleboka -->
+<div class="lag" id="bok">
+  <div class="kort bok">
+    <h2>📖 Samleboka</h2>
+    <div class="rutenett" id="rutenett"></div>
+    <div class="sjanser">
+      🛒 <b>Butikkegg:</b> 3 av 4 blir vanlige dyr, 1 av 4 blir litt sjeldne. Egget blir litt dyrere for hvert dyr du har.<br>
+      ✨ <b>Sjeldne egg</b> dukker opp et sted i skogen av og til. De blir veldig sjeldne dyr, og noen ganger … noe helt legendarisk.
+    </div>
+    <button class="stor" id="lukkBok" style="margin-top:12px">Lukk</button>
+  </div>
+</div>
+
+<script>
+/* EVN-NULLSTILL v1: «Start helt på nytt» på startskjermen (samme kode i alle EVN-spill).
+   Vises bare når det finnes lagring. Spør først i en egen boks. Sletter bare spillets egne lagringsnøkler
+   (ikke grafikkvalg eller spilletid), og laster siden på nytt. */
+window.EVNNullstill = function (cfg) {
+  var t = cfg.tema || {};
+  var harLagring = function () { if (cfg.harLagring) try { return !!cfg.harLagring(); } catch (e) { return false; } try { return cfg.nokler.some(function (k) { return localStorage.getItem(k) !== null; }); } catch (e) { return false; } };
+  var css = document.createElement('style');
+  css.textContent =
+    '#evnNullstill{display:block;margin:-8px auto 0;min-height:44px;padding:8px 14px;background:transparent;border:0;color:inherit;opacity:.75;font:700 15px ' + (t.font || 'system-ui,sans-serif') + ';text-decoration:underline;text-underline-offset:3px;cursor:pointer;touch-action:manipulation}' +
+    '#evnNullstill:hover,#evnNullstill:focus-visible{opacity:1}#evnNullstill[hidden]{display:none!important}' +
+    '#evnNullstillBoks{position:fixed;inset:0;z-index:99995;display:none;place-items:center;padding:16px;background:rgba(0,0,0,.7);touch-action:manipulation}' +
+    '#evnNullstillBoks.vis{display:grid}' +
+    '#evnNullstillBoks .kort{background:' + (t.panel || '#1c2436') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:20px;width:min(340px,100%);text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnNullstillBoks h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:28px;line-height:1.1;margin:0 0 10px;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnNullstillBoks p{margin:0 0 6px;font-size:17px;line-height:1.4;font-weight:700}' +
+    '#evnNullstillBoks button{display:block;width:100%;min-height:52px;margin:10px 0 0;border-radius:12px;font:800 19px ' + (t.font || 'system-ui,sans-serif') + ';cursor:pointer}' +
+    '#evnNullstillNei{background:' + (t.btn || '#ffd54a') + ';color:' + (t.btnInk || '#2b1d00') + ';border:0}' +
+    '#evnNullstillJa{background:transparent;color:inherit;border:2px solid #e05252}' +
+    '#evnNullstillBoks button:focus-visible,#evnNullstill:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}';
+  document.head.appendChild(css);
+
+  var lenke = document.createElement('button');
+  lenke.type = 'button'; lenke.id = 'evnNullstill'; lenke.textContent = '🗑️ Start helt på nytt';
+  cfg.plasser(lenke);
+  var boks = document.createElement('div');
+  boks.id = 'evnNullstillBoks'; boks.setAttribute('role', 'dialog'); boks.setAttribute('aria-modal', 'true'); boks.setAttribute('aria-labelledby', 'evnNullstillTittel');
+  boks.innerHTML = '<div class="kort"><h2 id="evnNullstillTittel">Starte helt på nytt?</h2>' +
+    '<p>' + cfg.tekst + '</p><p>Det kan ikke angres.</p>' +
+    '<button type="button" id="evnNullstillNei">Nei, behold alt</button>' +
+    '<button type="button" id="evnNullstillJa">Ja, slett alt</button></div>';
+  document.body.appendChild(boks);
+  ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (ev) {
+    boks.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+    lenke.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+  });
+  var $ = function (id) { return document.getElementById(id); };
+  var apen = false, forrige = null;
+  function oppdater() { lenke.hidden = !harLagring() || (cfg.vis ? !cfg.vis() : false); }
+  function apne() { apen = true; forrige = document.activeElement; boks.classList.add('vis'); $('evnNullstillNei').focus(); }
+  function lukk() { apen = false; boks.classList.remove('vis'); try { (forrige || lenke).focus(); } catch (e) {} }
+  lenke.addEventListener('click', apne);
+  $('evnNullstillNei').addEventListener('click', lukk);
+  $('evnNullstillJa').addEventListener('click', function () {
+    try {
+      // Spillet lagrer gjerne når siden lukkes (pagehide). Stopp skriving til disse nøklene, så lagringen ikke kommer tilbake.
+      var orig = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) { if (this === window.localStorage && cfg.nokler.indexOf(k) !== -1) return; return orig.call(this, k, v); };
+      cfg.nokler.forEach(function (k) { localStorage.removeItem(k); });
+    } catch (e) {}
+    location.reload();
+  });
+  window.addEventListener('keydown', function (e) {
+    if (!apen) return;
+    e.stopImmediatePropagation();                                    // spillet får ingen taster mens boksen er åpen
+    if (e.key === 'Escape') { e.preventDefault(); lukk(); }
+  }, true);
+  oppdater(); setInterval(oppdater, 500);
+};
+</script>
+<script>
+/* EVN-PAUSE v2: felles pause med spilletid og felles kart (samme kode i alle EVN-spill).
+   Kart (v2): 🗺️-knapp ved siden av ⏸ og tasten M åpner et stort kart. Spillet står stille mens kartet er åpent.
+   Spilletid lagres i localStorage 'evn-spilletid-<mappe>' = {dag, iDag, totalt} (millisekunder).
+   Tiden telles bare når spillet er aktivt, fanen synes, pausen ikke er åpen og noen har rørt tast/mus/skjerm siste 3 min. */
+window.EVNPause = function (cfg) {
+  var NOKKEL = 'evn-spilletid-' + cfg.mappe, LEDIG = 180000, t = cfg.tema || {};
+  var idag = function () { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); };
+  var tid = { dag: idag(), iDag: 0, totalt: 0 };
+  try { var l = JSON.parse(localStorage.getItem(NOKKEL)); if (l && typeof l.totalt === 'number') tid = l; } catch (e) {}
+  function lagreTid() { try { localStorage.setItem(NOKKEL, JSON.stringify(tid)); } catch (e) {} }
+  function fmt(ms) { var m = Math.floor(ms / 60000), h = Math.floor(m / 60); return ms < 60000 ? 'under 1 min' : h ? h + ' t ' + (m % 60) + ' min' : m + ' min'; }
+
+  var css = document.createElement('style');
+  css.textContent =
+    '#evnPauseKnapp,#evnKartKnapp{min-width:48px;min-height:48px;border-radius:12px;border:2px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;font:700 20px system-ui,sans-serif;cursor:pointer;touch-action:manipulation;pointer-events:auto;padding:0 10px}' +
+    '#evnPauseKnapp[hidden],#evnKartKnapp[hidden]{display:none!important}' +
+    '#evnKart{position:fixed;inset:0;z-index:99990;display:none;place-items:center;padding:12px;background:rgba(0,0,0,.55);touch-action:manipulation}' +
+    '#evnKart.vis{display:grid}' +
+    '#evnKart .kort{background:' + (t.panel || 'rgba(16,24,15,.95)') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:12px;max-width:100%;max-height:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnKart .topp{display:flex;align-items:center;gap:10px;margin:0 0 8px}' +
+    '#evnKart h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:26px;line-height:1;margin:0;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnKart .info{flex:1;font-size:14px;font-weight:700;opacity:.85;line-height:1.3}' +
+    '#evnKart button{width:44px;height:44px;flex:none;border-radius:12px;border:0;background:rgba(127,127,127,.28);color:inherit;font:800 20px system-ui,sans-serif;cursor:pointer}' +
+    '#evnKart canvas{display:block;border-radius:10px;image-rendering:pixelated}' +
+    '#evnKart button:focus-visible,#evnKartKnapp:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}' +
+    '#evnPause{position:fixed;inset:0;z-index:99990;display:none;place-items:center;padding:16px;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);touch-action:manipulation}' +
+    '#evnPause.vis{display:grid}' +
+    '#evnPause .kort{background:' + (t.panel || 'rgba(16,24,15,.95)') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:18px 20px;width:min(320px,100%);max-height:100%;overflow:auto;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnPause h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:38px;line-height:1;margin:0 0 6px;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnPause .tider{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 6px}' +
+    '#evnPause .tid{border-radius:12px;padding:8px 6px;background:rgba(127,127,127,.18)}' +
+    '#evnPause .tid b{display:block;font-size:22px;line-height:1.15}#evnPause .tid small{font-size:13px;font-weight:700;opacity:.85}' +
+    '#evnPause button{display:block;width:100%;min-height:48px;margin:8px 0 0;border-radius:12px;border:0;font:800 18px ' + (t.font || 'system-ui,sans-serif') + ';cursor:pointer}' +
+    '#evnPause .fortsett{background:' + (t.btn || '#ffd54a') + ';color:' + (t.btnInk || '#2b1d00') + ';font-size:22px;min-height:56px' + (t.head ? ';font-family:' + t.head + ';font-weight:' + (t.headW || 800) : '') + '}' +
+    '#evnPause .liten{background:rgba(127,127,127,.25);color:inherit}' +
+    '#evnPause .styr{text-align:left;font-size:15px;line-height:1.45;margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(127,127,127,.15)}' +
+    '#evnPause .tips{font-size:14px;opacity:.85;margin:10px 0 0}' +
+    '#evnPause button:focus-visible,#evnPauseKnapp:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}';
+  document.head.appendChild(css);
+
+  var knapp = document.createElement('button');
+  knapp.id = 'evnPauseKnapp'; knapp.type = 'button'; knapp.textContent = '⏸'; knapp.title = 'Pause (P)'; knapp.setAttribute('aria-label', 'Pause'); knapp.hidden = true;
+  var kartKnapp = null;
+  if (cfg.kart) {
+    kartKnapp = document.createElement('button');
+    kartKnapp.id = 'evnKartKnapp'; kartKnapp.type = 'button'; kartKnapp.textContent = '🗺️'; kartKnapp.title = 'Kart (M)'; kartKnapp.setAttribute('aria-label', 'Kart'); kartKnapp.hidden = true;
+  }
+  if (cfg.knapp) cfg.knapp(knapp, kartKnapp); else { if (kartKnapp) document.body.appendChild(kartKnapp); document.body.appendChild(knapp); }
+
+  var bak = document.createElement('div');
+  bak.id = 'evnPause'; bak.setAttribute('role', 'dialog'); bak.setAttribute('aria-modal', 'true'); bak.setAttribute('aria-labelledby', 'evnPauseTittel');
+  bak.innerHTML = '<div class="kort"><h2 id="evnPauseTittel">Pause</h2>' +
+    '<div class="tider"><div class="tid"><small>I dag</small><b id="evnPauseIdag"></b></div><div class="tid"><small>Totalt</small><b id="evnPauseTot"></b></div></div>' +
+    '<button class="fortsett" id="evnPauseFortsett" type="button">▶ Fortsett</button>' +
+    '<button class="liten" id="evnPauseStyrKnapp" type="button" aria-expanded="false">🎮 Slik styrer du</button>' +
+    '<div class="styr" id="evnPauseStyr" hidden></div>' +
+    '<button class="liten" id="evnPauseAvslutt" type="button">🚪 Avslutt</button>' +
+    '<p class="tips" id="evnPauseTips"></p></div>';
+  document.body.appendChild(bak);
+  var $ = function (id) { return document.getElementById(id); };
+  var kartBak = null;
+  if (cfg.kart) {
+    kartBak = document.createElement('div');
+    kartBak.id = 'evnKart'; kartBak.setAttribute('role', 'dialog'); kartBak.setAttribute('aria-modal', 'true'); kartBak.setAttribute('aria-labelledby', 'evnKartTittel');
+    kartBak.innerHTML = '<div class="kort"><div class="topp"><h2 id="evnKartTittel">🗺️ Kart</h2><span class="info" id="evnKartInfo"></span>' +
+      '<button type="button" id="evnKartLukk" aria-label="Lukk kartet">✕</button></div><canvas id="evnKartCv" role="img" aria-label="Kart over spillverdenen"></canvas></div>';
+    document.body.appendChild(kartBak);
+  }
+  [bak, knapp, kartBak, kartKnapp].forEach(function (el) {
+    if (el) ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (ev) { el.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
+  });
+
+  var apen = false, apnetTid = 0, venterAvslutt = false, kartApen = false;
+  var avsluttLenke = function () { var a = $(cfg.avsluttId); return a && getComputedStyle(a).display !== 'none' ? a : null; };
+  var sporsmal = function () { return $('evnSporsmal'); };
+  var sporsmalApent = function () { var s = sporsmal(); return !!s && s.style.display === 'grid'; };
+  function kan() { return !apen && !kartApen && !venterAvslutt && !sporsmalApent() && cfg.kanPause(); }
+
+  // ---------- Kart ----------
+  function tegnKart() {
+    if (!kartApen) return;
+    var K = cfg.kart, cv = $('evnKartCv'), f = K.forhold || 1;
+    var maksB = Math.min(innerWidth - 48, 900), maksH = innerHeight - 110;
+    var b = Math.max(120, Math.min(maksB, maksH * f)), h = b / f;
+    var d = Math.min(2, window.devicePixelRatio || 1);
+    cv.style.width = Math.round(b) + 'px'; cv.style.height = Math.round(h) + 'px';
+    cv.width = Math.round(b * d); cv.height = Math.round(h * d);
+    kartBak.querySelector('.kort').style.width = Math.round(b + 24) + 'px';   // kortet like bredt som kartet
+    var c = cv.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
+    try { K.tegn(c, cv.width, cv.height, cv); } catch (e) {}
+    $('evnKartInfo').textContent = K.info ? K.info() : '';
+  }
+  function apneKart() {
+    if (!cfg.kart || !kan()) return;
+    cfg.pause(); kartApen = true; apnetTid = performance.now();
+    kartBak.classList.add('vis'); knapp.hidden = true; kartKnapp.hidden = true;
+    tegnKart();
+    try { $('evnKartLukk').focus({ preventScroll: true }); } catch (e) {}
+  }
+  function lukkKart(fraKlikk) {
+    if (!kartApen) return;
+    kartApen = false; kartBak.classList.remove('vis');
+    cfg.fortsett(!!fraKlikk);
+  }
+  if (cfg.kart) {
+    kartKnapp.addEventListener('click', function () { apneKart(); });
+    $('evnKartLukk').addEventListener('click', function () { lukkKart(true); });
+    kartBak.addEventListener('click', function (e) { if (e.target === kartBak) lukkKart(true); });   // trykk utenfor kartet lukker
+    window.addEventListener('resize', tegnKart);
+  }
+
+  function apne(grunn) {
+    if (!kan()) return;
+    cfg.pause();
+    apen = true; apnetTid = performance.now();
+    $('evnPauseIdag').textContent = fmt(tid.iDag); $('evnPauseTot').textContent = fmt(tid.totalt);
+    $('evnPauseTips').textContent = grunn || 'Spillet står stille. Ingenting er borte.';
+    $('evnPauseStyr').hidden = true; $('evnPauseStyrKnapp').setAttribute('aria-expanded', 'false');
+    $('evnPauseAvslutt').hidden = !avsluttLenke() || !sporsmal();
+    bak.classList.add('vis'); knapp.hidden = true; lagreTid();
+    try { $('evnPauseFortsett').focus({ preventScroll: true }); } catch (e) {}
+  }
+  function lukk(fraKlikk) {
+    if (!apen) return;
+    apen = false; bak.classList.remove('vis');
+    cfg.fortsett(!!fraKlikk);
+  }
+  knapp.addEventListener('click', function () { apne(); });
+  $('evnPauseFortsett').addEventListener('click', function () { lukk(true); });
+  $('evnPauseStyrKnapp').addEventListener('click', function () {
+    var s = $('evnPauseStyr'); if (s.hidden) s.innerHTML = cfg.styring(); s.hidden = !s.hidden; this.setAttribute('aria-expanded', String(!s.hidden));
+  });
+  // Avslutt fra pausen: spillet står stille mens «Vil du avslutte?» vises. «Nei, spill videre» = fortsett.
+  function visSporsmal() { venterAvslutt = true; var s = sporsmal(); s.style.display = 'grid'; var b = $('evnBli'); if (b) b.focus(); }
+  $('evnPauseAvslutt').addEventListener('click', function () { apen = false; bak.classList.remove('vis'); if (cfg.lagre) cfg.lagre(); visSporsmal(); });
+  // Avslutt-knappen i spillet: spillet stopper også mens spørsmålet vises
+  document.addEventListener('click', function (e) {
+    var a = avsluttLenke(); if (!a || !a.contains(e.target) || venterAvslutt || apen || !cfg.kanPause()) return;
+    cfg.pause(); venterAvslutt = true;
+  }, true);
+  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; cfg.fortsett(false); }
+  document.addEventListener('click', function (e) { var b = $('evnBli'); if (b && b.contains(e.target)) setTimeout(nei, 0); }, true);
+
+  window.addEventListener('keydown', function (e) {
+    var k = e.code || e.key;
+    if (venterAvslutt && sporsmalApent()) { if (k === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); nei(); } return; }
+    if (kartApen) {
+      e.stopImmediatePropagation();                                  // spillet får ingen taster mens kartet er åpent
+      if ((k === 'Escape' || k === 'KeyM') && !e.repeat && performance.now() - apnetTid > 200) { e.preventDefault(); lukkKart(false); }
+      return;
+    }
+    if (k === 'KeyM' && cfg.kart && !e.repeat && kan()) { e.preventDefault(); e.stopImmediatePropagation(); apneKart(); return; }
+    if (apen) {
+      e.stopImmediatePropagation();                                  // spillet får ingen taster mens pausen er åpen
+      if ((k === 'Escape' || k === 'KeyP') && !e.repeat && performance.now() - apnetTid > 300) { e.preventDefault(); lukk(k === 'KeyP'); }
+      return;
+    }
+    if ((k === 'KeyP' || (k === 'Escape' && (typeof cfg.escPause === 'function' ? cfg.escPause() : cfg.escPause !== false))) && !e.repeat && kan()) { e.preventDefault(); e.stopImmediatePropagation(); apne(); }
+  }, true);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) { apne('Pause fordi du byttet fane eller app.'); lagreTid(); } });
+  window.addEventListener('blur', function () { apne('Pause fordi du gikk ut av spillet.'); });
+  window.addEventListener('pagehide', lagreTid);
+
+  var sistRort = performance.now(), sist = performance.now(), sistLagret = 0;
+  ['keydown', 'pointerdown', 'pointermove', 'touchstart', 'wheel'].forEach(function (ev) { window.addEventListener(ev, function () { sistRort = performance.now(); }, { passive: true, capture: true }); });
+  setInterval(function () {
+    var naa = performance.now(), dt = Math.min(2000, naa - sist); sist = naa;
+    knapp.hidden = apen || kartApen || venterAvslutt || !cfg.kanPause();
+    if (kartKnapp) kartKnapp.hidden = knapp.hidden;
+    var dag = idag(); if (tid.dag !== dag) { tid.dag = dag; tid.iDag = 0; }
+    if (!apen && !venterAvslutt && !document.hidden && naa - sistRort < LEDIG && cfg.aktiv()) { tid.iDag += dt; tid.totalt += dt; }
+    if (naa - sistLagret > 15000) { sistLagret = naa; lagreTid(); }
+  }, 250);
+  return { apne: apne, lukk: lukk, apneKart: apneKart, lukkKart: lukkKart, erApen: function () { return apen || kartApen; }, tid: function () { return tid; } };
+};
+</script>
+<script src="../../vendor/three-r128.min.js"></script>
+<script>
+'use strict';
+const VERSJON = '0.5.0';
+const LAGRING = 'evn-magiske-egg-v1';
+const TEST = location.hash === '#test';
+
+// ======================================================
+//  INNSTILLINGER – Even kan endre tallene her
+// ======================================================
+const INNST = {
+  startMynter: 25,         // mynter du har når du starter
+  eggPris: 20,             // hva det første butikkegget koster
+  prisVekst: 1.15,         // hvert nytt dyr gjør neste egg 15 % dyrere (Evens ønske 2.11.2026)
+  sjeldentEggMin: 70,      // sekunder før et sjeldent egg kan dukke opp
+  sjeldentEggMaks: 120,    // senest etter så mange sekunder
+  ilddrevSjanse: 0.05,     // 0.05 = 1 av 20 sjeldne egg blir Ilddrev
+  fart: 15,                // hvor fort du går
+  maksNivaa: 5,            // høyeste nivå et dyr kan vokse til
+  myntHvert: 6,            // sekunder mellom hver mynt fra et dyr
+  baerVokserIgjen: 40,     // sekunder før en busk får nye bær
+  maksDyr: 30,             // hvor mange dyr det er plass til i parken
+};
+if (TEST) { INNST.startMynter = 500; INNST.sjeldentEggMin = 8; INNST.sjeldentEggMaks = 12; INNST.ilddrevSjanse = 0.34; }
+
+// sjelden: 0 vanlig, 1 litt sjelden, 2 veldig sjelden, 3 legendarisk
+const DYR = [
+  { id:'boblefrosk',   navn:'Boblefrosk',    ikon:'🫧🐸', sjelden:0, mynt:1,  sone:'vann',    tekst:'Blåser magiske bobler som glitrer i sola.' },
+  { id:'glitterkanin', navn:'Glitterkanin',  ikon:'✨🐰', sjelden:0, mynt:1,  sone:'eng',     tekst:'Hopper så høyt at det drysser glitter.' },
+  { id:'bladrev',      navn:'Bladrev',       ikon:'🍃🦊', sjelden:0, mynt:1,  sone:'eng',     tekst:'Har en hale av blader og gjemmer seg i buskene.' },
+  { id:'blomsterbie',  navn:'Blomsterbie',   ikon:'🌼🐝', sjelden:0, mynt:1,  sone:'eng',     tekst:'Surrer fra blomst til blomst og har en krone av blader.' },
+  { id:'snopingvin',   navn:'Snøpingvin',    ikon:'❄️🐧', sjelden:0, mynt:1,  sone:'is',      tekst:'Glir på magen og har et varmt skjerf.' },
+  { id:'perleoter',    navn:'Perleoter',     ikon:'🫧🦦', sjelden:0, mynt:1,  sone:'vann',    tekst:'Passer godt på en skinnende perle.' },
+  { id:'lynkatt',      navn:'Lynkatt',       ikon:'⚡🐱', sjelden:1, mynt:2,  sone:'regnbue', tekst:'Løper så fort at det knitrer av lyn.' },
+  { id:'flammehest',   navn:'Flammehest',    ikon:'🔥🐴', sjelden:1, mynt:2,  sone:'vulkan',  tekst:'Har en manke av varme flammer som ikke brenner.' },
+  { id:'vannskilpadde',navn:'Vannskilpadde', ikon:'💧🐢', sjelden:1, mynt:2,  sone:'vann',    tekst:'Bærer en liten innsjø på ryggen.' },
+  { id:'regnbuesebra', navn:'Regnbuesebra',  ikon:'🌈🦓', sjelden:1, mynt:2,  sone:'regnbue', tekst:'Har striper i alle regnbuens farger.' },
+  { id:'lavaogle',     navn:'Lavaøgle',      ikon:'🌋🦎', sjelden:1, mynt:2,  sone:'vulkan',  tekst:'Har lysende flekker og elsker varme steiner.' },
+  { id:'stjerneugle',  navn:'Stjerneugle',   ikon:'🌟🦉', sjelden:2, mynt:5,  sone:'stjerne', tekst:'Har en stjerne på brystet som lyser.' },
+  { id:'isdrage',      navn:'Isdrage',       ikon:'❄️🐉', sjelden:2, mynt:5,  sone:'is',      tekst:'Puster frost som blir til snøfnugg.' },
+  { id:'maaneenhjorning', navn:'Måneenhjørning', ikon:'🌙🦄', sjelden:2, mynt:5, sone:'stjerne', tekst:'Hornet lyser som månen om natten.' },
+  { id:'ilddrev',      navn:'Ilddrev',       ikon:'🤍🔥🦊', sjelden:3, mynt:12, sone:'vulkan', tekst:'Tre hoder, hvit pels og hvit ild. Det sjeldneste dyret av alle!' },
+];
+// Sonene i parken. Vinkel 0 = sør (inngangen), 180 = nord.
+const SONER = [
+  { id:'eng',     navn:'Blomsterengen', ikon:'🌸', vinkel:0,   bakke:0xb9ec8a, kart:'#b9ec8a' },
+  { id:'regnbue', navn:'Regnbuesletta', ikon:'🌈', vinkel:60,  bakke:0xe2f2a2, kart:'#e2f2a2' },
+  { id:'vulkan',  navn:'Vulkanhagen',   ikon:'🌋', vinkel:120, bakke:0xffcfae, kart:'#ffc9a4' },
+  { id:'is',      navn:'Isriket',       ikon:'❄️', vinkel:180, bakke:0xeef7ff, kart:'#eef7ff' },
+  { id:'vann',    navn:'Vannlandet',    ikon:'💧', vinkel:240, bakke:0xa6e6c8, kart:'#a6e6c8' },
+  { id:'stjerne', navn:'Stjernehagen',  ikon:'🌙', vinkel:300, bakke:0xd6c6f4, kart:'#d6c6f4' },
+];
+const SONE_ID = Object.fromEntries(SONER.map(z => [z.id, z]));
+const SJ = [
+  { navn:'Vanlig',         farge:'#8fdc6a' },
+  { navn:'Litt sjelden',   farge:'#6cc0ff' },
+  { navn:'Veldig sjelden', farge:'#c79bff' },
+  { navn:'Legendarisk',    farge:'#ffc93c' },
+];
+const DYR_ID = Object.fromEntries(DYR.map(d => [d.id, d]));
+
+// ======================================================
+//  Oppsett
+// ======================================================
+const $ = id => document.getElementById(id);
+$('versjon').textContent = 'Versjon ' + VERSJON + (TEST ? ' · testmodus' : '');
+const erTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+if (erTouch) document.documentElement.classList.add('touch');
+addEventListener('touchstart', () => document.documentElement.classList.add('touch'), { once:true, passive:true });
+
+const canvas = $('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, erTouch ? 1.5 : 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const C = h => new THREE.Color(h).convertSRGBToLinear();
+const scene = new THREE.Scene();
+const HIMMEL = 0xdcefff;
+scene.background = C(0xcfe9ff);
+scene.fog = new THREE.Fog(C(HIMMEL), 120, 320);
+
+const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 700);
+const KAM = new THREE.Vector3(0, 24, 22);
+let zoom = 1;
+
+scene.add(new THREE.HemisphereLight(C(0xfff4fa), C(0xa8e08a), 0.85));
+const sol = new THREE.DirectionalLight(C(0xfff0dc), 1.45);
+sol.castShadow = true;
+sol.shadow.mapSize.set(erTouch ? 1024 : 2048, erTouch ? 1024 : 2048);
+const sc = sol.shadow.camera; sc.left = -55; sc.right = 55; sc.top = 55; sc.bottom = -55; sc.near = 1; sc.far = 220;
+sol.shadow.bias = -0.0006; sol.shadow.normalBias = 0.03;
+scene.add(sol, sol.target);
+
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.fov = w < h ? 62 : 50;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+// Felles geometri og materialer
+const SPH = new THREE.SphereGeometry(1, 18, 14);
+const SPH_L = new THREE.SphereGeometry(1, 10, 8);
+const CYL = new THREE.CylinderGeometry(1, 1, 1, 12);
+const CONE = new THREE.ConeGeometry(1, 1, 12);
+const OKTA = new THREE.OctahedronGeometry(1, 0);
+const BOX = new THREE.BoxGeometry(1, 1, 1);
+const matCache = {};
+function M(hex) { return matCache[hex] || (matCache[hex] = plysj(hex, { rim: 0.25 })); }
+const glowCache = {};
+function G(hex, op) { const k = hex + '_' + (op || 1); return glowCache[k] || (glowCache[k] = new THREE.MeshBasicMaterial({ color:C(hex), transparent: !!op, opacity: op || 1, depthWrite: !op })); }
+function del(geo, mat, sx, sy, sz, x, y, z, foreldre, skygge) {
+  const m = new THREE.Mesh(geo, mat);
+  m.scale.set(sx, sy, sz); m.position.set(x, y, z);
+  if (skygge) m.castShadow = true;
+  foreldre.add(m); return m;
+}
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+// ======================================================
+//  KOSESTIL («Søt og myk», valgt av Even 2.11.2026)
+//  Byggeklossene kommer fra stiltest 1.
+// ======================================================
+// «Plysj»: myk matt overflate med lys, fløyelsaktig kant (rim)
+const plysjCache = {};
+function plysj(hex, o = {}) {
+  const key = hex + '|' + (o.rim ?? 0.35) + '|' + (o.em || 0) + '|' + (o.r ?? 0.92);
+  if (plysjCache[key]) return plysjCache[key];
+  const m = new THREE.MeshStandardMaterial({ color: C(hex), roughness: o.r ?? 0.92, metalness: 0 });
+  if (o.em) { m.emissive = C(o.em); m.emissiveIntensity = o.ei ?? 0.8; }
+  const rimFarge = new THREE.Color(hex).lerp(new THREE.Color(0xffffff), 0.55).convertSRGBToLinear();
+  const styrke = (o.rim ?? 0.35).toFixed(2);
+  m.onBeforeCompile = sh => {
+    sh.uniforms.rimF = { value: rimFarge };
+    sh.fragmentShader = 'uniform vec3 rimF;\n' + sh.fragmentShader.replace('#include <tonemapping_fragment>',
+      `float rimV = 1.0 - max(dot(normalize(normal), normalize(vViewPosition)), 0.0);
+       gl_FragColor.rgb += rimF * pow(rimV, 2.0) * ${styrke};
+       #include <tonemapping_fragment>`);
+  };
+  m.customProgramCacheKey = () => 'plysj' + styrke;
+  return plysjCache[key] = m;
+}
+const GLANS_SVART = new THREE.MeshStandardMaterial({ color: C(0x1b1830), roughness: 0.12, metalness: 0.1 });
+const HVIT_GLANS = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const KINN = new THREE.MeshBasicMaterial({ color: C(0xff8fb0), transparent: true, opacity: 0.55, depthWrite: false });
+const glodCache = {};
+const glod = (hex, op = 1) => glodCache[hex + op] || (glodCache[hex + op] = new THREE.MeshBasicMaterial({ color: C(hex), transparent: op < 1, opacity: op, depthWrite: op >= 1 }));
+
+const KULE = new THREE.SphereGeometry(1, erTouch ? 22 : 28, erTouch ? 16 : 20);
+const KULE_L = new THREE.SphereGeometry(1, 16, 12);
+function ball(p, mat, r, x, y, z, sx = 1, sy = 1, sz = 1, geo = KULE) {
+  const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(r * sx, r * sy, r * sz); m.castShadow = true; p.add(m); return m;
+}
+function rotert(m, x = 0, y = 0, z = 0) { m.rotation.set(x, y, z); return m; }
+// Avrundet sylinder (pølse) mellom to punkter
+const SYL = new THREE.CylinderGeometry(1, 1, 1, 20, 1, true);
+function polse(p, mat, r, a, b) {
+  const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), mid = A.clone().add(B).multiplyScalar(0.5), len = A.distanceTo(B);
+  const m = new THREE.Mesh(SYL, mat); m.position.copy(mid); m.scale.set(r, len, r);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize()); m.castShadow = true; p.add(m);
+  ball(p, mat, r, ...a); ball(p, mat, r, ...b); return m;
+}
+// Myke, utstansede former (stjerne, lyn, flamme, blad, vinge)
+function form(punkter, dybde = 0.25, fas = 0.12) {
+  const s = new THREE.Shape(); punkter.forEach(([x, y], i) => i ? s.lineTo(x, y) : s.moveTo(x, y)); s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, { depth: dybde, bevelEnabled: true, bevelThickness: fas, bevelSize: fas, bevelSegments: 4, curveSegments: 12 });
+  g.center(); return g;
+}
+function kurveForm(lag, dybde = 0.2, fas = 0.1) {
+  const s = new THREE.Shape(); lag(s);
+  const g = new THREE.ExtrudeGeometry(s, { depth: dybde, bevelEnabled: true, bevelThickness: fas, bevelSize: fas, bevelSegments: 4, curveSegments: 16 });
+  g.center(); return g;
+}
+const STJERNE = (() => { const p = []; for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2 + Math.PI / 2, r = i % 2 ? 0.42 : 1; p.push([Math.cos(a) * r, Math.sin(a) * r]); } return form(p, 0.2, 0.12); })();
+const LYN = form([[-0.15, 1], [0.5, 1], [0.15, 0.2], [0.55, 0.2], [-0.3, -1], [0, -0.1], [-0.4, -0.1]], 0.18, 0.09);
+const FLAMME = kurveForm(s => { s.moveTo(0, -0.6); s.bezierCurveTo(0.7, -0.6, 0.75, 0.2, 0.2, 0.6); s.bezierCurveTo(0.25, 0.9, 0.05, 1.05, 0, 1.3); s.bezierCurveTo(-0.15, 0.9, -0.75, 0.6, -0.6, -0.1); s.bezierCurveTo(-0.55, -0.45, -0.3, -0.6, 0, -0.6); }, 0.25, 0.12);
+const BLAD = kurveForm(s => { s.moveTo(0, -1); s.bezierCurveTo(0.7, -0.5, 0.6, 0.6, 0, 1); s.bezierCurveTo(-0.6, 0.6, -0.7, -0.5, 0, -1); }, 0.08, 0.06);
+const VINGE = kurveForm(s => { s.moveTo(0, 0); s.bezierCurveTo(0.6, 0.9, 1.6, 1.2, 2.0, 0.9); s.bezierCurveTo(1.7, 0.6, 1.8, 0.3, 1.5, 0.1); s.bezierCurveTo(1.3, -0.1, 1.2, -0.3, 0.9, -0.3); s.bezierCurveTo(0.6, -0.5, 0.3, -0.3, 0, 0); }, 0.06, 0.07);
+
+// Store blanke øyne med lysglimt. Returnerer øyelokk-gruppa (for blunking).
+function oyne(p, r, avstand, y, z, iris) {
+  const lokk = [];
+  for (const s of [-1, 1]) {
+    const g = new THREE.Group(); g.position.set(s * avstand, y, z); p.add(g);
+    if (iris) ball(g, plysj(iris, { rim: 0.1, r: 0.3 }), r * 1.25, 0, 0, -r * 0.35, 1, 1, 0.5);
+    ball(g, GLANS_SVART, r, 0, 0, 0, 1, 1.1, 0.6);
+    ball(g, HVIT_GLANS, r * 0.32, r * 0.35, r * 0.4, r * 0.45, 1, 1, 1, KULE_L);
+    ball(g, HVIT_GLANS, r * 0.14, -r * 0.3, -r * 0.35, r * 0.5, 1, 1, 1, KULE_L);
+    lokk.push(g);
+  }
+  return lokk;
+}
+function kinn(p, r, avstand, y, z) { for (const s of [-1, 1]) { const m = ball(p, KINN, r, s * avstand, y, z, 1, 0.6, 0.25); m.castShadow = false; m.rotation.y = s * 0.5; } }
+function smil(p, r, y, z, farge = 0x5a2a3a) { const m = new THREE.Mesh(new THREE.TorusGeometry(r, r * 0.22, 8, 16, Math.PI), plysj(farge, { rim: 0 })); m.position.set(0, y, z); m.rotation.z = Math.PI; p.add(m); return m; }
+
+// Felles «animasjonsdata» for hvert dyr
+function nyAnim() { return { hode: null, lokk: [], orer: [], hale: null, bein: [], vinger: [], flimmer: [], bane: [], kropp: null }; }
+function stubbebein(g, a, mat, pos, r = 0.32, h = 0.55) {
+  for (const [x, z] of pos) { const b = new THREE.Group(); b.position.set(x, h, z); g.add(b); ball(b, mat, r, 0, -h + r * 0.85, 0, 1, 1.15, 1.1); a.bein.push(b); }
+}
+function partikkelbane(g, a, antall, mat, r, y, str, geo = STJERNE) {
+  for (let i = 0; i < antall; i++) { const m = new THREE.Mesh(geo, mat); m.scale.setScalar(str); g.add(m); a.bane.push({ m, r, y, fart: rnd(0.7, 1.3) * (i % 2 ? 1 : -1), fase: i / antall * 6.283 }); }
+}
+
+// =====================================================================
+//  De ni magiske dyrene i kosedyr-stil
+// =====================================================================
+const BYGG = {
+  boblefrosk(g, a) {
+    const gronn = plysj(0x7fdc7a), mage = plysj(0xe9fbc8);
+    const k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, gronn, 1.35, 0, 1.25, 0, 1.15, 0.9, 1);
+    ball(k, mage, 1.0, 0, 1.0, 0.45, 1.0, 0.75, 0.75);
+    for (const s of [-1, 1]) { ball(k, gronn, 0.55, s * 0.62, 2.15, 0.35); }
+    a.lokk = oyne(k, 0.3, 0.62, 2.22, 0.78);
+    kinn(k, 0.28, 0.95, 1.55, 1.05);
+    smil(k, 0.35, 1.55, 1.27);
+    stubbebein(g, a, gronn, [[-0.85, 0.7], [0.85, 0.7]], 0.36, 0.4);
+    for (const s of [-1, 1]) ball(g, gronn, 0.55, s * 1.15, 0.35, -0.4, 1, 0.55, 1.4);
+    const boble = new THREE.MeshStandardMaterial({ color: C(0xc8f2ff), roughness: 0.05, transparent: true, opacity: 0.45, depthWrite: false });
+    for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(KULE_L, boble); g.add(m); a.bane.push({ m, r: 0.6, y: 3.0, fart: 0.6 + i * 0.15, fase: i * 1.6, opp: true }); }
+  },
+  glitterkanin(g, a) {
+    const hvit = plysj(0xfff6fb), rosa = plysj(0xffc4dc), k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, hvit, 0.95, 0, 1.05, -0.1, 1, 1.05, 1);
+    ball(k, plysj(0xffeaf4), 0.65, 0, 0.95, 0.45, 1, 1, 0.6);
+    const h = new THREE.Group(); h.position.set(0, 2.35, 0.25); k.add(h); a.hode = h;
+    ball(h, hvit, 0.95, 0, 0, 0, 1.08, 0.95, 1);
+    for (const s of [-1, 1]) {
+      const o = new THREE.Group(); o.position.set(s * 0.38, 0.75, -0.1); o.rotation.z = -s * (s > 0 ? 0.15 : 0.6); h.add(o); a.orer.push(o);
+      polse(o, hvit, 0.27, [0, 0, 0], [0, 1.2, 0]); ball(o, rosa, 0.17, 0, 0.6, 0.15, 1, 3.2, 0.6);
+    }
+    a.lokk = oyne(h, 0.2, 0.38, 0.05, 0.8);
+    kinn(h, 0.2, 0.62, -0.25, 0.75);
+    ball(h, rosa, 0.12, 0, -0.18, 0.95, 1.2, 0.9, 0.8);
+    stubbebein(g, a, hvit, [[-0.45, 0.6], [0.45, 0.6]], 0.3, 0.4);
+    for (const s of [-1, 1]) ball(g, hvit, 0.4, s * 0.6, 0.32, -0.3, 1, 0.65, 1.5);
+    ball(g, hvit, 0.42, 0, 0.9, -1.0);
+    partikkelbane(g, a, 6, glod(0xffe680), 1.5, 1.6, 0.13);
+    partikkelbane(g, a, 4, glod(0xffb8de), 1.8, 2.6, 0.11);
+  },
+  bladrev(g, a) {
+    const oransje = plysj(0xff9b4a), krem = plysj(0xfff1dc), k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, oransje, 0.9, 0, 1.0, -0.2, 0.95, 0.85, 1.2);
+    ball(k, krem, 0.6, 0, 0.95, 0.4, 0.9, 0.9, 0.6);
+    const h = new THREE.Group(); h.position.set(0, 2.2, 0.55); k.add(h); a.hode = h;
+    ball(h, oransje, 0.95, 0, 0, 0, 1.12, 0.92, 1);
+    ball(h, krem, 0.55, 0, -0.3, 0.55, 1.2, 0.75, 0.8);
+    ball(h, GLANS_SVART, 0.14, 0, -0.12, 1.02, 1.2, 0.9, 1);
+    for (const s of [-1, 1]) { const o = new THREE.Group(); o.position.set(s * 0.55, 0.7, -0.05); o.rotation.z = -s * 0.35; h.add(o); a.orer.push(o); const e = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.85, 20), oransje); e.position.y = 0.3; e.castShadow = true; o.add(e); const i = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.55, 16), krem); i.position.set(0, 0.25, 0.12); o.add(i); }
+    a.lokk = oyne(h, 0.19, 0.4, 0.12, 0.78);
+    kinn(h, 0.18, 0.68, -0.15, 0.72);
+    stubbebein(g, a, plysj(0x6b3d24), [[-0.45, 0.45], [0.45, 0.45], [-0.45, -0.75], [0.45, -0.75]], 0.27, 0.45);
+    const hale = new THREE.Group(); hale.position.set(0, 1.1, -1.2); g.add(hale); a.hale = hale;
+    const bladGronn = [0x6fd05a, 0x9be36a, 0x4fb84a];
+    for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(BLAD, plysj(bladGronn[i % 3], { rim: 0.3 })); m.scale.setScalar(0.75 - i * 0.05); m.position.set(Math.sin(i * 1.3) * 0.25, 0.3 + i * 0.32, -0.25 - i * 0.18); m.rotation.set(-0.8 + i * 0.1, i * 0.7, Math.sin(i) * 0.5); m.castShadow = true; hale.add(m); }
+  },
+  lynkatt(g, a) {
+    const gul = plysj(0xffdb4d), lys = plysj(0xfff4c2), k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, gul, 0.85, 0, 1.0, -0.15, 0.95, 0.9, 1.15);
+    ball(k, lys, 0.55, 0, 0.95, 0.4, 0.9, 0.9, 0.6);
+    const h = new THREE.Group(); h.position.set(0, 2.25, 0.45); k.add(h); a.hode = h;
+    ball(h, gul, 1.0, 0, 0, 0, 1.15, 0.92, 1);
+    for (const s of [-1, 1]) { const o = new THREE.Group(); o.position.set(s * 0.62, 0.7, 0); o.rotation.z = -s * 0.3; h.add(o); a.orer.push(o); const e = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.7, 4), gul); e.rotation.y = Math.PI / 4; e.position.y = 0.2; e.castShadow = true; o.add(e); }
+    a.lokk = oyne(h, 0.21, 0.42, 0.05, 0.8, 0x4fb8ff);
+    kinn(h, 0.2, 0.7, -0.25, 0.72);
+    ball(h, plysj(0xff8fb0), 0.1, 0, -0.18, 0.98, 1.3, 0.8, 0.8);
+    for (const s of [-1, 1]) for (const v of [-0.08, 0.08]) { const m = polse(h, plysj(0x8a6a2a, { rim: 0 }), 0.025, [s * 0.35, -0.15 + v, 0.92], [s * 1.05, -0.05 + v * 2.5, 0.85]); }
+    const lyn = new THREE.Mesh(LYN, glod(0xfff7a0)); lyn.scale.setScalar(0.22); lyn.position.set(0, 0.55, 0.85); lyn.rotation.x = -0.4; h.add(lyn); a.flimmer.push(lyn);
+    stubbebein(g, a, gul, [[-0.4, 0.45], [0.4, 0.45], [-0.4, -0.7], [0.4, -0.7]], 0.26, 0.45);
+    const hale = new THREE.Group(); hale.position.set(0, 1.0, -1.05); g.add(hale); a.hale = hale;
+    const halelyn = new THREE.Mesh(LYN, plysj(0xffdb4d, { em: 0xffcf3a, ei: 0.35 })); halelyn.scale.set(0.55, 0.85, 1.4); halelyn.position.set(0, 0.85, -0.25); halelyn.rotation.set(-0.3, Math.PI / 2, 0); halelyn.castShadow = true; hale.add(halelyn);
+    for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(LYN, glod(0xfffbe0)); m.scale.setScalar(0.12); m.position.set(rnd(-1.3, 1.3), rnd(1.2, 3.2), rnd(-1, 1)); g.add(m); a.flimmer.push(m); }
+  },
+  flammehest(g, a) {
+    const rod = plysj(0xff7a4a), krem = plysj(0xffe3c8), k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, rod, 1.05, 0, 1.5, -0.2, 0.95, 0.85, 1.35);
+    polse(k, rod, 0.5, [0, 1.8, 0.65], [0, 2.7, 1.0]);
+    const h = new THREE.Group(); h.position.set(0, 3.15, 1.2); k.add(h); a.hode = h;
+    ball(h, rod, 0.85, 0, 0, 0, 1.0, 0.95, 1.05);
+    ball(h, krem, 0.62, 0, -0.35, 0.6, 1.05, 0.8, 0.85);
+    for (const s of [-1, 1]) ball(h, plysj(0xc0505a, { rim: 0 }), 0.08, s * 0.22, -0.3, 1.12, 1, 1.3, 0.6);
+    for (const s of [-1, 1]) { const o = new THREE.Group(); o.position.set(s * 0.42, 0.7, -0.1); o.rotation.z = -s * 0.25; h.add(o); a.orer.push(o); const e = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.55, 16), rod); e.position.y = 0.2; o.add(e); }
+    a.lokk = oyne(h, 0.18, 0.42, 0.18, 0.7);
+    kinn(h, 0.17, 0.6, -0.1, 0.62);
+    const fl = [0xfff1a0, 0xffc04a, 0xff7a2a];
+    for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(FLAMME, plysj(fl[i % 3], { em: fl[i % 3], ei: 0.9, rim: 0.2 })); m.scale.setScalar(0.5 - i * 0.03); m.position.set(0, 3.95 - i * 0.3, 0.95 - i * 0.28); m.rotation.set(-0.3 - i * 0.12, Math.PI / 2, 0); g.add(m); a.flimmer.push(m); }
+    stubbebein(g, a, rod, [[-0.5, 0.75], [0.5, 0.75], [-0.5, -0.95], [0.5, -0.95]], 0.3, 0.75);
+    a.bein.forEach(b => ball(b, plysj(0x7a3a2a), 0.31, 0, -0.62, 0, 1, 0.5, 1.05));
+    const hale = new THREE.Group(); hale.position.set(0, 1.9, -1.45); g.add(hale); a.hale = hale;
+    for (let i = 0; i < 3; i++) { const m = new THREE.Mesh(FLAMME, plysj(fl[i], { em: fl[i], ei: 0.9, rim: 0.2 })); m.scale.setScalar(0.65 - i * 0.12); m.position.set(0, 0.1 - i * 0.05, -0.4 + i * 0.05); m.rotation.set(-2.2, Math.PI / 2, 0); hale.add(m); a.flimmer.push(m); }
+  },
+  vannskilpadde(g, a) {
+    const gronn = plysj(0x9be08a), bla = plysj(0x4aa8f0), k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, bla, 1.35, 0, 1.0, -0.1, 1.05, 0.72, 1.15);
+    const kant = new THREE.Mesh(new THREE.TorusGeometry(1.32, 0.18, 12, 36), plysj(0x8fd0ff)); kant.rotation.x = Math.PI / 2; kant.position.y = 0.72; kant.scale.set(1.06, 1.15, 1); kant.castShadow = true; k.add(kant);
+    for (const [x, z] of [[0, 0], [0.55, 0.35], [-0.55, 0.35], [0.55, -0.45], [-0.55, -0.45]]) ball(k, plysj(0x6cc0ff), 0.32, x, 1.82 - Math.hypot(x, z) * 0.35, z - 0.1, 1, 0.25, 1);
+    const vann = new THREE.Mesh(new THREE.CircleGeometry(0.42, 24), new THREE.MeshStandardMaterial({ color: C(0xa8ecff), roughness: 0.05, metalness: 0.2 })); vann.rotation.x = -Math.PI / 2; vann.position.set(0, 1.95, -0.1); k.add(vann);
+    const h = new THREE.Group(); h.position.set(0, 1.25, 1.35); g.add(h); a.hode = h;
+    ball(h, gronn, 0.72, 0, 0, 0, 1.05, 0.95, 1);
+    a.lokk = oyne(h, 0.16, 0.3, 0.12, 0.6);
+    kinn(h, 0.15, 0.5, -0.15, 0.52);
+    smil(h, 0.18, -0.2, 0.7);
+    stubbebein(g, a, gronn, [[-0.95, 0.6], [0.95, 0.6], [-0.95, -0.75], [0.95, -0.75]], 0.36, 0.45);
+    for (let i = 0; i < 3; i++) { const m = new THREE.Mesh(KULE_L, new THREE.MeshStandardMaterial({ color: C(0xbff0ff), roughness: 0.05, transparent: true, opacity: 0.8 })); g.add(m); a.bane.push({ m, r: 0.25, y: 2.0, fart: 1.2, fase: i * 2.1, opp: true, liten: true }); }
+  },
+  stjerneugle(g, a) {
+    const lilla = plysj(0x8a6cf0), lys = plysj(0xd6caff), k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, lilla, 1.3, 0, 1.55, 0, 1.0, 1.08, 0.95);
+    ball(k, lys, 0.85, 0, 1.25, 0.6, 1, 1.05, 0.55);
+    for (const s of [-1, 1]) { ball(k, plysj(0xfff2b0, { rim: 0.2 }), 0.42, s * 0.48, 2.2, 0.95, 1, 1, 0.35); }
+    a.lokk = oyne(k, 0.25, 0.48, 2.2, 1.1);
+    const nebb = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.32, 16), plysj(0xffa83a)); nebb.rotation.x = Math.PI; nebb.position.set(0, 1.85, 1.22); k.add(nebb);
+    kinn(k, 0.2, 0.92, 1.85, 1.0);
+    for (const s of [-1, 1]) { const t = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.6, 16), lilla); t.position.set(s * 0.75, 2.8, 0.15); t.rotation.z = -s * 0.5; k.add(t); }
+    const st = new THREE.Mesh(STJERNE, plysj(0xffe14a, { em: 0xffd23a, ei: 0.7, rim: 0.2 })); st.scale.setScalar(0.32); st.position.set(0, 1.05, 1.1); k.add(st); a.flimmer.push(st);
+    for (const s of [-1, 1]) { const v = new THREE.Group(); v.position.set(s * 1.15, 1.8, 0); k.add(v); ball(v, plysj(0x6e50d6), 0.55, s * 0.12, -0.45, 0, 0.45, 1.1, 0.9); a.vinger.push(v); }
+    for (const s of [-1, 1]) ball(g, plysj(0xffa83a), 0.2, s * 0.42, 0.3, 0.4, 1.3, 0.6, 1.3);
+    partikkelbane(g, a, 5, glod(0xfff3b0), 1.8, 2.8, 0.14);
+  },
+  isdrage(g, a) {
+    const bla = plysj(0xa8dcff), hvit = plysj(0xf2fbff), k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, bla, 1.05, 0, 1.25, -0.1, 1.0, 0.95, 1.15);
+    ball(k, hvit, 0.72, 0, 1.15, 0.45, 0.9, 1.0, 0.6);
+    const h = new THREE.Group(); h.position.set(0, 2.65, 0.55); k.add(h); a.hode = h;
+    ball(h, bla, 0.92, 0, 0, 0, 1.1, 0.95, 1);
+    ball(h, hvit, 0.55, 0, -0.3, 0.55, 1.15, 0.75, 0.8);
+    for (const s of [-1, 1]) ball(h, plysj(0x5a8ab0, { rim: 0 }), 0.06, s * 0.2, -0.22, 1.05);
+    for (const s of [-1, 1]) { const ho = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.55, 16), hvit); ho.position.set(s * 0.42, 0.85, -0.15); ho.rotation.set(-0.4, 0, -s * 0.25); h.add(ho); }
+    a.lokk = oyne(h, 0.2, 0.4, 0.15, 0.75, 0x7ad0ff);
+    kinn(h, 0.18, 0.66, -0.15, 0.7);
+    for (const s of [-1, 1]) { const v = new THREE.Group(); v.position.set(s * 0.6, 1.9, -0.4); k.add(v); const w = new THREE.Mesh(VINGE, plysj(0xd8f0ff, { rim: 0.5 })); w.scale.set(s * 0.85, 0.85, 0.85); w.position.set(s * 0.85, 0.4, 0); w.rotation.set(0, s * 0.3, 0); w.castShadow = true; v.add(w); a.vinger.push(v); }
+    for (let i = 0; i < 3; i++) { const p = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.38, 12), hvit); p.position.set(0, 2.15 - i * 0.28, -0.55 - i * 0.38); p.rotation.x = -0.5; k.add(p); }
+    stubbebein(g, a, bla, [[-0.55, 0.5], [0.55, 0.5], [-0.55, -0.7], [0.55, -0.7]], 0.32, 0.5);
+    const hale = new THREE.Group(); hale.position.set(0, 0.85, -1.15); g.add(hale); a.hale = hale;
+    polse(hale, bla, 0.3, [0, 0, 0], [0, 0.15, -0.8]); polse(hale, bla, 0.2, [0, 0.15, -0.8], [0, 0.45, -1.4]);
+    const sp = new THREE.Mesh(STJERNE, plysj(0xffffff, { em: 0xcff0ff, ei: 0.5 })); sp.scale.setScalar(0.22); sp.position.set(0, 0.5, -1.6); hale.add(sp);
+    partikkelbane(g, a, 6, glod(0xffffff), 2.1, 2.6, 0.12);
+  },
+  ilddrev(g, a) {
+    const hvit = plysj(0xfffdf6, { rim: 0.6 }), krem = plysj(0xfff1dc), k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, hvit, 1.0, 0, 1.15, -0.2, 1.05, 0.88, 1.2);
+    ball(k, krem, 0.62, 0, 1.05, 0.45, 1.0, 0.9, 0.6);
+    const hoder = [[-1.25, 2.05, 0.1, 0.7, 0.6], [0, 2.6, 0.55, 0.85, 0], [1.25, 2.05, 0.1, 0.7, -0.6]];
+    hoder.forEach(([x, y, z, s, ry]) => {
+      const h = new THREE.Group(); h.position.set(x, y, z); h.rotation.y = -ry; h.scale.setScalar(s); k.add(h); if (!a.hode) a.hode = h; a.hoder = (a.hoder || []).concat(h);
+      ball(h, hvit, 0.95, 0, 0, 0, 1.12, 0.92, 1);
+      ball(h, krem, 0.55, 0, -0.3, 0.55, 1.2, 0.75, 0.8);
+      ball(h, GLANS_SVART, 0.14, 0, -0.12, 1.02, 1.2, 0.9, 1);
+      for (const sd of [-1, 1]) { const o = new THREE.Group(); o.position.set(sd * 0.55, 0.7, -0.05); o.rotation.z = -sd * 0.35; h.add(o); a.orer.push(o); const e = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.85, 20), hvit); e.position.y = 0.3; e.castShadow = true; o.add(e); const fl = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.45, 16), plysj(0xffb84a, { em: 0xff9a2a, ei: 0.9 })); fl.position.set(0, 0.55, 0.05); o.add(fl); }
+      a.lokk.push(...oyne(h, 0.19, 0.4, 0.12, 0.78, 0xff9a2a));
+      kinn(h, 0.18, 0.68, -0.15, 0.72);
+    });
+    stubbebein(g, a, hvit, [[-0.5, 0.5], [0.5, 0.5], [-0.5, -0.8], [0.5, -0.8]], 0.28, 0.48);
+    a.bein.forEach(b => { const f = new THREE.Mesh(FLAMME, plysj(0xffe08a, { em: 0xffb84a, ei: 1 })); f.scale.setScalar(0.22); f.position.set(0, -0.35, 0.2); f.rotation.y = Math.PI / 2; b.add(f); a.flimmer.push(f); });
+    const hale = new THREE.Group(); hale.position.set(0, 1.3, -1.3); g.add(hale); a.hale = hale;
+    const fl = [0xffffff, 0xfff1c0, 0xffc04a, 0xff7a2a];
+    for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(FLAMME, plysj(fl[i], { em: fl[i], ei: 0.9 - i * 0.1, rim: 0.3 })); m.scale.setScalar(0.95 - i * 0.18); m.position.set(0, 0.55 + i * 0.12, -0.35 - i * 0.05); m.rotation.set(-0.7, Math.PI / 2, 0); hale.add(m); a.flimmer.push(m); }
+    partikkelbane(g, a, 6, glod(0xffe7a0), 2.3, 2.4, 0.14, FLAMME);
+  },
+  // ---------- Nye dyr i v0.4 ----------
+  blomsterbie(g, a) {
+    const gul = plysj(0xffd84a), brun = plysj(0x5a4030, { rim: 0.15 }), k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, gul, 1.05, 0, 2.2, 0, 1, 0.95, 1.15);
+    for (const z of [-0.35, 0.2]) { const sk = Math.sqrt(1 - (z / 1.2) ** 2); const r = new THREE.Mesh(new THREE.TorusGeometry(1, 0.13, 10, 32), brun); r.position.set(0, 2.2, z - 0.15); r.scale.set(1.04 * sk, 0.99 * sk, 1); k.add(r); }
+    a.lokk = oyne(k, 0.21, 0.4, 2.42, 1.0);
+    kinn(k, 0.19, 0.7, 2.12, 0.95);
+    smil(k, 0.16, 2.08, 1.18);
+    for (const sx of [-1, 1]) { polse(k, brun, 0.05, [sx * 0.3, 3.05, 0.45], [sx * 0.55, 3.75, 0.7]); ball(k, plysj(0xff8fb0), 0.15, sx * 0.55, 3.78, 0.7); }
+    for (let i = 0; i < 6; i++) { const v = i / 6 * 6.283; ball(k, plysj([0xffb3d1, 0xffffff, 0xc9b3ff][i % 3], { rim: 0.3 }), 0.24, Math.sin(v) * 0.42, 3.16, Math.cos(v) * 0.42 - 0.05, 1, 0.5, 1); }
+    const brodd = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.4, 12), brun); brodd.rotation.x = -Math.PI / 2; brodd.position.set(0, 2.1, -1.3); k.add(brodd);
+    const vingeMat = new THREE.MeshStandardMaterial({ color: C(0xeaf6ff), roughness: 0.2, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false });
+    for (const sx of [-1, 1]) { const v = new THREE.Group(); v.position.set(sx * 0.35, 3.0, -0.25); k.add(v); const w = new THREE.Mesh(VINGE, vingeMat); w.scale.set(sx * 0.75, 0.75, 0.75); w.position.set(sx * 0.7, 0.3, 0); w.rotation.set(Math.PI / 2 - 0.35, 0, 0); v.add(w); a.vinger.push(v); }
+  },
+  snopingvin(g, a) {
+    const bla = plysj(0x3d4f86), hvit = plysj(0xffffff, { rim: 0.25 }), oransje = plysj(0xffa840), k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, bla, 1.15, 0, 1.45, 0, 1, 1.15, 0.95);
+    ball(k, hvit, 0.85, 0, 1.3, 0.38, 0.95, 1.08, 0.7);
+    ball(k, hvit, 0.62, 0, 2.25, 0.62, 1.15, 0.7, 0.55);
+    a.lokk = oyne(k, 0.2, 0.36, 2.35, 0.98);
+    kinn(k, 0.18, 0.62, 2.05, 0.95);
+    const nebb = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.42, 16), oransje); nebb.rotation.x = Math.PI / 2; nebb.position.set(0, 2.1, 1.2); k.add(nebb);
+    const skjerf = new THREE.Mesh(new THREE.TorusGeometry(0.82, 0.2, 12, 32), plysj(0xff6b7a, { rim: 0.3 })); skjerf.rotation.x = Math.PI / 2; skjerf.position.y = 1.85; skjerf.scale.set(1, 0.85, 1); k.add(skjerf);
+    polse(k, plysj(0xff6b7a, { rim: 0.3 }), 0.17, [0.45, 1.8, 0.62], [0.6, 1.1, 0.78]);
+    for (const sx of [-1, 1]) { const v = new THREE.Group(); v.position.set(sx * 1.05, 1.9, 0); k.add(v); ball(v, bla, 0.5, sx * 0.1, -0.5, 0, 0.35, 1.1, 0.8); a.vinger.push(v); }
+    for (const sx of [-1, 1]) ball(g, oransje, 0.3, sx * 0.42, 0.15, 0.45, 1.25, 0.45, 1.6);
+    const snoe = new THREE.Mesh(STJERNE, plysj(0xffffff, { em: 0xcff0ff, ei: 0.5 })); snoe.scale.setScalar(0.22); snoe.position.set(0, 2.98, 0.2); k.add(snoe); a.flimmer.push(snoe);
+    partikkelbane(g, a, 5, glod(0xffffff), 1.8, 2.6, 0.12);
+  },
+  perleoter(g, a) {
+    const brun = plysj(0xb58a62), krem = plysj(0xf5e2c8), mork = plysj(0x7a5a3e), k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, brun, 0.85, 0, 1.0, -0.2, 0.95, 0.85, 1.3);
+    ball(k, krem, 0.6, 0, 1.0, 0.35, 0.85, 0.85, 0.6);
+    const h = new THREE.Group(); h.position.set(0, 2.05, 0.65); k.add(h); a.hode = h;
+    ball(h, brun, 0.85, 0, 0, 0, 1.12, 0.92, 1);
+    ball(h, krem, 0.55, 0, -0.25, 0.5, 1.15, 0.75, 0.8);
+    ball(h, GLANS_SVART, 0.15, 0, -0.08, 0.95, 1.3, 0.9, 1);
+    for (const sx of [-1, 1]) { const o = new THREE.Group(); o.position.set(sx * 0.68, 0.55, -0.05); h.add(o); a.orer.push(o); ball(o, brun, 0.24, 0, 0, 0, 1, 1, 0.6); ball(o, krem, 0.13, 0, 0, 0.1, 1, 1, 0.5); }
+    a.lokk = oyne(h, 0.18, 0.36, 0.12, 0.72);
+    kinn(h, 0.17, 0.62, -0.18, 0.66);
+    for (const sx of [-1, 1]) for (const v of [-0.06, 0.08]) polse(h, plysj(0x6a5040, { rim: 0 }), 0.022, [sx * 0.3, -0.2 + v, 0.85], [sx * 0.95, -0.12 + v * 2.2, 0.75]);
+    for (const sx of [-1, 1]) ball(k, krem, 0.25, sx * 0.3, 1.35, 0.95, 1, 0.9, 1);
+    const perle = new THREE.Mesh(KULE_L, new THREE.MeshStandardMaterial({ color: C(0xfff6fb), roughness: 0.08, metalness: 0.2, emissive: C(0xffd6ec), emissiveIntensity: 0.35 })); perle.scale.setScalar(0.3); perle.position.set(0, 1.55, 1.15); perle.castShadow = true; k.add(perle); a.flimmer.push(perle);
+    stubbebein(g, a, mork, [[-0.45, 0.45], [0.45, 0.45], [-0.45, -0.8], [0.45, -0.8]], 0.26, 0.42);
+    const hale = new THREE.Group(); hale.position.set(0, 0.7, -1.3); g.add(hale); a.hale = hale;
+    ball(hale, brun, 0.38, 0, 0, -0.6, 0.9, 0.35, 2.0);
+    for (let i = 0; i < 3; i++) { const m = new THREE.Mesh(KULE_L, new THREE.MeshStandardMaterial({ color: C(0xbff0ff), roughness: 0.05, transparent: true, opacity: 0.7 })); g.add(m); a.bane.push({ m, r: 0.4, y: 2.6, fart: 1.2, fase: i * 2.1, opp: true, liten: true }); }
+  },
+  regnbuesebra(g, a) {
+    const hvit = plysj(0xfdfcff, { rim: 0.4 }), mule = plysj(0xe2dcf0), k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, hvit, 1.0, 0, 1.5, -0.2, 0.95, 0.85, 1.35);
+    const RB = [0xff8a8a, 0xffc27a, 0xfff08a, 0x9fe68a, 0x8ac8ff, 0xc49aff];
+    RB.forEach((f, i) => { const zz = -0.95 + i * 0.38, sk = Math.sqrt(Math.max(0.05, 1 - (zz / 1.35) ** 2)); const r = new THREE.Mesh(new THREE.TorusGeometry(1, 0.085, 8, 32), plysj(f, { rim: 0.2 })); r.position.set(0, 1.5, -0.2 + zz); r.scale.set(0.97 * sk, 0.87 * sk, 1); k.add(r); });
+    polse(k, hvit, 0.48, [0, 1.8, 0.65], [0, 2.7, 1.0]);
+    const h = new THREE.Group(); h.position.set(0, 3.12, 1.18); k.add(h); a.hode = h;
+    ball(h, hvit, 0.85, 0, 0, 0, 1.0, 0.95, 1.05);
+    ball(h, mule, 0.62, 0, -0.35, 0.6, 1.05, 0.8, 0.85);
+    for (const sx of [-1, 1]) ball(h, plysj(0x8a7aa0, { rim: 0 }), 0.08, sx * 0.22, -0.3, 1.12, 1, 1.3, 0.6);
+    for (const sx of [-1, 1]) { const o = new THREE.Group(); o.position.set(sx * 0.42, 0.7, -0.1); o.rotation.z = -sx * 0.25; h.add(o); a.orer.push(o); const e = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.55, 16), hvit); e.position.y = 0.2; o.add(e); }
+    a.lokk = oyne(h, 0.18, 0.42, 0.18, 0.7);
+    kinn(h, 0.17, 0.6, -0.1, 0.62);
+    for (let i = 0; i < 6; i++) ball(k, plysj(RB[i], { rim: 0.3 }), 0.3, 0, 3.75 - i * 0.3, 0.95 - i * 0.26);
+    stubbebein(g, a, hvit, [[-0.5, 0.75], [0.5, 0.75], [-0.5, -0.95], [0.5, -0.95]], 0.3, 0.75);
+    a.bein.forEach(b => ball(b, plysj(0x6a5a8a), 0.31, 0, -0.62, 0, 1, 0.5, 1.05));
+    const hale = new THREE.Group(); hale.position.set(0, 1.9, -1.45); g.add(hale); a.hale = hale;
+    polse(hale, hvit, 0.1, [0, 0, 0], [0, -0.6, -0.5]);
+    RB.forEach((f, i) => ball(hale, plysj(f, { rim: 0.3 }), 0.17, Math.sin(i) * 0.15, -0.75 - (i % 3) * 0.12, -0.6 - Math.floor(i / 3) * 0.12));
+    partikkelbane(g, a, 6, glod(0xffffff), 2.1, 2.8, 0.12);
+  },
+  lavaogle(g, a) {
+    const rod = plysj(0xff7a5a), mage = plysj(0xffd09a), k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, rod, 0.85, 0, 0.85, -0.1, 0.95, 0.65, 1.45);
+    ball(k, mage, 0.62, 0, 0.62, 0.15, 0.9, 0.5, 1.1);
+    const h = new THREE.Group(); h.position.set(0, 1.35, 1.3); k.add(h); a.hode = h;
+    ball(h, rod, 0.8, 0, 0, 0, 1.18, 0.85, 1.0);
+    a.lokk = oyne(h, 0.21, 0.42, 0.25, 0.62, 0xffb030);
+    kinn(h, 0.18, 0.68, -0.05, 0.62);
+    smil(h, 0.2, -0.22, 0.78);
+    for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(KULE_L, plysj(0xffe06a, { em: 0xffb030, ei: 1, rim: 0.2 })); m.scale.set(0.2, 0.12, 0.2); m.position.set((i % 2 ? 0.35 : -0.35), 1.38 - Math.abs(i - 2.5) * 0.03, 0.6 - i * 0.3); k.add(m); a.flimmer.push(m); }
+    stubbebein(g, a, rod, [[-0.75, 0.6], [0.75, 0.6], [-0.75, -0.7], [0.75, -0.7]], 0.27, 0.42);
+    const hale = new THREE.Group(); hale.position.set(0, 0.8, -1.3); g.add(hale); a.hale = hale;
+    polse(hale, rod, 0.36, [0, 0, 0], [0, -0.2, -1.0]); polse(hale, rod, 0.22, [0, -0.2, -1.0], [0, 0.2, -1.8]);
+    const fl = new THREE.Mesh(FLAMME, plysj(0xffc04a, { em: 0xff8a2a, ei: 1, rim: 0.2 })); fl.scale.setScalar(0.35); fl.position.set(0, 0.55, -1.95); fl.rotation.set(-0.4, Math.PI / 2, 0); hale.add(fl); a.flimmer.push(fl);
+  },
+  maaneenhjorning(g, a) {
+    const lys = plysj(0xf4efff, { rim: 0.4 }), mule = plysj(0xffe6f2), k = new THREE.Group(); g.add(k); a.kropp = k;
+    ball(k, lys, 1.0, 0, 1.5, -0.2, 0.95, 0.85, 1.35);
+    polse(k, lys, 0.48, [0, 1.8, 0.65], [0, 2.7, 1.0]);
+    const h = new THREE.Group(); h.position.set(0, 3.12, 1.18); k.add(h); a.hode = h;
+    ball(h, lys, 0.85, 0, 0, 0, 1.0, 0.95, 1.05);
+    ball(h, mule, 0.6, 0, -0.35, 0.6, 1.05, 0.8, 0.85);
+    for (const sx of [-1, 1]) { const o = new THREE.Group(); o.position.set(sx * 0.42, 0.7, -0.1); o.rotation.z = -sx * 0.25; h.add(o); a.orer.push(o); const e = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.55, 16), lys); e.position.y = 0.2; o.add(e); }
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.3, 20), plysj(0xffe9a8, { em: 0xffd76a, ei: 0.7, rim: 0.3 })); horn.position.set(0, 0.95, 0.35); horn.rotation.x = 0.45; h.add(horn); a.flimmer.push(horn);
+    for (let i = 0; i < 4; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(0.17 - i * 0.035, 0.03, 6, 18), plysj(0xfff6d0, { em: 0xffe08a, ei: 0.5 })); r.position.set(0, 0.55 + i * 0.25, 0.17 + i * 0.12); r.rotation.x = Math.PI / 2 + 0.45; h.add(r); }
+    a.lokk = oyne(h, 0.19, 0.42, 0.15, 0.7, 0xb89aff);
+    kinn(h, 0.17, 0.6, -0.1, 0.62);
+    const manke = [0xbfd4ff, 0xd9c2ff, 0xffc8e8];
+    for (let i = 0; i < 7; i++) ball(k, plysj(manke[i % 3], { rim: 0.35 }), 0.33, 0, 3.8 - i * 0.28, 0.95 - i * 0.25);
+    const maane = new THREE.Mesh(STJERNE, plysj(0xfff3b0, { em: 0xffe68a, ei: 0.7 })); maane.scale.setScalar(0.3); maane.position.set(0.93, 1.6, -0.5); maane.rotation.y = Math.PI / 2; k.add(maane);
+    const maane2 = maane.clone(); maane2.position.x = -0.93; k.add(maane2);
+    stubbebein(g, a, lys, [[-0.5, 0.75], [0.5, 0.75], [-0.5, -0.95], [0.5, -0.95]], 0.3, 0.75);
+    a.bein.forEach(b => ball(b, plysj(0xc4aef0), 0.31, 0, -0.62, 0, 1, 0.5, 1.05));
+    const hale = new THREE.Group(); hale.position.set(0, 1.9, -1.45); g.add(hale); a.hale = hale;
+    for (let i = 0; i < 5; i++) ball(hale, plysj(manke[i % 3], { rim: 0.35 }), 0.32 - i * 0.03, 0, -0.2 - i * 0.28, -0.3 - i * 0.18);
+    partikkelbane(g, a, 6, glod(0xfff3b0), 2.2, 3.2, 0.14);
+  },
+};
+
+
+// Slår sammen faste deler med samme materiale i hver gruppe (færre tegnekall).
+// Deler som animeres for seg selv (flimmer, partikler) får være i fred.
+function slaSammen(rot, behold) {
+  const grupper = []; rot.traverse(o => { if (o.isGroup || o === rot) grupper.push(o); });
+  const m4 = new THREE.Matrix4();
+  for (const gr of grupper) {
+    const botter = new Map();
+    for (const c of gr.children) { if (!c.isMesh || behold.has(c) || c.isInstancedMesh) continue; (botter.get(c.material) || botter.set(c.material, []).get(c.material)).push(c); }
+    for (const [mat, liste] of botter) {
+      if (liste.length < 2) continue;
+      let nv = 0, ni = 0; liste.forEach(m => { nv += m.geometry.attributes.position.count; ni += m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count; });
+      const pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), idx = new Uint32Array(ni); let ov = 0, oi = 0, skygge = false;
+      for (const m of liste) {
+        m.updateMatrix(); const g = m.geometry.clone(); g.applyMatrix4(m.matrix);
+        const p = g.attributes.position, n = g.attributes.normal, cnt = p.count;
+        pos.set(p.array.subarray(0, cnt * 3), ov * 3); nor.set(n.array.subarray(0, cnt * 3), ov * 3);
+        const snu = m.matrix.determinant() < 0;
+        const ind = g.index ? g.index.array : Array.from({ length: cnt }, (_, i) => i);
+        for (let i = 0; i < ind.length; i += 3) { idx[oi++] = ind[i] + ov; idx[oi++] = ind[snu ? i + 2 : i + 1] + ov; idx[oi++] = ind[snu ? i + 1 : i + 2] + ov; }
+        ov += cnt; skygge = skygge || m.castShadow; g.dispose(); gr.remove(m);
+      }
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); geo.setIndex(new THREE.BufferAttribute(idx, 1)); geo.computeBoundingSphere();
+      const ny = new THREE.Mesh(geo, mat); ny.castShadow = skygge && mat !== KINN && !mat.isMeshBasicMaterial && mat !== GLANS_SVART; gr.add(ny);
+    }
+  }
+}
+function lagKoseDyr(id) {
+  const g = new THREE.Group(), a = nyAnim(); BYGG[id](g, a);
+  const behold = new Set([...a.flimmer, ...a.bane.map(b => b.m)]);
+  slaSammen(g, behold);
+  a.hopp = id === 'boblefrosk' || id === 'glitterkanin' || id === 'stjerneugle' || id === 'snopingvin';
+  a.flyr = id === 'blomsterbie';
+  a.t = rnd(0, 10); a.blunk = rnd(1, 4);
+  g.updateMatrixWorld(true); a.hoyde = new THREE.Box3().setFromObject(g).max.y;
+  return { g, a };
+}
+// Pust, blunking, ører, hale, vinger, flammer og glitter
+function animerKose(a, dt, gar) {
+  a.t += dt; const t = a.t;
+  if (a.kropp) { const sq = Math.sin(t * 2.2) * 0.035; a.kropp.scale.set(1 - sq, 1 + sq, 1 - sq); }
+  a.blunk -= dt; const lukk = a.blunk < 0.12 ? 0.1 : 1; if (a.blunk < 0) a.blunk = rnd(2, 5);
+  a.lokk.forEach(l => l.scale.y = lukk);
+  (a.hoder || (a.hode ? [a.hode] : [])).forEach((h, i) => { h.rotation.z = Math.sin(t * 1.3 + i * 1.7) * 0.08; h.rotation.x = Math.sin(t * 0.9 + i) * 0.05; });
+  a.orer.forEach((o, i) => o.rotation.x = Math.sin(t * 3 + i * 0.8) * 0.12);
+  if (a.hale) a.hale.rotation.y = Math.sin(t * (gar ? 7 : 3.2)) * 0.4;
+  a.flimmer.forEach((m, i) => { m.userData.s0 = m.userData.s0 || m.scale.clone(); const f = 0.85 + Math.abs(Math.sin(t * 7 + i * 1.9)) * 0.3; m.scale.set(m.userData.s0.x * f, m.userData.s0.y * (0.9 + f * 0.2), m.userData.s0.z * f); });
+  a.bane.forEach(b => { const f = b.fase + t * b.fart; if (b.opp) { const y = ((t * 0.5 + b.fase) % 2); b.m.position.set(Math.sin(f) * b.r, b.y + y, 0.5 + Math.cos(f) * b.r * 0.5); b.m.scale.setScalar((b.liten ? 0.1 : 0.2) + y * (b.liten ? 0.04 : 0.1)); } else { b.m.position.set(Math.sin(f) * b.r, b.y + Math.sin(f * 2) * 0.35, Math.cos(f) * b.r); b.m.rotation.y = f * 2; b.m.rotation.z = f; } });
+}
+function lagKoseHelt() {
+  const g = new THREE.Group(), a = nyAnim(); g.userData.a = a; a.t = 0; a.blunk = 3;
+  const hud = plysj(0xffd2b0, { rim: 0.3 }), genser = plysj(0x9aa0ab), bukse = plysj(0x2a3a6a), sko = plysj(0xffffff, { rim: 0.2 }), har = plysj(0xffdf6a), caps = plysj(0x2c3f7a);
+  for (const s of [-1, 1]) { const b = new THREE.Group(); b.position.set(s * 0.38, 1.3, 0); g.add(b); polse(b, bukse, 0.3, [0, 0, 0], [0, -0.85, 0]); ball(b, sko, 0.36, 0, -1.08, 0.12, 1, 0.65, 1.35); a.bein.push(b); }
+  const k = new THREE.Group(); g.add(k); a.kropp = k;
+  ball(k, genser, 0.85, 0, 2.0, 0, 1, 1.05, 0.85);
+  ball(k, plysj(0x8a909b), 0.55, 0, 2.55, -0.45, 1.2, 0.55, 0.7); // hette
+  const logo = new THREE.Mesh(new THREE.CircleGeometry(0.26, 24), plysj(0x2a2d3a, { rim: 0 })); logo.position.set(0, 2.05, 0.73); k.add(logo);
+  const lt = new THREE.Mesh(STJERNE, glod(0xffc93c)); lt.scale.setScalar(0.12); lt.position.set(0, 2.05, 0.76); k.add(lt);
+  for (const s of [-1, 1]) { const ar = new THREE.Group(); ar.position.set(s * 0.82, 2.4, 0); k.add(ar); polse(ar, genser, 0.22, [0, 0, 0], [s * 0.1, -0.75, 0]); ball(ar, hud, 0.24, s * 0.1, -0.98, 0); a.vinger.push(ar); }
+  const h = new THREE.Group(); h.position.set(0, 3.55, 0.05); k.add(h); a.hode = h;
+  ball(h, hud, 1.05, 0, 0, 0, 1.05, 1, 1);
+  ball(h, har, 1.0, 0, 0.32, -0.15, 1.1, 0.8, 1.05);
+  for (const [x, y, z] of [[0.4, 0.22, 0.86], [-0.4, 0.22, 0.86], [0, 0.26, 0.93]]) ball(h, har, 0.27, x, y, z, 1.15, 0.55, 0.55);
+  ball(h, caps, 1.07, 0, 0.42, 0, 1.03, 0.62, 1.03);
+  const skjerm = ball(h, caps, 0.75, 0, 0.42, -1.0, 1, 0.12, 0.75); skjerm.rotation.x = 0.15;
+  ball(h, plysj(0xff5d5d), 0.12, 0, 1.05, 0);
+  a.lokk = oyne(h, 0.17, 0.36, -0.05, 0.92, 0x4f9bff);
+  kinn(h, 0.18, 0.62, -0.32, 0.82);
+  smil(h, 0.16, -0.38, 1.0);
+  for (const s of [-1, 1]) ball(h, hud, 0.2, s * 1.05, -0.05, 0, 0.6, 1, 0.8);
+  return g;
+}
+
+// =====================================================================
+//  Verden: myk eng, kosetrær, blomster, skyer, himmel
+const velg = arr => arr[Math.floor(Math.random() * arr.length)];
+
+// Tekstskilt (sprite)
+function skilt(tekst, str = 1, bakgrunn = 'rgba(29,36,64,.75)') {
+  const c = document.createElement('canvas'); const x = c.getContext('2d');
+  x.font = '800 44px Nunito, sans-serif';
+  const w = Math.ceil(x.measureText(tekst).width) + 40; c.width = w; c.height = 68;
+  x.font = '800 44px Nunito, sans-serif';
+  x.fillStyle = bakgrunn; x.beginPath();
+  if (x.roundRect) x.roundRect(0, 0, w, 68, 30); else x.rect(0, 0, w, 68);
+  x.fill(); x.fillStyle = '#fff'; x.textBaseline = 'middle'; x.fillText(tekst, 20, 37);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map:t, depthWrite:false }));
+  s.scale.set(w / 68 * 1.4 * str, 1.4 * str, 1);
+  return s;
+}
+
+// Egg (brukes også i butikken)
+function eggTekstur(bunn, flekker) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128; const x = c.getContext('2d');
+  x.fillStyle = bunn; x.fillRect(0, 0, 256, 128);
+  for (let i = 0; i < 26; i++) { x.fillStyle = flekker[i % flekker.length]; x.beginPath(); x.arc(Math.random() * 256, 14 + Math.random() * 100, 5 + Math.random() * 9, 0, 6.283); x.fill(); }
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+}
+const EGG_MAT = {
+  butikk: new THREE.MeshStandardMaterial({ map: eggTekstur('#fff4dc', ['#ff8fb8', '#6cc0ff', '#8fdc6a', '#ffc93c']), roughness: 0.55 }),
+  sjelden: new THREE.MeshStandardMaterial({ map: eggTekstur('#7b4bdc', ['#ffe14a', '#ffffff', '#ff9fe0']), roughness: 0.3, emissive: C(0x3a1a80), emissiveIntensity: 0.6 }),
+};
+function lagEgg(type) { const m = new THREE.Mesh(SPH, EGG_MAT[type]); m.scale.set(0.95, 1.25, 0.95); m.castShadow = true; return m; }
+
+// ======================================================
+//  Verden
+// ======================================================
+const PARK_R = 72;
+const TORG_R = 20;
+const NEST = new THREE.Vector3(0, 0, -2);
+const BUTIKK = new THREE.Vector3(10, 0, 15);
+const VERDEN_R = 215;
+const hindre = []; // {x,z,r}
+const rutenett = new Map();
+function leggHinder(x, z, r) { const h = { x, z, r }; hindre.push(h); const k = Math.floor(x / 12) + ',' + Math.floor(z / 12); (rutenett.get(k) || rutenett.set(k, []).get(k)).push(h); }
+function naerHindre(x, z) { const ix = Math.floor(x / 12), iz = Math.floor(z / 12); const ut = []; for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const l = rutenett.get((ix + a) + ',' + (iz + b)); if (l) ut.push(...l); } return ut; }
+
+const SJO = (() => { const a = 240 * Math.PI / 180; return { x: Math.sin(a) * 47, z: Math.cos(a) * 47, rx: 13, rz: 10 }; })();
+const VULKAN = (() => { const a = 120 * Math.PI / 180; return { x: Math.sin(a) * 52, z: Math.cos(a) * 52 }; })();
+const IGLO = (() => { const a = 180 * Math.PI / 180; return { x: Math.sin(a) * 56, z: Math.cos(a) * 56 }; })();
+const iSjoen = (x, z, m = 0) => Math.hypot((x - SJO.x) / (SJO.rx + m), (z - SJO.z) / (SJO.rz + m)) < 1;
+function vinkelGrader(x, z) { let a = Math.atan2(x, z) * 180 / Math.PI; return a < 0 ? a + 360 : a; }
+function soneVed(x, z) { const d = Math.hypot(x, z); if (d < TORG_R || d > PARK_R) return null; const a = vinkelGrader(x, z); return SONER[Math.round(a / 60) % 6]; }
+function tilfeldigISone(id) {
+  const z0 = SONE_ID[id] || SONER[0];
+  for (let f = 0; f < 200; f++) {
+    const a = (z0.vinkel + rnd(-24, 24)) * Math.PI / 180, r = Math.sqrt(rnd((TORG_R + 5) ** 2, (PARK_R - 6) ** 2));
+    const x = Math.sin(a) * r, z = Math.cos(a) * r;
+    if (Math.abs(x) < 4 && z > TORG_R) continue; // stien
+    if (id !== 'vann' && iSjoen(x, z, 1)) continue;
+    if (naerHindre(x, z).some(h => Math.hypot(h.x - x, h.z - z) < h.r + 2)) continue;
+    return new THREE.Vector3(x, 0, z);
+  }
+  return new THREE.Vector3(0, 0, TORG_R + 5);
+}
+function stoy(x, z) { return Math.sin(x * 0.07) * Math.cos(z * 0.06) * 0.5 + Math.sin(x * 0.23 + z * 0.17) * 0.3 + Math.sin(x * 0.61 - z * 0.53) * 0.2; }
+(function himmel() {
+  const mat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: { topp: { value: C(0x8fc8ff) }, midt: { value: C(0xcfe9ff) }, bunn: { value: C(0xffe2ef) } },
+    vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: 'uniform vec3 topp, midt, bunn; varying vec3 vP; void main(){ float h = vP.y; vec3 c = h > 0.15 ? mix(midt, topp, smoothstep(0.15, 0.7, h)) : mix(bunn, midt, smoothstep(-0.05, 0.15, h)); gl_FragColor = vec4(c, 1.0); }' });
+  const s = new THREE.Mesh(new THREE.SphereGeometry(500, 32, 16), mat); s.frustumCulled = false; scene.add(s); window.__himmel = s;
+})();
+const skyer = [];
+(function lagSkyer() {
+  const mat = plysj(0xffffff, { rim: 0.25 });
+  for (let i = 0; i < 10; i++) { const g = new THREE.Group(); const a = i / 10 * 6.283, d = rnd(140, 260); g.position.set(Math.sin(a) * d, rnd(45, 70), Math.cos(a) * d); g.scale.setScalar(rnd(1.4, 2));
+    for (let k = 0; k < 5; k++) ball(g, mat, rnd(3, 5.5), (k - 2) * 3.4, Math.sin(k) * 1.2, rnd(-1.5, 1.5), 1, 0.75, 1).castShadow = false;
+    slaSammen(g, new Set()); scene.add(g); skyer.push(g); }
+})();
+(function bakke() {
+  const geo = new THREE.PlaneGeometry(620, 620, 124, 124); geo.rotateX(-Math.PI / 2);
+  const p = geo.attributes.position; const farger = new Float32Array(p.count * 3); const c = new THREE.Color();
+  const parkG = C(0x9fe07a), parkL = C(0xb6ea8a), skogG = C(0x84d46a), skogM = C(0x6cc25e), sand = C(0xf3dfae);
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), z = p.getZ(i), d = Math.hypot(x, z), n = stoy(x, z);
+    if (d < PARK_R - 2) {
+      c.copy(parkG).lerp(parkL, (n + 1) * 0.5);
+      if (d > TORG_R - 4) {
+        const a = vinkelGrader(x, z), sc = new THREE.Color(0, 0, 0); let sum = 0;
+        for (const zn of SONER) { let da = Math.abs(a - zn.vinkel); if (da > 180) da = 360 - da; const w = Math.max(0, 1 - Math.max(0, da - 22) / 16); if (w > 0) { sc.add(C(zn.bakke).multiplyScalar(w)); sum += w; } }
+        sc.multiplyScalar(1 / sum); c.lerp(sc, Math.min(1, (d - TORG_R + 4) / 8));
+      }
+      if (Math.abs(x) < 3.5 && z > TORG_R - 2) c.copy(sand);
+      else if (d > TORG_R - 2.5 && d < TORG_R) c.copy(sand);
+    }
+    else if (d < PARK_R + 3) c.copy(sand);
+    else if (Math.abs(x) < 4.5 && z > 0 && d < 150) c.copy(sand).lerp(skogG, Math.min(1, (d - 50) / 100));
+    else c.copy(skogG).lerp(skogM, (n + 1) * 0.5);
+    farger[i * 3] = c.r; farger[i * 3 + 1] = c.g; farger[i * 3 + 2] = c.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(farger, 3));
+  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors:true, roughness: 1 }));
+  m.receiveShadow = true; scene.add(m);
+})();
+// Gress som vaier i vinden (instansert)
+const vind = { value: 0 };
+(function gress() {
+  const blad = new THREE.ConeGeometry(0.11, 0.85, 4, 1); blad.translate(0, 0.42, 0);
+  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1 });
+  mat.onBeforeCompile = sh => { sh.uniforms.tid = vind; sh.vertexShader = 'uniform float tid;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+    vec4 wp = instanceMatrix * vec4(0.0,0.0,0.0,1.0);
+    float boy = position.y * position.y * 0.35;
+    transformed.x += sin(tid * 1.8 + wp.x * 0.35 + wp.z * 0.2) * boy;
+    transformed.z += cos(tid * 1.3 + wp.z * 0.3) * boy * 0.5;`); };
+  const N = erTouch ? 5000 : 10000, im = new THREE.InstancedMesh(blad, mat, N), o = new THREE.Object3D(), farger = [0x7ed15a, 0x9be36a, 0x6cc25e, 0xb4ec7c];
+  let n = 0;
+  while (n < N) { const ipark = n < N * 0.45, a = Math.random() * 6.283, d = ipark ? Math.sqrt(Math.random()) * (PARK_R - 3) : rnd(PARK_R + 4, 170); const x = Math.sin(a) * d, z = Math.cos(a) * d;
+    { const zn = soneVed(x, z); if (zn && (zn.id === 'is' || zn.id === 'vulkan')) continue; }
+    if (iSjoen(x, z, 0.5) || Math.hypot(x - NEST.x, z - NEST.z) < 3.6 || Math.hypot(x - BUTIKK.x, z - BUTIKK.z) < 4 || (Math.abs(x) < 3.5 && z > TORG_R - 2 && z < PARK_R + 2)) continue;
+    o.position.set(x, 0, z); o.rotation.set(rnd(-0.2, 0.2), rnd(0, 6), rnd(-0.2, 0.2)); o.scale.setScalar(rnd(0.7, 1.4)); o.updateMatrix(); im.setMatrixAt(n, o.matrix); im.setColorAt(n, C(soneVed(x, z)?.id === 'regnbue' ? [0xe2e87a, 0xd4e06a, 0xf0ec96, 0xc8dc6a][n % 4] : farger[n % 4])); n++; }
+  scene.add(im);
+})();
+
+// Gjerde rundt parken, med åpning mot sør
+(function gjerde() {
+  const steg = 0.055, pos = [];
+  for (let a = 0; a < Math.PI * 2; a += steg) { if (Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < 0.075) continue; pos.push(a); }
+  const stolper = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.35, 0.4, 2.6, 8), M(0xa0703f), pos.length);
+  const planker = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.3, 0.2), M(0xc48a4f), pos.length * 2);
+  const o = new THREE.Object3D(); let n = 0;
+  pos.forEach((a, i) => {
+    o.position.set(Math.sin(a) * PARK_R, 1.3, Math.cos(a) * PARK_R); o.rotation.set(0, 0, 0); o.scale.set(1, 1, 1); o.updateMatrix(); stolper.setMatrixAt(i, o.matrix);
+    const b = a + steg / 2; if (Math.abs(Math.atan2(Math.sin(b), Math.cos(b))) < 0.1) return;
+    for (const y of [0.9, 1.9]) { o.position.set(Math.sin(b) * PARK_R, y, Math.cos(b) * PARK_R); o.rotation.set(0, b + Math.PI / 2, 0); o.scale.set(PARK_R * steg + 0.2, 1, 1); o.updateMatrix(); planker.setMatrixAt(n++, o.matrix); }
+  });
+  planker.count = n; stolper.castShadow = planker.castShadow = true; scene.add(stolper, planker);
+  const s = skilt('🥚 Magiske egg-parken', 1.3); s.position.set(0, 5, PARK_R + 1); scene.add(s);
+  for (const x of [-4, 4]) { del(CYL, M(0x8a5a30), 0.45, 4.2, 0.45, x, 2.1, PARK_R, scene, true); }
+})();
+
+// Kosetrær (instansert): runde «sukkerspinn»-kroner
+const traer = [];
+const TRE_TYPER = { gronn: [0x7fd66a, 0x6cc85e, 0x98e27a], rosa: [0xffb8d6, 0xffcde3, 0xff9fc6], gul: [0xd8ec6a, 0xc4e45a, 0xe6f38a] };
+const KLUMPER = [[0, 4.6, 0, 2.0], [1.3, 4.0, 0.4, 1.4], [-1.3, 4.1, -0.2, 1.45], [0.3, 5.7, -0.3, 1.4], [-0.3, 4.3, 1.1, 1.35]];
+(function skog() {
+  let forsok = 0;
+  while (traer.length < 330 && forsok++ < 20000) {
+    const a = Math.random() * Math.PI * 2, d = rnd(PARK_R + 10, VERDEN_R);
+    const x = Math.sin(a) * d, z = Math.cos(a) * d;
+    if (Math.abs(x) < 7 && z > 0 && d < 150) continue; // stien
+    if (naerHindre(x, z).some(h => Math.hypot(h.x - x, h.z - z) < h.r + 5.5)) continue;
+    const r = Math.random(), t = { x, z, s: rnd(1.2, 1.75), type: r < 0.6 ? 'gronn' : r < 0.8 ? 'rosa' : 'gul', f: Math.random() };
+    traer.push(t); leggHinder(x, z, 1.1 * t.s);
+  }
+  const stamme = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.42, 0.55, 3.6, 12), plysj(0xa8744a, { rim: 0.25 }), traer.length);
+  const krone = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 9), plysj(0xffffff, { rim: 0.4 }), traer.length * KLUMPER.length);
+  const o = new THREE.Object3D(), mx = new THREE.Matrix4();
+  traer.forEach((t, i) => {
+    o.position.set(t.x, 1.8 * t.s, t.z); o.rotation.set(0, t.f * 6, 0); o.scale.setScalar(t.s); o.updateMatrix(); stamme.setMatrixAt(i, o.matrix);
+    const farger = TRE_TYPER[t.type], cs = Math.cos(t.f * 6), sn = Math.sin(t.f * 6);
+    t.lov = krone; t.idx = [];
+    KLUMPER.forEach(([cx, cy, cz, r], k) => { o.position.set(t.x + (cx * cs + cz * sn) * t.s, cy * t.s, t.z + (-cx * sn + cz * cs) * t.s); o.rotation.set(0, 0, 0); o.scale.setScalar(r * t.s); o.updateMatrix(); const j = i * KLUMPER.length + k; krone.setMatrixAt(j, o.matrix); krone.setColorAt(j, C(farger[k % 3])); t.idx.push(j); });
+  });
+  for (const m of [stamme, krone]) { m.castShadow = true; m.receiveShadow = true; scene.add(m); }
+  traer.forEach((t, i) => { t.stamme = i; t.mat = t.idx.map(k => { krone.getMatrixAt(k, mx); return mx.clone(); }); stamme.getMatrixAt(i, mx); t.smat = mx.clone(); t.skjult = false; });
+  traer.stammeMesh = stamme;
+})();
+// Trær mellom kameraet og spilleren skjules, så helten alltid synes
+const NULL_M = new THREE.Matrix4().makeScale(0, 0, 0);
+function skjulTraerForan() {
+  const px = spiller.pos.x, pz = spiller.pos.z, endret = new Set();
+  for (const t of traer) {
+    const dz = t.z - pz, dx = Math.abs(t.x - px);
+    const skjul = dz > -3 && dz < 30 && dx < 6 + dz * 0.25;
+    if (skjul === t.skjult) continue;
+    t.skjult = skjul;
+    t.idx.forEach((k, j) => t.lov.setMatrixAt(k, skjul ? NULL_M : t.mat[j]));
+    traer.stammeMesh.setMatrixAt(t.stamme, skjul ? NULL_M : t.smat);
+    endret.add(t.lov); endret.add(traer.stammeMesh);
+  }
+  endret.forEach(m => m.instanceMatrix.needsUpdate = true);
+}
+
+// Steiner, blomster og dam
+(function pynt() {
+  const steiner = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 14, 10), plysj(0xcfc8de, { rim: 0.35 }), 70);
+  const o = new THREE.Object3D(); let n = 0;
+  while (n < 70) { const a = Math.random() * 6.283, d = rnd(PARK_R + 8, VERDEN_R); const x = Math.sin(a) * d, z = Math.cos(a) * d; if (naerHindre(x, z).some(h => Math.hypot(h.x - x, h.z - z) < h.r + 2)) continue; const s = rnd(0.6, 1.8); o.position.set(x, s * 0.35, z); o.rotation.set(0, rnd(0, 3), 0); o.scale.set(s * 1.3, s * 0.75, s); o.updateMatrix(); steiner.setMatrixAt(n++, o.matrix); if (s > 1.2) leggHinder(x, z, s); }
+  steiner.castShadow = steiner.receiveShadow = true; scene.add(steiner);
+  const N = 320, mid = new THREE.InstancedMesh(SPH_L, plysj(0xffe36a, { rim: 0.2 }), N), kr = new THREE.InstancedMesh(SPH_L, plysj(0xffffff, { rim: 0.3 }), N * 5), farger = [0xffb3d1, 0xffffff, 0xc9b3ff, 0xffd0a0, 0xa8dcff];
+  for (let i = 0; i < N; i++) { let x, z; for (let f = 0; f < 50; f++) { const a = i < 90 ? rnd(-0.5, 0.5) : Math.random() * 6.283, d = i < 180 ? rnd(4, PARK_R - 3) : rnd(PARK_R + 4, 150); x = Math.sin(a) * d; z = Math.cos(a) * d; const zn = soneVed(x, z); if (!(zn && (zn.id === 'is' || zn.id === 'vulkan')) && !iSjoen(x, z, 1)) break; } const y = 0.5, s = rnd(1, 1.6);
+    o.position.set(x, y, z); o.rotation.set(0, 0, 0); o.scale.setScalar(0.14 * s); o.updateMatrix(); mid.setMatrixAt(i, o.matrix);
+    const f = C(farger[i % 5]);
+    for (let k = 0; k < 5; k++) { const v = k / 5 * 6.283; o.position.set(x + Math.cos(v) * 0.22 * s, y, z + Math.sin(v) * 0.22 * s); o.scale.set(0.16 * s, 0.07 * s, 0.16 * s); o.updateMatrix(); kr.setMatrixAt(i * 5 + k, o.matrix); kr.setColorAt(i * 5 + k, f); } }
+  scene.add(mid, kr);
+})();
+
+// ======================================================
+//  Sonene i parken – pynt som passer til dyrene
+// ======================================================
+const stjerneFlyt = [];
+(function sonepynt() {
+  const o = new THREE.Object3D();
+  // Skilt for hver sone
+  for (const zn of SONER) {
+    const a = zn.vinkel * Math.PI / 180, r = TORG_R + 3.5, x = Math.sin(a) * r + (zn.id === 'eng' ? 6 : 0), z = Math.cos(a) * r;
+    const g = new THREE.Group(); g.position.set(x, 0, z);
+    polse(g, plysj(0xc48a5a, { rim: 0.2 }), 0.22, [0, 0, 0], [0, 3, 0]);
+    const s = skilt(zn.ikon + ' ' + zn.navn, 0.95, 'rgba(90,60,160,.78)'); s.position.y = 3.9; g.add(s);
+    scene.add(g);
+  }
+  // 💧 Vannlandet: innsjø med vannliljer og siv
+  { const g = new THREE.Group(); g.position.set(SJO.x, 0, SJO.z);
+    const sjo = new THREE.Mesh(new THREE.CircleGeometry(1, 48), new THREE.MeshStandardMaterial({ color: C(0x8fd8ff), roughness: 0.08, metalness: 0.15 }));
+    sjo.rotation.x = -Math.PI / 2; sjo.position.y = 0.06; sjo.scale.set(SJO.rx, SJO.rz, 1); sjo.receiveShadow = true; g.add(sjo);
+    const kant = new THREE.Mesh(new THREE.TorusGeometry(1, 0.05, 10, 48), plysj(0xf3dfae, { rim: 0.3 })); kant.rotation.x = -Math.PI / 2; kant.position.y = 0.1; kant.scale.set(SJO.rx + 0.3, SJO.rz + 0.3, 6); g.add(kant);
+    for (let i = 0; i < 9; i++) { const v = rnd(0, 6.283), r = rnd(0.2, 0.8); const lx = Math.cos(v) * r * SJO.rx, lz = Math.sin(v) * r * SJO.rz;
+      ball(g, plysj(0x7fd66a, { rim: 0.3 }), 1.1, lx, 0.12, lz, 1, 0.08, 1).castShadow = false;
+      if (i % 2 === 0) ball(g, plysj(0xffb3d1, { rim: 0.3 }), 0.35, lx, 0.35, lz, 1, 0.7, 1); }
+    for (let i = 0; i < 16; i++) { const v = i / 16 * 6.283 + rnd(-0.1, 0.1), rx = Math.cos(v) * (SJO.rx + 1), rz = Math.sin(v) * (SJO.rz + 1); if (i % 3 === 1) continue;
+      polse(g, plysj(0x6cbf5a, { rim: 0.2 }), 0.12, [rx, 0, rz], [rx + rnd(-0.3, 0.3), rnd(1.8, 2.8), rz]); ball(g, plysj(0x9a6a3a, { rim: 0.2 }), 0.2, rx, 2.4, rz, 1, 2.2, 1); }
+    slaSammen(g, new Set()); scene.add(g); }
+  // 🌋 Vulkanhagen: liten kosevulkan, lavapytter og varme steiner
+  { const g = new THREE.Group(); g.position.set(VULKAN.x, 0, VULKAN.z);
+    const fjell = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 8.5, 9, 32, 4), plysj(0xd98a6a, { rim: 0.35 })); fjell.position.y = 4.5; fjell.castShadow = true; g.add(fjell);
+    ball(g, plysj(0xd98a6a, { rim: 0.35 }), 1, 0, 0.6, 0, 8.6, 1.4, 8.6);
+    ball(g, plysj(0xff9a3a, { em: 0xff7a1a, ei: 1 }), 2.9, 0, 9.0, 0, 1, 0.3, 1).castShadow = false;
+    for (let i = 0; i < 6; i++) { const v = i / 6 * 6.283; ball(g, plysj(0xffb25a, { em: 0xff8a2a, ei: 0.8 }), 0.55, Math.sin(v) * 4.2, 6.5 - (i % 2) * 2, Math.cos(v) * 4.2, 0.8, 2.2, 0.6).rotation.y = v; }
+    slaSammen(g, new Set()); scene.add(g); leggHinder(VULKAN.x, VULKAN.z, 8.5);
+    const roykMat = plysj(0xf4eef2, { rim: 0.2 });
+    for (let i = 0; i < 4; i++) { const m = ball(scene, roykMat, 1.3, VULKAN.x, 10 + i * 2, VULKAN.z); m.castShadow = false; stjerneFlyt.push({ m, type: 'royk', fase: i * 0.25, x: VULKAN.x, z: VULKAN.z }); }
+    const lg = new THREE.Group();
+    for (let i = 0; i < 6; i++) { const t = tilfeldigISone('vulkan'); if (Math.hypot(t.x - VULKAN.x, t.z - VULKAN.z) < 12) continue;
+      const p = new THREE.Mesh(new THREE.CircleGeometry(rnd(1.4, 2.4), 28), glod(0xffa24a)); p.rotation.x = -Math.PI / 2; p.position.set(t.x, 0.07, t.z); lg.add(p);
+      const k = new THREE.Mesh(new THREE.TorusGeometry(1, 0.08, 8, 28), plysj(0x8a6a6a, { rim: 0.3 })); k.rotation.x = -Math.PI / 2; k.position.set(t.x, 0.1, t.z); k.scale.setScalar(p.geometry.parameters.radius + 0.1); k.scale.z = 3; lg.add(k); }
+    for (let i = 0; i < 10; i++) { const t = tilfeldigISone('vulkan'); ball(lg, plysj(0xb07a7a, { rim: 0.3 }), rnd(0.6, 1.2), t.x, 0.3, t.z, 1.3, 0.7, 1); }
+    slaSammen(lg, new Set()); scene.add(lg); }
+  // ❄️ Isriket: iglo, snøhauger og iskrystaller
+  { const g = new THREE.Group(); g.position.set(IGLO.x, 0, IGLO.z);
+    ball(g, plysj(0xffffff, { rim: 0.3 }), 4.2, 0, 0, 0, 1, 0.85, 1);
+    ball(g, plysj(0xffffff, { rim: 0.3 }), 1.6, 0, 0.6, 3.8, 1, 1.1, 1.2);
+    ball(g, plysj(0x8fb8e8, { rim: 0.1 }), 1.1, 0, 0.6, 5.1, 1, 1.15, 0.3);
+    for (let i = 0; i < 3; i++) { const r = new THREE.Mesh(new THREE.TorusGeometry(4.2 * Math.cos(0.3 + i * 0.35), 0.06, 6, 40), plysj(0xdbe9f8, { rim: 0 })); r.rotation.x = -Math.PI / 2; r.position.y = 3.57 * Math.sin(0.3 + i * 0.35); g.add(r); }
+    slaSammen(g, new Set()); scene.add(g); leggHinder(IGLO.x, IGLO.z, 4.3); leggHinder(IGLO.x, IGLO.z + 3.8, 1.6);
+    const ig = new THREE.Group();
+    for (let i = 0; i < 12; i++) { const t = tilfeldigISone('is'); ball(ig, plysj(0xffffff, { rim: 0.3 }), rnd(1, 2.4), t.x, 0, t.z, 1.3, 0.55, 1); }
+    for (let i = 0; i < 9; i++) { const t = tilfeldigISone('is'); for (let k = 0; k < 3; k++) { const c = new THREE.Mesh(new THREE.ConeGeometry(0.45, rnd(2, 3.5), 6), plysj(0xbfe8ff, { em: 0x9fdcff, ei: 0.25, rim: 0.5, r: 0.3 })); c.position.set(t.x + rnd(-0.8, 0.8), 1.1, t.z + rnd(-0.8, 0.8)); c.rotation.set(rnd(-0.35, 0.35), 0, rnd(-0.35, 0.35)); c.castShadow = true; ig.add(c); } leggHinder(t.x, t.z, 1); }
+    slaSammen(ig, new Set()); scene.add(ig); }
+  // 🌈 Regnbuesletta: stor regnbue med skyføtter
+  { const a = 60 * Math.PI / 180, r = 50, g = new THREE.Group(); g.position.set(Math.sin(a) * r, 0, Math.cos(a) * r); g.rotation.y = a + Math.PI / 2;
+    [0xff8a8a, 0xffc27a, 0xfff08a, 0x9fe68a, 0x8ac8ff, 0xc49aff].forEach((f, i) => { const t = new THREE.Mesh(new THREE.TorusGeometry(12.5 - i * 0.7, 0.36, 10, 48, Math.PI), plysj(f, { rim: 0.3, em: f, ei: 0.15 })); t.castShadow = true; g.add(t); });
+    for (const sx of [-1, 1]) for (let k = 0; k < 4; k++) ball(g, plysj(0xffffff, { rim: 0.25 }), rnd(1.3, 2), sx * 10.4 + rnd(-1.5, 1.5), 0.6 + rnd(0, 1), rnd(-1.2, 1.2));
+    slaSammen(g, new Set()); scene.add(g);
+    for (const sx of [-1, 1]) { const p = new THREE.Vector3(sx * 10.4, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), a + Math.PI / 2).add(g.position); leggHinder(p.x, p.z, 2.4); } }
+  // 🌙 Stjernehagen: lysende sopper og svevende stjerner
+  { const g = new THREE.Group(), hatt = [0xff9fd6, 0xb89aff, 0x8fd0ff];
+    for (let i = 0; i < 14; i++) { const t = tilfeldigISone('stjerne'), h = rnd(1.2, 2.6), f = hatt[i % 3];
+      polse(g, plysj(0xfff4e6, { rim: 0.2 }), 0.3, [t.x, 0, t.z], [t.x, h, t.z]);
+      ball(g, plysj(f, { em: f, ei: 0.55, rim: 0.4 }), 1.1, t.x, h + 0.1, t.z, 1, 0.6, 1);
+      for (let k = 0; k < 3; k++) ball(g, plysj(0xffffff, { em: 0xffffff, ei: 0.4 }), 0.14, t.x + Math.cos(k * 2.1) * 0.6, h + 0.55, t.z + Math.sin(k * 2.1) * 0.6);
+      leggHinder(t.x, t.z, 0.9); }
+    slaSammen(g, new Set()); scene.add(g);
+    for (let i = 0; i < 14; i++) { const t = tilfeldigISone('stjerne'); const m = new THREE.Mesh(STJERNE, glod(i % 2 ? 0xfff3b0 : 0xe7d8ff)); m.scale.setScalar(rnd(0.35, 0.6)); m.position.set(t.x, rnd(3, 6), t.z); scene.add(m); stjerneFlyt.push({ m, type: 'stjerne', fase: rnd(0, 6), y: m.position.y }); } }
+  // 🌸 Blomsterengen: bikube
+  { const a = rnd(-0.35, -0.2), r = 52, g = new THREE.Group(); g.position.set(Math.sin(a) * r, 0, Math.cos(a) * r);
+    polse(g, plysj(0xa8744a, { rim: 0.2 }), 0.3, [0, 0, 0], [0, 2.2, 0]);
+    for (let k = 0; k < 4; k++) ball(g, plysj(k % 2 ? 0xffd84a : 0xffe78a, { rim: 0.3 }), 1.25 - k * 0.2, 0, 2.8 + k * 0.62, 0, 1, 0.5, 1);
+    ball(g, plysj(0x5a4030, { rim: 0 }), 0.3, 0, 3.0, 1.05, 1, 1, 0.4);
+    slaSammen(g, new Set()); scene.add(g); leggHinder(g.position.x, g.position.z, 1.3); }
+})();
+function animerSonepynt(dt) {
+  for (const s of stjerneFlyt) {
+    s.fase += dt * (s.type === 'royk' ? 0.25 : 1);
+    if (s.type === 'royk') { const f = s.fase % 1; s.m.position.set(s.x + Math.sin(s.fase * 3) * 0.8, 10 + f * 9, s.z); s.m.scale.setScalar(1 + f * 1.6); }
+    else { s.m.position.y = s.y + Math.sin(s.fase) * 0.5; s.m.rotation.y += dt; }
+  }
+}
+
+// Redet
+(function redet() {
+  const g = new THREE.Group(); g.position.copy(NEST);
+  const r = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.95, 16, 36), plysj(0xe8b95a, { rim: 0.4 })); r.rotation.x = -Math.PI / 2; r.position.y = 0.65; r.castShadow = true; g.add(r);
+  ball(g, plysj(0xd9a24a, { rim: 0.2 }), 2.4, 0, 0.25, 0, 1, 0.15, 1);
+  for (let i = 0; i < 10; i++) { const v = i / 10 * 6.283; ball(g, plysj(0xf7d68a, { rim: 0.3 }), 0.35, Math.sin(v) * 2.6, 1.35, Math.cos(v) * 2.6, 1.6, 0.5, 0.6).rotation.y = v; }
+  const s = skilt('🪺 Redet', 1); s.position.set(0, 5.6, 0); g.add(s);
+  scene.add(g);
+})();
+
+// Eggbutikken
+(function butikk() {
+  const g = new THREE.Group(); g.position.copy(BUTIKK); g.rotation.y = -0.5;
+  ball(g, plysj(0xfff1d6), 1, 0, 1.25, 0, 3.6, 1.3, 1.7);
+  ball(g, plysj(0xffb3d1), 1, 0, 2.45, 0, 3.8, 0.32, 1.9);
+  for (const x of [-3.2, 3.2]) for (const z of [-1.3, 1.3]) polse(g, plysj(0xffffff, { rim: 0.2 }), 0.24, [x, 2.4, z], [x, 5.4, z]);
+  ball(g, plysj(0xff8fbf), 1, 0, 6.0, 0, 4.4, 1.35, 2.4);
+  for (let i = 0; i < 9; i++) { const x = -3.6 + i * 0.9; ball(g, plysj(0xffffff, { rim: 0.2 }), 0.32, x, 5.3, 2.05); ball(g, plysj(0xffffff, { rim: 0.2 }), 0.32, x, 5.3, -2.05); }
+  ball(g, plysj(0xffe14a, { em: 0xffc93a, ei: 0.3 }), 0.45, 0, 7.4, 0);
+  [[-2, 'butikk'], [0, 'sjelden'], [2, 'butikk']].forEach(([x, t]) => { const e = lagEgg(t); e.position.set(x, 3.4, 0.6); e.scale.multiplyScalar(0.62); g.add(e); });
+  slaSammen(g, new Set());
+  const s = skilt('🛒 Eggbutikk', 1.1); s.position.set(0, 9.2, 0); g.add(s);
+  scene.add(g); leggHinder(BUTIKK.x, BUTIKK.z, 3.8);
+})();
+
+// Bærbusker
+const busker = [];
+function lagBusk(x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z);
+  ball(g, plysj(0x6cc85e, { rim: 0.4 }), 1, 0, 1.2, 0, 1.8, 1.35, 1.8);
+  ball(g, plysj(0x8fdc72, { rim: 0.4 }), 1, 0.9, 1.75, 0.4, 1.25, 1.05, 1.25);
+  slaSammen(g, new Set());
+  const baer = [];
+  for (let i = 0; i < 4; i++) { const a = i * 1.7 + 0.4; const b = ball(g, plysj(0xff4f6a, { rim: 0.45, r: 0.45 }), 0.36, Math.sin(a) * 1.6, 1.1 + (i % 2) * 0.75, Math.cos(a) * 1.6, 1, 1, 1, KULE_L); b.castShadow = false; baer.push(b); }
+  scene.add(g); leggHinder(x, z, 1.4);
+  const b = { x, z, baer, igjen: 0, timer: 0 }; busker.push(b); return b;
+}
+lagBusk(-14, 46); lagBusk(16, 52); lagBusk(-24, 6); lagBusk(22, 8); lagBusk(-6, 62);
+(function skogBusker() { let n = 0, f = 0; while (n < 34 && f++ < 5000) { const a = Math.random() * 6.283, d = rnd(PARK_R + 10, 190); const x = Math.sin(a) * d, z = Math.cos(a) * d; if (naerHindre(x, z).some(h => Math.hypot(h.x - x, h.z - z) < h.r + 3)) continue; lagBusk(x, z); n++; } })();
+busker.forEach(b => b.igjen = 4);
+
+// ======================================================
+//  Spilleren (EVN-maskoten)
+// ======================================================
+const spiller = { pos: new THREE.Vector3(0, 0, 30), retning: Math.PI, fart: 0, gange: 0 };
+const helt = lagKoseHelt();
+(function () {
+  const a = helt.userData.a; slaSammen(helt, new Set());
+  helt.scale.setScalar(1.2);
+  helt.userData.bein = a.bein; helt.userData.armer = a.vinger; helt.userData.kropp = a.kropp;
+  scene.add(helt);
+})();
+// Skygge-ring under spilleren (lett å se hvor man står)
+const ring = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.5, 24), G(0xffffff, 0.35)); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.08; scene.add(ring);
+
+// ======================================================
+//  Magiske dyr
+// ======================================================
+const STORRELSE = { blomsterbie: 0.95, snopingvin: 1.0, perleoter: 1.0, regnbuesebra: 0.95, lavaogle: 1.05, maaneenhjorning: 0.95, boblefrosk: 1.05, glitterkanin: 1.0, bladrev: 1.05, lynkatt: 1.05, flammehest: 0.95, vannskilpadde: 1.0, stjerneugle: 1.0, isdrage: 1.05, ilddrev: 1.1 };
+const dyrListe = [];
+function skalaFor(d) { return STORRELSE[d.def.id] * (1 + 0.16 * (d.nivaa - 1)); }
+function nyttDyr(id, nivaa = 1, mat = 0, pos) {
+  const def = DYR_ID[id]; const { g, a } = lagKoseDyr(id);
+  const d = { def, nivaa, mat, g, a, mal: new THREE.Vector3(), vent: rnd(0.5, 3), myntTid: rnd(1, INNST.myntHvert), t: rnd(0, 10), lapp: null, lappTekst: '' };
+  const p = pos || tilfeldigISone(def.sone); g.position.copy(p); g.rotation.y = rnd(0, 6.28);
+  d.mal.copy(g.position); g.scale.setScalar(skalaFor(d));
+  scene.add(g); dyrListe.push(d); oppdaterLapp(d); return d;
+}
+function oppdaterLapp(d) {
+  const tekst = d.def.navn + ' ' + '⭐'.repeat(d.nivaa);
+  if (tekst === d.lappTekst) return;
+  if (d.lapp) { d.g.remove(d.lapp); d.lapp.material.map.dispose(); d.lapp.material.dispose(); }
+  d.lapp = skilt(tekst, 0.75, d.def.sjelden >= 2 ? 'rgba(90,50,170,.8)' : 'rgba(29,36,64,.7)');
+  d.lapp.position.y = d.a.hoyde + 0.9; d.lapp.visible = false; d.lapp.userData.sx = d.lapp.scale.x * 1.1; d.lapp.userData.sy = d.lapp.scale.y * 1.1;
+  d.lappTekst = tekst; d.g.add(d.lapp);
+}
+function myntVerdi(d) { return d.def.mynt * d.nivaa; }
+
+// ======================================================
+//  Egg
+// ======================================================
+
+// ======================================================
+//  Tilstand og lagring
+// ======================================================
+let tilstand = { mynter: INNST.startMynter, baer: 0, funnet: {}, baererEgg: false, eggKo: [], klekket: 0 };
+function lagre() {
+  try {
+    localStorage.setItem(LAGRING, JSON.stringify({ v: 1, mynter: Math.floor(tilstand.mynter), baer: tilstand.baer, funnet: tilstand.funnet, baererEgg: tilstand.baererEgg, eggKo: tilstand.eggKo, klekket: tilstand.klekket, dyr: dyrListe.map(d => ({ id: d.def.id, n: d.nivaa, m: d.mat })) }));
+  } catch (e) {}
+}
+function lastInn() {
+  let s = null; try { s = JSON.parse(localStorage.getItem(LAGRING)); } catch (e) {}
+  if (!s || s.v !== 1) return false;
+  tilstand.mynter = +s.mynter || 0; tilstand.baer = +s.baer || 0; tilstand.funnet = s.funnet || {}; tilstand.baererEgg = !!s.baererEgg; tilstand.klekket = +s.klekket || 0;
+  tilstand.eggKo = Array.isArray(s.eggKo) ? s.eggKo.filter(t => t === 'butikk' || t === 'sjelden') : [];
+  (s.dyr || []).forEach(d => { if (DYR_ID[d.id]) nyttDyr(d.id, Math.min(INNST.maksNivaa, Math.max(1, d.n | 0)), d.m | 0); });
+  return true;
+}
+
+// ======================================================
+//  Lyd (små pip laget i nettleseren)
+// ======================================================
+let lyd = null;
+function pip(frek, varighet = 0.12, type = 'sine', vol = 0.08, glid = 0) {
+  if (!lyd) return; try {
+    const o = lyd.createOscillator(), g = lyd.createGain(), t = lyd.currentTime;
+    o.type = type; o.frequency.setValueAtTime(frek, t); if (glid) o.frequency.exponentialRampToValueAtTime(frek * glid, t + varighet);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + varighet);
+    o.connect(g).connect(lyd.destination); o.start(t); o.stop(t + varighet + 0.02);
+  } catch (e) {}
+}
+const lydMynt = () => { pip(1320, 0.08, 'square', 0.03); setTimeout(() => pip(1760, 0.1, 'square', 0.03), 60); };
+const lydBaer = () => pip(660, 0.1, 'triangle', 0.08, 1.5);
+const lydKlekk = () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => pip(f, 0.18, 'triangle', 0.09), i * 90));
+const lydVokse = () => [392, 523, 659].forEach((f, i) => setTimeout(() => pip(f, 0.15, 'sine', 0.1), i * 80));
+
+// ======================================================
+//  HUD og meldinger
+// ======================================================
+const kø = []; let meldingTimer = 0;
+function melding(t) { if (kø[kø.length - 1] === t) return; kø.push(t); if (kø.length > 4) kø.shift(); }
+function oppdaterMelding(dt) {
+  const el = $('melding');
+  if (meldingTimer > 0) { meldingTimer -= dt; if (meldingTimer <= 0) el.classList.remove('vis'); return; }
+  if (meldingTimer > -0.3) { meldingTimer -= dt; return; }
+  if (kø.length) { const t = kø.shift(); el.textContent = t; el.classList.add('vis'); meldingTimer = Math.max(2.8, 1.2 + t.length * 0.065); }
+}
+function oppdaterHud() {
+  $('mynt').textContent = Math.floor(tilstand.mynter);
+  $('baer').textContent = tilstand.baer;
+  $('funnet').textContent = Object.keys(tilstand.funnet).length + '/' + DYR.length;
+}
+function bump(id) { const e = $(id); e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); }
+
+// Flytende tekst over ting
+const flytere = [];
+function flyt(tekst, pos, farge) { const s = skilt(tekst, 0.8, farge || 'rgba(0,0,0,0)'); s.position.copy(pos); scene.add(s); flytere.push({ s, t: 0 }); }
+
+// Partikler
+const partikler = [];
+function sprut(pos, farger, antall = 24, kraft = 9) {
+  for (let i = 0; i < antall; i++) { const m = new THREE.Mesh(OKTA, G(velg(farger))); m.scale.setScalar(rnd(0.15, 0.35)); m.position.copy(pos); scene.add(m); partikler.push({ m, v: new THREE.Vector3(rnd(-1, 1) * kraft * 0.6, rnd(0.5, 1.2) * kraft, rnd(-1, 1) * kraft * 0.6), t: 0, liv: rnd(0.7, 1.3) }); }
+}
+
+// ======================================================
+//  Mynter
+// ======================================================
+const myntGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.14, 18);
+const myntMat = new THREE.MeshStandardMaterial({ color: C(0xffc93c), metalness: 0.6, roughness: 0.3, emissive: C(0x5a3a00), emissiveIntensity: 0.4 });
+const mynter = [];
+function slippMynt(pos, verdi) {
+  if (mynter.length >= 70) { mynter[Math.floor(Math.random() * mynter.length)].verdi += verdi; return; }
+  const m = new THREE.Mesh(myntGeo, myntMat); m.rotation.x = Math.PI / 2; m.position.copy(pos); m.position.y = 1.5; m.castShadow = true; scene.add(m);
+  mynter.push({ m, verdi, v: new THREE.Vector3(rnd(-2, 2), rnd(5, 8), rnd(-2, 2)), t: rnd(0, 6) });
+}
+
+// ======================================================
+//  Klekking
+// ======================================================
+let redeEgg = null; // { m, type, t }
+const flyEgg = [];
+const KLEKK_TID = 2.6;
+function leggIRedet(type) { tilstand.eggKo.push(type); lagre(); }
+function oppdaterRedet(dt) {
+  if (!redeEgg && tilstand.eggKo.length && !$('klekk').classList.contains('vis')) {
+    const type = tilstand.eggKo[0]; const m = lagEgg(type); m.position.set(NEST.x, 1.4, NEST.z); m.scale.multiplyScalar(1.1); scene.add(m);
+    redeEgg = { m, type, t: 0 };
+  }
+  if (!redeEgg) return;
+  redeEgg.t += dt; const p = redeEgg.t / KLEKK_TID;
+  redeEgg.m.rotation.z = Math.sin(redeEgg.t * (8 + p * 20)) * 0.25 * p;
+  redeEgg.m.position.y = 1.4 + Math.max(0, Math.sin(redeEgg.t * 12)) * 0.2 * p;
+  if (redeEgg.t >= KLEKK_TID) klekk();
+}
+function trekkDyr(type) {
+  if (type === 'butikk') return velg(DYR.filter(d => d.sjelden === (Math.random() < 0.75 ? 0 : 1)));
+  if (Math.random() < INNST.ilddrevSjanse) return DYR_ID.ilddrev;
+  return velg(DYR.filter(d => d.sjelden === 2));
+}
+function klekk() {
+  const type = redeEgg.type; scene.remove(redeEgg.m); redeEgg = null; tilstand.eggKo.shift();
+  const def = trekkDyr(type);
+  const pos = new THREE.Vector3(NEST.x, 1.5, NEST.z);
+  sprut(pos, def.sjelden >= 2 ? ['#ffe14a', '#c79bff', '#ffffff'].map(s => parseInt(s.slice(1), 16)) : [0xfff4dc, 0xff8fb8, 0x6cc0ff, 0x8fdc6a], 34, 10);
+  const ny = !tilstand.funnet[def.id];
+  tilstand.funnet[def.id] = (tilstand.funnet[def.id] || 0) + 1; tilstand.klekket++;
+  const d = nyttDyr(def.id, 1, 0, new THREE.Vector3(NEST.x, 0, NEST.z + 0.5));
+  d.hoppUt = 0; d.mal.copy(tilfeldigISone(def.sone)); d.vent = 0;
+  melding(`${def.navn} går til ${SONE_ID[def.sone].ikon} ${SONE_ID[def.sone].navn}.`);
+  lydKlekk(); visKlekkKort(def, ny); oppdaterHud(); lagre();
+}
+function visKlekkKort(def, ny) {
+  $('klekkIkon').textContent = def.ikon; $('klekkNavn').textContent = def.navn;
+  const s = SJ[def.sjelden];
+  $('klekkMerker').innerHTML = `<span class="merkelapp" style="background:${s.farge}">${s.navn}</span>` + (ny ? '<span class="merkelapp ny">NY I SAMLEBOKA!</span>' : '');
+  $('klekkTekst').textContent = def.tekst + ` Den tjener ${def.mynt} 🪙 om gangen.`;
+  apneLag('klekk');
+}
+
+// Sjeldent egg i skogen
+let sjeldentEgg = null; // { g, egg, x, z }
+let sjeldentTimer = rnd(INNST.sjeldentEggMin, INNST.sjeldentEggMaks) * 0.6;
+let baereMesh = null;
+function lagSjeldentEgg() {
+  let x, z;
+  for (let f = 0; f < 500; f++) { const a = rnd(0, 6.283), r = rnd(PARK_R + 25, 190); x = Math.sin(a) * r; z = Math.cos(a) * r; if (!naerHindre(x, z).some(h => Math.hypot(h.x - x, h.z - z) < h.r + 2.5)) break; }
+  const g = new THREE.Group(); g.position.set(x, 0, z);
+  const egg = lagEgg('sjelden'); egg.position.y = 1.5; g.add(egg);
+  const straale = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.6, 80, 16, 1, true), new THREE.MeshBasicMaterial({ color: C(0xd9b8ff), transparent: true, opacity: 0.32, depthWrite: false, side: THREE.DoubleSide, fog: false, blending: THREE.AdditiveBlending }));
+  straale.position.y = 40; g.add(straale);
+  const r = new THREE.Mesh(new THREE.RingGeometry(1.6, 2.3, 28), G(0xffe14a, 0.6)); r.rotation.x = -Math.PI / 2; r.position.y = 0.1; g.add(r);
+  for (let i = 0; i < 5; i++) { const m = del(OKTA, G(0xfff3b0), 0.15, 0.15, 0.15, 0, 1.5, 0, g); m.userData.f = i * 1.25; }
+  scene.add(g); sjeldentEgg = { g, egg, x, z, straale, r };
+  melding('✨ Et sjeldent egg har dukket opp i skogen! Se etter lysstrålen.');
+  pip(880, 0.3, 'sine', 0.08, 1.5);
+}
+function oppdaterSjeldent(dt, tid) {
+  if (!sjeldentEgg && !tilstand.baererEgg && !tilstand.eggKo.includes('sjelden')) {
+    sjeldentTimer -= dt; if (sjeldentTimer <= 0) { lagSjeldentEgg(); sjeldentTimer = rnd(INNST.sjeldentEggMin, INNST.sjeldentEggMaks); }
+  }
+  if (sjeldentEgg) {
+    const s = sjeldentEgg; s.egg.rotation.y += dt * 1.2; s.egg.position.y = 1.5 + Math.sin(tid * 2.5) * 0.25;
+    s.straale.material.opacity = 0.25 + Math.sin(tid * 3) * 0.08; s.r.scale.setScalar(1 + Math.sin(tid * 3) * 0.12);
+    s.g.children.forEach(c => { if (c.userData.f !== undefined) { const f = c.userData.f + tid * 1.6; c.position.set(Math.sin(f) * 1.8, 1.5 + Math.sin(f * 1.7) * 0.8, Math.cos(f) * 1.8); c.rotation.y = f * 2; } });
+    if (Math.hypot(spiller.pos.x - s.x, spiller.pos.z - s.z) < 2.8) {
+      scene.remove(s.g); sjeldentEgg = null; tilstand.baererEgg = true; settBaering(true);
+      sprut(new THREE.Vector3(s.x, 1.5, s.z), [0xffe14a, 0xc79bff, 0xffffff], 24, 8); lydKlekk();
+      melding('Du fant et sjeldent egg! 🥚✨ Ta det med til redet i parken.'); lagre();
+    }
+  }
+  if (tilstand.baererEgg && spiller.pos.distanceTo(NEST) < 5.5) {
+    tilstand.baererEgg = false; settBaering(false); leggIRedet('sjelden'); melding('Det sjeldne egget ligger i redet. Nå klekker det!');
+  }
+}
+function settBaering(pa) {
+  if (pa && !baereMesh) { baereMesh = lagEgg('sjelden'); baereMesh.position.set(0, 6.0, 0); baereMesh.scale.multiplyScalar(0.8); helt.add(baereMesh); }
+  if (!pa && baereMesh) { helt.remove(baereMesh); baereMesh = null; }
+}
+
+// ======================================================
+//  Handlinger: kjøpe og mate
+// ======================================================
+let handling = null, handlingTekst = '';
+// Prisen øker for hvert dyr du har (og egg som venter i redet)
+function eggPris() { return Math.round(INNST.eggPris * Math.pow(INNST.prisVekst, dyrListe.length + tilstand.eggKo.length)); }
+function finnHandling() {
+  if (Math.hypot(spiller.pos.x - BUTIKK.x, spiller.pos.z - BUTIKK.z) < 7.5) {
+    if (dyrListe.length + tilstand.eggKo.length >= INNST.maksDyr) return { type: 'full', tekst: 'Parken er full! 🏞️', av: true };
+    const pris = eggPris(), ok = tilstand.mynter >= pris;
+    return { type: 'kjop', tekst: ok ? `🥚 Kjøp egg · ${pris} 🪙` : `🥚 Egg koster ${pris} 🪙`, av: !ok };
+  }
+  let best = null, bd = 5.5;
+  for (const d of dyrListe) { const dd = Math.hypot(d.g.position.x - spiller.pos.x, d.g.position.z - spiller.pos.z); if (dd < bd) { bd = dd; best = d; } }
+  if (best) {
+    if (best.nivaa >= INNST.maksNivaa) return { type: 'maks', dyr: best, tekst: `${best.def.navn} er fullvokst ⭐`, av: true };
+    const trengs = best.nivaa;
+    if (tilstand.baer <= 0) return { type: 'ingenbaer', dyr: best, tekst: `🍓 Finn bær til ${best.def.navn}`, av: true };
+    return { type: 'mat', dyr: best, tekst: `🍓 Gi mat til ${best.def.navn} (${best.mat}/${trengs})`, av: false };
+  }
+  return null;
+}
+function gjorHandling() {
+  if (!handling || modalApen()) return;
+  if (handling.type === 'kjop') {
+    const pris = eggPris();
+    if (tilstand.mynter < pris) { melding(`Egget koster ${pris} 🪙. Dyrene i parken lager mynter.`); return; }
+    tilstand.mynter -= pris; oppdaterHud(); bump('pMynt'); pip(520, 0.15, 'triangle', 0.1, 1.6);
+    const m = lagEgg('butikk'); m.position.set(BUTIKK.x, 3.5, BUTIKK.z); scene.add(m);
+    flyEgg.push({ m, t: 0, fra: m.position.clone() }); tilstand.eggKo.push('butikk'); lagre();
+    if (!tilstand.forsteKjop) { tilstand.forsteKjop = true; melding('Egget flyr til redet. Se hva som klekker! 🪺'); }
+  } else if (handling.type === 'mat') {
+    const d = handling.dyr; tilstand.baer--; d.mat++; bump('pBaer');
+    flyt('❤️', d.g.position.clone().add(new THREE.Vector3(0, 3.5, 0)));
+    pip(700, 0.1, 'sine', 0.08, 1.3);
+    if (d.mat >= d.nivaa) {
+      d.nivaa++; d.mat = 0; d.vekst = 0.6; oppdaterLapp(d);
+      sprut(d.g.position.clone().add(new THREE.Vector3(0, 2, 0)), [0xffe14a, 0x8fdc6a, 0xffffff], 20, 7); lydVokse();
+      melding(`${d.def.navn} vokste til nivå ${d.nivaa}! Nå lager den ${myntVerdi(d)} 🪙 om gangen.`);
+    }
+    oppdaterHud(); lagre();
+  } else if (handling.type === 'ingenbaer') {
+    melding('Du har ingen bær. Plukk bær fra buskene i skogen! 🍓');
+  }
+}
+$('handling').addEventListener('click', e => { e.preventDefault(); gjorHandling(); });
+
+// ======================================================
+//  Styring
+// ======================================================
+const taster = {};
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase(); taster[k] = true;
+  if (spillTilstand === 'spill' && !modalApen() && (k === 'e' || k === ' ')) { e.preventDefault(); if (!e.repeat) gjorHandling(); }
+  if (k === 'escape') { if ($('bok').classList.contains('vis')) lukkLag('bok'); else if ($('klekk').classList.contains('vis')) lukkLag('klekk'); }
+  if (k.startsWith('arrow')) e.preventDefault();
+});
+addEventListener('keyup', e => { taster[e.key.toLowerCase()] = false; });
+addEventListener('blur', () => { for (const k in taster) taster[k] = false; joy.aktiv = false; joyEl.style.display = 'none'; });
+addEventListener('wheel', e => { if (spillTilstand === 'spill') zoom = Math.min(1.5, Math.max(0.65, zoom * (e.deltaY > 0 ? 1.08 : 0.92))); }, { passive: true });
+
+const joy = { aktiv: false, id: null, sx: 0, sy: 0, dx: 0, dy: 0 };
+const joyEl = $('joy'), knott = joyEl.querySelector('i');
+canvas.addEventListener('pointerdown', e => {
+  if (spillTilstand !== 'spill' || joy.aktiv) return;
+  joy.aktiv = true; joy.id = e.pointerId; joy.sx = e.clientX; joy.sy = e.clientY; joy.dx = joy.dy = 0;
+  if (e.pointerType !== 'mouse' || true) { joyEl.style.left = e.clientX + 'px'; joyEl.style.top = e.clientY + 'px'; joyEl.style.display = 'block'; knott.style.transform = ''; }
+  canvas.setPointerCapture(e.pointerId); e.preventDefault();
+});
+canvas.addEventListener('pointermove', e => {
+  if (!joy.aktiv || e.pointerId !== joy.id) return;
+  let dx = e.clientX - joy.sx, dy = e.clientY - joy.sy; const l = Math.hypot(dx, dy), R = 55;
+  if (l > R) { dx *= R / l; dy *= R / l; }
+  joy.dx = l < 10 ? 0 : dx / R; joy.dy = l < 10 ? 0 : dy / R;
+  knott.style.transform = `translate(${dx}px,${dy}px)`;
+});
+const slippJoy = e => { if (e.pointerId !== joy.id) return; joy.aktiv = false; joy.id = null; joy.dx = joy.dy = 0; joyEl.style.display = 'none'; };
+canvas.addEventListener('pointerup', slippJoy); canvas.addEventListener('pointercancel', slippJoy);
+// Hindrer knip-zoom med to fingre under spilling (lærdom fra Mørkeskogen)
+document.addEventListener('gesturestart', e => { if (spillTilstand === 'spill') e.preventDefault(); });
+document.addEventListener('touchmove', e => { if (spillTilstand === 'spill' && e.touches.length > 1 && !modalApen()) e.preventDefault(); }, { passive: false });
+
+// ======================================================
+//  Lag (overlays)
+// ======================================================
+let spillTilstand = 'start';
+const evnApen = () => ['evnPause', 'evnKart', 'evnNullstillBoks'].some(id => { const e = $(id); return e && e.classList.contains('vis'); }) || (() => { const e = $('evnSporsmal'); return !!e && e.style.display === 'grid'; })();
+const modalApen = () => ['klekk', 'bok', 'start'].some(id => $(id).classList.contains('vis')) || evnApen();
+function apneLag(id) { $(id).classList.add('vis'); const b = $(id).querySelector('button.stor'); if (b) setTimeout(() => b.focus({ preventScroll: true }), 50); }
+function lukkLag(id) { $(id).classList.remove('vis'); }
+$('klekkOk').addEventListener('click', () => lukkLag('klekk'));
+$('bokKnapp').addEventListener('click', () => { byggBok(); apneLag('bok'); });
+
+// Kartet: nord er opp, akkurat som på skjermen. Tegnes her og vises i det felles kartet (EVN-PAUSE).
+const kartLerret = document.createElement('canvas'); kartLerret.width = kartLerret.height = 600;
+function tegnKart() {
+  const cv = kartLerret, x = cv.getContext('2d'), W = cv.width, R = W / 2 - 4, k = R / VERDEN_R;
+  const px = wx => W / 2 + wx * k, py = wz => W / 2 + wz * k;
+  x.clearRect(0, 0, W, W);
+  x.save(); x.beginPath(); x.arc(W / 2, W / 2, R, 0, 6.283); x.clip();
+  x.fillStyle = '#86cf6a'; x.fillRect(0, 0, W, W);
+  x.fillStyle = '#f0dcaa'; x.fillRect(px(-4.5), py(PARK_R), 9 * k, (150 - PARK_R) * k); // stien
+  const TF = { gronn: '#4f9e44', rosa: '#f4c6dc', gul: '#c3d460' }; for (const t of traer) { x.fillStyle = TF[t.type]; x.beginPath(); x.arc(px(t.x), py(t.z), 2.2 * t.s * k + 1, 0, 6.283); x.fill(); }
+  x.fillStyle = '#f0dcaa'; x.beginPath(); x.arc(W / 2, W / 2, (PARK_R + 3) * k, 0, 6.283); x.fill();
+  x.fillStyle = '#c6efa0'; x.beginPath(); x.arc(W / 2, W / 2, (PARK_R - 1) * k, 0, 6.283); x.fill();
+  for (const zn of SONER) { const a0 = (zn.vinkel - 30) * Math.PI / 180, a1 = (zn.vinkel + 30) * Math.PI / 180; x.fillStyle = zn.kart; x.beginPath(); x.moveTo(W / 2, W / 2); for (let t = 0; t <= 1.001; t += 0.05) { const v = a0 + (a1 - a0) * t; x.lineTo(px(Math.sin(v) * (PARK_R - 1)), py(Math.cos(v) * (PARK_R - 1))); } x.closePath(); x.fill(); }
+  x.fillStyle = '#c6efa0'; x.beginPath(); x.arc(W / 2, W / 2, TORG_R * k, 0, 6.283); x.fill();
+  x.fillStyle = '#f0dcaa'; x.fillRect(px(-3.5), py(TORG_R), 7 * k, (PARK_R - TORG_R) * k);
+  x.fillStyle = '#8fd8ff'; x.beginPath(); x.ellipse(px(SJO.x), py(SJO.z), SJO.rx * k, SJO.rz * k, 0, 0, 6.283); x.fill();
+  x.font = '22px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  for (const zn of SONER) { const v = zn.vinkel * Math.PI / 180, r = (TORG_R + PARK_R) / 2 + 6; x.fillText(zn.ikon, px(Math.sin(v) * r), py(Math.cos(v) * r)); }
+  x.strokeStyle = '#8a5a30'; x.lineWidth = 3; x.beginPath(); x.arc(W / 2, W / 2, PARK_R * k, Math.PI / 2 + 0.12, Math.PI / 2 - 0.12 + 6.283); x.stroke();
+  for (const b of busker) { x.fillStyle = b.igjen > 0 ? '#ff4f6a' : '#6aa86a'; x.beginPath(); x.arc(px(b.x), py(b.z), 4, 0, 6.283); x.fill(); }
+  for (const d of dyrListe) { x.fillStyle = SJ[d.def.sjelden].farge; x.beginPath(); x.arc(px(d.g.position.x), py(d.g.position.z), 3, 0, 6.283); x.fill(); }
+  x.font = '26px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText('🪺', px(NEST.x), py(NEST.z)); x.fillText('🛒', px(BUTIKK.x), py(BUTIKK.z));
+  // Spilleren: gul pil som peker dit du går
+  x.save(); x.translate(px(spiller.pos.x), py(spiller.pos.z)); x.rotate(-spiller.retning + Math.PI);
+  x.fillStyle = '#ffc93c'; x.strokeStyle = '#1d2440'; x.lineWidth = 3;
+  x.beginPath(); x.moveTo(0, -22); x.lineTo(15, 15); x.lineTo(0, 7); x.lineTo(-15, 15); x.closePath(); x.fill(); x.stroke();
+  x.restore(); x.restore();
+  x.strokeStyle = 'rgba(255,255,255,.6)'; x.lineWidth = 4; x.beginPath(); x.arc(W / 2, W / 2, R, 0, 6.283); x.stroke();
+  // Kompass
+  const cx = W - 70, cy = 70;
+  x.fillStyle = 'rgba(29,36,64,.85)'; x.beginPath(); x.arc(cx, cy, 46, 0, 6.283); x.fill();
+  x.fillStyle = '#ff5f5f'; x.beginPath(); x.moveTo(cx, cy - 30); x.lineTo(cx + 8, cy); x.lineTo(cx - 8, cy); x.fill();
+  x.fillStyle = '#ffffff'; x.beginPath(); x.moveTo(cx, cy + 30); x.lineTo(cx + 8, cy); x.lineTo(cx - 8, cy); x.fill();
+  x.font = '800 18px Nunito, sans-serif'; x.fillStyle = '#fff';
+  x.fillText('N', cx, cy - 38 + 4); x.fillText('S', cx, cy + 38 - 2); x.fillText('Ø', cx + 37, cy + 1); x.fillText('V', cx - 37, cy + 1);
+}
+$('lukkBok').addEventListener('click', () => lukkLag('bok'));
+
+function byggBok() {
+  $('rutenett').innerHTML = DYR.map(d => {
+    const n = tilstand.funnet[d.id], s = SJ[d.sjelden];
+    return n ? `<div class="dyrkort" style="border-color:${s.farge}"><div class="ik">${d.ikon}</div><div class="nv">${d.navn}</div><div class="sj" style="color:${s.farge}">${s.navn}</div><div class="sj">${SONE_ID[d.sone].ikon} ${SONE_ID[d.sone].navn}</div><div class="sj">Klekket: ${n}</div></div>`
+             : `<div class="dyrkort ukjent"><div class="ik">❓</div><div class="nv">???</div><div class="sj" style="color:${s.farge}">${s.navn}</div></div>`;
+  }).join('');
+}
+
+$('startBtn').addEventListener('click', () => {
+  try { lyd = lyd || new (window.AudioContext || window.webkitAudioContext)(); lyd.resume && lyd.resume(); } catch (e) {}
+  lukkLag('start'); $('hud').hidden = false; $('hoyre').hidden = false; spillTilstand = 'spill'; sisteTid = performance.now();
+  try { document.dispatchEvent(new Event('evn-start')); } catch (e) {}
+  $('hjelp').innerHTML = erTouch || document.documentElement.classList.contains('touch') ? 'Dra fingeren for å gå 👆' : 'Gå med piltastene eller WASD';
+  setTimeout(() => $('hjelp').style.opacity = 0, 15000);
+  if (dyrListe.length === 0 && tilstand.klekket === 0) melding(`Gå til eggbutikken 🛒 og kjøp ditt første egg!`);
+  else melding('Velkommen tilbake til parken! 🥚');
+});
+
+// ======================================================
+//  Oppdatering hvert bilde
+// ======================================================
+let sisteTid = performance.now(), tid = 0, lagreTid = 0;
+const tmp = new THREE.Vector3();
+function flyttMedKollisjon(p, dx, dz, r) {
+  let nx = p.x + dx, nz = p.z + dz;
+  for (const h of naerHindre(nx, nz)) { const ax = nx - h.x, az = nz - h.z, d = Math.hypot(ax, az), min = h.r + r; if (d < min && d > 0.0001) { nx = h.x + ax / d * min; nz = h.z + az / d * min; } }
+  const d = Math.hypot(nx, nz); if (d > VERDEN_R) { nx *= VERDEN_R / d; nz *= VERDEN_R / d; }
+  p.x = nx; p.z = nz;
+}
+function oppdaterSpiller(dt) {
+  let x = 0, z = 0;
+  if (!modalApen()) {
+    if (taster['arrowleft'] || taster['a']) x -= 1; if (taster['arrowright'] || taster['d']) x += 1;
+    if (taster['arrowup'] || taster['w']) z -= 1; if (taster['arrowdown'] || taster['s']) z += 1;
+    if (joy.aktiv) { x += joy.dx; z += joy.dy; }
+  }
+  const l = Math.hypot(x, z); if (l > 1) { x /= l; z /= l; }
+  const mal = Math.min(1, l) * INNST.fart; spiller.fart += (mal - spiller.fart) * Math.min(1, dt * 10);
+  if (l > 0.05) { const r = Math.atan2(x, z); let diff = r - spiller.retning; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); spiller.retning += diff * Math.min(1, dt * 12); }
+  if (spiller.fart > 0.1) { const s = spiller.fart * dt; flyttMedKollisjon(spiller.pos, Math.sin(spiller.retning) * s * (l > 0.05 ? 1 : 0.6), Math.cos(spiller.retning) * s * (l > 0.05 ? 1 : 0.6), 1.0); }
+  helt.position.copy(spiller.pos); helt.rotation.y = spiller.retning;
+  spiller.gange += dt * spiller.fart * 0.6; const sv = Math.sin(spiller.gange) * Math.min(1, spiller.fart / INNST.fart) * 0.8;
+  helt.userData.bein[0].rotation.x = sv; helt.userData.bein[1].rotation.x = -sv; helt.userData.armer[0].rotation.x = -sv; helt.userData.armer[1].rotation.x = sv;
+  helt.userData.kropp.position.y = Math.abs(Math.sin(spiller.gange)) * 0.25 * Math.min(1, spiller.fart / INNST.fart);
+  { const a = helt.userData.a; a.t += dt; a.blunk -= dt; const lukk = a.blunk < 0.12 ? 0.1 : 1; if (a.blunk < 0) a.blunk = rnd(2, 5); a.lokk.forEach(l => l.scale.y = lukk); a.hode.rotation.z = Math.sin(a.t * 1.3) * 0.05; }
+  ring.position.x = spiller.pos.x; ring.position.z = spiller.pos.z;
+  if (baereMesh) { baereMesh.rotation.y += dt * 2; baereMesh.position.y = 6.0 + Math.sin(tid * 4) * 0.15; }
+}
+function oppdaterDyr(dt) {
+  for (const d of dyrListe) {
+    d.t += dt; const g = d.g, a = d.a;
+    const s = skalaFor(d) * (d.vekst > 0 ? 1 + Math.sin((0.6 - d.vekst) / 0.6 * Math.PI) * 0.35 : 1); if (d.vekst > 0) d.vekst -= dt;
+    g.scale.setScalar(s);
+    if (d.lapp) { const k = 1 / s; d.lapp.scale.set(d.lapp.userData.sx * k, d.lapp.userData.sy * k, 1); d.lapp.position.y = d.a.hoyde + 0.9 / s; }
+    tmp.set(d.mal.x - g.position.x, 0, d.mal.z - g.position.z); const avst = tmp.length();
+    let gar = false;
+    if (d.vent > 0) d.vent -= dt;
+    else if (avst < 0.5) { d.vent = rnd(1.5, 5); d.mal.copy(tilfeldigISone(d.def.sone)); }
+    else {
+      gar = true; const fart = (d.def.id === 'flammehest' || d.def.id === 'lynkatt' ? 4 : 2.6);
+      tmp.normalize(); g.position.addScaledVector(tmp, Math.min(avst, fart * dt));
+      const r = Math.atan2(tmp.x, tmp.z); let diff = r - g.rotation.y; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); g.rotation.y += diff * Math.min(1, dt * 5);
+    }
+    const sving = gar ? Math.sin(d.t * 9) * 0.5 : 0;
+    a.bein.forEach((b, i) => b.rotation.x = (i === 0 || i === 3) ? sving : -sving);
+    g.position.y = a.flyr ? 0.4 + Math.sin(d.t * 2.5) * 0.35 : a.hopp && gar ? Math.abs(Math.sin(d.t * 6)) * 0.7 : 0;
+    animerKose(a, dt, gar);
+    a.vinger.forEach((v, i) => v.rotation.z = (i ? -1 : 1) * Math.sin(d.t * (a.flyr ? 30 : gar ? 9 : 4)) * (a.flyr ? 0.5 : gar ? 0.4 : 0.25));
+    // Mynter
+    d.myntTid -= dt; if (d.myntTid <= 0) { d.myntTid = INNST.myntHvert * rnd(0.85, 1.15); slippMynt(g.position, myntVerdi(d)); }
+    const naer = Math.hypot(g.position.x - spiller.pos.x, g.position.z - spiller.pos.z) < 16; if (d.lapp.visible !== naer) d.lapp.visible = naer;
+  }
+}
+function oppdaterMynter(dt) {
+  let fikk = 0;
+  for (let i = mynter.length - 1; i >= 0; i--) {
+    const c = mynter[i], m = c.m; c.t += dt; m.rotation.z += dt * 3;
+    if (c.v) { c.v.y -= 22 * dt; m.position.addScaledVector(c.v, dt); if (m.position.y <= 0.6) { m.position.y = 0.6; c.v = null; } }
+    else m.position.y = 0.7 + Math.sin(c.t * 3) * 0.15;
+    const dx = spiller.pos.x - m.position.x, dz = spiller.pos.z - m.position.z, dd = Math.hypot(dx, dz);
+    if (dd < 7 && !c.v) { const k = Math.min(1, dt * 9); m.position.x += dx * k; m.position.z += dz * k; }
+    if (dd < 1.8) { fikk += c.verdi; scene.remove(m); mynter.splice(i, 1); }
+  }
+  if (fikk) { tilstand.mynter += fikk; oppdaterHud(); bump('pMynt'); lydMynt(); flyt('+' + fikk + ' 🪙', spiller.pos.clone().add(new THREE.Vector3(0, 7, 0))); }
+}
+function oppdaterBusker(dt) {
+  for (const b of busker) {
+    if (b.igjen < 4) { b.timer += dt; if (b.timer >= INNST.baerVokserIgjen) { b.igjen = 4; b.timer = 0; b.baer.forEach(m => m.visible = true); } }
+    if (b.igjen > 0 && Math.hypot(spiller.pos.x - b.x, spiller.pos.z - b.z) < 3.4) {
+      tilstand.baer += b.igjen; flyt('+' + b.igjen + ' 🍓', new THREE.Vector3(b.x, 4, b.z)); b.igjen = 0; b.timer = 0; b.baer.forEach(m => m.visible = false);
+      oppdaterHud(); bump('pBaer'); lydBaer();
+      if (!tilstand.forsteBaer) { tilstand.forsteBaer = true; melding('Bær! 🍓 Gå bort til et dyr og gi det mat, så vokser det.'); }
+    }
+  }
+}
+function oppdaterEffekter(dt) {
+  for (let i = flyEgg.length - 1; i >= 0; i--) { const f = flyEgg[i]; f.t += dt / 1.1; const t = Math.min(1, f.t); f.m.position.lerpVectors(f.fra, tmp.set(NEST.x, 1.4, NEST.z), t); f.m.position.y += Math.sin(t * Math.PI) * 9; f.m.rotation.z += dt * 6; if (t >= 1) { scene.remove(f.m); flyEgg.splice(i, 1); } }
+  for (let i = flytere.length - 1; i >= 0; i--) { const f = flytere[i]; f.t += dt; f.s.position.y += dt * 2.5; f.s.material.opacity = 1 - f.t / 1.3; if (f.t > 1.3) { scene.remove(f.s); f.s.material.map.dispose(); f.s.material.dispose(); flytere.splice(i, 1); } }
+  for (let i = partikler.length - 1; i >= 0; i--) { const p = partikler[i]; p.t += dt; p.v.y -= 18 * dt; p.m.position.addScaledVector(p.v, dt); p.m.rotation.x += dt * 6; p.m.scale.multiplyScalar(1 - dt * 0.8); if (p.t > p.liv || p.m.position.y < 0) { scene.remove(p.m); partikler.splice(i, 1); } }
+}
+function oppdaterHandling() {
+  handling = spillTilstand === 'spill' && !modalApen() ? finnHandling() : null;
+  const el = $('handling');
+  const tekst = handling ? handling.tekst + (handling.av ? '' : '<span class="tast">(E)</span>') : '';
+  if (tekst !== handlingTekst) { handlingTekst = tekst; el.innerHTML = tekst; el.style.display = handling ? 'block' : 'none'; el.classList.toggle('av', !!(handling && handling.av)); }
+}
+function oppdaterKamera(dt) {
+  const mal = tmp.copy(spiller.pos).addScaledVector(KAM, zoom);
+  camera.position.lerp(mal, Math.min(1, dt * 6));
+  camera.lookAt(spiller.pos.x, spiller.pos.y + 3, spiller.pos.z - 2);
+  sol.position.set(spiller.pos.x + 40, 80, spiller.pos.z + 25); sol.target.position.copy(spiller.pos);
+}
+camera.position.copy(spiller.pos).add(KAM); camera.lookAt(spiller.pos);
+
+function loop(na) {
+  requestAnimationFrame(loop);
+  let dt = (na - sisteTid) / 1000; sisteTid = na; if (!(dt > 0)) dt = 0; dt = Math.min(dt, 0.05);
+  if (spillTilstand === 'spill') {
+    tid += dt;
+    oppdaterSpiller(dt); oppdaterDyr(dt); oppdaterMynter(dt); oppdaterBusker(dt); oppdaterRedet(dt); oppdaterSjeldent(dt, tid); oppdaterEffekter(dt);
+    lagreTid += dt; if (lagreTid > 5) { lagreTid = 0; lagre(); }
+  } else if (spillTilstand === 'start') {
+    tid += dt; oppdaterDyr(dt * 0.5);
+  }
+  vind.value += dt; animerSonepynt(dt); skyer.forEach(s => { s.position.x += dt * 0.8; if (s.position.x > 300) s.position.x = -300; }); window.__himmel.position.copy(camera.position);
+  oppdaterMelding(dt); oppdaterHandling(); oppdaterKamera(dt); skjulTraerForan();
+  renderer.render(scene, camera);
+}
+addEventListener('pagehide', lagre);
+
+// Start
+lastInn(); if (tilstand.baererEgg) settBaering(true); oppdaterHud();
+// «Start helt på nytt» på startskjermen (felles for alle EVN-spill)
+EVNNullstill({
+  nokler: [LAGRING],
+  tema: { panel: '#2d2a6e', ink: '#fff', hi: '#ffc93c', btn: '#ffc93c', btnInk: '#4a2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400 },
+  tekst: 'Alle dyrene, myntene og samleboka blir borte.',
+  harLagring: () => dyrListe.length > 0 || tilstand.klekket > 0 || tilstand.eggKo.length > 0,
+  plasser: el => $('evnTilbake').after(el),
+  vis: () => $('start').classList.contains('vis')
+});
+// Felles pause med spilletid og kart (⏸ / P / Esc, 🗺️ / M). Spilletid lagres i 'evn-spilletid-magiske-egg'.
+window.__evnP = EVNPause({
+  mappe: 'magiske-egg', avsluttId: 'evnAvslutt',
+  tema: { panel: 'rgba(45,42,110,.97)', ink: '#fff', hi: '#ffc93c', btn: '#ffc93c', btnInk: '#4a2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400 },
+  knapp: (b, k) => { for (const x of [k, b]) { x.className = 'rund'; x.style.cssText = 'padding:0;font-size:22px'; } $('hoyre').insertBefore(k, $('evnAvslutt')); $('hoyre').insertBefore(b, $('evnAvslutt')); },
+  kart: {
+    forhold: 1,
+    info: () => '🔺 Du · 🪺 Redet · 🛒 Butikk · 🔴 Bær',
+    tegn: (c, w, h) => { tegnKart(); c.drawImage(kartLerret, 0, 0, w, h); }
+  },
+  kanPause: () => spillTilstand === 'spill' && !['klekk', 'bok', 'start'].some(id => $(id).classList.contains('vis')),
+  aktiv: () => spillTilstand === 'spill',
+  pause: () => { spillTilstand = 'pause'; for (const k in taster) taster[k] = false; joy.aktiv = false; joyEl.style.display = 'none'; lagre(); },
+  fortsett: () => { spillTilstand = 'spill'; for (const k in taster) taster[k] = false; sisteTid = performance.now(); },
+  lagre: lagre,
+  styring: () => document.documentElement.classList.contains('touch')
+    ? '👆 Dra fingeren for å gå<br>🟡 Trykk på den gule knappen for å kjøpe og mate<br>🗺️ Kartet viser hvor du er'
+    : '⬆️ Piltaster eller WASD for å gå<br>E eller mellomrom: kjøpe og mate<br>M: kart · P eller Esc: pause'
+});
+requestAnimationFrame(loop);
+// Til testing
+window.__spill = { tilstand, dyrListe, spiller, INNST, mynter, busker, get sjeldentEgg() { return sjeldentEgg; }, gjorHandling, lagSjeldentEgg, nyttDyr, scene, camera };
+</script>
+<!-- EVN Studio: knapp tilbake til forsiden (vises bare under /spill/) -->
+<style>
+#evnSporsmal{position:fixed;inset:0;z-index:100000;display:none;place-items:center;background:rgba(15,20,40,.7);padding:16px}
+#evnSporsmal .boks{background:linear-gradient(#2d2a6e,#1d2440);border:3px solid #ffc93c;border-radius:20px;padding:22px;max-width:340px;display:grid;gap:14px;text-align:center;color:#fff;font:800 19px 'Nunito',system-ui,sans-serif}
+#evnSporsmal button{min-height:52px;border-radius:14px;font:800 19px 'Nunito',system-ui,sans-serif;cursor:pointer;touch-action:manipulation}
+#evnBli{background:linear-gradient(#ffd75e,#f0a91c);color:#4a2a00;border:3px solid #fff}
+#evnGaa{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5)}
+</style>
+<div id="evnSporsmal" role="dialog" aria-modal="true"><div class="boks">
+  <div>Vil du avslutte og gå tilbake til forsiden? Dyrene dine er lagret.</div>
+  <button type="button" id="evnBli">Nei, spill videre</button><button type="button" id="evnGaa">Ja, avslutt</button>
+</div></div>
+<script>
+try {
+  if (location.pathname.indexOf('/spill/') !== -1) {
+    var av = document.getElementById('evnAvslutt'), sp = document.getElementById('evnSporsmal');
+    av.style.display = 'flex';
+    var tb = document.getElementById('evnTilbake'); if (tb) tb.hidden = false;
+    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new Event('blur')); sp.style.display = 'grid'; document.getElementById('evnBli').focus(); });
+    addEventListener('keydown', function (e) { if (e.key === 'Escape' && sp.style.display === 'grid') { e.preventDefault(); sp.style.display = 'none'; } });
+    ['pointerdown', 'mousedown', 'touchstart'].forEach(function (ev) { sp.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); av.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
+    document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; });
+    document.getElementById('evnGaa').addEventListener('click', function () { location.href = '../../'; });
+  }
+} catch (e) {}
+</script>
+</body>
+</html>
