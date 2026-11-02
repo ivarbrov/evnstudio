@@ -1,4 +1,5 @@
-"""Beskjærer råbildene fra lag-bilder.mjs og lager WebP-filene til nettsiden.
+"""Beskjærer råbildene fra lag-bilder.mjs og lager WebP-filene til nettsiden og startkortene.
+Komprimerer også Era-arkene (nettleserens WebP-koder har ingen innstilling for gjennomsiktighet).
 Kjør: python3 lag-web.py <mappe med råbilder> <utmappe for bilder/>"""
 import sys
 from pathlib import Path
@@ -38,6 +39,12 @@ kv = hode.crop((cx - side // 2, b[1] - side // 20, cx + side // 2, b[1] - side /
 for h in (96, 192):
     lagre(kv, f'robot-hode-{h}.webp', h)
 
+# Startkort: én positur per spill (robot-start-<navn>-130/260.webp; vises ca. 100–120 px høy)
+for p in sorted(inn.glob('start-*.png')):
+    im = Image.open(p).convert('RGBA'); c = im.crop(boks(im))
+    for h in (130, 260):
+        lagre(c, f'robot-{p.stem}-{h}.webp', h)
+
 # Vinkesekvens: 8 bilder i én stripe, felles beskjæring så roboten står stille
 vink = [Image.open(inn / f'web-vink-{i}.png').convert('RGBA') for i in range(8)]
 fb = boks(*vink)
@@ -50,3 +57,9 @@ for h in (160,):
         stripe.paste(r.resize((w, h), Image.LANCZOS), (i * w, 0))
     stripe.save(ut / f'robot-vink-{h}.webp', 'WEBP', quality=70, alpha_quality=60, method=6)
     print('laget', f'robot-vink-{h}.webp', (w, h), 'per bilde', (ut / f'robot-vink-{h}.webp').stat().st_size, 'byte')
+
+# Era Defenders: mindre filer (robotarket q80, tilbehørslagene q70, gjennomsiktighet q50–60)
+for p in sorted(inn.glob('era-*.webp')):
+    im = Image.open(p); q, aq = (80, 60) if p.name == 'era-ark.webp' else (70, 50)
+    im.save(ut / p.name, 'WEBP', quality=q, alpha_quality=aq, method=6)
+    print('laget', p.name, (ut / p.name).stat().st_size, 'byte')
