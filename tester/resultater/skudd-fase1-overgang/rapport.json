@@ -1,0 +1,41 @@
+{
+ "dato": "2026-11-02T08:07:25.540Z",
+ "punkter": {
+  "dag-baal": {
+   "snittAvvik": 16.28,
+   "andelStoreAvvik": 0.1907,
+   "bilder": {
+    "original": "tester/resultater/skudd-fase1-overgang/dag-baal-original.png",
+    "2.0": "tester/resultater/skudd-fase1-overgang/dag-baal-2.0.png"
+   }
+  },
+  "kveld": {
+   "snittAvvik": 12.57,
+   "andelStoreAvvik": 0.1416,
+   "bilder": {
+    "original": "tester/resultater/skudd-fase1-overgang/kveld-original.png",
+    "2.0": "tester/resultater/skudd-fase1-overgang/kveld-2.0.png"
+   }
+  },
+  "natt": {
+   "snittAvvik": 5.05,
+   "andelStoreAvvik": 0.0501,
+   "bilder": {
+    "original": "tester/resultater/skudd-fase1-overgang/natt-original.png",
+    "2.0": "tester/resultater/skudd-fase1-overgang/natt-2.0.png"
+   }
+  },
+  "ovenfra": {
+   "snittAvvik": 16.22,
+   "andelStoreAvvik": 0.1842,
+   "bilder": {
+    "original": "tester/resultater/skudd-fase1-overgang/ovenfra-original.png",
+    "2.0": "tester/resultater/skudd-fase1-overgang/ovenfra-2.0.png"
+   }
+  }
+ },
+ "konsoll": {
+  "original": [],
+  "2.0": []
+ }
+}

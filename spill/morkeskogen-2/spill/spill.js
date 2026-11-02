@@ -2265,8 +2265,8 @@ function skyAt(dx, dy, dz, U, out) {
   return out;
 }
 function initR3() {
-  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true }); renderer.outputColorSpace = THREE.LinearSRGBColorSpace;   // 2.0: lineær utdata som i r128 (overgang)
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;   // 2.0: PCFSoftShadowMap er fjernet i r187
   const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9ab8a6);
   scene.fog = new THREE.Fog(0x9ab8a6, 600, 1300);
   const camera = new THREE.PerspectiveCamera(50, 1, 5, 16000);
@@ -3085,8 +3085,8 @@ function heroMat(o) {
   const m = new THREE.MeshStandardMaterial(Object.assign({ roughness: .85, metalness: 0 }, o));
   m.onBeforeCompile = sh => {
     FOG_HOOK(sh); sh.uniforms.uRimCol = HERO_RIM;
-    sh.fragmentShader = 'uniform vec3 uRimCol;\n' + sh.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );',
-      'outgoingLight += uRimCol * pow(1.0 - clamp(dot(normalize(vViewPosition), normal), 0.0, 1.0), 3.0);\n\tgl_FragColor = vec4( outgoingLight, diffuseColor.a );');
+    sh.fragmentShader = 'uniform vec3 uRimCol;\n' + sh.fragmentShader.replace('#include <opaque_fragment>',
+      'outgoingLight += uRimCol * pow(1.0 - clamp(dot(normalize(vViewPosition), normal), 0.0, 1.0), 3.0);\n\t#include <opaque_fragment>');   // 2.0: linja ligger i opaque_fragment fra r154
   };
   m.customProgramCacheKey = () => 'heroRim';
   return m;
@@ -3487,7 +3487,7 @@ function heroBodyMats(HM) {
   const skinT = cTex(128, 128, (x, w, h) => { x.fillStyle = '#f0ccb0'; x.fillRect(0, 0, w, h); grain(x, w, h, 1500, .03, 1, 3); }, [1, 1]);
   for (const t of [torsoT, sleeveT, denimT]) { t.wrapS = THREE.RepeatWrapping; }
   faceT.wrapS = THREE.RepeatWrapping;
-  const sk = { skinning: true };
+  const sk = {};   // 2.0: skinning-flagget er fjernet (r129)
   const mats = [
     heroMat(Object.assign({ map: faceT, roughness: .58, emissive: '#2a1008', emissiveIntensity: .32 }, sk)),
     heroMat(Object.assign({ map: skinT, roughness: .6, emissive: '#2a1008', emissiveIntensity: .32 }, sk)),

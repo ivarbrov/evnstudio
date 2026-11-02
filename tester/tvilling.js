@@ -17,7 +17,7 @@ const BASE = process.env.BASE || 'http://localhost:8765';
 const KANDIDAT = process.argv[2] || '2.0';
 const VALGTE = (process.argv[3] || 'alle').split(',');
 
-const INIT = `(() => {
+const INIT = `(() => {${process.env.DEBUG_RNG ? 'window.__rngLogg = [];' : ''}
   // Fast klokke og bildeløkke
   let T = 1000; const t0 = 1767225600000;
   performance.now = () => T; Date.now = () => t0 + T;
@@ -33,17 +33,22 @@ const INIT = `(() => {
   // I draw() (merket av testkroken) går alt til grafikkrekka. Utenfor draw avgjør kallstakken (få kall, så det er billig).
   window.__iGrafikk = false;
   // Grafikkens inngangspunkter (draw, buildWorld, initR3) merkes ved servering; ingen kallstakk-sjekk (den var for treg).
-  Math.random = () => { if (window.__iGrafikk) { __rngTeller.grafikk++; return grafikk(); } __rngTeller.logikk++; return logikk(); };
+  // Trekk inne i three.js (f.eks. UUID-er) er grafikk. Utenfor merkede grafikkfunksjoner sjekkes kallstakken (få kall, ca. 3 000 per scene).
+  const fraThree = () => /three-r1\d\d[.\w]*\.js/.test(new Error().stack);
+  Math.random = () => { if (window.__iGrafikk || fraThree()) { __rngTeller.grafikk++; return grafikk(); } __rngTeller.logikk++; if (window.__rngLogg) window.__rngLogg.push(new Error().stack.split(String.fromCharCode(10)).slice(2, 6).map(l => l.trim().split(' ')[1]).join(' < ')); return logikk(); };
   try { const s = sessionStorage.getItem('__tvillingLagring'); if (s) { const o = JSON.parse(s); for (const k in o) localStorage.setItem(k, o[k]); sessionStorage.removeItem('__tvillingLagring'); } } catch (e) {}
 })();`;
 // Testkrok: lesetilgang og noen rene hjelpefunksjoner (for å finne plasser i verden). Brukes likt på begge sider.
-const KROK = `window.__tv = { g: () => g, hero: () => hero, world: () => world, state: () => state,
+const KROK = `window.__kam = () => R3 && { yaw: R3.camYaw, pitch: R3.camPitch, zoom: R3.camZoom, mode: R3.camMode, aim: camAim() };
+window.__tv = { g: () => g, hero: () => hero, world: () => world, state: () => state,
   f: () => ({ target, canPlace, ghostPos, phaseInfo, trackPos, curW, LAKE_X, LAKE_Y, LAKE_R, DCX, DCY, FX, FY, DAY, DUSK, NIGHT, CAR_COACH }) };\n`;
 const DRAW_FRA = 'if (g) draw(ts / 1000);', DRAW_TIL = 'if (g) { window.__iGrafikk = true; try { draw(ts / 1000); } finally { window.__iGrafikk = false; } }';
 const MERK = t => ['buildWorld', 'initR3'].reduce((x, f) => x.replace(`function ${f}() {`, `function ${f}() { const __f = window.__iGrafikk; window.__iGrafikk = true; try { return ${f}__o.apply(this, arguments); } finally { window.__iGrafikk = __f; } }\nfunction ${f}__o() {`), t.replace(DRAW_FRA, DRAW_TIL));
 // r128 legger render() på selve objektet i konstruktøren, så vi pakker inn konstruktøren
-const SLÅ_AV_WEBGL = `<script>if (window.THREE) { const O = THREE.WebGLRenderer; THREE.WebGLRenderer = function (...a) { const r = new O(...a); r.render = function () {}; return r; }; THREE.WebGLRenderer.prototype = O.prototype; }</script>`;
+const SLÅ_AV_WEBGL = `<script>window.__iGrafikk = false; /* three.js er lastet; biblioteket trakk fra grafikkrekka */ if (window.THREE) { if (!Object.getOwnPropertyDescriptor(THREE, 'WebGLRenderer').writable) window.THREE = Object.assign({}, THREE); /* r187-bygget har bare getter-egenskaper */ const O = THREE.WebGLRenderer; THREE.WebGLRenderer = function (...a) { const r = new O(...a); r.render = function () {}; return r; }; THREE.WebGLRenderer.prototype = O.prototype; }</script>`;
 
+// Tilfeldige trekk som three.js gjør mens biblioteket lastes, regnes som grafikk (ulikt mellom r128 og r187)
+const FØR_THREE = '<script>window.__iGrafikk = true;</script>';
 function sha(f) { return crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex'); }
 async function side(browser, hvilken) {
   const ctx = await browser.newContext({ viewport: { width: 480, height: 300 }, reducedMotion: 'reduce' });
@@ -61,12 +66,14 @@ async function side(browser, hvilken) {
       if (h === før) throw new Error('mutant2 traff ikke koden');
     }
     h = h.replace('<script>\n(() => {\nconst WS = 1.6', '<script>\n(() => {\n' + KROK + 'const WS = 1.6'); h = MERK(h);
-    h = h.replace('<script src="../../vendor/three-r128.min.js"></script>', '<script src="../../vendor/three-r128.min.js"></script>' + SLÅ_AV_WEBGL);
+    h = h.replace('<script src="../../vendor/three-r128.min.js"></script>', FØR_THREE + '<script src="../../vendor/three-r128.min.js"></script>' + SLÅ_AV_WEBGL);
     r.fulfill({ body: h, contentType: 'text/html; charset=utf-8' });
   });
   await p.route('**/spill/morkeskogen-2/spill/index.html', async r => {
     let h = fs.readFileSync(path.join(ROT, 'spill/morkeskogen-2/spill/index.html'), 'utf8');
-    h = h.replace('<script src="../../../vendor/three-r128.min.js"></script>', '<script src="../../../vendor/three-r128.min.js"></script>' + SLÅ_AV_WEBGL);
+    const T = h.includes('three-r187.global.js') ? '<script src="../../../vendor/three-r187.global.js"></script>' : '<script src="../../../vendor/three-r128.min.js"></script>';
+    if (!h.includes(T)) throw new Error('Fant ikke three-taggen i 2.0');
+    h = h.replace(T, FØR_THREE + T + SLÅ_AV_WEBGL);
     r.fulfill({ body: h, contentType: 'text/html; charset=utf-8' });
   });
   await p.route('**/spill/morkeskogen-2/spill/spill.js', async r => {
@@ -84,7 +91,11 @@ async function last(p, lagring) {
 }
 const SNAP = () => {
   const sett = new WeakSet();
-  const rep = (k, v) => {
+  const G = __tv.g();
+  const rep = function (k, v) {
+    // Visuelle effekter i g: partikler og kameraristing. Leses bare av grafikken, og grafikken skriver også selv til dem
+    // (treet som lander i draw() kaller burst() og setter g.shake med grafikkrekka). Logikken bruker dem aldri.
+    if (this === G && (k === 'parts' || k === 'shake')) return undefined;
     if (typeof k === 'string' && k[0] === '_') return undefined;                       // grafikkobjekter (t._m o.l.)
     if (typeof v === 'function') return undefined;
     if (v && typeof v === 'object') {
@@ -95,7 +106,9 @@ const SNAP = () => {
     return v;
   };
   const ls = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.startsWith('mork3d')) ls[k] = localStorage.getItem(k); }   // evn-spilletid skrives av en sanntidstimer (EVN-PAUSE), ikke av spillogikken, og sammenlignes ikke
-  return JSON.stringify({ g: __tv.g(), hero: __tv.hero(), world: __tv.world(), state: __tv.state(), lagring: ls, rng: window.__rngTeller.logikk }, rep);
+  // JSON.stringify kaller three.js sine toJSON() (før filteret) og de trekker tilfeldige tall til UUID-er: regnes som grafikk, ikke spill
+  const før = window.__iGrafikk, n = window.__rngTeller.logikk; window.__iGrafikk = true;
+  try { return JSON.stringify({ g: G, hero: __tv.hero(), world: __tv.world(), state: __tv.state(), lagring: ls, rng: n }, rep); } finally { window.__iGrafikk = før; }
 };
 const HASH = `(() => { const s = (${SNAP.toString()})(); let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) + ':' + s.length; })()`;
 function forskjeller(a, b, sti = '', ut = []) {
@@ -270,6 +283,7 @@ const SCENER = {
         const [ha, hb] = await Promise.all([A.evaluate(HASH), B.evaluate(HASH)]);
         if (ha === hb) continue;
         const [sa, sb] = await Promise.all([A.evaluate(SNAP), B.evaluate(SNAP)]);
+        if (sa !== sb && process.env.DEBUG_RNG) { const la = await A.evaluate(() => __rngLogg), lb = await B.evaluate(() => __rngLogg); const nor = x => x.replace(/https?:\S+/g, 'url'); let i = 0; while (i < la.length && nor(la[i]) === nor(lb[i])) i++; fs.writeFileSync('/tmp/parts.json', JSON.stringify({ A: await A.evaluate(() => __tv.g().parts.map(q => [q.x, q.y, q.vx, q.vy, q.t, q.c])), B: await B.evaluate(() => __tv.g().parts.map(q => [q.x, q.y, q.vx, q.vy, q.t, q.c])) })); const ka = await A.evaluate(() => __kam && __kam()), kb = await B.evaluate(() => __kam && __kam()); fs.writeFileSync('/tmp/rngdiff.txt', `kamera A ${JSON.stringify(ka)}\nkamera B ${JSON.stringify(kb)}\nførste ulike trekk nr ${i} av ${la.length}/${lb.length}\nA: ${la.slice(Math.max(0, i - 3), i + 8).join('\n   ')}\nB: ${lb.slice(Math.max(0, i - 3), i + 8).join('\n   ')}\n`); }
         if (sa !== sb) { const d = forskjeller(JSON.parse(sa), JSON.parse(sb)); første = { bilde: bilder, sekunder: +(bilder / 60).toFixed(2), antall: d.length, forskjeller: d.map(x => ({ ...x, kategori: kategori(x.sti) })) }; }
       }
     };
