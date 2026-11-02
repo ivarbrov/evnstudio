@@ -63,7 +63,10 @@ window.EVN2_OVERGANG = (function () {
     });
   }
   const alle = [];
-  function farge(c) { if (!c) return; const s = sist.get(c); if (s !== undefined && s === c.getHex() + ':' + c.r) return; c.convertSRGBToLinear(); sist.set(c, c.getHex() + ':' + c.r); }
+  function farge(c) {   // tall i stedet for tekst: kjøres for alle gamle materialer hvert bilde
+    if (!c) return; let s = sist.get(c); if (s && s[0] === c.r && s[1] === c.g && s[2] === c.b) return;
+    c.convertSRGBToLinear(); if (!s) sist.set(c, s = new Float64Array(3)); s[0] = c.r; s[1] = c.g; s[2] = c.b;
+  }
   let n = 0;
   // Objekter som legges til i scenen (også senere i spillet), gjøres om med en gang
   const add0 = T.Object3D.prototype.add;

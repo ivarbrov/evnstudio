@@ -1,0 +1,27 @@
+{
+ "omregninger": 392399,
+ "dobbel": [],
+ "antallDobbel": 0,
+ "materialer": 1677,
+ "gamle": 1663,
+ "nye": 3,
+ "ikkeGjortOm": [],
+ "antallIkkeGjortOm": 0,
+ "nyGjortOm": [],
+ "feilVerdi": [],
+ "dynamiskeFarger": 43,
+ "robot": {
+  "Grey": "#5f5f55",
+  "Main": "#ff9a00",
+  "Black": "#0c0c0c"
+ },
+ "forventetRobot": {
+  "Main": "#ff9a00",
+  "Grey": "#5f5f55",
+  "Black": "#0c0c0c"
+ },
+ "konsoll": [],
+ "omregningerPerBilde": 33.28333333333333,
+ "status": "BESTÅTT",
+ "feil": []
+}
