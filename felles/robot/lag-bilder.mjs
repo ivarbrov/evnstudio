@@ -5,6 +5,7 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { startServer } from './server.mjs';
+import { EPOKER } from './tilbehor.js';
 
 const dir = path.dirname(new URL(import.meta.url).pathname);
 const ut = path.resolve(process.argv[2] || path.join(dir, 'ut'));
@@ -28,9 +29,9 @@ const lagre = (navn, url) => { fs.writeFileSync(path.join(ut, navn), Buffer.from
   for (const t of tider(6, K.Idle)) rammer.push({ klipp: 'Idle', t, retning: R });
   for (const t of tider(8, K.Walking)) rammer.push({ klipp: 'Walking', t, retning: R });
   for (const t of tider(6, K.Punch, false)) rammer.push({ klipp: 'Punch', t, retning: R });
-  for (const t of tider(6, K.Jump, false)) rammer.push({ klipp: 'Jump', t, retning: R });
+  for (const t of tider(6, K.Jump, false)) rammer.push({ klipp: 'Jump', t, retning: R, juster: 'topp' });   // hopp, klatring og fall: roboten står på samme høyde som før (0.7.3)
   lagre('fossil-ark.webp', await side.evaluate(s => window.tegnArk(s),
-    { F: 128, kol: 26, hoyde: 14, synlig: 1.255, fot: 0.965, rammer, kvalitet: 0.85 }));
+    { F: 128, kol: 26, hoyde: 14, synlig: 1.218, fot: 0.95, rammer, kvalitet: 0.85 }));
 }
 
 // ---- Era Defenders: ovenfra og skrått (50°), 5 retninger × 12 bilder à 96 px ----
@@ -43,14 +44,22 @@ const lagre = (navn, url) => { fs.writeFileSync(path.join(ut, navn), Buffer.from
     for (const t of tider(6, K.Walking)) rammer.push({ klipp: 'Walking', t, retning: r });
     for (const t of tider(4, K.Punch * 0.7, false)) rammer.push({ klipp: 'Punch', t, retning: r });
   }
-  lagre('era-ark.webp', await side.evaluate(s => window.tegnArk(s),
-    { F: 96, kol: 12, hoyde: 35, synlig: 1.4, fot: 0.9, rammer, kvalitet: 0.82 }));
+  const era = { F: 96, kol: 12, hoyde: 35, synlig: 1.4, fot: 0.9, rammer };
+  lagre('era-ark.webp', await side.evaluate(s => window.tegnArk(s), { ...era, kvalitet: 0.82 }));
+  // Tilbehør per tidsepoke (alternativ C: hatt/hjelm + kappe/utstyr). Bare tilbehøret; legges over robotarket i spillet.
+  for (const epoke of EPOKER)
+    lagre(`era-tilbehor-${epoke}.webp`, await side.evaluate(s => window.tegnArk(s), { ...era, kvalitet: 0.8, tilbehor: { epoke, hva: 'begge' }, kunTilbehor: true }));
 }
 
 // ---- Nettsiden: råbilder i PNG (beskjæres og gjøres om til WebP i lag-web.py) ----
 const bilde = (navn, s) => side.evaluate(s => window.tegnBilde(s), s).then(u => lagre(navn, u));
 await bilde('web-staende.png', { B: 1300, Hpx: 1400, klipp: 'Idle', t: 0, retning: 0.15, hoyde: 8, avstand: 3.2, mal: 0.5 });
 await bilde('web-hode.png', { B: 900, Hpx: 900, klipp: 'Idle', t: 0, retning: 0.15, hoyde: 6, avstand: 1.25, mal: 0.8 });
+// Startkort: én positur per spill (Even velger), samme kamera som «Hvem står bak?» men litt mer fra siden
+const POSER = { kamp: ['Punch', .3], tommel: ['ThumbsUp', .5], jubel: ['Jump', .45], vink: ['Wave', .35], lop: ['Running', .2],
+  'egg-holder': ['Wave', .3, 'egg-hand'], 'egg-ser': ['Idle', 0, 'egg-bakke', 0.95] };
+for (const [navn, [klipp, a, rekvisitt, retning]] of Object.entries(POSER))
+  await bilde(`start-${navn}.png`, { B: 1500, Hpx: 1500, klipp, t: K[klipp] * a, retning: retning ?? 0.35, hoyde: 8, avstand: 3.4, mal: 0.5, rekvisitt });
 for (const [i, t] of tider(8, K.Wave).entries())
   await bilde(`web-vink-${i}.png`, { B: 1300, Hpx: 1400, klipp: 'Wave', t, retning: 0.15, hoyde: 8, avstand: 3.2, mal: 0.5 });
 
