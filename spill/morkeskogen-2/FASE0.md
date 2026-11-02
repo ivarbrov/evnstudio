@@ -114,7 +114,7 @@ iPhone (iOS 18.7, Claude-appen), stil 2, Middels, DPR 1,5. Skjermlås-hindring: 
   Målemetoden er ikke årsaken: v1 og v2 regner FPS likt når det ikke er avbrudd.
 - **Konklusjon:** Ingen endring i grafikk eller kvalitet anbefales nå. Det avgjørende er om bildefrekvensen holder seg over 30 i 10 min. Det viser bare en gyldig varmetest.
 
-### Varmetest 2.11.2026 kl. 07:01 (UTC 06:01) – v2, 10 min (gyldig)
+### Varmetest 2.11.2026 kl. 06:51–07:01 – v2, 10 min (gyldig)
 Samme iPhone, stil 2, Middels, DPR 1,5. Skjermlås-hindring aktiv. **600 s aktiv tid av 600, 0 avbrudd. Status: BESTÅTT.**
 
 | | Hele testen | Svakeste minutt | Sterkeste minutt |
@@ -125,7 +125,7 @@ Samme iPhone, stil 2, Middels, DPR 1,5. Skjermlås-hindring aktiv. **600 s aktiv
 | Hakk > 100 ms | 0 | – | – |
 
 **Vurdering:**
-- **Ingen tegn til varmestruping.** FPS steg fra ca. 52 i minutt 1–3 til 56,6–57,8 i minutt 4–10. Testen startet ca. 10 min etter 1-minuttstesten, så telefonen var ikke kald.
+- **Ingen tegn til varmestruping.** FPS steg fra ca. 52 i minutt 1–3 til 56,6–57,8 i minutt 4–10. Testen startet rett etter 1-minuttstesten, så telefonen var ikke kald.
 - **Laveste verdi:** Ingen hele minutter var under 51 FPS. Laveste «1 % lav» var 32,3, over målet på 30.
 - **Hva testen dekker:**
   - Én scene (dag ved bålet) på én enhet. Natt med monstre var tyngst i 1-minuttstesten (45,8 FPS) og er ikke varmetestet.
