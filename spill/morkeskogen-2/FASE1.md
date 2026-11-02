@@ -200,3 +200,13 @@ Even valgte 90 % etter sammenligningsbildene. Ivar godkjente endringen.
 - **Bygging:** Den bygges med `verktoy/lag-testkopi.mjs`.
 - **Innhold:** Ingen statistikk. Egen nettleserlagring, så ekte lagringer berøres ikke.
 - **Testpanel:** Bytt kamera, FPS, tegnekall og antall tonede trær, pluss knappen «Mål 60 s».
+
+## HUD-forslag (til vurdering hos Even – ikke implementert)
+- **Prototype:** `testvisning/hud-prototype.html` (lages med `verktoy/lag-hud-prototype.py`). Artefakt: https://claude.ai/artifact/JByrNiYiFAoE1VKNBRqBK1
+- **Bakgrunn:** ekte skjermbilder fra 2.0 for PC (1280 × 720) og mobil (844 × 390, liggende), dag og natt. De tas med `tester/hud-skudd.js`.
+- **Kartlegging:** Dagens HUD oppdateres av `updateHud()`, som er en låst logikkblokk. Ny HUD må derfor beholde alle element-id-er: `bHp`, `bFood`, `bWater`, `bFire`, `fireLvl`, `wood`, `stone`, `iron`, `wIcon`, `axe`, `lvl`, `raw`, `cooked`, `skin`, `phase`, `nights`, `biome`, `hotbar`, `prompt` og `toast`.
+  - Ny layout lages med HTML og CSS i `index.html`.
+  - Visning ved behov (ressurser) lages i grafikklaget, for eksempel ved å se etter endringer i elementene. Logikken endres ikke.
+- **Merknader:**
+  - Spillet har ingen «varme»-status. 🔥-linja viser brensel i bålet og bålnivå.
+  - `EVN-UI-STANDARD.md` og `EVN-GAME-STANDARD.md` finnes ikke i repoet eller i prosjektet. Kontrollen er gjort mot prosjektinstruksen, kapittel 10 og 13.

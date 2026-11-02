@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mørkeskogen 2.0 – HUD-forslag</title>
+<style>
+/* EVN-identitet fra 5.6.2: farger og skrifter (Lilita One / Nunito med systemskrift som reserve) */
+:root{ --night:#0b1410; --ember:#ff9a3c; --bone:#f3ead6; --berry:#e0435a; --leaf:#7bc96f; --gold:#ffcc00;
+  --glass:rgba(12,20,16,.55); --glass2:rgba(12,20,16,.72); --line:rgba(243,234,214,.16);
+  --display:'Lilita One','Trebuchet MS',system-ui,sans-serif; --body:'Nunito','Segoe UI',system-ui,sans-serif; }
+*{box-sizing:border-box} html,body{margin:0;background:#101612;color:var(--bone);font-family:var(--body)}
+header{padding:14px 18px 6px} h1{font-family:var(--display);font-weight:400;color:var(--ember);margin:0 0 4px;font-size:28px}
+header p{margin:0;opacity:.85;max-width:900px}
+nav{display:flex;flex-wrap:wrap;gap:8px;padding:10px 18px}
+nav button{font:700 15px var(--body);padding:8px 14px;border-radius:10px;border:2px solid var(--line);background:#1b2620;color:var(--bone);cursor:pointer}
+nav button.på{border-color:var(--ember);background:#3a2a17}
+.rad{display:flex;flex-wrap:wrap;gap:8px;padding:0 18px 8px;align-items:center;font-size:14px}
+.rad label{display:flex;gap:6px;align-items:center;background:#1b2620;border-radius:8px;padding:5px 9px;cursor:pointer}
+.scene-wrap{padding:0 18px 18px}
+.scene{position:relative;overflow:hidden;border-radius:12px;transform-origin:0 0;background:#000 center/cover no-repeat}
+.merk{position:absolute;left:8px;bottom:8px;font:700 12px var(--body);background:rgba(0,0,0,.55);padding:3px 7px;border-radius:6px;z-index:50}
+.notat{padding:0 18px 24px;max-width:1100px;line-height:1.45}
+.notat h2{font-family:var(--display);font-weight:400;color:var(--ember);font-size:22px;margin:18px 0 6px}
+.notat table{border-collapse:collapse;font-size:14px} .notat td,.notat th{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+
+/* ===================== Ny HUD (felles byggeklosser) ===================== */
+.h-pill{background:var(--glass);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:14px}
+.h-status{position:absolute;display:grid;gap:5px;padding:8px 10px}
+.h-stat{display:grid;grid-template-columns:20px 1fr auto;align-items:center;gap:7px;font:800 12px var(--body)}
+.h-stat .ik{font-size:15px;line-height:1;text-align:center}
+.h-bar{height:9px;border-radius:6px;background:rgba(255,255,255,.14);overflow:hidden}
+.h-bar i{display:block;height:100%;border-radius:6px}
+.hp i{background:linear-gradient(90deg,#e0435a,#ff6b7d)} .mat i{background:linear-gradient(90deg,#e8913a,#ffc06a)} .baal i{background:linear-gradient(90deg,#ff7a2a,#ffd36b)}
+.h-stat .tall{min-width:26px;text-align:right;opacity:.9}
+.lav .h-bar i{animation:puls 1s infinite} @keyframes puls{50%{filter:brightness(1.7)}}
+.h-lvl{font:800 11px var(--body);background:var(--ember);color:#2a1606;border-radius:6px;padding:1px 5px}
+.h-topph{position:absolute;display:flex;gap:8px;align-items:center}
+.h-dag{display:flex;gap:10px;align-items:center;padding:6px 12px;font:15px var(--display);letter-spacing:.02em}
+.h-dag .omr{font:700 12px var(--body);opacity:.85}
+.h-knapp{display:grid;place-items:center;border-radius:50%;font-size:19px;border:1px solid var(--line);background:var(--glass2);color:var(--bone)}
+.h-hotbar{position:absolute;display:flex;gap:6px;padding:6px;align-items:end}
+.h-slot{position:relative;display:grid;place-items:center;border-radius:12px;background:rgba(243,234,214,.08);border:2px solid rgba(243,234,214,.16);font-size:24px}
+.h-slot.på{border-color:var(--gold);background:rgba(255,204,0,.22);box-shadow:0 0 0 2px rgba(255,204,0,.25)}
+.h-slot .k{position:absolute;left:4px;top:2px;font:800 10px var(--body);opacity:.7}
+.h-slot .nv{position:absolute;right:3px;bottom:1px;font:800 10px var(--body);color:var(--gold)}
+.h-vnavn{position:absolute;font:800 13px var(--body);text-align:center;text-shadow:0 1px 3px #000}
+.h-niva{display:grid;place-items:center;border-radius:50%;font:800 14px var(--body);color:#2a1606;
+  background:conic-gradient(var(--gold) var(--xp),rgba(255,255,255,.2) 0);position:relative}
+.h-niva::after{content:attr(data-l);position:absolute;inset:4px;border-radius:50%;background:#2a2410;color:var(--gold);display:grid;place-items:center}
+.h-res{position:absolute;display:flex;gap:6px;flex-wrap:wrap;transition:opacity .4s,transform .4s}
+.h-res.skjult{opacity:0;transform:translateY(-6px)}
+.h-chip{display:flex;gap:4px;align-items:center;padding:4px 9px;font:800 13px var(--body)}
+.h-chip.ny{border-color:var(--gold);box-shadow:0 0 0 1px rgba(255,204,0,.4)}
+.h-chip .full{color:var(--gold);font-size:11px}
+.h-prompt{position:absolute;left:50%;transform:translateX(-50%);padding:7px 14px;font:800 14px var(--body);white-space:nowrap}
+.h-prompt kbd{font:800 12px var(--body);background:var(--bone);color:#1a1a1a;border-radius:5px;padding:1px 6px;margin-right:6px}
+.h-toast{position:absolute;left:50%;transform:translateX(-50%);font:22px var(--display);text-shadow:0 2px 6px #000;white-space:nowrap}
+/* mobil: store berøringsflater */
+.m-joy{position:absolute;border-radius:50%;border:2px solid rgba(243,234,214,.25);background:rgba(12,20,16,.25)}
+.m-joy::after{content:'';position:absolute;left:30%;top:30%;width:40%;height:40%;border-radius:50%;background:rgba(243,234,214,.35)}
+.m-btn{position:absolute;display:grid;place-items:center;border-radius:50%;background:var(--glass2);border:2px solid rgba(243,234,214,.28);font-size:26px}
+.m-btn.stor{background:rgba(255,154,60,.35);border-color:var(--ember)}
+.m-btn small{position:absolute;bottom:-15px;font:800 10px var(--body);text-shadow:0 1px 2px #000;white-space:nowrap}
+.h-hjelp{position:absolute;inset:0;display:grid;place-items:center;background:rgba(5,10,8,.55);z-index:40}
+.h-hjelp .kort{width:min(560px,92%);padding:16px 18px}
+.h-hjelp h3{font:22px var(--display);margin:0 0 8px;color:var(--ember);font-weight:400}
+.h-hjelp table{width:100%;font:700 14px var(--body);border-collapse:collapse} .h-hjelp td{padding:4px 6px;border-bottom:1px solid var(--line)}
+.h-hjelp kbd{font:800 12px var(--body);background:var(--bone);color:#1a1a1a;border-radius:5px;padding:1px 6px}
+.utv{position:absolute;right:8px;bottom:8px;border:2px dashed #ff5aa5;background:rgba(40,0,20,.6);color:#ffd0e6;font:700 11px var(--body);padding:5px 8px;border-radius:8px;z-index:45}
+</style>
+</head>
+<body>
+<header>
+  <h1>Mørkeskogen 2.0 – forslag til ny HUD</h1>
+  <p>Bakgrunnen er ekte skjermbilder fra 2.0 (fase 1). HUD-en er en tegnet prototype: den er ikke koblet til spillet ennå. Velg PC eller mobil, dag eller natt, og slå av og på situasjoner nedenfor.</p>
+</header>
+<nav id="valg">
+  <button data-v="pc" class="på">💻 PC</button><button data-v="mobil">📱 Mobil (liggende)</button>
+  <button data-v="pc-for">PC i dag (5.6.2-HUD)</button><button data-v="mobil-for">Mobil i dag (5.6.2-HUD)</button>
+</nav>
+<div class="rad" id="sit">
+  <label><input type="checkbox" data-s="natt"> 🌙 Natt</label>
+  <label><input type="checkbox" data-s="ressurs" checked> 🪵 Har nettopp plukket ved</label>
+  <label><input type="checkbox" data-s="lav"> 🍓 Lite mat</label>
+  <label><input type="checkbox" data-s="prompt" checked> ✋ Står ved bålet</label>
+  <label><input type="checkbox" data-s="hjelp"> ❓ Hjelpemeny åpen</label>
+  <label><input type="checkbox" data-s="utv"> 🛠 Utviklerverktøy (bare for testing)</label>
+</div>
+<div class="scene-wrap"><div class="scene" id="scene"></div></div>
+
+<div class="notat">
+  <h2>Hva som er endret</h2>
+  <table>
+    <tr><th>Område</th><th>5.6.2</th><th>Forslag</th></tr>
+    <tr><td>Status oppe til venstre</td><td>Stort mørkt panel med liv, mat, bål, ressurser, våpen og nivå</td><td>Tre smale linjer (liv, mat, bål med nivå). Vann vises bare når det er i bruk, som før</td></tr>
+    <tr><td>Oppe til høyre</td><td>Panel med dag, netter, område, tastaturhjelp; egne knapper under</td><td>Én rad: dag og område, pause, kart, hjelp og avslutt (på mobil ligger Avslutt i pausemenyen). Netter overlevd vises i pause og hjelp, og når en ny dag starter</td></tr>
+    <tr><td>Ressurser (ved, stein, jern, kjøtt, stekt, skinn)</td><td>Alltid synlige</td><td>Vises i 4 s når de endres, alltid når lageret er fullt, ved bålet, i byggemodus og ved verkstedet. Alltid i ryggsekk-menyen</td></tr>
+    <tr><td>Våpen og nivå</td><td>Våpennavn og nivå i statuspanelet, hurtiglinje nederst</td><td>Hurtiglinje nederst med navnet på valgt våpen over, og nivå med XP-ring til venstre</td></tr>
+    <tr><td>Tastaturhjelp</td><td>Alltid synlig (PC)</td><td>I hjelpemenyen (❓ eller H). Hint i bunnen («E: legg ved på bålet») beholdes, det vises bare når det trengs</td></tr>
+    <tr><td>Mobil</td><td>Samme panel, mindre; små, gjennomsiktige knapper</td><td>Egen utforming: styrespak til venstre, stor øks-knapp og hopp til høyre (minst 56 px), små knapper 48 px med tekst, hurtiglinje i midten</td></tr>
+    <tr><td>Utviklerverktøy</td><td>Lys-test-panelet kan slås på i spillet</td><td>Rosa stiplet ramme og «UTVIKLER» – kan ikke forveksles med vanlig HUD; bare i testkopier</td></tr>
+  </table>
+</div>
+
+<script>
+const BILDER = { 'pc-dag': '{{PC_DAG}}', 'pc-natt': '{{PC_NATT}}', 'mobil-dag': '{{MOBIL_DAG}}', 'mobil-natt': '{{MOBIL_NATT}}', 'pc-for': '{{PC_FOR}}', 'mobil-for': '{{MOBIL_FOR}}' };
+const S = { natt: false, ressurs: true, lav: false, prompt: true, hjelp: false, utv: false };
+let visning = 'pc';
+const $ = s => document.querySelector(s);
+function stat(ik, kl, v, ekstra = '') { return `<div class="h-stat ${kl}"><span class="ik">${ik}</span><div class="h-bar"><i style="width:${v}%"></i></div>${ekstra}</div>`; }
+function hud(m) {   // m = 'pc' | 'mobil'
+  const pc = m === 'pc', lav = S.lav, matV = lav ? 18 : 72;
+  const dag = S.natt ? '🌙 Natt 1' : '☀️ Dag 1';
+  const kn = pc ? 40 : 44;
+  let h = '';
+  // Status
+  h += `<div class="h-pill h-status ${lav ? '' : ''}" style="left:${pc ? 14 : 12}px;top:${pc ? 14 : 10}px;width:${pc ? 230 : 160}px">
+    ${stat('❤️', 'hp', 85, pc ? '<b class="tall">85</b>' : '')}
+    <div class="${lav ? 'lav' : ''}">${stat('🍓', 'mat', matV, pc ? `<b class="tall">${matV}</b>` : '')}</div>
+    ${stat('🔥', 'baal', 64, '<b class="h-lvl">Nv 1</b>')}</div>`;
+  // Ressurser (kontekst)
+  h += `<div class="h-res ${S.ressurs || S.prompt ? '' : 'skjult'}" style="left:${pc ? 14 : 12}px;top:${pc ? 104 : 84}px;max-width:${pc ? 330 : 260}px">
+    <span class="h-pill h-chip ${S.ressurs ? 'ny' : ''}">🪵 7<span class="full">/15</span></span><span class="h-pill h-chip">🪨 3</span>
+    ${S.prompt ? '<span class="h-pill h-chip">🥩 2</span>' : ''}</div>`;
+  // Oppe til høyre
+  h += `<div class="h-topph" style="right:${pc ? 14 : 12}px;top:${pc ? 14 : 10}px">
+    <div class="h-pill h-dag">${dag}${pc ? '<span class="omr">🌲 Skogen</span>' : ''}</div>
+    <span class="h-knapp" style="width:${kn}px;height:${kn}px" title="Pause (P)">⏸</span>
+    <span class="h-knapp" style="width:${kn}px;height:${kn}px" title="Kart (M)">🗺️</span>
+    <span class="h-knapp" style="width:${kn}px;height:${kn}px" title="Hjelp (H)">❓</span>
+    ${pc ? `<span class="h-knapp" style="width:${kn}px;height:${kn}px" title="Avslutt">✕</span>` : ''}</div>`;
+  if (pc) {
+    const W = 1280, H = 720, sl = 52;
+    h += `<div class="h-vnavn" style="left:0;right:0;bottom:88px">🪓 Vanlig øks</div>`;
+    h += `<div class="h-pill h-hotbar" style="left:${W / 2 - 150}px;bottom:14px">
+      <span class="h-niva" style="--xp:35%;width:${sl}px;height:${sl}px" data-l="⭐1" title="Nivå 1 – 35 % til nivå 2"></span>
+      <span class="h-slot på" style="width:${sl}px;height:${sl}px"><span class="k">1</span>🪓</span>
+      <span class="h-slot" style="width:${sl}px;height:${sl}px"><span class="k">2</span>🗡️</span>
+      <span class="h-slot" style="width:${sl}px;height:${sl}px"><span class="k">3</span>🏹</span>
+      <span class="h-slot" style="width:${sl}px;height:${sl}px;font-size:22px" title="Ryggsekk (I)">🎒</span></div>`;
+    if (S.prompt) h += `<div class="h-pill h-prompt" style="bottom:116px"><kbd>E</kbd>Legg ved på bålet 🔥</div>`;
+  } else {
+    h += `<div class="m-joy" style="left:26px;bottom:24px;width:128px;height:128px"></div>`;
+    h += `<div class="m-btn stor" style="right:22px;bottom:22px;width:84px;height:84px;font-size:36px">🪓<small>Hugg</small></div>`;
+    h += `<div class="m-btn" style="right:122px;bottom:18px;width:60px;height:60px">⤴️<small>Hopp</small></div>`;
+    if (S.prompt) h += `<div class="m-btn" style="right:40px;bottom:126px;width:60px;height:60px;border-color:var(--gold)">✋<small>Bruk</small></div>`;
+    h += `<div class="m-btn" style="right:${S.prompt ? 112 : 30}px;bottom:${S.prompt ? 104 : 126}px;width:48px;height:48px;font-size:21px">🔨<small>Bygg</small></div>`;
+    h += `<div class="m-btn" style="right:${S.prompt ? 170 : 88}px;bottom:${S.prompt ? 104 : 126}px;width:48px;height:48px;font-size:21px">🍖<small>Spis</small></div>`;
+    h += `<div class="m-btn" style="right:${S.prompt ? 228 : 146}px;bottom:${S.prompt ? 104 : 126}px;width:48px;height:48px;font-size:21px">🎥<small>Kamera</small></div>`;
+    h += `<div class="h-pill h-hotbar" style="left:300px;bottom:10px"><span class="h-slot på" style="width:48px;height:48px">🪓</span><span class="h-slot" style="width:48px;height:48px">🗡️</span><span class="h-slot" style="width:48px;height:48px;font-size:21px">🎒</span></div>`;
+    if (S.prompt) h += `<div class="h-pill h-prompt" style="bottom:72px;font-size:13px">✋ Legg ved på bålet</div>`;
+  }
+  if (S.ressurs) h += `<div class="h-toast" style="top:${pc ? 80 : 58}px;font-size:${pc ? 22 : 17}px">+1 🪵</div>`;
+  if (S.hjelp) h += `<div class="h-hjelp"><div class="h-pill kort" style="background:var(--glass2)"><h3>❓ Slik styrer du</h3><table>
+    ${pc ? `<tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / piler</td><td>Gå</td></tr><tr><td><kbd>Mellomrom</kbd></td><td>Hopp</td></tr><tr><td>Klikk / <kbd>E</kbd></td><td>Hugg og bruk</td></tr>
+      <tr><td><kbd>1</kbd>–<kbd>9</kbd></td><td>Velg våpen</td></tr><tr><td><kbd>I</kbd></td><td>Ryggsekk og våpen</td></tr><tr><td><kbd>B</kbd></td><td>Bygg</td></tr><tr><td><kbd>C</kbd></td><td>Bytt kamera</td></tr><tr><td><kbd>M</kbd></td><td>Kart</td></tr><tr><td><kbd>P</kbd></td><td>Pause</td></tr>`
+      : `<tr><td>Venstre side</td><td>Dra for å gå</td></tr><tr><td>Høyre side</td><td>Dra for å snu kameraet</td></tr><tr><td>🪓</td><td>Hugg</td></tr><tr><td>✋</td><td>Bruk (vises når du kan)</td></tr><tr><td>🎒</td><td>Ryggsekk og våpen</td></tr>`}
+    <tr><td>Netter overlevd</td><td>0</td></tr></table></div></div>`;
+  if (S.utv) h += `<div class="utv">🛠 UTVIKLER · Lys-test: Morgen · Middag · Kveld · Natt · ⏸ · ⏩</div>`;
+  return h;
+}
+function tegn() {
+  const sc = $('#scene'), før = visning.endsWith('-for'), m = visning.startsWith('pc') ? 'pc' : 'mobil';
+  const W = m === 'pc' ? 1280 : 844, H = m === 'pc' ? 720 : 390;
+  const nøkkel = før ? visning : `${m}-${S.natt ? 'natt' : 'dag'}`;
+  sc.style.width = W + 'px'; sc.style.height = H + 'px'; sc.style.backgroundImage = `url(${BILDER[nøkkel]})`;
+  sc.innerHTML = (før ? '' : hud(m)) + `<div class="merk">${før ? 'I dag (5.6.2-HUD)' : 'Forslag'} · ${m === 'pc' ? 'PC 1280 × 720' : 'Mobil 844 × 390'}</div>`;
+  const maks = Math.min(1, (document.querySelector('.scene-wrap').clientWidth) / W);
+  sc.style.transform = `scale(${maks})`; sc.parentElement.style.height = H * maks + 'px';
+  document.querySelectorAll('#valg button').forEach(b => b.classList.toggle('på', b.dataset.v === visning));
+  $('#sit').style.opacity = før ? .4 : 1;
+}
+document.querySelectorAll('#valg button').forEach(b => b.onclick = () => { visning = b.dataset.v; tegn(); });
+document.querySelectorAll('#sit input').forEach(i => i.onchange = () => { S[i.dataset.s] = i.checked; tegn(); });
+addEventListener('resize', tegn); tegn();
+</script>
+</body>
+</html>
