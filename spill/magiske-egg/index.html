@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Magiske egg 0.7.0 – EVN Studio</title>
+<title>Magiske egg 0.7.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -18,7 +18,8 @@
   button { font-family:inherit; touch-action:manipulation; cursor:pointer; }
 
   /* HUD */
-  #hud { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); display:flex; gap:8px; z-index:5; flex-wrap:wrap; }
+  #hud { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); right:calc(250px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; flex-wrap:wrap; align-items:flex-start; }
+  #hud[hidden], #hoyre[hidden] { display:none !important; }
   .pille { background:rgba(29,36,64,.72); border:2px solid rgba(255,255,255,.25); border-radius:999px; padding:6px 14px; font-weight:800; font-size:18px; min-height:44px; display:flex; align-items:center; gap:6px; color:#fff; }
   .pille.bump { animation:bump .3s; }
   @keyframes bump { 50% { transform:scale(1.15); } }
@@ -103,7 +104,16 @@
     #hjelp { font-size:13px; }
     #handling { font-size:17px; min-width:130px; }
   }
-  @media (max-width:520px) { .kompass { display:none; } }
+  /* Avslutt som i de andre EVN-spillene: «✕ Avslutt» på store skjermer, bare ✕ på små */
+  #evnAvslutt { width:auto; padding:0 14px; border-radius:24px; font-size:18px; font-weight:800; gap:6px; }
+  @media (max-width:600px) { #evnAvslutt { width:48px; padding:0; border-radius:50%; } #evnAvslutt .evn-avs-tekst { display:none; } }
+  @media (max-width:520px) {
+    .kompass { display:none; }
+    #hud { right:calc(176px + env(safe-area-inset-right)); gap:6px; }
+    .pille { font-size:14px; padding:2px 8px; min-height:32px; gap:4px; }
+    #bokKnapp { min-height:44px; }
+    #melding { top:calc(96px + env(safe-area-inset-top)); font-size:16px; }
+  }
   @media (max-height:460px) {
     .kartkort h2 { font-size:22px; margin:0 0 4px; }
     .kartkort .forklaring { display:none; }
@@ -129,7 +139,7 @@
 </div>
 <div id="hoyre" hidden>
   <div class="kompass" role="img" aria-label="Kompass: nord er opp på skjermen"><b class="n">N</b><b class="s">S</b><b class="v">V</b><b class="o">Ø</b><i></i></div>
-  <a class="rund" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none;text-decoration:none">✕</a>
+  <a class="rund" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none;text-decoration:none">✕<span class="evn-avs-tekst"> Avslutt</span></a>
 </div>
 <div id="melding" role="status" aria-live="polite"></div>
 <button id="handling"></button>
@@ -151,7 +161,7 @@
     </div>
     <button class="stor evn-start" id="startBtn">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon"></div>
+    <div class="evn-ver" id="versjon">Versjon 0.7.1</div>
   </div>
 </div>
 
@@ -441,7 +451,7 @@ window.EVNPause = function (cfg) {
 <script src="../../vendor/three-r128.min.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.7.0';
+const VERSJON = '0.7.1';
 const LAGRING = 'evn-magiske-egg-v1';
 const TEST = location.hash === '#test';
 
@@ -1466,7 +1476,8 @@ function oppdaterMelding(dt) {
   const el = $('melding');
   if (meldingTimer > 0) { meldingTimer -= dt; if (meldingTimer <= 0) el.classList.remove('vis'); return; }
   if (meldingTimer > -0.3) { meldingTimer -= dt; return; }
-  if (kø.length) { const t = kø.shift(); el.textContent = t; el.classList.add('vis'); meldingTimer = Math.max(2.8, 1.2 + t.length * 0.065); }
+  if (kø.length) { const t = kø.shift(); el.textContent = t; el.classList.add('vis');
+    { const h = $('hud'); el.style.top = h.hidden ? '' : Math.max(68, Math.round(h.getBoundingClientRect().bottom + 10)) + 'px'; } meldingTimer = Math.max(2.8, 1.2 + t.length * 0.065); }
 }
 function oppdaterHud() {
   if (typeof parkNiva === 'function') { $('niva').textContent = parkNiva(); sjekkParkNiva(); }
