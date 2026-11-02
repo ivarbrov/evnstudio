@@ -94,7 +94,7 @@
 - **Før start:** Sett «Autolås» til «Aldri» og koble til lader. Ikke bruk strømsparingsmodus.
 - **Under testen:** Ikke rør eller bytt app i 10 min.
 
-### Måling 2.11.2026 kl. 07:20 – ytelsestest v2, 1 min (gyldig)
+### Måling 2.11.2026 kl. 06:50 – ytelsestest v2, 1 min (gyldig)
 iPhone (iOS 18.7, Claude-appen), stil 2, Middels, DPR 1,5. Skjermlås-hindring: **aktiv**. Ingen avbrudd. **Status: BESTÅTT** (mål 30 FPS).
 
 | Scene | FPS | 1 % lav | Verste bilde | Hakk > 100 ms | Tegnekall | Trekanter / skygge |
@@ -125,7 +125,7 @@ Samme iPhone, stil 2, Middels, DPR 1,5. Skjermlås-hindring aktiv. **600 s aktiv
 | Hakk > 100 ms | 0 | – | – |
 
 **Vurdering:**
-- **Ingen tegn til varmestruping.** FPS steg fra ca. 52 i minutt 1–3 til 56,6–57,8 i minutt 4–10.
+- **Ingen tegn til varmestruping.** FPS steg fra ca. 52 i minutt 1–3 til 56,6–57,8 i minutt 4–10. Testen startet ca. 10 min etter 1-minuttstesten, så telefonen var ikke kald.
 - **Laveste verdi:** Ingen hele minutter var under 51 FPS. Laveste «1 % lav» var 32,3, over målet på 30.
 - **Hva testen dekker:**
   - Én scene (dag ved bålet) på én enhet. Natt med monstre var tyngst i 1-minuttstesten (45,8 FPS) og er ikke varmetestet.
