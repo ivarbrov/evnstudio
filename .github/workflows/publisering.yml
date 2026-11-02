@@ -1,0 +1,64 @@
+# Publiseringssjekk. Kjører etter «Kvalitet» med arbeidsflyten og skriptet fra main (workflow_run),
+# slik at en PR ikke kan endre kontrollen som gjelder den selv.
+# Sikkerhet (GitHubs råd for privilegerte utløsere):
+# - PR-ens kode kjøres aldri her. PR-ens commit leses bare som data med git, og testresultatet leses bare som JSON.
+# - Ingen hemmeligheter. Tokenet kan bare lese innhold og kjøringer og sette status på en commit.
+# - Gjelder bare PR-er fra grener i dette repoet, ikke fra forks.
+name: Publiseringssjekk
+
+on:
+  workflow_run:
+    workflows: [Kvalitet]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  qa:
+    name: QA før publisering
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      statuses: write
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha }}
+      GH_TOKEN: ${{ github.token }}
+      STATUS_URL: ${{ github.api_url }}/repos/${{ github.repository }}/statuses/${{ github.event.workflow_run.head_sha }}
+      KJORING_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Sett status «pågår» på PR-ens commit
+        run: |
+          curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$STATUS_URL" \
+            -d "{\"state\":\"pending\",\"context\":\"QA før publisering\",\"description\":\"Kontrollerer\",\"target_url\":\"$KJORING_URL\"}" > /dev/null
+      - name: Hent main (betrodd kode)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Hent PR-ens commit som data
+        run: git fetch --no-tags --quiet origin "$SHA" || git cat-file -e "$SHA^{commit}"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Hent testresultatet fra kjøringen (bare som data)
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: testresultat
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/resultat
+      - name: Publiseringssjekk med skriptet fra main
+        id: sjekk
+        run: node test/publiseringssjekk.mjs --base origin/main --ref "$SHA" --ci-resultat "$RUNNER_TEMP/resultat/testresultat.json"
+      - name: Sett endelig status på PR-ens commit
+        if: ${{ always() }}
+        env:
+          UTFALL: ${{ steps.sjekk.outcome }}
+        run: |
+          if [ "$UTFALL" = success ]; then S=success; D="Tester og QA er godkjent"; else S=failure; D="Se kontrollen for hva som mangler"; fi
+          curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$STATUS_URL" \
+            -d "{\"state\":\"$S\",\"context\":\"QA før publisering\",\"description\":\"$D\",\"target_url\":\"$KJORING_URL\"}" > /dev/null
