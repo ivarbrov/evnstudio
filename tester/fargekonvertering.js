@@ -45,6 +45,8 @@ const VAKT = `<script>(() => {
   await p.goto('http://localhost:8765/spill/morkeskogen-2/spill/index.html', { timeout: 200000 });
   await p.evaluate(() => { document.getElementById('startBtn').click(); __steg(10); });
   await p.waitForFunction(() => window.__R3() && __R3().player && __R3().player.robot, null, { timeout: 120000, polling: 500 });
+  // Uten tegning: draw() (og overgangslaget, som kjøres i draw() før tegningen) går som vanlig. Programvaregrafikken her er ellers for treg.
+  await p.evaluate(() => { __R3().renderer.render = () => {}; });
   // Dag, natt (bål, monstre), hugging (partikler), bygging (ny bygning legges til), tilbake til dag
   await p.evaluate(() => { __steg(60); __g().time = 160; __steg(240); });
   await p.evaluate(() => { const g = __g(), { FX, FY } = __F(); g.time = 40; g.wood = 60; g.stone = 40; g.p.x = FX + 260; g.p.y = FY - 200; __steg(30); });

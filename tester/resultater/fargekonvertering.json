@@ -1,5 +1,5 @@
 {
- "omregninger": 392399,
+ "omregninger": 392303,
  "dobbel": [],
  "antallDobbel": 0,
  "materialer": 1677,
@@ -13,7 +13,8 @@
  "robot": {
   "Grey": "#5f5f55",
   "Main": "#ff9a00",
-  "Black": "#0c0c0c"
+  "Black": "#0c0c0c",
+  "": "#955f25"
  },
  "forventetRobot": {
   "Main": "#ff9a00",
