@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Magiske egg 0.6.0 – EVN Studio</title>
+<title>Magiske egg 0.6.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -429,7 +429,7 @@ window.EVNPause = function (cfg) {
 <script src="../../vendor/three-r128.min.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.6.0';
+const VERSJON = '0.6.1';
 const LAGRING = 'evn-magiske-egg-v1';
 const TEST = location.hash === '#test';
 
@@ -438,8 +438,8 @@ const TEST = location.hash === '#test';
 // ======================================================
 const INNST = {
   startMynter: 25,         // mynter du har når du starter
-  eggPris: 20,             // hva det første butikkegget koster
-  prisVekst: 1.15,         // hvert nytt dyr gjør neste egg 15 % dyrere (Evens ønske 2.11.2026)
+  eggPris: 15,             // hva det første butikkegget koster
+  prisVekst: 1.25,         // hvert nytt dyr gjør neste egg 25 % dyrere (Evens ønske 2.11.2026: mindre «inflasjon»)
   froPris: 10,             // en pose frø i matboden
   matPris: 30,             // ferdig favorittmat i matboden
   vekstTid: 60,            // sekunder før det du har plantet, er klart til å høstes
@@ -450,7 +450,8 @@ const INNST = {
   ilddrevSjanse: 0.05,     // 0.05 = 1 av 20 sjeldne egg blir Ilddrev
   fart: 15,                // hvor fort du går
   maksNivaa: 5,            // høyeste nivå et dyr kan vokse til
-  myntHvert: 6,            // sekunder mellom hver mynt fra et dyr
+  myntHvert: 10,           // sekunder mellom hver mynt fra et dyr
+  nivaaBonus: 0.5,         // hvert nivå over 1 gir 50 % mer per mynt (nivå 5 = 3 ganger så mye)
   baerVokserIgjen: 40,     // sekunder før en busk får nye bær
   maksDyr: 30,             // hvor mange dyr det er plass til i parken
 };
@@ -1386,7 +1387,7 @@ function oppdaterLapp(d) {
   d.lapp.position.y = d.a.hoyde + 0.9; d.lapp.visible = false; d.lapp.userData.sx = d.lapp.scale.x * 1.1; d.lapp.userData.sy = d.lapp.scale.y * 1.1;
   d.lappTekst = tekst; d.g.add(d.lapp);
 }
-function myntVerdi(d) { return d.def.mynt * d.nivaa; }
+function myntVerdi(d) { return Math.round(d.def.mynt * (1 + INNST.nivaaBonus * (d.nivaa - 1))); }
 
 // ======================================================
 //  Egg
