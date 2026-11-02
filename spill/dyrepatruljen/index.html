@@ -51,6 +51,9 @@ h1,h2,.lilita{font-family:'Lilita One',Nunito,sans-serif;font-weight:400;letter-
 @media (max-width:560px){.styring b{min-width:0;margin-right:4px}#beskjed{font-size:16px;padding:8px 14px;top:66px}.verdener{grid-template-columns:repeat(3,1fr)}.kort h1{font-size:34px}}
 
 /* Dyrebok */
+.bokkort{max-height:calc(100dvh - 32px);overflow:auto;padding-top:0}
+.boktopp{position:sticky;top:0;z-index:2;background:#fffaf0;display:flex;align-items:center;justify-content:center;padding:14px 52px 8px;margin:0 -24px;border-bottom:2px solid #f0e6d2}
+.lukkX{position:absolute;right:12px;top:10px;width:48px;height:48px;border-radius:14px;background:var(--bla);color:#fff;font-size:24px;box-shadow:0 4px 0 #124b94;touch-action:manipulation}
 .dyrerad{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0}
 .dyrkort{background:#f0ece2;border-radius:12px;padding:8px 2px;font-size:12px;min-height:76px}
 .dyrkort .e{font-size:30px;display:block}
@@ -64,7 +67,7 @@ h1,h2,.lilita{font-family:'Lilita One',Nunito,sans-serif;font-weight:400;letter-
 .topp>*{pointer-events:auto}
 .merke{background:rgba(255,255,255,.92);border-radius:14px;padding:6px 14px;font-size:18px;font-weight:800;box-shadow:0 3px 10px rgba(0,0,0,.15)}
 .ikonknapp{background:rgba(255,255,255,.92);width:48px;height:48px;border-radius:14px;font-size:24px;margin-left:8px;box-shadow:0 3px 10px rgba(0,0,0,.15)}
-#tips{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.45);color:#fff;padding:6px 14px;border-radius:12px;font-size:14px;white-space:nowrap;pointer-events:none}
+#tips{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.45);color:#fff;padding:6px 14px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);text-align:center;box-sizing:border-box;pointer-events:none}
 #snikMerke{position:absolute;top:66px;left:10px;background:#7b5cff;color:#fff;border-radius:12px;padding:4px 12px;font-weight:800;font-size:15px;pointer-events:none}
 #beskjed{position:absolute;top:70px;left:50%;transform:translateX(-50%);background:#fff;border-radius:16px;padding:10px 20px;font-size:20px;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.2);pointer-events:none;text-align:center;max-width:90vw;transition:opacity .3s}
 #etiketter{position:fixed;inset:0;pointer-events:none;z-index:5;overflow:hidden}
@@ -72,11 +75,18 @@ h1,h2,.lilita{font-family:'Lilita One',Nunito,sans-serif;font-weight:400;letter-
 .etikett.lyd{background:#fff;border-radius:12px;padding:2px 8px;font-size:14px;text-shadow:none;box-shadow:0 2px 6px rgba(0,0,0,.2)}
 .etikett.sp{color:#e6a400;font-size:26px}
 .etikett.ut{color:#e53935;font-size:28px}
+.etikett.note{color:#7b3fe4;font-size:26px}
 
 /* Berøringsstyring */
 .beror{display:none}
 body.touch .beror{display:block}
 body.touch #tips{display:none}
+ #pcKnapper{position:absolute;right:16px;bottom:72px;display:flex;gap:12px;align-items:center}
+.pc-knapp{position:relative;white-space:nowrap;background:rgba(255,255,255,.95);color:#1d2440;border-radius:16px;padding:10px 16px;font-size:18px;min-height:48px;box-shadow:0 4px 0 rgba(0,0,0,.18)}
+#btnHavPC{background:var(--gul)}
+#btnSnikPC.paa{background:var(--lilla);color:#fff}
+.pc-knapp .tast{display:inline-block;font-size:12px;border:2px solid currentColor;border-radius:6px;padding:0 5px;margin-left:4px;opacity:.75;vertical-align:middle}
+body.touch #pcKnapper{display:none}
 #joy{position:absolute;left:18px;bottom:18px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.3);border:3px solid rgba(255,255,255,.7);touch-action:none}
 #joyKnott{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(255,255,255,.9)}
 #btnHav{position:absolute;right:20px;bottom:24px;width:92px;height:92px;border-radius:50%;background:var(--gul);font-size:20px;box-shadow:0 5px 0 #c9a015;touch-action:none}
@@ -96,7 +106,11 @@ body.touch #tips{display:none}
   </div>
   <div id="snikMerke" class="skjult">🤫 Sniker</div>
   <div id="beskjed" style="opacity:0"></div>
-  <div id="tips">WASD/piler: gå · Shift: snik · Mellomrom: håv · Dra med musa: snu deg</div>
+  <div id="tips">WASD/piler: gå · Shift (hold) eller C: snik · Mellomrom: håv · Dra med musa: snu deg</div>
+  <div id="pcKnapper">
+    <button class="pc-knapp" id="btnSnikPC" aria-pressed="false">🤫 Snik <span class="tast">Shift</span></button>
+    <button class="pc-knapp" id="btnHavPC">🥅 Håv <span class="tast">Mellomrom</span></button>
+  </div>
   <div class="beror" id="joy" aria-label="Styrespak"><div id="joyKnott"></div></div>
   <button class="beror" id="btnSnik" aria-label="Snik av eller på">🤫<br>Snik</button>
   <button class="beror" id="btnHav" aria-label="Bruk håven">🥅<br>Håv</button>
@@ -119,7 +133,7 @@ body.touch #tips{display:none}
     </div>
     <button class="evn-start" id="startBtn">Start ▶</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver">v0.10.3</div>
+    <div class="evn-ver">Versjon 0.10.11</div>
   </div>
 </div>
 
@@ -137,8 +151,8 @@ body.touch #tips{display:none}
 
 <!-- Dyrebok -->
 <div class="lag skjult" id="dyrebok">
-  <div class="kort">
-    <h2 style="font-size:30px;margin:4px 0">📖 Dyreboka</h2>
+  <div class="kort bokkort">
+    <div class="boktopp"><h2 style="font-size:30px;margin:4px 0">📖 Dyreboka</h2><button class="lukkX" id="btnLukkBokTopp" aria-label="Lukk dyreboka">✕</button></div>
     <div id="bokTotalt" style="font-weight:800"></div>
     <div id="bokInnhold"></div>
     <button class="knapp bla liten" id="btnLukkBok">Lukk</button>
@@ -3807,7 +3821,7 @@ window.EVN_HELT_B64="Z2xURgIAAAB0FAcAEEMBAEpTT057ImFzc2V0Ijp7ImdlbmVyYXRvciI6IkZ
    Strukturen er laget for 15 verdener. Hver verden er en
    oppføring i VERDENER; bygde verdener har en bygg()-funksjon.
    ============================================================ */
-const VERSJON = 'v0.10.3';
+const VERSJON = 'v0.10.11';
 const LAGRE_NOKKEL = 'evn-dyrespillet-v1';
 const $ = id => document.getElementById(id);
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
@@ -5725,7 +5739,15 @@ function lastHelt(){
         haand.add(feste); haav.position.set(0, 0.1, 0); feste.add(haav);
       } else if (haav){ u.arm.visible = true; u.arm.children.forEach(c => c.visible = (c === haav)); }
       klipp.Idle.play();
-      helt = {modell, mix, klipp, aktiv:klipp.Idle};
+      const ben = {}; modell.traverse(o => { if (o.isBone) ben[o.name] = o; });
+      // Fotpunkter: de laveste hjørnene i hvilestilling. De brukes til å holde føttene akkurat på bakken i alle animasjoner.
+      spiller.updateMatrixWorld(true);
+      const fot = [], v = new THREE.Vector3(); let ymin = Infinity, ymax = -Infinity; const alle = [];
+      modell.traverse(o => { if (o.isSkinnedMesh){ const pos = o.geometry.attributes.position; for (let i=0;i<pos.count;i++){ v.fromBufferAttribute(pos, i); o.boneTransform(i, v); v.applyMatrix4(o.matrixWorld); alle.push([o, i, v.y]); ymin = Math.min(ymin, v.y); ymax = Math.max(ymax, v.y); } } });
+      const grense = ymin + (ymax - ymin)*0.3;   // bein og føtter (begge føttene, også når en fot løftes)
+      for (const [o, i, y] of alle) if (y < grense) fot.push([o, i]);
+      const armHvile = ['UpperArmL','LowerArmL','UpperArmR','LowerArmR'].filter(n => ben[n]).map(n => [ben[n], ben[n].quaternion.clone()]);
+      helt = {modell, mix, klipp, aktiv:klipp.Idle, ben, armHvile, holdW:0, grunnY:modell.position.y, snik:0, fot, v, haav:(haand && haav) ? haav : null, haavX:haav ? haav.rotation.x : 0, feste:haav ? haav.parent : null};
     }, e => console.warn('Fant ikke helten', e));
   } catch(e){ console.warn('Helten kunne ikke lastes', e); }
 }
@@ -5734,15 +5756,132 @@ function heltAnimasjon(dt, beveger, sniker, iVann){
   let ny = K.Idle, ts = 1;
   if (svingTid > 0 && K.Punch) { ny = K.Punch; ts = 2.2; }
   else if (beveger && !sniker && !iVann && K.Running) { ny = K.Running; ts = 0.85; }
-  else if (beveger) { ny = K.Walking; ts = sniker ? 0.7 : 1; }
+  else if (beveger) { ny = K.Walking; ts = sniker ? 0.55 : 1; }
   if (ny !== helt.aktiv){
     ny.reset(); ny.setEffectiveWeight(1); ny.play();
     helt.aktiv.crossFadeTo(ny, ny === K.Punch ? 0.08 : 0.2, false);
     helt.aktiv = ny;
   }
   ny.timeScale = ts;
+  // ta bort forrige bildes snike-vridning før animasjonen oppdateres (ledd som ikke animeres ville ellers vridd seg mer og mer)
+  for (const [b, akse, v] of (helt.lagtTil || [])) b.rotation[akse] -= v;
+  helt.lagtTil = [];
+  for (const [b, q] of helt.armHvile) b.quaternion.copy(q);
   helt.mix.update(dt);
+  // Even (2.11.2026): på tå når du sniker – bøyd fram, armene opp foran, og en liten hopp-bevegelse i hvert steg
+  helt.snik += ((sniker && !iVann ? 1 : 0) - helt.snik) * Math.min(1, dt*8);
+  const s = helt.snik, B = helt.ben;
+  // hold føttene på bakken: finn laveste fotpunkt i denne stillingen og løft/senk modellen så det står på bakken
+  helt.modell.position.y = helt.grunnY;
+  spiller.updateMatrixWorld(true);
+  let lavest = Infinity; const v = helt.v;
+  for (const [o, i] of helt.fot){ v.fromBufferAttribute(o.geometry.attributes.position, i); o.boneTransform(i, v); v.applyMatrix4(o.matrixWorld); if (v.y < lavest) lavest = v.y; }
+  const bunn = spiller.position.y - (spiller.userData.yOff || 0);   // bakken (eller broen) under spilleren
+  // aldri under bakken; i løpesteg med begge føttene i lufta får roboten sveve (ikke trekkes ned)
+  const korr = isFinite(lavest) ? Math.max(bunn - lavest, -0.1) + (iVann ? -0.65 : 0) : 0;
+  helt.modell.position.y = helt.grunnY + korr;
+  if (s > 0.01){
+    const fase = ny.time / (ny.getClip().duration || 1) * Math.PI * 4;
+    helt.modell.position.y += s * (0.08 + Math.abs(Math.sin(fase)) * (beveger ? 0.14 : 0.03));
+    const vri = (b, akse, v) => { if (!b) return; b.rotation[akse] += v; helt.lagtTil.push([b, akse, v]); };
+    vri(B.Torso_1, 'x', s * SNIK.torso);
+    vri(B.Head_1, 'x', s * SNIK.hode);
+    const R = SNIK.rygg, ryggArm = false;
+    for (const [n, f] of [['UpperArmL', 1], ['UpperArmR', -1]]){
+      if (n === 'UpperArmR' && ryggArm){ vri(B[n], 'x', s * R.armX); vri(B[n], 'y', s * R.armY); vri(B[n], 'z', s * R.armZ); }
+      else { vri(B[n], 'x', s * SNIK.armX); vri(B[n], 'z', s * SNIK.armZ * f); }
+    }
+    vri(B.LowerArmL, 'x', s * SNIK.albue);
+    vri(B.LowerArmR, 'x', s * (ryggArm ? R.albue : SNIK.albue));
+  }
+  // Even (2.11.2026): når du sniker, står håven rett opp langs ryggen. Når du svinger håven, tar han den i handa igjen.
+  const h = helt.haav;
+  if (h){
+    const paaRyggen = s > 0.5 && svingTid <= 0;
+    // Even (2.11.2026): ellers holder han håven med begge hendene, skrått foran seg
+    // Even (2.11.2026): også når han sniker, holder han håven med begge hendene – da bak ryggen
+    const toHender = svingTid <= 0;
+    helt.holdW += ((toHender ? 1 : 0) - helt.holdW) * Math.min(1, dt * 10);
+    if (helt.holdW > 0.02) toHandsGrep(helt.holdW, paaRyggen ? TO_HENDER.snik : TO_HENDER);
+    if (toHender && helt.holdW > 0.5){
+      spiller.updateMatrixWorld(true);
+      const f = helt.feste, R = HQ.p, L = HQ.p2, d = HQ.d;
+      f.getWorldPosition(R); helt.ben.Palm2L.getWorldPosition(L);
+      d.subVectors(L, R).normalize();
+      const x = HQ.x.crossVectors(HQ.opp, d).normalize(), y = HQ.y.crossVectors(d, x);
+      HQ.m.makeBasis(x, y, d); HQ.mal.setFromRotationMatrix(HQ.m);
+      f.getWorldQuaternion(HQ.fq);
+      h.quaternion.copy(HQ.fq.invert()).multiply(HQ.mal);
+      R.addScaledVector(d, -TO_HENDER.bak);
+      h.position.copy(f.worldToLocal(R));
+    } else if (paaRyggen){
+      // håven blir i handa, men skaftet peker rett opp bak ryggen og handa holder midt på skaftet
+      spiller.updateMatrixWorld(true);
+      const f = helt.feste, q = HQ.q.setFromEuler(HQ.e.set(-Math.PI/2, 0, Math.PI, 'XYZ'));
+      HQ.mal.copy(spiller.quaternion).multiply(q);
+      f.getWorldQuaternion(HQ.fq);
+      h.quaternion.copy(HQ.fq.invert()).multiply(HQ.mal);
+      f.getWorldPosition(HQ.p); HQ.p.y -= SNIK.rygg.grep;
+      h.position.copy(f.worldToLocal(HQ.p));
+    } else {
+      h.position.set(0, 0.1, 0); h.rotation.set(helt.haavX, 0, 0);
+      haavOverBakken(bunn);
+    }
+  }
 }
+// Even (2.11.2026): håven gikk ned i bakken når du sniker. Vipp håven opp akkurat så mye at den er over bakken.
+const HAAV_PUNKT = [[0,-0.7,2.25],[0,0,2.67],[0.42,0,2.25],[-0.42,0,2.25],[0,-0.4,2.6]].map(a => new THREE.Vector3(...a));
+function haavLavest(){
+  helt.haav.updateMatrixWorld(true);
+  let m = Infinity; const v = helt.v;
+  for (const p of HAAV_PUNKT){ v.copy(p).applyMatrix4(helt.haav.matrixWorld); if (v.y < m) m = v.y; }
+  return m;
+}
+function haavOverBakken(bunn){
+  const h = helt.haav; if (!h) return;
+  h.rotation.x = helt.haavX;
+  spiller.updateMatrixWorld(true);
+  const mal = bunn + 0.06;
+  let lav = haavLavest(); if (lav >= mal) return;
+  // finn hvilken vei som løfter håven, og vipp i små steg til den er over bakken
+  h.rotation.x = helt.haavX + 0.1; const pluss = haavLavest();
+  h.rotation.x = helt.haavX - 0.1; const minus = haavLavest();
+  const retning = pluss >= minus ? 1 : -1;
+  for (let a = 0.05; a <= 1.6; a += 0.05){
+    h.rotation.x = helt.haavX + retning * a;
+    if (haavLavest() >= mal) return;
+  }
+}
+const SNIK = {torso:0.35, hode:-0.25, armX:-0.9, armZ:0.3, albue:-0.9, rygg:{armX:-2.4, armY:0, armZ:0, albue:0, grep:0.9}};
+// to-hånds-grep: hendene (i spillerens rom: x = venstre, y = opp, z = fram) og hvor langt bak høyre hånd skaftet slutter
+const TO_HENDER = {hoyre:new THREE.Vector3(-0.2, 0.85, 0.4), venstre:new THREE.Vector3(0.12, 1.15, 0.6), bak:0.35,
+  snik:{hoyre:new THREE.Vector3(-0.15, 0.8, -0.5), venstre:new THREE.Vector3(-0.05, 1.2, -0.62)}};
+const IK = {j:new THREE.Vector3(), e:new THREE.Vector3(), t:new THREE.Vector3(), a:new THREE.Vector3(), b:new THREE.Vector3(), q:new THREE.Quaternion(), pq:new THREE.Quaternion(), wq:new THREE.Quaternion(), lagre:[]};
+// enkel IK (CCD): vri albue og skulder så handa når målet
+function armTil(over, under, ende, malLokal){
+  IK.t.copy(malLokal); spiller.localToWorld(IK.t);
+  for (let it = 0; it < 6; it++){
+    for (const ledd of [under, over]){
+      ledd.updateMatrixWorld(true);
+      ledd.getWorldPosition(IK.j); ende.getWorldPosition(IK.e);
+      IK.a.subVectors(IK.e, IK.j); IK.b.subVectors(IK.t, IK.j);
+      if (IK.a.lengthSq() < 1e-8 || IK.b.lengthSq() < 1e-8) continue;
+      IK.q.setFromUnitVectors(IK.a.normalize(), IK.b.normalize());
+      ledd.getWorldQuaternion(IK.wq); ledd.parent.getWorldQuaternion(IK.pq);
+      ledd.quaternion.copy(IK.pq.invert().multiply(IK.q).multiply(IK.wq));
+    }
+  }
+}
+function toHandsGrep(w, mal){
+  const B = helt.ben; if (!B.Palm2L || !B.UpperArmR) return;
+  const ledd = [B.UpperArmL, B.LowerArmL, B.UpperArmR, B.LowerArmR];
+  const for_ = ledd.map(b => b.quaternion.clone());
+  spiller.updateMatrixWorld(true);
+  armTil(B.UpperArmR, B.LowerArmR, helt.feste, mal.hoyre);
+  armTil(B.UpperArmL, B.LowerArmL, B.Palm2L, mal.venstre);
+  if (w < 0.999) ledd.forEach((b, i) => { const ny = b.quaternion.clone(); b.quaternion.copy(for_[i]).slerp(ny, w); });
+}
+const HQ = {p2:new THREE.Vector3(), d:new THREE.Vector3(), x:new THREE.Vector3(), y:new THREE.Vector3(), opp:new THREE.Vector3(0,1,0), m:new THREE.Matrix4(), q:new THREE.Quaternion(), e:new THREE.Euler(), mal:new THREE.Quaternion(), fq:new THREE.Quaternion(), p:new THREE.Vector3()};
 lastHelt();
 
 /* ---------- Tilstand ---------- */
@@ -5768,6 +5907,48 @@ function plasserEtikett(el, pos, tekst, klasse){
   el.style.left = ((tmpV.x+1)/2*innerWidth) + 'px';
   el.style.top = ((1-tmpV.y)/2*innerHeight) + 'px';
 }
+
+/* ---------- Plystring (Even 2.11.2026: han plystrer når han sniker) ----------
+   En liten egen melodi som går i ring. Plystringen skremmer ikke dyrene. */
+const PLYSTRE_MELODI = [[988,0.18],[1175,0.18],[1319,0.3],[0,0.18],[1175,0.18],[988,0.18],[880,0.36],[0,0.5],
+                        [784,0.18],[880,0.18],[988,0.3],[0,0.18],[1319,0.18],[1175,0.3],[988,0.42],[0,0.9]];
+const plyst = {i:0, tid:0.35, noter:[]};
+function plystreTone(f, varighet){
+  try {
+    if (!lydKontekst) lydKontekst = new (window.AudioContext||window.webkitAudioContext)();
+    const k = lydKontekst, t = k.currentTime, o = k.createOscillator(), g = k.createGain();
+    const vib = k.createOscillator(), vg = k.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(f*0.94, t); o.frequency.exponentialRampToValueAtTime(f, t+0.05);
+    vib.frequency.value = 6; vg.gain.value = f*0.012; vib.connect(vg).connect(o.frequency);
+    g.gain.setValueAtTime(0.001, t); g.gain.exponentialRampToValueAtTime(0.06, t+0.03);
+    g.gain.setValueAtTime(0.06, t+varighet*0.7); g.gain.exponentialRampToValueAtTime(0.001, t+varighet);
+    o.connect(g).connect(k.destination); o.start(t); o.stop(t+varighet+0.02); vib.start(t); vib.stop(t+varighet+0.02);
+  } catch(e){}
+}
+function plystre(dt, paa){
+  if (paa){
+    plyst.tid -= dt;
+    if (plyst.tid <= 0){
+      const [f, l] = PLYSTRE_MELODI[plyst.i]; plyst.i = (plyst.i + 1) % PLYSTRE_MELODI.length; plyst.tid = l;
+      if (f){
+        plystreTone(f, l*0.95);
+        if (Math.random() < 0.5){
+          const el = plyst.noter.find(n => n.liv <= 0) || (plyst.noter.length < 4 && (plyst.noter.push({el:lagEtikett(), liv:0}), plyst.noter[plyst.noter.length-1]));
+          if (el){ el.liv = 1.3; el.x = (Math.random()-0.5)*0.6; el.tegn = Math.random() < 0.5 ? '♪' : '♫'; }
+        }
+      }
+    }
+  } else { plyst.i = 0; plyst.tid = 0.35; }
+  for (const n of plyst.noter){
+    if (n.liv <= 0){ n.el.style.display = 'none'; continue; }
+    n.liv -= dt;
+    const t = 1 - n.liv/1.3;
+    tmpV2.set(spiller.position.x + n.x + Math.sin(t*6)*0.15, spiller.position.y + 2.5 + t*1.2, spiller.position.z);
+    plasserEtikett(n.el, tmpV2, n.tegn, 'note');
+    n.el.style.opacity = Math.min(1, n.liv*2).toFixed(2);
+  }
+}
+const tmpV2 = new THREE.Vector3();
 
 /* ---------- Beskjeder ---------- */
 function beskjed(tekst, sek=2.2){ const b = $('beskjed'); b.textContent = tekst; b.style.opacity = 1; beskjedTid = sek; }
@@ -5801,7 +5982,7 @@ function startVerden(i){
   tilstand = 'spill';
   visLag(null);
   $('hud').classList.remove('skjult');
-  $('btnHav').innerHTML = '🥅<br>Håv';
+  $('btnHav').innerHTML = '🥅<br>Håv'; $('btnHavPC').innerHTML = '🥅 Håv <span class="tast">Mellomrom</span>'; $('btnSnikPC').style.display = '';
   oppdaterHud();
   beskjed(ferdig ? 'Du har reddet alle her – men du kan fange dem igjen for moro skyld!' : verden.tips, 4);
 }
@@ -5831,7 +6012,7 @@ function startPark(){
   tilstand = 'park';
   visLag(null);
   $('hud').classList.remove('skjult');
-  $('btnHav').innerHTML = '❤️<br>Kos';
+  $('btnHav').innerHTML = '❤️<br>Kos'; $('btnHavPC').innerHTML = '❤️ Kos <span class="tast">Mellomrom</span>'; $('btnSnikPC').style.display = 'none';
   oppdaterHud();
   beskjed(dyrListe.length ? `Velkommen til dyreparken! ${park.antallOmr} naturområder. Gå inn og kos med dyrene ❤️` : 'Ingen dyr her ennå. Redd dyr i gata, så flytter de hit! 🏙️', 4);
 }
@@ -5974,6 +6155,7 @@ function oppdaterSpiller(dt){
   const inp = bevegelsesInput();
   const sniker = snikPaa || tast.ShiftLeft || tast.ShiftRight || (joy.aktiv && inp.styrke > 0.1 && inp.styrke < 0.55);
   $('snikMerke').classList.toggle('skjult', !sniker || tilstand === 'park');
+  const sk = $('btnSnikPC'); if (sk.classList.contains('paa') !== !!sniker){ sk.classList.toggle('paa', !!sniker); sk.setAttribute('aria-pressed', sniker ? 'true' : 'false'); }
   const inni = (o, p) => o.r !== undefined ? Math.hypot(p.x - o.x, p.z - o.z) < o.r : (p.x > o.x0 && p.x < o.x1 && p.z > o.z0 && p.z < o.z1);
   const bro = paaBro(spiller.position.x, spiller.position.z);
   const iVann = !bro && (!!(aktiv.vann && aktiv.vann.some(v => inni(v, spiller.position))) || !!(aktiv.erVann && aktiv.erVann(spiller.position.x, spiller.position.z)));
@@ -6009,12 +6191,13 @@ function oppdaterSpiller(dt){
   gangFase += beveger ? dt * fart * 2.2 : 0;
   const u = spiller.userData, sv = beveger ? Math.sin(gangFase)*0.6 : 0;
   u.bein1.rotation.x = sv; u.bein2.rotation.x = -sv; u.arm1.rotation.x = -sv*0.7; u.hode.rotation.z = beveger ? Math.sin(gangFase*0.5)*0.05 : 0;
-  const malY = bro ? 0 : iVann ? -0.65 : (sniker && beveger ? -0.15 : 0);
+  const malY = bro ? 0 : iVann ? -0.65 : (sniker && beveger && !helt ? -0.15 : 0);
   ps.yOff = (ps.yOff || 0) + (malY - (ps.yOff || 0)) * Math.min(1, dt*8);
   const grunn = bakkeHoyde(spiller.position.x, spiller.position.z);
   spiller.position.y = (bro ? Math.max(grunn, bro.y) : grunn) + ps.yOff;
   if (iVann && beveger && Math.random() < dt*3) tone(rnd(180,260), .08, 'sine', .03, 120);
   if (helt) heltAnimasjon(dt, beveger, sniker, iVann);
+  plystre(dt, sniker && !iVann);
   if (svingTid > 0){ svingTid -= dt; const t = 1 - svingTid/0.4; u.arm.rotation.x = -1.2 + Math.sin(t*Math.PI)*1.9; }
   else u.arm.rotation.x = -0.5 + sv*0.3;
   return {beveger, sniker, iVann};
@@ -6050,6 +6233,16 @@ function animerBen(d, fart, dt){
 }
 
 const lydPos = new THREE.Vector3();
+// Even (2.11.2026): si fra at det er lurt å snike når du nærmer deg et dyr
+let snikTipsVent = 3;
+function snikTips(dt, sp){
+  if (snikTipsVent > 0){ snikTipsVent -= dt; return; }
+  if (sp.sniker || beskjedTid > 0) return;
+  const naer = dyrListe.some(d => d.tilstand !== 'fanget' && Math.hypot(d.mesh.position.x - spiller.position.x, d.mesh.position.z - spiller.position.z) < 8);
+  if (!naer) return;
+  beskjed(erMobil ? '🤫 Et dyr er i nærheten! Trykk på Snik og gå sakte bort til det.' : '🤫 Et dyr er i nærheten! Hold Shift (eller trykk Snik) og gå sakte bort til det.', 3.5);
+  snikTipsVent = 20;
+}
 function oppdaterDyr(dt, sp){
   for (let i = dyrListe.length - 1; i >= 0; i--){
     const d = dyrListe[i], p = d.mesh.position, k = d.mesh.userData.kropp;
@@ -6172,6 +6365,7 @@ function loop(n){
   if (tilstand === 'spill' || tilstand === 'park'){
     const sp = oppdaterSpiller(dt);
     oppdaterDyr(dt, sp);
+    if (tilstand === 'spill') snikTips(dt, sp);
     oppdaterKamera(dt);
   }
   if (aktiv.oppdater) aktiv.oppdater(dt);
@@ -6214,6 +6408,8 @@ const joySlipp = e => { if (e.pointerId === joy.id){ joy.aktiv = false; joy.x = 
 joyEl.addEventListener('pointerup', joySlipp); joyEl.addEventListener('pointercancel', joySlipp);
 
 $('btnHav').addEventListener('pointerdown', e => { e.preventDefault(); svingHaav(); });
+$('btnHavPC').addEventListener('click', e => { e.preventDefault(); svingHaav(); });
+$('btnSnikPC').addEventListener('click', e => { e.preventDefault(); snikPaa = !snikPaa; $('btnSnik').classList.toggle('paa', snikPaa); e.currentTarget.blur(); });
 $('btnSnik').addEventListener('pointerdown', e => { e.preventDefault(); snikPaa = !snikPaa; $('btnSnik').classList.toggle('paa', snikPaa); });
 addEventListener('pointerdown', e => { if (e.pointerType === 'touch') document.body.classList.add('touch'); }, {capture:true});
 
@@ -6228,6 +6424,9 @@ $('startBtn').addEventListener('click', () => { tone(660,.1); visKart(); });
 $('btnBok').addEventListener('click', visBok);
 $('btnKartBok').addEventListener('click', visBok);
 $('btnLukkBok').addEventListener('click', lukkBok);
+$('btnLukkBokTopp').addEventListener('click', lukkBok);
+$('dyrebok').addEventListener('click', e => { if (e.target.id === 'dyrebok') lukkBok(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && !$('dyrebok').classList.contains('skjult')){ e.preventDefault(); lukkBok(); } });
 $('btnPause').addEventListener('click', pause);
 $('btnFortsett').addEventListener('click', fortsett);
 $('btnTilKart').addEventListener('click', visKart);
