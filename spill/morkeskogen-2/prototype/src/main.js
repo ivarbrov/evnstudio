@@ -20,7 +20,7 @@ import { lagStyring } from './styring.js';
 import { lagMaaling } from './maal.js';
 import { lagYtelsestest } from './ytelsestest.js';
 
-export const VERSJON = '2.0-proto.3';
+export const VERSJON = '2.0-proto.4';
 const $ = id => document.getElementById(id);
 const q = new URLSearchParams(location.search), hash = location.hash.slice(1);
 const berøring = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
@@ -36,6 +36,7 @@ const valg = {
   maal: q.get('maal') === '1' || /maal/.test(hash),
   tid: q.get('tid') || 'dag', autoTid: q.get('auto') === '1',
   frø: +(q.get('fro') || 424242),
+  gress: q.get('gress') || (/gressB/.test(hash) ? 'B' : 'A'),     // gressforsøk 2.11.2026: A = proto.3, B = vind og spor
 };
 
 const lerret = $('lerret');
@@ -75,7 +76,7 @@ async function bygg() {
   const bakke = lagBakke(scene, tex, stil);
   const hk = lagHoydekart();
   const skog = lagSkog(scene, verden, stil, kv, tex);
-  const gress = lagGress(scene, hk, stil, kv);
+  const gress = lagGress(scene, hk, stil, kv, valg.gress);
   const lys = lagLys(scene, renderer, stil, kv);
   const bal = lagBal(scene, stil, kv, tex);
   const hytte = lagHytte(scene, stil, tex);
@@ -141,21 +142,22 @@ function loop(nå) {
   if (!V || bygger) return;
   klokke += dt; if (autoTid) tid = (tid + dt) % DOGN_LENGDE;
   const testInp = yt.steg(rå, sistArbeid);
-  if (startet) oppdaterHelt(helt, testInp ? Object.assign({ hopp: false, slag: false, mengde: 1 }, testInp) : styr.les(), dt, verden, K.yaw);
+  const inp2 = testInp || window.__proto.inp;   // __proto.inp: styring fra automatiske tester (bildeserier)
+  if (startet) oppdaterHelt(helt, inp2 ? Object.assign({ hopp: false, slag: false, mengde: 1 }, inp2) : styr.les(), dt, verden, K.yaw);
   if (helt.slagT >= OKS.impact && !helt.slagTruffet) { helt.slagTruffet = true; slagTreff(); }
   oppdaterKamera(dt, helt, verden, innerWidth < 600);
   kamera.updateMatrixWorld();
   FELLES.uTid.value = klokke;
   const L = V.lys.oppdater(tid, kamera, helt, K.e); V.lys.settTid(klokke);
   V.skog.oppdater(dt, kamera, helt, V.scene.fog.far);
-  V.gress.oppdater(helt);
+  V.gress.oppdater(helt, dt);
   V.bal.oppdater(klokke, L.mork); V.hytte.oppdater(L.mork);
   V.monstre.oppdater(dt, klokke, L.mork, helt, (m, dx, dz) => { helt.vx += dx * 300; helt.vz += dz * 300; K.rist = .5; toast('😱 Uff! Monsteret skremte deg'); });
   V.figur.oppdater(helt, dt);
   if (composer && composer.bloom) composer.bloom.strength = (valg.stil === 1 ? .18 : .12) + L.mork * (valg.stil === 1 ? .45 : .35);
   maaling.startBilde();
   if (composer) { composer.render(dt); } else renderer.render(V.scene, kamera);
-  sistArbeid = performance.now() - nå;
+  sistArbeid = performance.now() - nå; window.__proto.bilder++;
   maaling.sluttBilde(() => ({ stil: valg.stil, kvalitet: kvalitet().navn, dpr: renderer.getPixelRatio(), traerNaer: V.skog.info().tegnetNær, traerLangt: V.skog.info().tegnetLangt, treTriNaer: V.skog.info().triNær, treTriLangt: V.skog.info().triLangt, gressTri: V.gress.tri(), byggMs: V.byggMs, mork: +L.mork.toFixed(2), versjon: VERSJON }));
 }
 addEventListener('resize', settStorrelse);
@@ -166,6 +168,7 @@ const yt = lagYtelsestest({
   forbered(S) {
     autoTid = false; tid = TIDER[S.tid]; tidValg = TIDNAVN.findIndex(x => x[0] === S.tid);
     helt.x = S.x; helt.z = S.z; helt.vx = helt.vz = 0; K.yaw = 0; K.pitch = 0; K.modus = S.modus; K.mål.set(S.x, 0, S.z);
+    if (S.gress) V.gress.settModus(S.gress);
     for (let i = 0; i < S.monstre; i++) { const a = i * 2.1, m = V.monstre.nytt(S.x + Math.cos(a) * 380, S.z + Math.sin(a) * 380); m.synlig = 1; }
     startet = true; $('startkort').hidden = true; oppdaterHud();
   },
@@ -181,6 +184,8 @@ const yt = lagYtelsestest({
     $('testTekst').value = JSON.stringify(r, null, 1); $('testkort').hidden = false; $('bKopier').textContent = '📋 Kopier resultat';
   },
 });
+$('bGresstest').onclick = () => yt.kjør('gress');
+document.querySelectorAll('[data-gress]').forEach(b => { b.classList.toggle('valgt', b.dataset.gress === valg.gress); b.onclick = () => { valg.gress = b.dataset.gress; V && V.gress.settModus(valg.gress); document.querySelectorAll('[data-gress]').forEach(x => x.classList.toggle('valgt', x === b)); }; });
 $('bTest').onclick = () => yt.kjør(false); $('bVarme').onclick = () => yt.kjør(true);
 $('bKopier').onclick = async () => { const t = $('testTekst'); try { await navigator.clipboard.writeText(t.value); $('bKopier').textContent = '✅ Kopiert'; } catch (_) { t.focus(); t.select(); $('bKopier').textContent = 'Merk og kopier teksten'; } };
 $('bLukkTest').onclick = () => { $('testkort').hidden = true; };
@@ -188,6 +193,7 @@ document.querySelectorAll('[data-kval]').forEach(b => { b.classList.toggle('valg
 
 // Testgrensesnitt for automatiske tester og faste kameraposisjoner
 window.__proto = {
+  inp: null, bilder: 0,
   versjon: VERSJON, verden, helt, K,
   klar: () => !!V && !bygger,
   async settStil(s) { valg.stil = s; await bygg(); },
@@ -196,6 +202,7 @@ window.__proto = {
   plasser(x, z, yaw = 0, modus = 'near', pitch = 0) { helt.x = x; helt.z = z; helt.vx = helt.vz = 0; K.yaw = yaw; K.modus = modus; K.e = modus === 'near' ? 1 : 0; K.pitch = pitch; K.mål.set(x, 0, z); K.k = 1; startet = true; },
   start() { startet = true; $('startkort').hidden = true; },
   monster(x, z) { return V.monstre.nytt(x, z); },
+  settGress(m) { valg.gress = m; V.gress.settModus(m); },
   // Kjører spillogikken med fast tidssteg uten å tegne (for tester i nettlesere uten skjermkort)
   simuler(sek, inp = {}) {
     const I = Object.assign({ dx: 0, dy: 0, mengde: 1, hopp: false, slag: false }, inp), dt = 1 / 60;
@@ -211,4 +218,4 @@ $('versjon').textContent = 'v' + VERSJON;
 document.querySelectorAll('[data-stil]').forEach(b => b.onclick = async () => { document.querySelectorAll('[data-stil]').forEach(x => x.classList.toggle('valgt', x === b)); if (+b.dataset.stil !== valg.stil) { valg.stil = +b.dataset.stil; await bygg(); } });
 document.querySelector(`[data-stil="${valg.stil}"]`)?.classList.add('valgt');
 $('startBtn').onclick = () => { startet = true; $('startkort').hidden = true; };
-bygg().then(() => { requestAnimationFrame(loop); if (/ytelsestest/.test(hash)) yt.kjør(false); if (/varmetest/.test(hash)) yt.kjør(true); });
+bygg().then(() => { requestAnimationFrame(loop); if (/ytelsestest/.test(hash)) yt.kjør(false); if (/varmetest/.test(hash)) yt.kjør(true); if (/gresstest/.test(hash)) yt.kjør('gress'); });

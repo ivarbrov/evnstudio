@@ -8,6 +8,10 @@
 // - Minuttverdiene gjelder hele minutter med aktiv tid. Et påbegynt minutt vises som delvis.
 // - Status: BESTÅTT / IKKE BESTÅTT / UGYLDIG TEST.
 const AVBRUDD_MS = 500, ALLTID_AVBRUDD_MS = 5000, HAKK_MS = 100, OPPVARMING_S = 3;
+// Gressforsøket (2.11.2026): A og B vekselvis i samme tette gress, med samme kamera og bevegelse. Hver variant måles to ganger.
+export const GRESSTED = { x: -120, z: 380 };
+const GRESSBEV = [['står stille', 0], ['går', .6], ['løper', 1]];
+const GRESSPLAN = [0, 1].flatMap(runde => GRESSBEV.flatMap(([b, m]) => ['A', 'B'].map(g => ({ navn: `Gress ${g}: ${b} (runde ${runde + 1})`, tid: 'dag', modus: 'near', x: GRESSTED.x, z: GRESSTED.z, monstre: 0, gress: g, mengde: m, lengde: 15 }))));
 const SCENER = [
   { navn: 'Dag ved bålet, kamera bak', tid: 'dag', modus: 'near', x: 70, z: 40, monstre: 0 },
   { navn: 'Natt ved bålet, 3 monstre', tid: 'natt', modus: 'near', x: 70, z: 40, monstre: 3 },
@@ -35,7 +39,7 @@ export function lagYtelsestest(api) {
   async function kjør(varme = false) {
     if (A) return;
     const mål = matchMedia('(pointer: coarse)').matches ? 30 : 60;
-    const plan = varme ? [{ ...SCENER[0], navn: 'Varmetest 10 min (dag ved bålet)', lengde: 600 }] : SCENER.map(s => ({ ...s, lengde: 20 }));
+    const plan = varme === 'gress' ? GRESSPLAN : varme ? [{ ...SCENER[0], navn: 'Varmetest 10 min (dag ved bålet)', lengde: 600 }] : SCENER.map(s => ({ ...s, lengde: 20 }));
     const skjermlås = await holdSkjermPå();                      // før testen starter, så ingen bilder måles under ventingen
     A = { plan, i: -1, mål, varme, start: performance.now(), aktiv: 0, hendelser: [], res: [], ugyldig: null, skjermlås, siste: [] };
     logg('start', `Skjermlås-hindring: ${A.skjermlås}`);
@@ -83,7 +87,8 @@ export function lagYtelsestest(api) {
       }
     }
     s.vinkel = (s.vinkel || 0) + dt * 0.35;
-    return { dx: Math.cos(s.vinkel), dy: Math.sin(s.vinkel), mengde: .6 };   // går rolig i sirkel
+    const mengde = S.mengde ?? .6; if (!mengde) return { dx: 0, dy: 0, mengde: 0 };
+    return { dx: Math.cos(s.vinkel), dy: Math.sin(s.vinkel), mengde };   // går rolig i sirkel (fart etter scenen)
   }
   function stat(f) {
     if (!f || !f.length) return { bilder: 0, sekunder: 0, fps: null, fps1lav: null };
@@ -116,7 +121,7 @@ export function lagYtelsestest(api) {
     if (alleFps.length && alleFps.every(f => f > 57 && f < 61)) merknader.push('Bildefrekvensen ligger på skjermens tak (ca. 60 Hz). Hvor mye reserve det er, kan ikke måles slik.');
     if (alleFps.length && alleFps.every(f => f > 28 && f < 31.5)) merknader.push('Stabilt ca. 30 FPS kan bety strømsparingsmodus (iOS begrenser da til 30 Hz) eller struping i iframe.');
     if (R.skjermlås !== 'aktiv') merknader.push(`Kunne ikke hindre skjermlås (${R.skjermlås}). Sett «Autolås» til «Aldri» under testen.`);
-    const rapport = { testversjon: 2, prototype: api.versjon, dato: new Date().toISOString(), status, begrunnelse, mål: R.mål,
+    const rapport = { test: R.varme === 'gress' ? 'gress A/B' : R.varme ? 'varmetest' : 'ytelsestest', testversjon: 2, prototype: api.versjon, dato: new Date().toISOString(), status, begrunnelse, mål: R.mål,
       planlagtTestTidS: planlagt, aktivTestTidS: aktiv, gyldigeMålinger: R.ugyldig ? 0 : R.res.length, avbrudd: R.hendelser.filter(h => h.type === 'avbrudd').length,
       stil: api.stil(), kvalitet: api.kvalitet(), dprBrukt: api.renderer.getPixelRatio(), skjermlås: R.skjermlås, enhet: enhet(), resultater: R.res, hendelser: R.hendelser, merknader };
     api.status(''); api.vis(rapport);
