@@ -31,7 +31,9 @@ export function lagRobot(P) {
     modell.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; } });
     // Even (2.11.2026): «jeg vil at karakteren skal være gul». Hovedfargen (Main) er gul; grått og svart er som før.
     settFarge(modell, GUL);
-    let hånd = null; modell.traverse(o => { if (o.isBone && o.name === 'Hand.R') hånd = o; });
+    // Grepet: håndflatebeinet Palm2.R (GLTFLoader fjerner punktum i navn: «Palm2R»). «Hand.R» i fila er et mesh, ikke et ledd.
+    let hånd = null; modell.traverse(o => { if (o.isBone && o.name.replace(/[^a-z0-9]/gi, '') === 'Palm2R') hånd = o; });
+    if (!hånd) console.warn('Mørkeskogen 2.0: fant ikke robotens høyre hånd (Palm2.R); våpnene blir ikke vist');
     const mix = new THREE.AnimationMixer(modell), klipp = {};
     for (const a of gltf.animations) klipp[a.name] = mix.clipAction(a);
     for (const n of ['Punch', 'Jump']) { klipp[n].setLoop(THREE.LoopOnce, 1); klipp[n].clampWhenFinished = true; }
