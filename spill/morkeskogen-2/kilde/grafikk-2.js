@@ -3334,7 +3334,7 @@ function syncList(list, key, make) {
 
 // 2.0, kameraforsøk (til vurdering): trær som står i veien gjør ikke lenger nært kamera kortere, men blir gjennomsiktige.
 // «#kamera=original» i adressen gir 5.6.2-oppførselen (kameraet trekkes inn mot helten, ned til 16 % av avstanden).
-const EVN2_KAM_TRAER = !(typeof location !== 'undefined' && /kamera=original/.test(location.hash));
+const EVN2_KAM_TRAER = !(typeof location !== 'undefined' && /kamera[=-]original/.test(location.hash)) && !(() => { try { return sessionStorage.getItem('evnKamera') === 'original'; } catch (e) { return false; } })();   // sessionStorage: bryteren i testkopien
 function draw(time) {
   if (!window.THREE) return;
   if (!R3) initR3();
@@ -3365,6 +3365,7 @@ function draw(time) {
       if (m.fallT > 1.2) m.grp.position.y = m.baseY - (m.fallT - 1.2) * 60 * t.s * treeWK(t);
     }
     m.grp.visible = (t.alive || falling) && n; m.stump.visible = !t.alive && n;
+    if (!n && m.fade2 !== undefined && m.fade2 < 1) { m.fade2 = 1; m.okk = undefined; for (const [o, mt] of m.oMats) o.material = mt; }   // 2.0: utenfor synsfeltet: tilbake til vanlig (ellers dukker det opp halvt gjennomsiktig)
     if (!n) continue;
     if (t.alive) {
       m.grp.position.x = t.x + (t.shake > 0 ? Math.sin(t.shake * 60) * 3 : 0);
@@ -3372,17 +3373,18 @@ function draw(time) {
         const wind = (t.giant ? .5 : 1) * (1 + Math.sin(time * .3) * .5) * (t.kind === 'lov' || t.kind === 'bjork' ? 1.4 : 1);
         m.grp.rotation.z = Math.sin(time * 1.3 + t.x * .013) * .02 * wind; m.grp.rotation.x = Math.cos(time * 1.1 + t.y * .011) * .012 * wind;
       } else if (m.grp.rotation.z !== 0) { m.grp.rotation.z = 0; m.grp.rotation.x = 0; }
-      if (R3.camE > .5 && !t.giant && t.y > p.y + 15 && t.y < p.y + 260 && Math.abs(t.x - p.x) < 34 * t.s * TREE_W + 10) m.grp.visible = false;   // ikke skjul helten
+      if (!EVN2_KAM_TRAER && R3.camE > .5 && !t.giant && t.y > p.y + 15 && t.y < p.y + 260 && Math.abs(t.x - p.x) < 34 * t.s * TREE_W + 10) m.grp.visible = false;   // ikke skjul helten (5.6.2; i 2.0 tones treet ned i stedet, uten å blinke)
     }
     if (EVN2_KAM_TRAER && !t.giant) {   // 2.0: tre mellom kameraet og helten (eller ved kameraet) tones ned til 30 %
-      const mål = m.okk !== undefined && R3.kamBilde - m.okk <= 2 ? 0.3 : 1;
+      // Mål 30 % mens treet står i veien, og 0,6 s etterpå (hindrer blinking når treet så vidt er innenfor/utenfor)
+      const mål = m.okk !== undefined && R3.kamTid - m.okk < 0.6 ? 0.3 : 1;
       if (mål < 1 || (m.fade2 !== undefined && m.fade2 < 1)) {
         if (!m.fMats) {   // egne kopier av materialene, laget én gang per tre som noen gang står i veien (samme shaderprogram)
           m.fMats = []; m.oMats = [];
           m.grp.traverse(o => { if (o.isMesh) { const c = o.material.clone(); if (o.material.onBeforeCompile) { c.onBeforeCompile = o.material.onBeforeCompile; c.customProgramCacheKey = o.material.customProgramCacheKey; } c.transparent = true; c.userData.evn2 = !!o.material.userData.evn2; c.userData.__evnLin = o.material.userData.__evnLin; m.fMats.push([o, c]); m.oMats.push([o, o.material]); } });
           m.fade2 = 1;
         }
-        m.fade2 += (mål - m.fade2) * Math.min(1, dt * 8);
+        m.fade2 += (mål - m.fade2) * Math.min(1, dt * (mål < m.fade2 ? 7 : 3.5));   // tones raskt ut (sikten først), roligere inn igjen
         if (mål === 1 && m.fade2 > .98) { m.fade2 = 1; for (const [o, mt] of m.oMats) o.material = mt; }
         else for (const [o, c] of m.fMats) { o.material = c; c.opacity = m.fade2; c.depthWrite = false; o.castShadow = true; }
       }
@@ -3875,7 +3877,7 @@ function draw(time) {
   R3.moon.intensity = 0;
 
   // Kamera følger spilleren
-  R3.kamBilde = (R3.kamBilde || 0) + 1;
+  R3.kamTid = (R3.kamTid || 0) + dt;
   R3.camT.lerp(R3.tmp.set(p.x, 0, p.y), Math.min(1, dt * 6));
   R3.camE += ((R3.camMode === 'near' ? 1 : 0) - R3.camE) * Math.min(1, dt * 4);
   R3.camLift = (R3.camLift || 0) + (p.z * 0.45 - (R3.camLift || 0)) * Math.min(1, dt * 7);         // kameraet følger hoppet mykt
@@ -3893,7 +3895,7 @@ function draw(time) {
       let hit = y < gy + 12;
       if (!hit) for (const t of trees) { const r = (t.giant ? 34 : 15 * t.s) * treeWK(t), h = (t.giant ? 330 : 125 * t.s) * treeHK(t); if (Math.abs(t.x - x) < r && Math.abs(t.y - z) < r && Math.hypot(t.x - x, t.y - z) < r && y < groundH(t.x, t.y) + h) {
         // 2.0 (til vurdering): trær gjør kameraet ikke kortere; de blir gjennomsiktige i stedet (se treløkka). Hytter, bygninger, terreng og murer som før.
-        if (EVN2_KAM_TRAER && !t.giant && t._m) { t._m.okk = R3.kamBilde; continue; }
+        if (EVN2_KAM_TRAER && !t.giant && t._m) continue;   // trær merkes etterpå, langs hele siktlinja (se under)
         hit = true; break; } }
       if (!hit) for (const c of huts) if (Math.abs(c.x - x) < 50 && Math.abs(c.y - z) < 42 && y < gy + 85) { hit = true; break; }
       if (!hit) for (const b of blds) if (dist(b.x, b.y, x, z) < BUILDINGS[b.type].r + 6 && y < gy + 75) { hit = true; break; }
@@ -3903,8 +3905,16 @@ function draw(time) {
     }
     R3.camK += (k - R3.camK) * Math.min(1, dt * (k < R3.camK ? 18 : 2.5));                // trekkes raskt inn foran hinderet, glir rolig ut igjen
     if (EVN2_KAM_TRAER) {   // 2.0: også trær rett ved kameraet blir gjennomsiktige (kameraet står aldri «inni» et synlig tre)
-      const cx = hx + ex * R3.camK, cz = hz + ez * R3.camK;
-      for (const t of g.trees) if (t.alive && !t.giant && t._m && Math.abs(t.x - cx) < 60 && Math.abs(t.y - cz) < 60 && Math.hypot(t.x - cx, t.y - cz) < 22 * t.s * treeWK(t) + 14) t._m.okk = R3.kamBilde;
+      // Siktlinja fra hodet til kameraet: et tre står i veien når stammen/kronen (sylinder) ligger nærmere linja enn radius,
+      // og linja går under tretoppen der. Regnet eksakt (ikke i punkter), så tynne trær ikke faller inn og ut mellom punktene.
+      const cx = hx + ex * R3.camK, cy = hy + ey * R3.camK, cz = hz + ez * R3.camK, dx = cx - hx, dz = cz - hz, L2 = dx * dx + dz * dz || 1;
+      const x0 = Math.min(hx, cx) - 60, x1 = Math.max(hx, cx) + 60, z0 = Math.min(hz, cz) - 60, z1 = Math.max(hz, cz) + 60;
+      for (const t of g.trees) {
+        if (!t.alive || t.giant || !t._m || t.x < x0 || t.x > x1 || t.y < z0 || t.y > z1) continue;
+        const u = Math.max(0, Math.min(1, ((t.x - hx) * dx + (t.y - hz) * dz) / L2)), px = hx + dx * u, pz = hz + dz * u;
+        const r = 15 * t.s * treeWK(t) + (u > .85 ? 10 : 0), top = groundH(t.x, t.y) + 125 * t.s * treeHK(t);   // litt romsligere rett ved kameraet
+        if (u > .04 && Math.hypot(t.x - px, t.y - pz) < r && hy + (cy - hy) * u < top) t._m.okk = R3.kamTid;
+      }
     }
     R3.camera.position.set(hx + ex * R3.camK, hy + ey * R3.camK, hz + ez * R3.camK);
   }

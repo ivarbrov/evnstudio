@@ -159,3 +159,44 @@ Even valgte 90 % etter sammenligningsbildene. Ivar godkjente endringen.
 
   Ved hytta, bålet, i nattkamp og ovenfra er det ingen vesentlig forskjell.
 - **Ikke testet:** Følelsen når man spiller (jevnhet når trær tones inn og ut) og ytelse på iPhone.
+
+## Kamera med gjennomsiktige trær – godkjent som foreløpig løsning (Ivar 2.11 kl. 21:02). Låses ved G1.
+**Endret etter godkjenningen (`kilde/grafikk-2.js`):**
+- **Hvilke trær tones ned:** Bare trær som faktisk står i veien. Avstanden fra treets akse til hele siktlinja (fra hodet til kameraet) regnes eksakt, i stedet for i 14 punkter. Da faller tynne trær ikke inn og ut. Linja må gå under tretoppen, og det er litt ekstra rom rett ved kameraet.
+- **Toning:** Mål 30 %. Treet tones ned med 7/s og opp igjen med 3,5/s, og holdes nede i 0,6 s etter at det sist stod i veien. Det hindrer blinking ved kanten.
+- **Utenfor synsfeltet:** Et tonet tre får straks vanlig utseende igjen. Ellers dukket det opp halvt gjennomsiktig.
+- **5.6.2-regelen er slått av i ny modus:** I 5.6.2 forsvinner trær foran helten helt (`visible = false`). Det ville gitt blink.
+- **Uendret:** Kollisjon mot terreng, hytter, bygninger, murer, slottet og kjempegraner.
+- **Bryteren:** `#kamera=original` eller `#kamera-original` (og `sessionStorage evnKamera` i testkopien) gir 5.6.2-kameraet.
+
+**Test (`tester/kamera.js`, BESTÅTT, headless):**
+
+| Scene | Tonet maks/snitt | Blink | Tonet uten å stå i veien | Kameraavstand min (ny / 5.6.2) | Tegnekall (ny / 5.6.2) |
+|---|---|---|---|---|---|
+| Tett skog (gå, løpe, snu kameraet, sidesteg) | 11 / 6,1 | 0 | 0 | 1,00 / 0,16 | 2 751 / 2 734 |
+| Ved hytte | 0 / 0 | 0 | 0 | 0,78 / 0,78 (hytta trekker fortsatt inn) | 3 204 / 3 129 |
+| Nattkamp (fire monstre, seks slag) | 3 / 3 | 0 | 0 | 1,00 / 0,16 | 3 190 / 2 988 |
+| Ovenfra | 3 / 1,8 | 0 | 0 | 1,00 / 0,16 | 1 523 / 1 176 |
+
+**Sortering og GPU:**
+- **Tegnekall:** Toningen gir ingen ekstra tegnekall, fordi treet bytter material og ikke får flere mesher. Forskjellene i tegnekall kommer av at kameraet står lenger unna og ser mer.
+- **Materialkopier:** Hvert tre som noen gang står i veien, får én gjennomsiktig materialkopi (samme shader).
+- **Ekstra GPU-arbeid:** Gjennomsiktige piksler for 3–11 trær, ingen dybdeskriving for dem. Ingen sorteringsfeil er sett på bildene. Krone og stamme i samme tre kan i teorien tegnes i feil rekkefølge, men det er lite synlig ved 30 %.
+- **Ytelse på iPhone:** Ikke målt ennå.
+
+**Kjent begrensning:** Bare trær som dekker linja til **hodet**, tones ned. En bred løvkrone ved siden av linja kan fortsatt dekke beina eller kroppen.
+
+## Øksas synlige rekkevidde (`tester/oks-rekkevidde.js`)
+| | Øksebladet lengst ut fra heltens midtpunkt | Logikk |
+|---|---|---|
+| 5.6.2, gutten | 28,4 | rekkevidde 95, bue 1,3 rad |
+| 2.0, roboten 90 % | 37,1 | uendret |
+
+- Roboten når altså **lenger** enn gutten. Avstanden mellom det man ser og logikkens rekkevidde er mindre enn i 5.6.2.
+- Logikken er ikke endret.
+
+## Testkopi for iPhone
+- **Lenke:** https://claude.ai/artifact/LeDf7MXuTKqDqCwAXtNYX5
+- **Bygging:** Den bygges med `verktoy/lag-testkopi.mjs`.
+- **Innhold:** Ingen statistikk. Egen nettleserlagring, så ekte lagringer berøres ikke.
+- **Testpanel:** Bytt kamera, FPS, tegnekall og antall tonede trær, pluss knappen «Mål 60 s».

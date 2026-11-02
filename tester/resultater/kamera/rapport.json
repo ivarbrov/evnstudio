@@ -1,0 +1,118 @@
+{
+ "scener": {
+  "tett-skog": {
+   "ny": {
+    "bilder": 550,
+    "maksPerBilde": 11,
+    "store": [],
+    "blink": [],
+    "ikkeISikt": 0,
+    "camKMin": 1,
+    "camKSnitt": 1,
+    "snittTonet": 6.1,
+    "antallBlink": 0,
+    "tegnekall": 2751,
+    "trekanter": 2104612
+   },
+   "original": {
+    "bilder": 550,
+    "maksPerBilde": 0,
+    "store": [],
+    "blink": [],
+    "ikkeISikt": 0,
+    "camKMin": 0.16,
+    "camKSnitt": 0.35,
+    "snittTonet": 0,
+    "antallBlink": 0,
+    "tegnekall": 2734,
+    "trekanter": 2056308
+   }
+  },
+  "hytte": {
+   "ny": {
+    "bilder": 180,
+    "maksPerBilde": 0,
+    "store": [],
+    "blink": [],
+    "ikkeISikt": 0,
+    "camKMin": 0.78,
+    "camKSnitt": 0.97,
+    "snittTonet": 0,
+    "antallBlink": 0,
+    "tegnekall": 3204,
+    "trekanter": 2546284
+   },
+   "original": {
+    "bilder": 180,
+    "maksPerBilde": 0,
+    "store": [],
+    "blink": [],
+    "ikkeISikt": 0,
+    "camKMin": 0.78,
+    "camKSnitt": 0.97,
+    "snittTonet": 0,
+    "antallBlink": 0,
+    "tegnekall": 3129,
+    "trekanter": 2561376
+   }
+  },
+  "kamp-natt": {
+   "ny": {
+    "bilder": 180,
+    "maksPerBilde": 3,
+    "store": [],
+    "blink": [],
+    "ikkeISikt": 0,
+    "camKMin": 1,
+    "camKSnitt": 1,
+    "snittTonet": 3,
+    "antallBlink": 0,
+    "tegnekall": 3190,
+    "trekanter": 2103300
+   },
+   "original": {
+    "bilder": 180,
+    "maksPerBilde": 0,
+    "store": [],
+    "blink": [],
+    "ikkeISikt": 0,
+    "camKMin": 0.16,
+    "camKSnitt": 0.16,
+    "snittTonet": 0,
+    "antallBlink": 0,
+    "tegnekall": 2988,
+    "trekanter": 2030654
+   }
+  },
+  "ovenfra": {
+   "ny": {
+    "bilder": 210,
+    "maksPerBilde": 3,
+    "store": [],
+    "blink": [],
+    "ikkeISikt": 0,
+    "camKMin": 1,
+    "camKSnitt": 1,
+    "snittTonet": 1.8,
+    "antallBlink": 0,
+    "tegnekall": 1523,
+    "trekanter": 1662600
+   },
+   "original": {
+    "bilder": 210,
+    "maksPerBilde": 0,
+    "store": [],
+    "blink": [],
+    "ikkeISikt": 0,
+    "camKMin": 0.16,
+    "camKSnitt": 0.23,
+    "snittTonet": 0,
+    "antallBlink": 0,
+    "tegnekall": 1176,
+    "trekanter": 1510856
+   }
+  }
+ },
+ "status": "BESTÅTT",
+ "feil": []
+}
