@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="no"><head><meta charset="utf-8"><title>EVN-roboten – bildeverksted</title>
+<script type="importmap">{ "imports": { "three": "./node_modules/three/build/three.module.js", "three/addons/": "./node_modules/three/examples/jsm/" } }</script>
+</head><body style="margin:0;background:#888">
+<script type="module">
+// Tegner bilder av EVN-roboten (RobotExpressive, CC0) med samme gulfarge som Mørkeskogen 2.0.
+// Brukes av lag-bilder.mjs. Ingen nettverkskall utenfor denne mappa.
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { ROBOT } from './robot-oppsett.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = ROBOT.lys.eksponering;
+renderer.setClearColor(0x000000, 0);
+
+const scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a7a66, ROBOT.lys.himmel));
+const sol = new THREE.DirectionalLight(0xffffff, ROBOT.lys.sol);
+sol.position.set(-3, 6, 5);
+scene.add(sol);
+const fyll = new THREE.DirectionalLight(0xdfe8ff, ROBOT.lys.fyll);
+fyll.position.set(4, 2, 3);
+scene.add(fyll);
+
+const gltf = await new GLTFLoader().loadAsync('./helt-robot.glb');
+const modell = gltf.scene, rot = new THREE.Group();
+rot.add(modell); scene.add(rot);
+// Hovedfargen (materialet «Main») = EVN-gul. Grått og svart er som i originalen.
+const hoved = new Set();
+modell.traverse(o => { if (o.isMesh && o.material && o.material.name === 'Main') hoved.add(o.material); });
+for (const m of hoved) m.color.setHex(ROBOT.farge);           // sRGB-hex; three.js regner om til lineær
+const box = new THREE.Box3().setFromObject(modell);
+const H = box.max.y - box.min.y;
+modell.position.y = -box.min.y;                                // føttene på y = 0
+const mix = new THREE.AnimationMixer(modell), klipp = {};
+for (const a of gltf.animations) klipp[a.name] = a;
+
+function stilling(navn, t) {
+  mix.stopAllAction();
+  const a = mix.clipAction(klipp[navn]); a.reset().play();
+  mix.setTime(Math.min(t, klipp[navn].duration - 1e-4));
+  modell.updateMatrixWorld(true);
+}
+
+// Ortografisk kamera, hevet «hoyde» grader. Bakkepunktet under roboten havner «fot» fra toppen av bildet.
+function ortoKamera(hoyde, synlig, fot) {
+  const c = new THREE.OrthographicCamera(-synlig / 2, synlig / 2, fot * synlig, -(1 - fot) * synlig, -100, 100);
+  const v = THREE.MathUtils.degToRad(hoyde);
+  c.position.set(0, Math.sin(v) * 10, Math.cos(v) * 10); c.lookAt(0, 0, 0);
+  return c;
+}
+function perspKamera(hoyde, avstand, mal, fov = 30) {
+  const c = new THREE.PerspectiveCamera(fov, 1, 0.1, 100);
+  const v = THREE.MathUtils.degToRad(hoyde);
+  c.position.set(Math.sin(ROBOT.web.sving) * avstand * Math.cos(v), mal + Math.sin(v) * avstand, Math.cos(ROBOT.web.sving) * avstand * Math.cos(v));
+  c.lookAt(0, mal, 0); return c;
+}
+
+// spec: { F, kol, rammer:[{klipp,t,retning(rad),speil}], hoyde, synlig (× robothøyde), fot, format, kvalitet }
+window.tegnArk = (spec) => {
+  const F = spec.F, kol = spec.kol || spec.rammer.length, rader = Math.ceil(spec.rammer.length / kol);
+  renderer.setSize(F, F, false);
+  const ark = document.createElement('canvas'); ark.width = F * kol; ark.height = F * rader;
+  const c2 = ark.getContext('2d');
+  const kam = ortoKamera(spec.hoyde, spec.synlig * H, spec.fot);
+  spec.rammer.forEach((r, i) => {
+    stilling(r.klipp, r.t); rot.rotation.y = r.retning || 0;
+    renderer.render(scene, kam);
+    const x = (i % kol) * F, y = Math.floor(i / kol) * F;
+    c2.save();
+    if (r.speil) { c2.translate(x + F, y); c2.scale(-1, 1); c2.drawImage(renderer.domElement, 0, 0); }
+    else c2.drawImage(renderer.domElement, x, y);
+    c2.restore();
+  });
+  return ark.toDataURL(spec.format || 'image/webp', spec.kvalitet ?? 0.82);
+};
+
+// Enkeltbilde med perspektiv (nettsiden). spec: { B, Hpx, klipp, t, retning, hoyde, avstand, mal, beskj: [x,y,b,h] i andel }
+window.tegnBilde = (spec) => {
+  renderer.setSize(spec.B, spec.Hpx, false);
+  stilling(spec.klipp, spec.t); rot.rotation.y = spec.retning || 0;
+  const kam = perspKamera(spec.hoyde, spec.avstand * H, spec.mal * H, spec.fov || 30);
+  kam.aspect = spec.B / spec.Hpx; kam.updateProjectionMatrix();
+  renderer.render(scene, kam);
+  return renderer.domElement.toDataURL('image/png');
+};
+window.klippNavn = Object.fromEntries(Object.entries(klipp).map(([k, a]) => [k, +a.duration.toFixed(3)]));
+window.robotHoyde = H;
+window.klar = true;
+</script></body></html>

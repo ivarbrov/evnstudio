@@ -1,0 +1,8 @@
+{
+  "name": "evn-robot-bilder",
+  "private": true,
+  "type": "module",
+  "description": "Lager 2D-bilder av EVN-roboten fra den felles 3D-modellen",
+  "scripts": { "bilder": "node lag-bilder.mjs ut && python3 lag-web.py ut ut/web" },
+  "devDependencies": { "three": "0.187.0", "playwright": "^1.40.0" }
+}
