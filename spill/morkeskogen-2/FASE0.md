@@ -94,6 +94,26 @@
 - **Før start:** Sett «Autolås» til «Aldri» og koble til lader. Ikke bruk strømsparingsmodus.
 - **Under testen:** Ikke rør eller bytt app i 10 min.
 
+### Måling 2.11.2026 kl. 07:20 – ytelsestest v2, 1 min (gyldig)
+iPhone (iOS 18.7, Claude-appen), stil 2, Middels, DPR 1,5. Skjermlås-hindring: **aktiv**. Ingen avbrudd. **Status: BESTÅTT** (mål 30 FPS).
+
+| Scene | FPS | 1 % lav | Verste bilde | Hakk > 100 ms | Tegnekall | Trekanter / skygge |
+|---|---|---|---|---|---|---|
+| Dag ved bålet | 55,4 | 33,3 | 33 ms | 0 | 138 | 0,51 M / 0,16 M |
+| Natt, 3 monstre | 45,8 | 32,3 | 34 ms | 0 | 140 | 0,48 M / 0,18 M |
+| Ovenfra | 49,9 | 37,0 | 29 ms | 0 | 141 | 0,38 M / 0,06 M |
+
+**Vurdering:**
+- **Mot 30 FPS:** Oppfylt med margin. Ingen enkeltbilder var tregere enn 34 ms (ca. 29 FPS), og det var ingen hakk.
+- **Bildene veksler mellom 16,7 og 33 ms.** iOS viser et bilde enten ved neste eller nest neste skjermoppdatering, så snittet blir et blandingstall mellom 60 og 30. Det betyr at mange bilder bruker litt mer enn 16,7 ms (grensen for 60 FPS), men godt under 33 ms (grensen for 30 FPS).
+- **Lavere enn i går kveld** (60 i alle scener med v1, samme mengde geometri). Mulige årsaker, ingen er kontrollert:
+  - Telefonen var varmere eller lå i lader. Lading gir varme.
+  - Strømtilstanden var en annen.
+  - Bakgrunnsaktivitet om morgenen.
+
+  Målemetoden er ikke årsaken: v1 og v2 regner FPS likt når det ikke er avbrudd.
+- **Konklusjon:** Ingen endring i grafikk eller kvalitet anbefales nå. Det avgjørende er om bildefrekvensen holder seg over 30 i 10 min. Det viser bare en gyldig varmetest.
+
 ## 4. Til godkjenning (G0)
 1. Ta en ny varmetest med v2. Resultatet avgjør det endelige mobilkravet (B7).
 2. Godta at tvillingen er grunnlaget for fase 1, med dekningshullene over lukket før G1.
