@@ -119,6 +119,51 @@ Automatiske tester og QA er separate kontroller. Grønne tester godkjenner ikke 
 - En suite som er «ikke innført» (filen finnes verken på grenen eller på `main`), gir varsel. I dag gjelder det `statistikk` og `ui` til grenene med dem er slått sammen.
 - Krav merket Q, E og V kan ikke testes automatisk.
 
+## Resultat av prøvekjøringen på GitHub (2. november 2026)
+
+| Gren | Kjøring | Resultat |
+|---|---|---|
+| `kvalitet/actions-test` (8b3e1c4) | «Automatiske tester» | Grønn. Kvittering med full SHA, `statisk=ok royk=ok`, `statistikk` og `ui` ikke innført |
+| `kvalitet/actions-test` | Seks selvtester med manipulert resultat | Alle røde, med riktig grunn |
+| `kvalitet/actions-test-feil` (8311bd5) | «Automatiske tester» | Rød: T3 i Fossil Zoo feilet når det kjente funnet var fjernet. `statisk=feil` |
+| `kvalitet/actions-test-omgaelse` (dde59b1) | Selvtestene | Alle grønne fordi skriptet var endret til å alltid bestå. **Dette viser svakheten, og er ikke en godkjenning** |
+
+Ingen av kjøringene startet publisering. Alle de 32 publiseringene til `github-pages` er fra `main`, og miljøet `github-pages` tillater bare grenen `main`.
+
+## Beskyttelse av main, tester og arbeidsflyt
+
+**Svakheten:** Ved `pull_request` kjører GitHub arbeidsflyten og testskriptene fra PR-grenen. En PR som endrer `test/` eller `.github/`, kan derfor gjøre sin egen kontroll grønn. Det viste grenen `-omgaelse`.
+
+**Det som ikke finnes for et personlig repo med én eier:**
+- Regel som sperrer endring av bestemte filer (push-regler med filstier). Den finnes bare for organisasjoner.
+- Godkjenning fra kodeeier (CODEOWNERS). Eieren kan ikke godkjenne sin egen PR, så det kan ikke kreves.
+
+**Løsningen:** «QA før publisering» kjøres med `pull_request_target`. Da hentes arbeidsflyten og testskriptene fra `main`, ikke fra PR-en. PR-ens filer brukes bare som det som testes.
+- Endringer i `test/` og `.github/` tar dermed først effekt etter at eieren har slått dem sammen.
+- Sjekken gir varsel når en PR endrer `test/` eller `.github/`, så eieren ser på dem særskilt.
+- `pull_request_target` gir ikke hemmeligheter eller skrivetilgang her, fordi arbeidsflyten bare har lesetilgang og repoet ikke har hemmeligheter.
+- Kjøringer fra fremmede forks må godkjennes av eieren (innstilling under).
+- Den første PR-en som legger arbeidsflyten på `main`, kan ikke beskyttes slik, fordi `main` ikke har arbeidsflyten ennå. Den må eieren gå gjennom manuelt.
+
+**Forslag til regel for `main` (Settings → Rules → Rulesets → New branch ruleset):**
+- Navn `main`, Enforcement «Active», Target «Default branch», ingen i Bypass list.
+- Restrict deletions: på. Block force pushes: på.
+- Require a pull request before merging: på, med 0 godkjenninger, fordi eieren ikke kan godkjenne sin egen PR. Sammenslåingen er eierens godkjenning.
+- Require status checks to pass: på, med «Require branches to be up to date before merging». Obligatoriske kontroller:
+  - «Automatiske tester»
+  - «QA før publisering»
+- Kontrollene fra testgrenene («Manipulert resultat – …» i «Selvtest av publiseringssjekken») skal **ikke** være obligatoriske. De finnes bare på testgrenene og skal aldri til `main`.
+
+**Andre innstillinger:**
+- Settings → Actions → General:
+  - Workflow permissions: «Read repository contents and packages permissions».
+  - «Allow GitHub Actions to create and approve pull requests»: av.
+  - Fork pull request workflows: krev godkjenning for alle eksterne bidragsytere.
+  - Allowed actions: bare GitHubs egne (`actions/checkout`, `actions/setup-node`, `actions/upload-artifact`, `actions/download-artifact`).
+- Settings → Pages: «Deploy from a branch», `main`, `/ (root)`. Uendret.
+- Settings → Environments → `github-pages`: bare grenen `main`. Uendret.
+- Settings → Collaborators: ingen andre med skrivetilgang.
+
 ## Hooks og ekstra sperrer: ikke nå
 
 En hook som sperrer agentens Bash-kommandoer, innføres ikke nå. Grunnene:
@@ -131,6 +176,6 @@ Dette vurderes på nytt hvis en QA-kontroll noen gang endrer filer.
 
 ## Rekkefølge videre
 
-- **Trinn 4:** Flytte `.claude/utkast/kvalitet.yml` til `.github/workflows/`, legge til PR-malen og gjøre GitHub-oppsettet over. Det krever eierens godkjenning.
+- **Aktivering:** Gjøre «QA før publisering» om til `pull_request_target`, flytte `.claude/utkast/kvalitet.yml` til `.github/workflows/` i én PR til `main` og gjøre GitHub-oppsettet over. Det krever eierens godkjenning. Testgrenene `kvalitet/actions-test*` kan slettes etterpå.
 - Spillgrenene (`feature/statistikk`, `feature/morkeskogen-ui` og `feature/fossil-startkort`) henter `main` etter at kvalitetsgrenene er slått sammen. Da kjører testene også for dem.
 - Fossil Zoo v0.7.3 på `main` er gjeldende publisert versjon, og `kvalitet/tester` har hentet den. `feature/statistikk` og `feature/morkeskogen-ui` kan slås sammen med `main` uten konflikt. `feature/fossil-startkort` bruker også versjonsnummeret 0.7.3 og har konflikt i `spill/fossilspillet/index.html`. Den må tilpasses v0.7.3 og få nytt versjonsnummer, med vanlig QA, test hos Even og godkjenning.
