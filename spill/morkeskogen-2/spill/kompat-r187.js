@@ -13,3 +13,68 @@
     'float getDistanceAttenuation( const in float lightDistance, const in float cutoffDistance, const in float decayExponent ) {\n  if ( cutoffDistance > 0.0 && decayExponent > 0.0 ) return pow( saturate( - lightDistance / cutoffDistance + 1.0 ), decayExponent );\n  return 1.0;\n}');
   if (!C.lights_pars_begin.includes('- lightDistance / cutoffDistance + 1.0')) console.warn('EVN 2.0: avstandsdemping ikke byttet');
 })();
+
+/* Mørkeskogen 2.0 – overgang til ny lysmodell (fase 1, steg 2).
+   Gammel grafikk er laget med farger «slik de vises» (5.6.2 hadde ingen fargehåndtering). Ny grafikk regner lys
+   i lineære farger, med sRGB-utdata og tonemapping (stil 2). For at gammel og ny grafikk skal kunne stå i samme
+   scene, gjøres de gamle fargene om én gang til lineære:
+   - materialfarger (color, emissive) og vertex-farger: sRGB -> lineær
+   - fargeteksturer: merkes som sRGB (dekodes av skjermkortet)
+   - egne ShaderMaterial (himmel, vann, lava, flammer ...): regner fortsatt i «visningsfarger»; resultatet gjøres om
+     til lineært rett før tonemapping og sRGB-utdata, så de ser ut som før
+   - lys og tåke: fargene som draw() setter hvert bilde, gjøres om etter draw()
+   Nye materialer merkes med userData.evn2 = true og røres ikke. */
+window.EVN2_OVERGANG = (function () {
+  const T = THREE, FERDIG = '__evnLin';
+  // Farger som draw() setter: gjøres om bare når draw() faktisk har endret dem (ellers ville de blitt mørkere for hvert bilde)
+  const sist = new WeakMap();
+  const SLUTT = '\n\tgl_FragColor = sRGBTransferEOTF( gl_FragColor );\n\t#include <tonemapping_fragment>\n\t#include <colorspace_fragment>\n}';
+  const tex = t => { if (t && t.isTexture && t.colorSpace !== T.SRGBColorSpace && !t.isDataTexture) { t.colorSpace = T.SRGBColorSpace; t.needsUpdate = true; } };
+  function materiale(m) {
+    if (!m || m.userData[FERDIG] || m.userData.evn2) return;
+    m.userData[FERDIG] = true;
+    if (m.isShaderMaterial) {
+      if (m.isRawShaderMaterial) return;
+      const fs = m.fragmentShader, i = fs.lastIndexOf('}');
+      if (i > 0 && !fs.includes('colorspace_fragment')) { m.fragmentShader = fs.slice(0, i) + SLUTT + fs.slice(i + 1); m.needsUpdate = true; }
+      return;
+    }
+    farge(m.color); farge(m.emissive); alle.push(m);   // draw() kan endre fargen senere (f.eks. fjellene om natta)
+    tex(m.map); tex(m.emissiveMap);
+    m.needsUpdate = true;
+  }
+  function geometri(g) {
+    if (!g || g.userData[FERDIG]) return; g.userData[FERDIG] = true;
+    const c = g.attributes && g.attributes.color; if (!c) return;
+    const a = c.array, v = new T.Color();
+    for (let i = 0; i < c.count; i++) { v.fromBufferAttribute(c, i).convertSRGBToLinear(); c.setXYZ(i, v.r, v.g, v.b); }
+    c.needsUpdate = true;
+  }
+  function gjennomgå(rot) {
+    rot.traverse(o => {
+      if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(materiale);
+      if (o.geometry && o.material && (Array.isArray(o.material) ? o.material.some(m => m.vertexColors) : o.material.vertexColors)) geometri(o.geometry);
+      if (o.isInstancedMesh && o.instanceColor && !o.instanceColor[FERDIG]) {
+        o.instanceColor[FERDIG] = true; const c = new T.Color();
+        for (let i = 0; i < o.count; i++) { o.getColorAt(i, c); o.setColorAt(i, c.convertSRGBToLinear()); }
+        o.instanceColor.needsUpdate = true;
+      }
+    });
+  }
+  const alle = [];
+  function farge(c) { if (!c) return; const s = sist.get(c); if (s !== undefined && s === c.getHex() + ':' + c.r) return; c.convertSRGBToLinear(); sist.set(c, c.getHex() + ':' + c.r); }
+  let n = 0;
+  // Objekter som legges til i scenen (også senere i spillet), gjøres om med en gang
+  const add0 = T.Object3D.prototype.add;
+  T.Object3D.prototype.add = function (...o) { const r = add0.apply(this, o); for (const x of o) if (x && x.isObject3D) gjennomgå(x); return r; };
+  return {
+    ramme(R3) {
+      if (n++ % 300 === 0) gjennomgå(R3.scene);   // sikkerhetsnett; nye objekter gjøres om allerede når de legges til (se add under)
+      for (const m of alle) { farge(m.color); farge(m.emissive); }
+      for (const l of [R3.hemi, R3.sun, R3.moon, R3.pLight, ...(R3.pool || [])]) { if (!l) continue; farge(l.color); if (l.groundColor) farge(l.groundColor); }
+      if (R3.scene.fog) farge(R3.scene.fog.color);
+      if (R3.scene.background && R3.scene.background.isColor) farge(R3.scene.background);
+    },
+    gjennomgå, materiale,
+  };
+})();

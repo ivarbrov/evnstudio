@@ -471,7 +471,7 @@ function cone(mat, r, h, x, y, z, rx = Math.PI / 2) { const c = mk(GEO.cone, mat
 //#blokk 0271 initR3
 
 function initR3() {
-  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true }); renderer.outputColorSpace = THREE.LinearSRGBColorSpace;   // 2.0: lineær utdata som i r128 (overgang)
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true }); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1;   // 2.0: ny lysmodell (stil 2)
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;   // 2.0: PCFSoftShadowMap er fjernet i r187
   const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9ab8a6);
   scene.fog = new THREE.Fog(0x9ab8a6, 600, 1300);
@@ -3927,6 +3927,7 @@ function draw(time) {
     const u = c.userData; u.dx += dt * 25; if (u.dx > 6000) u.dx -= 12000;
     c.position.set(cp.x - FWZ * u.dx - FWX * u.dz, u.h, cp.z + FWX * u.dx - FWZ * u.dz);
   }
+  if (window.EVN2_OVERGANG) EVN2_OVERGANG.ramme(R3);   // 2.0: gamle farger til lineære (ny lysmodell)
   R3.renderer.render(R3.scene, R3.camera);
 
   // Tekst og helsestolper oppå 3D-bildet
