@@ -73,7 +73,7 @@ export function lagYtelsestest(api) {
         const m4 = window.__maal || {};
         A.res.push(Object.assign({ scene: S.navn, lengdeS: S.lengde }, stat(s.bilder), {
           hakk: s.hakk, versteBildeMs: Math.round(s.verste), tegnekall: m4.tegnekallTotalt, trekanter: m4.trekanter, skyggeTrekanter: m4.trekanterSkygge,
-          minutter: S.lengde > 60 ? s.minutter.map((f, i) => ({ minutt: i + 1, ...stat(f), helt: stat(f).sekunder >= 59.5 })) : undefined,
+          minutter: S.lengde > 60 ? s.minutter.map((f, i) => ({ minutt: i + 1, ...stat(f), helt: stat(f).sekunder >= 59.5 })).filter(m => m.helt || m.sekunder >= 1) : undefined,   // dropp restminutt under 1 s
         }));
         neste(); return A ? { dx: 0, dy: 0 } : null;
       }

@@ -114,7 +114,31 @@ iPhone (iOS 18.7, Claude-appen), stil 2, Middels, DPR 1,5. Skjermlås-hindring: 
   Målemetoden er ikke årsaken: v1 og v2 regner FPS likt når det ikke er avbrudd.
 - **Konklusjon:** Ingen endring i grafikk eller kvalitet anbefales nå. Det avgjørende er om bildefrekvensen holder seg over 30 i 10 min. Det viser bare en gyldig varmetest.
 
+### Varmetest 2.11.2026 kl. 07:01 (UTC 06:01) – v2, 10 min (gyldig)
+Samme iPhone, stil 2, Middels, DPR 1,5. Skjermlås-hindring aktiv. **600 s aktiv tid av 600, 0 avbrudd. Status: BESTÅTT.**
+
+| | Hele testen | Svakeste minutt | Sterkeste minutt |
+|---|---|---|---|
+| FPS | 55,6 | 51,5 (min. 3) | 57,8 (min. 6 og 8) |
+| 1 % lav | 37,0 | 32,3 (min. 3) | 40,0 |
+| Verste bilde | 39 ms | – | – |
+| Hakk > 100 ms | 0 | – | – |
+
+**Vurdering:**
+- **Ingen tegn til varmestruping.** FPS steg fra ca. 52 i minutt 1–3 til 56,6–57,8 i minutt 4–10.
+- **Laveste verdi:** Ingen hele minutter var under 51 FPS. Laveste «1 % lav» var 32,3, over målet på 30.
+- **Hva testen dekker:**
+  - Én scene (dag ved bålet) på én enhet. Natt med monstre var tyngst i 1-minuttstesten (45,8 FPS) og er ikke varmetestet.
+  - Android, eldre telefoner og PC (60 FPS-målet) er ikke testet.
+- **Minutt 11:** Hadde 1 bilde og 0 s. Det var et rest-minutt fra siste bilde. Fra nå vises rest-minutter under 1 s ikke.
+
+**Forslag til B7 (endelig, for denne fasen):**
+- Middels er standard på mobil.
+- Kravet er ≥ 30 FPS i alle hele minutter av en 10-minutters varmetest, og «1 % lav» ≥ 30.
+- Kravet gjentas ved G2 og G6 med representative scener (natt, biomer, steder). Varmetesten bør da veksle mellom scener i stedet for å bruke bare én.
+- PC-måling (60 FPS) gjenstår.
+
 ## 4. Til godkjenning (G0)
-1. Ta en ny varmetest med v2. Resultatet avgjør det endelige mobilkravet (B7).
+1. ~~Ny varmetest med v2~~ Utført: BESTÅTT. Ta stilling til forslaget til B7 over.
 2. Godta at tvillingen er grunnlaget for fase 1, med dekningshullene over lukket før G1.
 3. Valgfritt: ekte lagringer fra Evens enheter som testkopier.
