@@ -71,7 +71,7 @@ export function lagYtelsestest(api) {
       const m = Math.floor(s.t / 60); (s.minutter[m] || (s.minutter[m] = [])).push(dtMs);
       if (s.t >= S.lengde) {
         const m4 = window.__maal || {};
-        A.res.push(Object.assign({ scene: S.navn, mål: S.lengde }, stat(s.bilder), {
+        A.res.push(Object.assign({ scene: S.navn, lengdeS: S.lengde }, stat(s.bilder), {
           hakk: s.hakk, versteBildeMs: Math.round(s.verste), tegnekall: m4.tegnekallTotalt, trekanter: m4.trekanter, skyggeTrekanter: m4.trekanterSkygge,
           minutter: S.lengde > 60 ? s.minutter.map((f, i) => ({ minutt: i + 1, ...stat(f), helt: stat(f).sekunder >= 59.5 })) : undefined,
         }));
@@ -94,7 +94,7 @@ export function lagYtelsestest(api) {
     if (!A || A.ugyldig) return;
     A.ugyldig = grunn; logg('avbrudd', grunn);
     const S = A.plan[A.i], s = A.s;
-    if (s && s.bilder.length) A.res.push(Object.assign({ scene: S.navn + ' (UFULLSTENDIG)', mål: S.lengde }, stat(s.bilder), { hakk: s.hakk, versteBildeMs: Math.round(s.verste),
+    if (s && s.bilder.length) A.res.push(Object.assign({ scene: S.navn + ' (UFULLSTENDIG)', lengdeS: S.lengde }, stat(s.bilder), { hakk: s.hakk, versteBildeMs: Math.round(s.verste),
       minutter: S.lengde > 60 ? s.minutter.map((f, i) => ({ minutt: i + 1, ...stat(f), helt: stat(f).sekunder >= 59.5 })) : undefined }));
     ferdig();
   }

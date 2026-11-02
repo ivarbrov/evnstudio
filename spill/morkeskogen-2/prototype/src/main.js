@@ -172,7 +172,7 @@ const yt = lagYtelsestest({
   status(t) { const el = $('teststatus'); el.textContent = t; el.hidden = !t; },
   vis(r) {
     const fmt = x => x == null ? '–' : x;
-    const rader = r.resultater.map(x => `<tr><td>${x.scene}</td><td>${fmt(x.fps)}</td><td>${fmt(x.fps1lav)}</td><td>${x.sekunder} / ${x.mål} s</td><td>${fmt(x.tegnekall)}</td></tr>` +
+    const rader = r.resultater.map(x => `<tr><td>${x.scene}</td><td>${fmt(x.fps)}</td><td>${fmt(x.fps1lav)}</td><td>${x.sekunder} / ${x.lengdeS} s</td><td>${fmt(x.tegnekall)}</td></tr>` +
       (x.minutter ? x.minutter.map(m => `<tr class="min"><td>Minutt ${m.minutt}${m.helt ? '' : ' (delvis)'}</td><td>${fmt(m.fps)}</td><td>${fmt(m.fps1lav)}</td><td>${m.sekunder} s</td><td></td></tr>`).join('') : '')).join('');
     $('testTabell').innerHTML = '<tr><th>Scene</th><th>FPS</th><th>1 % lav</th><th>Aktiv tid</th><th>Tegnekall</th></tr>' + rader;
     const st = $('testStatus'); st.textContent = r.status; st.className = 'status ' + (r.status === 'BESTÅTT' ? 'ok' : r.status === 'IKKE BESTÅTT' ? 'nei' : 'ugyldig');
