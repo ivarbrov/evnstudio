@@ -38,6 +38,12 @@ kv = hode.crop((cx - side // 2, b[1] - side // 20, cx + side // 2, b[1] - side /
 for h in (96, 192):
     lagre(kv, f'robot-hode-{h}.webp', h)
 
+# Startkort: én positur per spill (robot-start-<navn>-130/260.webp; vises ca. 100–120 px høy)
+for p in sorted(inn.glob('start-*.png')):
+    im = Image.open(p).convert('RGBA'); c = im.crop(boks(im))
+    for h in (130, 260):
+        lagre(c, f'robot-{p.stem}-{h}.webp', h)
+
 # Vinkesekvens: 8 bilder i én stripe, felles beskjæring så roboten står stille
 vink = [Image.open(inn / f'web-vink-{i}.png').convert('RGBA') for i in range(8)]
 fb = boks(*vink)
