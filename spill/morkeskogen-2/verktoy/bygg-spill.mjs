@@ -50,5 +50,7 @@ ny = ny.replace(/"\.\.\/\.\.\//g, '"../../../').replace(/'\.\.\/\.\.\//g, "'../.
 // three.js r187 (egen global build) + overgangslag
 const R128 = '<script src="../../../vendor/three-r128.min.js"></script>';
 if (!ny.includes(R128)) throw new Error('Fant ikke three-r128-taggen');
-ny = ny.replace(R128, '<script src="../../../vendor/three-r187.global.js"></script>\n<script src="kompat-r187.js"></script>');
+ny = ny.replace(R128, '<script src="../../../vendor/three-r187.global.js"></script>\n<script src="kompat-r187.js"></script>\n<script src="grafikk2.js"></script>');
+// Grafikkjernen (moduler i grafikk/) pakkes med esbuild
+const gb = spawnSync('node', ['spill/morkeskogen-2/grafikk/bygg.mjs'], { encoding: 'utf8' }); if (gb.status) { console.error(gb.stderr); process.exit(1); }
 writeFileSync(`${UT}/index.html`, ny);

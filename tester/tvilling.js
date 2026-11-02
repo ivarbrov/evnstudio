@@ -34,7 +34,7 @@ const INIT = `(() => {${process.env.DEBUG_RNG ? 'window.__rngLogg = [];' : ''}
   window.__iGrafikk = false;
   // Grafikkens inngangspunkter (draw, buildWorld, initR3) merkes ved servering; ingen kallstakk-sjekk (den var for treg).
   // Trekk inne i three.js (f.eks. UUID-er) er grafikk. Utenfor merkede grafikkfunksjoner sjekkes kallstakken (få kall, ca. 3 000 per scene).
-  const fraThree = () => /three-r1\d\d[.\w]*\.js/.test(new Error().stack);
+  const fraThree = () => { const st = new Error().stack; return st.includes('three-r187') || st.includes('three-r128') || st.includes('grafikk2.js'); };   // (ingen regex: INIT er en mal-streng der \\d ville blitt «d»)
   Math.random = () => { if (window.__iGrafikk || fraThree()) { __rngTeller.grafikk++; return grafikk(); } __rngTeller.logikk++; if (window.__rngLogg) window.__rngLogg.push(new Error().stack.split(String.fromCharCode(10)).slice(2, 6).map(l => l.trim().split(' ')[1]).join(' < ')); return logikk(); };
   try { const s = sessionStorage.getItem('__tvillingLagring'); if (s) { const o = JSON.parse(s); for (const k in o) localStorage.setItem(k, o[k]); sessionStorage.removeItem('__tvillingLagring'); } } catch (e) {}
 })();`;

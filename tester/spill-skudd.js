@@ -22,6 +22,8 @@ const PUNKTER = [
   { navn: 'kveld', tid: 125, opp: () => {} },
   { navn: 'natt', tid: 160, opp: () => {} },
   { navn: 'ovenfra', tid: 40, opp: () => { const R = __tv.R3(); R.camMode = 'far'; } },
+  { navn: 'snudd', tid: 40, opp: () => { const R = __tv.R3(); R.camMode = 'near'; R.camYaw = Math.PI; } },
+  { navn: 'okseslag', tid: 40, opp: () => { const R = __tv.R3(); R.camMode = 'near'; R.camYaw = Math.PI / 2; __tv.g().p.swing = 0.3; } },
 ];
 
 async function side(browser, hvilken) {
@@ -37,6 +39,9 @@ async function side(browser, hvilken) {
   try { await p.waitForFunction(() => window.__tv && window.__tv.g, null, { timeout: 300000 }); } catch (e) { console.error(hvilken, 'lastet ikke:', p.feil.slice(0, 5)); throw e; }
   await p.evaluate(() => document.getElementById('startBtn').click());
   await p.evaluate(() => __steg(10));
+  // 2.0: vent til robot-helten er lastet (GLB)
+  try { await p.waitForFunction(() => !window.EVN2 || (__tv.R3() && __tv.R3().player && __tv.R3().player.robot), null, { timeout: 120000, polling: 250 }); }
+  catch (e) { console.error(hvilken, 'roboten ble ikke lastet:', p.feil.slice(0, 5), await p.evaluate(() => ({ R3: !!__tv.R3(), player: !!(__tv.R3() && __tv.R3().player) }))); throw e; }
   return p;
 }
 
@@ -45,7 +50,7 @@ async function side(browser, hvilken) {
   const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   const P = {}; for (const k of Object.keys(SIDER)) P[k] = await side(browser, k);
   const rapport = { dato: new Date().toISOString(), punkter: {} };
-  for (const pk of PUNKTER) {
+  for (const pk of PUNKTER.filter(x => !process.env.PUNKT || x.navn === process.env.PUNKT)) {
     const bilder = {};
     for (const [k, p] of Object.entries(P)) {
       await p.evaluate(([tid, opp]) => { const g = __tv.g(); g.time = tid; const [FX, FY] = __tv.F(); g.p.x = FX + 120; g.p.y = FY + 160; eval('(' + opp + ')')(); }, [pk.tid, pk.opp.toString()]);

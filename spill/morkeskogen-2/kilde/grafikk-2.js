@@ -372,7 +372,7 @@ function renderLasso(dt, time) {
   });
   const F = g.lassoFx, Ln = R3.lassoLine; Ln.visible = R3.lassoLoop.visible = !!F;
   if (F && R3.player) {
-    const hp = R3.player.arms[1].el.getWorldPosition(R3.tmp2 || (R3.tmp2 = new THREE.Vector3()));
+    const hp = (window.EVN2 && EVN2.håndPos(R3.player, R3.tmp2 || (R3.tmp2 = new THREE.Vector3()))) || R3.player.arms[1].el.getWorldPosition(R3.tmp2 || (R3.tmp2 = new THREE.Vector3()));   // 2.0: fra robotens hånd
     const k = Math.min(1, F.t / F.dur), back = F.done ? 1 - Math.min(1, (F.t - F.dur) / 0.35) : 1, kk = k * back;
     const ex = hp.x + (F.tx - hp.x) * kk, ez = hp.z + (F.ty - hp.z) * kk, ey0 = surfaceH(F.tx, F.ty) + 22, ey = hp.y + (ey0 - hp.y) * kk + Math.sin(kk * Math.PI) * 50;
     const a = Ln.geometry.attributes.position;
@@ -3259,6 +3259,7 @@ function buildWorld() {
     P0.position.set(PYX, base, PYY); G.add(P0);
   }
   R3.player = makePlayer(); G.add(R3.player.grp);
+  if (window.EVN2) EVN2.lagRobot(R3.player).catch(e => console.warn('Mørkeskogen 2.0: roboten kunne ikke lastes', e));   // 2.0: robot-helten
   R3.ghost = null; R3.ghostType = null;
   R3.ghostRing = mk(GEO.ring, M.ghostRing, 1, 1, 1, 0, 1.5, 0, false); R3.ghostRing.rotation.x = -Math.PI / 2; R3.ghostRing.visible = false; G.add(R3.ghostRing);
   // Prosjektiler: ferdige objekter som gjenbrukes (ingen nye objekter mens du spiller)
@@ -3708,6 +3709,7 @@ function draw(time) {
   for (; pi < R3.parts.length; pi++) R3.parts[pi].visible = false;
   for (; si < R3.smoke.length; si++) R3.smoke[si].visible = false;
 
+  if (window.EVN2) EVN2.robotRamme(R3.player, p, dt);   // 2.0: robot-helten følger figuren og velger klipp
   // Fisking: snøret går fra stangtuppen til duppen; duppen guppar, dykker ved napp og trekkes inn; fisken synes når den kjemper og når den landes
   { const F = p.fish, P2 = R3.player;
     if (!R3.fishLine) {

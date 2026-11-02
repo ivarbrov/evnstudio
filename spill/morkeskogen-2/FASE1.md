@@ -41,10 +41,10 @@
 | 1 | 2.0 på three.js r187 med overgangslag (`kompat-r187.js`) | ✔ 2.11. Tvilling 12/12, bildetest lik original |
 | 1b | Rettet: elvas shader-tillegg traff ikke i r187 (også feil i testkopien `migrering/`). `verktoy/sjekk-shader.mjs` stopper nå bygget ved slike feil | ✔ 2.11. |
 | 2 | Lysmodell for stil 2: sRGB-utdata og ACES-tonemapping. Gamle farger gjøres om til lineære i overgangslaget (`kompat-r187.js`, `EVN2_OVERGANG`), også farger som `draw()` endrer underveis. Egne shadere regner som før og gjøres om rett før utdata | ✔ 2.11. Tvilling lik. Bilder: `tester/resultater/skudd-fase1-lysmodell` (mer kontrast og riktigere lys, ellers samme uttrykk). Ytelse ikke målt på iPhone ennå |
-| 3 | Himmel, døgn og tåke fra prototypen, koblet til spillets klokke (`phaseInfo`) | |
+| 3 | Himmel, døgn og tåke | **Vurdert: beholdes.** Himmelen i 5.6.2 er mer avansert enn prototypens. Den har sol og måne fra `skyClock`, stjerner som dreier, horisontfarge per biom, dalståke og dis mot sola. Den går nå i den nye lysmodellen. Fargene justeres til stil 2 sammen med Even ved G2 |
 | 4 | Terreng for alle biomer fra `terrainH`/`groundH`/`biomeAt`, med teksturer fra prototypen | |
 | 5 | Kamera (nært og fjernt), samme styring | |
-| 6 | Robot-helten (GLB) med fem klipp. `R3.player.head` uten caps til B1 er avgjort | |
+| 6 | Robot-helten (GLB) med fem klipp | ✔ 2.11. `grafikk/helt.js`, pakket til `spill/grafikk2.js`.<br>• **Farge:** Modellen er uendret. Hovedfargen er gul (Evens valg 2.11).<br>• **Klipp:** Idle, Walking, Running, Jump og Punch velges ut fra fart, hopp og slag.<br>• **Høyde:** Den er ca. 80 som i 5.6.2.<br>• **Den gamle figuren** er usynlig rigg, og `R3.player.head` finnes fortsatt.<br>• **Våpen:** Våpen i høyre hånd er flyttet til robothånda, og lassoen starter fra robothånda.<br>• **Mangler (fase 3):** bue og skjold i venstre hånd, våpenstillinger og sekker (B2).<br>• **Til Even:** Det store hodet kan skjule litt av utsikten i nært kamera |
 | 7 | HUD og startkort i ny stil | |
 | 8 | Overgangsmaterialer for resten av objektene | |
 | 9 | G1-kontroll: tvilling, gamle lagringer, funksjonstest, konsoll og CSP, ytelse på iPhone | |
