@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Magiske egg 0.5.0 – EVN Studio</title>
+<title>Magiske egg 0.6.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -83,6 +83,13 @@
   .kartkort { max-width:min(560px, calc(100vh - 40px)); padding:14px 16px; }
   #kartCanvas { width:100%; height:auto; aspect-ratio:1; display:block; margin:4px auto; max-width:calc(100vh - 230px); }
   .forklaring { font-size:14px; font-weight:800; opacity:.9; margin-top:6px; }
+  .matinfo { font-size:15px; margin:0 0 10px; }
+  .matrad { display:grid; grid-template-columns:auto 1fr auto auto; gap:8px; align-items:center; text-align:left; background:rgba(255,255,255,.08); border-radius:14px; padding:8px 10px; margin:6px 0; }
+  .matrad .mi { font-size:30px; }
+  .matrad b { display:block; font-size:16px; } .matrad small { font-size:13px; opacity:.9; }
+  .matrad button { min-height:48px; min-width:84px; border-radius:12px; border:2px solid #fff; background:linear-gradient(#ffd75e,#f0a91c); color:#4a2a00; font-weight:800; font-size:14px; padding:4px 8px; }
+  .matrad button:disabled { background:#8a8ea3; color:#2a2d3a; border-color:#c5c8d6; cursor:default; }
+  @media (max-width:520px) { .matrad { grid-template-columns:auto 1fr; } .matrad button { grid-column:span 1; } }
   .sjanser { font-size:14px; opacity:.85; text-align:left; line-height:1.5; }
 
   @media (max-width:640px) {
@@ -115,6 +122,7 @@
 <div id="hud" hidden>
   <div class="pille" id="pMynt">🪙 <span id="mynt">0</span></div>
   <div class="pille" id="pBaer">🍓 <span id="baer">0</span></div>
+  <div class="pille" id="pMat" title="Favorittmat">🧺 <span id="matSum">0</span></div>
   <button class="pille" id="bokKnapp" aria-label="Samleboka">📖 <span id="funnet">0/9</span></button>
 </div>
 <div id="hoyre" hidden>
@@ -157,12 +165,23 @@
   </div>
 </div>
 
+<!-- Matboden -->
+<div class="lag" id="matbod">
+  <div class="kort bok">
+    <h2>🥕 Matboden</h2>
+    <p class="matinfo">Favorittmat får dyrene til å vokse fort. Kjøp frø og plant dem i hagen 🌱, eller kjøp ferdig mat.</p>
+    <div id="matliste"></div>
+    <button class="stor" id="lukkMatbod" style="margin-top:12px">Lukk</button>
+  </div>
+</div>
+
 <!-- Samleboka -->
 <div class="lag" id="bok">
   <div class="kort bok">
     <h2>📖 Samleboka</h2>
     <div class="rutenett" id="rutenett"></div>
     <div class="sjanser">
+      🥕 <b>Favorittmat</b> fra matboden eller hagen teller som 3 bær.<br>
       🛒 <b>Butikkegg:</b> 3 av 4 blir vanlige dyr, 1 av 4 blir litt sjeldne. Egget blir litt dyrere for hvert dyr du har.<br>
       ✨ <b>Sjeldne egg</b> dukker opp et sted i skogen av og til. De blir veldig sjeldne dyr, og noen ganger … noe helt legendarisk.
     </div>
@@ -410,7 +429,7 @@ window.EVNPause = function (cfg) {
 <script src="../../vendor/three-r128.min.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.5.0';
+const VERSJON = '0.6.0';
 const LAGRING = 'evn-magiske-egg-v1';
 const TEST = location.hash === '#test';
 
@@ -421,6 +440,11 @@ const INNST = {
   startMynter: 25,         // mynter du har når du starter
   eggPris: 20,             // hva det første butikkegget koster
   prisVekst: 1.15,         // hvert nytt dyr gjør neste egg 15 % dyrere (Evens ønske 2.11.2026)
+  froPris: 10,             // en pose frø i matboden
+  matPris: 30,             // ferdig favorittmat i matboden
+  vekstTid: 60,            // sekunder før det du har plantet, er klart til å høstes
+  hostAntall: 2,           // hvor mye mat du får når du høster
+  favorittPoeng: 3,        // favorittmat teller som så mange bær
   sjeldentEggMin: 70,      // sekunder før et sjeldent egg kan dukke opp
   sjeldentEggMaks: 120,    // senest etter så mange sekunder
   ilddrevSjanse: 0.05,     // 0.05 = 1 av 20 sjeldne egg blir Ilddrev
@@ -430,7 +454,7 @@ const INNST = {
   baerVokserIgjen: 40,     // sekunder før en busk får nye bær
   maksDyr: 30,             // hvor mange dyr det er plass til i parken
 };
-if (TEST) { INNST.startMynter = 500; INNST.sjeldentEggMin = 8; INNST.sjeldentEggMaks = 12; INNST.ilddrevSjanse = 0.34; }
+if (TEST) { INNST.vekstTid = 6; INNST.startMynter = 500; INNST.sjeldentEggMin = 8; INNST.sjeldentEggMaks = 12; INNST.ilddrevSjanse = 0.34; }
 
 // sjelden: 0 vanlig, 1 litt sjelden, 2 veldig sjelden, 3 legendarisk
 const DYR = [
@@ -460,6 +484,17 @@ const SONER = [
   { id:'stjerne', navn:'Stjernehagen',  ikon:'🌙', vinkel:300, bakke:0xd6c6f4, kart:'#d6c6f4' },
 ];
 const SONE_ID = Object.fromEntries(SONER.map(z => [z.id, z]));
+// Favorittmat: hver sone har sin mat (Evens ønske 2.11.2026: matbod og hage, «litt som Hay Day»)
+const MATTYPER = [
+  { id:'gulrot',       navn:'Gulrot',       ikon:'🥕', sone:'eng',     farge:0xff9a3a },
+  { id:'regnbuebaer',  navn:'Regnbuebær',   ikon:'🍇', sone:'regnbue', farge:0xc49aff },
+  { id:'ildpepper',    navn:'Ildpepper',    ikon:'🌶️', sone:'vulkan',  farge:0xff5a3a },
+  { id:'isblabaer',    navn:'Isblåbær',     ikon:'🫐', sone:'is',      farge:0x7ab8ff },
+  { id:'vannsalat',    navn:'Vannsalat',    ikon:'🥬', sone:'vann',    farge:0x8fe07a },
+  { id:'stjernefrukt', navn:'Stjernefrukt', ikon:'⭐', sone:'stjerne', farge:0xffe14a },
+];
+const MAT_ID = Object.fromEntries(MATTYPER.map(m => [m.id, m]));
+const MAT_FOR_SONE = Object.fromEntries(MATTYPER.map(m => [m.sone, m]));
 const SJ = [
   { navn:'Vanlig',         farge:'#8fdc6a' },
   { navn:'Litt sjelden',   farge:'#6cc0ff' },
@@ -993,6 +1028,8 @@ const PARK_R = 72;
 const TORG_R = 20;
 const NEST = new THREE.Vector3(0, 0, -2);
 const BUTIKK = new THREE.Vector3(10, 0, 15);
+const MATBOD = new THREE.Vector3(-13, 0, -1);
+const HAGE_RUTER = [0, 1, 2].flatMap(i => [0, 1].map(j => ({ x: -16.4 + i * 3.4, z: 9.3 + j * 3.4 })));
 const VERDEN_R = 215;
 const hindre = []; // {x,z,r}
 const rutenett = new Map();
@@ -1071,7 +1108,7 @@ const vind = { value: 0 };
   let n = 0;
   while (n < N) { const ipark = n < N * 0.45, a = Math.random() * 6.283, d = ipark ? Math.sqrt(Math.random()) * (PARK_R - 3) : rnd(PARK_R + 4, 170); const x = Math.sin(a) * d, z = Math.cos(a) * d;
     { const zn = soneVed(x, z); if (zn && (zn.id === 'is' || zn.id === 'vulkan')) continue; }
-    if (iSjoen(x, z, 0.5) || Math.hypot(x - NEST.x, z - NEST.z) < 3.6 || Math.hypot(x - BUTIKK.x, z - BUTIKK.z) < 4 || (Math.abs(x) < 3.5 && z > TORG_R - 2 && z < PARK_R + 2)) continue;
+    if (iSjoen(x, z, 0.5) || Math.hypot(x - NEST.x, z - NEST.z) < 3.6 || Math.hypot(x - BUTIKK.x, z - BUTIKK.z) < 4 || Math.hypot(x - MATBOD.x, z - MATBOD.z) < 4 || (x > -18.5 && x < -7.5 && z > 7.3 && z < 14.6) || (Math.abs(x) < 3.5 && z > TORG_R - 2 && z < PARK_R + 2)) continue;
     o.position.set(x, 0, z); o.rotation.set(rnd(-0.2, 0.2), rnd(0, 6), rnd(-0.2, 0.2)); o.scale.setScalar(rnd(0.7, 1.4)); o.updateMatrix(); im.setMatrixAt(n, o.matrix); im.setColorAt(n, C(soneVed(x, z)?.id === 'regnbue' ? [0xe2e87a, 0xd4e06a, 0xf0ec96, 0xc8dc6a][n % 4] : farger[n % 4])); n++; }
   scene.add(im);
 })();
@@ -1256,6 +1293,48 @@ function animerSonepynt(dt) {
   scene.add(g); leggHinder(BUTIKK.x, BUTIKK.z, 3.8);
 })();
 
+// Matboden
+(function matbod() {
+  const g = new THREE.Group(); g.position.copy(MATBOD); g.rotation.y = 0.3;
+  ball(g, plysj(0xfff1d6), 1, 0, 1.25, 0, 3.6, 1.3, 1.7);
+  ball(g, plysj(0x9fe68a), 1, 0, 2.45, 0, 3.8, 0.32, 1.9);
+  for (const x of [-3.2, 3.2]) for (const z of [-1.3, 1.3]) polse(g, plysj(0xffffff, { rim: 0.2 }), 0.24, [x, 2.4, z], [x, 5.4, z]);
+  ball(g, plysj(0x7fd66a), 1, 0, 6.0, 0, 4.4, 1.35, 2.4);
+  for (let i = 0; i < 9; i++) { const x = -3.6 + i * 0.9; ball(g, plysj(0xffffff, { rim: 0.2 }), 0.32, x, 5.3, 2.05); ball(g, plysj(0xffffff, { rim: 0.2 }), 0.32, x, 5.3, -2.05); }
+  MATTYPER.forEach((m, i) => { const x = -2.5 + i; ball(g, plysj(m.farge, { rim: 0.35 }), 0.38, x, 3.05, 0.55); ball(g, plysj(0x6fd05a), 0.16, x, 3.45, 0.55, 1, 1.4, 1); });
+  slaSammen(g, new Set());
+  const s = skilt('🥕 Matbod', 1.1); s.position.set(0, 9.2, 0); g.add(s);
+  scene.add(g); leggHinder(MATBOD.x, MATBOD.z, 3.8);
+})();
+
+// Hagen: seks bed der du planter frø og høster favorittmat
+const hageBed = [];
+(function hage() {
+  const jord = plysj(0x9a6a46, { rim: 0.2 }), kant = plysj(0xc48a5a, { rim: 0.25 }), blad = plysj(0x6fd05a, { rim: 0.4 });
+  const g = new THREE.Group();
+  HAGE_RUTER.forEach(r => { ball(g, kant, 1, r.x, 0.18, r.z, 1.55, 0.22, 1.55); ball(g, jord, 1, r.x, 0.26, r.z, 1.32, 0.2, 1.32); });
+  slaSammen(g, new Set()); scene.add(g);
+  HAGE_RUTER.forEach(r => {
+    const p = new THREE.Group(); p.position.set(r.x, 0.35, r.z); p.visible = false; scene.add(p);
+    const blader = []; for (let k = 0; k < 3; k++) { const v = k / 3 * 6.283; const b = ball(p, blad, 0.32, Math.cos(v) * 0.3, 0.45, Math.sin(v) * 0.3, 0.6, 1.4, 0.6); b.rotation.set(Math.sin(v) * 0.5, 0, -Math.cos(v) * 0.5); blader.push(b); }
+    const frukt = []; for (let k = 0; k < 3; k++) { const v = k / 3 * 6.283 + 0.5; frukt.push(ball(p, plysj(0xffffff), 0.32, Math.cos(v) * 0.55, 0.45, Math.sin(v) * 0.55)); }
+    hageBed.push({ x: r.x, z: r.z, p, blader, frukt, type: null });
+  });
+  const s = skilt('🌱 Hagen', 0.95); s.position.set(-13, 3.2, 7.2); scene.add(s);
+})();
+function oppdaterHage(tidNa) {
+  hageBed.forEach((b, i) => {
+    const h = tilstand.hage[i];
+    if (!h) { b.p.visible = false; return; }
+    b.p.visible = true;
+    if (b.type !== h.type) { b.type = h.type; const mat = plysj(MAT_ID[h.type].farge, { rim: 0.4 }); b.frukt.forEach(f => f.material = mat); }
+    const k = Math.min(1, (Date.now() - h.t) / (INNST.vekstTid * 1000));
+    const s = 0.35 + k * 0.65; b.p.scale.setScalar(s);
+    b.frukt.forEach(f => f.visible = k >= 1);
+    b.p.position.y = 0.35 + (k >= 1 ? Math.abs(Math.sin(tidNa * 3 + i)) * 0.15 : 0);
+  });
+}
+
 // Bærbusker
 const busker = [];
 function lagBusk(x, z) {
@@ -1316,10 +1395,10 @@ function myntVerdi(d) { return d.def.mynt * d.nivaa; }
 // ======================================================
 //  Tilstand og lagring
 // ======================================================
-let tilstand = { mynter: INNST.startMynter, baer: 0, funnet: {}, baererEgg: false, eggKo: [], klekket: 0 };
+let tilstand = { mynter: INNST.startMynter, baer: 0, funnet: {}, baererEgg: false, eggKo: [], klekket: 0, fro: {}, mat: {}, hage: HAGE_RUTER.map(() => null) };
 function lagre() {
   try {
-    localStorage.setItem(LAGRING, JSON.stringify({ v: 1, mynter: Math.floor(tilstand.mynter), baer: tilstand.baer, funnet: tilstand.funnet, baererEgg: tilstand.baererEgg, eggKo: tilstand.eggKo, klekket: tilstand.klekket, dyr: dyrListe.map(d => ({ id: d.def.id, n: d.nivaa, m: d.mat })) }));
+    localStorage.setItem(LAGRING, JSON.stringify({ v: 1, mynter: Math.floor(tilstand.mynter), baer: tilstand.baer, funnet: tilstand.funnet, baererEgg: tilstand.baererEgg, eggKo: tilstand.eggKo, klekket: tilstand.klekket, fro: tilstand.fro, mat: tilstand.mat, hage: tilstand.hage, dyr: dyrListe.map(d => ({ id: d.def.id, n: d.nivaa, m: d.mat })) }));
   } catch (e) {}
 }
 function lastInn() {
@@ -1327,6 +1406,9 @@ function lastInn() {
   if (!s || s.v !== 1) return false;
   tilstand.mynter = +s.mynter || 0; tilstand.baer = +s.baer || 0; tilstand.funnet = s.funnet || {}; tilstand.baererEgg = !!s.baererEgg; tilstand.klekket = +s.klekket || 0;
   tilstand.eggKo = Array.isArray(s.eggKo) ? s.eggKo.filter(t => t === 'butikk' || t === 'sjelden') : [];
+  const telling = o => { const u = {}; if (o && typeof o === 'object') for (const k in o) if (MAT_ID[k] && o[k] > 0) u[k] = Math.floor(o[k]); return u; };
+  tilstand.fro = telling(s.fro); tilstand.mat = telling(s.mat);
+  tilstand.hage = HAGE_RUTER.map((_, i) => { const h = Array.isArray(s.hage) ? s.hage[i] : null; return h && MAT_ID[h.type] && isFinite(h.t) ? { type: h.type, t: Math.min(+h.t, Date.now()) } : null; });
   (s.dyr || []).forEach(d => { if (DYR_ID[d.id]) nyttDyr(d.id, Math.min(INNST.maksNivaa, Math.max(1, d.n | 0)), d.m | 0); });
   return true;
 }
@@ -1362,6 +1444,7 @@ function oppdaterMelding(dt) {
 function oppdaterHud() {
   $('mynt').textContent = Math.floor(tilstand.mynter);
   $('baer').textContent = tilstand.baer;
+  $('matSum').textContent = Object.values(tilstand.mat).reduce((a, b) => a + b, 0);
   $('funnet').textContent = Object.keys(tilstand.funnet).length + '/' + DYR.length;
 }
 function bump(id) { const e = $(id); e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); }
@@ -1427,7 +1510,7 @@ function visKlekkKort(def, ny) {
   $('klekkIkon').textContent = def.ikon; $('klekkNavn').textContent = def.navn;
   const s = SJ[def.sjelden];
   $('klekkMerker').innerHTML = `<span class="merkelapp" style="background:${s.farge}">${s.navn}</span>` + (ny ? '<span class="merkelapp ny">NY I SAMLEBOKA!</span>' : '');
-  $('klekkTekst').textContent = def.tekst + ` Den tjener ${def.mynt} 🪙 om gangen.`;
+  $('klekkTekst').textContent = def.tekst + ` Den tjener ${def.mynt} 🪙 om gangen og liker ${MAT_FOR_SONE[def.sone].ikon} ${MAT_FOR_SONE[def.sone].navn.toLowerCase()}.`;
   apneLag('klekk');
 }
 
@@ -1483,16 +1566,57 @@ function finnHandling() {
     const pris = eggPris(), ok = tilstand.mynter >= pris;
     return { type: 'kjop', tekst: ok ? `🥚 Kjøp egg · ${pris} 🪙` : `🥚 Egg koster ${pris} 🪙`, av: !ok };
   }
+  if (Math.hypot(spiller.pos.x - MATBOD.x, spiller.pos.z - MATBOD.z) < 7) return { type: 'matbod', tekst: '🥕 Åpne matboden', av: false };
+  { let b = null, bdist = 2.6; hageBed.forEach((r, i) => { const dd = Math.hypot(r.x - spiller.pos.x, r.z - spiller.pos.z); if (dd < bdist) { bdist = dd; b = i; } });
+    if (b !== null) {
+      const h = tilstand.hage[b];
+      if (h) { const igjen = Math.ceil(INNST.vekstTid - (Date.now() - h.t) / 1000), m = MAT_ID[h.type];
+        return igjen <= 0 ? { type: 'host', bed: b, tekst: `🧺 Høst ${m.ikon} ×${INNST.hostAntall}`, av: false } : { type: 'vokser', bed: b, tekst: `🌱 ${m.ikon} vokser · ${igjen} s`, av: true }; }
+      const fro = MATTYPER.filter(m => tilstand.fro[m.id] > 0).sort((a, c) => tilstand.fro[c.id] - tilstand.fro[a.id])[0];
+      return fro ? { type: 'plant', bed: b, mat: fro.id, tekst: `🌱 Plant ${fro.ikon} ${fro.navn}`, av: false } : { type: 'ingenfro', tekst: '🌱 Kjøp frø i matboden', av: true };
+    } }
   let best = null, bd = 5.5;
   for (const d of dyrListe) { const dd = Math.hypot(d.g.position.x - spiller.pos.x, d.g.position.z - spiller.pos.z); if (dd < bd) { bd = dd; best = d; } }
   if (best) {
     if (best.nivaa >= INNST.maksNivaa) return { type: 'maks', dyr: best, tekst: `${best.def.navn} er fullvokst ⭐`, av: true };
-    const trengs = best.nivaa;
-    if (tilstand.baer <= 0) return { type: 'ingenbaer', dyr: best, tekst: `🍓 Finn bær til ${best.def.navn}`, av: true };
+    const trengs = best.nivaa, fav = MAT_FOR_SONE[best.def.sone];
+    if (tilstand.mat[fav.id] > 0) return { type: 'fav', dyr: best, mat: fav.id, tekst: `${fav.ikon} Gi ${fav.navn.toLowerCase()} til ${best.def.navn} (${best.mat}/${trengs})`, av: false };
+    if (tilstand.baer <= 0) return { type: 'ingenbaer', dyr: best, tekst: `🍓 Finn bær · ${best.def.navn} liker ${fav.ikon}`, av: true };
     return { type: 'mat', dyr: best, tekst: `🍓 Gi mat til ${best.def.navn} (${best.mat}/${trengs})`, av: false };
   }
   return null;
 }
+function giMat(d, poeng, hjerte) {
+  d.mat += poeng;
+  flyt(hjerte, d.g.position.clone().add(new THREE.Vector3(0, 3.5, 0)));
+  pip(700, 0.1, 'sine', 0.08, 1.3);
+  let vokste = false;
+  while (d.nivaa < INNST.maksNivaa && d.mat >= d.nivaa) { d.mat -= d.nivaa; d.nivaa++; vokste = true; }
+  if (d.nivaa >= INNST.maksNivaa) d.mat = 0;
+  if (vokste) {
+    d.vekst = 0.6; oppdaterLapp(d);
+    sprut(d.g.position.clone().add(new THREE.Vector3(0, 2, 0)), [0xffe14a, 0x8fdc6a, 0xffffff], 20, 7); lydVokse();
+    melding(`${d.def.navn} vokste til nivå ${d.nivaa}! Nå lager den ${myntVerdi(d)} 🪙 om gangen.`);
+  }
+  oppdaterHud(); lagre();
+}
+function byggMatbod() {
+  $('matliste').innerHTML = MATTYPER.map(m => {
+    const dyr = DYR.filter(d => d.sone === m.sone).map(d => tilstand.funnet[d.id] ? d.ikon.slice(-2) : '❓').join(' ');
+    return `<div class="matrad"><span class="mi" aria-hidden="true">${m.ikon}</span><div><b>${m.navn}</b><small>${SONE_ID[m.sone].ikon} ${SONE_ID[m.sone].navn} · liker: ${dyr}</small><br><small>Du har: ${tilstand.fro[m.id] || 0} frø · ${tilstand.mat[m.id] || 0} mat</small></div>` +
+      `<button type="button" data-kjop="fro" data-mat="${m.id}" ${tilstand.mynter < INNST.froPris ? 'disabled' : ''}>🌱 Frø<br>${INNST.froPris} 🪙</button>` +
+      `<button type="button" data-kjop="mat" data-mat="${m.id}" ${tilstand.mynter < INNST.matPris ? 'disabled' : ''}>${m.ikon} Mat<br>${INNST.matPris} 🪙</button></div>`;
+  }).join('') + `<p class="matinfo" style="margin-top:8px">Du har ${Math.floor(tilstand.mynter)} 🪙</p>`;
+}
+$('matliste').addEventListener('click', e => {
+  const b = e.target.closest('button[data-kjop]'); if (!b || b.disabled) return;
+  const pris = b.dataset.kjop === 'fro' ? INNST.froPris : INNST.matPris, id = b.dataset.mat;
+  if (tilstand.mynter < pris) return;
+  tilstand.mynter -= pris; const lager = b.dataset.kjop === 'fro' ? tilstand.fro : tilstand.mat; lager[id] = (lager[id] || 0) + 1;
+  pip(620, 0.12, 'triangle', 0.08, 1.5); oppdaterHud(); lagre(); byggMatbod();
+  const ny = $('matliste').querySelector(`button[data-kjop="${b.dataset.kjop}"][data-mat="${id}"]`); if (ny) ny.focus({ preventScroll: true });
+});
+$('lukkMatbod').addEventListener('click', () => lukkLag('matbod'));
 function gjorHandling() {
   if (!handling || modalApen()) return;
   if (handling.type === 'kjop') {
@@ -1503,15 +1627,24 @@ function gjorHandling() {
     flyEgg.push({ m, t: 0, fra: m.position.clone() }); tilstand.eggKo.push('butikk'); lagre();
     if (!tilstand.forsteKjop) { tilstand.forsteKjop = true; melding('Egget flyr til redet. Se hva som klekker! 🪺'); }
   } else if (handling.type === 'mat') {
-    const d = handling.dyr; tilstand.baer--; d.mat++; bump('pBaer');
-    flyt('❤️', d.g.position.clone().add(new THREE.Vector3(0, 3.5, 0)));
-    pip(700, 0.1, 'sine', 0.08, 1.3);
-    if (d.mat >= d.nivaa) {
-      d.nivaa++; d.mat = 0; d.vekst = 0.6; oppdaterLapp(d);
-      sprut(d.g.position.clone().add(new THREE.Vector3(0, 2, 0)), [0xffe14a, 0x8fdc6a, 0xffffff], 20, 7); lydVokse();
-      melding(`${d.def.navn} vokste til nivå ${d.nivaa}! Nå lager den ${myntVerdi(d)} 🪙 om gangen.`);
-    }
-    oppdaterHud(); lagre();
+    tilstand.baer--; bump('pBaer'); giMat(handling.dyr, 1, '❤️');
+  } else if (handling.type === 'fav') {
+    tilstand.mat[handling.mat]--; if (!tilstand.mat[handling.mat]) delete tilstand.mat[handling.mat]; bump('pMat'); giMat(handling.dyr, INNST.favorittPoeng, '😍');
+  } else if (handling.type === 'matbod') {
+    byggMatbod(); apneLag('matbod');
+  } else if (handling.type === 'plant') {
+    tilstand.fro[handling.mat]--; if (!tilstand.fro[handling.mat]) delete tilstand.fro[handling.mat];
+    tilstand.hage[handling.bed] = { type: handling.mat, t: Date.now() }; pip(440, 0.15, 'triangle', 0.08, 1.4);
+    const r = hageBed[handling.bed]; sprut(new THREE.Vector3(r.x, 0.8, r.z), [0x9a6a46, 0x6fd05a], 10, 4);
+    if (!tilstand.forstePlant) { tilstand.forstePlant = true; melding(`Plantet! Om ${INNST.vekstTid} sekunder kan du høste. 🌱`); }
+    lagre();
+  } else if (handling.type === 'host') {
+    const h = tilstand.hage[handling.bed], m = MAT_ID[h.type]; tilstand.hage[handling.bed] = null;
+    tilstand.mat[m.id] = (tilstand.mat[m.id] || 0) + INNST.hostAntall; oppdaterHud(); bump('pMat'); lydBaer();
+    const r = hageBed[handling.bed]; flyt(`+${INNST.hostAntall} ${m.ikon}`, new THREE.Vector3(r.x, 3, r.z));
+    sprut(new THREE.Vector3(r.x, 1, r.z), [m.farge, 0x6fd05a, 0xffffff], 14, 5);
+    if (!tilstand.forsteHost) { tilstand.forsteHost = true; melding(`${m.navn} er favorittmaten i ${SONE_ID[m.sone].ikon} ${SONE_ID[m.sone].navn}. Gi den til dyrene der!`); }
+    lagre();
   } else if (handling.type === 'ingenbaer') {
     melding('Du har ingen bær. Plukk bær fra buskene i skogen! 🍓');
   }
@@ -1525,7 +1658,7 @@ const taster = {};
 addEventListener('keydown', e => {
   const k = e.key.toLowerCase(); taster[k] = true;
   if (spillTilstand === 'spill' && !modalApen() && (k === 'e' || k === ' ')) { e.preventDefault(); if (!e.repeat) gjorHandling(); }
-  if (k === 'escape') { if ($('bok').classList.contains('vis')) lukkLag('bok'); else if ($('klekk').classList.contains('vis')) lukkLag('klekk'); }
+  if (k === 'escape') { if ($('bok').classList.contains('vis')) lukkLag('bok'); else if ($('matbod').classList.contains('vis')) lukkLag('matbod'); else if ($('klekk').classList.contains('vis')) lukkLag('klekk'); }
   if (k.startsWith('arrow')) e.preventDefault();
 });
 addEventListener('keyup', e => { taster[e.key.toLowerCase()] = false; });
@@ -1558,7 +1691,7 @@ document.addEventListener('touchmove', e => { if (spillTilstand === 'spill' && e
 // ======================================================
 let spillTilstand = 'start';
 const evnApen = () => ['evnPause', 'evnKart', 'evnNullstillBoks'].some(id => { const e = $(id); return e && e.classList.contains('vis'); }) || (() => { const e = $('evnSporsmal'); return !!e && e.style.display === 'grid'; })();
-const modalApen = () => ['klekk', 'bok', 'start'].some(id => $(id).classList.contains('vis')) || evnApen();
+const modalApen = () => ['klekk', 'bok', 'start', 'matbod'].some(id => $(id).classList.contains('vis')) || evnApen();
 function apneLag(id) { $(id).classList.add('vis'); const b = $(id).querySelector('button.stor'); if (b) setTimeout(() => b.focus({ preventScroll: true }), 50); }
 function lukkLag(id) { $(id).classList.remove('vis'); }
 $('klekkOk').addEventListener('click', () => lukkLag('klekk'));
@@ -1586,7 +1719,7 @@ function tegnKart() {
   for (const b of busker) { x.fillStyle = b.igjen > 0 ? '#ff4f6a' : '#6aa86a'; x.beginPath(); x.arc(px(b.x), py(b.z), 4, 0, 6.283); x.fill(); }
   for (const d of dyrListe) { x.fillStyle = SJ[d.def.sjelden].farge; x.beginPath(); x.arc(px(d.g.position.x), py(d.g.position.z), 3, 0, 6.283); x.fill(); }
   x.font = '26px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.fillText('🪺', px(NEST.x), py(NEST.z)); x.fillText('🛒', px(BUTIKK.x), py(BUTIKK.z));
+  x.fillText('🪺', px(NEST.x), py(NEST.z)); x.fillText('🛒', px(BUTIKK.x), py(BUTIKK.z)); x.fillText('🥕', px(MATBOD.x), py(MATBOD.z)); x.fillText('🌱', px(-13), py(11));
   // Spilleren: gul pil som peker dit du går
   x.save(); x.translate(px(spiller.pos.x), py(spiller.pos.z)); x.rotate(-spiller.retning + Math.PI);
   x.fillStyle = '#ffc93c'; x.strokeStyle = '#1d2440'; x.lineWidth = 3;
@@ -1606,7 +1739,7 @@ $('lukkBok').addEventListener('click', () => lukkLag('bok'));
 function byggBok() {
   $('rutenett').innerHTML = DYR.map(d => {
     const n = tilstand.funnet[d.id], s = SJ[d.sjelden];
-    return n ? `<div class="dyrkort" style="border-color:${s.farge}"><div class="ik">${d.ikon}</div><div class="nv">${d.navn}</div><div class="sj" style="color:${s.farge}">${s.navn}</div><div class="sj">${SONE_ID[d.sone].ikon} ${SONE_ID[d.sone].navn}</div><div class="sj">Klekket: ${n}</div></div>`
+    return n ? `<div class="dyrkort" style="border-color:${s.farge}"><div class="ik">${d.ikon}</div><div class="nv">${d.navn}</div><div class="sj" style="color:${s.farge}">${s.navn}</div><div class="sj">${SONE_ID[d.sone].ikon} ${SONE_ID[d.sone].navn}</div><div class="sj">Liker ${MAT_FOR_SONE[d.sone].ikon}</div><div class="sj">Klekket: ${n}</div></div>`
              : `<div class="dyrkort ukjent"><div class="ik">❓</div><div class="nv">???</div><div class="sj" style="color:${s.farge}">${s.navn}</div></div>`;
   }).join('');
 }
@@ -1722,7 +1855,7 @@ function loop(na) {
   let dt = (na - sisteTid) / 1000; sisteTid = na; if (!(dt > 0)) dt = 0; dt = Math.min(dt, 0.05);
   if (spillTilstand === 'spill') {
     tid += dt;
-    oppdaterSpiller(dt); oppdaterDyr(dt); oppdaterMynter(dt); oppdaterBusker(dt); oppdaterRedet(dt); oppdaterSjeldent(dt, tid); oppdaterEffekter(dt);
+    oppdaterSpiller(dt); oppdaterDyr(dt); oppdaterMynter(dt); oppdaterBusker(dt); oppdaterHage(tid); oppdaterRedet(dt); oppdaterSjeldent(dt, tid); oppdaterEffekter(dt);
     lagreTid += dt; if (lagreTid > 5) { lagreTid = 0; lagre(); }
   } else if (spillTilstand === 'start') {
     tid += dt; oppdaterDyr(dt * 0.5);
@@ -1751,10 +1884,10 @@ window.__evnP = EVNPause({
   knapp: (b, k) => { for (const x of [k, b]) { x.className = 'rund'; x.style.cssText = 'padding:0;font-size:22px'; } $('hoyre').insertBefore(k, $('evnAvslutt')); $('hoyre').insertBefore(b, $('evnAvslutt')); },
   kart: {
     forhold: 1,
-    info: () => '🔺 Du · 🪺 Redet · 🛒 Butikk · 🔴 Bær',
+    info: () => '🔺 Du · 🪺 Redet · 🛒 Eggbutikk · 🥕 Matbod · 🌱 Hage · 🔴 Bær',
     tegn: (c, w, h) => { tegnKart(); c.drawImage(kartLerret, 0, 0, w, h); }
   },
-  kanPause: () => spillTilstand === 'spill' && !['klekk', 'bok', 'start'].some(id => $(id).classList.contains('vis')),
+  kanPause: () => spillTilstand === 'spill' && !['klekk', 'bok', 'start', 'matbod'].some(id => $(id).classList.contains('vis')),
   aktiv: () => spillTilstand === 'spill',
   pause: () => { spillTilstand = 'pause'; for (const k in taster) taster[k] = false; joy.aktiv = false; joyEl.style.display = 'none'; lagre(); },
   fortsett: () => { spillTilstand = 'spill'; for (const k in taster) taster[k] = false; sisteTid = performance.now(); },
@@ -1765,7 +1898,7 @@ window.__evnP = EVNPause({
 });
 requestAnimationFrame(loop);
 // Til testing
-window.__spill = { tilstand, dyrListe, spiller, INNST, mynter, busker, get sjeldentEgg() { return sjeldentEgg; }, gjorHandling, lagSjeldentEgg, nyttDyr, scene, camera };
+window.__spill = { tilstand, dyrListe, spiller, INNST, mynter, busker, get sjeldentEgg() { return sjeldentEgg; }, gjorHandling, lagSjeldentEgg, nyttDyr, scene, camera, hageBed, MATBOD };
 </script>
 <!-- EVN Studio: knapp tilbake til forsiden (vises bare under /spill/) -->
 <style>
