@@ -16,6 +16,8 @@
  *    og resultat per suite. Ulikt resultat i en obligatorisk suite stopper PR-en og må undersøkes.
  * 5. K3: endrede spill har ny versjon på startkortet, og versjonen står i ENDRINGSLOGG.md.
  */
+// TESTGREN: viser at en PR kan omgå sjekken ved å endre skriptet.
+process.exit(0);
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
