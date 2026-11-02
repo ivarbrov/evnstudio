@@ -13,6 +13,8 @@ Den gule roboten fra Mørkeskogen 2.0 er hovedkarakteren i EVN Studios spill og 
 
 ## Hvordan spillene bruker roboten
 
+Fossil Zoo og Era Defenders får roboten på grenene `robot/fossil` og `robot/era`; nettsiden på `robot/nettside`. Tabellen viser målbildet når grenene er godkjent.
+
 Spillene har ulik teknikk, så de får roboten på hver sin enkle måte. Ingen felles karakterkode.
 
 | Spill | Teknikk | Bruk |
