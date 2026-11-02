@@ -70,7 +70,7 @@ Laget i trinn 3 på grenen `kvalitet/tester`. Det trengs ingen nye verktøy elle
 | `test/index.html` | Testsiden. Kjører alle suitene i en ramme og legger resultatet i `window.EVNTestResultat`. Kan åpnes i en vanlig nettleser med `?auto`. |
 | `test/kjor.mjs` | Starter en liten lokal server og Chrome eller Edge uten skjerm, kjører testsiden, fanger feil som bare nettleseren ser, og skriver tabell og testkvittering. Avslutter med kode 1 ved feil. |
 | `test/publiseringssjekk.mjs` | Kontrollerer testkjøringen i Actions, QA-rapporten og versjonen ved PR til `main` (se under). |
-| `.claude/utkast/kvalitet.yml` | Utkast til GitHub Actions med to kontroller. Ikke aktiv. |
+| `.github/workflows/kvalitet.yml` og `publisering.yml` | De to kontrollene i GitHub Actions (se under). |
 
 | Suite | Krav | Kontroller | Blokkerer |
 |---|---|---|---|
@@ -93,31 +93,31 @@ Resultatet per suite er `ok`, `feil`, `varsel` (rådgivende), `ikke-innfort` ell
 
 ## Kontroll ved PR til main
 
-Utkastet `.claude/utkast/kvalitet.yml` har to separate kontroller. Begge skal kreves i regelen for `main`.
+To arbeidsflyter gir to separate kontroller. Begge skal kreves i regelen for `main`.
 
-**«Automatiske tester»** kjører ved hver push og PR:
-- Actions kjører `test/kjor.mjs` selv, på den nøyaktige commiten i PR-en, og lager sin egen testkvittering og resultatfil.
-- Feiler en obligatorisk test, eller mangler en, blir kontrollen rød. Rådgivende suiter (i dag `ui`) gir bare varsel til kravene er gjeldende.
+**«Automatiske tester»** (`.github/workflows/kvalitet.yml`) kjører ved hver push og PR:
+- Arbeidsflyten kjører PR-ens egen kode med `pull_request`, uten privilegier: bare lesetilgang, ingen hemmeligheter og `persist-credentials: false`.
+- `test/kjor.mjs` kjøres på den nøyaktige commiten og lager testkvittering og resultatfil.
+- Feiler en obligatorisk test, eller mangler en, blir kontrollen rød. Rådgivende suiter (i dag `ui`) gir bare varsel.
 
-**«QA før publisering»** kjører bare ved PR til `main`, etter testene. `test/publiseringssjekk.mjs` krever:
-1. **Actions sin egen kjøring:** resultatfilen fra jobben over gjelder HEAD, har rent arbeidstre, har resultat for hver suite som finnes i `test/index.html` på grenen eller på `main`, bare kjente resultatverdier, og ingen feil. I Actions er resultatfilen påkrevd. En lokal kvittering kan aldri oppfylle kravet alene.
-2. **QA etter siste kodeendring:** en rapport i `qa/rapporter/` der «Grunnlag» har full SHA for siste commit som endrer noe utenfor `qa/`, og samme standardhash og agentversjon som git viser på den commiten. Kort SHA godtas ikke.
-3. **Full QA for hvert endret spill:** «Nivå: full», hver gjeldende krav-ID for spillet gjort rede for, og konklusjon som ikke er NEI. Felles kode regnes som endring i alle spill.
-4. **Testkvitteringen i rapporten:** må gjelde samme commit, være laget på rent arbeidstre og ha kjørt alle suiter. Den sammenlignes med Actions på versjon av `test/` og resultat per suite. Ulikt resultat i en obligatorisk suite stopper PR-en og må undersøkes. Ulikt resultat i en rådgivende suite gir varsel.
-5. **K3:** endrede spill har nytt versjonsnummer på startkortet, og det står i `ENDRINGSLOGG.md`.
+**«QA før publisering»** (`.github/workflows/publisering.yml`) kjører etter testene ved PR til `main`:
+- Arbeidsflyten utløses av `workflow_run`. GitHub henter den og skriptet fra `main`, så en PR kan ikke endre kontrollen som gjelder den selv.
+- PR-ens kode kjøres aldri her. Commiten leses bare som data med git, og resultatfilen fra testene leses bare som JSON.
+- Tokenet kan bare lese innhold og kjøringer og sette status på commiten (`statuses: write`). Det finnes ingen hemmeligheter.
+- Kontrollen gjelder bare PR-er fra grener i dette repoet, ikke fra forks.
+- Resultatet settes som status «QA før publisering» på PR-ens commit.
 
-Automatiske tester og QA er separate kontroller. Grønne tester godkjenner ikke QA, og QA-rapporten erstatter ikke testene.
+`test/publiseringssjekk.mjs` krever:
+1. **Uendrede tester:** PR-en endrer ikke `test/` eller `.github/`. Er det endret, er testresultatet ikke betrodd, og sjekken blir rød. Eieren går da gjennom endringen og slår eventuelt sammen med unntak (se regelen under).
+2. **Testkjøringen:** resultatfilen gjelder PR-ens commit, har rent arbeidstre, har resultat for hver suite i `test/index.html` på grenen eller på `main`, har bare kjente verdier og har ingen feil.
+3. **QA etter siste kodeendring:** en rapport i `qa/rapporter/` der «Grunnlag» har full SHA for siste commit som endrer noe utenfor `qa/`, og samme standardhash og agentversjon som git viser på den commiten.
+4. **Full QA for hvert endret spill:** «Nivå: full», hver gjeldende krav-ID gjort rede for, og konklusjon som ikke er NEI. Felles kode regnes som endring i alle spill.
+5. **Testkvitteringen i rapporten:** gjelder samme commit, er laget på rent arbeidstre og har samme resultat som Actions i de obligatoriske suitene.
+6. **K3:** endrede spill har nytt versjonsnummer på startkortet, og det står i `ENDRINGSLOGG.md`.
 
-**Ulikt resultat i Actions og lokalt:** Kravene senkes ikke automatisk. PR-en stopper, og forskjellen undersøkes. Enten retter man årsaken, eller eieren godkjenner en endring i testen eller standarden.
+**Hvorfor resultatfilen kan brukes:** Testene som lager den, kjører PR-ens kode, og den kan i prinsippet påvirke resultatet. Men punkt 1 sikrer at testskriptene og arbeidsflyten er de samme som på `main`. Resultatfilen behandles bare som data. Stemmer den ikke med QA-rapportens kvittering, stopper PR-en.
 
-**Begrensninger:**
-- Sjekken viser at Actions har kjørt testene på riktig commit, og at rapporten gjelder samme commit og standard. Den kan ikke bevise at hver vurdering i rapporten er riktig. Derfor er Evens test og eierens godkjenning egne lag.
-- En lokal kvittering kan skrives av for hånd. Den er likevel bare et tillegg: beviset for at testene er kjørt, er Actions sin egen kjøring.
-- Testene og sjekken ligger i repoet. Endres de i en PR, kjører Actions den endrede versjonen. Endringer i `test/` og `.github/` må derfor vurderes av eieren i PR-en.
-- «QA før publisering» kjører også når testene er røde, og stopper da selv. Begge kontrollene må likevel kreves i regelen for `main`.
-- Testversjonen leses fra commiten (`HEAD:test`), ikke fra arbeidstreet. Endringer som ikke er committet, gir `arbeidstre=endret`, og da godtas ikke kvitteringen.
-- En suite som er «ikke innført» (filen finnes verken på grenen eller på `main`), gir varsel. I dag gjelder det `statistikk` og `ui` til grenene med dem er slått sammen.
-- Krav merket Q, E og V kan ikke testes automatisk.
+**Ulikt resultat i Actions og lokalt:** Kravene senkes ikke automatisk. PR-en stopper, og forskjellen undersøkes.
 
 ## Resultat av prøvekjøringen på GitHub (2. november 2026)
 
@@ -132,27 +132,23 @@ Ingen av kjøringene startet publisering. Alle de 32 publiseringene til `github-
 
 ## Beskyttelse av main, tester og arbeidsflyt
 
-**Svakheten:** Ved `pull_request` kjører GitHub arbeidsflyten og testskriptene fra PR-grenen. En PR som endrer `test/` eller `.github/`, kan derfor gjøre sin egen kontroll grønn. Det viste grenen `-omgaelse`.
+**Svakheten som er løst:** Ved `pull_request` kjører GitHub arbeidsflyten og testskriptene fra PR-grenen. En PR som endrer dem, kan gjøre sin egen kontroll grønn. Det viste grenen `-omgaelse`. «QA før publisering» kjører derfor med `workflow_run` fra `main` og feiler når PR-en endrer `test/` eller `.github/`.
 
-**Det som ikke finnes for et personlig repo med én eier:**
-- Regel som sperrer endring av bestemte filer (push-regler med filstier). Den finnes bare for organisasjoner.
-- Godkjenning fra kodeeier (CODEOWNERS). Eieren kan ikke godkjenne sin egen PR, så det kan ikke kreves.
+**Hvorfor ikke `pull_request_target`:** GitHub fraråder å kjøre eller sjekke ut PR-kode med privilegerte utløsere (`pull_request_target` og `workflow_run`). GitHub anbefaler å kjøre den upålitelige koden med `pull_request` og la `workflow_run` behandle resultatet som data. Det er dette mønsteret som brukes her.
 
-**Løsningen:** «QA før publisering» kjøres med `pull_request_target`. Da hentes arbeidsflyten og testskriptene fra `main`, ikke fra PR-en. PR-ens filer brukes bare som det som testes.
-- Endringer i `test/` og `.github/` tar dermed først effekt etter at eieren har slått dem sammen.
-- Sjekken gir varsel når en PR endrer `test/` eller `.github/`, så eieren ser på dem særskilt.
-- `pull_request_target` gir ikke hemmeligheter eller skrivetilgang her, fordi arbeidsflyten bare har lesetilgang og repoet ikke har hemmeligheter.
-- Kjøringer fra fremmede forks må godkjennes av eieren (innstilling under).
-- Den første PR-en som legger arbeidsflyten på `main`, kan ikke beskyttes slik, fordi `main` ikke har arbeidsflyten ennå. Den må eieren gå gjennom manuelt.
+**Enklere alternativ som ble vurdert:** bare `pull_request`, og at eieren selv ser etter endringer i `test/` og `.github/`. Det er enklere, men en endret test kan da gi grønn kontroll uten at noen merker det. Ekstrakostnaden er én liten arbeidsflyt, og den vurderes som verdt det.
+
+**Det som ikke finnes for et personlig repo med én eier:** regler som sperrer bestemte filstier (bare for organisasjoner), og krav om godkjenning fra kodeeier. Eieren kan ikke godkjenne sin egen PR.
 
 **Forslag til regel for `main` (Settings → Rules → Rulesets → New branch ruleset):**
-- Navn `main`, Enforcement «Active», Target «Default branch», ingen i Bypass list.
+- Navn `main`, Enforcement «Active», Target «Default branch».
+- Bypass list: «Repository admin», med «For pull requests only». Unntaket brukes bare for PR-er som endrer `test/` eller `.github/`, etter manuell gjennomgang.
 - Restrict deletions: på. Block force pushes: på.
-- Require a pull request before merging: på, med 0 godkjenninger, fordi eieren ikke kan godkjenne sin egen PR. Sammenslåingen er eierens godkjenning.
+- Require a pull request before merging: på, med 0 godkjenninger. Sammenslåingen er eierens godkjenning.
 - Require status checks to pass: på, med «Require branches to be up to date before merging». Obligatoriske kontroller:
-  - «Automatiske tester»
-  - «QA før publisering»
-- Kontrollene fra testgrenene («Manipulert resultat – …» i «Selvtest av publiseringssjekken») skal **ikke** være obligatoriske. De finnes bare på testgrenene og skal aldri til `main`.
+  - «Automatiske tester» (fra GitHub Actions)
+  - «QA før publisering» (status satt av publiseringssjekken)
+- Kontrollene fra testgrenene («Manipulert resultat – …» i «Selvtest av publiseringssjekken») skal **ikke** være obligatoriske. De finnes bare på testgrenene.
 
 **Andre innstillinger:**
 - Settings → Actions → General:
@@ -163,6 +159,13 @@ Ingen av kjøringene startet publisering. Alle de 32 publiseringene til `github-
 - Settings → Pages: «Deploy from a branch», `main`, `/ (root)`. Uendret.
 - Settings → Environments → `github-pages`: bare grenen `main`. Uendret.
 - Settings → Collaborators: ingen andre med skrivetilgang.
+
+**Begrensninger og manuell kontroll:**
+- Den første PR-en som legger arbeidsflytene på `main`, får ikke «QA før publisering», fordi `workflow_run` bare kjører fra `main`. Den må eieren gå gjennom manuelt og slå sammen med unntak.
+- PR-er som endrer `test/` eller `.github/`, krever alltid manuell gjennomgang.
+- En PR kan i prinsippet endre `kvalitet.yml` og selv sette en falsk status med samme navn. Den blir likevel rød i «QA før publisering», fordi `.github/` er endret, men statusen som settes sist, gjelder. Derfor må eieren alltid sjekke at en PR ikke endrer `.github/`, før den slås sammen.
+- Sjekken viser at testene er kjørt på riktig commit, og at QA-rapporten gjelder samme commit og standard. Den kan ikke bevise at vurderingene i rapporten er riktige. Derfor er Evens test og eierens godkjenning egne lag.
+- Krav merket Q, E og V kan ikke testes automatisk.
 
 ## Hooks og ekstra sperrer: ikke nå
 
@@ -176,6 +179,6 @@ Dette vurderes på nytt hvis en QA-kontroll noen gang endrer filer.
 
 ## Rekkefølge videre
 
-- **Aktivering:** Gjøre «QA før publisering» om til `pull_request_target`, flytte `.claude/utkast/kvalitet.yml` til `.github/workflows/` i én PR til `main` og gjøre GitHub-oppsettet over. Det krever eierens godkjenning. Testgrenene `kvalitet/actions-test*` kan slettes etterpå.
+- **Aktivering:** PR-en fra `kvalitet/felles` legger arbeidsflytene i `.github/workflows/`. Når den er godkjent og slått sammen, settes regelen for `main` opp. Testgrenene `kvalitet/actions-test*` kan slettes etterpå.
 - Spillgrenene (`feature/statistikk`, `feature/morkeskogen-ui` og `feature/fossil-startkort`) henter `main` etter at kvalitetsgrenene er slått sammen. Da kjører testene også for dem.
 - Fossil Zoo v0.7.3 på `main` er gjeldende publisert versjon, og `kvalitet/tester` har hentet den. `feature/statistikk` og `feature/morkeskogen-ui` kan slås sammen med `main` uten konflikt. `feature/fossil-startkort` bruker også versjonsnummeret 0.7.3 og har konflikt i `spill/fossilspillet/index.html`. Den må tilpasses v0.7.3 og få nytt versjonsnummer, med vanlig QA, test hos Even og godkjenning.

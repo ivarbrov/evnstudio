@@ -63,6 +63,6 @@ Standarden merker hvert krav med kontrollmetode: A (automatisk og objektiv), Q (
 | `test/index.html` og `test/kjor.mjs`: suitene `statisk`, `royk`, `statistikk` og `ui` | S1, T3, F1, K1, U1, ST1–ST5, UI7 | Laget og prøvd lokalt (trinn 3). Kjøres med `node test/kjor.mjs` |
 | `test/publiseringssjekk.mjs` | QA etter siste kodeendring, full QA, K3 | Laget og prøvd lokalt (trinn 3). Brukes ved PR til `main` |
 | UI-måling per kategori og kjernesone | UI8a–c | Ikke laget. Krever at elementene i prototypen merkes med `data-ui` |
-| GitHub Actions | Alle A-tester | Utkast i `.claude/utkast/kvalitet.yml`, ikke aktiv (trinn 4) |
+| GitHub Actions | Alle A-tester | `.github/workflows/kvalitet.yml` («Automatiske tester») og `publisering.yml` («QA før publisering»). Aktive etter sammenslåing med `main` |
 
 Krav merket Q, E eller V kan ikke erstattes av automatiske tester. Even er hovedtester av spillopplevelsen.

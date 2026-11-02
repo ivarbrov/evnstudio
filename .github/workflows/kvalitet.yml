@@ -1,0 +1,37 @@
+# Automatiske tester. Kjører PR-ens egen kode uten privilegier (bare lesetilgang, ingen hemmeligheter).
+# Resultatet kontrolleres av «Publiseringssjekk» (publisering.yml), som kjører med skriptet fra main.
+name: Kvalitet
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  tester:
+    name: Automatiske tester
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          # Ved PR testes selve grenen, ikke en sammenslått kopi, så kvitteringen gjelder samme commit som QA-rapporten.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Kjør testene
+        run: node test/kjor.mjs --base origin/main --json "$RUNNER_TEMP/testresultat.json"
+      - name: Lagre testresultatet
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: testresultat
+          path: ${{ runner.temp }}/testresultat.json
+          retention-days: 30

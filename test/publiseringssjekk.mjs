@@ -2,7 +2,11 @@
 /*
  * EVN Publiseringssjekk – kjøres ved PR til main. Ingen avhengigheter, bare Node og git.
  *
- *   node test/publiseringssjekk.mjs [--base origin/main] [--ci-resultat <JSON fra test/kjor.mjs i Actions>]
+ *   node test/publiseringssjekk.mjs [--base origin/main] [--ref <commit>] [--ci-resultat <JSON fra test/kjor.mjs i Actions>]
+ *
+ * I GitHub kjøres skriptet fra main (workflow_run), ikke fra PR-en. Det leser PR-ens filer som data med git.
+ * Endrer PR-en test/ eller .github/, feiler sjekken: da har testene i PR-en ikke samme innhold som på main,
+ * og eieren må gå gjennom endringen og eventuelt slå den sammen med unntak (bypass).
  *
  * 1. Testene i Actions: --ci-resultat er resultatet av Actions sin egen kjøring av test/kjor.mjs.
  *    Den må gjelde HEAD, være kjørt på et rent arbeidstre, ha kjørt alle suiter og ikke ha feil.
@@ -26,17 +30,23 @@ const args = process.argv.slice(2);
 const arg = (n, d) => { const i = args.indexOf('--' + n); return i >= 0 ? args[i + 1] : d; };
 const BASE = arg('base', process.env.EVN_BASE || 'origin/main');
 const CI_RESULTAT = arg('ci-resultat', '');
+// --ref: commiten som kontrolleres. I Actions er det PR-ens commit, som bare leses som data med git (aldri kjøres).
+const REF = arg('ref', 'HEAD');
 const I_ACTIONS = process.env.GITHUB_ACTIONS === 'true';
 const git = (...a) => { try { return execFileSync('git', ['-c', 'core.quotePath=false', ...a], { cwd: ROT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20 }).trim(); } catch { return null; } };
 const vis = (rev, fil) => git('show', rev + ':' + fil);
 const kort = sha => (sha || '–').slice(0, 7);
 
 const feil = [], varsler = [], ok = [];
-const mb = git('merge-base', BASE, 'HEAD');
+const mb = git('merge-base', BASE, REF);
 if (!mb) { console.error('Fant ikke felles commit med ' + BASE + '.'); process.exit(2); }
-const HEAD = git('rev-parse', 'HEAD');
-const endrede = (git('diff', '--name-only', mb, 'HEAD') || '').split('\n').filter(Boolean);
-const kode = git('log', '-1', '--format=%H', 'HEAD', '--', '.', ':(exclude)qa');
+const HEAD = git('rev-parse', REF);
+const endrede = (git('diff', '--name-only', mb, REF) || '').split('\n').filter(Boolean);
+const kode = git('log', '-1', '--format=%H', REF, '--', '.', ':(exclude)qa');
+if (!HEAD) { console.error('Fant ikke commiten ' + REF + '.'); process.exit(2); }
+// Testene og arbeidsflyten skal være de samme som på main, ellers er testresultatet ikke betrodd.
+const betrodd = endrede.filter(f => f.startsWith('test/') || f.startsWith('.github/'));
+if (betrodd.length) feil.push(`PR-en endrer testene eller arbeidsflyten (${betrodd.slice(0, 5).join(', ')}${betrodd.length > 5 ? ' …' : ''}). Testresultatet er da ikke betrodd. Eieren må gå gjennom endringen og eventuelt slå sammen med unntak.`);
 
 // ---- Kravene som gjelder, lest fra standarden på den kontrollerte commiten ----
 function krav(standard) {
@@ -75,10 +85,10 @@ else varsler.push('Lokal kjøring: testkvitteringen i rapporten er bare kontroll
 const RADGIVENDE = new Set(ci && Array.isArray(ci.radgivende) ? ci.radgivende : ['ui']);
 // Suitene som må finnes: alle som står i test/index.html på main eller på denne grenen.
 const suiterI = rev => [...(vis(rev, 'test/index.html') || '').matchAll(/\{ navn: '([a-z]+)', fil: (?:null|'([^']+)')/g)].map(m => [m[1], m[2] || null]);
-const SUITEFIL = Object.fromEntries([...suiterI(mb), ...suiterI('HEAD')]);
+const SUITEFIL = Object.fromEntries([...suiterI(mb), ...suiterI(REF)]);
 const KREVDE = Object.keys(SUITEFIL);
 // «Ikke innført» er bare lov for en suite med testfil, når filen mangler både her og på main.
-const kanMangle = n => SUITEFIL[n] && git('cat-file', '-e', 'HEAD:' + SUITEFIL[n]) === null && git('cat-file', '-e', mb + ':' + SUITEFIL[n]) === null;
+const kanMangle = n => SUITEFIL[n] && git('cat-file', '-e', REF + ':' + SUITEFIL[n]) === null && git('cat-file', '-e', mb + ':' + SUITEFIL[n]) === null;
 const GYLDIGE = new Set(['ok', 'varsel', 'ikke-innfort', 'feil', 'ikke-kjort']);
 if (ci) {
   const f0 = feil.length;
@@ -121,8 +131,8 @@ function kontrollerKvittering(navn, r) {
 }
 
 // ---- QA-rapportene som er committet ----
-const rapporter = (git('ls-tree', '-r', '--name-only', 'HEAD', 'qa/rapporter/') || '').split('\n').filter(f => f.endsWith('.md')).map(fil => {
-  const t = vis('HEAD', fil) || '';
+const rapporter = (git('ls-tree', '-r', '--name-only', REF, 'qa/rapporter/') || '').split('\n').filter(f => f.endsWith('.md')).map(fil => {
+  const t = vis(REF, fil) || '';
   const g = /^Grunnlag: agent (\d+(?:\.\d+)*)[^,]*,\s*standard (.+?)\s*\(([0-9a-f]{40})\),\s*commit ([0-9a-f]{40})\b/m.exec(t);
   const k = /## Klar for testing hos Even\?\s*\n\s*(JA MED FORBEHOLD|JA|NEI)/.exec(t);
   return { fil, tekst: t, tittel: (/^# EVN Game QA: (.+)$/m.exec(t) || [])[1] || '', grunnlag: g && { agent: g[1], standard: g[2], hash: g[3], commit: g[4] },
@@ -138,7 +148,7 @@ const forKode = rapporter.filter(r => r.grunnlag && r.grunnlag.commit === kode);
 const riktigGrunnlag = r => r.grunnlag.hash === standardHash && r.grunnlag.agent === agentVersjon;
 
 // ---- Hvilke spill er endret ----
-const alleSpill = (git('ls-tree', '--name-only', 'HEAD', 'spill/') || '').split('\n').filter(Boolean).map(f => f.replace(/^spill\//, ''));
+const alleSpill = (git('ls-tree', '--name-only', REF, 'spill/') || '').split('\n').filter(Boolean).map(f => f.replace(/^spill\//, ''));
 const felles = endrede.some(f => f === 'statistikk.js' || f.startsWith('vendor/') || f.startsWith('fonter/'));
 const spill = felles ? alleSpill : [...new Set(endrede.map(f => (/^spill\/([^/]+)\//.exec(f) || [])[1]).filter(Boolean))];
 
@@ -164,10 +174,10 @@ for (const s of spill) {
   kontrollerKvittering(navn, r);
 
   const ver = rev => ((/class="[^"]*\bevn-ver\b[^"]*"[^>]*>\s*Versjon\s+(\d+(?:\.\d+){1,3})/.exec(vis(rev, `spill/${s}/index.html`) || '') || [])[1]);
-  const ny = ver('HEAD'), gammel = ver(mb);
+  const ny = ver(REF), gammel = ver(mb);
   if (!ny) feil.push(`${navn}: fant ikke «Versjon x.y.z» på startkortet (K3).`);
   else if (ny === gammel) feil.push(`${navn}: versjonen er fortsatt ${ny}. Øk versjonsnummeret (K3).`);
-  else if (!(vis('HEAD', 'ENDRINGSLOGG.md') || '').includes(ny)) feil.push(`${navn}: versjon ${ny} står ikke i ENDRINGSLOGG.md (K3).`);
+  else if (!(vis(REF, 'ENDRINGSLOGG.md') || '').includes(ny)) feil.push(`${navn}: versjon ${ny} står ikke i ENDRINGSLOGG.md (K3).`);
   else ok.push(`${navn}: versjon ${gammel || '–'} → ${ny}, og den står i ENDRINGSLOGG.md.`);
 }
 
