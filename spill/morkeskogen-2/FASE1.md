@@ -74,3 +74,25 @@
   - Alle 14 klipp lastes.
   - Bildene fra spillet ligger i `tester/resultater/robotfarge/spill-B.png` (dag, slag og natt).
   - **Ikke verifisert:** Om øksa sitter riktig i hånda, kan ikke avgjøres fra bildene. Det kontrolleres med et eget nærbilde fra siden før G1.
+
+## Kontroll 2.11.2026 kl. 15–16: to kjøringer på samme gren
+- **Hva skjedde:** Commitene 8d729a8 (12:24), 6d1fb43 (13:15) og 6a044d9 (13:56) har samme økt-ID.
+  - Samme Claude Code-økt ble kjørt videre i to tråder i samme arbeidsmappe. Den ene tråden gjorde gressforsøket og robottesten. Den andre tråden visste ikke om det.
+  - Nå kjører bare én prosess i mappa.
+- **Commit 6a044d9:** Den har feil melding. Den inneholder **bare** arbeid fra den andre tråden:
+  - `grafikk/helt.js`: våpenfestet er flyttet fra `Hand.R` (et mesh, ikke et ledd, så våpnene ble aldri flyttet) til leddet `Palm2.R` («Palm2R» etter GLTFLoader), med varsel hvis det mangler.
+  - `spill/grafikk2.js` er bygget på nytt.
+  - Ny test `tester/robot-animasjon.js`.
+- **Fargetesten:** Fargetesten og den raskere fargesjekken var allerede committet identisk i 8d729a8.
+- **Ingen tap:** Ingen arbeid er slettet eller tilbakestilt.
+- **Robottesten avdekket en feil:**
+  - **Feilen:** Ved raske bytter (står → går → løper) ble summen av klippvektene opptil 1,7. Årsaken er at `fadeIn`/`fadeOut` i three.js alltid starter fra 0 og 1.
+  - **Rettet:** Vektene går nå mot målet fra dagens verdi og normaliseres (`grafikk/helt.js`).
+  - **Testen er justert:** Den bruker `isScheduled`, fordi hopp og slag står stille på siste bilde og fortsatt påvirker stillingen.
+- **Resultater (commit oppgitt under):**
+  - `tester/robot-animasjon.js` er BESTÅTT. Den bruker klippene Idle, Walking, Running, Jump og Punch, uten rykk over 0,5 rad per bilde, og summen av vektene er ca. 1 i alle bilder.
+  - Øksa sitter fast i hånda (samme avstand og vinkel gjennom hele slaget). Nærbilder: `tester/resultater/robot-animasjon/`.
+  - **Merknad:** I slaget peker øksa oppover. Punch er et slag, ikke et hugg. Egen huggestilling kommer i fase 3.
+  - Tvillingen er 12/12 lik (`tvilling-2.0-kontroll.json`).
+  - `tester/fargekonvertering.js` er BESTÅTT.
+- **Ved parallelt arbeid senere:** Bruk én `git worktree` og én gren per delarbeid, for eksempel `morkeskogen-2.0-gress`. Hver økt får sin egen mappe. Arbeidet slås sammen til `morkeskogen-2.0` etter at testene er kjørt. Hver gren eies av én økt.

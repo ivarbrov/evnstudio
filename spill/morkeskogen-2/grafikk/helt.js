@@ -37,8 +37,9 @@ export function lagRobot(P) {
     const mix = new THREE.AnimationMixer(modell), klipp = {};
     for (const a of gltf.animations) klipp[a.name] = mix.clipAction(a);
     for (const n of ['Punch', 'Jump']) { klipp[n].setLoop(THREE.LoopOnce, 1); klipp[n].clampWhenFinished = true; }
-    const R = { rot, modell, hånd, mix, klipp, aktiv: klipp.Idle, sistSving: 0, vis: 0 };
-    R.aktiv.play();
+    const R = { rot, modell, hånd, mix, klipp, aktiv: klipp.Idle, fart: 1 / .3, sistSving: 0, vis: 0 };
+    for (const a of Object.values(klipp)) { a.enabled = true; a.setEffectiveWeight(0); }
+    R.aktiv.setEffectiveWeight(1).play();
     P.grp.add(rot);
     flyttVåpen(P, R);                                      // først: våpnene skal ikke skjules sammen med den gamle figuren
     skjulGammelFigur(P, R);
@@ -101,7 +102,10 @@ export function robotRamme(P, p, dt) {
   for (const c of P.grp.children) if (c.userData.evn2Skjult) c.visible = false;
   P.body.traverse(o => { if (o.userData.evn2Skjult) o.visible = false; });
   const K = R.klipp, spd = p.spd || 0, iLufta = (p.z || 0) > 2, slår = (p.swing || 0) > 0;
-  const bytt = (ny, tid = .2) => { if (ny === R.aktiv) return; ny.reset().setEffectiveWeight(1).fadeIn(tid).play(); R.aktiv.fadeOut(tid); R.aktiv = ny; };
+  // Bytte av klipp: det nye klippet tones inn og alle andre tones ut, fra vekten de har akkurat nå.
+  // (three.js sine fadeIn/fadeOut starter alltid fra 1 og 0; ved raske bytter, f.eks. står → går → løper,
+  // ble summen av vektene opptil 1,7 og stillingen overdrevet. Målt av tester/robot-animasjon.js.)
+  const bytt = (ny, tid = .2) => { if (ny !== R.aktiv) { if (!ny.isScheduled() || ny.getEffectiveWeight() < .01) ny.reset().setEffectiveWeight(0).play(); R.aktiv = ny; } R.fart = 1 / tid; };
   if (slår && R.sistSving <= 0) { K.Punch.reset(); K.Punch.timeScale = 1.6; bytt(K.Punch, .08); }
   else if (slår && R.aktiv === K.Punch) { /* slaget spilles ferdig */ }
   else if (iLufta) bytt(K.Jump, .1);
@@ -109,6 +113,15 @@ export function robotRamme(P, p, dt) {
   else if (spd > 12) { bytt(K.Walking); K.Walking.timeScale = Math.max(.6, spd / 95); }
   else bytt(K.Idle, .3);
   R.sistSving = p.swing || 0;
+  // Vektene går mot mål (aktivt klipp 1, resten 0) og normaliseres, så summen alltid er 1
+  let sum = 0; const steg = Math.min(1, dt * R.fart);
+  for (const a of Object.values(K)) {
+    if (!a.isScheduled() && a !== R.aktiv) continue;              // isScheduled: også klipp som står stille på siste bilde (hopp, slag)
+    const w0 = a.getEffectiveWeight(), w = a === R.aktiv ? w0 + (1 - w0) * steg : w0 * (1 - steg);
+    if (a !== R.aktiv && w < .005) { a.stop(); continue; }
+    a.setEffectiveWeight(w); sum += w;
+  }
+  if (sum > 0) for (const a of Object.values(K)) if (a.isScheduled()) a.setEffectiveWeight(a.getEffectiveWeight() / sum);
   R.mix.update(dt);
 }
 

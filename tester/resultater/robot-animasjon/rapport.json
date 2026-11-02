@@ -1,0 +1,594 @@
+{
+ "status": "BESTÅTT",
+ "feil": [],
+ "logg": [
+  {
+   "bilde": 1,
+   "hva": "står",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:1.00"
+  },
+  {
+   "bilde": 7,
+   "hva": "står",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:1.00"
+  },
+  {
+   "bilde": 13,
+   "hva": "står",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:1.00"
+  },
+  {
+   "bilde": 19,
+   "hva": "står",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:1.00"
+  },
+  {
+   "bilde": 25,
+   "hva": "står",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:1.00"
+  },
+  {
+   "bilde": 30,
+   "hva": "står",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:1.00"
+  },
+  {
+   "bilde": 31,
+   "hva": "starter å gå",
+   "aktiv": "Walking",
+   "spd": 45,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.92 Walking:0.08"
+  },
+  {
+   "bilde": 37,
+   "hva": "starter å gå",
+   "aktiv": "Running",
+   "spd": 150,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.54 Running:0.29 Walking:0.16"
+  },
+  {
+   "bilde": 38,
+   "hva": "starter å gå",
+   "aktiv": "Running",
+   "spd": 155,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.50 Running:0.35 Walking:0.15"
+  },
+  {
+   "bilde": 39,
+   "hva": "løper",
+   "aktiv": "Running",
+   "spd": 159,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.46 Running:0.41 Walking:0.14"
+  },
+  {
+   "bilde": 45,
+   "hva": "løper",
+   "aktiv": "Running",
+   "spd": 169,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.27 Running:0.65 Walking:0.08"
+  },
+  {
+   "bilde": 51,
+   "hva": "løper",
+   "aktiv": "Running",
+   "spd": 175,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.16 Running:0.79 Walking:0.05"
+  },
+  {
+   "bilde": 57,
+   "hva": "løper",
+   "aktiv": "Running",
+   "spd": 177,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.10 Running:0.88 Walking:0.03"
+  },
+  {
+   "bilde": 63,
+   "hva": "løper",
+   "aktiv": "Running",
+   "spd": 178,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.06 Running:0.93 Walking:0.02"
+  },
+  {
+   "bilde": 69,
+   "hva": "løper",
+   "aktiv": "Running",
+   "spd": 180,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.03 Running:0.96 Walking:0.01"
+  },
+  {
+   "bilde": 75,
+   "hva": "løper",
+   "aktiv": "Running",
+   "spd": 178,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.02 Running:0.97 Walking:0.01"
+  },
+  {
+   "bilde": 81,
+   "hva": "løper",
+   "aktiv": "Running",
+   "spd": 174,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.01 Running:0.99"
+  },
+  {
+   "bilde": 87,
+   "hva": "løper",
+   "aktiv": "Running",
+   "spd": 170,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.01 Running:0.99"
+  },
+  {
+   "bilde": 93,
+   "hva": "løper",
+   "aktiv": "Running",
+   "spd": 169,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Running:1.00"
+  },
+  {
+   "bilde": 98,
+   "hva": "løper",
+   "aktiv": "Running",
+   "spd": 169,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Running:1.00"
+  },
+  {
+   "bilde": 99,
+   "hva": "stopper",
+   "aktiv": "Running",
+   "spd": 118,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Running:1.00"
+  },
+  {
+   "bilde": 105,
+   "hva": "stopper",
+   "aktiv": "Walking",
+   "spd": 14,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Running:0.59 Walking:0.41"
+  },
+  {
+   "bilde": 111,
+   "hva": "stopper",
+   "aktiv": "Idle",
+   "spd": 2,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.29 Running:0.42 Walking:0.29"
+  },
+  {
+   "bilde": 117,
+   "hva": "stopper",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.50 Running:0.30 Walking:0.20"
+  },
+  {
+   "bilde": 123,
+   "hva": "stopper",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.64 Running:0.21 Walking:0.15"
+  },
+  {
+   "bilde": 129,
+   "hva": "stopper",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.75 Running:0.15 Walking:0.10"
+  },
+  {
+   "bilde": 135,
+   "hva": "stopper",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.82 Running:0.11 Walking:0.07"
+  },
+  {
+   "bilde": 138,
+   "hva": "stopper",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.85 Running:0.09 Walking:0.06"
+  },
+  {
+   "bilde": 139,
+   "hva": "hopp",
+   "aktiv": "Jump",
+   "spd": 0,
+   "z": 7,
+   "sving": 0,
+   "vekter": "Idle:0.71 Jump:0.17 Running:0.07 Walking:0.05"
+  },
+  {
+   "bilde": 141,
+   "hva": "hopp",
+   "aktiv": "Jump",
+   "spd": 0,
+   "z": 18,
+   "sving": 0,
+   "vekter": "Idle:0.49 Jump:0.42 Running:0.05 Walking:0.04"
+  },
+  {
+   "bilde": 142,
+   "hva": "i lufta og lander",
+   "aktiv": "Jump",
+   "spd": 0,
+   "z": 24,
+   "sving": 0,
+   "vekter": "Idle:0.41 Jump:0.52 Running:0.04 Walking:0.03"
+  },
+  {
+   "bilde": 148,
+   "hva": "i lufta og lander",
+   "aktiv": "Jump",
+   "spd": 0,
+   "z": 47,
+   "sving": 0,
+   "vekter": "Idle:0.14 Jump:0.84 Running:0.01 Walking:0.01"
+  },
+  {
+   "bilde": 154,
+   "hva": "i lufta og lander",
+   "aktiv": "Jump",
+   "spd": 0,
+   "z": 55,
+   "sving": 0,
+   "vekter": "Idle:0.05 Jump:0.95"
+  },
+  {
+   "bilde": 160,
+   "hva": "i lufta og lander",
+   "aktiv": "Jump",
+   "spd": 0,
+   "z": 49,
+   "sving": 0,
+   "vekter": "Idle:0.02 Jump:0.98"
+  },
+  {
+   "bilde": 166,
+   "hva": "i lufta og lander",
+   "aktiv": "Jump",
+   "spd": 0,
+   "z": 27,
+   "sving": 0,
+   "vekter": "Idle:0.01 Jump:0.99"
+  },
+  {
+   "bilde": 172,
+   "hva": "i lufta og lander",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.11 Jump:0.89"
+  },
+  {
+   "bilde": 178,
+   "hva": "i lufta og lander",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.37 Jump:0.63"
+  },
+  {
+   "bilde": 184,
+   "hva": "i lufta og lander",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.55 Jump:0.45"
+  },
+  {
+   "bilde": 190,
+   "hva": "i lufta og lander",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.68 Jump:0.32"
+  },
+  {
+   "bilde": 191,
+   "hva": "i lufta og lander",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.70 Jump:0.30"
+  },
+  {
+   "bilde": 192,
+   "hva": "slag",
+   "aktiv": "Punch",
+   "spd": 0,
+   "z": 0,
+   "sving": 0.5,
+   "vekter": "Idle:0.55 Jump:0.24 Punch:0.21"
+  },
+  {
+   "bilde": 194,
+   "hva": "slag",
+   "aktiv": "Punch",
+   "spd": 0,
+   "z": 0,
+   "sving": 0.47,
+   "vekter": "Idle:0.35 Jump:0.15 Punch:0.50"
+  },
+  {
+   "bilde": 195,
+   "hva": "slaget",
+   "aktiv": "Punch",
+   "spd": 0,
+   "z": 0,
+   "sving": 0.45,
+   "vekter": "Idle:0.27 Jump:0.12 Punch:0.61"
+  },
+  {
+   "bilde": 201,
+   "hva": "slaget",
+   "aktiv": "Punch",
+   "spd": 0,
+   "z": 0,
+   "sving": 0.35,
+   "vekter": "Idle:0.07 Jump:0.03 Punch:0.90"
+  },
+  {
+   "bilde": 207,
+   "hva": "slaget",
+   "aktiv": "Punch",
+   "spd": 0,
+   "z": 0,
+   "sving": 0.25,
+   "vekter": "Idle:0.02 Jump:0.01 Punch:0.98"
+  },
+  {
+   "bilde": 213,
+   "hva": "slaget",
+   "aktiv": "Punch",
+   "spd": 0,
+   "z": 0,
+   "sving": 0.15,
+   "vekter": "Punch:1.00"
+  },
+  {
+   "bilde": 219,
+   "hva": "slaget",
+   "aktiv": "Punch",
+   "spd": 0,
+   "z": 0,
+   "sving": 0.05,
+   "vekter": "Punch:1.00"
+  },
+  {
+   "bilde": 225,
+   "hva": "slaget",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.20 Punch:0.80"
+  },
+  {
+   "bilde": 231,
+   "hva": "slaget",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.44 Punch:0.56"
+  },
+  {
+   "bilde": 237,
+   "hva": "slaget",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.60 Punch:0.40"
+  },
+  {
+   "bilde": 239,
+   "hva": "slaget",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.64 Punch:0.36"
+  },
+  {
+   "bilde": 240,
+   "hva": "står igjen",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.66 Punch:0.34"
+  },
+  {
+   "bilde": 246,
+   "hva": "står igjen",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.76 Punch:0.24"
+  },
+  {
+   "bilde": 252,
+   "hva": "står igjen",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.83 Punch:0.17"
+  },
+  {
+   "bilde": 258,
+   "hva": "står igjen",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.88 Punch:0.12"
+  },
+  {
+   "bilde": 264,
+   "hva": "står igjen",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.91 Punch:0.09"
+  },
+  {
+   "bilde": 270,
+   "hva": "står igjen",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.94 Punch:0.06"
+  },
+  {
+   "bilde": 276,
+   "hva": "står igjen",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.96 Punch:0.04"
+  },
+  {
+   "bilde": 279,
+   "hva": "står igjen",
+   "aktiv": "Idle",
+   "spd": 0,
+   "z": 0,
+   "sving": 0,
+   "vekter": "Idle:0.96 Punch:0.04"
+  }
+ ],
+ "rykk": [],
+ "nullvekt": [],
+ "klippBrukt": [
+  "Idle",
+  "Walking",
+  "Running",
+  "Jump",
+  "Punch"
+ ],
+ "antallKlipp": 14,
+ "øks": {
+  "målinger": [
+   {
+    "avstand": 0,
+    "relVinkel": 3.142,
+    "synlig": true,
+    "forelder": "evn2-vapenfeste"
+   },
+   {
+    "avstand": 0,
+    "relVinkel": 3.142,
+    "synlig": true,
+    "forelder": "evn2-vapenfeste"
+   },
+   {
+    "avstand": 0,
+    "relVinkel": 3.142,
+    "synlig": true,
+    "forelder": "evn2-vapenfeste"
+   },
+   {
+    "avstand": 0,
+    "relVinkel": 3.142,
+    "synlig": true,
+    "forelder": "evn2-vapenfeste"
+   },
+   {
+    "avstand": 0,
+    "relVinkel": 3.142,
+    "synlig": true,
+    "forelder": "evn2-vapenfeste"
+   },
+   {
+    "avstand": 0,
+    "relVinkel": 3.142,
+    "synlig": true,
+    "forelder": "evn2-vapenfeste"
+   },
+   {
+    "avstand": 0,
+    "relVinkel": 3.142,
+    "synlig": true,
+    "forelder": "evn2-vapenfeste"
+   }
+  ]
+ },
+ "konsoll": []
+}

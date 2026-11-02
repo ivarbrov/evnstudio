@@ -24,10 +24,15 @@ const INIT = `(() => {
   await p.addInitScript(INIT);
   await p.route('**/statistikk.js', r => r.fulfill({ body: '', contentType: 'text/javascript' }));
   await p.route('**/spill/morkeskogen-2/spill/spill.js', r => r.fulfill({ body: fs.readFileSync('spill/morkeskogen-2/spill/spill.js', 'utf8').replace('(() => {\n', '(() => {\nwindow.__R3 = () => R3; window.__g = () => g; window.__F = () => ({ FX, FY });\n'), contentType: 'text/javascript' }));
+  const t0 = Date.now(), steg = m => console.error(`[${Math.round((Date.now() - t0) / 1000)} s] ${m}`);
   await p.goto('http://localhost:8765/spill/morkeskogen-2/spill/index.html', { timeout: 200000 });
-  await p.evaluate(() => { document.getElementById('startBtn').click(); __steg(10); });
-  await p.waitForFunction(() => window.__R3() && __R3().player && __R3().player.robot, null, { timeout: 120000, polling: 500 });
+  steg('side lastet'); await p.evaluate(() => { document.getElementById('startBtn').click(); __steg(10); }); steg('startet');
+  try { await p.waitForFunction(() => window.__R3() && __R3().player && __R3().player.robot, null, { timeout: 300000, polling: 500 }); }
+  catch (e) { console.error('roboten ble ikke lastet:', konsoll.slice(0, 5)); await b.close(); process.exit(2); }
 
+  steg('robot klar');
+  // Uten tegning under sekvensen (bare leddene måles; programvaregrafikken her bruker ellers ~2 s per bilde)
+  await p.evaluate(() => { const r = __R3().renderer; window.__render0 = r.render; r.render = () => {}; });
   // Sekvens med ekte tastetrykk. Helten står på åpen mark nær bålet.
   const r = await p.evaluate(({ GRENSE }) => {
     const g = __g(), { FX, FY } = __F(), P = __R3().player, R = P.robot, K = R.klipp;
@@ -39,7 +44,7 @@ const INIT = `(() => {
     const logg = [], rykk = [], nullvekt = [], sett = new Set();
     let bilde = 0;
     const steg = (n, hva) => { for (let i = 0; i < n; i++) { __steg(1); bilde++;
-      const vekter = Object.entries(K).map(([k, a]) => [k, a.isRunning() ? a.getEffectiveWeight() : 0]).filter(x => x[1] > 0.001);
+      const vekter = Object.entries(K).map(([k, a]) => [k, a.isScheduled() ? a.getEffectiveWeight() : 0]).filter(x => x[1] > 0.001);
       const sum = vekter.reduce((s, x) => s + x[1], 0);
       if (sum < 0.6 || sum > 1.4) nullvekt.push({ bilde, hva, sum: +sum.toFixed(2), vekter });
       for (const o of ledd) { const q = forrige.get(o), v = q.angleTo(o.quaternion); if (v > GRENSE) rykk.push({ bilde, hva, ledd: o.name, rad: +v.toFixed(2), aktiv: navn.get(R.aktiv) }); q.copy(o.quaternion); }
@@ -54,6 +59,7 @@ const INIT = `(() => {
     return { logg, rykk, nullvekt, klippBrukt: [...sett], antallKlipp: Object.keys(K).length };
   }, { GRENSE });
 
+  steg('sekvens ferdig');
   // Øksa: grepets avstand til håndleddet og vinkelen mellom øksa og hånda, gjennom et helt slag
   const øks = await p.evaluate(() => {
     const P = __R3().player, R = P.robot, øks = P.wpn && P.wpn.oks, v = new THREE.Vector3(), h = new THREE.Vector3();
@@ -68,6 +74,7 @@ const INIT = `(() => {
     return { målinger: ut };
   });
 
+  await p.evaluate(() => { __R3().renderer.render = window.__render0; });
   // Nærbilder fra siden: i ro, og midt i slaget
   const nærbilde = async (navn, slag) => {
     const url = await p.evaluate(slag => {
@@ -80,7 +87,7 @@ const INIT = `(() => {
     }, slag);
     fs.writeFileSync(`${UT}/${navn}.png`, Buffer.from(url.split(',')[1], 'base64'));
   };
-  await nærbilde('oks-i-ro', false); await nærbilde('oks-slag', true);
+  steg('øksemåling ferdig'); await nærbilde('oks-i-ro', false); steg('nærbilde 1'); await nærbilde('oks-slag', true);
 
   const feil = [];
   for (const k of ['Idle', 'Running', 'Jump', 'Punch']) if (!r.klippBrukt.includes(k)) feil.push(`klippet ${k} ble ikke brukt i sekvensen`);
