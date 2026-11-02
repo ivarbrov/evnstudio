@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Magiske egg 0.6.1 – EVN Studio</title>
+<title>Magiske egg 0.7.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -88,6 +88,7 @@
   .matrad .mi { font-size:30px; }
   .matrad b { display:block; font-size:16px; } .matrad small { font-size:13px; opacity:.9; }
   .matrad button { min-height:48px; min-width:84px; border-radius:12px; border:2px solid #fff; background:linear-gradient(#ffd75e,#f0a91c); color:#4a2a00; font-weight:800; font-size:14px; padding:4px 8px; }
+  .matrad.last { opacity:.75; }
   .matrad button:disabled { background:#8a8ea3; color:#2a2d3a; border-color:#c5c8d6; cursor:default; }
   @media (max-width:520px) { .matrad { grid-template-columns:auto 1fr; } .matrad button { grid-column:span 1; } }
   .sjanser { font-size:14px; opacity:.85; text-align:left; line-height:1.5; }
@@ -122,6 +123,7 @@
 <div id="hud" hidden>
   <div class="pille" id="pMynt">🪙 <span id="mynt">0</span></div>
   <div class="pille" id="pBaer">🍓 <span id="baer">0</span></div>
+  <div class="pille" id="pNiva" title="Parknivå: mat og klekk dyr for å gå opp">🏆 <span id="niva">1</span></div>
   <div class="pille" id="pMat" title="Favorittmat">🧺 <span id="matSum">0</span></div>
   <button class="pille" id="bokKnapp" aria-label="Samleboka">📖 <span id="funnet">0/9</span></button>
 </div>
@@ -165,6 +167,16 @@
   </div>
 </div>
 
+<!-- Eggbutikken -->
+<div class="lag" id="eggbutikk">
+  <div class="kort bok">
+    <h2>🛒 Eggbutikken</h2>
+    <p class="matinfo" id="eggniva"></p>
+    <div id="eggliste"></div>
+    <button class="stor" id="lukkEggbutikk" style="margin-top:12px">Lukk</button>
+  </div>
+</div>
+
 <!-- Matboden -->
 <div class="lag" id="matbod">
   <div class="kort bok">
@@ -181,8 +193,8 @@
     <h2>📖 Samleboka</h2>
     <div class="rutenett" id="rutenett"></div>
     <div class="sjanser">
-      🥕 <b>Favorittmat</b> fra matboden eller hagen teller som 3 bær.<br>
-      🛒 <b>Butikkegg:</b> 3 av 4 blir vanlige dyr, 1 av 4 blir litt sjeldne. Egget blir litt dyrere for hvert dyr du har.<br>
+      🥕 <b>Favorittmat</b> fra matboden eller hagen teller som 3 bær. Sjeldne dyr spiser <b>bare</b> favorittmaten sin.<br>
+      🛒 <b>Eggbutikken:</b> 🥚 vanlig, 💙 blått (parknivå 2), 💜 lilla (nivå 4) og 💛 gull (nivå 6). Jo sjeldnere egg, jo dyrere. Klekk og mat dyr for å gå opp i parknivå.<br>
       ✨ <b>Sjeldne egg</b> dukker opp et sted i skogen av og til. De blir veldig sjeldne dyr, og noen ganger … noe helt legendarisk.
     </div>
     <button class="stor" id="lukkBok" style="margin-top:12px">Lukk</button>
@@ -429,7 +441,7 @@ window.EVNPause = function (cfg) {
 <script src="../../vendor/three-r128.min.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.6.1';
+const VERSJON = '0.7.0';
 const LAGRING = 'evn-magiske-egg-v1';
 const TEST = location.hash === '#test';
 
@@ -496,6 +508,17 @@ const MATTYPER = [
 ];
 const MAT_ID = Object.fromEntries(MATTYPER.map(m => [m.id, m]));
 const MAT_FOR_SONE = Object.fromEntries(MATTYPER.map(m => [m.sone, m]));
+// Eggene i butikken (Evens ønske 2.11.2026): pris etter hvor sjeldne de er, og bedre egg låses opp med parknivå.
+// sjanser: [vanlig, litt sjelden, veldig sjelden, legendarisk]
+const EGGTYPER = [
+  { id:'vanlig', navn:'Vanlig egg',   ikon:'🥚', grunnpris:15,  niva:1, sjanser:[1, 0, 0, 0] },
+  { id:'bla',    navn:'Blått egg',    ikon:'💙', grunnpris:45,  niva:2, sjanser:[0.25, 0.75, 0, 0] },
+  { id:'lilla',  navn:'Lilla egg',    ikon:'💜', grunnpris:150, niva:4, sjanser:[0, 0.3, 0.7, 0] },
+  { id:'gull',   navn:'Gullegg',      ikon:'💛', grunnpris:600, niva:6, sjanser:[0, 0, 0.75, 0.25] },
+];
+const EGG_ID = Object.fromEntries(EGGTYPER.map(e => [e.id, e]));
+// Parknivå = summen av alle dyrenes nivåer (klekke og mate gir fremgang)
+const PARKNIVA = [0, 5, 12, 22, 35, 50];
 const SJ = [
   { navn:'Vanlig',         farge:'#8fdc6a' },
   { navn:'Litt sjelden',   farge:'#6cc0ff' },
@@ -1019,8 +1042,11 @@ function eggTekstur(bunn, flekker) {
 const EGG_MAT = {
   butikk: new THREE.MeshStandardMaterial({ map: eggTekstur('#fff4dc', ['#ff8fb8', '#6cc0ff', '#8fdc6a', '#ffc93c']), roughness: 0.55 }),
   sjelden: new THREE.MeshStandardMaterial({ map: eggTekstur('#7b4bdc', ['#ffe14a', '#ffffff', '#ff9fe0']), roughness: 0.3, emissive: C(0x3a1a80), emissiveIntensity: 0.6 }),
+  bla: new THREE.MeshStandardMaterial({ map: eggTekstur('#8fd0ff', ['#ffffff', '#4a8fe0', '#cfeaff']), roughness: 0.45 }),
+  lilla: new THREE.MeshStandardMaterial({ map: eggTekstur('#c9a8ff', ['#ffffff', '#8a5ae0', '#ffd0f0']), roughness: 0.4, emissive: C(0x2a1050), emissiveIntensity: 0.3 }),
+  gull: new THREE.MeshStandardMaterial({ map: eggTekstur('#ffd34a', ['#fff6c8', '#ffb020', '#ffffff']), roughness: 0.2, metalness: 0.4, emissive: C(0x5a3a00), emissiveIntensity: 0.5 }),
 };
-function lagEgg(type) { const m = new THREE.Mesh(SPH, EGG_MAT[type]); m.scale.set(0.95, 1.25, 0.95); m.castShadow = true; return m; }
+function lagEgg(type) { const m = new THREE.Mesh(SPH, EGG_MAT[type === 'vanlig' ? 'butikk' : type]); m.scale.set(0.95, 1.25, 0.95); m.castShadow = true; return m; }
 
 // ======================================================
 //  Verden
@@ -1406,7 +1432,7 @@ function lastInn() {
   let s = null; try { s = JSON.parse(localStorage.getItem(LAGRING)); } catch (e) {}
   if (!s || s.v !== 1) return false;
   tilstand.mynter = +s.mynter || 0; tilstand.baer = +s.baer || 0; tilstand.funnet = s.funnet || {}; tilstand.baererEgg = !!s.baererEgg; tilstand.klekket = +s.klekket || 0;
-  tilstand.eggKo = Array.isArray(s.eggKo) ? s.eggKo.filter(t => t === 'butikk' || t === 'sjelden') : [];
+  tilstand.eggKo = Array.isArray(s.eggKo) ? s.eggKo.filter(t => t === 'butikk' || t === 'sjelden' || EGG_ID[t]) : [];
   const telling = o => { const u = {}; if (o && typeof o === 'object') for (const k in o) if (MAT_ID[k] && o[k] > 0) u[k] = Math.floor(o[k]); return u; };
   tilstand.fro = telling(s.fro); tilstand.mat = telling(s.mat);
   tilstand.hage = HAGE_RUTER.map((_, i) => { const h = Array.isArray(s.hage) ? s.hage[i] : null; return h && MAT_ID[h.type] && isFinite(h.t) ? { type: h.type, t: Math.min(+h.t, Date.now()) } : null; });
@@ -1443,6 +1469,7 @@ function oppdaterMelding(dt) {
   if (kø.length) { const t = kø.shift(); el.textContent = t; el.classList.add('vis'); meldingTimer = Math.max(2.8, 1.2 + t.length * 0.065); }
 }
 function oppdaterHud() {
+  if (typeof parkNiva === 'function') { $('niva').textContent = parkNiva(); sjekkParkNiva(); }
   $('mynt').textContent = Math.floor(tilstand.mynter);
   $('baer').textContent = tilstand.baer;
   $('matSum').textContent = Object.values(tilstand.mat).reduce((a, b) => a + b, 0);
@@ -1491,6 +1518,7 @@ function oppdaterRedet(dt) {
   if (redeEgg.t >= KLEKK_TID) klekk();
 }
 function trekkDyr(type) {
+  if (EGG_ID[type]) { let r = Math.random(), s = 0; const sj = EGG_ID[type].sjanser; for (let i = 0; i < 4; i++) { s += sj[i]; if (r < s && sj[i] > 0) return velg(DYR.filter(d => d.sjelden === i)); } return velg(DYR.filter(d => d.sjelden === 0)); }
   if (type === 'butikk') return velg(DYR.filter(d => d.sjelden === (Math.random() < 0.75 ? 0 : 1)));
   if (Math.random() < INNST.ilddrevSjanse) return DYR_ID.ilddrev;
   return velg(DYR.filter(d => d.sjelden === 2));
@@ -1511,7 +1539,7 @@ function visKlekkKort(def, ny) {
   $('klekkIkon').textContent = def.ikon; $('klekkNavn').textContent = def.navn;
   const s = SJ[def.sjelden];
   $('klekkMerker').innerHTML = `<span class="merkelapp" style="background:${s.farge}">${s.navn}</span>` + (ny ? '<span class="merkelapp ny">NY I SAMLEBOKA!</span>' : '');
-  $('klekkTekst').textContent = def.tekst + ` Den tjener ${def.mynt} 🪙 om gangen og liker ${MAT_FOR_SONE[def.sone].ikon} ${MAT_FOR_SONE[def.sone].navn.toLowerCase()}.`;
+  $('klekkTekst').textContent = def.tekst + ` Den tjener ${def.mynt} 🪙 om gangen og ` + (def.sjelden >= 1 ? `spiser bare ${MAT_FOR_SONE[def.sone].ikon} ${MAT_FOR_SONE[def.sone].navn.toLowerCase()} fra matboden eller hagen.` : `liker ${MAT_FOR_SONE[def.sone].ikon} ${MAT_FOR_SONE[def.sone].navn.toLowerCase()}.`);
   apneLag('klekk');
 }
 
@@ -1560,12 +1588,23 @@ function settBaering(pa) {
 // ======================================================
 let handling = null, handlingTekst = '';
 // Prisen øker for hvert dyr du har (og egg som venter i redet)
-function eggPris() { return Math.round(INNST.eggPris * Math.pow(INNST.prisVekst, dyrListe.length + tilstand.eggKo.length)); }
+function eggPris(type = 'vanlig') { return Math.round(EGG_ID[type].grunnpris / 15 * INNST.eggPris * Math.pow(INNST.prisVekst, dyrListe.length + tilstand.eggKo.length)); }
+function parkPoeng() { return dyrListe.reduce((a, d) => a + d.nivaa, 0); }
+function parkNiva() { const p = parkPoeng(); let n = 1; PARKNIVA.forEach((g, i) => { if (p >= g) n = i + 1; }); return n; }
+let sistNiva = null;
+function sjekkParkNiva() {
+  const n = parkNiva();
+  if (sistNiva !== null && n > sistNiva) {
+    const nye = EGGTYPER.filter(e => e.niva > sistNiva && e.niva <= n);
+    melding(`🏆 Parknivå ${n}!` + (nye.length ? ` Nå kan du kjøpe ${nye.map(e => e.ikon + ' ' + e.navn.toLowerCase()).join(' og ')}!` : ''));
+    sprut(spiller.pos.clone().add(new THREE.Vector3(0, 5, 0)), [0xffe14a, 0xffffff, 0xc79bff], 30, 9); lydVokse(); bump('pNiva');
+  }
+  sistNiva = n;
+}
 function finnHandling() {
   if (Math.hypot(spiller.pos.x - BUTIKK.x, spiller.pos.z - BUTIKK.z) < 7.5) {
     if (dyrListe.length + tilstand.eggKo.length >= INNST.maksDyr) return { type: 'full', tekst: 'Parken er full! 🏞️', av: true };
-    const pris = eggPris(), ok = tilstand.mynter >= pris;
-    return { type: 'kjop', tekst: ok ? `🥚 Kjøp egg · ${pris} 🪙` : `🥚 Egg koster ${pris} 🪙`, av: !ok };
+    return { type: 'eggbutikk', tekst: '🛒 Åpne eggbutikken', av: false };
   }
   if (Math.hypot(spiller.pos.x - MATBOD.x, spiller.pos.z - MATBOD.z) < 7) return { type: 'matbod', tekst: '🥕 Åpne matboden', av: false };
   { let b = null, bdist = 2.6; hageBed.forEach((r, i) => { const dd = Math.hypot(r.x - spiller.pos.x, r.z - spiller.pos.z); if (dd < bdist) { bdist = dd; b = i; } });
@@ -1582,6 +1621,8 @@ function finnHandling() {
     if (best.nivaa >= INNST.maksNivaa) return { type: 'maks', dyr: best, tekst: `${best.def.navn} er fullvokst ⭐`, av: true };
     const trengs = best.nivaa, fav = MAT_FOR_SONE[best.def.sone];
     if (tilstand.mat[fav.id] > 0) return { type: 'fav', dyr: best, mat: fav.id, tekst: `${fav.ikon} Gi ${fav.navn.toLowerCase()} til ${best.def.navn} (${best.mat}/${trengs})`, av: false };
+    // Sjeldne dyr spiser bare favorittmaten sin (Evens ønske 2.11.2026)
+    if (best.def.sjelden >= 1) return { type: 'kresen', dyr: best, tekst: `${fav.ikon} ${best.def.navn} spiser bare ${fav.navn.toLowerCase()}`, av: true };
     if (tilstand.baer <= 0) return { type: 'ingenbaer', dyr: best, tekst: `🍓 Finn bær · ${best.def.navn} liker ${fav.ikon}`, av: true };
     return { type: 'mat', dyr: best, tekst: `🍓 Gi mat til ${best.def.navn} (${best.mat}/${trengs})`, av: false };
   }
@@ -1618,15 +1659,33 @@ $('matliste').addEventListener('click', e => {
   const ny = $('matliste').querySelector(`button[data-kjop="${b.dataset.kjop}"][data-mat="${id}"]`); if (ny) ny.focus({ preventScroll: true });
 });
 $('lukkMatbod').addEventListener('click', () => lukkLag('matbod'));
+const PROS = v => Math.round(v * 100) + ' %';
+function byggEggbutikk() {
+  const n = parkNiva(), p = parkPoeng(), neste = PARKNIVA[n];
+  $('eggniva').textContent = `🏆 Parknivå ${n}` + (neste !== undefined ? ` · ${p}/${neste} stjerner til nivå ${n + 1}. Klekk og mat dyr for å gå opp!` : ' · høyeste nivå!');
+  const full = dyrListe.length + tilstand.eggKo.length >= INNST.maksDyr;
+  $('eggliste').innerHTML = EGGTYPER.map(e => {
+    const last = n < e.niva, pris = eggPris(e.id), kan = !last && !full && tilstand.mynter >= pris;
+    const gir = e.sjanser.map((v, i) => v > 0 ? `<span style="color:${SJ[i].farge}">${SJ[i].navn} ${PROS(v)}</span>` : '').filter(Boolean).join(' · ');
+    return `<div class="matrad${last ? ' last' : ''}"><span class="mi" aria-hidden="true">${last ? '🔒' : e.ikon}</span><div><b>${e.navn}</b><small>${gir}</small></div>` +
+      `<span></span><button type="button" data-egg="${e.id}" ${kan ? '' : 'disabled'}>${last ? '🔒 Nivå ' + e.niva : full ? 'Parken er full' : pris + ' 🪙'}</button></div>`;
+  }).join('') + `<p class="matinfo" style="margin-top:8px">Du har ${Math.floor(tilstand.mynter)} 🪙. Egg blir dyrere jo flere dyr du har.<br>✨ Sjeldne egg i skogen er gratis!</p>`;
+}
+$('eggliste').addEventListener('click', e => {
+  const b = e.target.closest('button[data-egg]'); if (!b || b.disabled) return;
+  const type = b.dataset.egg, pris = eggPris(type);
+  if (tilstand.mynter < pris || parkNiva() < EGG_ID[type].niva || dyrListe.length + tilstand.eggKo.length >= INNST.maksDyr) return;
+  tilstand.mynter -= pris; oppdaterHud(); bump('pMynt'); pip(520, 0.15, 'triangle', 0.1, 1.6);
+  const m = lagEgg(type); m.position.set(BUTIKK.x, 3.5, BUTIKK.z); scene.add(m);
+  flyEgg.push({ m, t: 0, fra: m.position.clone() }); tilstand.eggKo.push(type); lagre();
+  lukkLag('eggbutikk');
+  if (!tilstand.forsteKjop) { tilstand.forsteKjop = true; melding('Egget flyr til redet. Se hva som klekker! 🪺'); }
+});
+$('lukkEggbutikk').addEventListener('click', () => lukkLag('eggbutikk'));
 function gjorHandling() {
   if (!handling || modalApen()) return;
-  if (handling.type === 'kjop') {
-    const pris = eggPris();
-    if (tilstand.mynter < pris) { melding(`Egget koster ${pris} 🪙. Dyrene i parken lager mynter.`); return; }
-    tilstand.mynter -= pris; oppdaterHud(); bump('pMynt'); pip(520, 0.15, 'triangle', 0.1, 1.6);
-    const m = lagEgg('butikk'); m.position.set(BUTIKK.x, 3.5, BUTIKK.z); scene.add(m);
-    flyEgg.push({ m, t: 0, fra: m.position.clone() }); tilstand.eggKo.push('butikk'); lagre();
-    if (!tilstand.forsteKjop) { tilstand.forsteKjop = true; melding('Egget flyr til redet. Se hva som klekker! 🪺'); }
+  if (handling.type === 'eggbutikk') {
+    byggEggbutikk(); apneLag('eggbutikk');
   } else if (handling.type === 'mat') {
     tilstand.baer--; bump('pBaer'); giMat(handling.dyr, 1, '❤️');
   } else if (handling.type === 'fav') {
@@ -1659,7 +1718,7 @@ const taster = {};
 addEventListener('keydown', e => {
   const k = e.key.toLowerCase(); taster[k] = true;
   if (spillTilstand === 'spill' && !modalApen() && (k === 'e' || k === ' ')) { e.preventDefault(); if (!e.repeat) gjorHandling(); }
-  if (k === 'escape') { if ($('bok').classList.contains('vis')) lukkLag('bok'); else if ($('matbod').classList.contains('vis')) lukkLag('matbod'); else if ($('klekk').classList.contains('vis')) lukkLag('klekk'); }
+  if (k === 'escape') { if ($('bok').classList.contains('vis')) lukkLag('bok'); else if ($('matbod').classList.contains('vis')) lukkLag('matbod'); else if ($('eggbutikk').classList.contains('vis')) lukkLag('eggbutikk'); else if ($('klekk').classList.contains('vis')) lukkLag('klekk'); }
   if (k.startsWith('arrow')) e.preventDefault();
 });
 addEventListener('keyup', e => { taster[e.key.toLowerCase()] = false; });
@@ -1692,7 +1751,7 @@ document.addEventListener('touchmove', e => { if (spillTilstand === 'spill' && e
 // ======================================================
 let spillTilstand = 'start';
 const evnApen = () => ['evnPause', 'evnKart', 'evnNullstillBoks'].some(id => { const e = $(id); return e && e.classList.contains('vis'); }) || (() => { const e = $('evnSporsmal'); return !!e && e.style.display === 'grid'; })();
-const modalApen = () => ['klekk', 'bok', 'start', 'matbod'].some(id => $(id).classList.contains('vis')) || evnApen();
+const modalApen = () => ['klekk', 'bok', 'start', 'matbod', 'eggbutikk'].some(id => $(id).classList.contains('vis')) || evnApen();
 function apneLag(id) { $(id).classList.add('vis'); const b = $(id).querySelector('button.stor'); if (b) setTimeout(() => b.focus({ preventScroll: true }), 50); }
 function lukkLag(id) { $(id).classList.remove('vis'); }
 $('klekkOk').addEventListener('click', () => lukkLag('klekk'));
@@ -1740,7 +1799,7 @@ $('lukkBok').addEventListener('click', () => lukkLag('bok'));
 function byggBok() {
   $('rutenett').innerHTML = DYR.map(d => {
     const n = tilstand.funnet[d.id], s = SJ[d.sjelden];
-    return n ? `<div class="dyrkort" style="border-color:${s.farge}"><div class="ik">${d.ikon}</div><div class="nv">${d.navn}</div><div class="sj" style="color:${s.farge}">${s.navn}</div><div class="sj">${SONE_ID[d.sone].ikon} ${SONE_ID[d.sone].navn}</div><div class="sj">Liker ${MAT_FOR_SONE[d.sone].ikon}</div><div class="sj">Klekket: ${n}</div></div>`
+    return n ? `<div class="dyrkort" style="border-color:${s.farge}"><div class="ik">${d.ikon}</div><div class="nv">${d.navn}</div><div class="sj" style="color:${s.farge}">${s.navn}</div><div class="sj">${SONE_ID[d.sone].ikon} ${SONE_ID[d.sone].navn}</div><div class="sj">${d.sjelden >= 1 ? 'Spiser bare' : 'Liker'} ${MAT_FOR_SONE[d.sone].ikon}</div><div class="sj">Klekket: ${n}</div></div>`
              : `<div class="dyrkort ukjent"><div class="ik">❓</div><div class="nv">???</div><div class="sj" style="color:${s.farge}">${s.navn}</div></div>`;
   }).join('');
 }
@@ -1888,7 +1947,7 @@ window.__evnP = EVNPause({
     info: () => '🔺 Du · 🪺 Redet · 🛒 Eggbutikk · 🥕 Matbod · 🌱 Hage · 🔴 Bær',
     tegn: (c, w, h) => { tegnKart(); c.drawImage(kartLerret, 0, 0, w, h); }
   },
-  kanPause: () => spillTilstand === 'spill' && !['klekk', 'bok', 'start', 'matbod'].some(id => $(id).classList.contains('vis')),
+  kanPause: () => spillTilstand === 'spill' && !['klekk', 'bok', 'start', 'matbod', 'eggbutikk'].some(id => $(id).classList.contains('vis')),
   aktiv: () => spillTilstand === 'spill',
   pause: () => { spillTilstand = 'pause'; for (const k in taster) taster[k] = false; joy.aktiv = false; joyEl.style.display = 'none'; lagre(); },
   fortsett: () => { spillTilstand = 'spill'; for (const k in taster) taster[k] = false; sisteTid = performance.now(); },
