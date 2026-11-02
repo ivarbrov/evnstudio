@@ -1,0 +1,63 @@
+# UTKAST – ikke aktiv. Flyttes til .github/workflows/kvalitet.yml i trinn 4, etter godkjenning fra eieren.
+# Gratis i offentlige repoer. Ingen KI-kall, ingen hemmeligheter, bare lesetilgang.
+# Bruker Chrome og Node som allerede finnes på GitHubs ubuntu-maskiner. Ingen npm-pakker.
+#
+# To separate kontroller. Begge skal kreves i regelen for main:
+#   «Automatiske tester»  – Actions kjører alle testene selv og lager sin egen testkvittering.
+#   «QA før publisering»  – bare ved PR til main: QA-rapporten sammenlignes med kjøringen over.
+name: Kvalitet
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  tester:
+    name: Automatiske tester
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Ved PR testes selve grenen, ikke en sammenslått kopi, så kvitteringen gjelder samme commit som QA-rapporten.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Kjør testene
+        run: node test/kjor.mjs --base origin/main --json "$RUNNER_TEMP/testresultat.json"
+      - name: Lagre testresultatet
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: testresultat
+          path: ${{ runner.temp }}/testresultat.json
+          retention-days: 30
+
+  qa:
+    name: QA før publisering
+    # Kjører også når testene er røde, så sjekken selv stopper PR-en og ikke bare blir hoppet over.
+    if: github.event_name == 'pull_request' && !cancelled()
+    needs: tester
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: testresultat
+          path: ${{ runner.temp }}
+      - name: Sjekk QA-rapport og testkvittering
+        run: node test/publiseringssjekk.mjs --base origin/main --ci-resultat "$RUNNER_TEMP/testresultat.json"
