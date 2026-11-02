@@ -38,12 +38,12 @@ const vis = (rev, fil) => git('show', rev + ':' + fil);
 const kort = sha => (sha || '–').slice(0, 7);
 
 const feil = [], varsler = [], ok = [];
+const HEAD = git('rev-parse', '--verify', '--quiet', REF + '^{commit}');
+if (!HEAD) { console.error('Fant ikke commiten ' + REF + '.'); process.exit(2); }
 const mb = git('merge-base', BASE, REF);
 if (!mb) { console.error('Fant ikke felles commit med ' + BASE + '.'); process.exit(2); }
-const HEAD = git('rev-parse', REF);
 const endrede = (git('diff', '--name-only', mb, REF) || '').split('\n').filter(Boolean);
 const kode = git('log', '-1', '--format=%H', REF, '--', '.', ':(exclude)qa');
-if (!HEAD) { console.error('Fant ikke commiten ' + REF + '.'); process.exit(2); }
 // Testene og arbeidsflyten skal være de samme som på main, ellers er testresultatet ikke betrodd.
 const betrodd = endrede.filter(f => f.startsWith('test/') || f.startsWith('.github/'));
 if (betrodd.length) feil.push(`PR-en endrer testene eller arbeidsflyten (${betrodd.slice(0, 5).join(', ')}${betrodd.length > 5 ? ' …' : ''}). Testresultatet er da ikke betrodd. Eieren må gå gjennom endringen og eventuelt slå sammen med unntak.`);
@@ -82,7 +82,9 @@ if (CI_RESULTAT) {
   try { ci = JSON.parse(fs.readFileSync(CI_RESULTAT, 'utf8')); } catch { feil.push(`Fant ikke testresultatet fra Actions (${CI_RESULTAT}). Testene må ha kjørt i Actions.`); }
 } else if (I_ACTIONS) feil.push('Testresultatet fra Actions mangler (--ci-resultat). En lokal testkvittering kan ikke alene oppfylle kravet.');
 else varsler.push('Lokal kjøring: testkvitteringen i rapporten er bare kontrollert på formen. Ved PR til main sammenlignes den med Actions sin egen testkjøring.');
-const RADGIVENDE = new Set(ci && Array.isArray(ci.radgivende) ? ci.radgivende : ['ui']);
+// Rådgivende suiter leses fra testsiden på main (betrodd), aldri fra resultatfilen.
+const radgivendeI = rev => { const m = /IKKE_GJELDENDE = \{([^}]*)\}/.exec(vis(rev, 'test/index.html') || ''); return m ? [...m[1].matchAll(/([a-z]+):/g)].map(x => x[1]) : null; };
+const RADGIVENDE = new Set(radgivendeI(BASE) || ['ui']);
 // Suitene som må finnes: alle som står i test/index.html på main eller på denne grenen.
 const suiterI = rev => [...(vis(rev, 'test/index.html') || '').matchAll(/\{ navn: '([a-z]+)', fil: (?:null|'([^']+)')/g)].map(m => [m[1], m[2] || null]);
 const SUITEFIL = Object.fromEntries([...suiterI(mb), ...suiterI(REF)]);
@@ -98,6 +100,8 @@ if (ci) {
   for (const [n, v] of Object.entries(ci.suiter)) if (!GYLDIGE.has(v)) feil.push(`Actions: suiten ${n} har ukjent resultat «${v}».`);
   if (ci.commit !== HEAD) feil.push(`Testkjøringen i Actions gjelder ${kort(ci.commit)}, ikke ${kort(HEAD)}.`);
   if (ci.arbeidstre !== 'rent') feil.push('Testkjøringen i Actions hadde endringer som ikke var committet.');
+  const testversjon = (git('rev-parse', REF + ':test') || '').slice(0, 12);
+  if (ci.testversjon !== testversjon) feil.push(`Testkjøringen i Actions oppgir testversjon ${ci.testversjon}, men test/ på ${kort(HEAD)} har ${testversjon}.`);
   for (const [n, v] of Object.entries(ci.suiter || {})) {
     if (v === 'feil' || v === 'ikke-kjort') (RADGIVENDE.has(n) && v === 'feil' ? varsler : feil).push(`Actions: suiten ${n} er ${v}${RADGIVENDE.has(n) ? ' (rådgivende)' : ''}.`);
     else if (v === 'varsel') varsler.push(`Actions: suiten ${n} gir varsel. Den er rådgivende til kravene er gjeldende.`);

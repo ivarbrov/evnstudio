@@ -45,7 +45,7 @@ Ett lag erstatter aldri et annet. Grønne tester er ikke en QA-vurdering, og en 
 
 **Risiko:**
 - Nøkkelen ligger uten passord på denne PC-en. Den som har tilgang til PC-en, kan pushe utviklingsgrener og tagger, men ikke endre `main`. Tilgangen fjernes ved å slette deploy key på GitHub.
-- Nøkkelen kan også pushe endrede filer i `.github/workflows/` på en utviklingsgren. Det er lav risiko så lenge workflows bare har lesetilgang og repoet ikke har hemmeligheter.
+- Nøkkelen kan også pushe endrede filer i `.github/workflows/` på en utviklingsgren. En slik arbeidsflyt kan selv be om skrivetilgang med `permissions:`. Innstillingen «Read» gjelder bare standardverdien. Beskyttelsen ligger derfor i regelen for `main`, i at `github-pages` bare tillater `main`, og i at repoet ikke har hemmeligheter.
 - PC-en er en jobb-PC. Eieren bør sjekke at en privat nøkkel for et personlig repo er i tråd med arbeidsgiverens regler.
 
 ## GitHub Pages og tagger
@@ -115,7 +115,7 @@ To arbeidsflyter gir to separate kontroller. Begge skal kreves i regelen for `ma
 5. **Testkvitteringen i rapporten:** gjelder samme commit, er laget på rent arbeidstre og har samme resultat som Actions i de obligatoriske suitene.
 6. **K3:** endrede spill har nytt versjonsnummer på startkortet, og det står i `ENDRINGSLOGG.md`.
 
-**Hvorfor resultatfilen kan brukes:** Testene som lager den, kjører PR-ens kode, og den kan i prinsippet påvirke resultatet. Men punkt 1 sikrer at testskriptene og arbeidsflyten er de samme som på `main`. Resultatfilen behandles bare som data. Stemmer den ikke med QA-rapportens kvittering, stopper PR-en.
+**Hvorfor resultatfilen kan brukes:** Punkt 1 sikrer at testskriptene og arbeidsflyten er de samme som på `main`, og resultatfilen må oppgi samme testversjon som `test/` på commiten. Hvilke suiter som er rådgivende, leses fra `main`, ikke fra filen. Testene kjører likevel PR-ens spillkode i samme nettleser. Spillkode som med vilje skrev til testresultatet, kunne i prinsippet påvirke det. Det er en restrisiko så lenge bare eieren og Claude kan pushe grener. Resultatfilen behandles bare som data. Stemmer den ikke med QA-rapportens kvittering, stopper PR-en.
 
 **Ulikt resultat i Actions og lokalt:** Kravene senkes ikke automatisk. PR-en stopper, og forskjellen undersøkes.
 
