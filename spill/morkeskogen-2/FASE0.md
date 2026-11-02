@@ -1,6 +1,6 @@
 # Mørkeskogen 2.0 – fase 0: status til gjennomgang (2.11.2026)
 
-**Gren:** `morkeskogen-2.0`. `main` (f88263c) og evnstudio.no er uendret. Fase 1 er ikke startet.
+**Gren:** `morkeskogen-2.0`. `main` (f88263c) og evnstudio.no er uendret. G0 er godkjent. Forberedelsene til fase 1 er dokumentert og bestått (se pkt. 2 og 4).
 
 ## 1. Logikkflytting (grunnlaget for tvillingen)
 - **Verktøy:** `verktoy/del-opp.mjs` deler hovedskriptet i 5.6.2 i 499 toppnivåblokker:
