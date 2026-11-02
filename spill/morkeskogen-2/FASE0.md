@@ -34,22 +34,40 @@
 - **Lagring:** Lagringene testes som **kopier** i en midlertidig profil. Ingen ekte spillerfremgang berøres.
 - **Original uendret:** Originalfilens sha256 kontrolleres før og etter.
 
-**Resultat:** 5 scener, 3 556 bilder (ca. 59 s spilltid).
+**Første resultat (før G0):** 5 scener, 3 556 bilder. Original mot original 5/5, original mot 2.0 5/5, mutanten ble oppdaget i alle 5.
+
+**Utvidet resultat (2.11.2026, etter G0):** 12 scener, 10 022 bilder (ca. 167 s spilltid). Etter hver scene lastes spillet på nytt fra en kopi av lagringen, og tilstanden sammenlignes igjen.
 
 | Sammenligning | Scener med lik tilstand | Lik etter ny lasting fra lagringskopi | Konklusjon |
 |---|---|---|---|
-| Original mot original | 5 av 5 | 5 av 5 | Testen er deterministisk |
-| Original mot 2.0 (flyttet logikk) | **5 av 5** | **5 av 5** | Ingen avvik i spillogikk eller lagring |
-| Original mot mutant (fart 170 → 171) | 0 av 5 (avvik funnet etter 40–192 bilder) | – | Testen oppdager en liten logikkendring |
+| Original mot 2.0 (flyttet logikk) | **12 av 12** | **12 av 12** | Ingen avvik i spillogikk eller lagring |
+| Original mot mutant (fart 170 → 171) | 2 av 12 (avvik i 10) | – | Oppdaget overalt der helten går selv |
+| Original mot mutant2 (togfart 300 → 301, verdensfrø +1) | 0 av 2 (tog, ny verden) | – | Dekker de to scenene den første mutanten ikke traff |
 
-**Kjent unntak:** `evn-spilletid-morkeskogen` skrives av en sanntidstimer i EVN-PAUSE, ikke av spillogikken. Den sammenlignes derfor ikke. Det første kjøreforsøket viste at tidspunktet varierer.
+Den første mutanten ble ikke oppdaget i «tog» og «ny verden». Grunnen er at helten der flyttes direkte og ikke går selv. Derfor ble mutant2 laget med feil akkurat i de to systemene, og den ble oppdaget i begge.
 
-**Dekningshull (rettes før G1):**
-- **Hugging:** Scenen ga ikke felt tre. Plassering og sikte må justeres.
-- **Bygging:** Hytta ble ikke bygd. Halmseng og bålnivå 2 ble bygd.
-- **Søvn:** Søvn ble ikke utløst.
-- **Ikke dekket ennå:** fiske, lasso og tamme dyr, Beinslottet, tog og Kaktusbyen, oppdrag med bossen, og «Lag en helt ny verden».
-- **Ekte lagringer:** Lagringstesten bruker lagringer laget av testen selv. Ekte lagringer fra Evens enheter kan legges til som kopier (eksport fra nettleseren). Det krever en voksen.
+**Hver scene er kontrollert for at handlingen faktisk skjedde.** Hendelsene leses fra originalen; 2.0 hadde samme tilstand.
+
+| Scene | Bekreftet effekt |
+|---|---|
+| hugging_felling | Treet er felt, og ved er samlet (3) |
+| hytte_seng_sovn | Hytte og halmseng er bygd fra byggemenyen; søvn er startet i senga (kveld); oppdrag fullført (2) |
+| fiske | Fisk er fanget med stang ved innsjøen (1 art i fiskeboka, XP gitt) |
+| lasso | Ett dyr er temmet med lasso og følger etter |
+| beinslottet | Helten er inne i Beinslottet (etasje 0); kamp (liv 96); oppdrag fullført (1) |
+| tog | Påstigning ved perrong A, tur, framme ved B, ute av toget. Helten endte med 0 liv etter ventetiden – likt på begge sider |
+| ny_verden | «Lag en helt ny verden» er trykket to ganger (bekreftelse); nytt verdensfrø er lagret |
+| bygging_og_sovn | Halmseng og bålnivå 2 |
+| natt_og_monstre, vaapen, start_og_gange, hugging_og_baal | Som før |
+
+**Kjent unntak:** `evn-spilletid-morkeskogen` skrives av en sanntidstimer i EVN-PAUSE, ikke av spillogikken. Den sammenlignes derfor ikke.
+
+**Metode i de nye scenene:** For å komme raskt til riktig sted settes heltens plass og eventuelt ressurser eller XP direkte. Dette gjøres med nøyaktig samme verdier på begge sider. Selve handlingen (hugge, bygge, sove, kaste, fiske, gå om bord) utføres med vanlige tastetrykk og menyknapper, slik at spillets egen kode kjører.
+
+**Gjenstående dekning (ikke krav for G1, foreslås senere):**
+- oppdrag med bossen og samtaler i Kaktusbyen
+- Beinslottet lenger inn (etasje 1–2, kister)
+- ekte lagringer fra Evens enheter som testkopier (krever en voksen)
 
 ## 3. Ytelsesmålinger (prototypen)
 **iPhone (iOS 18.7, Claude-appen), stil 2, Middels, DPR 1,5**, ytelsestest v1 (1.11 kl. 23:18):
@@ -138,7 +156,12 @@ Samme iPhone, stil 2, Middels, DPR 1,5. Skjermlås-hindring aktiv. **600 s aktiv
 - Kravet gjentas ved G2 og G6 med representative scener (natt, biomer, steder). Varmetesten bør da veksle mellom scener i stedet for å bruke bare én.
 - PC-måling (60 FPS) gjenstår.
 
-## 4. Til godkjenning (G0)
-1. ~~Ny varmetest med v2~~ Utført: BESTÅTT. Ta stilling til forslaget til B7 over.
-2. Godta at tvillingen er grunnlaget for fase 1, med dekningshullene over lukket før G1.
-3. Valgfritt: ekte lagringer fra Evens enheter som testkopier.
+## 4. G0 – godkjent 2.11.2026 (Ivar)
+- **Tvillingen** er godkjent som grunnlag for fase 1. Dekningen er utvidet før G1 (se over).
+- **B7 endelig:**
+  - Stil 2, Middels er standard på mobil.
+  - Mobil: minst 30 FPS i hvert hele minutt av en 10 minutters varmetest, og 1 % low ≥ 30 i testede representative scener.
+  - PC: mål 60 FPS. Dette må verifiseres på en ekte PC.
+  - Kravene gjelder den testede iPhonen. Eldre telefoner og Android vurderes separat.
+  - Målet er høyest mulig grafisk kvalitet, ikke bare minstekravet.
+- **Senere:** Varmetesten utvides til representativ last (natt, monstre, flere biomer, bygging). Prototypen alene er ikke bevis for at hele spillet oppfyller kravene.

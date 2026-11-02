@@ -1,0 +1,392 @@
+{
+ "kandidat": "mutant2",
+ "dato": "2026-11-02T06:47:14.542Z",
+ "filer": {
+  "original": "90dfc8f5aa1aa77ffbb243d9a125442ca0348e3f926142ab4f647291499e28e4",
+  "etter": "90dfc8f5aa1aa77ffbb243d9a125442ca0348e3f926142ab4f647291499e28e4"
+ },
+ "scener": {
+  "tog": {
+   "dekning": {
+    "observert": {
+     "togFra": "A",
+     "påToget": true,
+     "togTil": "B",
+     "ferdigRidd": true
+    },
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 1,
+    "valgtVåpen": "oks",
+    "xp": 80,
+    "oppdragFerdig": 2,
+    "hp": 0,
+    "prosjektiler": 0
+   },
+   "bilder": 1564,
+   "sekunder": 26.1,
+   "sammenligninger": 54,
+   "likTilstand": false,
+   "førsteAvvik": {
+    "bilde": 10,
+    "sekunder": 0.17,
+    "antall": 15,
+    "forskjeller": [
+     {
+      "sti": ".g.trees[0].x",
+      "a": "6540.166477300227",
+      "b": "10340.391267128289",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[0].y",
+      "a": "302.03624799847603",
+      "b": "128.10673832893372",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[0].s",
+      "a": "2.316666696802713",
+      "b": "2.5174651195993647",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[1].x",
+      "a": "7537.281224578619",
+      "b": "3336.7119047045708",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[1].y",
+      "a": "6361.50988124311",
+      "b": "6101.0915664583445",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[1].s",
+      "a": "2.4438010765006766",
+      "b": "2.631295366352424",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[2].x",
+      "a": "10122.142755016685",
+      "b": "8499.732945673168",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[2].y",
+      "a": "2722.1387023851275",
+      "b": "4816.484190374613",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[2].s",
+      "a": "2.3303264329442754",
+      "b": "2.841290938993916",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[2].kind",
+      "a": "\"snogran\"",
+      "b": "\"gran\"",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[3].x",
+      "a": "7885.357873663306",
+      "b": "4127.840892039239",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[3].y",
+      "a": "6364.13756005466",
+      "b": "1972.785395719111",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[3].s",
+      "a": "2.880773132969625",
+      "b": "2.46411669019144",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[3].kind",
+      "a": "\"gran\"",
+      "b": "\"snogran\"",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[4].x",
+      "a": "5702.109084613621",
+      "b": "663.2477696239948",
+      "kategori": "posisjon/kollisjon"
+     }
+    ]
+   },
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.kart",
+     "evn-spilletid-morkeskogen"
+    ],
+    "likMellomSidene": false
+   },
+   "lastetPåNytt": {
+    "likTilstand": false,
+    "avvik": [
+     {
+      "sti": ".g.trees[0].x",
+      "a": "6540.166477300227",
+      "b": "10340.391267128289",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[0].y",
+      "a": "302.03624799847603",
+      "b": "128.10673832893372",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[0].s",
+      "a": "2.316666696802713",
+      "b": "2.5174651195993647",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[1].x",
+      "a": "7537.281224578619",
+      "b": "3336.7119047045708",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[1].y",
+      "a": "6361.50988124311",
+      "b": "6101.0915664583445",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[1].s",
+      "a": "2.4438010765006766",
+      "b": "2.631295366352424",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[2].x",
+      "a": "10122.142755016685",
+      "b": "8499.732945673168",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[2].y",
+      "a": "2722.1387023851275",
+      "b": "4816.484190374613",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[2].s",
+      "a": "2.3303264329442754",
+      "b": "2.841290938993916",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[2].kind",
+      "a": "\"snogran\"",
+      "b": "\"gran\"",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[3].x",
+      "a": "7885.357873663306",
+      "b": "4127.840892039239",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[3].y",
+      "a": "6364.13756005466",
+      "b": "1972.785395719111",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[3].s",
+      "a": "2.880773132969625",
+      "b": "2.46411669019144",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[3].kind",
+      "a": "\"gran\"",
+      "b": "\"snogran\"",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[4].x",
+      "a": "5702.109084613621",
+      "b": "663.2477696239948",
+      "kategori": "posisjon/kollisjon"
+     }
+    ]
+   },
+   "rngTrekk": {
+    "logikk": 5963,
+    "grafikk": 3201028
+   },
+   "feil": []
+  },
+  "ny_verden": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 283527736,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 40,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 1,
+    "valgtVåpen": "oks",
+    "xp": 0,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 135,
+   "sekunder": 2.3,
+   "sammenligninger": 6,
+   "likTilstand": false,
+   "førsteAvvik": {
+    "bilde": 10,
+    "sekunder": 0.17,
+    "antall": 15,
+    "forskjeller": [
+     {
+      "sti": ".g.trees[0].x",
+      "a": "6540.166477300227",
+      "b": "10340.391267128289",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[0].y",
+      "a": "302.03624799847603",
+      "b": "128.10673832893372",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[0].s",
+      "a": "2.316666696802713",
+      "b": "2.5174651195993647",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[1].x",
+      "a": "7537.281224578619",
+      "b": "3336.7119047045708",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[1].y",
+      "a": "6361.50988124311",
+      "b": "6101.0915664583445",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[1].s",
+      "a": "2.4438010765006766",
+      "b": "2.631295366352424",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[2].x",
+      "a": "10122.142755016685",
+      "b": "8499.732945673168",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[2].y",
+      "a": "2722.1387023851275",
+      "b": "4816.484190374613",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[2].s",
+      "a": "2.3303264329442754",
+      "b": "2.841290938993916",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[2].kind",
+      "a": "\"snogran\"",
+      "b": "\"gran\"",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[3].x",
+      "a": "7885.357873663306",
+      "b": "4127.840892039239",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[3].y",
+      "a": "6364.13756005466",
+      "b": "1972.785395719111",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.trees[3].s",
+      "a": "2.880773132969625",
+      "b": "2.46411669019144",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[3].kind",
+      "a": "\"gran\"",
+      "b": "\"snogran\"",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.trees[4].x",
+      "a": "5702.109084613621",
+      "b": "663.2477696239948",
+      "kategori": "posisjon/kollisjon"
+     }
+    ]
+   },
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.verden",
+     "mork3d.kart"
+    ],
+    "likMellomSidene": false
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 169,
+    "grafikk": 3200637
+   },
+   "feil": []
+  }
+ },
+ "originalUendret": true
+}

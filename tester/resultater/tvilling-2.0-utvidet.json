@@ -1,0 +1,577 @@
+{
+ "kandidat": "2.0",
+ "dato": "2026-11-02T06:37:13.107Z",
+ "filer": {
+  "original": "90dfc8f5aa1aa77ffbb243d9a125442ca0348e3f926142ab4f647291499e28e4",
+  "etter": "90dfc8f5aa1aa77ffbb243d9a125442ca0348e3f926142ab4f647291499e28e4"
+ },
+ "scener": {
+  "start_og_gange": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 1,
+    "valgtVåpen": "oks",
+    "xp": 0,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 570,
+   "sekunder": 9.5,
+   "sammenligninger": 20,
+   "likTilstand": true,
+   "førsteAvvik": null,
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.kart"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 2838,
+    "grafikk": 3200709
+   },
+   "feil": []
+  },
+  "hugging_og_baal": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": false,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 2,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 1,
+    "valgtVåpen": "oks",
+    "xp": 0,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 516,
+   "sekunder": 8.6,
+   "sammenligninger": 28,
+   "likTilstand": true,
+   "førsteAvvik": null,
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.kart"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 161796,
+    "grafikk": 3247112
+   },
+   "feil": []
+  },
+  "natt_og_monstre": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 3,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 1,
+    "valgtVåpen": "oks",
+    "xp": 80,
+    "oppdragFerdig": 2,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 1126,
+   "sekunder": 18.8,
+   "sammenligninger": 43,
+   "likTilstand": true,
+   "førsteAvvik": null,
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.kart",
+     "evn-spilletid-morkeskogen"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 21165,
+    "grafikk": 3201066
+   },
+   "feil": []
+  },
+  "bygging_og_sovn": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 2,
+    "bygninger": [
+     "seng"
+    ],
+    "bålnivå": 2,
+    "ved": 27,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 2,
+    "valgtVåpen": "oks",
+    "xp": 90,
+    "oppdragFerdig": 2,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 569,
+   "sekunder": 9.5,
+   "sammenligninger": 30,
+   "likTilstand": true,
+   "førsteAvvik": null,
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.verden",
+     "mork3d.kart"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 2499,
+    "grafikk": 3204235
+   },
+   "feil": []
+  },
+  "hugging_felling": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": true,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 3,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 1,
+    "valgtVåpen": "oks",
+    "xp": 0,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 349,
+   "sekunder": 5.8,
+   "sammenligninger": 24,
+   "likTilstand": true,
+   "førsteAvvik": null,
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.kart"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 97259,
+    "grafikk": 3247086
+   },
+   "feil": []
+  },
+  "hytte_seng_sovn": {
+   "dekning": {
+    "observert": {
+     "sovnStartet": true
+    },
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 2,
+    "bygninger": [
+     "hytte",
+     "seng"
+    ],
+    "bålnivå": 1,
+    "ved": 37,
+    "nattTeller": 0,
+    "sover": true,
+    "eideVåpen": 2,
+    "valgtVåpen": "oks",
+    "xp": 90,
+    "oppdragFerdig": 2,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 941,
+   "sekunder": 15.7,
+   "sammenligninger": 44,
+   "likTilstand": true,
+   "førsteAvvik": null,
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.verden",
+     "mork3d.kart",
+     "evn-spilletid-morkeskogen"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 4522,
+    "grafikk": 3204342
+   },
+   "feil": []
+  },
+  "fiske": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 1,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 2,
+    "valgtVåpen": "stang",
+    "xp": 39,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 2311,
+   "sekunder": 38.5,
+   "sammenligninger": 130,
+   "likTilstand": true,
+   "førsteAvvik": null,
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.kart",
+     "evn-spilletid-morkeskogen"
+    ],
+    "likMellomSidene": false
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 106256,
+    "grafikk": 3205126
+   },
+   "feil": []
+  },
+  "lasso": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 1,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 2,
+    "valgtVåpen": "lasso",
+    "xp": 99999,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 556,
+   "sekunder": 9.3,
+   "sammenligninger": 30,
+   "likTilstand": true,
+   "førsteAvvik": null,
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.kart"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 42430,
+    "grafikk": 3200734
+   },
+   "feil": []
+  },
+  "beinslottet": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": 0,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 3,
+    "valgtVåpen": "oks",
+    "xp": 100039,
+    "oppdragFerdig": 1,
+    "hp": 96,
+    "prosjektiler": 0
+   },
+   "bilder": 610,
+   "sekunder": 10.2,
+   "sammenligninger": 27,
+   "likTilstand": true,
+   "førsteAvvik": null,
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.kart"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 102720,
+    "grafikk": 3216113
+   },
+   "feil": []
+  },
+  "tog": {
+   "dekning": {
+    "observert": {
+     "togFra": "A",
+     "påToget": true,
+     "togTil": "B",
+     "ferdigRidd": true
+    },
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 1,
+    "valgtVåpen": "oks",
+    "xp": 80,
+    "oppdragFerdig": 2,
+    "hp": 0,
+    "prosjektiler": 0
+   },
+   "bilder": 1564,
+   "sekunder": 26.1,
+   "sammenligninger": 54,
+   "likTilstand": true,
+   "førsteAvvik": null,
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.kart",
+     "evn-spilletid-morkeskogen"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 5963,
+    "grafikk": 3201028
+   },
+   "feil": []
+  },
+  "ny_verden": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 283527736,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 40,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 1,
+    "valgtVåpen": "oks",
+    "xp": 0,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 135,
+   "sekunder": 2.3,
+   "sammenligninger": 6,
+   "likTilstand": true,
+   "førsteAvvik": null,
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.verden",
+     "mork3d.kart"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 169,
+    "grafikk": 3200637
+   },
+   "feil": []
+  },
+  "vaapen": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 9,
+    "valgtVåpen": "oks",
+    "xp": 99999,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 1
+   },
+   "bilder": 775,
+   "sekunder": 12.9,
+   "sammenligninger": 42,
+   "likTilstand": true,
+   "førsteAvvik": null,
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.kart"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 90260,
+    "grafikk": 3200778
+   },
+   "feil": []
+  }
+ },
+ "originalUendret": true
+}

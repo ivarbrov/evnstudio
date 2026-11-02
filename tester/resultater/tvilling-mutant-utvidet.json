@@ -1,0 +1,1063 @@
+{
+ "kandidat": "mutant",
+ "dato": "2026-11-02T06:37:13.167Z",
+ "filer": {
+  "original": "90dfc8f5aa1aa77ffbb243d9a125442ca0348e3f926142ab4f647291499e28e4",
+  "etter": "90dfc8f5aa1aa77ffbb243d9a125442ca0348e3f926142ab4f647291499e28e4"
+ },
+ "scener": {
+  "start_og_gange": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 1,
+    "valgtVåpen": "oks",
+    "xp": 0,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 570,
+   "sekunder": 9.5,
+   "sammenligninger": 20,
+   "likTilstand": false,
+   "førsteAvvik": {
+    "bilde": 60,
+    "sekunder": 1,
+    "antall": 8,
+    "forskjeller": [
+     {
+      "sti": ".g.parts[4].y",
+      "a": "5589.997761121485",
+      "b": "5589.693526454429",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.parts[4].z0",
+      "a": "5589.1018720527645",
+      "b": "5588.797637385708",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.parts[5].y",
+      "a": "5590.031130275068",
+      "b": "5589.726895608012",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.parts[5].z0",
+      "a": "5589.1052089681225",
+      "b": "5588.800974301066",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.y",
+      "a": "5562.790957622729",
+      "b": "5562.336786785213",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.vy",
+      "a": "-169.98452995045986",
+      "b": "-170.98443895016842",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.spd",
+      "a": "169.98452995045986",
+      "b": "170.98443895016842",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.walk",
+      "a": "4.727290747055388",
+      "b": "4.743979606291014",
+      "kategori": "spilltilstand"
+     }
+    ]
+   },
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.kart"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 2838,
+    "grafikk": 3200709
+   },
+   "feil": []
+  },
+  "hugging_og_baal": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": false,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 2,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 1,
+    "valgtVåpen": "oks",
+    "xp": 0,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 516,
+   "sekunder": 8.6,
+   "sammenligninger": 28,
+   "likTilstand": false,
+   "førsteAvvik": {
+    "bilde": 410,
+    "sekunder": 6.83,
+    "antall": 10,
+    "forskjeller": [
+     {
+      "sti": ".g.parts[10].y",
+      "a": "5734.458204816763",
+      "b": "5734.157863274184",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.parts[10].z0",
+      "a": "5733.127572126992",
+      "b": "5732.827230584413",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.parts[11].y",
+      "a": "5733.169651458864",
+      "b": "5732.869309916285",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.parts[11].z0",
+      "a": "5733.010430912638",
+      "b": "5732.710089370059",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.y",
+      "a": "5702.370667955017",
+      "b": "5701.89045848452",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.vy",
+      "a": "-180.37078275868163",
+      "b": "-181.4144267169188",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.spd",
+      "a": "180.37078275868163",
+      "b": "181.4144267169188",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.walk",
+      "a": "4.895533845466782",
+      "b": "4.919882661467471",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.h",
+      "a": "-0.9025604583785949",
+      "b": "-0.9255663821164041",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.dc.rel",
+      "a": "-49.7190267412022",
+      "b": "-49.742032664940005",
+      "kategori": "spilltilstand"
+     }
+    ]
+   },
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.kart"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 161796,
+    "grafikk": 3247112
+   },
+   "feil": []
+  },
+  "natt_og_monstre": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 3,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 1,
+    "valgtVåpen": "oks",
+    "xp": 80,
+    "oppdragFerdig": 2,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 1126,
+   "sekunder": 18.8,
+   "sammenligninger": 43,
+   "likTilstand": false,
+   "førsteAvvik": {
+    "bilde": 40,
+    "sekunder": 0.67,
+    "antall": 11,
+    "forskjeller": [
+     {
+      "sti": ".g.monsters[0].x",
+      "a": "6082.434829159525",
+      "b": "6082.453876537896",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.monsters[0].y",
+      "a": "6465.912912363668",
+      "b": "6465.91732340535",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.parts[2].x",
+      "a": "6252.230780223558",
+      "b": "6252.539176000237",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.parts[3].x",
+      "a": "6252.579961898441",
+      "b": "6252.88835767512",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.fx[0].x",
+      "a": "6200.7555555555555",
+      "b": "6200.76",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.x",
+      "a": "6278.482032513046",
+      "b": "6278.950299884073",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.vx",
+      "a": "176.24213867357838",
+      "b": "177.1493234903567",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.spd",
+      "a": "176.24213867357838",
+      "b": "177.1493234903567",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.walk",
+      "a": "4.786559203308452",
+      "b": "4.806011367903383",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.h",
+      "a": "5.461154863436531",
+      "b": "5.447209840517816",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.dc.rel",
+      "a": "-43.35531141938707",
+      "b": "-43.36925644230579",
+      "kategori": "spilltilstand"
+     }
+    ]
+   },
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.kart",
+     "evn-spilletid-morkeskogen"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 21165,
+    "grafikk": 3201066
+   },
+   "feil": []
+  },
+  "bygging_og_sovn": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 2,
+    "bygninger": [
+     "seng"
+    ],
+    "bålnivå": 2,
+    "ved": 27,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 2,
+    "valgtVåpen": "oks",
+    "xp": 90,
+    "oppdragFerdig": 2,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 569,
+   "sekunder": 9.5,
+   "sammenligninger": 30,
+   "likTilstand": false,
+   "førsteAvvik": {
+    "bilde": 192,
+    "sekunder": 3.2,
+    "antall": 8,
+    "forskjeller": [
+     {
+      "sti": ".g.parts[6].x",
+      "a": "5852.367005327038",
+      "b": "5852.676960520714",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.parts[7].x",
+      "a": "5847.778759588733",
+      "b": "5848.088714782409",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.x",
+      "a": "5877.9962651784645",
+      "b": "5878.46879947072",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.vx",
+      "a": "177.45824323067947",
+      "b": "178.57400014740685",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.spd",
+      "a": "177.45824323067947",
+      "b": "178.57400014740685",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.walk",
+      "a": "4.781150663480285",
+      "b": "4.801458926454155",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.h",
+      "a": "1.5063595806190984",
+      "b": "1.491313748599775",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.dc.rel",
+      "a": "-47.31010670220451",
+      "b": "-47.32515253422383",
+      "kategori": "spilltilstand"
+     }
+    ]
+   },
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.verden",
+     "mork3d.kart"
+    ],
+    "likMellomSidene": false
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 2429,
+    "grafikk": 3204235
+   },
+   "feil": []
+  },
+  "hugging_felling": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": true,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 3,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 1,
+    "valgtVåpen": "oks",
+    "xp": 0,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 349,
+   "sekunder": 5.8,
+   "sammenligninger": 24,
+   "likTilstand": false,
+   "førsteAvvik": {
+    "bilde": 13,
+    "sekunder": 0.22,
+    "antall": 6,
+    "forskjeller": [
+     {
+      "sti": ".g.p.y",
+      "a": "5769.303422277342",
+      "b": "5769.280591288716",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.vy",
+      "a": "-106.74857268701075",
+      "b": "-107.37665972684522",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.spd",
+      "a": "106.74857268701075",
+      "b": "107.37665972684522",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.walk",
+      "a": "0.3464236787839696",
+      "b": "0.3474629164461326",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.h",
+      "a": "1.7001750679042833",
+      "b": "1.6993606796937026",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.dc.rel",
+      "a": "-47.11629121491932",
+      "b": "-47.1171056031299",
+      "kategori": "spilltilstand"
+     }
+    ]
+   },
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.kart"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 97259,
+    "grafikk": 3247086
+   },
+   "feil": []
+  },
+  "hytte_seng_sovn": {
+   "dekning": {
+    "observert": {
+     "sovnStartet": true
+    },
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 2,
+    "bygninger": [
+     "hytte",
+     "seng"
+    ],
+    "bålnivå": 1,
+    "ved": 37,
+    "nattTeller": 0,
+    "sover": true,
+    "eideVåpen": 2,
+    "valgtVåpen": "oks",
+    "xp": 90,
+    "oppdragFerdig": 2,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 941,
+   "sekunder": 15.7,
+   "sammenligninger": 44,
+   "likTilstand": false,
+   "førsteAvvik": {
+    "bilde": 13,
+    "sekunder": 0.22,
+    "antall": 8,
+    "forskjeller": [
+     {
+      "sti": ".g.fx[0].y",
+      "a": "5490.955994552875",
+      "b": "5490.951550108431",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.fx[0].z0",
+      "a": "5491.955994552875",
+      "b": "5491.951550108431",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.y",
+      "a": "5539.407081236073",
+      "b": "5539.38470450003",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.vy",
+      "a": "-103.84075503107022",
+      "b": "-104.4514580103443",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.spd",
+      "a": "103.84075503107022",
+      "b": "104.4514580103443",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.walk",
+      "a": "0.34349282681356286",
+      "b": "0.34453297350399015",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.h",
+      "a": "44.07023711236361",
+      "b": "44.07003004047337",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.dc.rel",
+      "a": "-4.746229170459998",
+      "b": "-4.746436242350235",
+      "kategori": "spilltilstand"
+     }
+    ]
+   },
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.verden",
+     "mork3d.kart",
+     "evn-spilletid-morkeskogen"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 4479,
+    "grafikk": 3204342
+   },
+   "feil": []
+  },
+  "fiske": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 1,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 2,
+    "valgtVåpen": "stang",
+    "xp": 39,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 2311,
+   "sekunder": 38.5,
+   "sammenligninger": 130,
+   "likTilstand": false,
+   "førsteAvvik": {
+    "bilde": 13,
+    "sekunder": 0.22,
+    "antall": 4,
+    "forskjeller": [
+     {
+      "sti": ".g.p.y",
+      "a": "6976.218864197531",
+      "b": "6976.196622222222",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.vy",
+      "a": "-102.95703703703737",
+      "b": "-103.562666666667",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.spd",
+      "a": "102.95703703703737",
+      "b": "103.562666666667",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.walk",
+      "a": "0.34257781325623327",
+      "b": "0.3436183610913729",
+      "kategori": "spilltilstand"
+     }
+    ]
+   },
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.kart",
+     "evn-spilletid-morkeskogen"
+    ],
+    "likMellomSidene": false
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 106256,
+    "grafikk": 3205126
+   },
+   "feil": []
+  },
+  "lasso": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 1,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 2,
+    "valgtVåpen": "lasso",
+    "xp": 99999,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 556,
+   "sekunder": 9.3,
+   "sammenligninger": 30,
+   "likTilstand": false,
+   "førsteAvvik": {
+    "bilde": 12,
+    "sekunder": 0.2,
+    "antall": 6,
+    "forskjeller": [
+     {
+      "sti": ".g.p.y",
+      "a": "6069.045401526681",
+      "b": "6069.033602874532",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.vy",
+      "a": "-74.9292119381689",
+      "b": "-75.37046440040801",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.spd",
+      "a": "74.9292119381689",
+      "b": "75.37046440040801",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.walk",
+      "a": "0.20366060151295484",
+      "b": "0.20434744650499426",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.h",
+      "a": "19.724820796029405",
+      "b": "19.725653847031214",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.dc.rel",
+      "a": "-29.0916454867942",
+      "b": "-29.09081243579239",
+      "kategori": "spilltilstand"
+     }
+    ]
+   },
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.kart"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 42430,
+    "grafikk": 3200734
+   },
+   "feil": []
+  },
+  "beinslottet": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": 0,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 3,
+    "valgtVåpen": "oks",
+    "xp": 100039,
+    "oppdragFerdig": 1,
+    "hp": 96,
+    "prosjektiler": 0
+   },
+   "bilder": 610,
+   "sekunder": 10.2,
+   "sammenligninger": 27,
+   "likTilstand": false,
+   "førsteAvvik": {
+    "bilde": 70,
+    "sekunder": 1.17,
+    "antall": 6,
+    "forskjeller": [
+     {
+      "sti": ".g.parts[4].x",
+      "a": "9934.14595745637",
+      "b": "9934.45019212342",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.parts[5].x",
+      "a": "9938.122619601367",
+      "b": "9938.426854268417",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.x",
+      "a": "9963.456379478539",
+      "b": "9963.910550316046",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.vx",
+      "a": "169.98452995045986",
+      "b": "170.98443895016842",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.spd",
+      "a": "169.98452995045986",
+      "b": "170.98443895016842",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.walk",
+      "a": "4.727290747055372",
+      "b": "4.743979606290999",
+      "kategori": "spilltilstand"
+     }
+    ]
+   },
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.kart"
+    ],
+    "likMellomSidene": false
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 102720,
+    "grafikk": 3216113
+   },
+   "feil": []
+  },
+  "tog": {
+   "dekning": {
+    "observert": {
+     "togFra": "A",
+     "påToget": true,
+     "togTil": "B",
+     "ferdigRidd": true
+    },
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 1,
+    "valgtVåpen": "oks",
+    "xp": 80,
+    "oppdragFerdig": 2,
+    "hp": 0,
+    "prosjektiler": 0
+   },
+   "bilder": 1564,
+   "sekunder": 26.1,
+   "sammenligninger": 54,
+   "likTilstand": true,
+   "førsteAvvik": null,
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.kart",
+     "evn-spilletid-morkeskogen"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 5963,
+    "grafikk": 3201028
+   },
+   "feil": []
+  },
+  "ny_verden": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 283527736,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 40,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 1,
+    "valgtVåpen": "oks",
+    "xp": 0,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 0
+   },
+   "bilder": 135,
+   "sekunder": 2.3,
+   "sammenligninger": 6,
+   "likTilstand": true,
+   "førsteAvvik": null,
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.verden",
+     "mork3d.kart"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 169,
+    "grafikk": 3200637
+   },
+   "feil": []
+  },
+  "vaapen": {
+   "dekning": {
+    "observert": null,
+    "verdensfrø": 166771183,
+    "fisk": null,
+    "fiskebok": 0,
+    "tammeDyr": 0,
+    "rir": false,
+    "togStatus": "wait",
+    "slottEtasje": -1,
+    "treFelt": null,
+    "monstre": 0,
+    "bygninger": [],
+    "bålnivå": 1,
+    "ved": 0,
+    "nattTeller": 0,
+    "sover": false,
+    "eideVåpen": 9,
+    "valgtVåpen": "oks",
+    "xp": 99999,
+    "oppdragFerdig": 0,
+    "hp": 100,
+    "prosjektiler": 1
+   },
+   "bilder": 775,
+   "sekunder": 12.9,
+   "sammenligninger": 42,
+   "likTilstand": false,
+   "førsteAvvik": {
+    "bilde": 110,
+    "sekunder": 1.83,
+    "antall": 4,
+    "forskjeller": [
+     {
+      "sti": ".g.p.y",
+      "a": "5591.10923627366",
+      "b": "5590.821643545856",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.vy",
+      "a": "-169.65606415256906",
+      "b": "-170.65404100052532",
+      "kategori": "posisjon/kollisjon"
+     },
+     {
+      "sti": ".g.p.spd",
+      "a": "169.65606415256906",
+      "b": "170.65404100052532",
+      "kategori": "spilltilstand"
+     },
+     {
+      "sti": ".g.p.walk",
+      "a": "3.079209400863267",
+      "b": "3.0867978148504345",
+      "kategori": "spilltilstand"
+     }
+    ]
+   },
+   "lagringEtterScene": {
+    "nøkler": [
+     "mork3d.helt",
+     "mork3d.kart"
+    ],
+    "likMellomSidene": true
+   },
+   "lastetPåNytt": {
+    "likTilstand": true,
+    "avvik": null
+   },
+   "rngTrekk": {
+    "logikk": 90260,
+    "grafikk": 3200778
+   },
+   "feil": []
+  }
+ },
+ "originalUendret": true
+}
