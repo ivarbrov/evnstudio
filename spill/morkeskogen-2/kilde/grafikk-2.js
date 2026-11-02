@@ -670,7 +670,7 @@ function initR3() {
         vec2 tn = normalize(vTan), pp = vec2(-tn.y, tn.x), gw = tn * wg.x + pp * wg.y;
         vec3 nW = normalize(vec3(-gw.x * 2.5, 1.0, -gw.y * 2.5));
         normal = normalize((viewMatrix * vec4(nW, 0.0)).xyz);`)
-      .replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );', `
+      .replace('#include <opaque_fragment>', `   // 2.0: fra r154 ligger gl_FragColor-linja i opaque_fragment (elva var uten speiling og glimt i r187)
         vec3 V = normalize(cameraPosition - vWp);
         float fres = pow(1.0 - clamp(dot(V, nW), 0.0, 1.0), 3.0);
         outgoingLight = mix(outgoingLight, uSky, fres * .55);                                              // himmelen speiler seg

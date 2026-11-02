@@ -5,6 +5,7 @@
 // Bruk (fra repo-roten): node spill/morkeskogen-2/verktoy/bygg-spill.mjs
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 
 const ORIG = 'spill/morkeskogen/index.html', K = 'spill/morkeskogen-2/kilde', UT = 'spill/morkeskogen-2/spill';
 const les = f => readFileSync(f, 'utf8');
@@ -35,6 +36,10 @@ const endredeGrafikkblokker = [...G.keys()].filter(i => G.get(i) !== G0.get(i));
 const helt = kropp === orig;
 console.log(JSON.stringify({ logikkblokker: L.size, grafikkblokker: G.size, logikkUendret: avvik.length === 0 && låstLik, låsteKopierLikOriginal: låstLik, avvikendeLogikkblokker: avvik, endredeGrafikkblokker, heleSkriptetLikt: helt, sha256Original: sha(orig), sha256Bygd: sha(kropp) }, null, 1));
 if (avvik.length || !låstLik) { console.error('STOPP: logikkblokker er endret'); process.exit(1); }
+
+// Shader-erstatninger må treffe i r187
+const sj = spawnSync('node', ['spill/morkeskogen-2/verktoy/sjekk-shader.mjs', `${K}/grafikk-2.js`], { encoding: 'utf8' });
+console.log(sj.stdout.trim()); if (sj.status) { console.error('STOPP: shader-erstatning treffer ikke'); process.exit(1); }
 
 // Skriv 2.0-utgaven: samme HTML, hovedskriptet som egen fil, stier ett nivå dypere
 mkdirSync(UT, { recursive: true });

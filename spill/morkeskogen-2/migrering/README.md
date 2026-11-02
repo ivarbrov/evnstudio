@@ -10,3 +10,5 @@
 6. Stiene er ett nivå dypere (`../../../`), og testkroken `window.__dbg` er lagt til.
 
 Dette er en teknisk test, ikke en ny versjon. Lagring og spillmekanikk er uendret.
+
+**Kjent feil i denne testkopien (funnet 2.11 i fase 1):** Elvas shader-tillegg (speiling, skum og solglimt) erstatter `gl_FragColor`-linja, som ikke finnes i r187. Effekten forsvinner derfor uten feilmelding her. Rettet i 2.0-bygget (`kilde/grafikk-2.js`), og `verktoy/sjekk-shader.mjs` stopper nå bygget hvis en shader-erstatning ikke treffer.
