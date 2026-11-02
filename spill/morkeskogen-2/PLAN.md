@@ -1,4 +1,4 @@
-# Mørkeskogen 2.0 – plan for full grafisk oppgradering (til godkjenning)
+# Mørkeskogen 2.0 – plan for full grafisk oppgradering
 
 **Versjon:** 2, 2.11.2026. **Status:** Strategien er godkjent av en voksen 1.11 kl. 22:51. **Fase 0 pågår** (se `claude/morkeskogen-2.0-fase0.md`). Fase 1, full integrering og publisering er **ikke** godkjent.
 
@@ -18,6 +18,7 @@
 3. Lagringstester bruker bare **kopier** i egne testprofiler.
 4. Alle avvik rapporteres. Endret spillogikk skilles fra rent visuelle forskjeller.
 5. Ny grafikk måles med representative scener og funksjoner, ikke bare startområdet. Måling per biom og sted legges inn i fase 2 og 5.
+
 **Gren:** `morkeskogen-2.0`. `main` er uendret (f88263c).
 **Grunnlag:**
 - Funksjonsoversikten for 5.6.2
@@ -45,7 +46,7 @@ Grafikken er ca. 4 000 linjer i 94 funksjoner. Spillogikken er ca. 2 300 linjer.
 | Grafikk og spillogikk må skilles (stor omskriving) | Unødvendig. Skillet finnes. Spillogikken flyttes **ordrett** til egen fil, og bare `draw` og byggefunksjonene erstattes. |
 | Alt må modelleres på nytt før noe kan testes | Nei. Gamle objekter vises først i en enkel overgangsversjon med nye materialer, og byttes ut område for område. Spillet er spillbart i hele perioden. |
 | Hele spillet skal deles i moduler | Bare grafikklaget deles i moduler, slik prototypen er bygd. Spillogikken flyttes som én fil, og oppdeling vurderes senere. |
-| Alt bør beholdes | Ubrukt kode (gammelt minikart og stort kart, skjult tørst, utviklerverktøy) påvirker ingen funksjoner. Den kan tas ut i fase 1 **hvis godkjent** (beslutning B4). |
+| Alt bør beholdes | Ubrukt kode (gammelt minikart og stort kart, skjult tørst, utviklerverktøy) påvirker ingen funksjoner. Den beholdes inntil funksjonslikhet er verifisert (B4). |
 | 3D-modeller må hentes utenfra | Bare dyr og fiender trenger det. Terreng, trær, vann, bygninger og effekter lages i kode, slik prototypen viser. |
 
 ## 2. Målarkitektur
@@ -87,7 +88,7 @@ Omfang i arbeidsøkter. Estimatene er usikre, ±50 %.
   - ID-ene `startBtn` og `againBtn` beholdes.
   - Det samme gjelder `#evnAvslutt`, `#evnSporsmal` og felles startkort.
 - **CSP:** Nye filer ligger på eget domene (`'self'`), så CSP trenger ingen endring.
-- **Ressurser:** CC0 eller egenprodusert, og alt føres i `LISENSER.md`. Bladteksturene er MIT-lisensiert av EZ-Tree-forfatteren (repoets `textures/LICENSE.md`, commit dcf309b). Det gjenstår en voksen godkjenning (B6).
+- **Ressurser:** CC0 eller egenprodusert, og alt føres i `LISENSER.md`. Bladteksturene er MIT-lisensiert av EZ-Tree-forfatteren (repoets `textures/LICENSE.md`, commit dcf309b). De kan brukes etter B6, med lisens- og krediteringstekst.
 
 ## 5. Funksjoner som kan bli ødelagt når grafikken byttes
 | # | Funksjon | Kobling i 5.6.2 | Hva kan gå galt | Tiltak og test |
@@ -149,7 +150,7 @@ Omfang i arbeidsøkter. Estimatene er usikre, ±50 %.
 | Trekanter | ≤ 0,6 M (skygge ≤ 0,2 M) | ≤ 1,5 M |
 | FPS | ≥ 30 stabilt i 10 min | ≥ 60 |
 
-Prototypen ligger i dag på 149 tegnekall og 0,38 M trekanter (mobil), og 213 tegnekall og 0,97 M trekanter (PC). FPS er ikke målt ennå.
+Prototypen (testnettleser) ligger på 149 tegnekall og 0,38 M trekanter (mobil), og 213 tegnekall og 0,97 M trekanter (PC). På iPhone (Middels) ble det målt 60 FPS og 136–159 tegnekall i 3 × 20 s. Varmetesten var ugyldig (se fase 0).
 
 ## 8. Kontrolliste fra funksjonsoversikten
 Hver linje må ha status «videreført og testet» før G7.
