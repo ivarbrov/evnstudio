@@ -44,7 +44,7 @@
 | 3 | Himmel, døgn og tåke | **Vurdert: beholdes.** Himmelen i 5.6.2 er mer avansert enn prototypens. Den har sol og måne fra `skyClock`, stjerner som dreier, horisontfarge per biom, dalståke og dis mot sola. Den går nå i den nye lysmodellen. Fargene justeres til stil 2 sammen med Even ved G2 |
 | 4 | Terreng for alle biomer fra `terrainH`/`groundH`/`biomeAt`, med teksturer fra prototypen | |
 | 5 | Kamera (nært og fjernt), samme styring | |
-| 6 | Robot-helten (GLB) med fem klipp | ✔ 2.11. `grafikk/helt.js`, pakket til `spill/grafikk2.js`.<br>• **Farge:** Modellen er uendret. Hovedfargen er gul (Evens valg 2.11).<br>• **Klipp:** Idle, Walking, Running, Jump og Punch velges ut fra fart, hopp og slag.<br>• **Høyde:** Den er ca. 80 som i 5.6.2.<br>• **Den gamle figuren** er usynlig rigg, og `R3.player.head` finnes fortsatt.<br>• **Våpen:** Våpen i høyre hånd er flyttet til robothånda, og lassoen starter fra robothånda.<br>• **Mangler (fase 3):** bue og skjold i venstre hånd, våpenstillinger og sekker (B2).<br>• **Til Even:** Det store hodet kan skjule litt av utsikten i nært kamera |
+| 6 | Robot-helten (GLB) med fem klipp | ✔ 2.11. `grafikk/helt.js`, pakket til `spill/grafikk2.js`.<br>• **Farge:** Modellen er uendret. Hovedfargen er gul (Evens valg 2.11, se beslutningen under).<br>• **Klipp:** Idle, Walking, Running, Jump og Punch velges ut fra fart, hopp og slag.<br>• **Høyde:** Den er ca. 80 som i 5.6.2.<br>• **Den gamle figuren** er usynlig rigg, og `R3.player.head` finnes fortsatt.<br>• **Våpen:** Våpen i høyre hånd er flyttet til robothånda, og lassoen starter fra robothånda.<br>• **Mangler (fase 3):** bue og skjold i venstre hånd, våpenstillinger og sekker (B2).<br>• **Til Even:** Det store hodet kan skjule litt av utsikten i nært kamera |
 | 7 | HUD og startkort i ny stil | |
 | 8 | Overgangsmaterialer for resten av objektene | |
 | 9 | G1-kontroll: tvilling, gamle lagringer, funksjonstest, konsoll og CSP, ytelse på iPhone | |
@@ -57,3 +57,20 @@
   - kontrollerer logikken og de låste kopiene
   - kjører shader-kontrollen
   - skriver `spill/`
+
+## Beslutning: robotens gulfarge (2.11.2026)
+- **Valg:** Even valgte **B «klassisk robotgul»** (`#ffcc00`, sRGB) kl. 11:05. Testvisningen hadde også A «sitrongul» (`#ffe135`) og C «gyldengul» (`#f6d35b`), side om side i dag- og nattlys med samme kamera, bakgrunn og klipp.
+  - Testvisning: `testvisning/robotfarge.html`. Bildene ligger i `tester/resultater/robotfarge/`.
+- **Endring:** Bare fargen på materialet «Main» er endret (`grafikk/helt.js`, `FARGER`/`GUL`).
+  - Den settes én gang ved lasting. Materialet deles av alle robotdelene, så det lages ingen kopier per bilde.
+- **Årsaken til det oransje preget:** Det kom verken fra materialfargen, lyset eller ACES.
+  - **Feil i overgangslaget:** Overgangslaget fargekonverterte robotens materialer **to ganger**. Det skjedde fordi GLB-en ble bygd med `add()` før den var merket som ny grafikk. Gul ble derfor mørk oransje, og grått ble nesten svart.
+  - **ACES alene:** Med samme farge og målte dagslysverdier flytter ACES fargetonen litt mot gult og demper metningen. ACES gjør altså ikke fargen mer oransje.
+  - **Rettet:** Overgangslaget gjør nå om nye objekter først når de henger i scenen, og hopper over alt som er merket `userData.evn2`.
+- **Ikke endret:** Lyssetting, eksponering og tonemapping.
+- **Kontroller:**
+  - Tvillingen er 12/12 lik etter rettingen.
+  - Ingen konsollfeil i spillet eller i testvisningen.
+  - Alle 14 klipp lastes.
+  - Bildene fra spillet ligger i `tester/resultater/robotfarge/spill-B.png` (dag, slag og natt).
+  - **Ikke verifisert:** Om øksa sitter riktig i hånda, kan ikke avgjøres fra bildene. Det kontrolleres med et eget nærbilde fra siden før G1.

@@ -6,17 +6,19 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-export const GUL = 0xf2c84b;             // robotens hovedfarge (Evens valg)
+// Hovedfargen (materialet «Main»), sRGB. Even valgte gul 2.11.2026; tre varianter til endelig valg.
+export const FARGER = { A: 0xffe135, B: 0xffcc00, C: 0xf6d35b, gammel: 0xf2c84b };
+export const GUL = FARGER.B;                 // Evens valg 2.11.2026 kl. 11:05: B «klassisk robotgul»
 export const HOYDE = 86;                 // målt: toppen havner på ca. 80, som toppen av hodet til helten i 5.6.2 (modellboksen er litt høyere enn figuren)
 
-function lesGLB() {
+function lesGLB(sti = 'modeller/helt-robot.glb') {
   const laster = new GLTFLoader();
   if (window.EVN_HELT_B64) {             // artefakt-kopien: modellen ligger innebygd (ingen nettverkskall)
     const bin = atob(window.EVN_HELT_B64), buf = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
     return laster.parseAsync(buf.buffer, '');
   }
-  return laster.loadAsync('modeller/helt-robot.glb');
+  return laster.loadAsync(sti);
 }
 
 // Lager roboten og kobler den til den gamle figuren P. Returnerer et løfte; draw() bruker roboten når den er klar.
@@ -28,7 +30,7 @@ export function lagRobot(P) {
     modell.scale.setScalar(k); modell.position.y = -box.min.y * k; rot.add(modell);
     modell.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; } });
     // Even (2.11.2026): «jeg vil at karakteren skal være gul». Hovedfargen (Main) er gul; grått og svart er som før.
-    modell.traverse(o => { if (o.isMesh && o.material && o.material.name === 'Main') o.material.color.setHex(GUL).convertSRGBToLinear(); });
+    settFarge(modell, GUL);
     let hånd = null; modell.traverse(o => { if (o.isBone && o.name === 'Hand.R') hånd = o; });
     const mix = new THREE.AnimationMixer(modell), klipp = {};
     for (const a of gltf.animations) klipp[a.name] = mix.clipAction(a);
@@ -40,6 +42,29 @@ export function lagRobot(P) {
     skjulGammelFigur(P, R);
     P.robot = R;
     return R;
+  });
+}
+
+// Setter hovedfargen. sRGB-hex -> lineær (THREE.ColorManagement er av i overgangen, så omregningen gjøres her).
+// Materialet deles av alle delene av roboten, så dette er én endring, ikke én per del eller per bilde.
+export function settFarge(modell, hex) {
+  const sett = new Set(); modell.traverse(o => { if (o.isMesh && o.material && o.material.name === 'Main') sett.add(o.material); });
+  for (const m of sett) m.color.setHex(hex).convertSRGBToLinear();
+  return sett.size;
+}
+
+// Testvisning: egen robot med egen farge (lastes for seg, så hver robot har sine egne tre materialer)
+export function lagRobotVisning(hex, sti) {
+  return lesGLB(sti).then(gltf => {                         // egen lasting per robot: ingen deling med spillets robot
+    const modell = gltf.scene, rot = new THREE.Group();
+    modell.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
+    modell.traverse(o => { o.userData.evn2 = true; if (o.material) o.material.userData.evn2 = true; });
+    const box = new THREE.Box3().setFromObject(modell), k = HOYDE / (box.max.y - box.min.y);
+    modell.scale.setScalar(k); modell.position.y = -box.min.y * k; rot.add(modell);
+    settFarge(modell, hex);
+    const mix = new THREE.AnimationMixer(modell);
+    for (const a of gltf.animations) if (a.name === 'Idle') mix.clipAction(a).play();
+    return { rot, modell, mix, klipp: gltf.animations.map(a => a.name) };
   });
 }
 

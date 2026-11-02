@@ -52,6 +52,7 @@ window.EVN2_OVERGANG = (function () {
   }
   function gjennomgå(rot) {
     rot.traverse(o => {
+      if (o.userData.evn2) return;                       // ny grafikk
       if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(materiale);
       if (o.geometry && o.material && (Array.isArray(o.material) ? o.material.some(m => m.vertexColors) : o.material.vertexColors)) geometri(o.geometry);
       if (o.isInstancedMesh && o.instanceColor && !o.instanceColor[FERDIG]) {
@@ -66,9 +67,15 @@ window.EVN2_OVERGANG = (function () {
   let n = 0;
   // Objekter som legges til i scenen (også senere i spillet), gjøres om med en gang
   const add0 = T.Object3D.prototype.add;
-  T.Object3D.prototype.add = function (...o) { const r = add0.apply(this, o); for (const x of o) if (x && x.isObject3D) gjennomgå(x); return r; };
+  // Objektet gjøres om ved neste bilde, ikke med en gang: da rekker ny grafikk (f.eks. GLB-er som bygges med add()
+  // mens de lastes) å merke seg med userData.evn2 først. Ellers ble robotens farger gjort om to ganger (for mørke og oransje).
+  const kø = [];
+  T.Object3D.prototype.add = function (...o) { const r = add0.apply(this, o); for (const x of o) if (x && x.isObject3D) kø.push(x); return r; };
   return {
     ramme(R3) {
+      // Bare det som faktisk henger i scenen. Ting som bygges utenfor (f.eks. en GLB under lasting) gjøres om
+      // når de senere legges inn i scenen (da står de i køen på nytt via sin forelder).
+      while (kø.length) { const x = kø.pop(); let o = x; while (o.parent) o = o.parent; if (o.isScene) gjennomgå(x); }
       if (n++ % 300 === 0) gjennomgå(R3.scene);   // sikkerhetsnett; nye objekter gjøres om allerede når de legges til (se add under)
       for (const m of alle) { farge(m.color); farge(m.emissive); }
       for (const l of [R3.hemi, R3.sun, R3.moon, R3.pLight, ...(R3.pool || [])]) { if (!l) continue; farge(l.color); if (l.groundColor) farge(l.groundColor); }

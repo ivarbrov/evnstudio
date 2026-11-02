@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mørkeskogen 2.0 – velg robotens gulfarge</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #111; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
+  #knapper { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; }
+  #knapper button { font-size: 18px; padding: 8px 16px; border-radius: 10px; border: 2px solid #fff; background: #222; color: #fff; }
+  #knapper button.på { background: #fff; color: #111; }
+  .navn { position: fixed; bottom: 14px; font-size: 40px; font-weight: 800; text-shadow: 0 2px 6px #000; transform: translateX(-50%); text-align: center; }
+  .navn small { display: block; font-size: 15px; font-weight: 500; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="knapper"><button id="dag" class="på">☀️ Dag</button><button id="natt">🔥 Natt ved bålet</button></div>
+<div class="navn" style="left:20%">A<small>Sitrongul</small></div>
+<div class="navn" style="left:50%">B<small>Klassisk robotgul</small></div>
+<div class="navn" style="left:80%">C<small>Gyldengul</small></div>
+<!-- Samme bibliotek, overgangslag og grafikkjerne som spillet (three.js r187, sRGB og ACES) -->
+<script src="../../../vendor/three-r187.global.js"></script>
+<script src="../spill/kompat-r187.js"></script>
+<script src="../spill/grafikk2.js"></script>
+<script>
+(() => {
+  // Lysverdiene er målt i spillet (2.0, kl. 40 = dag og kl. 160 = natt). Fargene er lineære, som i spillet etter overgangslaget.
+  const LYS = {
+    dag:  { hemi: [[.599, .719, .84], [.023, .042, .014], .808], sol: [[1, .904, .782], .921, [.65, .536, .539]], bakgrunn: [.292, .475, .602], bål: 0 },
+    natt: { hemi: [[.023, .025, .031], [.004, .005, .0085], .17], sol: [[.3185, .448, 1], .26, [-.117, .318, -.941]], bakgrunn: [.0016, .0023, .0048], bål: 2.6 },
+  };
+  const cv = document.getElementById('c');
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, preserveDrawingBuffer: true });
+  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1;   // som i spillet
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
+  const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(32, 1, 5, 5000);
+  camera.position.set(0, 70, 330); camera.lookAt(0, 45, 0);
+  const hemi = new THREE.HemisphereLight(); scene.add(hemi);
+  const sol = new THREE.DirectionalLight(); sol.castShadow = true; sol.shadow.mapSize.set(2048, 2048);
+  Object.assign(sol.shadow.camera, { left: -250, right: 250, top: 250, bottom: -250, near: 10, far: 2000 }); scene.add(sol, sol.target);
+  // Bakken (skogbunnfarge fra spillet)
+  const bakke = new THREE.Mesh(new THREE.CircleGeometry(900, 48), new THREE.MeshStandardMaterial({ color: new THREE.Color().setHex(0x4a5a2c).convertSRGBToLinear(), roughness: 1 }));
+  bakke.rotation.x = -Math.PI / 2; bakke.receiveShadow = true; bakke.material.userData.evn2 = true; scene.add(bakke);
+  // Ett «bål» foran hver robot, på nøyaktig samme sted i forhold til roboten (samme lys for A, B og C)
+  const X = [-130, 0, 130], bål = [];
+  for (const x of X) {
+    const l = new THREE.PointLight(new THREE.Color(1, .35, .085), 0, 300, 1); l.position.set(x + 40, 25, 70); scene.add(l);
+    const flamme = new THREE.Mesh(new THREE.ConeGeometry(9, 26, 10), new THREE.MeshBasicMaterial({ color: new THREE.Color().setHex(0xff7a1a).convertSRGBToLinear(), toneMapped: false })); flamme.position.set(x + 40, 13, 70); flamme.material.userData.evn2 = true; scene.add(flamme);
+    bål.push({ l, flamme });
+  }
+  let modus = 'dag';
+  function settLys() {
+    const L = LYS[modus];
+    hemi.color.setRGB(...L.hemi[0]); hemi.groundColor.setRGB(...L.hemi[1]); hemi.intensity = L.hemi[2];
+    sol.color.setRGB(...L.sol[0]); sol.intensity = L.sol[1];
+    sol.position.set(L.sol[2][0] * 800, Math.abs(L.sol[2][1]) * 800, L.sol[2][2] * 800 + 400);
+    scene.background = new THREE.Color().setRGB(...L.bakgrunn);
+    for (const b of bål) { b.l.intensity = L.bål; b.flamme.visible = L.bål > 0; }
+    for (const id of ['dag', 'natt']) document.getElementById(id).classList.toggle('på', id === modus);
+  }
+  document.getElementById('dag').onclick = () => { modus = 'dag'; settLys(); };
+  document.getElementById('natt').onclick = () => { modus = 'natt'; settLys(); };
+  window.__visModus = m => { modus = m; settLys(); };
+  settLys();
+  const F = EVN2.FARGER, roboter = [];
+  Promise.all(['A', 'B', 'C'].map((k, i) => EVN2.lagRobotVisning(F[k], '../spill/modeller/helt-robot.glb').then(R => { R.rot.position.x = X[i]; R.rot.rotation.y = 0.35; scene.add(R.rot); roboter[i] = R; })))
+    .then(() => { window.__klar = true; });
+  function størrelse() { const w = innerWidth, h = innerHeight; renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w < h ? 60 : 32; camera.updateProjectionMatrix(); }
+  addEventListener('resize', størrelse); størrelse();
+  // Alle tre spiller samme klipp (Idle) med samme tid
+  let t0 = performance.now();
+  window.__tegn = (tid) => { for (const R of roboter) if (R) R.mix.setTime(tid); renderer.render(scene, camera); };
+  (function løkke() { const t = (performance.now() - t0) / 1000; for (const R of roboter) if (R) R.mix.setTime(t); renderer.render(scene, camera); requestAnimationFrame(løkke); })();
+})();
+</script>
+</body>
+</html>
