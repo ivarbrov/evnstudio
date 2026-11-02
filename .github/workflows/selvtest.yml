@@ -1,0 +1,47 @@
+# BARE PÅ TESTGRENENE kvalitet/actions-test*. Skal aldri slås sammen med main.
+# Viser at publiseringssjekken blir rød på GitHub når resultatet fra testkjøringen er manipulert.
+# Alle jobbene her SKAL bli røde. Grunnen står som merknad på hver jobb.
+name: Selvtest av publiseringssjekken
+
+on:
+  push:
+    branches: ['kvalitet/actions-test*']
+
+permissions:
+  contents: read
+
+jobs:
+  manipulert:
+    name: Manipulert resultat – ${{ matrix.tilfelle }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        tilfelle: [uten-resultat, suite-mangler, ukjent-verdi, suite-feilet, feil-commit, royk-ikke-innfort]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Lag et manipulert testresultat
+        run: |
+          node -e '
+            const t = process.argv[1], fs = require("fs"), { execSync } = require("child_process");
+            const head = execSync("git rev-parse HEAD").toString().trim();
+            const tv = execSync("git rev-parse HEAD:test").toString().trim().slice(0, 12);
+            const o = { format: "evn1", commit: head, testversjon: tv, arbeidstre: "rent",
+              suiter: { statisk: "ok", royk: "ok", statistikk: "ikke-innfort", ui: "ikke-innfort" }, radgivende: ["ui"] };
+            if (t === "suite-mangler") delete o.suiter.royk;
+            if (t === "ukjent-verdi") o.suiter.statisk = "bestått";
+            if (t === "suite-feilet") o.suiter.royk = "feil";
+            if (t === "feil-commit") o.commit = "0".repeat(40);
+            if (t === "royk-ikke-innfort") o.suiter.royk = "ikke-innfort";
+            if (t !== "uten-resultat") fs.writeFileSync(process.env.RUNNER_TEMP + "/ci.json", JSON.stringify(o));
+          ' "${{ matrix.tilfelle }}"
+      - name: Publiseringssjekk (skal bli rød)
+        run: |
+          F="$RUNNER_TEMP/ci.json"
+          if [ -f "$F" ]; then node test/publiseringssjekk.mjs --base origin/main --ci-resultat "$F"; else node test/publiseringssjekk.mjs --base origin/main; fi
