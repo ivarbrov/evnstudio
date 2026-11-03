@@ -53,9 +53,9 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
 /* EVN Studio-maskoten på startkortet (samme oppbygging som Era Defenders, eget spills farger):
    står til venstre for målet, aldri over tittel eller Start. Skjules i liggende mobil. */
 #start .start-intro{display:flex;align-items:center;justify-content:center;gap:16px;text-align:left}
-#start .start-maskot{flex-shrink:0;width:70px;height:auto;max-height:120px;object-fit:contain;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45)) drop-shadow(0 0 18px rgba(255,200,80,.45))}
+#start .start-maskot{flex-shrink:0;width:50px;height:auto;max-height:120px;object-fit:contain;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45)) drop-shadow(0 0 18px rgba(255,200,80,.45))}
 #start{justify-content:flex-start} #start .kort{margin:auto} /* høyt kort på liten skjerm: start øverst og kan rulles, i stedet for å kuttes */
-@media (max-width:380px){#start .start-maskot{width:56px} #start .start-intro{gap:12px} #start .kort{gap:8px;padding:16px} #start .kort .maal{font-size:15px} #start .kort ul{font-size:14px;gap:3px} #start{padding-top:100px}} /* smale mobiler: tettere kort; plass til «Avslutt» */
+@media (max-width:380px){#start .start-maskot{width:40px} #start .start-intro{gap:12px} #start .kort{gap:8px;padding:16px} #start .kort .maal{font-size:15px} #start .kort ul{font-size:14px;gap:3px} #start{padding-top:100px}} /* smale mobiler: tettere kort; plass til «Avslutt» */
 @media (max-height:500px){#start .start-maskot{display:none} #start .start-intro{display:block;text-align:center}}
 @media (max-height:500px){#start .kort{gap:6px;padding:12px 18px} #start h1{font-size:34px} #start .kort ul{font-size:14px;gap:2px} #start .kort .maal{font-size:15px}}
 /* ===== EVN-startkort (felles oppbygging i alle EVN Studio-spill, fra 1.11.2026) =====
