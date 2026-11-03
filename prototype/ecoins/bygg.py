@@ -1,0 +1,10 @@
+import base64,json
+s=open('app.html').read()
+f=lambda p: base64.b64encode(open('/home/claude/evnstudio/fonter/'+p,'rb').read()).decode()
+s=s.replace('/*RUBIK800*/',f('rubik-latin-800-normal.woff2')).replace('/*NUNITO700*/',f('nunito-latin-700-normal.woff2')).replace('/*NUNITO800*/',f('nunito-latin-800-normal.woff2'))
+m=json.load(open('modell-ut.json'))
+s=s.replace('/*MODELL*/',json.dumps({'milepaeler':m['milepaeler'],'varer':m['varer']},ensure_ascii=False))
+s=s.replace('/*ROBOT*/',open('robot.b64').read())
+s=s.replace('/*GLTF*/',open('gltf.html').read())
+s=s.replace('<script>/*THREE*/</script>','<script>/* three.js r128 – MIT */\n'+open('three-r128.min.js').read()+'</script>')
+open('e-shop-prototype.html','w').write(s); print(len(s)//1024,'KB')

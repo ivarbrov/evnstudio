@@ -1,0 +1,840 @@
+{
+ "spill": {
+  "era": {
+   "navn": "Era Defenders",
+   "milepaeler": 14,
+   "maks": 495,
+   "publisert": true,
+   "timer_anslag": 2.9,
+   "min_til_forste_40": 24
+  },
+  "fossil": {
+   "navn": "Fossil Zoo",
+   "milepaeler": 16,
+   "maks": 375,
+   "publisert": true,
+   "timer_anslag": 2.2,
+   "min_til_forste_40": 27.5
+  },
+  "dyrepatruljen": {
+   "navn": "Dyrepatruljen",
+   "milepaeler": 16,
+   "maks": 475,
+   "publisert": true,
+   "timer_anslag": 3.0,
+   "min_til_forste_40": 24
+  },
+  "magiske-egg": {
+   "navn": "Magiske egg",
+   "milepaeler": 21,
+   "maks": 368,
+   "publisert": true,
+   "timer_anslag": 3.1,
+   "min_til_forste_40": 20
+  },
+  "morkeskogen-2": {
+   "navn": "Mørkeskogen 2.0",
+   "milepaeler": 19,
+   "maks": 440,
+   "publisert": false,
+   "timer_anslag": 4.2,
+   "min_til_forste_40": 45
+  }
+ },
+ "typer": {
+  "Ny spiller": {
+   "opptjent": 80,
+   "milepaeler": 4,
+   "timer_anslag": 0.7,
+   "snitt_varer_kjopt": 1.1,
+   "snitt_saldo_igjen": 27,
+   "saldo_igjen_min_maks": [
+    0,
+    80
+   ],
+   "andel_brukt": 0.66,
+   "varer_igjen_aa_onske_seg": 13.9,
+   "detaljer": [
+    {
+     "spill": "Era Defenders",
+     "tatt": 0,
+     "av": 14,
+     "E": 0
+    },
+    {
+     "spill": "Fossil Zoo",
+     "tatt": 2,
+     "av": 16,
+     "E": 30
+    },
+    {
+     "spill": "Dyrepatruljen",
+     "tatt": 2,
+     "av": 16,
+     "E": 50
+    },
+    {
+     "spill": "Magiske egg",
+     "tatt": 0,
+     "av": 21,
+     "E": 0
+    }
+   ]
+  },
+  "Vanlig spiller": {
+   "opptjent": 652,
+   "milepaeler": 33,
+   "timer_anslag": 4.9,
+   "snitt_varer_kjopt": 7.0,
+   "snitt_saldo_igjen": 56,
+   "saldo_igjen_min_maks": [
+    2,
+    242
+   ],
+   "andel_brukt": 0.91,
+   "varer_igjen_aa_onske_seg": 8.0,
+   "detaljer": [
+    {
+     "spill": "Era Defenders",
+     "tatt": 6,
+     "av": 14,
+     "E": 165
+    },
+    {
+     "spill": "Fossil Zoo",
+     "tatt": 10,
+     "av": 16,
+     "E": 200
+    },
+    {
+     "spill": "Dyrepatruljen",
+     "tatt": 7,
+     "av": 16,
+     "E": 175
+    },
+    {
+     "spill": "Magiske egg",
+     "tatt": 10,
+     "av": 21,
+     "E": 112
+    }
+   ]
+  },
+  "Svært aktiv spiller": {
+   "opptjent": 1713,
+   "milepaeler": 67,
+   "timer_anslag": 11.3,
+   "snitt_varer_kjopt": 15,
+   "snitt_saldo_igjen": 128,
+   "saldo_igjen_min_maks": [
+    128,
+    128
+   ],
+   "andel_brukt": 0.93,
+   "varer_igjen_aa_onske_seg": 0,
+   "detaljer": [
+    {
+     "spill": "Era Defenders",
+     "tatt": 14,
+     "av": 14,
+     "E": 495
+    },
+    {
+     "spill": "Fossil Zoo",
+     "tatt": 16,
+     "av": 16,
+     "E": 375
+    },
+    {
+     "spill": "Dyrepatruljen",
+     "tatt": 16,
+     "av": 16,
+     "E": 475
+    },
+    {
+     "spill": "Magiske egg",
+     "tatt": 21,
+     "av": 21,
+     "E": 368
+    }
+   ]
+  }
+ },
+ "scenario": {
+  "Lansering (4 publiserte spill)": {
+   "E_maks": 1713,
+   "butikkverdi": 1585,
+   "forhold_E_V": 1.08,
+   "antall_varer": 15,
+   "overskudd_ved_alt_kjopt": 128
+  },
+  "Med Mørkeskogen 2.0": {
+   "E_maks": 2153,
+   "butikkverdi": 1960,
+   "forhold_E_V": 1.1,
+   "antall_varer": 18,
+   "overskudd_ved_alt_kjopt": 193
+  }
+ },
+ "utvidelse": {
+  "mork_E": 440,
+  "reserve_verdi": 375,
+  "regel": "Ny butikkverdi ≈ ny E-coins / 1,1"
+ },
+ "milepaeler": {
+  "era": [
+   {
+    "id": "era.boss.1",
+    "tekst": "Første boss slått i Steinalderen (bølge 5)",
+    "E": 15,
+    "min": 12
+   },
+   {
+    "id": "era.epoke.1",
+    "tekst": "Steinalderen fullført – portalen åpnes (bølge 10)",
+    "E": 40,
+    "min": 12
+   },
+   {
+    "id": "era.boss.2",
+    "tekst": "Første boss slått i Oldtiden (bølge 5)",
+    "E": 15,
+    "min": 12
+   },
+   {
+    "id": "era.epoke.2",
+    "tekst": "Oldtiden fullført – portalen åpnes (bølge 10)",
+    "E": 40,
+    "min": 12
+   },
+   {
+    "id": "era.boss.3",
+    "tekst": "Første boss slått i Monsterskogen (bølge 5)",
+    "E": 15,
+    "min": 12
+   },
+   {
+    "id": "era.epoke.3",
+    "tekst": "Monsterskogen fullført – portalen åpnes (bølge 10)",
+    "E": 40,
+    "min": 12
+   },
+   {
+    "id": "era.boss.4",
+    "tekst": "Første boss slått i Piratskipet (bølge 5)",
+    "E": 15,
+    "min": 12
+   },
+   {
+    "id": "era.epoke.4",
+    "tekst": "Piratskipet fullført – portalen åpnes (bølge 10)",
+    "E": 40,
+    "min": 12
+   },
+   {
+    "id": "era.boss.5",
+    "tekst": "Første boss slått i Robotfabrikken (bølge 5)",
+    "E": 15,
+    "min": 12
+   },
+   {
+    "id": "era.epoke.5",
+    "tekst": "Robotfabrikken fullført – portalen åpnes (bølge 10)",
+    "E": 40,
+    "min": 12
+   },
+   {
+    "id": "era.boss.6",
+    "tekst": "Første boss slått i Romstasjonen (bølge 5)",
+    "E": 15,
+    "min": 12
+   },
+   {
+    "id": "era.epoke.6",
+    "tekst": "Romstasjonen fullført – portalen åpnes (bølge 10)",
+    "E": 40,
+    "min": 12
+   },
+   {
+    "id": "era.boss.7",
+    "tekst": "Første boss slått i Tidsvirvelen (bølge 5)",
+    "E": 15,
+    "min": 12
+   },
+   {
+    "id": "era.seier",
+    "tekst": "Tidsherren (sluttbossen) er slått",
+    "E": 150,
+    "min": 20
+   }
+  ],
+  "fossil": [
+   {
+    "id": "fossil.dyr.dimetrodon",
+    "tekst": "Dimetrodon vekket til live (5 deler)",
+    "E": 15,
+    "min": 12.5
+   },
+   {
+    "id": "fossil.dyr.oyenstikker",
+    "tekst": "Kjempeøyenstikker vekket til live (3 deler)",
+    "E": 15,
+    "min": 7.5
+   },
+   {
+    "id": "fossil.dyr.panserfisk",
+    "tekst": "Panserfisk vekket til live (3 deler)",
+    "E": 15,
+    "min": 7.5
+   },
+   {
+    "id": "fossil.dyr.trilobitt",
+    "tekst": "Trilobitt vekket til live (3 deler)",
+    "E": 15,
+    "min": 7.5
+   },
+   {
+    "id": "fossil.epoke.1",
+    "tekst": "Alle dyr i Jordas oldtid vekket",
+    "E": 40,
+    "min": 0
+   },
+   {
+    "id": "fossil.dyr.flygeogle",
+    "tekst": "Flygeøgle vekket til live (4 deler)",
+    "E": 15,
+    "min": 10.0
+   },
+   {
+    "id": "fossil.dyr.trex",
+    "tekst": "T-rex vekket til live (5 deler)",
+    "E": 15,
+    "min": 12.5
+   },
+   {
+    "id": "fossil.dyr.langhals",
+    "tekst": "Langhals vekket til live (5 deler)",
+    "E": 15,
+    "min": 12.5
+   },
+   {
+    "id": "fossil.dyr.ammonitt",
+    "tekst": "Ammonitt vekket til live (3 deler)",
+    "E": 15,
+    "min": 7.5
+   },
+   {
+    "id": "fossil.epoke.2",
+    "tekst": "Alle dyr i Jordas mellomalder vekket",
+    "E": 40,
+    "min": 0
+   },
+   {
+    "id": "fossil.dyr.ulv",
+    "tekst": "Ulv vekket til live (4 deler)",
+    "E": 15,
+    "min": 10.0
+   },
+   {
+    "id": "fossil.dyr.love",
+    "tekst": "Løve vekket til live (4 deler)",
+    "E": 15,
+    "min": 10.0
+   },
+   {
+    "id": "fossil.dyr.elefant",
+    "tekst": "Elefant vekket til live (5 deler)",
+    "E": 15,
+    "min": 12.5
+   },
+   {
+    "id": "fossil.dyr.mammut",
+    "tekst": "Mammut vekket til live (5 deler)",
+    "E": 15,
+    "min": 12.5
+   },
+   {
+    "id": "fossil.dyr.hval",
+    "tekst": "Hval vekket til live (5 deler)",
+    "E": 15,
+    "min": 12.5
+   },
+   {
+    "id": "fossil.epoke.3",
+    "tekst": "Alle dyr i Jordas nytid vekket",
+    "E": 100,
+    "min": 0
+   }
+  ],
+  "dyrepatruljen": [
+   {
+    "id": "dyrepatruljen.verden.1",
+    "tekst": "Alle 10 dyr reddet i Gata",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.verden.2",
+    "tekst": "Alle 10 dyr reddet i Byen",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.verden.3",
+    "tekst": "Alle 10 dyr reddet i Kjøpesenteret",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.verden.4",
+    "tekst": "Alle 10 dyr reddet i Snøverdenen",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.verden.5",
+    "tekst": "Alle 10 dyr reddet i Lavaverdenen",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.verden.6",
+    "tekst": "Alle 10 dyr reddet i Godterilandet",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.verden.7",
+    "tekst": "Alle 10 dyr reddet i Jungelen",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.verden.8",
+    "tekst": "Alle 10 dyr reddet i Gården",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.verden.9",
+    "tekst": "Alle 10 dyr reddet i Lekelandet",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.verden.10",
+    "tekst": "Alle 10 dyr reddet i Under havet",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.verden.11",
+    "tekst": "Alle 10 dyr reddet i Ørkenen",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.verden.12",
+    "tekst": "Alle 10 dyr reddet i Sumpen",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.verden.13",
+    "tekst": "Alle 10 dyr reddet i Skogen",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.verden.14",
+    "tekst": "Alle 10 dyr reddet i Gruva",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.verden.15",
+    "tekst": "Alle 10 dyr reddet i Eventyrlandet",
+    "E": 25,
+    "min": 12
+   },
+   {
+    "id": "dyrepatruljen.alle",
+    "tekst": "Alle 150 dyr i alle 15 verdener reddet",
+    "E": 100,
+    "min": 0
+   }
+  ],
+  "magiske-egg": [
+   {
+    "id": "egg.art.boblefrosk",
+    "tekst": "Første Boblefrosk klekket",
+    "E": 8,
+    "min": 4
+   },
+   {
+    "id": "egg.art.glitterkanin",
+    "tekst": "Første Glitterkanin klekket",
+    "E": 8,
+    "min": 4
+   },
+   {
+    "id": "egg.art.bladrev",
+    "tekst": "Første Bladrev klekket",
+    "E": 8,
+    "min": 4
+   },
+   {
+    "id": "egg.park.2",
+    "tekst": "Parknivå 2 nådd",
+    "E": 20,
+    "min": 8
+   },
+   {
+    "id": "egg.art.blomsterbie",
+    "tekst": "Første Blomsterbie klekket",
+    "E": 8,
+    "min": 4
+   },
+   {
+    "id": "egg.art.snopingvin",
+    "tekst": "Første Snøpingvin klekket",
+    "E": 8,
+    "min": 4
+   },
+   {
+    "id": "egg.art.perleoter",
+    "tekst": "Første Perleoter klekket",
+    "E": 8,
+    "min": 4
+   },
+   {
+    "id": "egg.park.3",
+    "tekst": "Parknivå 3 nådd",
+    "E": 20,
+    "min": 8
+   },
+   {
+    "id": "egg.art.lynkatt",
+    "tekst": "Første Lynkatt klekket",
+    "E": 12,
+    "min": 10
+   },
+   {
+    "id": "egg.art.flammehest",
+    "tekst": "Første Flammehest klekket",
+    "E": 12,
+    "min": 10
+   },
+   {
+    "id": "egg.art.vannskilpadde",
+    "tekst": "Første Vannskilpadde klekket",
+    "E": 12,
+    "min": 10
+   },
+   {
+    "id": "egg.park.4",
+    "tekst": "Parknivå 4 nådd",
+    "E": 20,
+    "min": 8
+   },
+   {
+    "id": "egg.art.regnbuesebra",
+    "tekst": "Første Regnbuesebra klekket",
+    "E": 12,
+    "min": 10
+   },
+   {
+    "id": "egg.art.lavaogle",
+    "tekst": "Første Lavaøgle klekket",
+    "E": 12,
+    "min": 10
+   },
+   {
+    "id": "egg.art.stjerneugle",
+    "tekst": "Første Stjerneugle klekket",
+    "E": 20,
+    "min": 15
+   },
+   {
+    "id": "egg.park.5",
+    "tekst": "Parknivå 5 nådd",
+    "E": 20,
+    "min": 8
+   },
+   {
+    "id": "egg.art.isdrage",
+    "tekst": "Første Isdrage klekket",
+    "E": 20,
+    "min": 15
+   },
+   {
+    "id": "egg.art.maaneenhjorning",
+    "tekst": "Første Måneenhjørning klekket",
+    "E": 20,
+    "min": 15
+   },
+   {
+    "id": "egg.park.6",
+    "tekst": "Parknivå 6 nådd",
+    "E": 20,
+    "min": 8
+   },
+   {
+    "id": "egg.art.ilddrev",
+    "tekst": "Første Ilddrev klekket",
+    "E": 40,
+    "min": 30
+   },
+   {
+    "id": "egg.alle",
+    "tekst": "Alle 15 arter i samleboka",
+    "E": 60,
+    "min": 0
+   }
+  ],
+  "morkeskogen-2": [
+   {
+    "id": "mork.oppdrag.natt1",
+    "tekst": "Overlev første natt",
+    "E": 15,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.jeger",
+    "tekst": "Jeger-oppdraget",
+    "E": 20,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.seng",
+    "tekst": "Bygg en seng",
+    "E": 10,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.sovet",
+    "tekst": "Sov i senga",
+    "E": 10,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.skjelett",
+    "tekst": "Skjelett-oppdraget",
+    "E": 15,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.fisker",
+    "tekst": "Fisker-oppdraget",
+    "E": 15,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.troll",
+    "tekst": "Troll-oppdraget",
+    "E": 20,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.stasjon",
+    "tekst": "Stasjon-oppdraget",
+    "E": 15,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.cowboy",
+    "tekst": "Cowboy-oppdraget",
+    "E": 15,
+    "min": 15
+   },
+   {
+    "id": "mork.niva.5",
+    "tekst": "Heltenivå 5",
+    "E": 20,
+    "min": 0
+   },
+   {
+    "id": "mork.oppdrag.vulkan",
+    "tekst": "Vulkan-oppdraget",
+    "E": 20,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.sheriff",
+    "tekst": "Sheriff-oppdraget (3 deler)",
+    "E": 25,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.lasso",
+    "tekst": "Lasso-oppdraget (5 deler)",
+    "E": 25,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.haidammen",
+    "tekst": "Haidammen",
+    "E": 20,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.dinoverden",
+    "tekst": "Dinoverdenen",
+    "E": 25,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.heksa",
+    "tekst": "Heksa",
+    "E": 40,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.overlevaren",
+    "tekst": "Overlevaren (5 netter)",
+    "E": 40,
+    "min": 15
+   },
+   {
+    "id": "mork.oppdrag.dinoslott",
+    "tekst": "Beinslottet – Skjelett-T-rex-kongen",
+    "E": 50,
+    "min": 15
+   },
+   {
+    "id": "mork.niva.10",
+    "tekst": "Heltenivå 10 (maks)",
+    "E": 40,
+    "min": 0
+   }
+  ]
+ },
+ "varer": [
+  {
+   "id": "vernehjelm",
+   "navn": "Vernehjelm",
+   "plass": "hode",
+   "pris": 40,
+   "kilde": "era"
+  },
+  {
+   "id": "steinhette",
+   "navn": "Steinalderhette",
+   "plass": "hode",
+   "pris": 40,
+   "kilde": "era"
+  },
+  {
+   "id": "ryggsekk",
+   "navn": "Ryggsekk",
+   "plass": "rygg",
+   "pris": 40,
+   "kilde": "ny"
+  },
+  {
+   "id": "pirathatt",
+   "navn": "Pirathatt",
+   "plass": "hode",
+   "pris": 75,
+   "kilde": "era"
+  },
+  {
+   "id": "vikinghjelm",
+   "navn": "Vikinghjelm",
+   "plass": "hode",
+   "pris": 75,
+   "kilde": "ny"
+  },
+  {
+   "id": "rod_kappe",
+   "navn": "Rød kappe",
+   "plass": "rygg",
+   "pris": 75,
+   "kilde": "era"
+  },
+  {
+   "id": "svart_kappe",
+   "navn": "Svart kappe",
+   "plass": "rygg",
+   "pris": 75,
+   "kilde": "era"
+  },
+  {
+   "id": "verktoybelte",
+   "navn": "Verktøybelte",
+   "plass": "rygg",
+   "pris": 75,
+   "kilde": "era"
+  },
+  {
+   "id": "ridderhjelm",
+   "navn": "Ridderhjelm",
+   "plass": "hode",
+   "pris": 120,
+   "kilde": "era"
+  },
+  {
+   "id": "faraokrone",
+   "navn": "Faraokrone",
+   "plass": "hode",
+   "pris": 120,
+   "kilde": "era"
+  },
+  {
+   "id": "romhjelm",
+   "navn": "Romhjelm",
+   "plass": "hode",
+   "pris": 120,
+   "kilde": "era"
+  },
+  {
+   "id": "oksygentank",
+   "navn": "Oksygentank",
+   "plass": "rygg",
+   "pris": 120,
+   "kilde": "era"
+  },
+  {
+   "id": "trollmannshatt",
+   "navn": "Trollmannshatt",
+   "plass": "hode",
+   "pris": 180,
+   "kilde": "era"
+  },
+  {
+   "id": "stjernekappe",
+   "navn": "Stjernekappe",
+   "plass": "rygg",
+   "pris": 180,
+   "kilde": "era"
+  },
+  {
+   "id": "gullkrone",
+   "navn": "Gullkrone",
+   "plass": "hode",
+   "pris": 250,
+   "kilde": "ny"
+  },
+  {
+   "id": "cowboyhatt",
+   "navn": "Cowboyhatt",
+   "plass": "hode",
+   "pris": 75,
+   "kilde": "reserve"
+  },
+  {
+   "id": "sheriffkappe",
+   "navn": "Sheriffkappe",
+   "plass": "rygg",
+   "pris": 120,
+   "kilde": "reserve"
+  },
+  {
+   "id": "beinkrone",
+   "navn": "Beinkrone",
+   "plass": "hode",
+   "pris": 180,
+   "kilde": "reserve"
+  }
+ ]
+}
