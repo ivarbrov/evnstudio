@@ -25,7 +25,7 @@ h1,h2,.lilita{font-family:'Lilita One',Nunito,sans-serif;font-weight:400;letter-
 .evn-merke{display:inline-block;font-family:'Lilita One',sans-serif;font-size:13px;letter-spacing:2px;color:#fff;background:linear-gradient(90deg,var(--bla),var(--lilla));padding:4px 12px;border-radius:999px}
 .kort h1{font-size:42px;margin:10px 0 4px;color:#e2701c;text-shadow:0 3px 0 #ffd9a8}
 .maal{display:flex;gap:12px;align-items:center;text-align:left;margin:12px 0;font-size:17px}
-.maal img{width:70px;height:auto;flex:none}
+.maal img{width:70px;height:auto;max-height:167px;flex:none}   /* EVN-roboten (vinker): samme bredde som gutten hadde, så teksten får like mye plass som før */
 .styring{text-align:left;background:#eef6ff;border-radius:14px;padding:10px 14px;font-size:15px;margin:10px 0;line-height:1.5}
 .styring b{display:inline-block;min-width:92px}
 .evn-start,.knapp{background:var(--gronn);color:#fff;font-size:22px;padding:14px 34px;border-radius:16px;box-shadow:0 5px 0 #14602f;margin:8px 4px;min-height:48px}
@@ -123,7 +123,7 @@ body.touch #pcKnapper{display:none}
     <span class="evn-merke">EVN STUDIO</span>
     <h1>Dyrepatruljen</h1>
     <div class="maal">
-      <img src="../../bilder/maskot-staende-260.webp" srcset="../../bilder/maskot-staende-260.webp 1x, ../../bilder/maskot-staende-520.webp 2x" width="70" height="167" alt="" decoding="async" onerror="this.remove()">
+      <img src="../../bilder/robot-start-vink-130.webp" srcset="../../bilder/robot-start-vink-130.webp 1x, ../../bilder/robot-start-vink-260.webp 2x" width="232" height="260" alt="" decoding="async" onerror="this.remove()">
       <div>Masse dyr har gått seg vill! Finn dem, snik deg innpå og fang dem med håven. Da kommer de trygt hjem til dyreparken din. Det er <b>15 verdener</b> å utforske!</div>
     </div>
     <div class="styring">
@@ -135,7 +135,7 @@ body.touch #pcKnapper{display:none}
     </div>
     <button class="evn-start" id="startBtn">Start ▶</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver">Versjon 0.10.15</div>
+    <div class="evn-ver">Versjon 0.10.16</div>
   </div>
 </div>
 
@@ -4011,7 +4011,7 @@ window.EVN_HELT_B64="Z2xURgIAAAB0FAcAEEMBAEpTT057ImFzc2V0Ijp7ImdlbmVyYXRvciI6IkZ
    Strukturen er laget for 15 verdener. Hver verden er en
    oppføring i VERDENER; bygde verdener har en bygg()-funksjon.
    ============================================================ */
-const VERSJON = 'v0.10.15';
+const VERSJON = 'v0.10.16';
 const LAGRE_NOKKEL = 'evn-dyrespillet-v1';
 const $ = id => document.getElementById(id);
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));

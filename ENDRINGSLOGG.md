@@ -6,6 +6,7 @@ er små – se på retning over flere uker, ikke på enkeltdager.
 
 | Dato | Hva | Spill | Kan påvirke |
 |---|---|---|---|
+| ikke publisert | **Dyrepatruljen v0.10.16: EVN-roboten vinker på startkortet** (bygger på 0.10.15). Startkortet viser den felles EVN-roboten som vinker i stedet for gutten (`bilder/robot-start-vink-130/260.webp`, 70 px bred som gutten, så teksten får like mye plass). Roboten i spillet er allerede den felles modellen (byte for byte lik `felles/robot/helt-robot.glb`, farge #ffcc00) og er ikke endret. Spillmekanikk, lagring og statistikk er uendret. | Dyrepatruljen | Ingen forventet effekt |
 | ikke publisert | **Dyrepatruljen v0.10.15: retting av heng.** Ble dyreboka åpnet rett etter det tiende dyret, ble ferdigkortet låst. Nå virker ferdigkortet. Ellers ingen endringer. | Dyrepatruljen | Ingen forventet effekt |
 | ikke publisert | **Dyrepatruljen v0.10.14: fokus også i dyreboka og «Start helt på nytt».** Samme fokusregel som i pausen: mens dialogen er åpen, kan ingenting bak få fokus eller trykk, og Tab går rundt i dialogen. Ellers ingen endringer. | Dyrepatruljen | Ingen forventet effekt |
 | ikke publisert | **Dyrepatruljen v0.10.13: lydbryter, melding uten 3D og fokus i pausen.** 🔊-knappen øverst (eller L) slår av og på all lyd, også plystringen, og valget huskes. Virker ikke 3D (WebGL), står det en forklaring på startkortet, og Start er slått av. Mens pausen, kartet eller «Vil du avslutte?» er åpen, kan ingenting bak få fokus eller trykk. Ellers ingen endringer i spillet. | Dyrepatruljen | Ingen forventet effekt |
