@@ -2,10 +2,14 @@
 (() => {
   const orig = /kamera[=-]original/.test(location.hash) || (() => { try { return sessionStorage.getItem('evnKamera') === 'original'; } catch (e) { return false; } })();
   const p = document.createElement('div');
-  p.style.cssText = 'position:fixed;left:50%;top:4px;transform:translateX(-50%);z-index:99999;background:rgba(0,0,0,.65);color:#fff;font:12px/1.3 system-ui;padding:4px 8px;border-radius:8px;display:flex;gap:6px;align-items:center;pointer-events:auto';
-  p.innerHTML = `<b>TEST</b><span id="tpK">Kamera: ${orig ? 'som 5.6.2' : 'nytt'}</span><button id="tpB">Bytt kamera</button><button id="tpM">Mål 60 s</button><span id="tpF"></span>`;
+  // Liten fane på venstre kant, midt på skjermen (dekker ikke HUD-en). Trykk på «TEST» for å åpne og lukke.
+  p.style.cssText = 'position:fixed;left:max(4px,env(safe-area-inset-left,0px));top:42%;z-index:99999;background:rgba(0,0,0,.7);color:#fff;font:11px/1.3 system-ui;padding:4px 6px;border-radius:8px;display:flex;flex-direction:column;gap:4px;align-items:flex-start;pointer-events:auto;max-width:150px';
+  p.innerHTML = `<b id="tpT" style="cursor:pointer">TEST ▸</b><span id="tpK">Kamera: ${orig ? 'som 5.6.2' : 'nytt'}</span><button id="tpB">Bytt kamera</button><button id="tpM">Mål 60 s</button><span id="tpF"></span>`;
   for (const b of p.querySelectorAll('button')) b.style.cssText = 'font:12px system-ui;padding:3px 6px;border-radius:6px;border:0';
   document.body.appendChild(p);
+  const deler = () => [...p.children].filter(c => c.id !== 'tpT');
+  let åpen = false; const vis = () => { for (const c of deler()) c.style.display = åpen ? '' : 'none'; p.querySelector('#tpT').textContent = åpen ? 'TEST ▾' : 'TEST ▸'; };
+  p.querySelector('#tpT').onclick = () => { åpen = !åpen; vis(); }; vis();
   p.querySelector('#tpB').onclick = () => { try { sessionStorage.setItem('evnKamera', orig ? 'ny' : 'original'); } catch (e) {} location.hash = orig ? '' : 'kamera-original'; location.reload(); };
   // Bildetider: rAF-tidsstempler (uavhengig av spillets egen løkke)
   const tider = []; let sist = 0, måling = null;

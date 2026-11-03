@@ -249,3 +249,33 @@ Even valgte 90 % etter sammenligningsbildene. Ivar godkjente endringen.
 - **Safe area:** ikke prøvd med hakk på ekte iPhone.
 - **Hint på liten skjerm:** «Avbryt» i byggemodus kan bli avkortet. 🔨-knappen avbryter fortsatt.
 - **Steking:** Når både «Legg ved» og «Stek kjøtt» er mulig, vises bare «Legg ved».
+
+## Tilbakemelding fra iPhone-test 3.11.2026 kl. 08:01
+- **Høykant var ikke tegnet: rettet.**
+  - Topp-raden står på egen linje øverst, og statusfeltet ligger under.
+  - Meldinger og hint får full bredde.
+  - `hud-test.js` har fått skjermen `hoykant` (390 × 844), som er BESTÅTT.
+- **Testpanelet dekket HUD-en: rettet.** Det er nå en liten fane «TEST ▸» på venstre kant.
+- **`backdrop-filter` er fjernet fra HUD-en.** Uskarphet over WebGL koster mye på iPhone. Panelene er litt mindre gjennomsiktige i stedet.
+- **Ytelse (Ivars iPhone, høykant, panelets FPS-måler):**
+
+  | Situasjon | FPS | Tegnekall |
+  |---|---|---|
+  | Ryggsekk-menyen | 14 | 694 |
+  | Kaktusbyen | 29 | 709 |
+
+  Begge målingene er før `backdrop-filter` ble fjernet. Dette er under kravet (≥ 30), og må måles på nytt og følges opp i ytelsesarbeidet. Prototypens målinger gjaldt bare skogscenen.
+- **Ulv ved start:** `tester/ulv-skade.js` gir nøyaktig samme forløp i 5.6.2 og 2.0. Øksa treffer 2 av 7 slag, og helten dør på ca. 4 s.
+  - Det er spillbalansen fra 5.6.2 (ulv: liv 6, skade 15; øks: skade 1, nedkjøling 0,5 s). Det er ikke en feil i 2.0.
+  - Endring krever eget mandat.
+- **Hatter gjennom verandataket i Kaktusbyen:** finnes også i 5.6.2. Byblokken er uendret. Taket står i høyde 30, og cowboyenes hatt når ca. 83.
+  - Forslag: rette det når Kaktusbyen får ny grafikk.
+  - Vurderingen gjelder både cowboyene og roboten (72).
+- **Ryggsekk-menyen viser mye som ikke hører til sekken:**
+  - lommer og fisk
+  - utstyr og våpen
+  - sekk og håndverk
+  - capsen (gjelder ikke roboten, se B1)
+  - «Lag en helt ny verden»
+  - fiskeboka og nivå
+  - Dette er menyen fra 5.6.2 (`renderMenu`, en grafikkblokk). Omorganisering må godkjennes, se forslaget.

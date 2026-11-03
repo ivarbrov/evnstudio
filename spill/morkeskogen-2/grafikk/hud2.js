@@ -54,8 +54,9 @@
     if (t && st) t.style.top = (Math.max(st.getBoundingClientRect().bottom, dg ? dg.getBoundingClientRect().bottom : 0) + 10) + 'px';
     if (!document.body.classList.contains('touchui')) { h.style.maxWidth = ''; return; }
     const acts = document.querySelector('#touch .acts'), hb = $('hotbar'); if (!acts) return;
+    if (innerHeight > innerWidth) { h.style.maxWidth = (innerWidth - 32) + 'px'; } else {   // høykant: knappene ligger under hintet, så hele bredden kan brukes
     const midt = innerWidth / 2, høyre = acts.getBoundingClientRect().left - 8, venstre = Math.max(16, innerWidth - høyre);   // symmetrisk rundt midten
-    h.style.maxWidth = Math.max(140, 2 * Math.min(midt - venstre, høyre - midt)) + 'px';
+    h.style.maxWidth = Math.max(140, 2 * Math.min(midt - venstre, høyre - midt)) + 'px'; }
     const v = $('h2Vapen');
     if (hb && !hb.hidden) { const top = hb.getBoundingClientRect().top; if (v) v.style.bottom = (innerHeight - top + 4) + 'px';
       h.style.bottom = (innerHeight - (v && !v.hidden ? v.getBoundingClientRect().top : top) + 6) + 'px'; }

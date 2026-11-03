@@ -1,0 +1,92 @@
+{
+ "5.6.2": {
+  "art": "ulv",
+  "maksHp": null,
+  "slag": 7,
+  "ulvDød": false,
+  "heltHpFør": 100,
+  "heltHpEtter": 0,
+  "logg": [
+   {
+    "slag": 1,
+    "ulvHp": 5,
+    "heltHp": 87
+   },
+   {
+    "slag": 2,
+    "ulvHp": 5,
+    "heltHp": 69
+   },
+   {
+    "slag": 3,
+    "ulvHp": 5,
+    "heltHp": 50
+   },
+   {
+    "slag": 4,
+    "ulvHp": 5,
+    "heltHp": 32
+   },
+   {
+    "slag": 5,
+    "ulvHp": 5,
+    "heltHp": 14
+   },
+   {
+    "slag": 6,
+    "ulvHp": 5,
+    "heltHp": 3
+   },
+   {
+    "slag": 7,
+    "ulvHp": 4,
+    "heltHp": 0
+   }
+  ]
+ },
+ "2.0": {
+  "art": "ulv",
+  "maksHp": null,
+  "slag": 7,
+  "ulvDød": false,
+  "heltHpFør": 100,
+  "heltHpEtter": 0,
+  "logg": [
+   {
+    "slag": 1,
+    "ulvHp": 5,
+    "heltHp": 87
+   },
+   {
+    "slag": 2,
+    "ulvHp": 5,
+    "heltHp": 69
+   },
+   {
+    "slag": 3,
+    "ulvHp": 5,
+    "heltHp": 50
+   },
+   {
+    "slag": 4,
+    "ulvHp": 5,
+    "heltHp": 32
+   },
+   {
+    "slag": 5,
+    "ulvHp": 5,
+    "heltHp": 14
+   },
+   {
+    "slag": 6,
+    "ulvHp": 5,
+    "heltHp": 3
+   },
+   {
+    "slag": 7,
+    "ulvHp": 4,
+    "heltHp": 0
+   }
+  ]
+ }
+}

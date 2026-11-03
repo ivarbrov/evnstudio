@@ -1,16 +1,16 @@
 /* Mørkeskogen 2.0 – ny HUD (fase 1). Bare utseende og plassering: alle element-id-er som spillogikken skriver til,
    er beholdt (bHp, bFood, bWater, bFire, fireLvl, wood, stone, iron, wIcon, axe, lvl, raw, cooked, skin, phase, nights,
    biome, hotbar, prompt, toast, useBtn, act …). Hjelpefunksjoner i hud2.js flytter noen av dem til nye plasser. */
-:root{ --h2-glass:rgba(12,20,16,.38); --h2-glass2:rgba(12,20,16,.66); --h2-line:rgba(243,234,214,.18); --h2-gold:#ffb020; }
+:root{ --h2-glass:rgba(12,20,16,.48); --h2-glass2:rgba(12,20,16,.74);   /* uten backdrop-filter (uskarphet koster mye på iPhone over WebGL) */ --h2-line:rgba(243,234,214,.18); --h2-gold:#ffb020; }
 
 /* ---------- Status oppe til venstre ---------- */
 #hud{align-items:flex-start}
-#hud > .panel:first-child{background:var(--h2-glass);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid var(--h2-line);
+#hud > .panel:first-child{background:var(--h2-glass);border:1px solid var(--h2-line);
   border-radius:14px;padding:10px 12px;gap:8px;min-width:200px}
 #hud .stat{gap:8px;font-size:14px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 #hud .stat > span:first-child{width:20px;text-align:center}
 #hud .bar{width:150px;height:10px;background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
-#hud .lvl{font:800 11px var(--body);background:var(--ember);color:#2a1606;border-radius:6px;padding:1px 6px}
+#hud .lvl{white-space:nowrap;font:800 11px var(--body);background:var(--ember);color:#2a1606;border-radius:6px;padding:1px 6px}
 #hud .inv{display:none!important}                        /* ressursene vises ved behov (h2Res), våpen og nivå over hurtiglinja */
 
 /* Ressurser ved behov: høyst tre, fast rekkefølge */
@@ -27,7 +27,7 @@
 #hud .clock{background:none;padding:0;display:flex;align-items:center;gap:8px;text-align:left}
 #hud .clock > .sub, #hud .clock .keyhint, #minimap{display:none!important}
 #h2Dag{display:flex;align-items:center;gap:10px;padding:6px 14px;border-radius:999px;background:var(--h2-glass2);border:1px solid var(--h2-line);
-  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  }
 #h2Dag #phase{font-size:16px}
 #h2Dag #biome{display:block!important;font:700 12px var(--body);opacity:.85}
 #hud #evnRad{margin:0;gap:8px}
@@ -39,7 +39,7 @@
 #h2Netter{margin:2px 0 6px;font:700 14px var(--body);opacity:.9;text-align:center}
 
 /* ---------- Hurtiglinje ---------- */
-#hotbar{background:var(--h2-glass2);border:1px solid var(--h2-line);border-radius:16px;padding:6px;gap:6px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#hotbar{background:var(--h2-glass2);border:1px solid var(--h2-line);border-radius:16px;padding:6px;gap:6px;}
 #hotbar button{width:52px;height:52px;border-radius:12px;border:2px solid rgba(243,234,214,.16)}
 #hotbar button.on{border-color:var(--h2-gold);background:rgba(255,176,32,.22);box-shadow:0 0 0 2px rgba(255,176,32,.35),0 0 12px rgba(255,176,32,.35)}
 #hotbar #invBtn{margin-left:12px;border-style:dashed;background:rgba(243,234,214,.04);position:relative}
@@ -54,7 +54,7 @@
 #prompt{visibility:hidden!important}
 #h2Hint{box-sizing:border-box;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(112px + env(safe-area-inset-bottom,0px));z-index:5;pointer-events:none;
   background:var(--h2-glass2);border:1px solid var(--h2-line);border-radius:999px;padding:7px 14px;font:800 15px var(--body);white-space:nowrap;
-  max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis;}
 #h2Hint kbd{font:800 13px var(--body);background:var(--bone);color:#1a1a1a;border-radius:5px;padding:1px 6px;margin-right:7px}
 #h2Hint[hidden]{display:none}
 #h2Hint.info{font-weight:700;opacity:.9}
@@ -96,3 +96,12 @@
 #evnPause .kort{position:relative}
 #evnPause #h2Lukk{position:absolute;margin:0;min-height:0;right:8px;top:8px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(243,234,214,.3);background:rgba(243,234,214,.08);
   color:var(--bone);font-size:18px;cursor:pointer;display:grid;place-items:center;padding:0}
+
+/* Mobil på høykant: topp-raden (dag og knapper) på egen linje øverst, statusfeltet under til venstre */
+@media (pointer:coarse) and (orientation:portrait){
+  #hud{flex-wrap:wrap;row-gap:8px}
+  #hud .clock{order:-1;width:100%;justify-content:flex-end}
+  body.touchui #hud > .panel:first-child{min-width:0}
+  body.touchui #hud .bar{width:min(110px,30vw)}
+  body.touchui #toast{max-width:88vw}
+}

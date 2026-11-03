@@ -4,7 +4,7 @@
 // Krever server på :8765. Bruk: node tester/hud-test.js [utmappe]   (BARE=pc|mobil|liten for én skjerm)
 const { chromium } = require('playwright'); const fs = require('fs');
 const UT = process.argv[2] || 'tester/resultater/hud-test';
-const SKJERM = { pc: { viewport: { width: 1280, height: 720 } }, mobil: { viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true }, liten: { viewport: { width: 667, height: 375 }, isMobile: true, hasTouch: true } };
+const SKJERM = { pc: { viewport: { width: 1280, height: 720 } }, mobil: { viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true }, liten: { viewport: { width: 667, height: 375 }, isMobile: true, hasTouch: true }, hoykant: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } };
 const MIN_BERØRING = 44;
 // Elementer som ikke skal overlappe hverandre (når de er synlige)
 const SJEKK = ['#hud > .panel:first-child', '#h2Dag', '#evnPauseKnapp', '#evnKartKnapp', '#h2Hjelp', '#hotbar', '#h2Vapen', '#h2Hint', '#toast', '#jumpBtn', '#act', '#useBtn', '#eatBtn', '#buildBtn', '#camBtn'];
