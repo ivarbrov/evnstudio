@@ -25,7 +25,7 @@ h1,h2,.lilita{font-family:'Lilita One',Nunito,sans-serif;font-weight:400;letter-
 .evn-merke{display:inline-block;font-family:'Lilita One',sans-serif;font-size:13px;letter-spacing:2px;color:#fff;background:linear-gradient(90deg,var(--bla),var(--lilla));padding:4px 12px;border-radius:999px}
 .kort h1{font-size:42px;margin:10px 0 4px;color:#e2701c;text-shadow:0 3px 0 #ffd9a8}
 .maal{display:flex;gap:12px;align-items:center;text-align:left;margin:12px 0;font-size:17px}
-.maal img{width:70px;height:auto;flex:none}
+.maal img{width:70px;height:auto;max-height:167px;flex:none}   /* EVN-roboten (vinker): samme bredde som gutten hadde, så teksten får like mye plass som før */
 .styring{text-align:left;background:#eef6ff;border-radius:14px;padding:10px 14px;font-size:15px;margin:10px 0;line-height:1.5}
 .styring b{display:inline-block;min-width:92px}
 .evn-start,.knapp{background:var(--gronn);color:#fff;font-size:22px;padding:14px 34px;border-radius:16px;box-shadow:0 5px 0 #14602f;margin:8px 4px;min-height:48px}
@@ -35,8 +35,9 @@ h1,h2,.lilita{font-family:'Lilita One',Nunito,sans-serif;font-weight:400;letter-
 .evn-start{animation:puls 1.6s ease-in-out infinite}
 @keyframes puls{50%{transform:scale(1.06)}}
 @media (prefers-reduced-motion:reduce){.evn-start{animation:none}}
-.evn-tilbake{display:inline-block;margin-top:8px;color:var(--bla);font-weight:800;min-height:44px;line-height:44px;padding:0 10px}
-.evn-ver{font-size:12px;color:#666;margin-top:8px}
+.evn-start{display:block;width:100%;margin:12px 0 0}
+.evn-tilbake{display:block;text-align:center;margin-top:6px;color:var(--bla);font-weight:800;text-decoration:underline;text-underline-offset:3px;min-height:44px;line-height:44px;padding:0 10px}
+.evn-ver{font-size:12px;color:#666;margin-top:4px;text-align:center}
 
 /* Kart over 15 verdener */
 #kart .kort{max-width:760px}
@@ -48,9 +49,12 @@ h1,h2,.lilita{font-family:'Lilita One',Nunito,sans-serif;font-weight:400;letter-
 .verden.aapen:hover,.verden.aapen:focus-visible{transform:translateY(-3px)}
 .verden.snart{background:#dff5e6;color:#2a6b3e}
 .verden b{font-size:15px}
-@media (max-width:560px){.styring b{min-width:0;margin-right:4px}#beskjed{font-size:16px;padding:8px 14px;top:66px}.verdener{grid-template-columns:repeat(3,1fr)}.kort h1{font-size:34px}}
+@media (max-width:560px){.styring b{min-width:0;margin-right:4px}body #beskjed{font-size:16px;padding:8px 14px;top:124px}#hud .topp>div:last-child{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;max-width:160px}#hud .topp>div:last-child>*{margin-left:0!important}.verdener{grid-template-columns:repeat(3,1fr)}.kort h1{font-size:34px}}
 
 /* Dyrebok */
+.bokkort{max-height:calc(100dvh - 32px);overflow:auto;padding-top:0}
+.boktopp{position:sticky;top:0;z-index:2;background:#fffaf0;display:flex;align-items:center;justify-content:center;padding:14px 52px 8px;margin:0 -24px;border-bottom:2px solid #f0e6d2}
+.lukkX{position:absolute;right:12px;top:10px;width:48px;height:48px;border-radius:14px;background:var(--bla);color:#fff;font-size:24px;box-shadow:0 4px 0 #124b94;touch-action:manipulation}
 .dyrerad{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0}
 .dyrkort{background:#f0ece2;border-radius:12px;padding:8px 2px;font-size:12px;min-height:76px}
 .dyrkort .e{font-size:30px;display:block}
@@ -60,11 +64,11 @@ h1,h2,.lilita{font-family:'Lilita One',Nunito,sans-serif;font-weight:400;letter-
 /* HUD */
 #hud{position:fixed;inset:0;pointer-events:none;z-index:10}
 #hud>*{pointer-events:auto}
-.topp{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none}
-.topp>*{pointer-events:auto}
+#hud .topp{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none}
+#hud .topp>*{pointer-events:auto}
 .merke{background:rgba(255,255,255,.92);border-radius:14px;padding:6px 14px;font-size:18px;font-weight:800;box-shadow:0 3px 10px rgba(0,0,0,.15)}
 .ikonknapp{background:rgba(255,255,255,.92);width:48px;height:48px;border-radius:14px;font-size:24px;margin-left:8px;box-shadow:0 3px 10px rgba(0,0,0,.15)}
-#tips{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.45);color:#fff;padding:6px 14px;border-radius:12px;font-size:14px;white-space:nowrap;pointer-events:none}
+#tips{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.45);color:#fff;padding:6px 14px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);text-align:center;box-sizing:border-box;pointer-events:none}
 #snikMerke{position:absolute;top:66px;left:10px;background:#7b5cff;color:#fff;border-radius:12px;padding:4px 12px;font-weight:800;font-size:15px;pointer-events:none}
 #beskjed{position:absolute;top:70px;left:50%;transform:translateX(-50%);background:#fff;border-radius:16px;padding:10px 20px;font-size:20px;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.2);pointer-events:none;text-align:center;max-width:90vw;transition:opacity .3s}
 #etiketter{position:fixed;inset:0;pointer-events:none;z-index:5;overflow:hidden}
@@ -72,11 +76,18 @@ h1,h2,.lilita{font-family:'Lilita One',Nunito,sans-serif;font-weight:400;letter-
 .etikett.lyd{background:#fff;border-radius:12px;padding:2px 8px;font-size:14px;text-shadow:none;box-shadow:0 2px 6px rgba(0,0,0,.2)}
 .etikett.sp{color:#e6a400;font-size:26px}
 .etikett.ut{color:#e53935;font-size:28px}
+.etikett.note{color:#7b3fe4;font-size:26px}
 
 /* Berøringsstyring */
 .beror{display:none}
 body.touch .beror{display:block}
 body.touch #tips{display:none}
+ #pcKnapper{position:absolute;right:16px;bottom:72px;display:flex;gap:12px;align-items:center}
+.pc-knapp{position:relative;white-space:nowrap;background:rgba(255,255,255,.95);color:#1d2440;border-radius:16px;padding:10px 16px;font-size:18px;min-height:48px;box-shadow:0 4px 0 rgba(0,0,0,.18)}
+#btnHavPC{background:var(--gul)}
+#btnSnikPC.paa{background:var(--lilla);color:#fff}
+.pc-knapp .tast{display:inline-block;font-size:12px;border:2px solid currentColor;border-radius:6px;padding:0 5px;margin-left:4px;opacity:.75;vertical-align:middle}
+body.touch #pcKnapper{display:none}
 #joy{position:absolute;left:18px;bottom:18px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.3);border:3px solid rgba(255,255,255,.7);touch-action:none}
 #joyKnott{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(255,255,255,.9)}
 #btnHav{position:absolute;right:20px;bottom:24px;width:92px;height:92px;border-radius:50%;background:var(--gul);font-size:20px;box-shadow:0 5px 0 #c9a015;touch-action:none}
@@ -92,11 +103,15 @@ body.touch #tips{display:none}
 <div id="hud" class="skjult">
   <div class="topp">
     <div class="merke" id="hudNavn">🏙️ Gata · 🐾 0/10</div>
-    <div><button class="ikonknapp" id="btnBok" aria-label="Dyreboka">📖</button><button class="ikonknapp" id="btnPause" aria-label="Pause">⏸</button><a class="ikonknapp" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none;text-decoration:none;line-height:48px;text-align:center;vertical-align:top;color:#1d2440">✕</a></div>
+    <div><button class="ikonknapp" id="btnLyd" aria-pressed="false" aria-label="Slå av lyden (L)" title="Slå av lyden (L)">🔊</button><button class="ikonknapp" id="btnBok" aria-label="Dyreboka">📖</button><button class="ikonknapp" id="btnVerdener" aria-label="Velg verden" title="Velg verden">🌍</button><a class="ikonknapp" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none;text-decoration:none;line-height:48px;text-align:center;vertical-align:top;color:#1d2440">✕</a></div>
   </div>
   <div id="snikMerke" class="skjult">🤫 Sniker</div>
   <div id="beskjed" style="opacity:0"></div>
-  <div id="tips">WASD/piler: gå · Shift: snik · Mellomrom: håv · Dra med musa: snu deg</div>
+  <div id="tips">WASD/piler: gå · Shift (hold) eller C: snik · Mellomrom: håv · Dra med musa: snu deg</div>
+  <div id="pcKnapper">
+    <button class="pc-knapp" id="btnSnikPC" aria-pressed="false">🤫 Snik <span class="tast">Shift</span></button>
+    <button class="pc-knapp" id="btnHavPC">🥅 Håv <span class="tast">Mellomrom</span></button>
+  </div>
   <div class="beror" id="joy" aria-label="Styrespak"><div id="joyKnott"></div></div>
   <button class="beror" id="btnSnik" aria-label="Snik av eller på">🤫<br>Snik</button>
   <button class="beror" id="btnHav" aria-label="Bruk håven">🥅<br>Håv</button>
@@ -108,7 +123,7 @@ body.touch #tips{display:none}
     <span class="evn-merke">EVN STUDIO</span>
     <h1>Dyrepatruljen</h1>
     <div class="maal">
-      <img src="../../bilder/maskot-staende-260.webp" srcset="../../bilder/maskot-staende-260.webp 1x, ../../bilder/maskot-staende-520.webp 2x" width="70" height="167" alt="" decoding="async" onerror="this.remove()">
+      <img src="../../bilder/robot-start-vink-130.webp" srcset="../../bilder/robot-start-vink-130.webp 1x, ../../bilder/robot-start-vink-260.webp 2x" width="232" height="260" alt="" decoding="async" onerror="this.remove()">
       <div>Masse dyr har gått seg vill! Finn dem, snik deg innpå og fang dem med håven. Da kommer de trygt hjem til dyreparken din. Det er <b>15 verdener</b> å utforske!</div>
     </div>
     <div class="styring">
@@ -116,10 +131,11 @@ body.touch #tips{display:none}
       <div><b>Snik:</b> hold Shift · Snik-knappen på mobil</div>
       <div><b>Håv:</b> mellomrom eller E · Håv-knappen på mobil</div>
       <div><b>Snu deg:</b> dra med musa eller fingeren</div>
+      <div><b>Lyd av/på:</b> L eller 🔊</div>
     </div>
     <button class="evn-start" id="startBtn">Start ▶</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver">v0.10.3</div>
+    <div class="evn-ver">Versjon 0.10.16</div>
   </div>
 </div>
 
@@ -137,20 +153,11 @@ body.touch #tips{display:none}
 
 <!-- Dyrebok -->
 <div class="lag skjult" id="dyrebok">
-  <div class="kort">
-    <h2 style="font-size:30px;margin:4px 0">📖 Dyreboka</h2>
+  <div class="kort bokkort">
+    <div class="boktopp"><h2 style="font-size:30px;margin:4px 0">📖 Dyreboka</h2><button class="lukkX" id="btnLukkBokTopp" aria-label="Lukk dyreboka">✕</button></div>
     <div id="bokTotalt" style="font-weight:800"></div>
     <div id="bokInnhold"></div>
     <button class="knapp bla liten" id="btnLukkBok">Lukk</button>
-  </div>
-</div>
-
-<!-- Pause -->
-<div class="lag skjult" id="pause">
-  <div class="kort">
-    <h2 style="font-size:32px;margin:4px 0">Pause ⏸</h2>
-    <button class="knapp" id="btnFortsett">▶ Fortsett</button><br>
-    <button class="knapp gra liten" id="btnTilKart">🗺️ Til kartet</button>
   </div>
 </div>
 
@@ -166,6 +173,203 @@ body.touch #tips{display:none}
 </div>
 
 <script src="../../vendor/three-r128.min.js"></script>
+<script>
+/* EVN-PAUSE v2: felles pause med spilletid og felles kart (samme kode i alle EVN-spill).
+   Kart (v2): 🗺️-knapp ved siden av ⏸ og tasten M åpner et stort kart. Spillet står stille mens kartet er åpent.
+   Spilletid lagres i localStorage 'evn-spilletid-<mappe>' = {dag, iDag, totalt} (millisekunder).
+   Tiden telles bare når spillet er aktivt, fanen synes, pausen ikke er åpen og noen har rørt tast/mus/skjerm siste 3 min. */
+window.EVNPause = function (cfg) {
+  var NOKKEL = 'evn-spilletid-' + cfg.mappe, LEDIG = 180000, t = cfg.tema || {};
+  var idag = function () { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); };
+  var tid = { dag: idag(), iDag: 0, totalt: 0 };
+  try { var l = JSON.parse(localStorage.getItem(NOKKEL)); if (l && typeof l.totalt === 'number') tid = l; } catch (e) {}
+  function lagreTid() { try { localStorage.setItem(NOKKEL, JSON.stringify(tid)); } catch (e) {} }
+  function fmt(ms) { var m = Math.floor(ms / 60000), h = Math.floor(m / 60); return ms < 60000 ? 'under 1 min' : h ? h + ' t ' + (m % 60) + ' min' : m + ' min'; }
+
+  var css = document.createElement('style');
+  css.textContent =
+    '#evnPauseKnapp,#evnKartKnapp{min-width:48px;min-height:48px;border-radius:12px;border:2px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;font:700 20px system-ui,sans-serif;cursor:pointer;touch-action:manipulation;pointer-events:auto;padding:0 10px}' +
+    '#evnPauseKnapp[hidden],#evnKartKnapp[hidden]{display:none!important}' +
+    '#evnKart{position:fixed;inset:0;z-index:99990;display:none;place-items:center;padding:12px;background:rgba(0,0,0,.55);touch-action:manipulation}' +
+    '#evnKart.vis{display:grid}' +
+    '#evnKart .kort{background:' + (t.panel || 'rgba(16,24,15,.95)') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:12px;max-width:100%;max-height:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnKart .topp{display:flex;align-items:center;gap:10px;margin:0 0 8px}' +
+    '#evnKart h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:26px;line-height:1;margin:0;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnKart .info{flex:1;font-size:14px;font-weight:700;opacity:.85;line-height:1.3}' +
+    '#evnKart button{width:44px;height:44px;flex:none;border-radius:12px;border:0;background:rgba(127,127,127,.28);color:inherit;font:800 20px system-ui,sans-serif;cursor:pointer}' +
+    '#evnKart canvas{display:block;border-radius:10px;image-rendering:pixelated}' +
+    '#evnKart button:focus-visible,#evnKartKnapp:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}' +
+    '#evnPause{position:fixed;inset:0;z-index:99990;display:none;place-items:center;padding:16px;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);touch-action:manipulation}' +
+    '#evnPause.vis{display:grid}' +
+    '#evnPause .kort{background:' + (t.panel || 'rgba(16,24,15,.95)') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:18px 20px;width:min(320px,100%);max-height:100%;overflow:auto;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnPause h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:38px;line-height:1;margin:0 0 6px;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnPause .tider{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 6px}' +
+    '#evnPause .tid{border-radius:12px;padding:8px 6px;background:rgba(127,127,127,.18)}' +
+    '#evnPause .tid b{display:block;font-size:22px;line-height:1.15}#evnPause .tid small{font-size:13px;font-weight:700;opacity:.85}' +
+    '#evnPause button{display:block;width:100%;min-height:48px;margin:8px 0 0;border-radius:12px;border:0;font:800 18px ' + (t.font || 'system-ui,sans-serif') + ';cursor:pointer}' +
+    '#evnPause .fortsett{background:' + (t.btn || '#ffd54a') + ';color:' + (t.btnInk || '#2b1d00') + ';font-size:22px;min-height:56px' + (t.head ? ';font-family:' + t.head + ';font-weight:' + (t.headW || 800) : '') + '}' +
+    '#evnPause .liten{background:rgba(127,127,127,.25);color:inherit}' +
+    '#evnPause .styr{text-align:left;font-size:15px;line-height:1.45;margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(127,127,127,.15)}' +
+    '#evnPause .tips{font-size:14px;opacity:.85;margin:10px 0 0}' +
+    '#evnPause button:focus-visible,#evnPauseKnapp:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}';
+  document.head.appendChild(css);
+
+  var knapp = document.createElement('button');
+  knapp.id = 'evnPauseKnapp'; knapp.type = 'button'; knapp.textContent = '⏸'; knapp.title = 'Pause (P)'; knapp.setAttribute('aria-label', 'Pause'); knapp.hidden = true;
+  var kartKnapp = null;
+  if (cfg.kart) {
+    kartKnapp = document.createElement('button');
+    kartKnapp.id = 'evnKartKnapp'; kartKnapp.type = 'button'; kartKnapp.textContent = '🗺️'; kartKnapp.title = 'Kart (M)'; kartKnapp.setAttribute('aria-label', 'Kart'); kartKnapp.hidden = true;
+  }
+  if (cfg.knapp) cfg.knapp(knapp, kartKnapp); else { if (kartKnapp) document.body.appendChild(kartKnapp); document.body.appendChild(knapp); }
+
+  var bak = document.createElement('div');
+  bak.id = 'evnPause'; bak.setAttribute('role', 'dialog'); bak.setAttribute('aria-modal', 'true'); bak.setAttribute('aria-labelledby', 'evnPauseTittel');
+  bak.innerHTML = '<div class="kort"><h2 id="evnPauseTittel">Pause</h2>' +
+    '<div class="tider"><div class="tid"><small>I dag</small><b id="evnPauseIdag"></b></div><div class="tid"><small>Totalt</small><b id="evnPauseTot"></b></div></div>' +
+    '<button class="fortsett" id="evnPauseFortsett" type="button">▶ Fortsett</button>' +
+    '<button class="liten" id="evnPauseStyrKnapp" type="button" aria-expanded="false">🎮 Slik styrer du</button>' +
+    '<div class="styr" id="evnPauseStyr" hidden></div>' +
+    '<button class="liten" id="evnPauseAvslutt" type="button">🚪 Avslutt</button>' +
+    '<p class="tips" id="evnPauseTips"></p></div>';
+  document.body.appendChild(bak);
+  var $ = function (id) { return document.getElementById(id); };
+  var kartBak = null;
+  if (cfg.kart) {
+    kartBak = document.createElement('div');
+    kartBak.id = 'evnKart'; kartBak.setAttribute('role', 'dialog'); kartBak.setAttribute('aria-modal', 'true'); kartBak.setAttribute('aria-labelledby', 'evnKartTittel');
+    kartBak.innerHTML = '<div class="kort"><div class="topp"><h2 id="evnKartTittel">🗺️ Kart</h2><span class="info" id="evnKartInfo"></span>' +
+      '<button type="button" id="evnKartLukk" aria-label="Lukk kartet">✕</button></div><canvas id="evnKartCv" role="img" aria-label="Kart over spillverdenen"></canvas></div>';
+    document.body.appendChild(kartBak);
+  }
+  [bak, knapp, kartBak, kartKnapp].forEach(function (el) {
+    if (el) ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (ev) { el.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
+  });
+
+  var apen = false, apnetTid = 0, venterAvslutt = false, kartApen = false;
+  // T2: mens en dialog er åpen, kan ingenting bak den få fokus eller trykk (inert), og Tab blir i dialogen.
+  var inertListe = [], aktivDialog = null;
+  function settInert(dlg) {
+    inertListe.forEach(function (el) { el.inert = false; }); inertListe = [];
+    aktivDialog = dlg || null;
+    if (!dlg) return;
+    Array.prototype.forEach.call(document.body.children, function (el) {
+      if (el !== dlg && !el.contains(dlg) && !el.inert && el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') { el.inert = true; inertListe.push(el); }
+    });
+  }
+  window.EVNPauseInert = settInert;
+  // Tab og Shift+Tab går rundt i den åpne dialogen i stedet for ut av siden (på window, før pausens egen tastaturhåndtering)
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab' || !aktivDialog) return;
+    var f = Array.prototype.filter.call(aktivDialog.querySelectorAll('button, a[href], input, [tabindex]:not([tabindex="-1"])'), function (el) { return !el.disabled && !el.hidden && el.getClientRects().length > 0; });
+    if (!f.length) return;
+    var i = f.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+  }, true);
+  var avsluttLenke = function () { var a = $(cfg.avsluttId); return a && getComputedStyle(a).display !== 'none' ? a : null; };
+  var sporsmal = function () { return $('evnSporsmal'); };
+  var sporsmalApent = function () { var s = sporsmal(); return !!s && s.style.display === 'grid'; };
+  function kan() { return !apen && !kartApen && !venterAvslutt && !sporsmalApent() && cfg.kanPause(); }
+
+  // ---------- Kart ----------
+  function tegnKart() {
+    if (!kartApen) return;
+    var K = cfg.kart, cv = $('evnKartCv'), f = K.forhold || 1;
+    var maksB = Math.min(innerWidth - 48, 900), maksH = innerHeight - 110;
+    var b = Math.max(120, Math.min(maksB, maksH * f)), h = b / f;
+    var d = Math.min(2, window.devicePixelRatio || 1);
+    cv.style.width = Math.round(b) + 'px'; cv.style.height = Math.round(h) + 'px';
+    cv.width = Math.round(b * d); cv.height = Math.round(h * d);
+    kartBak.querySelector('.kort').style.width = Math.round(b + 24) + 'px';   // kortet like bredt som kartet
+    var c = cv.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
+    try { K.tegn(c, cv.width, cv.height, cv); } catch (e) {}
+    $('evnKartInfo').textContent = K.info ? K.info() : '';
+  }
+  function apneKart() {
+    if (!cfg.kart || !kan()) return;
+    cfg.pause(); kartApen = true; apnetTid = performance.now();
+    kartBak.classList.add('vis'); knapp.hidden = true; kartKnapp.hidden = true; settInert(kartBak);
+    tegnKart();
+    try { $('evnKartLukk').focus({ preventScroll: true }); } catch (e) {}
+  }
+  function lukkKart(fraKlikk) {
+    if (!kartApen) return;
+    kartApen = false; kartBak.classList.remove('vis'); settInert(null);
+    cfg.fortsett(!!fraKlikk);
+  }
+  if (cfg.kart) {
+    kartKnapp.addEventListener('click', function () { apneKart(); });
+    $('evnKartLukk').addEventListener('click', function () { lukkKart(true); });
+    kartBak.addEventListener('click', function (e) { if (e.target === kartBak) lukkKart(true); });   // trykk utenfor kartet lukker
+    window.addEventListener('resize', tegnKart);
+  }
+
+  function apne(grunn) {
+    if (!kan()) return;
+    cfg.pause();
+    apen = true; apnetTid = performance.now();
+    $('evnPauseIdag').textContent = fmt(tid.iDag); $('evnPauseTot').textContent = fmt(tid.totalt);
+    $('evnPauseTips').textContent = grunn || 'Spillet står stille. Ingenting er borte.';
+    $('evnPauseStyr').hidden = true; $('evnPauseStyrKnapp').setAttribute('aria-expanded', 'false');
+    $('evnPauseAvslutt').hidden = !avsluttLenke() || !sporsmal();
+    bak.classList.add('vis'); knapp.hidden = true; lagreTid(); settInert(bak);
+    try { $('evnPauseFortsett').focus({ preventScroll: true }); } catch (e) {}
+  }
+  function lukk(fraKlikk) {
+    if (!apen) return;
+    apen = false; bak.classList.remove('vis'); settInert(null);
+    cfg.fortsett(!!fraKlikk);
+  }
+  knapp.addEventListener('click', function () { apne(); });
+  $('evnPauseFortsett').addEventListener('click', function () { lukk(true); });
+  $('evnPauseStyrKnapp').addEventListener('click', function () {
+    var s = $('evnPauseStyr'); if (s.hidden) s.innerHTML = cfg.styring(); s.hidden = !s.hidden; this.setAttribute('aria-expanded', String(!s.hidden));
+  });
+  // Avslutt fra pausen: spillet står stille mens «Vil du avslutte?» vises. «Nei, spill videre» = fortsett.
+  function visSporsmal() { venterAvslutt = true; var s = sporsmal(); s.style.display = 'grid'; settInert(s); var b = $('evnBli'); if (b) b.focus(); }
+  $('evnPauseAvslutt').addEventListener('click', function () { apen = false; bak.classList.remove('vis'); if (cfg.lagre) cfg.lagre(); visSporsmal(); });
+  // Avslutt-knappen i spillet: spillet stopper også mens spørsmålet vises
+  document.addEventListener('click', function (e) {
+    var a = avsluttLenke(); if (!a || !a.contains(e.target) || venterAvslutt || apen || !cfg.kanPause()) return;
+    cfg.pause(); venterAvslutt = true;
+  }, true);
+  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; settInert(null); cfg.fortsett(false); }
+  document.addEventListener('click', function (e) { var b = $('evnBli'); if (b && b.contains(e.target)) setTimeout(nei, 0); }, true);
+
+  window.addEventListener('keydown', function (e) {
+    var k = e.code || e.key;
+    if (venterAvslutt && sporsmalApent()) { if (k === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); nei(); } return; }
+    if (kartApen) {
+      e.stopImmediatePropagation();                                  // spillet får ingen taster mens kartet er åpent
+      if ((k === 'Escape' || k === 'KeyM') && !e.repeat && performance.now() - apnetTid > 200) { e.preventDefault(); lukkKart(false); }
+      return;
+    }
+    if (k === 'KeyM' && cfg.kart && !e.repeat && kan()) { e.preventDefault(); e.stopImmediatePropagation(); apneKart(); return; }
+    if (apen) {
+      e.stopImmediatePropagation();                                  // spillet får ingen taster mens pausen er åpen
+      if ((k === 'Escape' || k === 'KeyP') && !e.repeat && performance.now() - apnetTid > 300) { e.preventDefault(); lukk(k === 'KeyP'); }
+      return;
+    }
+    if ((k === 'KeyP' || (k === 'Escape' && (typeof cfg.escPause === 'function' ? cfg.escPause() : cfg.escPause !== false))) && !e.repeat && kan()) { e.preventDefault(); e.stopImmediatePropagation(); apne(); }
+  }, true);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) { apne('Pause fordi du byttet fane eller app.'); lagreTid(); } });
+  window.addEventListener('blur', function () { apne('Pause fordi du gikk ut av spillet.'); });
+  window.addEventListener('pagehide', lagreTid);
+
+  var sistRort = performance.now(), sist = performance.now(), sistLagret = 0;
+  ['keydown', 'pointerdown', 'pointermove', 'touchstart', 'wheel'].forEach(function (ev) { window.addEventListener(ev, function () { sistRort = performance.now(); }, { passive: true, capture: true }); });
+  setInterval(function () {
+    var naa = performance.now(), dt = Math.min(2000, naa - sist); sist = naa;
+    knapp.hidden = apen || kartApen || venterAvslutt || !cfg.kanPause();
+    if (kartKnapp) kartKnapp.hidden = knapp.hidden;
+    var dag = idag(); if (tid.dag !== dag) { tid.dag = dag; tid.iDag = 0; }
+    if (!apen && !venterAvslutt && !document.hidden && naa - sistRort < LEDIG && cfg.aktiv()) { tid.iDag += dt; tid.totalt += dt; }
+    if (naa - sistLagret > 15000) { sistLagret = naa; lagreTid(); }
+  }, 250);
+  return { apne: apne, lukk: lukk, apneKart: apneKart, lukkKart: lukkKart, erApen: function () { return apen || kartApen; }, tid: function () { return tid; } };
+};
+</script>
 <script>/* three.js r128 GLTFLoader – MIT-lisens, (c) three.js authors */
 ( function () {
 
@@ -3807,7 +4011,7 @@ window.EVN_HELT_B64="Z2xURgIAAAB0FAcAEEMBAEpTT057ImFzc2V0Ijp7ImdlbmVyYXRvciI6IkZ
    Strukturen er laget for 15 verdener. Hver verden er en
    oppføring i VERDENER; bygde verdener har en bygg()-funksjon.
    ============================================================ */
-const VERSJON = 'v0.10.3';
+const VERSJON = 'v0.10.16';
 const LAGRE_NOKKEL = 'evn-dyrespillet-v1';
 const $ = id => document.getElementById(id);
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
@@ -3918,16 +4122,31 @@ const verdenFerdig = i => reddetI(VERDENER[i].id).length >= DYR_PER_VERDEN;
 const verdenAapen = i => i === 0 || verdenFerdig(i-1);
 lastInn();
 
-/* ---------- Lyd (enkle pip, starter etter første trykk) ---------- */
-let lydKontekst = null;
+/* ---------- Lyd (enkle pip, starter etter første trykk). Kan slås av, og valget huskes (B1). ---------- */
+let lydKontekst = null, lydHoved = null;
+let lydPaa = (() => { try { return localStorage.getItem('evn-dyrepatruljen-lyd') !== 'av'; } catch(e){ return true; } })();
+function lydUt(){
+  if (!lydKontekst) lydKontekst = new (window.AudioContext||window.webkitAudioContext)();
+  if (!lydHoved){ lydHoved = lydKontekst.createGain(); lydHoved.connect(lydKontekst.destination); }
+  lydHoved.gain.value = lydPaa ? 1 : 0;
+  return lydHoved;
+}
+function settLyd(paa){
+  lydPaa = paa;
+  try { localStorage.setItem('evn-dyrepatruljen-lyd', paa ? 'paa' : 'av'); } catch(e){}
+  if (lydHoved) lydHoved.gain.value = paa ? 1 : 0;
+  const b = document.getElementById('btnLyd');
+  if (b){ const t = paa ? 'Slå av lyden (L)' : 'Slå på lyden (L)'; b.textContent = paa ? '🔊' : '🔇'; b.setAttribute('aria-pressed', String(!paa)); b.setAttribute('aria-label', t); b.title = t; }
+}
 function tone(f, varighet=0.12, type='sine', vol=0.15, slutt){
+  if (!lydPaa) return;
   try {
-    if (!lydKontekst) lydKontekst = new (window.AudioContext||window.webkitAudioContext)();
+    const ut = lydUt();
     const t = lydKontekst.currentTime, o = lydKontekst.createOscillator(), g = lydKontekst.createGain();
     o.type = type; o.frequency.setValueAtTime(f, t);
     if (slutt) o.frequency.exponentialRampToValueAtTime(slutt, t+varighet);
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t+varighet);
-    o.connect(g).connect(lydKontekst.destination); o.start(t); o.stop(t+varighet);
+    o.connect(g).connect(ut); o.start(t); o.stop(t+varighet);
   } catch(e){}
 }
 const lydSving = () => tone(500, .15, 'triangle', .08, 200);
@@ -3938,7 +4157,20 @@ const lydRedd = () => tone(300, .2, 'square', .05, 150);
 const lerret = $('spill');
 const erMobil = matchMedia('(pointer:coarse)').matches;
 if (erMobil) document.body.classList.add('touch');
-const renderer = new THREE.WebGLRenderer({canvas:lerret, antialias:!erMobil});
+function ingen3D(){
+  // Spillet trenger 3D. Startknappen slås av, og barnet får en forklaring i stedet for en tom skjerm.
+  const sb = $('startBtn'); sb.disabled = true; sb.textContent = '3D virker ikke her';
+  const m = document.createElement('p'); m.id = 'ingen3D'; m.setAttribute('role', 'alert');
+  m.style.cssText = 'background:#fff3cd;color:#5a3b00;border-radius:12px;padding:10px 12px;font-weight:700;margin:6px 0';
+  m.textContent = 'Dette spillet trenger 3D, og 3D virker ikke i denne nettleseren. Prøv en annen nettleser, eller spør en voksen. De andre spillene på EVN Studio virker som vanlig.';
+  sb.before(m);
+  addEventListener('error', e => { if (e.error && e.error.evnIngen3D) e.preventDefault(); });
+  const f = new Error('3D (WebGL) virker ikke'); f.evnIngen3D = true; throw f;
+}
+const har3D = (() => { try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl') || c.getContext('experimental-webgl'))); } catch(e){ return false; } })();
+if (!har3D) ingen3D();
+let renderer;
+try { renderer = new THREE.WebGLRenderer({canvas:lerret, antialias:!erMobil}); } catch(e){ ingen3D(); }
 renderer.setPixelRatio(Math.min(devicePixelRatio, erMobil ? 1.5 : 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -5725,7 +5957,15 @@ function lastHelt(){
         haand.add(feste); haav.position.set(0, 0.1, 0); feste.add(haav);
       } else if (haav){ u.arm.visible = true; u.arm.children.forEach(c => c.visible = (c === haav)); }
       klipp.Idle.play();
-      helt = {modell, mix, klipp, aktiv:klipp.Idle};
+      const ben = {}; modell.traverse(o => { if (o.isBone) ben[o.name] = o; });
+      // Fotpunkter: de laveste hjørnene i hvilestilling. De brukes til å holde føttene akkurat på bakken i alle animasjoner.
+      spiller.updateMatrixWorld(true);
+      const fot = [], v = new THREE.Vector3(); let ymin = Infinity, ymax = -Infinity; const alle = [];
+      modell.traverse(o => { if (o.isSkinnedMesh){ const pos = o.geometry.attributes.position; for (let i=0;i<pos.count;i++){ v.fromBufferAttribute(pos, i); o.boneTransform(i, v); v.applyMatrix4(o.matrixWorld); alle.push([o, i, v.y]); ymin = Math.min(ymin, v.y); ymax = Math.max(ymax, v.y); } } });
+      const grense = ymin + (ymax - ymin)*0.3;   // bein og føtter (begge føttene, også når en fot løftes)
+      for (const [o, i, y] of alle) if (y < grense) fot.push([o, i]);
+      const armHvile = ['UpperArmL','LowerArmL','UpperArmR','LowerArmR'].filter(n => ben[n]).map(n => [ben[n], ben[n].quaternion.clone()]);
+      helt = {modell, mix, klipp, aktiv:klipp.Idle, ben, armHvile, holdW:0, grunnY:modell.position.y, snik:0, fot, v, haav:(haand && haav) ? haav : null, haavX:haav ? haav.rotation.x : 0, feste:haav ? haav.parent : null};
     }, e => console.warn('Fant ikke helten', e));
   } catch(e){ console.warn('Helten kunne ikke lastes', e); }
 }
@@ -5734,15 +5974,132 @@ function heltAnimasjon(dt, beveger, sniker, iVann){
   let ny = K.Idle, ts = 1;
   if (svingTid > 0 && K.Punch) { ny = K.Punch; ts = 2.2; }
   else if (beveger && !sniker && !iVann && K.Running) { ny = K.Running; ts = 0.85; }
-  else if (beveger) { ny = K.Walking; ts = sniker ? 0.7 : 1; }
+  else if (beveger) { ny = K.Walking; ts = sniker ? 0.55 : 1; }
   if (ny !== helt.aktiv){
     ny.reset(); ny.setEffectiveWeight(1); ny.play();
     helt.aktiv.crossFadeTo(ny, ny === K.Punch ? 0.08 : 0.2, false);
     helt.aktiv = ny;
   }
   ny.timeScale = ts;
+  // ta bort forrige bildes snike-vridning før animasjonen oppdateres (ledd som ikke animeres ville ellers vridd seg mer og mer)
+  for (const [b, akse, v] of (helt.lagtTil || [])) b.rotation[akse] -= v;
+  helt.lagtTil = [];
+  for (const [b, q] of helt.armHvile) b.quaternion.copy(q);
   helt.mix.update(dt);
+  // Even (2.11.2026): på tå når du sniker – bøyd fram, armene opp foran, og en liten hopp-bevegelse i hvert steg
+  helt.snik += ((sniker && !iVann ? 1 : 0) - helt.snik) * Math.min(1, dt*8);
+  const s = helt.snik, B = helt.ben;
+  // hold føttene på bakken: finn laveste fotpunkt i denne stillingen og løft/senk modellen så det står på bakken
+  helt.modell.position.y = helt.grunnY;
+  spiller.updateMatrixWorld(true);
+  let lavest = Infinity; const v = helt.v;
+  for (const [o, i] of helt.fot){ v.fromBufferAttribute(o.geometry.attributes.position, i); o.boneTransform(i, v); v.applyMatrix4(o.matrixWorld); if (v.y < lavest) lavest = v.y; }
+  const bunn = spiller.position.y - (spiller.userData.yOff || 0);   // bakken (eller broen) under spilleren
+  // aldri under bakken; i løpesteg med begge føttene i lufta får roboten sveve (ikke trekkes ned)
+  const korr = isFinite(lavest) ? Math.max(bunn - lavest, -0.1) + (iVann ? -0.65 : 0) : 0;
+  helt.modell.position.y = helt.grunnY + korr;
+  if (s > 0.01){
+    const fase = ny.time / (ny.getClip().duration || 1) * Math.PI * 4;
+    helt.modell.position.y += s * (0.08 + Math.abs(Math.sin(fase)) * (beveger ? 0.14 : 0.03));
+    const vri = (b, akse, v) => { if (!b) return; b.rotation[akse] += v; helt.lagtTil.push([b, akse, v]); };
+    vri(B.Torso_1, 'x', s * SNIK.torso);
+    vri(B.Head_1, 'x', s * SNIK.hode);
+    const R = SNIK.rygg, ryggArm = false;
+    for (const [n, f] of [['UpperArmL', 1], ['UpperArmR', -1]]){
+      if (n === 'UpperArmR' && ryggArm){ vri(B[n], 'x', s * R.armX); vri(B[n], 'y', s * R.armY); vri(B[n], 'z', s * R.armZ); }
+      else { vri(B[n], 'x', s * SNIK.armX); vri(B[n], 'z', s * SNIK.armZ * f); }
+    }
+    vri(B.LowerArmL, 'x', s * SNIK.albue);
+    vri(B.LowerArmR, 'x', s * (ryggArm ? R.albue : SNIK.albue));
+  }
+  // Even (2.11.2026): når du sniker, står håven rett opp langs ryggen. Når du svinger håven, tar han den i handa igjen.
+  const h = helt.haav;
+  if (h){
+    const paaRyggen = s > 0.5 && svingTid <= 0;
+    // Even (2.11.2026): ellers holder han håven med begge hendene, skrått foran seg
+    // Even (2.11.2026): også når han sniker, holder han håven med begge hendene – da bak ryggen
+    const toHender = svingTid <= 0;
+    helt.holdW += ((toHender ? 1 : 0) - helt.holdW) * Math.min(1, dt * 10);
+    if (helt.holdW > 0.02) toHandsGrep(helt.holdW, paaRyggen ? TO_HENDER.snik : TO_HENDER);
+    if (toHender && helt.holdW > 0.5){
+      spiller.updateMatrixWorld(true);
+      const f = helt.feste, R = HQ.p, L = HQ.p2, d = HQ.d;
+      f.getWorldPosition(R); helt.ben.Palm2L.getWorldPosition(L);
+      d.subVectors(L, R).normalize();
+      const x = HQ.x.crossVectors(HQ.opp, d).normalize(), y = HQ.y.crossVectors(d, x);
+      HQ.m.makeBasis(x, y, d); HQ.mal.setFromRotationMatrix(HQ.m);
+      f.getWorldQuaternion(HQ.fq);
+      h.quaternion.copy(HQ.fq.invert()).multiply(HQ.mal);
+      R.addScaledVector(d, -TO_HENDER.bak);
+      h.position.copy(f.worldToLocal(R));
+    } else if (paaRyggen){
+      // håven blir i handa, men skaftet peker rett opp bak ryggen og handa holder midt på skaftet
+      spiller.updateMatrixWorld(true);
+      const f = helt.feste, q = HQ.q.setFromEuler(HQ.e.set(-Math.PI/2, 0, Math.PI, 'XYZ'));
+      HQ.mal.copy(spiller.quaternion).multiply(q);
+      f.getWorldQuaternion(HQ.fq);
+      h.quaternion.copy(HQ.fq.invert()).multiply(HQ.mal);
+      f.getWorldPosition(HQ.p); HQ.p.y -= SNIK.rygg.grep;
+      h.position.copy(f.worldToLocal(HQ.p));
+    } else {
+      h.position.set(0, 0.1, 0); h.rotation.set(helt.haavX, 0, 0);
+      haavOverBakken(bunn);
+    }
+  }
 }
+// Even (2.11.2026): håven gikk ned i bakken når du sniker. Vipp håven opp akkurat så mye at den er over bakken.
+const HAAV_PUNKT = [[0,-0.7,2.25],[0,0,2.67],[0.42,0,2.25],[-0.42,0,2.25],[0,-0.4,2.6]].map(a => new THREE.Vector3(...a));
+function haavLavest(){
+  helt.haav.updateMatrixWorld(true);
+  let m = Infinity; const v = helt.v;
+  for (const p of HAAV_PUNKT){ v.copy(p).applyMatrix4(helt.haav.matrixWorld); if (v.y < m) m = v.y; }
+  return m;
+}
+function haavOverBakken(bunn){
+  const h = helt.haav; if (!h) return;
+  h.rotation.x = helt.haavX;
+  spiller.updateMatrixWorld(true);
+  const mal = bunn + 0.06;
+  let lav = haavLavest(); if (lav >= mal) return;
+  // finn hvilken vei som løfter håven, og vipp i små steg til den er over bakken
+  h.rotation.x = helt.haavX + 0.1; const pluss = haavLavest();
+  h.rotation.x = helt.haavX - 0.1; const minus = haavLavest();
+  const retning = pluss >= minus ? 1 : -1;
+  for (let a = 0.05; a <= 1.6; a += 0.05){
+    h.rotation.x = helt.haavX + retning * a;
+    if (haavLavest() >= mal) return;
+  }
+}
+const SNIK = {torso:0.35, hode:-0.25, armX:-0.9, armZ:0.3, albue:-0.9, rygg:{armX:-2.4, armY:0, armZ:0, albue:0, grep:0.9}};
+// to-hånds-grep: hendene (i spillerens rom: x = venstre, y = opp, z = fram) og hvor langt bak høyre hånd skaftet slutter
+const TO_HENDER = {hoyre:new THREE.Vector3(-0.2, 0.85, 0.4), venstre:new THREE.Vector3(0.12, 1.15, 0.6), bak:0.35,
+  snik:{hoyre:new THREE.Vector3(-0.15, 0.8, -0.5), venstre:new THREE.Vector3(-0.05, 1.2, -0.62)}};
+const IK = {j:new THREE.Vector3(), e:new THREE.Vector3(), t:new THREE.Vector3(), a:new THREE.Vector3(), b:new THREE.Vector3(), q:new THREE.Quaternion(), pq:new THREE.Quaternion(), wq:new THREE.Quaternion(), lagre:[]};
+// enkel IK (CCD): vri albue og skulder så handa når målet
+function armTil(over, under, ende, malLokal){
+  IK.t.copy(malLokal); spiller.localToWorld(IK.t);
+  for (let it = 0; it < 6; it++){
+    for (const ledd of [under, over]){
+      ledd.updateMatrixWorld(true);
+      ledd.getWorldPosition(IK.j); ende.getWorldPosition(IK.e);
+      IK.a.subVectors(IK.e, IK.j); IK.b.subVectors(IK.t, IK.j);
+      if (IK.a.lengthSq() < 1e-8 || IK.b.lengthSq() < 1e-8) continue;
+      IK.q.setFromUnitVectors(IK.a.normalize(), IK.b.normalize());
+      ledd.getWorldQuaternion(IK.wq); ledd.parent.getWorldQuaternion(IK.pq);
+      ledd.quaternion.copy(IK.pq.invert().multiply(IK.q).multiply(IK.wq));
+    }
+  }
+}
+function toHandsGrep(w, mal){
+  const B = helt.ben; if (!B.Palm2L || !B.UpperArmR) return;
+  const ledd = [B.UpperArmL, B.LowerArmL, B.UpperArmR, B.LowerArmR];
+  const for_ = ledd.map(b => b.quaternion.clone());
+  spiller.updateMatrixWorld(true);
+  armTil(B.UpperArmR, B.LowerArmR, helt.feste, mal.hoyre);
+  armTil(B.UpperArmL, B.LowerArmL, B.Palm2L, mal.venstre);
+  if (w < 0.999) ledd.forEach((b, i) => { const ny = b.quaternion.clone(); b.quaternion.copy(for_[i]).slerp(ny, w); });
+}
+const HQ = {p2:new THREE.Vector3(), d:new THREE.Vector3(), x:new THREE.Vector3(), y:new THREE.Vector3(), opp:new THREE.Vector3(0,1,0), m:new THREE.Matrix4(), q:new THREE.Quaternion(), e:new THREE.Euler(), mal:new THREE.Quaternion(), fq:new THREE.Quaternion(), p:new THREE.Vector3()};
 lastHelt();
 
 /* ---------- Tilstand ---------- */
@@ -5768,6 +6125,49 @@ function plasserEtikett(el, pos, tekst, klasse){
   el.style.left = ((tmpV.x+1)/2*innerWidth) + 'px';
   el.style.top = ((1-tmpV.y)/2*innerHeight) + 'px';
 }
+
+/* ---------- Plystring (Even 2.11.2026: han plystrer når han sniker) ----------
+   En liten egen melodi som går i ring. Plystringen skremmer ikke dyrene. */
+const PLYSTRE_MELODI = [[988,0.18],[1175,0.18],[1319,0.3],[0,0.18],[1175,0.18],[988,0.18],[880,0.36],[0,0.5],
+                        [784,0.18],[880,0.18],[988,0.3],[0,0.18],[1319,0.18],[1175,0.3],[988,0.42],[0,0.9]];
+const plyst = {i:0, tid:0.35, noter:[]};
+function plystreTone(f, varighet){
+  if (!lydPaa) return;
+  try {
+    const ut = lydUt();
+    const k = lydKontekst, t = k.currentTime, o = k.createOscillator(), g = k.createGain();
+    const vib = k.createOscillator(), vg = k.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(f*0.94, t); o.frequency.exponentialRampToValueAtTime(f, t+0.05);
+    vib.frequency.value = 6; vg.gain.value = f*0.012; vib.connect(vg).connect(o.frequency);
+    g.gain.setValueAtTime(0.001, t); g.gain.exponentialRampToValueAtTime(0.06, t+0.03);
+    g.gain.setValueAtTime(0.06, t+varighet*0.7); g.gain.exponentialRampToValueAtTime(0.001, t+varighet);
+    o.connect(g).connect(ut); o.start(t); o.stop(t+varighet+0.02); vib.start(t); vib.stop(t+varighet+0.02);
+  } catch(e){}
+}
+function plystre(dt, paa){
+  if (paa){
+    plyst.tid -= dt;
+    if (plyst.tid <= 0){
+      const [f, l] = PLYSTRE_MELODI[plyst.i]; plyst.i = (plyst.i + 1) % PLYSTRE_MELODI.length; plyst.tid = l;
+      if (f){
+        plystreTone(f, l*0.95);
+        if (Math.random() < 0.5){
+          const el = plyst.noter.find(n => n.liv <= 0) || (plyst.noter.length < 4 && (plyst.noter.push({el:lagEtikett(), liv:0}), plyst.noter[plyst.noter.length-1]));
+          if (el){ el.liv = 1.3; el.x = (Math.random()-0.5)*0.6; el.tegn = Math.random() < 0.5 ? '♪' : '♫'; }
+        }
+      }
+    }
+  } else { plyst.i = 0; plyst.tid = 0.35; }
+  for (const n of plyst.noter){
+    if (n.liv <= 0){ n.el.style.display = 'none'; continue; }
+    n.liv -= dt;
+    const t = 1 - n.liv/1.3;
+    tmpV2.set(spiller.position.x + n.x + Math.sin(t*6)*0.15, spiller.position.y + 2.5 + t*1.2, spiller.position.z);
+    plasserEtikett(n.el, tmpV2, n.tegn, 'note');
+    n.el.style.opacity = Math.min(1, n.liv*2).toFixed(2);
+  }
+}
+const tmpV2 = new THREE.Vector3();
 
 /* ---------- Beskjeder ---------- */
 function beskjed(tekst, sek=2.2){ const b = $('beskjed'); b.textContent = tekst; b.style.opacity = 1; beskjedTid = sek; }
@@ -5801,7 +6201,7 @@ function startVerden(i){
   tilstand = 'spill';
   visLag(null);
   $('hud').classList.remove('skjult');
-  $('btnHav').innerHTML = '🥅<br>Håv';
+  $('btnHav').innerHTML = '🥅<br>Håv'; $('btnHavPC').innerHTML = '🥅 Håv <span class="tast">Mellomrom</span>'; $('btnSnikPC').style.display = '';
   oppdaterHud();
   beskjed(ferdig ? 'Du har reddet alle her – men du kan fange dem igjen for moro skyld!' : verden.tips, 4);
 }
@@ -5831,19 +6231,25 @@ function startPark(){
   tilstand = 'park';
   visLag(null);
   $('hud').classList.remove('skjult');
-  $('btnHav').innerHTML = '❤️<br>Kos';
+  $('btnHav').innerHTML = '❤️<br>Kos'; $('btnHavPC').innerHTML = '❤️ Kos <span class="tast">Mellomrom</span>'; $('btnSnikPC').style.display = 'none';
   oppdaterHud();
   beskjed(dyrListe.length ? `Velkommen til dyreparken! ${park.antallOmr} naturområder. Gå inn og kos med dyrene ❤️` : 'Ingen dyr her ennå. Redd dyr i gata, så flytter de hit! 🏙️', 4);
 }
 
 /* ---------- Skjermer ---------- */
-const LAG = ['startkort','kart','dyrebok','pause','ferdig'];
-function visLag(id){ for (const l of LAG) $(l).classList.toggle('skjult', l !== id); }
+const LAG = ['startkort','kart','dyrebok','ferdig'];
+function visLag(id){
+  const bokVarApen = !$('dyrebok').classList.contains('skjult');
+  for (const l of LAG) $(l).classList.toggle('skjult', l !== id);
+  // Skjules dyreboka av et annet lag (for eksempel ferdigkortet), må fokusregelen for boka fjernes, ellers blir det nye laget inert
+  if (bokVarApen && id !== 'dyrebok' && window.EVNPauseInert) window.EVNPauseInert(null);
+}
 
 function visKart(){
   tilstand = 'kart';
   $('hud').classList.add('skjult');
   for (const d of dyrListe){ d.lyd.style.display = d.merke.style.display = 'none'; }
+  for (const n of plyst.noter){ n.liv = 0; n.el.style.display = 'none'; }
   $('totalt').textContent = `🐾 Du har reddet ${antallReddet()} av ${TOTALT_DYR} dyr`;
   const liste = $('verdensliste'); liste.innerHTML = '';
   VERDENER.forEach((v,i)=>{
@@ -5883,14 +6289,16 @@ function visBok(){
   html += `<p style="color:#667;font-size:14px">🔒 ${VERDENER.length - VERDENER.filter(v=>v.bygd).length} verdener til med 10 dyr hver kommer senere!</p>`;
   $('bokInnhold').innerHTML = html;
   visLag('dyrebok');
+  if (window.EVNPauseInert) window.EVNPauseInert($('dyrebok'));   // T2: fokus blir i boka, ingenting bak kan trykkes
+  try { $('btnLukkBokTopp').focus({ preventScroll: true }); } catch(e){}
 }
 function lukkBok(){
+  if (window.EVNPauseInert) window.EVNPauseInert(null);
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();   // mellomrom skal ikke trykke en knapp med fokus
   if (bokFra === 'spill' || bokFra === 'park'){ tilstand = bokFra; visLag(null); }
   else visLag('kart');
 }
 
-function pause(){ if (tilstand!=='spill' && tilstand!=='park') return; bokFra = tilstand; tilstand = 'pause'; visLag('pause'); }
-function fortsett(){ tilstand = bokFra; visLag(null); }
 
 function oppdaterHud(){
   if (verden){
@@ -5974,6 +6382,7 @@ function oppdaterSpiller(dt){
   const inp = bevegelsesInput();
   const sniker = snikPaa || tast.ShiftLeft || tast.ShiftRight || (joy.aktiv && inp.styrke > 0.1 && inp.styrke < 0.55);
   $('snikMerke').classList.toggle('skjult', !sniker || tilstand === 'park');
+  const sk = $('btnSnikPC'); if (sk.classList.contains('paa') !== !!sniker){ sk.classList.toggle('paa', !!sniker); sk.setAttribute('aria-pressed', sniker ? 'true' : 'false'); }
   const inni = (o, p) => o.r !== undefined ? Math.hypot(p.x - o.x, p.z - o.z) < o.r : (p.x > o.x0 && p.x < o.x1 && p.z > o.z0 && p.z < o.z1);
   const bro = paaBro(spiller.position.x, spiller.position.z);
   const iVann = !bro && (!!(aktiv.vann && aktiv.vann.some(v => inni(v, spiller.position))) || !!(aktiv.erVann && aktiv.erVann(spiller.position.x, spiller.position.z)));
@@ -6009,12 +6418,13 @@ function oppdaterSpiller(dt){
   gangFase += beveger ? dt * fart * 2.2 : 0;
   const u = spiller.userData, sv = beveger ? Math.sin(gangFase)*0.6 : 0;
   u.bein1.rotation.x = sv; u.bein2.rotation.x = -sv; u.arm1.rotation.x = -sv*0.7; u.hode.rotation.z = beveger ? Math.sin(gangFase*0.5)*0.05 : 0;
-  const malY = bro ? 0 : iVann ? -0.65 : (sniker && beveger ? -0.15 : 0);
+  const malY = bro ? 0 : iVann ? -0.65 : (sniker && beveger && !helt ? -0.15 : 0);
   ps.yOff = (ps.yOff || 0) + (malY - (ps.yOff || 0)) * Math.min(1, dt*8);
   const grunn = bakkeHoyde(spiller.position.x, spiller.position.z);
   spiller.position.y = (bro ? Math.max(grunn, bro.y) : grunn) + ps.yOff;
   if (iVann && beveger && Math.random() < dt*3) tone(rnd(180,260), .08, 'sine', .03, 120);
   if (helt) heltAnimasjon(dt, beveger, sniker, iVann);
+  plystre(dt, sniker && !iVann);
   if (svingTid > 0){ svingTid -= dt; const t = 1 - svingTid/0.4; u.arm.rotation.x = -1.2 + Math.sin(t*Math.PI)*1.9; }
   else u.arm.rotation.x = -0.5 + sv*0.3;
   return {beveger, sniker, iVann};
@@ -6050,6 +6460,16 @@ function animerBen(d, fart, dt){
 }
 
 const lydPos = new THREE.Vector3();
+// Even (2.11.2026): si fra at det er lurt å snike når du nærmer deg et dyr
+let snikTipsVent = 3;
+function snikTips(dt, sp){
+  if (snikTipsVent > 0){ snikTipsVent -= dt; return; }
+  if (sp.sniker || beskjedTid > 0) return;
+  const naer = dyrListe.some(d => d.tilstand !== 'fanget' && Math.hypot(d.mesh.position.x - spiller.position.x, d.mesh.position.z - spiller.position.z) < 8);
+  if (!naer) return;
+  beskjed(erMobil ? '🤫 Et dyr er i nærheten! Trykk på Snik og gå sakte bort til det.' : '🤫 Et dyr er i nærheten! Hold Shift (eller trykk Snik) og gå sakte bort til det.', 3.5);
+  snikTipsVent = 20;
+}
 function oppdaterDyr(dt, sp){
   for (let i = dyrListe.length - 1; i >= 0; i--){
     const d = dyrListe[i], p = d.mesh.position, k = d.mesh.userData.kropp;
@@ -6172,6 +6592,7 @@ function loop(n){
   if (tilstand === 'spill' || tilstand === 'park'){
     const sp = oppdaterSpiller(dt);
     oppdaterDyr(dt, sp);
+    if (tilstand === 'spill') snikTips(dt, sp);
     oppdaterKamera(dt);
   }
   if (aktiv.oppdater) aktiv.oppdater(dt);
@@ -6185,7 +6606,6 @@ addEventListener('keydown', e => {
   tast[e.code] = true;
   if (e.code === 'Space' || e.code === 'KeyE'){ e.preventDefault(); svingHaav(); }
   if (e.code === 'KeyC'){ snikPaa = !snikPaa; $('btnSnik').classList.toggle('paa', snikPaa); }
-  if (e.code === 'Escape' && !evnSporsmalApen()) pause();
   if (e.code === 'KeyB') visBok();
   if (e.code.startsWith('Arrow')) e.preventDefault();
 });
@@ -6214,6 +6634,8 @@ const joySlipp = e => { if (e.pointerId === joy.id){ joy.aktiv = false; joy.x = 
 joyEl.addEventListener('pointerup', joySlipp); joyEl.addEventListener('pointercancel', joySlipp);
 
 $('btnHav').addEventListener('pointerdown', e => { e.preventDefault(); svingHaav(); });
+$('btnHavPC').addEventListener('click', e => { e.preventDefault(); svingHaav(); });
+$('btnSnikPC').addEventListener('click', e => { e.preventDefault(); snikPaa = !snikPaa; $('btnSnik').classList.toggle('paa', snikPaa); e.currentTarget.blur(); });
 $('btnSnik').addEventListener('pointerdown', e => { e.preventDefault(); snikPaa = !snikPaa; $('btnSnik').classList.toggle('paa', snikPaa); });
 addEventListener('pointerdown', e => { if (e.pointerType === 'touch') document.body.classList.add('touch'); }, {capture:true});
 
@@ -6226,24 +6648,59 @@ document.addEventListener('touchmove', e => { if (spiller_aktiv() && e.touches.l
 // Knapper
 $('startBtn').addEventListener('click', () => { tone(660,.1); visKart(); });
 $('btnBok').addEventListener('click', visBok);
+$('btnLyd').addEventListener('click', e => { e.currentTarget.blur(); settLyd(!lydPaa); });
+addEventListener('keydown', e => { if (e.code === 'KeyL' && !e.repeat && !$('hud').classList.contains('skjult')) settLyd(!lydPaa); });
+settLyd(lydPaa);
 $('btnKartBok').addEventListener('click', visBok);
 $('btnLukkBok').addEventListener('click', lukkBok);
-$('btnPause').addEventListener('click', pause);
-$('btnFortsett').addEventListener('click', fortsett);
-$('btnTilKart').addEventListener('click', visKart);
+$('btnLukkBokTopp').addEventListener('click', lukkBok);
+$('dyrebok').addEventListener('click', e => { if (e.target.id === 'dyrebok') lukkBok(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && !$('dyrebok').classList.contains('skjult')){ e.preventDefault(); lukkBok(); } });
+$('btnVerdener').addEventListener('click', e => { e.currentTarget.blur(); visKart(); });
 $('btnTilPark').addEventListener('click', startPark);
 $('btnFerdigPark').addEventListener('click', startPark);
 $('btnFerdigKart').addEventListener('click', visKart);
 
-// EVN-avslutt: spillet står stille mens «Vil du avslutte?» er åpen
+// EVN-avslutt: den felles pausen (EVNPause) holder spillet stille mens «Vil du avslutte?» er åpen
 const evnSporsmalApen = () => { const e = document.getElementById('evnSporsmal'); return !!e && e.style.display === 'grid'; };
-document.addEventListener('click', e => {
-  if (e.target.closest && e.target.closest('#evnAvslutt') && (tilstand === 'spill' || tilstand === 'park')){ bokFra = tilstand; tilstand = 'stille'; }
-  if (e.target.closest && e.target.closest('#evnBli') && tilstand === 'stille') tilstand = bokFra;
-}, true);
-addEventListener('keydown', e => { if (e.key === 'Escape' && tilstand === 'stille') setTimeout(() => { if (!evnSporsmalApen()) tilstand = bokFra; }, 0); });
 // Til testing
 window.__dyrespill = { kamera, verdener: VERDENER, aktivt: () => aktiv, helt: () => helt, pauseKamera: (x,y,z,lx,ly,lz) => { tilstand = 'pause'; kamera.position.set(x,y,z); kamera.lookAt(lx,ly,lz); }, fortsettKamera: () => { tilstand = aktiv === park ? 'park' : 'spill'; }, get tilstand(){ return tilstand; }, get dyr(){ return dyrListe; }, spiller, lagret: () => lagret, fang: d => fang(d), startVerden, startPark };
+// Felles pause med spilletid og felles kart (⏸ / P / Esc, 🗺️ / M). Spilletid lagres i 'evn-spilletid-dyrepatruljen'.
+let evnFra = null;
+function tegnVerdenskart(c, w, h){
+  const g = aktiv.grense + 0.6, sx = x => (g - x) / (2*g) * w, sz = z => (g - z) / (2*g) * h, sk = w / (2*g);
+  c.fillStyle = aktiv === park ? '#9fd38a' : '#cfd8c4'; c.fillRect(0, 0, w, h);
+  const omr = (o, farge) => { c.fillStyle = farge; c.beginPath();
+    if (o.r !== undefined) c.arc(sx(o.x), sz(o.z), o.r*sk, 0, Math.PI*2); else c.rect(sx(o.x1), sz(o.z1), (o.x1-o.x0)*sk, (o.z1-o.z0)*sk);
+    c.fill(); };
+  for (const o of aktiv.is || []) omr(o, '#e3f6ff');
+  for (const o of aktiv.vann || []) omr(o, '#6cc3ef');
+  c.fillStyle = '#5b6170';
+  for (const b of aktiv.hindre) c.fillRect(sx(b.x1), sz(b.z1), Math.max(1, (b.x1-b.x0)*sk), Math.max(1, (b.z1-b.z0)*sk));
+  for (const br of aktiv.broer || []){ c.strokeStyle = '#b07a3c'; c.lineWidth = Math.max(3, br.b*sk*0.7); c.beginPath(); c.moveTo(sx(br.ax), sz(br.az)); c.lineTo(sx(br.bx), sz(br.bz)); c.stroke(); }
+  // spilleren: rød prikk med pil i gåretningen
+  const px = sx(spiller.position.x), pz = sz(spiller.position.z), r = Math.max(7, w/70), a = spiller.rotation.y;
+  c.save(); c.translate(px, pz); c.rotate(Math.PI - a);
+  c.fillStyle = '#e53935'; c.strokeStyle = '#fff'; c.lineWidth = Math.max(2, r/3);
+  c.beginPath(); c.moveTo(0, -r*1.8); c.lineTo(r, 0); c.arc(0, 0, r, 0, Math.PI); c.lineTo(-r, 0); c.closePath(); c.fill(); c.stroke();
+  c.restore();
+}
+EVNPause({
+  mappe:'dyrepatruljen', avsluttId:'evnAvslutt',
+  tema:{panel:'#fffaf0', ink:'#1d2440', hi:'#1a66c9', btn:'#ffc83d', btnInk:'#2b1d00', font:"Nunito,system-ui,sans-serif", head:"'Lilita One',sans-serif", headW:400},
+  knapp:(b, k) => { for (const x of [k, b]){ x.className = 'ikonknapp'; x.style.cssText = 'pointer-events:auto;background:rgba(255,255,255,.92);color:#1d2440;border:0;width:48px;height:48px;min-width:48px;border-radius:14px;font-size:22px;padding:0;margin-left:8px;box-shadow:0 3px 10px rgba(0,0,0,.15)'; }
+    const av = $('evnAvslutt'); av.parentNode.insertBefore(k, av); av.parentNode.insertBefore(b, av); },
+  kart:{
+    forhold:1,
+    info:() => '🔴 Du er her · ' + (aktiv === park ? '🦒 Dyreparken' : `${verden.ikon} ${verden.navn}`),
+    tegn:tegnVerdenskart
+  },
+  kanPause:() => (tilstand === 'spill' || tilstand === 'park') && !evnSporsmalApen(),
+  aktiv:() => tilstand === 'spill' || tilstand === 'park',
+  pause:() => { if (tilstand === 'spill' || tilstand === 'park') evnFra = tilstand; tilstand = 'pause'; for (const k in tast) tast[k] = false; joy.aktiv = false; },
+  fortsett:() => { if (evnFra) tilstand = evnFra; evnFra = null; for (const k in tast) tast[k] = false; },
+  styring:() => [...document.querySelectorAll('#startkort .styring > div')].map(d => d.innerHTML).join('<br>') + '<br><b>Kart:</b> M eller 🗺️ · <b>Dyreboka:</b> B eller 📖'
+});
 </script>
 <script>
 /* EVN-NULLSTILL v1: «Start helt på nytt» på startskjermen (samme kode i alle EVN-spill).
@@ -6284,8 +6741,8 @@ window.EVNNullstill = function (cfg) {
   var $ = function (id) { return document.getElementById(id); };
   var apen = false, forrige = null;
   function oppdater() { lenke.hidden = !harLagring() || (cfg.vis ? !cfg.vis() : false); }
-  function apne() { apen = true; forrige = document.activeElement; boks.classList.add('vis'); $('evnNullstillNei').focus(); }
-  function lukk() { apen = false; boks.classList.remove('vis'); try { (forrige || lenke).focus(); } catch (e) {} }
+  function apne() { apen = true; forrige = document.activeElement; boks.classList.add('vis'); if (window.EVNPauseInert) window.EVNPauseInert(boks); $('evnNullstillNei').focus(); }
+  function lukk() { apen = false; boks.classList.remove('vis'); if (window.EVNPauseInert) window.EVNPauseInert(null); try { (forrige || lenke).focus(); } catch (e) {} }
   lenke.addEventListener('click', apne);
   $('evnNullstillNei').addEventListener('click', lukk);
   $('evnNullstillJa').addEventListener('click', function () {
@@ -6329,10 +6786,10 @@ try {
     var av = document.getElementById('evnAvslutt'), sp = document.getElementById('evnSporsmal');
     av.style.display = 'inline-block';
     var tb = document.getElementById('evnTilbake'); if (tb) tb.hidden = false;
-    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new Event('blur')); sp.style.display = 'grid'; document.getElementById('evnBli').focus(); });
-    addEventListener('keydown', function (e) { if (e.key === 'Escape' && sp.style.display === 'grid') { e.preventDefault(); sp.style.display = 'none'; } });
+    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new Event('blur')); sp.style.display = 'grid'; if (window.EVNPauseInert) window.EVNPauseInert(sp); document.getElementById('evnBli').focus(); });
+    addEventListener('keydown', function (e) { if (e.key === 'Escape' && sp.style.display === 'grid') { e.preventDefault(); sp.style.display = 'none'; if (window.EVNPauseInert) window.EVNPauseInert(null); } });
     ['pointerdown', 'mousedown', 'touchstart'].forEach(function (ev) { sp.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); av.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
-    document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; });
+    document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; if (window.EVNPauseInert) window.EVNPauseInert(null); });
     document.getElementById('evnGaa').addEventListener('click', function () { location.href = '../../'; });
   }
 } catch (e) {}
