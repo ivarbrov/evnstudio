@@ -178,13 +178,15 @@ Disse kan prioriteres senere og er ikke krav:
 
 ## Hvilke krav gjelder for hvert spill
 
-Spillmapper: Era Defenders = `spill/eventyrspill`, Mørkeskogen = `spill/morkeskogen`, Fossil Zoo = `spill/fossilspillet`.
+Spillmapper: Era Defenders = `spill/eventyrspill`, Mørkeskogen = `spill/morkeskogen`, Fossil Zoo = `spill/fossilspillet`, Dyrepatruljen = `spill/dyrepatruljen`, Magiske egg = `spill/magiske-egg`.
 
 | Spill | Betingede krav som gjelder | UI1–UI10 |
 |---|---|---|
 | Era Defenders | B2, B4, B6, B7 | Ikke tatt i bruk |
 | Mørkeskogen | B1, B2, B3, B4 | Ikke tatt i bruk i 5.6.x. Tenkt for 2.0 |
 | Fossil Zoo | B1, B2, B5 | Ikke tatt i bruk |
+| Dyrepatruljen | B1, B2, B3 | Ikke tatt i bruk |
+| Magiske egg | B1, B2, B3 | Ikke tatt i bruk |
 
 Oversikten oppdateres når et spill får eller mister en funksjon.
 
@@ -216,3 +218,4 @@ Funnene er fra kartleggingen 1. november 2026. De er ikke rettet, og publiserte 
 | 1.1 | 2. november 2026 | Statistikk ST1–ST8 og godkjente hendelser | Godkjent |
 | 1.2 | 2. november 2026 | UI1–UI10 skrevet inn (godkjent som hovedløsning), og UI8 erstattet av UI8a–c. Statusnivåer og kontrollmetode per krav (forslag). Klarspråk etter NS-ISO 24495-1:2023 (forslag). Merknad om GoatCounter kopiert fra agentfilen til ST-avsnittet. Ny fil `.claude/vedtak.md` med originaltekst og godkjenninger. Kolonnen «UI1–UI10» lagt til i oversikten per spill. Ingen eksisterende krav er endret eller fjernet. | Utkast |
 | 1.2a | 3. november 2026 | S2 presisert: «kjøp» betyr kjøp med ekte penger. Kjøp med E-coins (opptjent i spillene, lagret lokalt) er tillatt. Vedtak V4 3.11.2026 i `.claude/vedtak.md`. | Godkjent (bare S2) |
+| 1.2b | 3. november 2026 | Dyrepatruljen og Magiske egg lagt inn i oversikten per spill, begge med B1, B2 og B3 (lyd, kart og 3D). B4–B7 gjelder ikke: ingen kamp eller skrekk, læringsfakta, app-installasjon eller fritekst. Ingen krav er endret. Sak #12. | Godkjennes ved sammenslåing |
