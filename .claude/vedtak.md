@@ -77,7 +77,7 @@ Evens valg E1 (varer og navn), E2 (Era: valgt antrekk erstatter epokeutstyret, a
 
 Beslutningsgrunnlag: kartleggingen av de fem spillene (dokumentet «EVN Studio – kartlegging og forslag til felles UI-standard», 3.11.2026). Svar fra den voksne eieren, ordrett fra valgene i økta:
 
-- Plassering og kravnivå: «Egen fil, KS for nye versjoner (Anbefalt)». Standarden ligger i `.claude/evn-ui-standard.md`. KS1–KS15 gjelder nye spill straks og eksisterende spill trinn for trinn.
+- Plassering og kravnivå: «Egen fil, KS for nye versjoner (Anbefalt)». Standarden ligger i `.claude/evn-ui-standard.md`. Alternativet som ble valgt, var beskrevet slik: «KS1–KS15 gjelder nye spill straks og eksisterende spill trinn for trinn». Claude Code har skrevet dette inn som at et krav gjelder et eksisterende spill når trinnet som innfører det, er godkjent og publisert. Tolkningen må bekreftes av eieren.
 - Trinn 2: «Her, én PR per spill (Anbefalt)». Rettingene gjøres i standardiseringsøkta, med én PR per spill.
 - Trinn 3: «Vent til trinn 2 er godkjent (Anbefalt)».
 

@@ -3,7 +3,7 @@
 Versjon 1.0, godkjent 3. november 2026 (vedtak i `.claude/vedtak.md`).
 
 Felles betjening, navigasjon og symboler på tvers av spillene på evnstudio.no. Målet er at et barn som kan ett EVN-spill, raskt forstår de andre.
-Standarden supplerer EVN Game Standard (`.claude/evn-game-standard.md`) og UI1–UI10. Den endrer ingen krav der.
+Standarden supplerer EVN Game Standard (`.claude/evn-game-standard.md`). Den endrer ingen krav der. Den er ikke det samme som UI1–UI10 (vedtak 2. november 2026), som fortsatt har status godkjent hovedløsning.
 Grunnlag: kartlegging av Era Defenders 0.21.0, Mørkeskogen 2.0.0, Fossil Zoo 0.8.0, Dyrepatruljen 0.11.0 og Magiske egg 0.9.0 (`main`, abca738), 3. november 2026.
 
 **Grunnregel:** Lik funksjon har lik betjening, likt symbol og samme plass. Ulik spillmekanikk kan ha ulik betjening.
@@ -15,6 +15,8 @@ Grunnlag: kartlegging av Era Defenders 0.21.0, Mørkeskogen 2.0.0, Fossil Zoo 0.
 | Nye spill fra 3. november 2026 | Gjeldende fra første versjon |
 | Eksisterende spill | Et krav blir gjeldende for spillet når trinnet i planen som innfører det, er godkjent og publisert. Til da rapporteres brudd som forbedringsforslag |
 
+Forhold til UI1–UI10: KS13 og KS14 gjør de tilsvarende delene av UI7 (safe area) og UI1 (oppsett etter siste inndata) obligatoriske for nye spill, etter vedtaket 3. november 2026. Resten av UI1–UI10 har uendret status. I spill der UI1–UI10 er tatt i bruk, går UI3 (én inngang ☰ til alt annet) foran KS5: da er ☰ pauseinngangen, og Avslutt og 🗺️ står ved siden av den. (Presisering skrevet av Claude Code, må bekreftes av eieren.)
+
 KA1–KA9 er anbefalinger. Avvik fra dem begrunnes i spillets plan. Endringer som påvirker styring eller spillfølelse, prøves av Even før de bygges inn.
 
 Status per spill står nederst og oppdateres når et trinn er publisert.
@@ -23,12 +25,12 @@ Status per spill står nederst og oppdateres når et trinn er publisert.
 
 | ID | Krav | Bygger på | Kontroll |
 |---|---|---|---|
-| KS1 | Pause: P og Esc åpner og lukker. ⏸ står øverst til høyre. Spillet står stille. | F1, UI10 | A |
+| KS1 | Pause: P og Esc åpner og lukker. ⏸ står i topplinjen til høyre (Avslutt står ytterst, se KS5). Spillet står stille. | F1, UI10 | A |
 | KS2 | Kart (spill med verden): M og 🗺️, rett til venstre for ⏸. | B2 | A |
 | KS3 | Hjelp: «🎮 Slik styrer du» i pausen. Teksten viser bare det som faktisk virker, for den inndataen som brukes nå. | U2 | Q |
 | KS4 | Vei ut: Avslutt er synlig under spilling og på alle skjermer der spilleren kan bli stående (valgskjermer, tap, seier). Bruker felles `#evnAvslutt` og `#evnSporsmal`. | U1 | A, Q |
 | KS5 | Toppknapper, fra høyre hjørne: Avslutt, ⏸, 🗺️, deretter spillets egne (🔊, 📖, 🌍 …). Rekkefølgen og høyre hjørne beholdes på alle skjermstørrelser. | UI3 | A |
-| KS6 | Symboler betyr det samme i alle spill (ikonordboka under). Ett symbol har én betydning. | T4, klarspråk | Q |
+| KS6 | Symboler betyr det samme i alle spill (ikonordboka under). Ett symbol har én betydning. | Nytt krav (støtter U2 og U3) | Q |
 | KS7 | Esc lukker alltid det øverste som er åpent (dialog, kart, undermeny, valgskjerm). Er ingenting åpent, åpner Esc pausen. Alt som kan lukkes med Esc, har også en synlig lukkeknapp. | UI10 | A |
 | KS8 | Reserverte taster: Esc, P, M og Tab brukes aldri til noe annet. Tab flytter bare fokus. L er lyd i spill med lyd. | T2 | A |
 | KS9 | Spill med lyd har lydbryter i pausen og tasten L. Valget huskes. | B1 | A |
@@ -80,7 +82,8 @@ Felles grensesnittkode limes inn i hvert spill som merkede kopier (for eksempel 
 
 | Komponent | Status |
 |---|---|
-| EVN-PAUSE v2, EVN-NULLSTILL v1, startkort, `#evnAvslutt`/`#evnSporsmal` | I bruk i alle spill |
+| EVN-PAUSE v2, EVN-NULLSTILL v1, startkort, `#evnSporsmal` | I bruk i alle spill |
+| `#evnAvslutt` | I bruk i alle spill unntatt Era Defenders, som har egen `#avsluttKnapp` |
 | EVN-PAUSE v3 (lydbryter, `inert`-fokus, `EVNAktivTid`, Esc-stabel, fast toppknapperad) | Planlagt, trinn 3. Pilot i Magiske egg |
 | EVN-AVSLUTT, EVN-INNDATA, EVN-FEIL | Planlagt |
 
@@ -97,7 +100,7 @@ Felles grensesnittkode limes inn i hvert spill som merkede kopier (for eksempel 
 
 | Spill | Publisert versjon | Trinn 2 | Kjente brudd på KS (forbedringsforslag til trinnet er publisert) |
 |---|---|---|---|
-| Era Defenders | 0.21.0 | PR åpnet 3.11.2026 | KS5, KS12, KS13, KS14, KS15 |
+| Era Defenders | 0.21.0 | PR åpnet 3.11.2026 | KS4, KS5, KS12, KS13, KS14, KS15 |
 | Mørkeskogen | 2.0.0 | PR åpnet 3.11.2026 | KS4, KS5, KS8, KS9, KS10, KS12, KS14, KS15 |
 | Fossil Zoo | 0.8.0 | PR åpnet 3.11.2026 | KS5, KS7, KS9, KS12, KS13, KS14, KS15 |
 | Dyrepatruljen | 0.11.0 | PR åpnet 3.11.2026 | KS4, KS7, KS13, KS14, KS15 |
