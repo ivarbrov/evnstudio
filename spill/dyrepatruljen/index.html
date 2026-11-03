@@ -50,7 +50,7 @@ h1,h2,.lilita{font-family:'Lilita One',Nunito,sans-serif;font-weight:400;letter-
 .verden.aapen:hover,.verden.aapen:focus-visible{transform:translateY(-3px)}
 .verden.snart{background:#dff5e6;color:#2a6b3e}
 .verden b{font-size:15px}
-@media (max-width:560px){.styring b{min-width:0;margin-right:4px}body #beskjed{font-size:16px;padding:8px 14px;top:124px}#hud .topp>div:last-child{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;max-width:160px}#hud .topp>div:last-child>*{margin-left:0!important}.verdener{grid-template-columns:repeat(3,1fr)}.kort h1{font-size:34px}}
+@media (max-width:560px){.styring b{min-width:0;margin-right:4px}body #beskjed{font-size:16px;padding:8px 14px;top:calc(124px + env(safe-area-inset-top))}#hud .topp>div:last-child{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;max-width:160px}#hud .topp>div:last-child>*{margin-left:0!important}.verdener{grid-template-columns:repeat(3,1fr)}.kort h1{font-size:34px}}
 
 /* Dyrebok */
 .bokkort{max-height:calc(100dvh - 32px);overflow:auto;padding-top:0}
@@ -71,7 +71,7 @@ h1,h2,.lilita{font-family:'Lilita One',Nunito,sans-serif;font-weight:400;letter-
 .ikonknapp{background:rgba(255,255,255,.92);width:48px;height:48px;border-radius:14px;font-size:24px;margin-left:8px;box-shadow:0 3px 10px rgba(0,0,0,.15)}
 #tips{position:absolute;bottom:calc(12px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:rgba(0,0,0,.45);color:#fff;padding:6px 14px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);text-align:center;box-sizing:border-box;pointer-events:none}
 #snikMerke{position:absolute;top:calc(66px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left));background:#7b5cff;color:#fff;border-radius:12px;padding:4px 12px;font-weight:800;font-size:15px;pointer-events:none}
-#beskjed{position:absolute;top:70px;left:50%;transform:translateX(-50%);background:#fff;border-radius:16px;padding:10px 20px;font-size:20px;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.2);pointer-events:none;text-align:center;max-width:90vw;transition:opacity .3s}
+#beskjed{position:absolute;top:calc(70px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#fff;border-radius:16px;padding:10px 20px;font-size:20px;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.2);pointer-events:none;text-align:center;max-width:90vw;transition:opacity .3s}
 #etiketter{position:fixed;inset:0;pointer-events:none;z-index:5;overflow:hidden}
 .etikett{position:absolute;transform:translate(-50%,-100%);font-weight:800;font-size:16px;white-space:nowrap;text-shadow:0 0 4px #fff,0 0 4px #fff}
 .etikett.lyd{background:#fff;border-radius:12px;padding:2px 8px;font-size:14px;text-shadow:none;box-shadow:0 2px 6px rgba(0,0,0,.2)}
@@ -147,10 +147,10 @@ body.touch #pcKnapper{display:none}
     <span class="evn-merke">EVN STUDIO</span>
     <h1 style="font-size:34px">Velg en verden</h1>
     <div id="totalt" style="font-weight:800"></div>
+    <div class="kartnav"><button class="knapp gra liten" id="btnKartTilbake">← Tilbake</button><button class="knapp gra liten" id="btnKartAvslutt" hidden>🚪 Avslutt</button></div>
     <div class="verdener" id="verdensliste"></div>
     <button class="knapp bla liten" id="btnTilPark">🏞️ Dyreparken</button>
     <button class="knapp liten" id="btnKartBok">📖 Dyreboka</button>
-    <div class="kartnav"><button class="knapp gra liten" id="btnKartTilbake">← Tilbake</button><button class="knapp gra liten" id="btnKartAvslutt" hidden>🚪 Avslutt</button></div>
   </div>
 </div>
 
@@ -6265,11 +6265,11 @@ function visLag(id){
   const bokVarApen = !$('dyrebok').classList.contains('skjult');
   const ferdigVarApent = !$('ferdig').classList.contains('skjult');
   for (const l of LAG) $(l).classList.toggle('skjult', l !== id);
-  // Ferdigkortet er en dialog: fokus inn, Tab holdes inne, og fokusregelen fjernes når det lukkes (KS12)
-  if (id === 'ferdig' && window.EVNPauseInert){ window.EVNPauseInert($('ferdig')); $('btnFerdigPark').focus(); }
-  else if (ferdigVarApent && id !== 'ferdig' && window.EVNPauseInert) window.EVNPauseInert(null);
   // Skjules dyreboka av et annet lag (for eksempel ferdigkortet), må fokusregelen for boka fjernes, ellers blir det nye laget inert
   if (bokVarApen && id !== 'dyrebok' && window.EVNPauseInert) window.EVNPauseInert(null);
+  // Ferdigkortet er en dialog: fokus inn, Tab holdes inne, og fokusregelen fjernes når det lukkes (KS12). Settes etter bokas regel over.
+  if (id === 'ferdig' && window.EVNPauseInert){ window.EVNPauseInert($('ferdig')); $('btnFerdigPark').focus(); }
+  else if (ferdigVarApent && id !== 'ferdig' && window.EVNPauseInert) window.EVNPauseInert(null);
 }
 
 function visKart(){
@@ -6377,13 +6377,16 @@ function fang(d){
       EVNEcoins.belonn('dyrepatruljen.verden.' + (verdenIndeks+1));
       if (VERDENER.every((v, i) => verdenFerdig(i))) EVNEcoins.belonn('dyrepatruljen.alle');
     } } catch(e){}
-    setTimeout(()=>{
+    // Ferdigkortet vises først når ingen annen dialog er åpen (ellers ble pausen eller dyreboka utrykkbar bak fokusregelen)
+    const visFerdig = () => {
+      if (annenDialogApen()){ setTimeout(visFerdig, 300); return; }
       tilstand = 'pause'; bokFra = 'spill';
       const neste = VERDENER[verdenIndeks+1];
       $('ferdigTittel').textContent = `Du reddet alle dyrene i ${verden.navn.toLowerCase()}!`;
       $('ferdigTekst').textContent = !neste ? 'Du har reddet alle dyrene i alle verdener! 🏆' : neste.bygd ? `Alle 10 dyrene bor nå i dyreparken din. ${neste.ikon} ${neste.navn} er låst opp – velg den på kartet!` : `Alle 10 dyrene bor nå i dyreparken din. ${neste.navn} er låst opp – den lager vi sammen snart! 🛠️`;
       visLag('ferdig');
-    }, 1300);
+    };
+    setTimeout(visFerdig, 1300);
   }
 }
 function kos(){
@@ -6692,11 +6695,12 @@ $('btnTilPark').addEventListener('click', startPark);
 $('btnFerdigPark').addEventListener('click', startPark);
 $('btnFerdigKart').addEventListener('click', visKart);
 // Verdensvalget: tilbake til startkortet, og Avslutt som i pausen (KS4). Esc lukker verdensvalget og ferdigkortet (KS7).
+const annenDialogApen = () => !!document.querySelector('#evnPause.vis, #evnKart.vis, #evnNullstillBoks.vis') || evnSporsmalApen() || !$('dyrebok').classList.contains('skjult');
 function tilStartkort(){ tilstand = 'start'; visLag('startkort'); $('startBtn').focus(); }
 $('btnKartTilbake').addEventListener('click', tilStartkort);
 $('btnKartAvslutt').addEventListener('click', e => { e.stopPropagation(); const av = $('evnAvslutt'); if (av) av.click(); });
 addEventListener('keydown', e => {
-  if (e.key !== 'Escape' || e.defaultPrevented || evnSporsmalApen()) return;
+  if (e.key !== 'Escape' || e.repeat || e.defaultPrevented || evnSporsmalApen()) return;
   if (!$('ferdig').classList.contains('skjult')){ e.preventDefault(); visKart(); }
   else if (!$('kart').classList.contains('skjult')){ e.preventDefault(); tilStartkort(); }
 });
