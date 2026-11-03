@@ -68,12 +68,13 @@
     if (t && st) t.style.top = (Math.max(st.getBoundingClientRect().bottom, dg ? dg.getBoundingClientRect().bottom : 0) + 10) + 'px';
     if (!document.body.classList.contains('touchui')) { h.style.maxWidth = ''; return; }
     const acts = document.querySelector('#touch .acts'), hb = $('hotbar'); if (!acts) return;
-    if (innerHeight > innerWidth) { h.style.maxWidth = (innerWidth - 32) + 'px'; } else {   // høykant: knappene ligger under hintet, så hele bredden kan brukes
+    if (innerHeight > innerWidth) { h.style.maxWidth = (innerWidth - 32) + 'px';   // høykant: over knappene til høyre, så hintet aldri dekker dem
+      if (document.body.classList.contains('h2-hoy')) { h.style.bottom = (innerHeight - acts.getBoundingClientRect().top + 10) + 'px'; return; } } else {   // høykant: knappene ligger under hintet, så hele bredden kan brukes
     const midt = innerWidth / 2, høyre = acts.getBoundingClientRect().left - 8, venstre = Math.max(16, innerWidth - høyre);   // symmetrisk rundt midten
     h.style.maxWidth = Math.max(140, 2 * Math.min(midt - venstre, høyre - midt)) + 'px'; }
     const v = $('h2Vapen');
-    if (hb && !hb.hidden) { const top = hb.getBoundingClientRect().top; if (v) v.style.bottom = (innerHeight - top + 4) + 'px';
-      h.style.bottom = (innerHeight - (v && !v.hidden ? v.getBoundingClientRect().top : top) + 6) + 'px'; }
+    if (hb && !hb.hidden && hb.offsetHeight && !document.body.classList.contains('h2-hoy')) { const top = hb.getBoundingClientRect().top; if (v) v.style.bottom = (innerHeight - top + 4) + 'px';
+      h.style.bottom = (innerHeight - (v && !v.hidden ? v.getBoundingClientRect().top : top) + 6) + 'px'; } else h.style.bottom = '';
   }
   function hint() {
     const pr = $('prompt'), h = $('h2Hint'); if (!pr || !h) return;
@@ -99,12 +100,55 @@
   }
   addEventListener('keydown', e => { if (e.code === 'KeyH' && !e.repeat && !e.ctrlKey && !e.metaKey && document.body.classList.contains('h2-spiller')) hjelp(); });
 
+
+  // ---------- Mobil på høykant: ryddig skjerm (3.11.2026, Ivars tilbakemelding) ----------
+  // Under spilling vises bare status, dag, ☰, styrespak og knappene Hugg, Hopp og våpen. Resten ligger i ☰-menyen
+  // eller vises bare når det kan brukes. Selve knappene er de samme som før (samme id-er og samme handlinger i spillet).
+  const HØY = matchMedia('(pointer:coarse) and (orientation:portrait)');
+  const trykkPå = el => { if (!el) return; el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true })); };
+  function lukkMeny() { const m = $('h2Ark'); if (m) m.hidden = true; const k = $('h2MenyKnapp'); if (k) k.setAttribute('aria-expanded', 'false'); }
+  function høykant() {
+    const rad = $('evnRad'); if (!rad || $('h2MenyKnapp')) return;
+    const k = document.createElement('button'); k.id = 'h2MenyKnapp'; k.type = 'button'; k.textContent = '☰'; k.setAttribute('aria-label', 'Meny'); k.setAttribute('aria-expanded', 'false');
+    const ark = document.createElement('div'); ark.id = 'h2Ark'; ark.hidden = true; ark.setAttribute('role', 'menu');
+    const valg = [
+      ['⏸', 'Pause', () => $('evnPauseKnapp') && $('evnPauseKnapp').click()],
+      ['🎒', 'Ryggsekk', () => { const b = $('invBtn'); if (b) trykkPå(b); }],
+      ['🗺️', 'Kart', () => $('evnKartKnapp') && $('evnKartKnapp').click()],
+      ['🔨', 'Bygg', () => trykkPå($('buildBtn'))],
+      ['🎥', 'Kamera', () => trykkPå($('camBtn'))],
+      ['❓', 'Hjelp', () => hjelp()],
+    ];
+    for (const [ik, t, f] of valg) { const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitem'); b.innerHTML = `<span>${ik}</span>${t}`;
+      b.addEventListener('click', e => { e.stopPropagation(); lukkMeny(); f(); }); ark.appendChild(b); }
+    k.addEventListener('click', e => { e.stopPropagation(); ark.hidden = !ark.hidden; k.setAttribute('aria-expanded', String(!ark.hidden)); });
+    [k, ark].forEach(el => ['pointerdown', 'mousedown', 'touchstart'].forEach(ev => el.addEventListener(ev, e => e.stopPropagation(), { passive: true })));
+    rad.appendChild(k); document.body.appendChild(ark);
+    document.addEventListener('pointerdown', e => { if (!ark.hidden && !ark.contains(e.target) && e.target !== k) lukkMeny(); }, true);
+    // Våpenknapp ved handlingsknappene: viser valgt våpen, trykk åpner våpenvalget (hurtiglinja som eget vindu)
+    const vk = document.createElement('button'); vk.id = 'h2VapenKnapp'; vk.type = 'button'; vk.setAttribute('aria-label', 'Velg våpen');
+    vk.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); document.body.classList.toggle('h2-velg'); });
+    const big = document.querySelector('#touch .acts .big'); if (big) big.appendChild(vk);
+    const hb = $('hotbar'); if (hb) hb.addEventListener('pointerdown', () => setTimeout(() => document.body.classList.remove('h2-velg'), 120));
+    document.addEventListener('pointerdown', e => { if (document.body.classList.contains('h2-velg') && !e.target.closest('#hotbar') && e.target !== vk) document.body.classList.remove('h2-velg'); }, true);
+  }
+  function høykantOppdater() {
+    const p = HØY.matches; document.body.classList.toggle('h2-hoy', p);
+    if (!p) { document.body.classList.remove('h2-velg'); lukkMeny(); return; }
+    const vk = $('h2VapenKnapp'), ik = ($('wIcon') || {}).textContent || '🪓'; if (vk && vk.textContent !== ik) vk.textContent = ik;
+    // Spis og Bygg bare når de kan brukes
+    const pr = $('prompt'), ptxt = pr && !pr.hidden ? pr.textContent : '';
+    const mat = verdi('raw').n > 0 || verdi('cooked').n > 0 || /stek|fisk|spis/i.test(ptxt);
+    const e = $('eatBtn'); if (e) e.classList.toggle('h2-av', !mat);
+    const b = $('buildBtn'); if (b) b.classList.toggle('h2-av', !/bål|bygg/i.test(ptxt));
+  }
   function verdi(id) { const t = ($(id) || {}).textContent || '0'; const m = t.match(/(\d+)(?:\s*\/\s*(\d+))?/); return m ? { n: +m[1], maks: m[2] ? +m[2] : null } : { n: 0, maks: null }; }
   function oppdater() {
-    if (!oppsett()) return; knapper();
+    if (!oppsett()) return; knapper(); høykant();
     const nå = performance.now(), hud = $('hud'), spiller = !!hud && !hud.hidden;
     document.body.classList.toggle('h2-spiller', spiller);
-    if (!spiller) return;   // startskjerm, slutt: ingenting å oppdatere
+    if (!spiller) { document.body.classList.remove('h2-velg'); lukkMeny(); return; }   // startskjerm, slutt: ingenting å oppdatere
+    høykantOppdater();
     // Våpenlinja over hurtiglinja følger hurtiglinja
     const hb = $('hotbar'), v = $('h2Vapen'); if (v && hb) v.hidden = hb.hidden;
     // Ressurser: endret siste 4 s, fullt lager, eller ved (når hintet handler om bålet)

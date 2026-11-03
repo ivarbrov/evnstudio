@@ -111,3 +111,41 @@
 .h2Faner button{flex:1;min-height:44px;border-radius:12px;border:2px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#fff;font:inherit;font-weight:700;cursor:pointer}
 .h2Faner button.on{border-color:#ffcc00;background:rgba(255,204,0,.18)}
 #evnPause #h2NyVerden{margin-top:6px}
+
+/* ---------- Mobil på høykant: ryddig skjerm (3.11.2026) ----------
+   Synlig under spilling: smalt statusfelt, dag + ☰, styrespak, Hugg, Hopp og våpenknapp.
+   Pause, ryggsekk, kart, bygg, kamera og hjelp ligger i ☰. Hurtiglinja vises som våpenvalg når våpenknappen trykkes. */
+#h2MenyKnapp,#h2Ark,#h2VapenKnapp{display:none}
+@media (pointer:coarse) and (orientation:portrait){
+  #hud{flex-wrap:nowrap;align-items:flex-start;gap:8px}
+  #hud .clock{order:0;width:auto;justify-content:flex-end;flex-wrap:nowrap}
+  body.touchui #hud > .panel:first-child{padding:6px 8px;gap:4px;border-radius:12px}
+  body.touchui #hud .stat{font-size:11px;gap:5px} body.touchui #hud .stat > span:first-child{width:14px}
+  body.touchui #hud .bar{width:min(84px,22vw);height:7px}
+  body.touchui #hud .lvl{font-size:10px;padding:0 5px}
+  body.touchui #h2Res{min-height:0;margin-top:0} body.touchui #h2Res:empty{display:none}
+  body.touchui #h2Res .c{font-size:11px;padding:1px 7px}
+  body.touchui #h2Dag{padding:4px 10px;gap:6px} body.touchui #h2Dag #phase{font-size:13px} body.touchui #h2Dag #biome{display:none!important}
+  body.touchui #hud #evnRad #evnPauseKnapp,body.touchui #hud #evnRad #evnKartKnapp,body.touchui #h2Hjelp{display:none!important}
+  body.touchui #h2MenyKnapp{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;padding:0;font-size:20px;background:rgba(12,20,16,.72);border:1px solid rgba(243,234,214,.32);color:var(--bone);pointer-events:auto;cursor:pointer}
+  body.touchui #h2Ark:not([hidden]){display:grid;grid-template-columns:1fr 1fr;gap:8px;position:fixed;z-index:40;right:max(10px,env(safe-area-inset-right,0px));
+    top:calc(64px + env(safe-area-inset-top,0px));width:min(300px,calc(100vw - 20px));padding:10px;border-radius:16px;background:rgba(12,20,16,.94);border:1px solid var(--h2-line);box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  #h2Ark button{display:flex;align-items:center;gap:8px;min-height:52px;padding:0 12px;border-radius:12px;border:1px solid rgba(243,234,214,.18);background:rgba(243,234,214,.06);color:var(--bone);font:800 15px var(--body);cursor:pointer}
+  #h2Ark button span{font-size:20px}
+  /* Midten fri: hurtiglinja og våpenlinja skjules under spilling */
+  body.touchui #hotbar,body.touchui #h2Vapen{display:none!important}
+  body.touchui.h2-velg #hotbar:not([hidden]){display:flex!important;position:fixed;left:50%;transform:translateX(-50%);top:auto;
+    bottom:calc(200px + env(safe-area-inset-bottom,0px));flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 24px);z-index:30;background:rgba(12,20,16,.94)}
+  body.touchui.h2-velg #hotbar button{width:52px;height:52px}
+  /* Verktøyfeltet: kamera ligger i ☰; Bygg og Spis bare når de kan brukes */
+  body.touchui #camBtn{display:none!important}
+  /* faste plasser: skjult knapp beholder plassen sin, så de andre ikke flytter seg */
+  body.touchui .acts .small{background:none;border:0;padding:0}
+  body.touchui #eatBtn,body.touchui #buildBtn{background:rgba(12,20,16,.6)!important;border:1px solid rgba(243,234,214,.28)!important;border-radius:50%}
+  body.touchui #buildBtn.h2-av,body.touchui #eatBtn.h2-av{visibility:hidden!important;pointer-events:none}
+  body.touchui.h2-velg #h2Hint{display:none!important}
+  body.touchui #h2VapenKnapp{display:grid;place-items:center;grid-column:1;grid-row:1;align-self:end;justify-self:center;width:56px;height:56px;border-radius:50%;padding:0;font-size:26px;
+    background:rgba(12,20,16,.6);border:2px solid rgba(243,234,214,.32);color:var(--bone);pointer-events:auto;touch-action:manipulation}
+  body.touchui.h2-velg #h2VapenKnapp{border-color:#ffcc00;background:rgba(255,204,0,.25)}
+  body.touchui #h2Hint{bottom:calc(196px + env(safe-area-inset-bottom,0px))}
+}

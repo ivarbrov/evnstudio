@@ -12,7 +12,7 @@ const VERDEN = { v: 1, seed: 166771183, buildings: [] };
   const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   const rapport = {}, feil = [];
   for (const [navn, o] of Object.entries(SKJERM)) {
-    const ctx = await b.newContext({ ...o, deviceScaleFactor: 1 }), p = await ctx.newPage(), konsoll = [];
+    const ctx = await b.newContext({ ...o, deviceScaleFactor: 1 }), konsoll = []; let p = await ctx.newPage();
     const sjekk = (ok, tekst) => { console.log(navn, ok ? 'OK ' : 'FEIL', tekst); (rapport[navn] = rapport[navn] || {})[tekst] = !!ok; if (!ok) feil.push(`${navn}: ${tekst}`); };
     p.on('pageerror', e => konsoll.push(e.message)); p.on('console', m => { if (m.type() === 'error') konsoll.push(m.text()); });
     await ctx.addInitScript(({ H, V }) => { if (sessionStorage.getItem('__lagt')) return; sessionStorage.setItem('__lagt', 1); localStorage.clear(); localStorage.setItem('mork3d.helt', JSON.stringify(H)); localStorage.setItem('mork3d.verden', JSON.stringify(V)); }, { H: HELT, V: VERDEN });
@@ -65,9 +65,12 @@ const VERDEN = { v: 1, seed: 166771183, buildings: [] };
     sjekk(await vis('#evnKart'), 'kartet åpnes'); await trykk('#evnKartLukk'); await p.waitForTimeout(400);
     sjekk(!(await vis('#evnKart')), 'kartet lukkes');
     // Start helt på nytt
-    await p.goto('http://localhost:8765/spill/morkeskogen-2/spill/index.html', { timeout: 200000 });
+    // Ny fane i samme profil (samme localStorage); navigering bort fra en tung 3D-side henger i SwiftShader
+    await p.close(); p = await ctx.newPage(); p.on('pageerror', e => konsoll.push(e.message));
+    await p.route('**/statistikk.js', r => r.fulfill({ body: '', contentType: 'text/javascript' }));
+    await p.goto('http://localhost:8765/spill/morkeskogen-2/spill/index.html', { timeout: 200000, waitUntil: 'domcontentloaded' }); await p.waitForTimeout(3000);
     await trykk('#evnNullstill'); await p.waitForTimeout(300); await trykk('#evnNullstillJa');
-    await p.waitForLoadState('load'); await p.waitForTimeout(1500);
+    await p.waitForTimeout(6000);
     const igjen = await p.evaluate(() => ['mork3d.helt', 'mork3d.verden', 'mork3d.q'].map(k => localStorage.getItem(k)));
     sjekk(igjen.every(x => x === null) && !(await vis('#evnNullstill')), '«Start helt på nytt» sletter lagringen');
     if (konsoll.length) feil.push(`${navn}: konsoll: ${konsoll.slice(0, 3).join(' | ')}`);

@@ -7,7 +7,7 @@ const UT = process.argv[2] || 'tester/resultater/hud-test';
 const SKJERM = { pc: { viewport: { width: 1280, height: 720 } }, mobil: { viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true }, liten: { viewport: { width: 667, height: 375 }, isMobile: true, hasTouch: true }, hoykant: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } };
 const MIN_BERØRING = 44;
 // Elementer som ikke skal overlappe hverandre (når de er synlige)
-const SJEKK = ['#hud > .panel:first-child', '#h2Dag', '#evnPauseKnapp', '#evnKartKnapp', '#h2Hjelp', '#hotbar', '#h2Vapen', '#h2Hint', '#toast', '#jumpBtn', '#act', '#useBtn', '#eatBtn', '#buildBtn', '#camBtn'];
+const SJEKK = ['#hud > .panel:first-child', '#h2Dag', '#evnPauseKnapp', '#evnKartKnapp', '#h2Hjelp', '#hotbar', '#h2Vapen', '#h2Hint', '#toast', '#jumpBtn', '#act', '#useBtn', '#eatBtn', '#buildBtn', '#camBtn', '#h2MenyKnapp', '#h2VapenKnapp'];
 
 (async () => {
   fs.mkdirSync(UT, { recursive: true });
@@ -30,7 +30,9 @@ const SJEKK = ['#hud > .panel:first-child', '#h2Dag', '#evnPauseKnapp', '#evnKar
       ['natt-kamp', () => { const g = __g(); g.time = 165; for (let k = 0; k < 3; k++) { const m = g.monsters[k]; if (m) { m.x = g.p.x + 30 * k; m.y = g.p.y - 60; } } }],
       ['byggemodus', () => { const g = __g(); g.time = 40; g.wood = 20; g.stone = 10; g.build = 'hytte'; }],
       ['ryggsekk-meny', () => { const g = __g(); g.build = null; window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyI' })); }],
-      ['hjelp-pause', () => { const x = document.getElementById('menuClose') || document.getElementById('menuX'); if (x) x.click(); setTimeout(() => document.getElementById('h2Hjelp').click(), 300); }],
+      ['meny-hoykant', () => { const x = document.getElementById('menuX'); if (x) x.click(); const k = document.getElementById('h2MenyKnapp'); if (k && getComputedStyle(k).display !== 'none') k.click(); }],
+      ['vapenvalg-hoykant', () => { const a = document.getElementById('h2Ark'); if (a) a.hidden = true; const v = document.getElementById('h2VapenKnapp'); if (v && getComputedStyle(v).display !== 'none') v.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); }],
+      ['hjelp-pause', () => { document.body.classList.remove('h2-velg'); const x = document.getElementById('menuClose') || document.getElementById('menuX'); if (x) x.click(); setTimeout(() => document.getElementById('h2Hjelp').click(), 300); }],
     ];
     rapport[navn] = {};
     for (const [sit, f] of SIT) {
@@ -43,11 +45,11 @@ const SJEKK = ['#hud > .panel:first-child', '#h2Dag', '#evnPauseKnapp', '#evnKar
         for (let i = 0; i < rekt.length; i++) for (let j = i + 1; j < rekt.length; j++) { const a = rekt[i], c = rekt[j]; const ox = Math.min(a.x + a.w, c.x + c.w) - Math.max(a.x, c.x), oy = Math.min(a.y + a.h, c.y + c.h) - Math.max(a.y, c.y); if (ox > 1 && oy > 1) overlapp.push(`${a.s} × ${c.s}`); }
         const utenfor = rekt.filter(a => a.x < 0 || a.y < 0 || a.x + a.w > innerWidth + 1 || a.y + a.h > innerHeight + 1).map(a => a.s);
         const touch = document.body.classList.contains('touchui');
-        const små = touch ? [...document.querySelectorAll('#touch button, #hotbar button, #evnPauseKnapp, #evnKartKnapp, #h2Hjelp')].filter(synlig).map(el => { const b = el.getBoundingClientRect(); return { id: el.id || el.dataset.w || el.textContent.trim(), w: Math.round(b.width), h: Math.round(b.height) }; }).filter(x => x.w < MIN || x.h < MIN) : [];
+        const små = touch ? [...document.querySelectorAll('#touch button, #hotbar button, #evnPauseKnapp, #evnKartKnapp, #h2Hjelp, #h2MenyKnapp, #h2Ark button')].filter(synlig).map(el => { const b = el.getBoundingClientRect(); return { id: el.id || el.dataset.w || el.textContent.trim(), w: Math.round(b.width), h: Math.round(b.height) }; }).filter(x => x.w < MIN || x.h < MIN) : [];
         const res = document.querySelectorAll('#h2Res .c').length, full = document.querySelectorAll('#h2Res .c.full').length;
         const pr = document.getElementById('h2Hint'); const pos = {}; for (const id of ['jumpBtn', 'act', 'useBtn', 'eatBtn', 'buildBtn', 'camBtn']) { const el = document.getElementById(id); if (el) { const b = el.getBoundingClientRect(); pos[id] = [Math.round(b.left), Math.round(b.top)]; } }
         return { synlige: rekt.map(a => a.s), overlapp, utenfor, små, ressurser: res, fulle: full, hint: synlig(pr) ? pr.textContent.trim() : null, avsluttSynlig: synlig(document.getElementById('evnAvslutt')),
-          meny: synlig(document.getElementById('menu')), avsluttIPause: synlig(document.getElementById('evnPauseAvslutt')), lukk: (() => { const x = document.getElementById('h2Lukk'); if (!synlig(x)) return null; const b = x.getBoundingClientRect(); return [Math.round(b.width), Math.round(b.height)]; })(), vapen: synlig(document.getElementById('h2Vapen')) ? document.getElementById('h2Vapen').textContent.trim() : null, pause: synlig(document.getElementById('evnPause')), styrÅpen: synlig(document.getElementById('evnPauseStyr')), netter: (document.getElementById('h2Netter') || {}).textContent || null, tilstand: __st(), pos };
+          meny: synlig(document.getElementById('menu')), avsluttIPause: synlig(document.getElementById('evnPauseAvslutt')), lukk: (() => { const x = document.getElementById('h2Lukk'); if (!synlig(x)) return null; const b = x.getBoundingClientRect(); return [Math.round(b.width), Math.round(b.height)]; })(), vapen: synlig(document.getElementById('h2Vapen')) ? document.getElementById('h2Vapen').textContent.trim() : null, pause: synlig(document.getElementById('evnPause')), styrÅpen: synlig(document.getElementById('evnPauseStyr')), netter: (document.getElementById('h2Netter') || {}).textContent || null, tilstand: __st(), pos, vapenKnapp: synlig(document.getElementById('h2VapenKnapp')), ark: synlig(document.getElementById('h2Ark')), velg: document.body.classList.contains('h2-velg') && synlig(document.getElementById('hotbar')) };
       }, { SJEKK, MIN: MIN_BERØRING });
       rapport[navn][sit] = r;
       await p.screenshot({ path: `${UT}/${navn}-${sit}.png`, timeout: 120000 }).catch(e => { r.skjermbilde = 'feilet: ' + e.message.slice(0, 60); });
@@ -63,7 +65,8 @@ const SJEKK = ['#hud > .panel:first-child', '#h2Dag', '#evnPauseKnapp', '#evnKar
     if (rapport[navn]['fullt-lager'].fulle < 1) feil.push(`${navn}: fullt lager vises ikke`);
     if (!rapport[navn]['hjelp-pause'].avsluttIPause) feil.push(`${navn}: Avslutt mangler i pausemenyen`);
     { const l = rapport[navn]['hjelp-pause'].lukk; if (!l || l[0] > 60 || l[0] < 44) feil.push(`${navn}: lukkeknappen i pausen er ${l ? l.join('×') : 'borte'}`); }
-    if (!rapport[navn]['ved-baalet'].vapen || !/Nivå/.test(rapport[navn]['ved-baalet'].vapen)) feil.push(`${navn}: våpen og nivå vises ikke`);
+    if (navn === 'hoykant') { if (!rapport[navn]['ved-baalet'].vapenKnapp) feil.push(`${navn}: våpenknappen vises ikke`); if (!rapport[navn]['meny-hoykant'].ark) feil.push(`${navn}: ☰-menyen åpner ikke`); if (!rapport[navn]['vapenvalg-hoykant'].velg) feil.push(`${navn}: våpenvalget åpner ikke`); }
+    else if (!rapport[navn]['ved-baalet'].vapen || !/Nivå/.test(rapport[navn]['ved-baalet'].vapen)) feil.push(`${navn}: våpen og nivå vises ikke`);
     if (!rapport[navn]['hjelp-pause'].styrÅpen) feil.push(`${navn}: hjelp åpner ikke «Slik styrer du»`);
     if (konsoll.length) feil.push(`${navn}: konsoll: ${konsoll.slice(0, 3).join(' | ')}`);
     rapport[navn].konsoll = konsoll;
