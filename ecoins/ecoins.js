@@ -214,7 +214,7 @@
         el = document.createElement('a'); el.id = 'evnPauseEcoins'; el.className = 'evnEcoins'; el.href = BUTIKK;
         var tider = kort.querySelector('.tider'); kort.insertBefore(el, tider ? tider.nextSibling : kort.children[1] || null);
       }
-      var s = saldoAv(d || les());
+      var s = Math.max(0, saldoAv(d || les()));
       el.innerHTML = IKON + '<span></span>';
       el.lastChild.textContent = s + ' E-coins · E-shop';
       el.setAttribute('aria-label', 'Du har ' + s + ' E-coins. Åpne E-shop');
@@ -236,7 +236,7 @@
     nokkel: NOKKEL,
     spill: SPILL, varer: VARER, milepael: function (id) { return MILEPAEL[id] || null; }, vare: function (id) { return VARE[id] || null; },
     data: les,
-    saldo: function () { return saldoAv(les()); },
+    saldo: function () { return Math.max(0, saldoAv(les())); },   // vises aldri under 0 (kan skje hvis en milepæl fjernes)
     tjent: function () { return sum(les().tjent, 'e'); },
     brukt: function () { return sum(les().kjopt, 'pris'); },
     harTjent: function (id) { return !!les().tjent[id]; },
