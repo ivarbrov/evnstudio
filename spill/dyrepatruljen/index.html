@@ -135,7 +135,7 @@ body.touch #pcKnapper{display:none}
     </div>
     <button class="evn-start" id="startBtn">Start ▶</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver">Versjon 0.11.0</div>
+    <div class="evn-ver">Versjon 0.11.1</div>
   </div>
 </div>
 
@@ -4014,7 +4014,7 @@ window.EVN_HELT_B64="Z2xURgIAAAB0FAcAEEMBAEpTT057ImFzc2V0Ijp7ImdlbmVyYXRvciI6IkZ
    Strukturen er laget for 15 verdener. Hver verden er en
    oppføring i VERDENER; bygde verdener har en bygg()-funksjon.
    ============================================================ */
-const VERSJON = 'v0.11.0';
+const VERSJON = 'v0.11.1';
 const LAGRE_NOKKEL = 'evn-dyrespillet-v1';
 const $ = id => document.getElementById(id);
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
@@ -6347,7 +6347,8 @@ function sjekkFangst(){
     if (d.tilstand === 'fanget') continue;
     const dx = d.mesh.position.x - spiller.position.x, dz = d.mesh.position.z - spiller.position.z;
     const avst = Math.hypot(dx,dz);
-    if (avst > bestAvst || d.mesh.position.y > 1.6) continue;
+    // høyde over bakken der dyret står (ikke over havnivå): ellers kunne dyr på bakketopper ikke fanges (Even 3.11.2026: høna i Gården)
+    if (avst > bestAvst || d.mesh.position.y - bakkeHoyde(d.mesh.position.x, d.mesh.position.z) > 1.6) continue;
     const vinkel = (dx*fx + dz*fz) / (avst||1);
     if (vinkel < 0.3 && avst > 1.2) continue;
     best = d; bestAvst = avst;
