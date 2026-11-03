@@ -73,6 +73,8 @@ main{display:grid;grid-template-columns:1fr;gap:16px;padding:16px max(16px,env(s
 .rad button[aria-pressed=true]{border-color:var(--gronn);box-shadow:0 0 0 3px rgba(95,224,138,.2)}
 .lagret{color:var(--gronn);font-size:15px;min-height:22px;margin-top:6px}
 .tom{color:var(--dempet);background:var(--flate);border:1px dashed var(--kant);border-radius:16px;padding:14px}
+#tomLomme{margin:0 0 12px}
+#tomLomme .knapp{margin-top:8px}
 .tall{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .tall div{background:var(--flate);border:1px solid var(--kant);border-radius:16px;padding:12px;text-align:center}
 .tall b{display:flex;justify-content:center;align-items:center;gap:6px;font-family:var(--tittel);font-weight:800;font-size:26px}
@@ -132,6 +134,7 @@ details.spill li.gjort{color:var(--tekst)} details.spill li:not(.gjort){color:va
     </div>
 
     <div class="panel" id="p-butikk" role="tabpanel" aria-labelledby="fane-butikk">
+      <p class="tom" id="tomLomme" hidden>Du har 0 E-coins. Spill EVN-spillene for å tjene flere.<br><button type="button" class="knapp" id="visTjen">Slik tjener du E-coins</button></p>
       <div class="filter" role="group" aria-label="Vis">
         <button aria-pressed="true" data-f="alle">Alle</button>
         <button aria-pressed="false" data-f="hode">🎩 På hodet</button>
