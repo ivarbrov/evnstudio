@@ -26,10 +26,10 @@ nav button.på{border-color:var(--ember);background:#3a2a17}
 
 /* ===================== Ny HUD (felles byggeklosser) ===================== */
 .h-pill{background:var(--glass);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:14px}
-.h-status{position:absolute;display:grid;gap:5px;padding:8px 10px}
-.h-stat{display:grid;grid-template-columns:20px 1fr auto;align-items:center;gap:7px;font:800 12px var(--body)}
+.h-status{position:absolute;display:grid;gap:8px;padding:10px 12px;background:rgba(12,20,16,.38)}
+.h-stat{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:8px;font:800 12px var(--body);text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .h-stat .ik{font-size:15px;line-height:1;text-align:center}
-.h-bar{height:9px;border-radius:6px;background:rgba(255,255,255,.14);overflow:hidden}
+.h-bar{height:10px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25);border-radius:6px;background:rgba(255,255,255,.14);overflow:hidden}
 .h-bar i{display:block;height:100%;border-radius:6px}
 .hp i{background:linear-gradient(90deg,#e0435a,#ff6b7d)} .mat i{background:linear-gradient(90deg,#e8913a,#ffc06a)} .baal i{background:linear-gradient(90deg,#ff7a2a,#ffd36b)}
 .h-stat .tall{min-width:26px;text-align:right;opacity:.9}
@@ -41,7 +41,9 @@ nav button.på{border-color:var(--ember);background:#3a2a17}
 .h-knapp{display:grid;place-items:center;border-radius:50%;font-size:19px;border:1px solid var(--line);background:var(--glass2);color:var(--bone)}
 .h-hotbar{position:absolute;display:flex;gap:6px;padding:6px;align-items:end}
 .h-slot{position:relative;display:grid;place-items:center;border-radius:12px;background:rgba(243,234,214,.08);border:2px solid rgba(243,234,214,.16);font-size:24px}
-.h-slot.på{border-color:var(--gold);background:rgba(255,204,0,.22);box-shadow:0 0 0 2px rgba(255,204,0,.25)}
+.h-slot.på{border-color:#ffb020;background:rgba(255,176,32,.22);box-shadow:0 0 0 2px rgba(255,176,32,.35),0 0 12px rgba(255,176,32,.35)}
+.h-slot.sekk{margin-left:10px;border-style:dashed;background:rgba(243,234,214,.04)}
+.h-skille{width:1px;align-self:stretch;background:var(--line);margin:4px 0}
 .h-slot .k{position:absolute;left:4px;top:2px;font:800 10px var(--body);opacity:.7}
 .h-slot .nv{position:absolute;right:3px;bottom:1px;font:800 10px var(--body);color:var(--gold)}
 .h-vnavn{position:absolute;font:800 13px var(--body);text-align:center;text-shadow:0 1px 3px #000}
@@ -83,6 +85,7 @@ nav button.på{border-color:var(--ember);background:#3a2a17}
   <label><input type="checkbox" data-s="natt"> 🌙 Natt</label>
   <label><input type="checkbox" data-s="ressurs" checked> 🪵 Har nettopp plukket ved</label>
   <label><input type="checkbox" data-s="lav"> 🍓 Lite mat</label>
+  <label><input type="checkbox" data-s="full"> 🪵 Fullt lager</label>
   <label><input type="checkbox" data-s="prompt" checked> ✋ Står ved bålet</label>
   <label><input type="checkbox" data-s="hjelp"> ❓ Hjelpemeny åpen</label>
   <label><input type="checkbox" data-s="utv"> 🛠 Utviklerverktøy (bare for testing)</label>
@@ -94,18 +97,18 @@ nav button.på{border-color:var(--ember);background:#3a2a17}
   <table>
     <tr><th>Område</th><th>5.6.2</th><th>Forslag</th></tr>
     <tr><td>Status oppe til venstre</td><td>Stort mørkt panel med liv, mat, bål, ressurser, våpen og nivå</td><td>Tre smale linjer (liv, mat, bål med nivå). Vann vises bare når det er i bruk, som før</td></tr>
-    <tr><td>Oppe til høyre</td><td>Panel med dag, netter, område, tastaturhjelp; egne knapper under</td><td>Én rad: dag og område, pause, kart, hjelp og avslutt (på mobil ligger Avslutt i pausemenyen). Netter overlevd vises i pause og hjelp, og når en ny dag starter</td></tr>
-    <tr><td>Ressurser (ved, stein, jern, kjøtt, stekt, skinn)</td><td>Alltid synlige</td><td>Vises i 4 s når de endres, alltid når lageret er fullt, ved bålet, i byggemodus og ved verkstedet. Alltid i ryggsekk-menyen</td></tr>
-    <tr><td>Våpen og nivå</td><td>Våpennavn og nivå i statuspanelet, hurtiglinje nederst</td><td>Hurtiglinje nederst med navnet på valgt våpen over, og nivå med XP-ring til venstre</td></tr>
+    <tr><td>Oppe til høyre</td><td>Panel med dag, netter, område, tastaturhjelp; egne knapper under</td><td>Ett felt med dag og område, og egne knapper for pause, kart og hjelp. Avslutt ligger i pausemenyen (PC og mobil). Netter overlevd vises i pausemenyen</td></tr>
+    <tr><td>Ressurser (ved, stein, jern, kjøtt, stekt, skinn)</td><td>Alltid synlige</td><td>Høyst tre om gangen, alltid i samme rekkefølge (ved, stein, jern, kjøtt, stekt, skinn). Vises i ca. 4 s når de endres, og hele tiden når lageret er fullt (merket FULLT). Alt står i ryggsekk-menyen</td></tr>
+    <tr><td>Våpen og nivå</td><td>Våpennavn og nivå i statuspanelet, hurtiglinje nederst</td><td>Valgt våpen har gul/oransje ramme; ryggsekken står for seg med skillelinje. Våpennavn og ⭐ nivå i én diskret linje over</td></tr>
     <tr><td>Tastaturhjelp</td><td>Alltid synlig (PC)</td><td>I hjelpemenyen (❓ eller H). Hint i bunnen («E: legg ved på bålet») beholdes, det vises bare når det trengs</td></tr>
-    <tr><td>Mobil</td><td>Samme panel, mindre; små, gjennomsiktige knapper</td><td>Egen utforming: styrespak til venstre, stor øks-knapp og hopp til høyre (minst 56 px), små knapper 48 px med tekst, hurtiglinje i midten</td></tr>
+    <tr><td>Mobil</td><td>Samme panel, mindre; små, gjennomsiktige knapper</td><td>Styrespak nede til venstre, hurtiglinje i midten. Stor primærknapp (84 px) som er «Hugg» eller «Bruk» etter situasjonen, hopp 64 px, Bygg/Spis/Kamera 46 px med tekst</td></tr>
     <tr><td>Utviklerverktøy</td><td>Lys-test-panelet kan slås på i spillet</td><td>Rosa stiplet ramme og «UTVIKLER» – kan ikke forveksles med vanlig HUD; bare i testkopier</td></tr>
   </table>
 </div>
 
 <script>
 const BILDER = { 'pc-dag': '{{PC_DAG}}', 'pc-natt': '{{PC_NATT}}', 'mobil-dag': '{{MOBIL_DAG}}', 'mobil-natt': '{{MOBIL_NATT}}', 'pc-for': '{{PC_FOR}}', 'mobil-for': '{{MOBIL_FOR}}' };
-const S = { natt: false, ressurs: true, lav: false, prompt: true, hjelp: false, utv: false };
+const S = { full: false, natt: false, ressurs: true, lav: false, prompt: true, hjelp: false, utv: false };
 let visning = 'pc';
 const $ = s => document.querySelector(s);
 function stat(ik, kl, v, ekstra = '') { return `<div class="h-stat ${kl}"><span class="ik">${ik}</span><div class="h-bar"><i style="width:${v}%"></i></div>${ekstra}</div>`; }
@@ -121,35 +124,36 @@ function hud(m) {   // m = 'pc' | 'mobil'
     ${stat('🔥', 'baal', 64, '<b class="h-lvl">Nv 1</b>')}</div>`;
   // Ressurser (kontekst)
   h += `<div class="h-res ${S.ressurs || S.prompt ? '' : 'skjult'}" style="left:${pc ? 14 : 12}px;top:${pc ? 104 : 84}px;max-width:${pc ? 330 : 260}px">
-    <span class="h-pill h-chip ${S.ressurs ? 'ny' : ''}">🪵 7<span class="full">/15</span></span><span class="h-pill h-chip">🪨 3</span>
+    ${S.full ? '<span class="h-pill h-chip ny" style="border-color:#ffb020">🪵 15/15 <b class="full">FULLT</b></span>' : `<span class="h-pill h-chip ${S.ressurs ? 'ny' : ''}">🪵 7<span class="full">/15</span></span>`}<span class="h-pill h-chip">🪨 3</span>
     ${S.prompt ? '<span class="h-pill h-chip">🥩 2</span>' : ''}</div>`;
   // Oppe til høyre
   h += `<div class="h-topph" style="right:${pc ? 14 : 12}px;top:${pc ? 14 : 10}px">
-    <div class="h-pill h-dag">${dag}${pc ? '<span class="omr">🌲 Skogen</span>' : ''}</div>
+    <div class="h-pill h-dag">${dag}<span class="omr">🌲 Skogen</span></div>
     <span class="h-knapp" style="width:${kn}px;height:${kn}px" title="Pause (P)">⏸</span>
     <span class="h-knapp" style="width:${kn}px;height:${kn}px" title="Kart (M)">🗺️</span>
     <span class="h-knapp" style="width:${kn}px;height:${kn}px" title="Hjelp (H)">❓</span>
-    ${pc ? `<span class="h-knapp" style="width:${kn}px;height:${kn}px" title="Avslutt">✕</span>` : ''}</div>`;
+    </div>`;
   if (pc) {
     const W = 1280, H = 720, sl = 52;
-    h += `<div class="h-vnavn" style="left:0;right:0;bottom:88px">🪓 Vanlig øks</div>`;
+    h += `<div class="h-vnavn" style="left:0;right:0;bottom:88px">🪓 Vanlig øks <span style="opacity:.75;font-weight:700">· ⭐ Nivå 1</span></div>`;
     h += `<div class="h-pill h-hotbar" style="left:${W / 2 - 150}px;bottom:14px">
-      <span class="h-niva" style="--xp:35%;width:${sl}px;height:${sl}px" data-l="⭐1" title="Nivå 1 – 35 % til nivå 2"></span>
       <span class="h-slot på" style="width:${sl}px;height:${sl}px"><span class="k">1</span>🪓</span>
       <span class="h-slot" style="width:${sl}px;height:${sl}px"><span class="k">2</span>🗡️</span>
       <span class="h-slot" style="width:${sl}px;height:${sl}px"><span class="k">3</span>🏹</span>
-      <span class="h-slot" style="width:${sl}px;height:${sl}px;font-size:22px" title="Ryggsekk (I)">🎒</span></div>`;
+      <span class="h-skille"></span><span class="h-slot sekk" style="width:${sl}px;height:${sl}px;font-size:22px" title="Ryggsekk (I)">🎒</span></div>`;
     if (S.prompt) h += `<div class="h-pill h-prompt" style="bottom:116px"><kbd>E</kbd>Legg ved på bålet 🔥</div>`;
   } else {
     h += `<div class="m-joy" style="left:26px;bottom:24px;width:128px;height:128px"></div>`;
-    h += `<div class="m-btn stor" style="right:22px;bottom:22px;width:84px;height:84px;font-size:36px">🪓<small>Hugg</small></div>`;
-    h += `<div class="m-btn" style="right:122px;bottom:18px;width:60px;height:60px">⤴️<small>Hopp</small></div>`;
-    if (S.prompt) h += `<div class="m-btn" style="right:40px;bottom:126px;width:60px;height:60px;border-color:var(--gold)">✋<small>Bruk</small></div>`;
-    h += `<div class="m-btn" style="right:${S.prompt ? 112 : 30}px;bottom:${S.prompt ? 104 : 126}px;width:48px;height:48px;font-size:21px">🔨<small>Bygg</small></div>`;
-    h += `<div class="m-btn" style="right:${S.prompt ? 170 : 88}px;bottom:${S.prompt ? 104 : 126}px;width:48px;height:48px;font-size:21px">🍖<small>Spis</small></div>`;
-    h += `<div class="m-btn" style="right:${S.prompt ? 228 : 146}px;bottom:${S.prompt ? 104 : 126}px;width:48px;height:48px;font-size:21px">🎥<small>Kamera</small></div>`;
-    h += `<div class="h-pill h-hotbar" style="left:300px;bottom:10px"><span class="h-slot på" style="width:48px;height:48px">🪓</span><span class="h-slot" style="width:48px;height:48px">🗡️</span><span class="h-slot" style="width:48px;height:48px;font-size:21px">🎒</span></div>`;
-    if (S.prompt) h += `<div class="h-pill h-prompt" style="bottom:72px;font-size:13px">✋ Legg ved på bålet</div>`;
+    // Primærknapp: «Bruk» når noe kan brukes, ellers våpenet. Hopp rett til venstre for den. Små knapper over.
+    h += S.prompt ? `<div class="m-btn stor" style="right:22px;bottom:22px;width:84px;height:84px;font-size:36px;border-color:var(--gold);background:rgba(255,204,0,.28)">✋<small>Bruk</small></div>`
+                  : `<div class="m-btn stor" style="right:22px;bottom:22px;width:84px;height:84px;font-size:36px">🪓<small>Hugg</small></div>`;
+    if (S.prompt) h += `<div class="m-btn" style="right:122px;bottom:96px;width:52px;height:52px;font-size:22px">🪓<small>Hugg</small></div>`;
+    h += `<div class="m-btn" style="right:122px;bottom:22px;width:64px;height:64px">⤴️<small>Hopp</small></div>`;
+    h += `<div class="m-btn" style="right:30px;bottom:132px;width:46px;height:46px;font-size:20px">🔨<small>Bygg</small></div>`;
+    h += `<div class="m-btn" style="right:${S.prompt ? 186 : 86}px;bottom:${S.prompt ? 96 : 132}px;width:46px;height:46px;font-size:20px">🍖<small>Spis</small></div>`;
+    h += `<div class="m-btn" style="right:${S.prompt ? 242 : 142}px;bottom:${S.prompt ? 96 : 132}px;width:46px;height:46px;font-size:20px">🎥<small>Kamera</small></div>`;
+    h += `<div class="h-pill h-hotbar" style="left:${844 / 2 - 90}px;bottom:10px"><span class="h-slot på" style="width:46px;height:46px">🪓</span><span class="h-slot" style="width:46px;height:46px">🗡️</span><span class="h-skille"></span><span class="h-slot sekk" style="width:46px;height:46px;font-size:20px">🎒</span></div>`;
+    if (S.prompt) h += `<div class="h-pill h-prompt" style="bottom:70px;font-size:13px"><kbd>✋</kbd>Legg ved på bålet</div>`;
   }
   if (S.ressurs) h += `<div class="h-toast" style="top:${pc ? 80 : 58}px;font-size:${pc ? 22 : 17}px">+1 🪵</div>`;
   if (S.hjelp) h += `<div class="h-hjelp"><div class="h-pill kort" style="background:var(--glass2)"><h3>❓ Slik styrer du</h3><table>

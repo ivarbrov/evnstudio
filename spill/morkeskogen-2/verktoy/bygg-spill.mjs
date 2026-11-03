@@ -51,6 +51,9 @@ ny = ny.replace(/"\.\.\/\.\.\//g, '"../../../').replace(/'\.\.\/\.\.\//g, "'../.
 const R128 = '<script src="../../../vendor/three-r128.min.js"></script>';
 if (!ny.includes(R128)) throw new Error('Fant ikke three-r128-taggen');
 ny = ny.replace(R128, '<script src="../../../vendor/three-r187.global.js"></script>\n<script src="kompat-r187.js"></script>\n<script src="grafikk2.js"></script>');
+// Ny HUD (fase 1): eget stilark og skript. Bare utseende og plassering; alle element-id-er som logikken skriver til beholdes.
+ny = ny.trimEnd() + '\n<!-- Mørkeskogen 2.0: ny HUD (sist, så den overstyrer stilene over) -->\n<link rel="stylesheet" href="hud2.css">\n<script src="hud2.js"></script>\n';
+writeFileSync(`${UT}/hud2.css`, les('spill/morkeskogen-2/grafikk/hud2.css')); writeFileSync(`${UT}/hud2.js`, les('spill/morkeskogen-2/grafikk/hud2.js'));
 // Grafikkjernen (moduler i grafikk/) pakkes med esbuild
 const gb = spawnSync('node', ['spill/morkeskogen-2/grafikk/bygg.mjs'], { encoding: 'utf8' }); if (gb.status) { console.error(gb.stderr); process.exit(1); }
 writeFileSync(`${UT}/index.html`, ny);

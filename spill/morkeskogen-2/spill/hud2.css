@@ -1,0 +1,98 @@
+/* Mørkeskogen 2.0 – ny HUD (fase 1). Bare utseende og plassering: alle element-id-er som spillogikken skriver til,
+   er beholdt (bHp, bFood, bWater, bFire, fireLvl, wood, stone, iron, wIcon, axe, lvl, raw, cooked, skin, phase, nights,
+   biome, hotbar, prompt, toast, useBtn, act …). Hjelpefunksjoner i hud2.js flytter noen av dem til nye plasser. */
+:root{ --h2-glass:rgba(12,20,16,.38); --h2-glass2:rgba(12,20,16,.66); --h2-line:rgba(243,234,214,.18); --h2-gold:#ffb020; }
+
+/* ---------- Status oppe til venstre ---------- */
+#hud{align-items:flex-start}
+#hud > .panel:first-child{background:var(--h2-glass);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid var(--h2-line);
+  border-radius:14px;padding:10px 12px;gap:8px;min-width:200px}
+#hud .stat{gap:8px;font-size:14px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+#hud .stat > span:first-child{width:20px;text-align:center}
+#hud .bar{width:150px;height:10px;background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+#hud .lvl{font:800 11px var(--body);background:var(--ember);color:#2a1606;border-radius:6px;padding:1px 6px}
+#hud .inv{display:none!important}                        /* ressursene vises ved behov (h2Res), våpen og nivå over hurtiglinja */
+
+/* Ressurser ved behov: høyst tre, fast rekkefølge */
+#h2Res{display:flex;gap:6px;margin-top:6px;min-height:28px;pointer-events:none}
+#h2Res .c{display:flex;gap:4px;align-items:center;padding:3px 9px;border-radius:999px;font:800 13px var(--body);
+  background:var(--h2-glass2);border:1px solid var(--h2-line);transition:opacity .35s,transform .35s}
+#h2Res .c.ny{border-color:var(--h2-gold)}
+#h2Res .c.full{border-color:var(--h2-gold);background:rgba(80,52,8,.75)}
+#h2Res .c.full b.f{color:#ffd36b;font-size:11px;letter-spacing:.04em}
+#h2Res .c.ut{opacity:0;transform:translateY(-4px)}
+#h2Res .c small{opacity:.7;font-size:11px}
+
+/* ---------- Oppe til høyre: dag og område i ett felt + egne knapper ---------- */
+#hud .clock{background:none;padding:0;display:flex;align-items:center;gap:8px;text-align:left}
+#hud .clock > .sub, #hud .clock .keyhint, #minimap{display:none!important}
+#h2Dag{display:flex;align-items:center;gap:10px;padding:6px 14px;border-radius:999px;background:var(--h2-glass2);border:1px solid var(--h2-line);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#h2Dag #phase{font-size:16px}
+#h2Dag #biome{display:block!important;font:700 12px var(--body);opacity:.85}
+#hud #evnRad{margin:0;gap:8px}
+#hud #evnRad #evnPauseKnapp,#hud #evnRad #evnKartKnapp,#h2Hjelp{width:44px;min-width:44px;height:44px;min-height:44px;padding:0;display:grid;place-items:center;
+  border-radius:50%;font-size:18px;background:rgba(12,20,16,.72);border:1px solid rgba(243,234,214,.32);color:var(--bone);cursor:pointer;pointer-events:auto}
+/* Avslutt ligger i pausemenyen (🚪 Avslutt). Knappen i HUD-en gjøres usynlig uten display:none: EVN-PAUSE viser
+   «Avslutt» i pausen bare når lenken ikke har display:none (avsluttLenke()). */
+#evnAvslutt{visibility:hidden!important;position:fixed!important;left:-9999px!important;top:0!important;width:1px!important;height:1px!important;overflow:hidden!important;pointer-events:none!important}
+#h2Netter{margin:2px 0 6px;font:700 14px var(--body);opacity:.9;text-align:center}
+
+/* ---------- Hurtiglinje ---------- */
+#hotbar{background:var(--h2-glass2);border:1px solid var(--h2-line);border-radius:16px;padding:6px;gap:6px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#hotbar button{width:52px;height:52px;border-radius:12px;border:2px solid rgba(243,234,214,.16)}
+#hotbar button.on{border-color:var(--h2-gold);background:rgba(255,176,32,.22);box-shadow:0 0 0 2px rgba(255,176,32,.35),0 0 12px rgba(255,176,32,.35)}
+#hotbar #invBtn{margin-left:12px;border-style:dashed;background:rgba(243,234,214,.04);position:relative}
+#hotbar #invBtn::before{content:'';position:absolute;left:-10px;top:4px;bottom:4px;width:1px;background:var(--h2-line)}
+#h2Vapen{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:5;pointer-events:none;
+  font:800 13px var(--body);text-shadow:0 1px 3px #000;white-space:nowrap}
+#h2Vapen .n{opacity:.75;font-weight:700}
+#h2Vapen[hidden]{display:none}
+
+/* ---------- Handlingshint: ett om gangen ---------- */
+/* Spillet skriver hintet i #prompt (uendret). hud2.js viser én handling i #h2Hint, og #prompt holdes usynlig. */
+#prompt{visibility:hidden!important}
+#h2Hint{box-sizing:border-box;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(112px + env(safe-area-inset-bottom,0px));z-index:5;pointer-events:none;
+  background:var(--h2-glass2);border:1px solid var(--h2-line);border-radius:999px;padding:7px 14px;font:800 15px var(--body);white-space:nowrap;
+  max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+#h2Hint kbd{font:800 13px var(--body);background:var(--bone);color:#1a1a1a;border-radius:5px;padding:1px 6px;margin-right:7px}
+#h2Hint[hidden]{display:none}
+#h2Hint.info{font-weight:700;opacity:.9}
+#h2Hint .og{opacity:.6;margin:0 6px}
+
+/* ---------- Utviklerverktøy: tydelig adskilt ---------- */
+#devSky{border:2px dashed #ff5aa5!important;background:rgba(40,0,20,.75)!important;color:#ffd0e6!important}
+#devSky::before{content:'UTVIKLER';font:800 10px var(--body);letter-spacing:.08em;background:#ff5aa5;color:#2a0014;border-radius:4px;padding:1px 5px;margin-right:4px}
+
+/* ---------- Mobil (berøring) ---------- */
+@media (pointer:coarse){
+  body.touchui #hud > .panel:first-child{padding:7px 9px;gap:6px;min-width:0}
+  body.touchui #hud .stat{font-size:12px;gap:6px}
+  body.touchui #hud .bar{width:min(96px,22vw);height:9px}
+  body.touchui #h2Dag{padding:5px 11px;gap:8px} body.touchui #h2Dag #phase{font-size:14px} body.touchui #h2Dag #biome{font-size:11px}
+  body.touchui #h2Res .c{font-size:12px;padding:2px 8px}
+  body.touchui #hotbar button{width:46px;height:46px;font-size:21px}
+  body.touchui #h2Vapen{font-size:11px;bottom:auto}           /* mobil: liten linje rett over hurtiglinja (plassert av hud2.js) */
+  body.touchui #toast{font-size:15px;max-width:calc(100vw - 2 * 190px);white-space:normal;text-align:center;line-height:1.15}
+  body.touchui #h2Hint{bottom:calc(68px + env(safe-area-inset-bottom,0px));font-size:13px;max-width:calc(100vw - 2 * 200px)}
+  /* Høyre side, faste plasser (flytter seg aldri): Hugg (stor) nederst til høyre, Hopp til venstre for den,
+     Bruk over Hugg (vises bare når noe kan brukes; plassen står tom ellers), verktøyfelt (Bygg, Spis, Kamera) øverst. */
+  .acts{gap:10px}
+  .acts .small{gap:6px;padding:4px;border-radius:999px;background:rgba(12,20,16,.45);border:1px solid rgba(243,234,214,.18)}
+  #eatBtn,#buildBtn,#camBtn{width:44px;height:44px;background:rgba(243,234,214,.10)!important;border:0!important;font-size:19px!important}
+  .acts .big{grid-template-columns:auto auto;grid-template-rows:auto auto;gap:10px}
+  #jumpBtn{grid-column:1;grid-row:2;width:64px;height:64px;background:rgba(12,20,16,.6)!important;border:2px solid rgba(243,234,214,.32)!important}
+  #act{grid-column:2;grid-row:2;width:84px;height:84px;background:rgba(255,154,60,.42)!important;border:2px solid var(--ember)!important}
+  #useBtn{grid-column:2;grid-row:1;width:60px;height:60px;justify-self:center;font-size:26px!important;background:rgba(255,204,0,.30)!important;border:2px solid #ffcc00!important}
+}
+/* Små mobilskjermer (f.eks. iPhone SE liggende, 667 × 375) */
+@media (pointer:coarse) and (max-width:700px){
+  body.touchui #hud .bar{width:80px}
+  body.touchui #h2Dag #biome{max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body.touchui #hotbar button{width:44px;height:44px;font-size:19px}
+  body.touchui #hotbar{gap:4px;padding:4px}
+}
+/* Pause og hjelp: tydelig lukkeknapp oppe til høyre i kortet (gjør det samme som «Fortsett») */
+#evnPause .kort{position:relative}
+#evnPause #h2Lukk{position:absolute;margin:0;min-height:0;right:8px;top:8px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(243,234,214,.3);background:rgba(243,234,214,.08);
+  color:var(--bone);font-size:18px;cursor:pointer;display:grid;place-items:center;padding:0}

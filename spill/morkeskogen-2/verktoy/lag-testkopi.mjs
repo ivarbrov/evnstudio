@@ -18,7 +18,7 @@ h = h.replace('<title>', '<title>TEST 2.0 – ');
 writeFileSync(`${U}/index.html`, h);
 // Spillet: samme fil, pluss en lesekrok for testpanelet (bare grafikkobjekter og tellere; endrer ingenting)
 writeFileSync(`${U}/spill.js`, readFileSync(`${S}/spill.js`, 'utf8').replace('(() => {\n', '(() => {\nwindow.__testR3 = () => R3; window.__testG = () => g;\n'));
-for (const f of ['kompat-r187.js', 'grafikk2.js']) copyFileSync(`${S}/${f}`, `${U}/${f}`);
+for (const f of ['kompat-r187.js', 'grafikk2.js', 'hud2.css', 'hud2.js']) copyFileSync(`${S}/${f}`, `${U}/${f}`);
 copyFileSync('vendor/three-r187.global.js', `${U}/three-r187.global.js`);
 writeFileSync(`${U}/helt-data.js`, 'window.EVN_HELT_B64 = "' + readFileSync(`${S}/modeller/helt-robot.glb`).toString('base64') + '";\n');
 copyFileSync('spill/morkeskogen-2/verktoy/testpanel.js', `${U}/testpanel.js`);

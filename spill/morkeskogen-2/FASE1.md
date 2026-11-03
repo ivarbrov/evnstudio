@@ -210,3 +210,42 @@ Even valgte 90 % etter sammenligningsbildene. Ivar godkjente endringen.
 - **Merknader:**
   - Spillet har ingen «varme»-status. 🔥-linja viser brensel i bålet og bålnivå.
   - `EVN-UI-STANDARD.md` og `EVN-GAME-STANDARD.md` finnes ikke i repoet eller i prosjektet. Kontrollen er gjort mot prosjektinstruksen, kapittel 10 og 13.
+
+## Ny HUD – implementert (2.–3.11.2026)
+**Grunnlag:** Prototypen ble godkjent av Ivar 2.11 kl. 22:52, med justeringer, og kl. 23:40 med fire justeringer til.
+- **Filer:** `grafikk/hud2.css` og `grafikk/hud2.js`. `bygg-spill.mjs` legger dem sist i `spill/index.html`.
+- **Spillogikken er uendret.** Alle element-id-er som `updateHud()` skriver til, er beholdt. Noen er flyttet til nye plasser, for eksempel `#phase` og `#biome` til `#h2Dag`, og `#wIcon`, `#axe` og `#lvl` til `#h2Vapen`.
+- **Handlingshint:** Spillet skriver fortsatt `#prompt`. `hud2.js` viser én handling i `#h2Hint`:
+  - Den første som faktisk er en handling, ikke bare en melding om bålet.
+  - En ren melding vises uten knapp.
+  - I byggemodus vises «Bygg …» og «Avbryt» sammen.
+- **Ressurser:** Høyst tre om gangen, i fast rekkefølge (ved, stein, jern, kjøtt, stekt, skinn). En ressurs vises i 4 s etter en endring. Fullt lager (merket FULLT) går foran. Ved vises når hintet handler om bålet.
+- **Oppe til høyre:** Ett felt med dag og område, og egne knapper: pause, kart og ❓ hjelp (H). Hjelp åpner pausemenyen med «Slik styrer du».
+  - Avslutt ligger i pausemenyen. HUD-knappen er gjort usynlig, men ikke med `display:none`, ellers skjuler EVN-PAUSE den også i pausen.
+  - Pausekortet har lukkeknapp ✕ (44 px), som gjør det samme som «Fortsett». Netter overlevd står i pausemenyen.
+- **Mobil:**
+  - Faste plasser: Hugg (84 px) og Hopp (64 px) nederst til høyre. Bruk (60 px, gul) står over Hugg og vises bare når noe kan brukes; plassen står tom ellers.
+  - Bygg, Spis og Kamera ligger i et lite verktøyfelt (44 px).
+  - Styrespak og hurtiglinje som før.
+  - Hint og våpenlinje plasseres ut fra faktisk layout og `env(safe-area-inset-*)`.
+- **Klarspråk:** Merket på bålet heter «Bål N» (var «Nivå N», som er lett å forveksle med heltens nivå).
+- **Utviklerverktøy** (`#devSky`): rosa stiplet ramme og merket «UTVIKLER».
+
+**Tester (`tester/hud-test.js`, BESTÅTT):**
+- **Skjermer:** PC 1280 × 720, mobil 844 × 390 og liten mobil 667 × 375.
+- **Situasjoner:** ved bålet, ressurser som endres, fullt lager, nattkamp, byggemodus, ryggsekk-meny og hjelp/pause.
+- **Kontrollert:** Ingen overlapp (HUD, knapper, hint og meldinger). Ingen berøringsflater under 44 px. Knappene flytter seg ikke mellom situasjonene. Høyst tre ressurser, og fullt lager vises. Avslutt finnes i pausen, og «Slik styrer du» åpnes. Ingen konsollfeil.
+
+**EVN Game QA:** Uavhengig gjennomgang (egen agent, bare lesing). Fem feil er rettet etter rapporten:
+1. Avslutt var borte fra pausemenyen.
+2. Lukkeknappen var feil formet.
+3. Nivå og våpen var skjult på mobil.
+4. Område var skjult på små skjermer.
+5. Meldinger dekket statusfeltet.
+
+**Gjenstår:**
+- **Even:** prøve mobilstyringen i testkopien.
+- **Kontrast:** ikke målt.
+- **Safe area:** ikke prøvd med hakk på ekte iPhone.
+- **Hint på liten skjerm:** «Avbryt» i byggemodus kan bli avkortet. 🔨-knappen avbryter fortsatt.
+- **Steking:** Når både «Legg ved» og «Stek kjøtt» er mulig, vises bare «Legg ved».

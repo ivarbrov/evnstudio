@@ -1,0 +1,1212 @@
+{
+ "pc": {
+  "ved-baalet": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 2,
+   "fulle": 0,
+   "hint": "Bålet brenner for fullt 🔥",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     0,
+     0
+    ],
+    "act": [
+     0,
+     0
+    ],
+    "useBtn": [
+     0,
+     0
+    ],
+    "eatBtn": [
+     0,
+     0
+    ],
+    "buildBtn": [
+     0,
+     0
+    ],
+    "camBtn": [
+     0,
+     0
+    ]
+   }
+  },
+  "ressurser-endres": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 3,
+   "fulle": 0,
+   "hint": "FStek kjøtt",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     0,
+     0
+    ],
+    "act": [
+     0,
+     0
+    ],
+    "useBtn": [
+     0,
+     0
+    ],
+    "eatBtn": [
+     0,
+     0
+    ],
+    "buildBtn": [
+     0,
+     0
+    ],
+    "camBtn": [
+     0,
+     0
+    ]
+   }
+  },
+  "fullt-lager": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 2,
+   "fulle": 2,
+   "hint": "🖱️/EAngrip dyret",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     0,
+     0
+    ],
+    "act": [
+     0,
+     0
+    ],
+    "useBtn": [
+     0,
+     0
+    ],
+    "eatBtn": [
+     0,
+     0
+    ],
+    "buildBtn": [
+     0,
+     0
+    ],
+    "camBtn": [
+     0,
+     0
+    ]
+   }
+  },
+  "natt-kamp": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 2,
+   "fulle": 2,
+   "hint": "🖱️/EAngrip dyret",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     0,
+     0
+    ],
+    "act": [
+     0,
+     0
+    ],
+    "useBtn": [
+     0,
+     0
+    ],
+    "eatBtn": [
+     0,
+     0
+    ],
+    "buildBtn": [
+     0,
+     0
+    ],
+    "camBtn": [
+     0,
+     0
+    ]
+   }
+  },
+  "byggemodus": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 1,
+   "fulle": 1,
+   "hint": "EBygg hytte·EscAvbryt",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     0,
+     0
+    ],
+    "act": [
+     0,
+     0
+    ],
+    "useBtn": [
+     0,
+     0
+    ],
+    "eatBtn": [
+     0,
+     0
+    ],
+    "buildBtn": [
+     0,
+     0
+    ],
+    "camBtn": [
+     0,
+     0
+    ]
+   }
+  },
+  "ryggsekk-meny": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#toast"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 1,
+   "fulle": 1,
+   "hint": null,
+   "avsluttSynlig": false,
+   "meny": true,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "menu",
+   "pos": {
+    "jumpBtn": [
+     0,
+     0
+    ],
+    "act": [
+     0,
+     0
+    ],
+    "useBtn": [
+     0,
+     0
+    ],
+    "eatBtn": [
+     0,
+     0
+    ],
+    "buildBtn": [
+     0,
+     0
+    ],
+    "camBtn": [
+     0,
+     0
+    ]
+   }
+  },
+  "hjelp-pause": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#toast"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 1,
+   "fulle": 1,
+   "hint": null,
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": true,
+   "lukk": [
+    44,
+    44
+   ],
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": true,
+   "styrÅpen": true,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "pause",
+   "pos": {
+    "jumpBtn": [
+     0,
+     0
+    ],
+    "act": [
+     0,
+     0
+    ],
+    "useBtn": [
+     0,
+     0
+    ],
+    "eatBtn": [
+     0,
+     0
+    ],
+    "buildBtn": [
+     0,
+     0
+    ],
+    "camBtn": [
+     0,
+     0
+    ]
+   }
+  },
+  "konsoll": []
+ },
+ "mobil": {
+  "ved-baalet": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast",
+    "#jumpBtn",
+    "#act",
+    "#useBtn",
+    "#eatBtn",
+    "#buildBtn",
+    "#camBtn"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 1,
+   "fulle": 0,
+   "hint": "Bålet brenner for fullt 🔥",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     670,
+     310
+    ],
+    "act": [
+     744,
+     290
+    ],
+    "useBtn": [
+     756,
+     220
+    ],
+    "eatBtn": [
+     611,
+     325
+    ],
+    "buildBtn": [
+     611,
+     275
+    ],
+    "camBtn": [
+     611,
+     225
+    ]
+   }
+  },
+  "ressurser-endres": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast",
+    "#jumpBtn",
+    "#act",
+    "#useBtn",
+    "#eatBtn",
+    "#buildBtn",
+    "#camBtn"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 3,
+   "fulle": 0,
+   "hint": "🍖Stek kjøtt",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     670,
+     310
+    ],
+    "act": [
+     744,
+     290
+    ],
+    "useBtn": [
+     756,
+     220
+    ],
+    "eatBtn": [
+     611,
+     325
+    ],
+    "buildBtn": [
+     611,
+     275
+    ],
+    "camBtn": [
+     611,
+     225
+    ]
+   }
+  },
+  "fullt-lager": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast",
+    "#jumpBtn",
+    "#act",
+    "#eatBtn",
+    "#buildBtn",
+    "#camBtn"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 2,
+   "fulle": 2,
+   "hint": "🪓Angrip dyret",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     670,
+     310
+    ],
+    "act": [
+     744,
+     290
+    ],
+    "useBtn": [
+     756,
+     220
+    ],
+    "eatBtn": [
+     611,
+     325
+    ],
+    "buildBtn": [
+     611,
+     275
+    ],
+    "camBtn": [
+     611,
+     225
+    ]
+   }
+  },
+  "natt-kamp": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast",
+    "#jumpBtn",
+    "#act",
+    "#eatBtn",
+    "#buildBtn",
+    "#camBtn"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 2,
+   "fulle": 2,
+   "hint": "🪓Angrip dyret",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     670,
+     310
+    ],
+    "act": [
+     744,
+     290
+    ],
+    "useBtn": [
+     756,
+     220
+    ],
+    "eatBtn": [
+     611,
+     325
+    ],
+    "buildBtn": [
+     611,
+     275
+    ],
+    "camBtn": [
+     611,
+     225
+    ]
+   }
+  },
+  "byggemodus": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast",
+    "#jumpBtn",
+    "#act",
+    "#eatBtn",
+    "#buildBtn",
+    "#camBtn"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 2,
+   "fulle": 1,
+   "hint": "🪓Bygg hytte·🔨Avbryt",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     670,
+     310
+    ],
+    "act": [
+     744,
+     290
+    ],
+    "useBtn": [
+     756,
+     220
+    ],
+    "eatBtn": [
+     611,
+     325
+    ],
+    "buildBtn": [
+     611,
+     275
+    ],
+    "camBtn": [
+     611,
+     225
+    ]
+   }
+  },
+  "ryggsekk-meny": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#toast",
+    "#jumpBtn",
+    "#act",
+    "#eatBtn",
+    "#buildBtn",
+    "#camBtn"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 1,
+   "fulle": 1,
+   "hint": null,
+   "avsluttSynlig": false,
+   "meny": true,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "menu",
+   "pos": {
+    "jumpBtn": [
+     670,
+     310
+    ],
+    "act": [
+     744,
+     290
+    ],
+    "useBtn": [
+     756,
+     220
+    ],
+    "eatBtn": [
+     611,
+     325
+    ],
+    "buildBtn": [
+     611,
+     275
+    ],
+    "camBtn": [
+     611,
+     225
+    ]
+   }
+  },
+  "hjelp-pause": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#toast",
+    "#jumpBtn",
+    "#act",
+    "#eatBtn",
+    "#buildBtn",
+    "#camBtn"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 1,
+   "fulle": 1,
+   "hint": null,
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": true,
+   "lukk": [
+    44,
+    44
+   ],
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": true,
+   "styrÅpen": true,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "pause",
+   "pos": {
+    "jumpBtn": [
+     670,
+     310
+    ],
+    "act": [
+     744,
+     290
+    ],
+    "useBtn": [
+     756,
+     220
+    ],
+    "eatBtn": [
+     611,
+     325
+    ],
+    "buildBtn": [
+     611,
+     275
+    ],
+    "camBtn": [
+     611,
+     225
+    ]
+   }
+  },
+  "konsoll": []
+ },
+ "liten": {
+  "ved-baalet": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast",
+    "#jumpBtn",
+    "#act",
+    "#useBtn",
+    "#eatBtn",
+    "#buildBtn",
+    "#camBtn"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 2,
+   "fulle": 0,
+   "hint": "Bålet brenner for fullt 🔥",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     493,
+     295
+    ],
+    "act": [
+     567,
+     275
+    ],
+    "useBtn": [
+     579,
+     205
+    ],
+    "eatBtn": [
+     434,
+     310
+    ],
+    "buildBtn": [
+     434,
+     260
+    ],
+    "camBtn": [
+     434,
+     210
+    ]
+   }
+  },
+  "ressurser-endres": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast",
+    "#jumpBtn",
+    "#act",
+    "#useBtn",
+    "#eatBtn",
+    "#buildBtn",
+    "#camBtn"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 3,
+   "fulle": 0,
+   "hint": "🍖Stek kjøtt",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     493,
+     295
+    ],
+    "act": [
+     567,
+     275
+    ],
+    "useBtn": [
+     579,
+     205
+    ],
+    "eatBtn": [
+     434,
+     310
+    ],
+    "buildBtn": [
+     434,
+     260
+    ],
+    "camBtn": [
+     434,
+     210
+    ]
+   }
+  },
+  "fullt-lager": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast",
+    "#jumpBtn",
+    "#act",
+    "#eatBtn",
+    "#buildBtn",
+    "#camBtn"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 2,
+   "fulle": 2,
+   "hint": "🪓Angrip dyret",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     493,
+     295
+    ],
+    "act": [
+     567,
+     275
+    ],
+    "useBtn": [
+     579,
+     205
+    ],
+    "eatBtn": [
+     434,
+     310
+    ],
+    "buildBtn": [
+     434,
+     260
+    ],
+    "camBtn": [
+     434,
+     210
+    ]
+   }
+  },
+  "natt-kamp": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast",
+    "#jumpBtn",
+    "#act",
+    "#eatBtn",
+    "#buildBtn",
+    "#camBtn"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 2,
+   "fulle": 2,
+   "hint": "🪓Angrip dyret",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     493,
+     295
+    ],
+    "act": [
+     567,
+     275
+    ],
+    "useBtn": [
+     579,
+     205
+    ],
+    "eatBtn": [
+     434,
+     310
+    ],
+    "buildBtn": [
+     434,
+     260
+    ],
+    "camBtn": [
+     434,
+     210
+    ]
+   }
+  },
+  "byggemodus": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#evnPauseKnapp",
+    "#evnKartKnapp",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#h2Hint",
+    "#toast",
+    "#jumpBtn",
+    "#act",
+    "#eatBtn",
+    "#buildBtn",
+    "#camBtn"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 2,
+   "fulle": 1,
+   "hint": "🪓Bygg hytte·🔨Avbryt",
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "play",
+   "pos": {
+    "jumpBtn": [
+     493,
+     295
+    ],
+    "act": [
+     567,
+     275
+    ],
+    "useBtn": [
+     579,
+     205
+    ],
+    "eatBtn": [
+     434,
+     310
+    ],
+    "buildBtn": [
+     434,
+     260
+    ],
+    "camBtn": [
+     434,
+     210
+    ]
+   }
+  },
+  "ryggsekk-meny": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#toast",
+    "#jumpBtn",
+    "#act",
+    "#eatBtn",
+    "#buildBtn",
+    "#camBtn"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 1,
+   "fulle": 1,
+   "hint": null,
+   "avsluttSynlig": false,
+   "meny": true,
+   "avsluttIPause": false,
+   "lukk": null,
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": false,
+   "styrÅpen": false,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "menu",
+   "pos": {
+    "jumpBtn": [
+     493,
+     295
+    ],
+    "act": [
+     567,
+     275
+    ],
+    "useBtn": [
+     579,
+     205
+    ],
+    "eatBtn": [
+     434,
+     310
+    ],
+    "buildBtn": [
+     434,
+     260
+    ],
+    "camBtn": [
+     434,
+     210
+    ]
+   }
+  },
+  "hjelp-pause": {
+   "synlige": [
+    "#hud > .panel:first-child",
+    "#h2Dag",
+    "#h2Hjelp",
+    "#hotbar",
+    "#h2Vapen",
+    "#toast",
+    "#jumpBtn",
+    "#act",
+    "#eatBtn",
+    "#buildBtn",
+    "#camBtn"
+   ],
+   "overlapp": [],
+   "utenfor": [],
+   "små": [],
+   "ressurser": 1,
+   "fulle": 1,
+   "hint": null,
+   "avsluttSynlig": false,
+   "meny": false,
+   "avsluttIPause": true,
+   "lukk": [
+    44,
+    44
+   ],
+   "vapen": "🪓 Vanlig øks · ⭐ Nivå 1",
+   "pause": true,
+   "styrÅpen": true,
+   "netter": "🌙 Netter overlevd: 0",
+   "tilstand": "pause",
+   "pos": {
+    "jumpBtn": [
+     493,
+     295
+    ],
+    "act": [
+     567,
+     275
+    ],
+    "useBtn": [
+     579,
+     205
+    ],
+    "eatBtn": [
+     434,
+     310
+    ],
+    "buildBtn": [
+     434,
+     260
+    ],
+    "camBtn": [
+     434,
+     210
+    ]
+   }
+  },
+  "konsoll": []
+ },
+ "status": "BESTÅTT",
+ "feil": []
+}
