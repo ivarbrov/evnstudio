@@ -67,6 +67,12 @@ Nytt vedtak, godkjent av den voksne eieren. Sammendrag:
 - Sikkerhetskopien på eierens personlige OneDrive skal beholdes.
 - Trinn 2 kan starte på en egen utviklingsgren.
 
+## 3. november 2026: E-coins (V1–V5)
+
+Beslutningsgrunnlag: `prototype/ecoins/E-COINS-PLAN.md`. Godkjenning: «Dette godkjenes publiser løsningne», presisert med valget «Bygg alle fire spill».
+Det gjelder V1 økonomimodellen, V2 arkitekturen, V3 at fremgang fra før gir E-coins med én samlet melding, V4 presiseringen av S2 (ingen kjøp med ekte penger) og V5 pilotspill. Publisering av den ferdige versjonen krever egen godkjenning etter Evens test og EVN Game QA.
+Evens valg E1 (varer og navn), E2 (Era: valgt antrekk erstatter epokeutstyret, alternativ A brukes til han har valgt) og E3 (ikonet) er ikke tatt ennå.
+
 ## Ikke vedtatt ennå
 
 - Standard 1.2 og agent 2.0 som gjeldende versjoner (i dag utkast), med statusnivåer, kontrollmetode, klarspråkavsnittet og nye arbeidsregler i `CLAUDE.md`.

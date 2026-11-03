@@ -57,7 +57,7 @@ Status: gjeldende (versjon 1.0).
 | K2 | Teknisk | Uventede feil gir en vennlig melding med mulighet til å laste på nytt | A, Q |
 | K3 | Teknisk | Versjonsnummer og endringslogg oppdateres ved hver publisering | A |
 | S1 | Sikkerhet | CSP er på plass, uten `eval` og uten nye eksterne domener uten voksen godkjenning | A |
-| S2 | Sikkerhet | Ingen konto, chat, kjøp, reklame eller innsamling av personopplysninger | A, Q |
+| S2 | Sikkerhet | Ingen konto, chat, kjøp med ekte penger, reklame eller innsamling av personopplysninger. Kjøp med E-coins (opptjent i spillene, lagret lokalt) er tillatt (vedtak 3.11.2026) | A, Q |
 | S3 | Sikkerhet | Fritekst fra barnet lagres bare lokalt, sendes ikke ut og vises trygt | A, Q |
 | S4 | Sikkerhet | Personvern- og sikkerhetssidene stemmer med det spillet faktisk gjør | Q |
 
@@ -215,3 +215,4 @@ Funnene er fra kartleggingen 1. november 2026. De er ikke rettet, og publiserte 
 | 1.0 | 1. november 2026 | Første felles standard | Godkjent |
 | 1.1 | 2. november 2026 | Statistikk ST1–ST8 og godkjente hendelser | Godkjent |
 | 1.2 | 2. november 2026 | UI1–UI10 skrevet inn (godkjent som hovedløsning), og UI8 erstattet av UI8a–c. Statusnivåer og kontrollmetode per krav (forslag). Klarspråk etter NS-ISO 24495-1:2023 (forslag). Merknad om GoatCounter kopiert fra agentfilen til ST-avsnittet. Ny fil `.claude/vedtak.md` med originaltekst og godkjenninger. Kolonnen «UI1–UI10» lagt til i oversikten per spill. Ingen eksisterende krav er endret eller fjernet. | Utkast |
+| 1.2a | 3. november 2026 | S2 presisert: «kjøp» betyr kjøp med ekte penger. Kjøp med E-coins (opptjent i spillene, lagret lokalt) er tillatt. Vedtak V4 3.11.2026 i `.claude/vedtak.md`. | Godkjent (bare S2) |

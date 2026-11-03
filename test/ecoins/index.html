@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<title>Test – E-coins</title>
+<style>body{font:15px system-ui,sans-serif;margin:16px}td,th{border:1px solid #ccc;padding:4px 8px}.ok{color:#080}.feil{color:#b00;font-weight:700}</style>
+</head>
+<body>
+<h1>Test av E-coins-modulen</h1>
+<p>Kjøres av suiten <code>ecoins</code> i <code>test/index.html</code>, eller her med <code>?auto</code>. Bruker en egen kopi av lagringen og legger tilbake det som var der.</p>
+<table><thead><tr><th>Krav</th><th>Kontroll</th><th>Resultat</th><th>Detaljer</th></tr></thead><tbody id="ut"></tbody></table>
+<script>
+// Resultatet ligger i window.EVNEcoinsResultat = {ferdig, kontroller:[{id, spill, navn, ok, info}]}
+(function () {
+  'use strict';
+  var NOKKEL = 'evn-ecoins-v1', kontroller = [];
+  var lagret = {}; [NOKKEL, NOKKEL + '-kopi'].forEach(function (k) { lagret[k] = localStorage.getItem(k); });
+  function legg(id, navn, ok, info) { kontroller.push({ id: id, spill: 'ecoins', navn: navn, ok: !!ok, info: info == null ? '' : String(info) }); }
+  function rydd() { localStorage.removeItem(NOKKEL); localStorage.removeItem(NOKKEL + '-kopi'); }
+  function lastModul() {
+    return new Promise(function (r) {
+      var s = document.createElement('script'); s.src = '../../ecoins/ecoins.js';
+      s.onload = function () { r(true); }; s.onerror = function () { r(false); }; document.head.appendChild(s);
+    });
+  }
+  function kjor() {
+    rydd();
+    return lastModul().then(function (lastet) {
+      var E = window.EVNEcoins;
+      legg('EC0', 'Modulen lastes', lastet && !!E);
+      if (!E) return;
+      var sumRegler = E.spill.reduce(function (a, s) { return a + s.m.reduce(function (b, m) { return b + m[1]; }, 0); }, 0);
+      var publisert = E.spill.filter(function (s) { return !s.kommer; }).reduce(function (a, s) { return a + s.m.reduce(function (b, m) { return b + m[1]; }, 0); }, 0);
+      var butikk = E.varer.reduce(function (a, v) { return a + v.pris; }, 0);
+      legg('EC1', 'Regeltabellen stemmer med godkjent modell (1713 publisert, 2153 med Mørkeskogen 2.0, butikk 1585)', publisert === 1713 && sumRegler === 2153 && butikk === 1585, publisert + ' / ' + sumRegler + ' / ' + butikk);
+      var ider = {}; var dobbelId = E.spill.some(function (s) { return s.m.some(function (m) { if (ider[m[0]]) return true; ider[m[0]] = 1; return false; }); });
+      legg('EC1', 'Hver milepæl-ID er unik', !dobbelId);
+
+      var r1 = E.belonn('dyrepatruljen.verden.1', true);
+      legg('EC2', 'Milepæl gir E-coins', r1.ok && E.saldo() === 25, 'saldo ' + E.saldo());
+      var r2 = E.belonn('dyrepatruljen.verden.1', true);
+      legg('EC3', 'Samme milepæl gir ikke E-coins to ganger', !r2.ok && r2.grunn === 'allerede' && E.saldo() === 25, r2.grunn);
+      var r3 = E.belonn('finnes.ikke', true);
+      legg('EC3', 'Ukjent milepæl gir ingenting', !r3.ok && E.saldo() === 25);
+
+      var r4 = E.kjop('pirathatt');
+      legg('EC4', 'Kjøp avvises når saldoen er for lav', !r4.ok && r4.grunn === 'rad' && !E.eier('pirathatt') && E.saldo() === 25, r4.grunn);
+      E.avstem(['era.epoke.1', 'era.epoke.2', 'dyrepatruljen.verden.1', 'finnes.ikke'], 'test');
+      legg('EC5', 'Avstemming gir bare det som mangler', E.saldo() === 105, 'saldo ' + E.saldo());
+      var r5 = E.kjop('pirathatt');
+      legg('EC6', 'Kjøp med nok saldo trekker riktig beløp og gir eierskap', r5.ok && E.eier('pirathatt') && E.saldo() === 30, 'saldo ' + E.saldo());
+      var r6 = E.kjop('pirathatt');
+      legg('EC6', 'En vare kan ikke kjøpes to ganger', !r6.ok && r6.grunn === 'eid' && E.saldo() === 30);
+      var raa = JSON.parse(localStorage.getItem(NOKKEL));
+      legg('EC7', 'Saldoen lagres ikke, den regnes ut', !('saldo' in raa) && raa.kjopt.pirathatt.pris === 75);
+
+      // Avbrutt kjøp: lagringen feiler midt i kjøpet
+      E.belonn('era.epoke.3', true); var for_ = E.saldo();
+      var orig = Storage.prototype.setItem;
+      Storage.prototype.setItem = function () { throw new Error('full'); };
+      var r7; try { r7 = E.kjop('vernehjelm'); } finally { Storage.prototype.setItem = orig; }
+      legg('EC8', 'Avbrutt kjøp trekker ingen E-coins og gir ikke varen', !r7.ok && E.saldo() === for_ && !E.eier('vernehjelm'), r7.grunn + ', saldo ' + E.saldo());
+
+      // Garderobe
+      var r8 = E.taPa('hode', 'romhjelm');
+      legg('EC9', 'Kan ikke ta på noe man ikke eier', !r8.ok && E.antrekk().hode === null);
+      var r9 = E.taPa('rygg', 'pirathatt');
+      legg('EC9', 'En hatt kan ikke brukes på ryggen', !r9.ok);
+      var r10 = E.taPa('hode', 'pirathatt');
+      legg('EC9', 'Eid vare kan tas på og huskes', r10.ok && JSON.parse(localStorage.getItem(NOKKEL)).antrekk.hode === 'pirathatt');
+
+      // En annen fane har skrevet i mellomtiden: ingenting skal overskrives
+      var annen = JSON.parse(localStorage.getItem(NOKKEL)); annen.tjent['fossil.dyr.ulv'] = { e: 15, t: 1 }; localStorage.setItem(NOKKEL, JSON.stringify(annen));
+      E.belonn('fossil.dyr.love', true);
+      var etter = JSON.parse(localStorage.getItem(NOKKEL));
+      legg('EC10', 'Endring fra en annen fane blir ikke overskrevet', !!etter.tjent['fossil.dyr.ulv'] && !!etter.tjent['fossil.dyr.love'] && etter.kjopt.pirathatt);
+
+      // Ødelagt og ugyldig lagring
+      localStorage.setItem(NOKKEL, '{ikke json');
+      var s0 = E.saldo();
+      legg('EC11', 'Ødelagt lagring krasjer ikke, og originalen tas vare på', s0 === 0 && localStorage.getItem(NOKKEL + '-kopi') === '{ikke json');
+      localStorage.setItem(NOKKEL, JSON.stringify({ v: 1, tjent: { a: { e: -500 }, b: { e: 'x' }, 'era.seier': { e: 150 } }, kjopt: { romhjelm: { pris: 120 } }, antrekk: { hode: 'gullkrone', rygg: 'pirathatt' } }));
+      var d = E.data();
+      legg('EC11', 'Ugyldige verdier og antrekk som ikke er eid, renses bort', E.saldo() === 30 && d.antrekk.hode === null && d.antrekk.rygg === null, 'saldo ' + E.saldo());
+
+      legg('EC12', 'Nullstilling sletter E-coins', E.nullstill().ok && E.saldo() === 0 && localStorage.getItem(NOKKEL) === null);
+      var spillNokler = ['evn-eventyrspill-v1', 'evn-fossilspillet-v04', 'evn-dyrespillet-v1', 'evn-magiske-egg-v1'];
+      legg('EC12', 'E-coins bruker egen nøkkel, ikke spillenes', spillNokler.indexOf(E.nokkel) < 0);
+    }).catch(function (e) { legg('EC-kjoring', 'Testen ble ferdig', false, e && e.message); }).then(function () {
+      rydd(); for (var k in lagret) if (lagret[k] != null) localStorage.setItem(k, lagret[k]);
+      var ut = document.getElementById('ut');
+      kontroller.forEach(function (k) { var tr = document.createElement('tr'); [k.id, k.navn, k.ok ? 'OK' : 'FEIL', k.info].forEach(function (v, i) { var td = document.createElement('td'); td.textContent = v; if (i === 2) td.className = k.ok ? 'ok' : 'feil'; tr.appendChild(td); }); ut.appendChild(tr); });
+      window.EVNEcoinsResultat = { ferdig: true, kontroller: kontroller };
+    });
+  }
+  if (/[?&]auto\b/.test(location.search)) kjor(); else { var b = document.createElement('button'); b.textContent = 'Kjør'; b.onclick = kjor; document.body.insertBefore(b, document.querySelector('table')); }
+})();
+</script>
+</body>
+</html>
