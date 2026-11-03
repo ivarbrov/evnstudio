@@ -6378,8 +6378,11 @@ function fang(d){
       if (VERDENER.every((v, i) => verdenFerdig(i))) EVNEcoins.belonn('dyrepatruljen.alle');
     } } catch(e){}
     // Ferdigkortet vises først når ingen annen dialog er åpen (ellers ble pausen eller dyreboka utrykkbar bak fokusregelen)
+    // Må være ledig to sjekker på rad: pausen lukker «Vil du avslutte?» før den selv er ferdig med å fortsette spillet
+    let ledig = 0;
     const visFerdig = () => {
-      if (annenDialogApen()){ setTimeout(visFerdig, 300); return; }
+      if (annenDialogApen()){ ledig = 0; setTimeout(visFerdig, 300); return; }
+      if (++ledig < 2){ setTimeout(visFerdig, 150); return; }
       tilstand = 'pause'; bokFra = 'spill';
       const neste = VERDENER[verdenIndeks+1];
       $('ferdigTittel').textContent = `Du reddet alle dyrene i ${verden.navn.toLowerCase()}!`;
