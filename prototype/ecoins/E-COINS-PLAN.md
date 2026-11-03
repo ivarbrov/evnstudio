@@ -224,3 +224,7 @@ Arbeidet gjøres på egne greiner (`ecoins/…`). `main` og publiserte spill end
 - Bygget: `ecoins/ecoins.js`, `ecoins/tilbehor-3d.js`, `ecoins/2d/` (30 overlegg, 540 kB, lastes bare ved valg), `butikk/`, lenke i forsidemenyen, integrasjon i Era Defenders 0.21.0, Fossil Zoo 0.8.0, Dyrepatruljen 0.11.0 og Magiske egg 0.9.0.
 - Fra planen: Era bruker alternativ A for E2 til Even har valgt. Overleggene i 2D har ekstra plass over rammen (Fossil 32 px, Era 16 px), så høye hatter ikke blir kuttet.
 - Bildeverktøyet for overleggene ligger på grenen `ecoins/robot-verktoy` (`felles/robot/lag-ecoins-bilder.mjs`).
+- Avvik fra kapittel 8–9: modulen ligger i `ecoins/` (ikke `felles/ecoins/`) og lastes uten `defer`, så den finnes før spillets eget skript leser lagringen. Alle fire spill integrert samtidig etter Ivars valg (ikke pilot først).
+- Tester: `node test/kjor.mjs` 85 ok / 0 feil, ny suite `test/ecoins/` (20 kontroller). Spillene virker med blokkert `ecoins/`.
+- EVN Game QA (full) på 9bd1d2f: ingen kritiske feil, «JA MED FORBEHOLD». Gjenstår: statistikktestsiden (ST8, manglet fra før), test på ekte enhet, Evens test.
+- Draft-PR #13 mot `main`. Ikke slått sammen og ikke publisert.
