@@ -30,7 +30,11 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
   var SPILL = [
     { id: 'eventyrspill', start: 'menyStart' },
     { id: 'morkeskogen', start: 'startBtn' },
-    { id: 'dyrepatruljen', start: 'startBtn' },
+    { id: 'dyrepatruljen', start: 'startBtn', etterStart: function (d) {
+        var v = d.querySelector('.verden.aapen');   // Start viser verdensvalget; velg første åpne verden
+        if (v) v.click();
+      } },
+    { id: 'magiske-egg', start: 'startBtn' },
     { id: 'fossilspillet', start: 'startBtn', etterStart: function (d) {
         var b = [].find.call(d.querySelectorAll('.lvcard button'), function (x) { return !x.disabled; });
         if (b) b.click();
@@ -38,10 +42,8 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
   ];
   // Funn som står under «Kjente funn» i standarden. De gir «kjent» i stedet for «feil», og «rettet» når de er borte.
   var KJENTE = {
-    'fossilspillet/T3-zoom': 'Kjent funn i standarden: user-scalable=no sperrer zoom',
-    // Dyrepatruljen v0.10.3 ble publisert 2. november 2026 før røyktesten fantes. Funnene skal også inn i standarden.
-    'dyrepatruljen/U1-versjon': 'Kjent funn (2. november 2026): startkortet viser «v0.10.3», ikke «Versjon x.y.z»',
-    'dyrepatruljen/F1-pause': 'Kjent funn (2. november 2026): spillet bruker ikke felles pause (EVN-PAUSE)'
+    'fossilspillet/T3-zoom': 'Kjent funn i standarden: user-scalable=no sperrer zoom'
+    // Dyrepatruljen: funnene U1-versjon og F1-pause fra v0.10.3 er rettet i v0.10.12.
   };
   // Suiter for krav som ennå ikke er gjeldende. Brudd gir «varsel» og stopper ingenting.
   var IKKE_GJELDENDE = { ui: 'UI1–UI10 er godkjent hovedløsning, ikke gjeldende krav' };
