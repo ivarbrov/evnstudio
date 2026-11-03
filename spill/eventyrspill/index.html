@@ -37,15 +37,6 @@
   #base .basenavn input { font: inherit; font-size: 17px; font-weight: bold; min-height: 44px; width: 13em; max-width: 100%; padding: 6px 12px;
     border-radius: 12px; border: 2px solid rgba(255,213,74,0.6); background: rgba(0,0,0,0.35); color: #fff; text-align: center; }
   #base .basenavn input:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-  #base .tidsreise { max-width: 760px; margin: 4px auto 14px; padding: 12px 14px; border-radius: 16px; background: rgba(224,64,251,0.12); border: 2px solid rgba(224,64,251,0.45); text-align: center; }
-  #base .tidsreise h2 { margin: 0; font-size: 22px; color: #f3b4ff; }
-  #base .tidsreise p { margin: 4px 0 10px; font-size: 15px; color: #f1e6f5; }
-  #base .tidsreise-knapper { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
-  #base .tidsreise button { min-height: 48px; padding: 8px 10px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.35);
-    color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; touch-action: manipulation; }
-  #base .tidsreise button.bekreft { background: #8e24aa; border-color: #f3b4ff; }
-  #base .tidsreise button:disabled { opacity: 0.6; cursor: default; }
-  #base .tidsreise button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
   #base .basenavn small { flex-basis: 100%; text-align: center; color: #c9c2b0; font-size: 13px; }
   #base .info { color: #ddd; margin-bottom: 18px; font-size: 17px; }
   #base .kort-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
@@ -131,6 +122,28 @@
   #meny.slutt .meny-maskot { display: none; }
   @media (max-width: 380px) { #meny .meny-maskot { width: 42px; } #meny .meny-intro { gap: 12px; } #meny { padding-top: 66px; } } /* plass til «Avslutt» øverst til høyre */
   @media (max-height: 500px) { #meny .meny-maskot { display: none; } #meny .meny-intro { display: block; text-align: center; } }
+  /* Velg tidsepoke (3.11.2026, samme prinsipp som «Velg en verden» i Dyrepatruljen) */
+  #epokeKart { position: fixed; inset: 0; z-index: 21; display: none; align-items: center; justify-content: center; padding: 16px;
+    background: rgba(0,0,0,0.7); color: #fff; overflow-y: auto; }
+  #epokeKart .boks { width: min(560px, 100%); background: rgba(20,26,40,0.95); border: 2px solid rgba(255,255,255,0.18); border-radius: 18px;
+    padding: 20px 22px; display: grid; gap: 12px; text-align: center; margin: auto; }
+  #epokeKart h1 { margin: 0; font-size: 28px; color: #ffd54a; }
+  #epokeKart .andre { min-height: 48px; font-size: 18px; font-weight: bold; padding: 10px; border-radius: 14px; border: 2px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.08); color: #fff; cursor: pointer; }
+  #epokeKart .andre:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+  #epokeKart .epoker { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  #epokeKart .epoke-kort { position: relative; display: grid; justify-items: center; gap: 2px; min-height: 96px; padding: 10px 6px; border-radius: 14px;
+    border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #9aa3b8; font-size: 14px; }
+  #epokeKart .epoke-kort .nr { position: absolute; top: 5px; left: 9px; font-size: 12px; opacity: 0.8; }
+  #epokeKart .epoke-kort .ik { font-size: 30px; line-height: 1.2; }
+  #epokeKart .epoke-kort b { font-size: 16px; color: inherit; }
+  #epokeKart button.epoke-kort { cursor: pointer; color: #2a1a00; background: linear-gradient(160deg, #fff3c4, #ffd98a); border-color: #e0a640;
+    box-shadow: 0 4px 0 #b9832e; touch-action: manipulation; font-family: inherit; }
+  #epokeKart button.epoke-kort:hover, #epokeKart button.epoke-kort:focus-visible { transform: translateY(-3px); }
+  #epokeKart button.epoke-kort:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+  #epokeKart button.epoke-kort.her { background: linear-gradient(160deg, #c8f7ff, #7fd8ff); border-color: #2aa7d6; box-shadow: 0 4px 0 #1d7fa6; }
+  #epokeKart .epoke-kort.last .ik { opacity: 0.45; }
+  @media (max-width: 420px) { #epokeKart .epoker { grid-template-columns: repeat(2, 1fr); } #epokeKart .boks { padding: 16px 14px; } }
+  @media (prefers-reduced-motion: reduce) { #epokeKart button.epoke-kort:hover, #epokeKart button.epoke-kort:focus-visible { transform: none; } }
   /* Spørsmål før man avslutter (E3) */
   #evnSporsmal { position: fixed; inset: 0; z-index: 30; display: none; place-items: center; background: rgba(0,0,0,0.7); padding: 16px; }
   #evnSporsmal .boks { background: #1c2436; border: 2px solid rgba(255,255,255,0.2); border-radius: 16px; padding: 22px; max-width: 340px;
@@ -183,8 +196,16 @@ addEventListener('keydown',function(){t(false);},true);})();
   </div>
   <button class="start evn-start" id="menyStart">▶ Start</button>
   <button class="andre" id="menyNyRunde" hidden>⭐ Ny runde – sterkere fiender</button>
+  <button class="andre" id="menyEpoker" hidden>🌍 Velg tidsepoke</button>
   <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
   <div class="evn-ver">Versjon 0.20.1 · 7 tidsepoker</div>
+</div></div>
+<div id="epokeKart" role="dialog" aria-modal="true" aria-labelledby="epokeTittel"><div class="boks">
+  <span class="evn-merke">EVN STUDIO</span>
+  <h1 id="epokeTittel">🌍 Velg tidsepoke</h1>
+  <div class="lagret" id="epokeInfo"></div>
+  <div class="epoker" id="epokeListe"></div>
+  <button class="andre" id="epokeTilbake">← Tilbake</button>
 </div></div>
 <div id="evnSporsmal" role="dialog" aria-modal="true"><div class="boks">
   <div>Vil du avslutte og gå tilbake til forsiden? Spillet ditt er lagret.</div>
@@ -199,11 +220,6 @@ addEventListener('keydown',function(){t(false);},true);})();
     <small>Navnet vises over basen i spillet. Det lagres bare på denne enheten.</small>
   </div>
   <div class="info" id="baseInfo"></div>
-  <div class="tidsreise" id="tidsreise" hidden>
-    <h2>⏳ Tidsreise</h2>
-    <p>Du har vært i alle tidsepokene! Velg en du vil spille på nytt.</p>
-    <div class="tidsreise-knapper" id="tidsreiseKnapper"></div>
-  </div>
   <div class="kort-liste" id="kortListe"></div>
   <button id="tilbake">⚔️ Tilbake til kampen<span class="bare-pc"> (B)</span></button>
 </div></div>
@@ -977,36 +993,7 @@ function lukkBase() {
   for (const k in taster) taster[k] = false;
 }
 
-// Tidsreise: når du har vært i siste tidsepoke, kan du reise tilbake og spille alle epokene på nytt fra basen
-let tidsreiseValg = null, tidsreiseTimer = null;
-function visTidsreise() {
-  const boks = document.getElementById('tidsreise');
-  boks.hidden = (helt.hoyesteVerden || 1) < SISTE_VERDEN;
-  if (boks.hidden) return;
-  const knapper = document.getElementById('tidsreiseKnapper');
-  knapper.innerHTML = '';
-  for (let n = 1; n <= SISTE_VERDEN; n++) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    if (n === helt.verden) { b.textContent = VERDENSNAVN[n] + ' (her er du)'; b.disabled = true; }
-    else if (tidsreiseValg === n) { b.textContent = '✔️ Trykk igjen for å reise'; b.className = 'bekreft'; }
-    else b.textContent = VERDENSNAVN[n];
-    b.addEventListener('click', () => {
-      if (tidsreiseValg !== n) { // første trykk: spør, andre trykk: reis (så man ikke reiser ved et uhell)
-        tidsreiseValg = n; clearTimeout(tidsreiseTimer);
-        tidsreiseTimer = setTimeout(() => { tidsreiseValg = null; if (tilstand === 'base') visTidsreise(); }, 3000);
-        visTidsreise(); return;
-      }
-      tidsreiseValg = null; clearTimeout(tidsreiseTimer);
-      lukkBase();
-      gaaTilVerden(n);
-    });
-    knapper.appendChild(b);
-  }
-}
-
 function visBase() {
-  visTidsreise();
   document.getElementById('baseInfo').textContent =
     '💰 ' + helt.penger + ' penger   ⭐ Nivå ' + helt.niva + '   ❤️ ' + helt.liv + '/' + helt.maksLiv + '   🧪 ' + helt.drikker + ' drikker';
   const liste = document.getElementById('kortListe');
@@ -1105,7 +1092,7 @@ window.addEventListener('keydown', e => {
     if (k === 'b') apneBase();
     if (k === 'q') drikk();
     if (k === 'f') skytPistol(helt.retning.x, helt.retning.y);
-  } else if ((k === 'enter' || k === ' ') && !e.repeat && (tilstand === 'start' || tilstand === 'slutt') && !sporsmalApent() && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#menyVansk'))) {
+  } else if ((k === 'enter' || k === ' ') && !e.repeat && (tilstand === 'start' || tilstand === 'slutt') && !sporsmalApent() && !epokeKartApent() && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#menyVansk'))) {
     startSpill();
   }
 });
@@ -2876,12 +2863,13 @@ function oppdaterMeny() {
   const lagretEl = document.getElementById('menyLagret');
   lagretEl.classList.toggle('stats', tilstand === 'seier');
   document.getElementById('menyNyRunde').hidden = tilstand !== 'seier';
+  document.getElementById('menyEpoker').hidden = !((tilstand === 'start' || tilstand === 'seier') && tidsreiseApen());
   if (tilstand === 'seier') {
     const v = vg();
     document.getElementById('menyTittel').textContent = '🏆 Du klarte det!';
     document.getElementById('menyEpoke').textContent = 'Du slo Tidsherren og reddet hele tiden – fra steinalderen til Tidsvirvelen!';
     lagretEl.textContent = '⏱️ ' + spilletidTekst(helt.spilletid || 0) + ' · ⭐ Nivå ' + helt.niva + ' · 👑 ' + (helt.bosser || 0) + ' bosser · 💀 ' + (helt.dodsfall || 0) + ' ganger slått ut · ' + v.ikon + ' ' + v.navn + ((helt.runde || 0) ? ' · Runde ' + (helt.runde + 1) : '');
-    document.getElementById('menyMaal').textContent = 'Vil du spille videre, eller prøve en ny runde der fiendene er sterkere? Du beholder basen og nivået. I basen kan du også reise tilbake til alle tidsepokene ⏳';
+    document.getElementById('menyMaal').textContent = 'Vil du spille videre, eller prøve en ny runde der fiendene er sterkere? Du beholder basen og nivået. Med «Velg tidsepoke» kan du spille en tidligere tidsepoke på nytt.';
     document.getElementById('menyStart').textContent = '♾️ Fortsett å spille';
   }
 }
@@ -2893,6 +2881,43 @@ for (const b of document.querySelectorAll('#menyVansk button')) {
   });
 }
 document.getElementById('menyNyRunde').addEventListener('click', e => { e.stopPropagation(); nyRunde(); });
+
+// ===================== VELG TIDSEPOKE =====================
+// Når du har nådd siste tidsepoke, kan du velge hvilken epoke du vil spille fra startkortet og seiersskjermen.
+// Sett TIDSREISE_FRA til 2 hvis du vil kunne velge mellom epokene du har vært i, med en gang.
+const TIDSREISE_FRA = SISTE_VERDEN;
+function tidsreiseApen() { return (helt.hoyesteVerden || 1) >= TIDSREISE_FRA; }
+const epokeKart = document.getElementById('epokeKart');
+let kartFra = null;
+function epokeKartApent() { return epokeKart.style.display === 'flex'; }
+function visEpokeKart() {
+  kartFra = tilstand;
+  const hoy = helt.hoyesteVerden || 1;
+  document.getElementById('epokeInfo').textContent = '⏳ Du har vært i ' + hoy + ' av ' + SISTE_VERDEN + ' tidsepoker' + (helt.seiret ? ' og slått Tidsherren 🏆' : '');
+  const liste = document.getElementById('epokeListe'); liste.innerHTML = '';
+  for (let n = 1; n <= SISTE_VERDEN; n++) {
+    const apen = n <= hoy, navn = VERDENSNAVN[n].replace(' ' + VERDENSIKON[n], '');
+    const el = document.createElement(apen ? 'button' : 'div');
+    el.className = 'epoke-kort' + (apen ? '' : ' last') + (n === helt.verden ? ' her' : '');
+    const status = !apen ? '🔒 Låst' : n === helt.verden ? '📍 Her er du' : (n < hoy || (n === SISTE_VERDEN && helt.seiret)) ? '✅ Klart' : '▶ Spill';
+    el.innerHTML = '<span class="nr">' + n + '</span><span class="ik">' + VERDENSIKON[n] + '</span><b>' + navn + '</b><span>' + status + '</span>';
+    if (apen) { el.type = 'button'; el.addEventListener('click', e => { e.stopPropagation(); velgEpoke(n); }); }
+    else el.setAttribute('aria-label', 'Tidsepoke ' + n + ', ' + navn + ', låst');
+    liste.appendChild(el);
+  }
+  document.getElementById('meny').style.display = 'none';
+  epokeKart.style.display = 'flex';
+  const forste = liste.querySelector('button'); if (forste) forste.focus();
+}
+function lukkEpokeKart() { epokeKart.style.display = 'none'; menyVist = ''; } // startkortet eller seiersskjermen vises igjen
+function velgEpoke(n) {
+  epokeKart.style.display = 'none';
+  if (kartFra === 'seier') fortsettEtterSeier(); else startSpill();
+  if (n !== helt.verden) gaaTilVerden(n);
+}
+document.getElementById('menyEpoker').addEventListener('click', e => { e.stopPropagation(); visEpokeKart(); });
+document.getElementById('epokeTilbake').addEventListener('click', e => { e.stopPropagation(); lukkEpokeKart(); });
+epokeKart.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); lukkEpokeKart(); } });
 document.getElementById('menyStart').addEventListener('click', e => { if (tilstand === 'seier') { e.stopPropagation(); fortsettEtterSeier(); } });
 document.getElementById('meny').addEventListener('click', () => { if (tilstand === 'start' || tilstand === 'slutt') startSpill(); });
 document.getElementById('meny').addEventListener('touchstart', () => { erTouch = true; mus.brukt = false; }, { passive: true });
