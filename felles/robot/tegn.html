@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="no"><head><meta charset="utf-8"><title>EVN-roboten – bildeverksted</title>
 <script type="importmap">{ "imports": { "three": "./node_modules/three/build/three.module.js", "three/addons/": "./node_modules/three/examples/jsm/" } }</script>
+<script src="./ecoins-tilbehor.js"></script><!-- kopi av ecoins/tilbehor-3d.js på grenen ecoins/v1 -->
 </head><body style="margin:0;background:#888">
 <script type="module">
 // Tegner bilder av EVN-roboten (RobotExpressive, CC0) med samme gulfarge som Mørkeskogen 2.0.
@@ -77,6 +78,12 @@ function lagEgg(skala) {
 function leggTilEkstra(spec) {
   stilling('Idle', 0); rot.rotation.y = 0; rot.updateMatrixWorld(true);
   if (spec.tilbehor) ekstra.push(...lagTilbehor(THREE, scene, modell, spec.tilbehor.epoke, spec.tilbehor.hva || 'begge'));
+  if (spec.vare) {                                        // E-coins-vare: bare denne vises; alle festede deler fjernes etterpå
+    const t = window.EVNTilbehor.lag(THREE, modell);
+    const v = t.objekt(spec.vare); if (!v) throw new Error('ukjent vare ' + spec.vare);
+    modell.traverse(o => { if (o.name && o.name.startsWith('evn-tilbehor-')) ekstra.push(o); });
+    for (const o of ekstra) o.visible = (o === v);
+  }
   if (spec.rekvisitt === 'egg-hand') {                    // egget i høyre hånd (følger animasjonen)
     let h = null; modell.traverse(o => { if (o.isBone && o.name.replace(/[^a-z0-9]/gi, '') === 'Palm2R') h = o; });
     const e = lagEgg(H * .085); const ws = new THREE.Vector3(); h.getWorldScale(ws); e.scale.divideScalar(ws.x);
@@ -97,7 +104,8 @@ window.tegnArk = (spec) => {
   if (spec.kunTilbehor) modell.traverse(o => { if (o.isMesh && !ekstra.some(e => { let p = o; while (p) { if (p === e) return true; p = p.parent; } return false; })) { if (!skjult.some(([m]) => m === o.material)) skjult.push([o.material, o.material.colorWrite]); o.material.colorWrite = false; } });
   const F = spec.F, kol = spec.kol || spec.rammer.length, rader = Math.ceil(spec.rammer.length / kol);
   renderer.setSize(F, F, false);
-  const ark = document.createElement('canvas'); ark.width = F * kol; ark.height = F * rader;
+  const E = spec.ekstraTopp || 0, FH = F + E;            // ekstraTopp: plass over rammen til høye hatter (bare tilbehørslag)
+  const ark = document.createElement('canvas'); ark.width = F * kol; ark.height = FH * rader;
   const c2 = ark.getContext('2d');
   const kam = ortoKamera(spec.hoyde, spec.synlig * H, spec.fot);
   const tmp = document.createElement('canvas'); tmp.width = tmp.height = F; const t2 = tmp.getContext('2d', { willReadFrequently: true });
@@ -106,12 +114,29 @@ window.tegnArk = (spec) => {
   let refTopp = null;
   spec.rammer.forEach((r, i) => {
     stilling(r.klipp, r.t); rot.rotation.y = r.retning || 0;
-    renderer.render(scene, kam);
-    t2.clearRect(0, 0, F, F); t2.drawImage(renderer.domElement, 0, 0);
     let dy = 0;
-    if (i === 0) refTopp = topp();
-    if (r.juster === 'topp') { dy = refTopp - topp(); dy = Math.min(dy, F - 1 - bunn()); }
-    const x = (i % kol) * F, y = Math.floor(i / kol) * F;
+    if (spec.kunTilbehor && (i === 0 || r.juster)) {     // mål på roboten uten tilbehør, så laget flyttes likt med robotarket
+      const sv = ekstra.map(o => [o, o.visible]); ekstra.forEach(o => { o.visible = false; });
+      for (const [m] of skjult) m.colorWrite = true;
+      renderer.render(scene, kam); t2.clearRect(0, 0, F, F); t2.drawImage(renderer.domElement, 0, 0);
+      if (i === 0) refTopp = topp();
+      if (r.juster === 'topp') { dy = refTopp - topp(); dy = Math.min(dy, F - 1 - bunn()); }
+      for (const [m] of skjult) m.colorWrite = false; sv.forEach(([o, v]) => { o.visible = v; });
+    }
+    // Tilbehørslaget: flytt kameraet i stedet for bildet, så en hatt over rammekanten ikke blir kuttet
+    const enhet = (kam.top - kam.bottom) / F;
+    const flytt = spec.kunTilbehor && dy ? dy * enhet : 0;
+    if (flytt || E) { kam.top += flytt + E * enhet; kam.bottom += flytt; kam.updateProjectionMatrix(); if (E) { renderer.setSize(F, FH, false); tmp.height = FH; } }
+    renderer.render(scene, kam);
+    if (flytt || E) { kam.top -= flytt + E * enhet; kam.bottom -= flytt; kam.updateProjectionMatrix(); }
+    t2.clearRect(0, 0, F, FH); t2.drawImage(renderer.domElement, 0, 0);
+    if (E) { renderer.setSize(F, F, false); }
+    if (spec.kunTilbehor) dy = 0;
+    if (!spec.kunTilbehor) {
+      if (i === 0) refTopp = topp();
+      if (r.juster === 'topp') { dy = refTopp - topp(); dy = Math.min(dy, F - 1 - bunn()); }
+    }
+    const x = (i % kol) * F, y = Math.floor(i / kol) * FH;
     c2.save();
     if (r.speil) { c2.translate(x + F, y + dy); c2.scale(-1, 1); c2.drawImage(tmp, 0, 0); }
     else c2.drawImage(tmp, x, y + dy);
