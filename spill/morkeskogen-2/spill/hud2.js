@@ -22,6 +22,9 @@
     const hn = document.createElement('div'); hn.id = 'h2Hint'; hn.hidden = true; hn.setAttribute('role', 'status'); document.body.appendChild(hn);
     return true;
   }
+  // Faner i ryggsekken: husk valgt fane og tegn menyen på nytt (renderMenu leser EVN2_MENYFANE)
+  document.addEventListener('click', e => { const f = e.target.closest && e.target.closest('#menuList [data-fane]'); if (!f) return;
+    e.stopPropagation(); window.EVN2_MENYFANE = f.dataset.fane; if (typeof window.EVN2_visMeny === 'function') window.EVN2_visMeny(); const l = $('menuList'); if (l) l.scrollTop = 0; }, true);
   function knapper() {   // EVN-PAUSE lager knappene litt etter oppstart
     const rad = $('evnRad'); if (!rad || $('h2Hjelp')) return;
     const h = document.createElement('button'); h.id = 'h2Hjelp'; h.type = 'button'; h.textContent = '❓'; h.title = 'Hjelp (H)'; h.setAttribute('aria-label', 'Hjelp');
@@ -33,6 +36,17 @@
     // Lukkeknapp i pausekortet (samme som «Fortsett»; Esc og P virker som før)
     if (kort && !$('h2Lukk')) { const x = document.createElement('button'); x.id = 'h2Lukk'; x.type = 'button'; x.textContent = '✕'; x.setAttribute('aria-label', 'Lukk og spill videre');
       x.addEventListener('click', e => { e.stopPropagation(); const f = $('evnPauseFortsett'); if (f) f.click(); }); kort.prepend(x); }
+    // «Lag en helt ny verden» er flyttet fra ryggsekken til pausen. Samme handling som før (to trykk for å bekrefte).
+    const av = $('evnPauseAvslutt');
+    if (kort && av && !$('h2NyVerden') && typeof window.EVN2_menyHandling === 'function') {
+      const b = document.createElement('button'); b.id = 'h2NyVerden'; b.type = 'button'; b.className = 'liten'; b.textContent = '🌍 Lag en helt ny verden';
+      let t0 = 0;
+      b.addEventListener('click', e => { e.stopPropagation();         const andre = performance.now() - t0 < 6000; t0 = performance.now();
+        window.EVN2_menyHandling('newworld');
+        b.textContent = andre ? '✅ Ny verden neste gang du starter et spill' : '⚠️ Trykk igjen – det du har bygd blir borte';
+        if (andre) t0 = 0; });
+      kort.insertBefore(b, av);
+    }
     if (kort && n && !$('h2Netter')) { const p = document.createElement('p'); p.id = 'h2Netter'; p.append('🌙 Netter overlevd: ', n); kort.insertBefore(p, $('evnPauseFortsett')); }
   }
   // Hjelp = pausemenyen med «Slik styrer du» åpen (spillet står stille mens den vises)

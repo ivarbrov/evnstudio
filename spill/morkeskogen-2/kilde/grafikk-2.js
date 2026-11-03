@@ -407,26 +407,33 @@ function renderMenu() {
       rows.push({ icon: B.icon, n: B.n, desc: B.desc, cost: B.cost, btn: 'Bygg', act: 'build:' + id, ok: afford(B.cost) });
   } else if (menuKind === 'weapons') {
     const lv = heroLevel();
-    $('menuTitle').textContent = 'Ryggsekk og våpen 🎒';
-    pre = invGrid();
-    if (g.sack > 0) rows.push({ icon: '🎒', n: g.packDown ? 'Sekken står på bakken' : `${SACKS[g.sack].n} på ryggen`, desc: g.packDown ? 'Gå bort til den og trykk E for å ta den på igjen.' : 'Sett den fra deg her (da har du bare lommeplass).', cost: {}, btn: g.packDown ? '—' : 'Ta av', act: g.packDown ? '' : 'packoff', ok: !g.packDown });
-    rows.push(...craftRows());
-    rows.push({ icon: '🧢', n: hero.cap !== false ? 'Capsen er på' : 'Capsen er av', desc: 'Den beige capsen med skyggen bak. Ta den av eller på.', cost: {}, btn: hero.cap !== false ? 'Ta av' : 'Ta på', act: 'cap', ok: true });
-    rows.push({ icon: '🌍', n: 'Lag en helt ny verden', desc: 'Neste gang du starter et spill, får du en ny, tilfeldig verden. Det du har bygd blir borte (våpen, XP og oppdrag beholder du).', cost: {}, btn: 'Ny verden', act: 'newworld', ok: true });
-    const book = hero.fishBook || {}; const fk = Object.keys(FISH);
-    rows.push({ icon: '📖', n: `Fiskeboka: ${fk.filter(k => book[k]).length} av ${fk.length} arter`, desc: fk.map(k => book[k] ? `${FISH[k].icon} ${FISH[k].n} ${book[k]} cm` : `❔ ${FISH[k].water === 'innsjø' ? 'innsjø' : FISH[k].biome === 'sno' ? 'elv i snøen' : FISH[k].biome === 'jungel' ? 'elv i jungelen' : 'elv'}`).join(' · '), cost: {}, btn: '', act: '', ok: false, nobtn: true });
-    rows.push({ icon: '⭐', n: `Nivå ${lv.L}`, desc: lv.need ? `${lv.x} av ${lv.need} XP til nivå ${lv.L + 1}. Du får XP av oppdrag, netter du overlever og farlige fiender.` : 'Du har nådd høyeste nivå!', cost: {}, btn: '', act: '', ok: false, nobtn: true });
-    const fart = W => W.kind === 'bow' ? 'trekk og skyt' : W.cd <= 0.35 ? 'rask' : W.cd <= 0.6 ? 'middels' : 'treg';
-    const rekk = W => W.kind !== 'melee' ? 'lang (skudd)' : W.aoe ? 'rundt deg' : W.reach < 100 ? 'kort' : 'lang';
-    WEAPON_SLOTS.forEach((id, i) => {
-      const W = WEAPONS[id], own = hero.owned.includes(id), sel = hero.sel === id;
-      const dmg = Math.round(weaponDmg(id) * 10) / 10;
-      const desc = own && W.kind === 'lasso' ? `Kast den på et dyr – dyret blir tamt og følger deg (maks ${PET_MAX}).` : own && W.kind === 'rod' ? 'Kast mot elva eller innsjøen, vent på napp og sveiv inn.' : own ? `Skade ${dmg} · ${fart(W)} · rekkevidde ${rekk(W)}` + (id === 'oks' ? ` · ${AXES[g.axe].n}` : ` · våpennivå ${wLvl(id)}`) + (lv.L < W.lvl ? ` · 🔒 krever nivå ${W.lvl}` : '') : '🔒 ' + W.how;
-      rows.push({ icon: W.icon, n: `${i + 1}. ${W.n}${W.rare ? ' ✨' : ''}`, desc, cost: {}, btn: sel ? 'Valgt' : 'Velg', act: 'sel:' + id, ok: own && !sel && lv.L >= W.lvl });
-    });
-    for (const q of QUESTS) {
-      const done = hero.qdone.includes(q.id), pr = hero.qprog[q.id] || 0;
-      rows.push({ icon: done ? '✅' : '📜', n: q.n, desc: `${q.d} ${done ? 'Fullført!' : `(${pr}/${q.goal})`} Belønning: ${q.xp} XP${q.reward ? ` og ${WEAPONS[q.reward].icon} ${WEAPONS[q.reward].n}` : ''}.`, cost: {}, btn: '', act: '', ok: false, nobtn: true });
+    $('menuTitle').textContent = 'Ryggsekk 🎒';
+    // 2.0: ryggsekken delt i faner (Sekk / Våpen / Lag). «Ny verden» ligger i pausemenyen; capsen er fjernet (roboten har ingen caps).
+    const FANER = [['sekk', '🎒 Sekk'], ['vapen', '⚔️ Våpen'], ['lag', '🔨 Lag']];
+    const fane = FANER.some(f => f[0] === window.EVN2_MENYFANE) ? window.EVN2_MENYFANE : 'sekk';
+    pre = '<div class="h2Faner" role="tablist">' + FANER.map(([id, t]) => `<button type="button" role="tab" data-fane="${id}" aria-selected="${id === fane}" class="${id === fane ? 'on' : ''}">${t}</button>`).join('') + '</div>';
+    if (fane === 'sekk') {
+      pre += invGrid();
+      if (g.sack > 0) rows.push({ icon: '🎒', n: g.packDown ? 'Sekken står på bakken' : `${SACKS[g.sack].n} på ryggen`, desc: g.packDown ? 'Gå bort til den og trykk E for å ta den på igjen.' : 'Sett den fra deg her (da har du bare lommeplass).', cost: {}, btn: g.packDown ? '—' : 'Ta av', act: g.packDown ? '' : 'packoff', ok: !g.packDown });
+      const book = hero.fishBook || {}; const fk = Object.keys(FISH);
+      rows.push({ icon: '📖', n: `Fiskeboka: ${fk.filter(k => book[k]).length} av ${fk.length} arter`, desc: fk.map(k => book[k] ? `${FISH[k].icon} ${FISH[k].n} ${book[k]} cm` : `❔ ${FISH[k].water === 'innsjø' ? 'innsjø' : FISH[k].biome === 'sno' ? 'elv i snøen' : FISH[k].biome === 'jungel' ? 'elv i jungelen' : 'elv'}`).join(' · '), cost: {}, btn: '', act: '', ok: false, nobtn: true });
+    } else if (fane === 'lag') {
+      rows.push(...craftRows());
+      if (!rows.length) rows.push({ icon: '🔨', n: 'Du har laget alt du kan lage her', desc: 'Øks og våpen lager du i verkstedet i landsbyen.', cost: {}, btn: '', act: '', ok: false, nobtn: true });
+    } else {
+      rows.push({ icon: '⭐', n: `Nivå ${lv.L}`, desc: lv.need ? `${lv.x} av ${lv.need} XP til nivå ${lv.L + 1}. Du får XP av oppdrag, netter du overlever og farlige fiender.` : 'Du har nådd høyeste nivå!', cost: {}, btn: '', act: '', ok: false, nobtn: true });
+      const fart = W => W.kind === 'bow' ? 'trekk og skyt' : W.cd <= 0.35 ? 'rask' : W.cd <= 0.6 ? 'middels' : 'treg';
+      const rekk = W => W.kind !== 'melee' ? 'lang (skudd)' : W.aoe ? 'rundt deg' : W.reach < 100 ? 'kort' : 'lang';
+      WEAPON_SLOTS.forEach((id, i) => {
+        const W = WEAPONS[id], own = hero.owned.includes(id), sel = hero.sel === id;
+        const dmg = Math.round(weaponDmg(id) * 10) / 10;
+        const desc = own && W.kind === 'lasso' ? `Kast den på et dyr – dyret blir tamt og følger deg (maks ${PET_MAX}).` : own && W.kind === 'rod' ? 'Kast mot elva eller innsjøen, vent på napp og sveiv inn.' : own ? `Skade ${dmg} · ${fart(W)} · rekkevidde ${rekk(W)}` + (id === 'oks' ? ` · ${AXES[g.axe].n}` : ` · våpennivå ${wLvl(id)}`) + (lv.L < W.lvl ? ` · 🔒 krever nivå ${W.lvl}` : '') : '🔒 ' + W.how;
+        rows.push({ icon: W.icon, n: `${i + 1}. ${W.n}${W.rare ? ' ✨' : ''}`, desc, cost: {}, btn: sel ? 'Valgt' : 'Velg', act: 'sel:' + id, ok: own && !sel && lv.L >= W.lvl });
+      });
+      for (const q of QUESTS) {
+        const done = hero.qdone.includes(q.id), pr = hero.qprog[q.id] || 0;
+        rows.push({ icon: done ? '✅' : '📜', n: q.n, desc: `${q.d} ${done ? 'Fullført!' : `(${pr}/${q.goal})`} Belønning: ${q.xp} XP${q.reward ? ` og ${WEAPONS[q.reward].icon} ${WEAPONS[q.reward].n}` : ''}.`, cost: {}, btn: '', act: '', ok: false, nobtn: true });
+      }
     }
   } else {
     $('menuTitle').textContent = 'Verkstedet 🔨';
@@ -448,6 +455,7 @@ function renderMenu() {
       <div class="mtext"><b>${r.n}</b><span>${r.desc}</span><span class="mcost">${costText(r.cost)}</span></div>
       ${r.nobtn ? '<span></span>' : `<button data-act="${r.act}" ${r.ok ? '' : 'disabled'}>${r.btn}</button>`}</div>`).join('');
 }
+window.EVN2_menyHandling = act => menuAction(act); window.EVN2_visMeny = () => renderMenu();   // 2.0: lar pausemenyen (hud2.js) bruke samme handling som menyknappene, f.eks. «Ny verden»
 //#slutt
 //#blokk 0252 lam
 

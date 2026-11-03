@@ -105,3 +105,9 @@
   body.touchui #hud .bar{width:min(110px,30vw)}
   body.touchui #toast{max-width:88vw}
 }
+
+/* Ryggsekk-faner */
+.h2Faner{display:flex;gap:6px;margin:0 0 10px;position:sticky;top:0;z-index:2;padding:4px 0;background:inherit}
+.h2Faner button{flex:1;min-height:44px;border-radius:12px;border:2px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.h2Faner button.on{border-color:#ffcc00;background:rgba(255,204,0,.18)}
+#evnPause #h2NyVerden{margin-top:6px}

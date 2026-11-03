@@ -279,3 +279,29 @@ Even valgte 90 % etter sammenligningsbildene. Ivar godkjente endringen.
   - «Lag en helt ny verden»
   - fiskeboka og nivå
   - Dette er menyen fra 5.6.2 (`renderMenu`, en grafikkblokk). Omorganisering må godkjennes, se forslaget.
+
+## Ryggsekk i faner og publisering (3.11.2026)
+
+**Godkjenning:** Ivar godkjente faneforslaget og publisering som erstatning for 5.6.2 (kl. 09:05, gjentatt kl. 10:12: «du kan publiser spille nå»).
+
+**Ryggsekken** (grafikkblokk 0199 `renderMenu`, `hud2.js`, `hud2.css`). Spillogikken er uendret; logikkblokkene er fortsatt byte-like.
+- Menyen har tre faner:
+  - 🎒 Sekk: lommer, fisk, utstyr, sekkstatus og fiskebok.
+  - ⚔️ Våpen: nivå, våpenliste med Velg og oppdrag.
+  - 🔨 Lag: sekk og fiskestang. Har man laget alt, står det at øks og våpen lages i verkstedet.
+- Valgt fane huskes i økta (`window.EVN2_MENYFANE`).
+- «Lag en helt ny verden» er flyttet til pausen (`#h2NyVerden`). Den bruker den samme logikkhandlingen `menuAction('newworld')`, med to trykk innen 6 s for å bekrefte. Grafikkblokken eksponerer `EVN2_menyHandling` og `EVN2_visMeny`, fordi spillkoden ligger i en IIFE.
+- Capsen er fjernet fra menyen, siden roboten ikke har caps. Lagringsfeltet `hero.cap` står urørt (B1).
+
+**Funksjonstest** (`tester/funksjonstest.js`, PC og høykant 390×844). Testen bruker en kopi av en 5.6.2-lagring som testdata, med våpen, valgt våpen, XP, fiskebok og våpennivå. Den sjekker at lagringen lastes uendret, og kontrollerer:
+- fanene, valg av våpen med lagring, Lag-fanen og lukking
+- Ny verden i pausen, med spørsmål først og så ny verden
+- lukkeknappen, kartet og «Start helt på nytt»
+
+**Publisering** (gren `publiser/morkeskogen-2.0`, ut fra `main`):
+- Bygget er kopiert til `spill/morkeskogen/`.
+- three.js r187 og lisensen ligger i spillmappa, ikke i `vendor/`, slik at endringen bare gjelder dette spillet.
+- Versjonen er 2.0.0.
+- Linje i ENDRINGSLOGG.
+- `test/kjor.mjs`: statisk=ok, royk=ok.
+- EVN Game QA er kjørt før PR-en.
