@@ -120,6 +120,7 @@
   function tegnVarer() {
     var rot = $('varer'); rot.innerHTML = '';
     var saldo = E.saldo(), a = E.antrekk();
+    $('tomLomme').hidden = saldo > 0;
     VARER.forEach(function (v) {
       if (filter !== 'alle' && v.plass !== filter) return;
       var eid = E.eier(v.id), rad = saldo >= v.pris, paa = a[v.plass] === v.id;
@@ -238,6 +239,7 @@
     t.onkeydown = function (e) { var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (d) { var n = faner[(i + d + faner.length) % faner.length]; n.focus(); velgFane(n); } };
   });
   $('saldoKnapp').onclick = function () { velgFane($('fane-lomme')); };
+  $('visTjen').onclick = function () { velgFane($('fane-lomme')); $('fane-lomme').focus(); };
   document.querySelectorAll('.filter button').forEach(function (b) {
     b.onclick = function () { filter = b.dataset.f; document.querySelectorAll('.filter button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); }); tegnVarer(); };
   });
