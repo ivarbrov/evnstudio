@@ -137,7 +137,7 @@
       if (gyldig(d)) {
         // vask: bare kjente felt og tall
         var ut = tom(); ut.regler = d.regler || REGLER;
-        for (var k in d.tjent) { var t = d.tjent[k]; if (t && typeof t.e === 'number' && isFinite(t.e) && t.e >= 0) ut.tjent[k] = { e: t.e, t: +t.t || 0 }; }
+        for (var k in d.tjent) { var t = d.tjent[k]; if (MILEPAEL[k] && t && typeof t.e === 'number' && isFinite(t.e) && t.e >= 0) ut.tjent[k] = { e: t.e, t: +t.t || 0 }; }
         for (var j in d.kjopt) { var p = d.kjopt[j]; if (p && typeof p.pris === 'number' && isFinite(p.pris) && p.pris >= 0) ut.kjopt[j] = { pris: p.pris, t: +p.t || 0 }; }
         ['hode', 'rygg'].forEach(function (pl) { var id = d.antrekk[pl]; ut.antrekk[pl] = (id && VARE[id] && VARE[id].plass === pl && ut.kjopt[id]) ? id : null; });
         return ut;
@@ -166,8 +166,10 @@
   // ---------- Melding ----------
   var IKON = '<svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" style="flex:none"><defs><linearGradient id="evnEcoinG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#19c3ff"/><stop offset=".5" stop-color="#2f6bff"/><stop offset="1" stop-color="#8a3dff"/></linearGradient></defs><path d="M16 1.5 28.6 8.75v14.5L16 30.5 3.4 23.25V8.75Z" fill="url(#evnEcoinG)" stroke="#dfe8ff" stroke-width="1.6"/><path d="M11.5 9h9.5v3h-6v2.6h5.2v2.8H15V20h6.2v3h-9.7z" fill="#fff"/></svg>';
   var boks = null, ko = [], viser = false;
-  function lagBoks() {
-    if (boks || !document.body) return boks;
+  var cssLagt = false;
+  function lagCss() {
+    if (cssLagt || !document.head) return;
+    cssLagt = true;
     var css = document.createElement('style');
     css.textContent = '#evnEcoinMelding{position:fixed;left:50%;top:max(12px,env(safe-area-inset-top));z-index:99995;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 24px);' +
       'padding:8px 16px 8px 10px;border-radius:999px;background:#0e1430;color:#f1f4ff;border:2px solid #19c3ff;box-shadow:0 6px 24px rgba(0,0,0,.45);' +
@@ -175,8 +177,12 @@
       '#evnEcoinMelding.vis{opacity:1;transform:translate(-50%,0)}#evnEcoinMelding small{display:block;font-weight:700;font-size:13px;color:#a3add3}' +
       '@media (prefers-reduced-motion:reduce){#evnEcoinMelding{transition:none}}' +
       '#evnPause .evnEcoins{display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0 0;padding:6px 10px;border-radius:12px;background:rgba(127,127,127,.15);font-weight:800;font-size:16px;color:inherit;text-decoration:none;min-height:44px}' +
-      '#evnPause .evnEcoins svg{width:24px;height:24px}';
+      '#evnPause .evnEcoins svg{width:24px;height:24px}#evnPause .evnEcoins:focus-visible{outline:3px solid #19c3ff;outline-offset:2px}';
     document.head.appendChild(css);
+  }
+  function lagBoks() {
+    if (boks || !document.body) return boks;
+    lagCss();
     boks = document.createElement('div'); boks.id = 'evnEcoinMelding'; boks.setAttribute('role', 'status'); boks.setAttribute('aria-live', 'polite');
     document.body.appendChild(boks);
     return boks;
@@ -215,6 +221,7 @@
     } catch (e) {}
   }
   function startPause() {
+    lagCss();
     oppdaterPause();
     try {
       var p = document.getElementById('evnPause');

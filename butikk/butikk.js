@@ -194,7 +194,7 @@
     $('d-tittel').textContent = o.tittel; $('d-tekst').innerHTML = o.tekst;
     var k = $('d-knapper'); k.innerHTML = '';
     o.knapper.forEach(function (b) { var el = document.createElement('button'); el.className = 'knapp ' + (b.klasse || ''); el.textContent = b.tekst; el.onclick = function () { lukk(); if (b.gjor) b.gjor(); }; k.appendChild(el); });
-    $('slor').hidden = false; k.lastElementChild.focus();
+    $('slor').hidden = false; k.firstElementChild.focus();   // tryggeste valg først: Enter to ganger kjøper eller sletter ikke
   }
   function lukk() { $('slor').hidden = true; if (fokusFor && fokusFor.focus && document.contains(fokusFor)) fokusFor.focus(); }
   $('slor').addEventListener('keydown', function (e) {
