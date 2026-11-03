@@ -135,7 +135,7 @@ body.touch #pcKnapper{display:none}
     </div>
     <button class="evn-start" id="startBtn">Start ▶</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver">Versjon 0.10.13</div>
+    <div class="evn-ver">Versjon 0.10.14</div>
   </div>
 </div>
 
@@ -4011,7 +4011,7 @@ window.EVN_HELT_B64="Z2xURgIAAAB0FAcAEEMBAEpTT057ImFzc2V0Ijp7ImdlbmVyYXRvciI6IkZ
    Strukturen er laget for 15 verdener. Hver verden er en
    oppføring i VERDENER; bygde verdener har en bygg()-funksjon.
    ============================================================ */
-const VERSJON = 'v0.10.13';
+const VERSJON = 'v0.10.14';
 const LAGRE_NOKKEL = 'evn-dyrespillet-v1';
 const $ = id => document.getElementById(id);
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
@@ -6284,8 +6284,12 @@ function visBok(){
   html += `<p style="color:#667;font-size:14px">🔒 ${VERDENER.length - VERDENER.filter(v=>v.bygd).length} verdener til med 10 dyr hver kommer senere!</p>`;
   $('bokInnhold').innerHTML = html;
   visLag('dyrebok');
+  if (window.EVNPauseInert) window.EVNPauseInert($('dyrebok'));   // T2: fokus blir i boka, ingenting bak kan trykkes
+  try { $('btnLukkBokTopp').focus({ preventScroll: true }); } catch(e){}
 }
 function lukkBok(){
+  if (window.EVNPauseInert) window.EVNPauseInert(null);
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();   // mellomrom skal ikke trykke en knapp med fokus
   if (bokFra === 'spill' || bokFra === 'park'){ tilstand = bokFra; visLag(null); }
   else visLag('kart');
 }
@@ -6732,8 +6736,8 @@ window.EVNNullstill = function (cfg) {
   var $ = function (id) { return document.getElementById(id); };
   var apen = false, forrige = null;
   function oppdater() { lenke.hidden = !harLagring() || (cfg.vis ? !cfg.vis() : false); }
-  function apne() { apen = true; forrige = document.activeElement; boks.classList.add('vis'); $('evnNullstillNei').focus(); }
-  function lukk() { apen = false; boks.classList.remove('vis'); try { (forrige || lenke).focus(); } catch (e) {} }
+  function apne() { apen = true; forrige = document.activeElement; boks.classList.add('vis'); if (window.EVNPauseInert) window.EVNPauseInert(boks); $('evnNullstillNei').focus(); }
+  function lukk() { apen = false; boks.classList.remove('vis'); if (window.EVNPauseInert) window.EVNPauseInert(null); try { (forrige || lenke).focus(); } catch (e) {} }
   lenke.addEventListener('click', apne);
   $('evnNullstillNei').addEventListener('click', lukk);
   $('evnNullstillJa').addEventListener('click', function () {
