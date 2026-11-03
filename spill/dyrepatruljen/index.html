@@ -103,7 +103,7 @@ body.touch #pcKnapper{display:none}
 <div id="hud" class="skjult">
   <div class="topp">
     <div class="merke" id="hudNavn">🏙️ Gata · 🐾 0/10</div>
-    <div><button class="ikonknapp" id="btnBok" aria-label="Dyreboka">📖</button><button class="ikonknapp" id="btnVerdener" aria-label="Velg verden" title="Velg verden">🌍</button><a class="ikonknapp" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none;text-decoration:none;line-height:48px;text-align:center;vertical-align:top;color:#1d2440">✕</a></div>
+    <div><button class="ikonknapp" id="btnLyd" aria-pressed="false" aria-label="Slå av lyden (L)" title="Slå av lyden (L)">🔊</button><button class="ikonknapp" id="btnBok" aria-label="Dyreboka">📖</button><button class="ikonknapp" id="btnVerdener" aria-label="Velg verden" title="Velg verden">🌍</button><a class="ikonknapp" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none;text-decoration:none;line-height:48px;text-align:center;vertical-align:top;color:#1d2440">✕</a></div>
   </div>
   <div id="snikMerke" class="skjult">🤫 Sniker</div>
   <div id="beskjed" style="opacity:0"></div>
@@ -131,10 +131,11 @@ body.touch #pcKnapper{display:none}
       <div><b>Snik:</b> hold Shift · Snik-knappen på mobil</div>
       <div><b>Håv:</b> mellomrom eller E · Håv-knappen på mobil</div>
       <div><b>Snu deg:</b> dra med musa eller fingeren</div>
+      <div><b>Lyd av/på:</b> L eller 🔊</div>
     </div>
     <button class="evn-start" id="startBtn">Start ▶</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver">Versjon 0.10.12</div>
+    <div class="evn-ver">Versjon 0.10.13</div>
   </div>
 </div>
 
@@ -246,6 +247,26 @@ window.EVNPause = function (cfg) {
   });
 
   var apen = false, apnetTid = 0, venterAvslutt = false, kartApen = false;
+  // T2: mens en dialog er åpen, kan ingenting bak den få fokus eller trykk (inert), og Tab blir i dialogen.
+  var inertListe = [], aktivDialog = null;
+  function settInert(dlg) {
+    inertListe.forEach(function (el) { el.inert = false; }); inertListe = [];
+    aktivDialog = dlg || null;
+    if (!dlg) return;
+    Array.prototype.forEach.call(document.body.children, function (el) {
+      if (el !== dlg && !el.contains(dlg) && !el.inert && el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') { el.inert = true; inertListe.push(el); }
+    });
+  }
+  window.EVNPauseInert = settInert;
+  // Tab og Shift+Tab går rundt i den åpne dialogen i stedet for ut av siden (på window, før pausens egen tastaturhåndtering)
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab' || !aktivDialog) return;
+    var f = Array.prototype.filter.call(aktivDialog.querySelectorAll('button, a[href], input, [tabindex]:not([tabindex="-1"])'), function (el) { return !el.disabled && !el.hidden && el.getClientRects().length > 0; });
+    if (!f.length) return;
+    var i = f.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+  }, true);
   var avsluttLenke = function () { var a = $(cfg.avsluttId); return a && getComputedStyle(a).display !== 'none' ? a : null; };
   var sporsmal = function () { return $('evnSporsmal'); };
   var sporsmalApent = function () { var s = sporsmal(); return !!s && s.style.display === 'grid'; };
@@ -268,13 +289,13 @@ window.EVNPause = function (cfg) {
   function apneKart() {
     if (!cfg.kart || !kan()) return;
     cfg.pause(); kartApen = true; apnetTid = performance.now();
-    kartBak.classList.add('vis'); knapp.hidden = true; kartKnapp.hidden = true;
+    kartBak.classList.add('vis'); knapp.hidden = true; kartKnapp.hidden = true; settInert(kartBak);
     tegnKart();
     try { $('evnKartLukk').focus({ preventScroll: true }); } catch (e) {}
   }
   function lukkKart(fraKlikk) {
     if (!kartApen) return;
-    kartApen = false; kartBak.classList.remove('vis');
+    kartApen = false; kartBak.classList.remove('vis'); settInert(null);
     cfg.fortsett(!!fraKlikk);
   }
   if (cfg.kart) {
@@ -292,12 +313,12 @@ window.EVNPause = function (cfg) {
     $('evnPauseTips').textContent = grunn || 'Spillet står stille. Ingenting er borte.';
     $('evnPauseStyr').hidden = true; $('evnPauseStyrKnapp').setAttribute('aria-expanded', 'false');
     $('evnPauseAvslutt').hidden = !avsluttLenke() || !sporsmal();
-    bak.classList.add('vis'); knapp.hidden = true; lagreTid();
+    bak.classList.add('vis'); knapp.hidden = true; lagreTid(); settInert(bak);
     try { $('evnPauseFortsett').focus({ preventScroll: true }); } catch (e) {}
   }
   function lukk(fraKlikk) {
     if (!apen) return;
-    apen = false; bak.classList.remove('vis');
+    apen = false; bak.classList.remove('vis'); settInert(null);
     cfg.fortsett(!!fraKlikk);
   }
   knapp.addEventListener('click', function () { apne(); });
@@ -306,14 +327,14 @@ window.EVNPause = function (cfg) {
     var s = $('evnPauseStyr'); if (s.hidden) s.innerHTML = cfg.styring(); s.hidden = !s.hidden; this.setAttribute('aria-expanded', String(!s.hidden));
   });
   // Avslutt fra pausen: spillet står stille mens «Vil du avslutte?» vises. «Nei, spill videre» = fortsett.
-  function visSporsmal() { venterAvslutt = true; var s = sporsmal(); s.style.display = 'grid'; var b = $('evnBli'); if (b) b.focus(); }
+  function visSporsmal() { venterAvslutt = true; var s = sporsmal(); s.style.display = 'grid'; settInert(s); var b = $('evnBli'); if (b) b.focus(); }
   $('evnPauseAvslutt').addEventListener('click', function () { apen = false; bak.classList.remove('vis'); if (cfg.lagre) cfg.lagre(); visSporsmal(); });
   // Avslutt-knappen i spillet: spillet stopper også mens spørsmålet vises
   document.addEventListener('click', function (e) {
     var a = avsluttLenke(); if (!a || !a.contains(e.target) || venterAvslutt || apen || !cfg.kanPause()) return;
     cfg.pause(); venterAvslutt = true;
   }, true);
-  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; cfg.fortsett(false); }
+  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; settInert(null); cfg.fortsett(false); }
   document.addEventListener('click', function (e) { var b = $('evnBli'); if (b && b.contains(e.target)) setTimeout(nei, 0); }, true);
 
   window.addEventListener('keydown', function (e) {
@@ -3990,7 +4011,7 @@ window.EVN_HELT_B64="Z2xURgIAAAB0FAcAEEMBAEpTT057ImFzc2V0Ijp7ImdlbmVyYXRvciI6IkZ
    Strukturen er laget for 15 verdener. Hver verden er en
    oppføring i VERDENER; bygde verdener har en bygg()-funksjon.
    ============================================================ */
-const VERSJON = 'v0.10.12';
+const VERSJON = 'v0.10.13';
 const LAGRE_NOKKEL = 'evn-dyrespillet-v1';
 const $ = id => document.getElementById(id);
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
@@ -4101,16 +4122,31 @@ const verdenFerdig = i => reddetI(VERDENER[i].id).length >= DYR_PER_VERDEN;
 const verdenAapen = i => i === 0 || verdenFerdig(i-1);
 lastInn();
 
-/* ---------- Lyd (enkle pip, starter etter første trykk) ---------- */
-let lydKontekst = null;
+/* ---------- Lyd (enkle pip, starter etter første trykk). Kan slås av, og valget huskes (B1). ---------- */
+let lydKontekst = null, lydHoved = null;
+let lydPaa = (() => { try { return localStorage.getItem('evn-dyrepatruljen-lyd') !== 'av'; } catch(e){ return true; } })();
+function lydUt(){
+  if (!lydKontekst) lydKontekst = new (window.AudioContext||window.webkitAudioContext)();
+  if (!lydHoved){ lydHoved = lydKontekst.createGain(); lydHoved.connect(lydKontekst.destination); }
+  lydHoved.gain.value = lydPaa ? 1 : 0;
+  return lydHoved;
+}
+function settLyd(paa){
+  lydPaa = paa;
+  try { localStorage.setItem('evn-dyrepatruljen-lyd', paa ? 'paa' : 'av'); } catch(e){}
+  if (lydHoved) lydHoved.gain.value = paa ? 1 : 0;
+  const b = document.getElementById('btnLyd');
+  if (b){ const t = paa ? 'Slå av lyden (L)' : 'Slå på lyden (L)'; b.textContent = paa ? '🔊' : '🔇'; b.setAttribute('aria-pressed', String(!paa)); b.setAttribute('aria-label', t); b.title = t; }
+}
 function tone(f, varighet=0.12, type='sine', vol=0.15, slutt){
+  if (!lydPaa) return;
   try {
-    if (!lydKontekst) lydKontekst = new (window.AudioContext||window.webkitAudioContext)();
+    const ut = lydUt();
     const t = lydKontekst.currentTime, o = lydKontekst.createOscillator(), g = lydKontekst.createGain();
     o.type = type; o.frequency.setValueAtTime(f, t);
     if (slutt) o.frequency.exponentialRampToValueAtTime(slutt, t+varighet);
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t+varighet);
-    o.connect(g).connect(lydKontekst.destination); o.start(t); o.stop(t+varighet);
+    o.connect(g).connect(ut); o.start(t); o.stop(t+varighet);
   } catch(e){}
 }
 const lydSving = () => tone(500, .15, 'triangle', .08, 200);
@@ -4121,7 +4157,20 @@ const lydRedd = () => tone(300, .2, 'square', .05, 150);
 const lerret = $('spill');
 const erMobil = matchMedia('(pointer:coarse)').matches;
 if (erMobil) document.body.classList.add('touch');
-const renderer = new THREE.WebGLRenderer({canvas:lerret, antialias:!erMobil});
+function ingen3D(){
+  // Spillet trenger 3D. Startknappen slås av, og barnet får en forklaring i stedet for en tom skjerm.
+  const sb = $('startBtn'); sb.disabled = true; sb.textContent = '3D virker ikke her';
+  const m = document.createElement('p'); m.id = 'ingen3D'; m.setAttribute('role', 'alert');
+  m.style.cssText = 'background:#fff3cd;color:#5a3b00;border-radius:12px;padding:10px 12px;font-weight:700;margin:6px 0';
+  m.textContent = 'Dette spillet trenger 3D, og 3D virker ikke i denne nettleseren. Prøv en annen nettleser, eller spør en voksen. De andre spillene på EVN Studio virker som vanlig.';
+  sb.before(m);
+  addEventListener('error', e => { if (e.error && e.error.evnIngen3D) e.preventDefault(); });
+  const f = new Error('3D (WebGL) virker ikke'); f.evnIngen3D = true; throw f;
+}
+const har3D = (() => { try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl') || c.getContext('experimental-webgl'))); } catch(e){ return false; } })();
+if (!har3D) ingen3D();
+let renderer;
+try { renderer = new THREE.WebGLRenderer({canvas:lerret, antialias:!erMobil}); } catch(e){ ingen3D(); }
 renderer.setPixelRatio(Math.min(devicePixelRatio, erMobil ? 1.5 : 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -6083,15 +6132,16 @@ const PLYSTRE_MELODI = [[988,0.18],[1175,0.18],[1319,0.3],[0,0.18],[1175,0.18],[
                         [784,0.18],[880,0.18],[988,0.3],[0,0.18],[1319,0.18],[1175,0.3],[988,0.42],[0,0.9]];
 const plyst = {i:0, tid:0.35, noter:[]};
 function plystreTone(f, varighet){
+  if (!lydPaa) return;
   try {
-    if (!lydKontekst) lydKontekst = new (window.AudioContext||window.webkitAudioContext)();
+    const ut = lydUt();
     const k = lydKontekst, t = k.currentTime, o = k.createOscillator(), g = k.createGain();
     const vib = k.createOscillator(), vg = k.createGain();
     o.type = 'sine'; o.frequency.setValueAtTime(f*0.94, t); o.frequency.exponentialRampToValueAtTime(f, t+0.05);
     vib.frequency.value = 6; vg.gain.value = f*0.012; vib.connect(vg).connect(o.frequency);
     g.gain.setValueAtTime(0.001, t); g.gain.exponentialRampToValueAtTime(0.06, t+0.03);
     g.gain.setValueAtTime(0.06, t+varighet*0.7); g.gain.exponentialRampToValueAtTime(0.001, t+varighet);
-    o.connect(g).connect(k.destination); o.start(t); o.stop(t+varighet+0.02); vib.start(t); vib.stop(t+varighet+0.02);
+    o.connect(g).connect(ut); o.start(t); o.stop(t+varighet+0.02); vib.start(t); vib.stop(t+varighet+0.02);
   } catch(e){}
 }
 function plystre(dt, paa){
@@ -6589,6 +6639,9 @@ document.addEventListener('touchmove', e => { if (spiller_aktiv() && e.touches.l
 // Knapper
 $('startBtn').addEventListener('click', () => { tone(660,.1); visKart(); });
 $('btnBok').addEventListener('click', visBok);
+$('btnLyd').addEventListener('click', e => { e.currentTarget.blur(); settLyd(!lydPaa); });
+addEventListener('keydown', e => { if (e.code === 'KeyL' && !e.repeat && !$('hud').classList.contains('skjult')) settLyd(!lydPaa); });
+settLyd(lydPaa);
 $('btnKartBok').addEventListener('click', visBok);
 $('btnLukkBok').addEventListener('click', lukkBok);
 $('btnLukkBokTopp').addEventListener('click', lukkBok);
@@ -6724,10 +6777,10 @@ try {
     var av = document.getElementById('evnAvslutt'), sp = document.getElementById('evnSporsmal');
     av.style.display = 'inline-block';
     var tb = document.getElementById('evnTilbake'); if (tb) tb.hidden = false;
-    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new Event('blur')); sp.style.display = 'grid'; document.getElementById('evnBli').focus(); });
-    addEventListener('keydown', function (e) { if (e.key === 'Escape' && sp.style.display === 'grid') { e.preventDefault(); sp.style.display = 'none'; } });
+    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new Event('blur')); sp.style.display = 'grid'; if (window.EVNPauseInert) window.EVNPauseInert(sp); document.getElementById('evnBli').focus(); });
+    addEventListener('keydown', function (e) { if (e.key === 'Escape' && sp.style.display === 'grid') { e.preventDefault(); sp.style.display = 'none'; if (window.EVNPauseInert) window.EVNPauseInert(null); } });
     ['pointerdown', 'mousedown', 'touchstart'].forEach(function (ev) { sp.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); av.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
-    document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; });
+    document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; if (window.EVNPauseInert) window.EVNPauseInert(null); });
     document.getElementById('evnGaa').addEventListener('click', function () { location.href = '../../'; });
   }
 } catch (e) {}
