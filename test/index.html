@@ -53,7 +53,8 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
     { navn: 'statisk', fil: null, kjor: statisk },
     { navn: 'royk', fil: null, kjor: function () { return rekke(SPILL, royk); } },
     { navn: 'statistikk', fil: 'test/statistikk/index.html', kjor: statistikk },
-    { navn: 'ui', fil: 'prototype/ui/index.html', kjor: ui }
+    { navn: 'ui', fil: 'prototype/ui/index.html', kjor: ui },
+    { navn: 'ecoins', fil: 'test/ecoins/index.html', kjor: ecoins }
   ];
   var tester = [], suiter = {};
 
@@ -158,6 +159,17 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
         r.kontroller.forEach(function (k) { legg('statistikk', k.spill, k.id + ' ' + k.navn, k.id, k.navn, k.ok, k.info); });
       });
     }).catch(function (e) { legg('statistikk', '–', 'ST-kjoring', 'ST8', 'Statistikktesten ble ferdig', false, String(e && e.message || e)); });
+  }
+
+  // ---- E-coins: felles lommebok, kjøp og garderobe (EC0–EC12) ----
+  function ecoins() {
+    return last('/test/ecoins/?auto', 1000, 700).then(function (f) {
+      return venterPa(function () { var r = f.contentWindow.EVNEcoinsResultat; return r && r.ferdig; }, 60000).then(function () {
+        var r = f.contentWindow.EVNEcoinsResultat;
+        legg('ecoins', '–', 'EC-antall', '', 'E-coins-testen kjørte kontroller', r.kontroller.length >= 20, r.kontroller.length + ' kontroller');
+        r.kontroller.forEach(function (k) { legg('ecoins', k.spill, k.id + ' ' + k.navn, k.id, k.navn, k.ok, k.info); });
+      });
+    }).catch(function (e) { legg('ecoins', '–', 'EC-kjoring', '', 'E-coins-testen ble ferdig', false, String(e && e.message || e)); });
   }
 
   // ---- UI7 i prototypen: størrelse, avstand og overlapp i fem skjermstørrelser ----

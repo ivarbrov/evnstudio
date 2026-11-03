@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Era Defenders – v0.20.0</title>
+<title>Era Defenders – v0.21.0</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="ikoner/ikon-192.png">
 <link rel="apple-touch-icon" href="ikoner/apple-touch-icon.png">
@@ -138,6 +138,8 @@
 </style>
 </head>
 <body>
+<!-- E-coins (felles for alle EVN-spill). Spillet virker som før hvis den ikke lastes. -->
+<script src="../../ecoins/ecoins.js"></script>
 <script>
 (function(){var h=document.documentElement,t=function(x){h.classList.toggle('touch',x);h.classList.toggle('mus',!x);};
 try{t(matchMedia('(pointer: coarse)').matches);}catch(e){t(false);}
@@ -175,7 +177,7 @@ addEventListener('keydown',function(){t(false);},true);})();
   <button class="start evn-start" id="menyStart">▶ Start</button>
   <button class="andre" id="menyNyRunde" hidden>⭐ Ny runde – sterkere fiender</button>
   <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-  <div class="evn-ver">Versjon 0.20.0 · 7 tidsepoker</div>
+  <div class="evn-ver">Versjon 0.21.0 · 7 tidsepoker</div>
 </div></div>
 <div id="evnSporsmal" role="dialog" aria-modal="true"><div class="boks">
   <div>Vil du avslutte og gå tilbake til forsiden? Spillet ditt er lagret.</div>
@@ -1478,7 +1480,7 @@ function oppdater() {
   for (const f of fiender) if (f.sluttboss) sluttbossFase(f);
   for (const f of fiender) {
     if (f.liv <= 0) {
-      if (f.boss) helt.bosser = (helt.bosser || 0) + 1;
+      if (f.boss) { helt.bosser = (helt.bosser || 0) + 1; try { if (window.EVNEcoins) EVNEcoins.belonn('era.boss.' + helt.verden); } catch (e) {} }
       if (f.sluttboss) vunnet();
       for (let i = 0; i < f.penger; i++) mynter.push({ x: f.x + Math.random() * 20 - 10, y: f.y + Math.random() * 20 - 10, verdi: 1, tid: 0 });
       gaXp(f.xp);
@@ -1510,6 +1512,7 @@ function oppdater() {
     }
     if (helt.verden < SISTE_VERDEN && bolge >= PORTAL_BOLGE && !helt.portalApen) {
       helt.portalApen = true;
+      try { if (window.EVNEcoins) EVNEcoins.belonn('era.epoke.' + helt.verden); } catch (e) {}
       visTekst('⏳ En tidsportal til ' + VERDENSNAVN[helt.verden + 1] + ' har åpnet seg i basen!', helt.x, helt.y - 90, '#e040fb', 22);
     }
     nyBolge();
@@ -1670,6 +1673,7 @@ function sluttbossFase(f) {
 let seierVent = 0;
 function vunnet() {
   helt.seiret = true; helt.alleKlart = true;
+  try { if (window.EVNEcoins) EVNEcoins.belonn('era.seier'); } catch (e) {}
   visTekst('🏆 DU SLO TIDSHERREN! 🏆', helt.x, helt.y - 110, '#ffd54a', 32);
   for (const f of fiender) if (!f.sluttboss) { f.liv = 0; lagPartikler(f.x, f.y, '#ffd54a', 15, 4); }
   fiendeskudd = [];
@@ -2029,6 +2033,23 @@ function utstyrFor(verden) {
   if (!robotUtstyr[i]) { const b = new Image(); b.onload = () => { b.klar = true; }; b.src = ROBOT_UTSTYR_DATA[i]; robotUtstyr[i] = b; }
   return robotUtstyr[i].klar ? robotUtstyr[i] : null;
 }
+// E-coins: overlegg per vare med samme rutenett som robotarket. Lastes bare når varen er valgt. Bare pynt.
+// Gir null når ingenting er valgt (da brukes epokeutstyret som før), ellers en liste med ferdig lastede bilder.
+const ecoinsBilder = {}, ECOINS_TOPP = 16;
+let ecoinsAntrekk = null;
+try { if (window.EVNEcoins) { ecoinsAntrekk = EVNEcoins.antrekk(); EVNEcoins.pa(d => { ecoinsAntrekk = d.antrekk; }); } } catch (e) {}
+function ecoinsLag() {
+  try {
+    const a = ecoinsAntrekk; if (!a || (!a.hode && !a.rygg)) return null;
+    const ut = [];
+    for (const pl of ['rygg', 'hode']) { const id = a[pl]; if (!id) continue;
+      let b = ecoinsBilder[id];
+      if (!b) { b = ecoinsBilder[id] = new Image(); b.onload = () => { b.klar = true; }; b.onerror = () => { b.feil = true; }; b.src = '../../ecoins/2d/era-' + id + '.webp'; }
+      if (b.klar) ut.push(b);
+    }
+    return ut.length || !Object.values(ecoinsBilder).every(b => b.feil) ? ut : null;
+  } catch (e) { return null; }
+}
 let robotGaaSist = 0, robotGaarTil = 0;
 function tegnRobotHelt(x, y, vinkel) {
   const dx = Math.cos(vinkel), dy = Math.sin(vinkel), speil = dx < -0.01;
@@ -2041,7 +2062,10 @@ function tegnRobotHelt(x, y, vinkel) {
   ctx.save(); ctx.translate(x, y + 14);
   if (speil) ctx.scale(-1, 1);
   ctx.drawImage(robotArk, kol * ROBOT_F, rad * ROBOT_F, ROBOT_F, ROBOT_F, -ROBOT_STR / 2, -ROBOT_STR * ROBOT_FOT, ROBOT_STR, ROBOT_STR);
-  const utstyr = utstyrFor(helt.verden);
+  // E-coins: har spilleren valgt noe i garderoben, vises det i stedet for epokeutstyret (Evens valg E2, alternativ A)
+  const eLag = ecoinsLag();
+  const utstyr = eLag ? null : utstyrFor(helt.verden);
+  if (eLag) for (const b of eLag) ctx.drawImage(b, kol * ROBOT_F, rad * (ROBOT_F + ECOINS_TOPP), ROBOT_F, ROBOT_F + ECOINS_TOPP, -ROBOT_STR / 2, -ROBOT_STR * ROBOT_FOT - ROBOT_STR * ECOINS_TOPP / ROBOT_F, ROBOT_STR, ROBOT_STR * (ROBOT_F + ECOINS_TOPP) / ROBOT_F);   // +16 px over til høye hatter
   if (utstyr) ctx.drawImage(utstyr, kol * ROBOT_F, rad * ROBOT_F, ROBOT_F, ROBOT_F, -ROBOT_STR / 2, -ROBOT_STR * ROBOT_FOT, ROBOT_STR, ROBOT_STR);
   ctx.restore();
 }
@@ -2937,6 +2961,17 @@ EVNNullstill({
 });
 
 helt = hentLagring(); // fortsett lagret spill hvis det finnes
+// E-coins: det lagringen viser er klart, gir E-coins én gang (også for fremgang fra før E-coins fantes).
+// Lagringen husker bare nåværende epoke: epoker før den er fullført, og sjekkpunkt ≥ 5 betyr at epokens boss er slått.
+setTimeout(() => { try {
+  if (!window.EVNEcoins) return;
+  const ider = [], alt = helt.seiret || (helt.runde || 0) > 0;
+  const naa = alt ? SISTE_VERDEN + 1 : Math.max(1, helt.verden | 0);
+  for (let n = 1; n < naa; n++) { ider.push('era.boss.' + n); if (n < SISTE_VERDEN) ider.push('era.epoke.' + n); }
+  if (!alt) { if ((helt.sjekkpunkt | 0) >= BOSS_HVER) ider.push('era.boss.' + naa); if (helt.portalApen) ider.push('era.epoke.' + naa); }
+  if (alt) ider.push('era.seier');
+  EVNEcoins.avstem(ider);
+} catch (e) {} }, 800);
 nyttSpill();
 lokke();
 </script>

@@ -1,6 +1,6 @@
 # E-coins – beslutningsgrunnlag (fase 1–3)
 
-Versjon 0.1 · 3. november 2026 · Status: **forslag, ikke godkjent**
+Versjon 0.2 · 3. november 2026 · Status: **V1–V5 godkjent av Ivar 3.11.2026. E1–E3 (Evens valg) gjenstår. Bygget på grenen `ecoins/v1`, ikke publisert.**
 Grunnlag: `main` 4474df5, `morkeskogen-2.0` 2b43319, `robot/felles` 7a836ee. Prototype: «E-shop – prototype · EVN Studio» (claude.ai-artefakt). Modell: `modell.py` → `modell-ut.json` (gren `ecoins/beslutningsgrunnlag`).
 
 Merking: **[FINNES]** = verifisert i koden · **[MULIG]** = teknisk mulig, ikke bygget · **[FORSLAG]** = nytt forslag som krever beslutning.
@@ -159,7 +159,7 @@ EVNEcoins.pa('endring', fn)    // også ved endring i en annen fane (storage-hen
 {v:1, regler:1, tjent:{<milepæl>:{e,spill,t}}, kjopt:{<vare>:{pris,t}}, antrekk:{hode,rygg}}
 ```
 - **Saldoen lagres ikke.** Den regnes ut som summen av `tjent` minus summen av `kjopt`. Et kjøp er én skriving av én nøkkel. Saldo og eierskap kan derfor ikke komme ut av takt, og et avbrutt kjøp har enten skjedd helt eller ikke i det hele tatt.
-- Modulen leser alltid lagringen på nytt rett før den skriver. Den bruker `navigator.locks` der nettleseren har det, slik at to faner ikke overskriver hverandre.
+- Modulen leser alltid lagringen på nytt rett før den skriver, slik at to faner ikke overskriver hverandre (testet, EC10). `navigator.locks` er ikke brukt: lesing og skriving skjer i samme synkrone steg, og en utdeling som likevel skulle gå tapt, gis tilbake ved neste avstemming.
 - **localStorage fremfor IndexedDB:** alle spillene bruker det allerede, datamengden er liten, og et synkront grensesnitt er enklere å gjøre robust.
 - Ødelagt data tas vare på som `…-kopi` (som Magiske egg gjør), og spillet går videre.
 - «Start på nytt» i et spill sletter **ikke** E-coins. En egen nullstilling med bekreftelse ligger i E-shop.
@@ -218,3 +218,9 @@ Arbeidet gjøres på egne greiner (`ecoins/…`). `main` og publiserte spill end
 - V3: Gammel fremgang. Anbefalt: **ja, med én samlet melding** («Du har allerede klart mye – du får 175 E-coins!»). Alternativet er å telle bare fra lansering.
 - V4: Presisering av S2 i standarden (ingen kjøp med ekte penger).
 - V5: Pilotspill (anbefalt Dyrepatruljen).
+
+## Status 3. november 2026 (grenen `ecoins/v1`)
+
+- Bygget: `ecoins/ecoins.js`, `ecoins/tilbehor-3d.js`, `ecoins/2d/` (30 overlegg, 540 kB, lastes bare ved valg), `butikk/`, lenke i forsidemenyen, integrasjon i Era Defenders 0.21.0, Fossil Zoo 0.8.0, Dyrepatruljen 0.11.0 og Magiske egg 0.9.0.
+- Fra planen: Era bruker alternativ A for E2 til Even har valgt. Overleggene i 2D har ekstra plass over rammen (Fossil 32 px, Era 16 px), så høye hatter ikke blir kuttet.
+- Bildeverktøyet for overleggene ligger på grenen `ecoins/robot-verktoy` (`felles/robot/lag-ecoins-bilder.mjs`).

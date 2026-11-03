@@ -18,8 +18,8 @@ for n, navn in enumerate(era_epoker, 1):
 M['era'].append(('era.seier', 'Tidsherren (sluttbossen) er slått', 150, 20))
 
 fossil = [  # (epoke, dyr-id, navn, deler)
-    (0,'dimetrodon','Dimetrodon',5),(0,'oyenstikker','Kjempeøyenstikker',3),(0,'panserfisk','Panserfisk',3),(0,'trilobitt','Trilobitt',3),
-    (1,'flygeogle','Flygeøgle',4),(1,'trex','T-rex',5),(1,'langhals','Langhals',5),(1,'ammonitt','Ammonitt',3),
+    (0,'dimetrodon','Dimetrodon',5),(0,'meganeura','Kjempeøyenstikker',3),(0,'dunkle','Panserfisk',3),(0,'trilobitt','Trilobitt',3),
+    (1,'flyg','Flygeøgle',4),(1,'trex','T-rex',5),(1,'langhals','Langhals',5),(1,'ammonitt','Ammonitt',3),
     (2,'ulv','Ulv',4),(2,'love','Løve',4),(2,'elefant','Elefant',5),(2,'mammut','Mammut',5),(2,'hval','Hval',5)]
 fos_epoke_bonus = {0: 40, 1: 40, 2: 100}
 fos_epoke_navn = {0: 'Jordas oldtid', 1: 'Jordas mellomalder', 2: 'Jordas nytid'}

@@ -276,13 +276,13 @@
     "min": 12.5
    },
    {
-    "id": "fossil.dyr.oyenstikker",
+    "id": "fossil.dyr.meganeura",
     "tekst": "Kjempeøyenstikker vekket til live (3 deler)",
     "E": 15,
     "min": 7.5
    },
    {
-    "id": "fossil.dyr.panserfisk",
+    "id": "fossil.dyr.dunkle",
     "tekst": "Panserfisk vekket til live (3 deler)",
     "E": 15,
     "min": 7.5
@@ -300,7 +300,7 @@
     "min": 0
    },
    {
-    "id": "fossil.dyr.flygeogle",
+    "id": "fossil.dyr.flyg",
     "tekst": "Flygeøgle vekket til live (4 deler)",
     "E": 15,
     "min": 10.0
