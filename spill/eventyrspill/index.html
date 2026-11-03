@@ -106,7 +106,7 @@
   #meny .vansk button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
   #meny .vansk-info { font-size: 13px; color: #c7cde0; min-height: 2.6em; }
   @media (max-width: 420px) { #meny .vansk button { font-size: 14px; white-space: nowrap; padding: 6px 2px; } }
-  @media (max-height: 700px) { #meny .vansk-info, #meny .evn-ver { display: none; } #meny .boks { gap: 8px; } #meny .meny-maskot { width: 54px; } #meny .start { padding: 12px; } }
+  @media (max-height: 700px) { #meny .vansk-info, #meny .evn-ver { display: none; } #meny .boks { gap: 8px; } #meny .meny-maskot { width: 35px; } #meny .start { padding: 12px; } }
   #meny .andre { font-size: 18px; font-weight: bold; padding: 12px; border-radius: 14px; border: 2px solid rgba(255,213,74,0.7); background: rgba(255,213,74,0.12); color: #ffe9b0; cursor: pointer; }
   #meny .andre:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   #meny.seier h1 { font-size: 34px; }
@@ -116,11 +116,11 @@
      aldri over tittel eller Start-knapp. Vises ikke på «Du ble slått ut»-skjermen eller i liggende mobil. */
   #meny .meny-intro { display: flex; align-items: center; justify-content: center; gap: 16px; text-align: left; }
   #meny .meny-intro .maal { max-width: 15em; }
-  #meny .meny-maskot { flex-shrink: 0; width: 70px; height: auto; max-height: 120px; object-fit: contain; padding: 0; background: none; border-radius: 0; justify-self: auto;
+  #meny .meny-maskot { flex-shrink: 0; width: 50px; height: auto; max-height: 120px; object-fit: contain; /* EVN-roboten: samme bredde som gutten hadde, så teksten får like mye plass som før */ padding: 0; background: none; border-radius: 0; justify-self: auto;
     filter: drop-shadow(0 6px 14px rgba(0,0,0,.45)) drop-shadow(0 0 18px rgba(80,120,255,.45)); }
   #meny.slutt .meny-intro { display: block; text-align: center; }
   #meny.slutt .meny-maskot { display: none; }
-  @media (max-width: 380px) { #meny .meny-maskot { width: 58px; } #meny .meny-intro { gap: 12px; } #meny { padding-top: 66px; } } /* plass til «Avslutt» øverst til høyre */
+  @media (max-width: 380px) { #meny .meny-maskot { width: 42px; } #meny .meny-intro { gap: 12px; } #meny { padding-top: 66px; } } /* plass til «Avslutt» øverst til høyre */
   @media (max-height: 500px) { #meny .meny-maskot { display: none; } #meny .meny-intro { display: block; text-align: center; } }
   /* Spørsmål før man avslutter (E3) */
   #evnSporsmal { position: fixed; inset: 0; z-index: 30; display: none; place-items: center; background: rgba(0,0,0,0.7); padding: 16px; }
