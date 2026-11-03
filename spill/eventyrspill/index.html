@@ -122,6 +122,28 @@
   #meny.slutt .meny-maskot { display: none; }
   @media (max-width: 380px) { #meny .meny-maskot { width: 42px; } #meny .meny-intro { gap: 12px; } #meny { padding-top: 66px; } } /* plass til «Avslutt» øverst til høyre */
   @media (max-height: 500px) { #meny .meny-maskot { display: none; } #meny .meny-intro { display: block; text-align: center; } }
+  /* Velg tidsepoke (3.11.2026, samme prinsipp som «Velg en verden» i Dyrepatruljen) */
+  #epokeKart { position: fixed; inset: 0; z-index: 21; display: none; align-items: center; justify-content: center; padding: 16px;
+    background: rgba(0,0,0,0.7); color: #fff; overflow-y: auto; }
+  #epokeKart .boks { width: min(560px, 100%); background: rgba(20,26,40,0.95); border: 2px solid rgba(255,255,255,0.18); border-radius: 18px;
+    padding: 20px 22px; display: grid; gap: 12px; text-align: center; margin: auto; }
+  #epokeKart h1 { margin: 0; font-size: 28px; color: #ffd54a; }
+  #epokeKart .andre { min-height: 48px; font-size: 18px; font-weight: bold; padding: 10px; border-radius: 14px; border: 2px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.08); color: #fff; cursor: pointer; }
+  #epokeKart .andre:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+  #epokeKart .epoker { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  #epokeKart .epoke-kort { position: relative; display: grid; justify-items: center; gap: 2px; min-height: 96px; padding: 10px 6px; border-radius: 14px;
+    border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #9aa3b8; font-size: 14px; }
+  #epokeKart .epoke-kort .nr { position: absolute; top: 5px; left: 9px; font-size: 12px; opacity: 0.8; }
+  #epokeKart .epoke-kort .ik { font-size: 30px; line-height: 1.2; }
+  #epokeKart .epoke-kort b { font-size: 16px; color: inherit; }
+  #epokeKart button.epoke-kort { cursor: pointer; color: #2a1a00; background: linear-gradient(160deg, #fff3c4, #ffd98a); border-color: #e0a640;
+    box-shadow: 0 4px 0 #b9832e; touch-action: manipulation; font-family: inherit; }
+  #epokeKart button.epoke-kort:hover, #epokeKart button.epoke-kort:focus-visible { transform: translateY(-3px); }
+  #epokeKart button.epoke-kort:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+  #epokeKart button.epoke-kort.her { background: linear-gradient(160deg, #c8f7ff, #7fd8ff); border-color: #2aa7d6; box-shadow: 0 4px 0 #1d7fa6; }
+  #epokeKart .epoke-kort.last .ik { opacity: 0.45; }
+  @media (max-width: 420px) { #epokeKart .epoker { grid-template-columns: repeat(2, 1fr); } #epokeKart .boks { padding: 16px 14px; } }
+  @media (prefers-reduced-motion: reduce) { #epokeKart button.epoke-kort:hover, #epokeKart button.epoke-kort:focus-visible { transform: none; } }
   /* Spørsmål før man avslutter (E3) */
   #evnSporsmal { position: fixed; inset: 0; z-index: 30; display: none; place-items: center; background: rgba(0,0,0,0.7); padding: 16px; }
   #evnSporsmal .boks { background: #1c2436; border: 2px solid rgba(255,255,255,0.2); border-radius: 16px; padding: 22px; max-width: 340px;
@@ -176,8 +198,16 @@ addEventListener('keydown',function(){t(false);},true);})();
   </div>
   <button class="start evn-start" id="menyStart">▶ Start</button>
   <button class="andre" id="menyNyRunde" hidden>⭐ Ny runde – sterkere fiender</button>
+  <button class="andre" id="menyEpoker" hidden>🌍 Velg tidsepoke</button>
   <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
   <div class="evn-ver">Versjon 0.21.0 · 7 tidsepoker</div>
+</div></div>
+<div id="epokeKart" role="dialog" aria-modal="true" aria-labelledby="epokeTittel"><div class="boks">
+  <span class="evn-merke">EVN STUDIO</span>
+  <h1 id="epokeTittel">🌍 Velg tidsepoke</h1>
+  <div class="lagret" id="epokeInfo"></div>
+  <div class="epoker" id="epokeListe"></div>
+  <button class="andre" id="epokeTilbake">← Tilbake</button>
 </div></div>
 <div id="evnSporsmal" role="dialog" aria-modal="true"><div class="boks">
   <div>Vil du avslutte og gå tilbake til forsiden? Spillet ditt er lagret.</div>
@@ -448,9 +478,9 @@ const BOSS_HVER = 5;          // en boss kommer hver 5. bølge
 // ===================== VANSKELIGHETSGRAD (velges på startkortet) =====================
 // Lett er slik spillet var før 1.11.2026. Prøv å endre tallene!
 const VANSKELIGHET = {
-  lett:      { navn: 'Lett',      ikon: '🙂', bolgeLiv: 1,    nivaLiv: 1,    mana: 0.35, verdenLiv: 0,    verdenSkade: 0, fart: 1,    pris: 1,    usarbar: 40, spesial: false, skuddNed: 0,   tilbakeslag: 25 },
-  normal:    { navn: 'Normal',    ikon: '😎', bolgeLiv: 0.4,  nivaLiv: 0.25, mana: 0.27, verdenLiv: 0.1,  verdenSkade: 4, fart: 1.1,  pris: 1,    usarbar: 40, spesial: true,  skuddNed: 170, tilbakeslag: 0 },
-  vanskelig: { navn: 'Vanskelig', ikon: '🔥', bolgeLiv: 0.15, nivaLiv: 0.1,  mana: 0.22, verdenLiv: 0.25, verdenSkade: 2, fart: 1.25, pris: 1.15, usarbar: 32, spesial: true,  skuddNed: 120, tilbakeslag: 0 }
+  lett:      { navn: 'Lett',      ikon: '🙂', bolgeLiv: 1,    nivaLiv: 1,    mana: 0.35, verdenLiv: 0,    verdenSkade: 0, fart: 1,    pris: 1,    usarbar: 40, spesial: false, skuddNed: 0,   tilbakeslag: 25, magiNed: 30, pistolGang: 1.5 },
+  normal:    { navn: 'Normal',    ikon: '😎', bolgeLiv: 0.4,  nivaLiv: 0.25, mana: 0.27, verdenLiv: 0.1,  verdenSkade: 4, fart: 1.1,  pris: 1,    usarbar: 40, spesial: true,  skuddNed: 170, tilbakeslag: 0,  magiNed: 40, pistolGang: 2 },
+  vanskelig: { navn: 'Vanskelig', ikon: '🔥', bolgeLiv: 0.15, nivaLiv: 0.1,  mana: 0.22, verdenLiv: 0.25, verdenSkade: 2, fart: 1.25, pris: 1.15, usarbar: 32, spesial: true,  skuddNed: 120, tilbakeslag: 0,  magiNed: 50, pistolGang: 2.5 }
 };
 // bolgeLiv:    hvor mye liv du får tilbake når en ny bølge starter (1 = fullt). Ved sjekkpunkt får du alltid fullt liv.
 // nivaLiv:     hvor mye liv du får tilbake når du går opp et nivå (1 = fullt)
@@ -460,6 +490,8 @@ const VANSKELIGHET = {
 // fart:        hvor fort fiendene går   pris: hvor dyrt det er å bygge   usarbar: hvor lenge helten ikke kan bli truffet etter et slag
 // spesial:     raske 💨 og skytende 🎯 fiender   skuddNed: hvor lenge en skytende fiende venter mellom skuddene
 // tilbakeslag: hvor langt fiendene spretter unna når du slår dem (0 = de blir stående)
+// magiNed:     hvor lenge du må vente mellom hvert magiskudd (60 = ett sekund). Før 3.11.2026 var det 15 i alle grader.
+// pistolGang:  hvor mye lenger laserpistolen må vente mellom skuddene
 function vg() { return VANSKELIGHET[helt && helt.vansk] || VANSKELIGHET.lett; }
 function byggePris(b, antall) { return Math.round((b.kanKjopesMange ? b.priser[0] : b.priser[antall]) * vg().pris); }
 const SLUTTBOSS_LIV = { lett: 3, normal: 3, vanskelig: 4 }; // sluttbossen i Tidsvirvelen har så mange ganger mer liv enn en vanlig boss
@@ -759,7 +791,7 @@ function nyttSpill() {
     pynt: [],             // pynt som står i basen
     tarnNedkjoling: [0, 0, 0, 0],
     murLiv: 0, tarnLiv: [0, 0, 0, 0],   // hvor hel muren og tårnene er
-    verden: 1, portalApen: false, sjekkpunkt: 0, alleKlart: false, basenavn: '',
+    verden: 1, hoyesteVerden: 1, portalApen: false, sjekkpunkt: 0, alleKlart: false, basenavn: '',
     vansk: 'normal', runde: 0, seiret: false, spilletid: 0, bosser: 0, dodsfall: 0,
     dragePos: { x: VERDEN_BREDDE / 2 - 40, y: VERDEN_HOYDE / 2 }, drageNed: 0, drageFlamme: 0, drageMaal: null,
     kanonNed: 0, kanonVinkel: 0, lynNed: 0, tempelNed: 0, empNed: 0,
@@ -780,6 +812,7 @@ function nyttSpill() {
     helt.sjekkpunkt = gammel.sjekkpunkt;
     helt.alleKlart = gammel.alleKlart;
     helt.basenavn = gammel.basenavn || '';
+    helt.hoyesteVerden = Math.max(gammel.hoyesteVerden || 1, helt.verden);
     for (const k of ['vansk', 'runde', 'seiret', 'spilletid', 'bosser', 'dodsfall']) if (gammel[k] !== undefined) helt[k] = gammel[k];
     helt.murLiv = gammel.murLiv;
     helt.tarnLiv = gammel.tarnLiv.slice();
@@ -872,7 +905,7 @@ function lagre() {
   if (!helt) return;
   try {
     const d = {};
-    for (const k of ['niva', 'xp', 'penger', 'drikker', 'pynt', 'bygget', 'verden', 'portalApen', 'sjekkpunkt', 'alleKlart', 'murLiv', 'tarnLiv', 'vansk', 'runde', 'seiret', 'spilletid', 'bosser', 'dodsfall', 'basenavn']) d[k] = helt[k];
+    for (const k of ['niva', 'xp', 'penger', 'drikker', 'pynt', 'bygget', 'verden', 'portalApen', 'sjekkpunkt', 'alleKlart', 'murLiv', 'tarnLiv', 'vansk', 'runde', 'seiret', 'spilletid', 'bosser', 'dodsfall', 'basenavn', 'hoyesteVerden']) d[k] = helt[k];
     d.epoker = 7;
     localStorage.setItem(LAGRE_NOKKEL, JSON.stringify(d));
   } catch (e) { /* lagring er ikke tilgjengelig – spillet virker likevel */ }
@@ -886,10 +919,12 @@ function hentLagring() {
     const standard = { niva: 1, xp: 0, penger: 0, drikker: 0, pynt: [], bygget: {}, verden: 1, portalApen: false, sjekkpunkt: 0, alleKlart: false, murLiv: 0, tarnLiv: [0, 0, 0, 0], basenavn: '',
       vansk: 'lett', runde: 0, seiret: false, spilletid: 0, bosser: 0, dodsfall: 0 }; // lagringer fra før 1.11.2026 spiller videre på Lett, slik de gjorde før
     const h = Object.assign(standard, d);
+    if (!d.hoyesteVerden) h.hoyesteVerden = 0; // settes etter at epoke-flyttingen under er gjort
     // Før Robotfabrikken kom, var romstasjonen verden 5. Da blir du der du var.
     if (!d.epoker && h.verden >= 5) { h.verden += 1; h.alleKlart = false; }
     if (!VERDENER[h.verden]) h.verden = 1;
     if (!VANSKELIGHET[h.vansk]) h.vansk = 'lett';
+    if (!h.hoyesteVerden) h.hoyesteVerden = (h.alleKlart || h.seiret) ? SISTE_VERDEN : h.verden; // lagringer fra før tidsreisen
     return h;
   } catch (e) { return null; }
 }
@@ -1059,7 +1094,7 @@ window.addEventListener('keydown', e => {
     if (k === 'b') apneBase();
     if (k === 'q') drikk();
     if (k === 'f') skytPistol(helt.retning.x, helt.retning.y);
-  } else if ((k === 'enter' || k === ' ') && !e.repeat && (tilstand === 'start' || tilstand === 'slutt') && !sporsmalApent() && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#menyVansk'))) {
+  } else if ((k === 'enter' || k === ' ') && !e.repeat && (tilstand === 'start' || tilstand === 'slutt') && !sporsmalApent() && !epokeKartApent() && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#menyVansk'))) {
     startSpill();
   }
 });
@@ -1085,7 +1120,7 @@ function skytPistol(rx, ry) {
   if (laser) {
     piler.push({ x: sx, y: sy, vx: rx * 16, vy: ry * 16, liv: 45, laser: true, farge: '#00e5ff', gjennom: true, truffet: [],
                  skade: 6 + 3 * nivaa + 5 * laser });
-    helt.pistolNed = 14;
+    helt.pistolNed = Math.round(14 * (vg().pistolGang || 1));
     lagPartikler(sx, sy, '#00e5ff', 5, 2);
   } else {
     piler.push({ x: sx, y: sy, vx: rx * 11, vy: ry * 11, liv: 50, kule: true, skade: 4 + 2 * (nivaa - 1) });
@@ -1243,7 +1278,7 @@ function sverdHugg() {
 
 function skytMagi(rx, ry) {
   if (helt.magiNedkjoling > 0 || helt.mana < MAGI_KOSTER) return;
-  helt.mana -= MAGI_KOSTER; helt.magiNedkjoling = 15;
+  helt.mana -= MAGI_KOSTER; helt.magiNedkjoling = vg().magiNed || 15;
   const vinkler = antallBygget('trippel') ? [-0.25, 0, 0.25] : [0];
   const grunn = Math.atan2(ry, rx);
   for (const v of vinkler) {
@@ -1303,6 +1338,7 @@ function bossKnuser(f, vedMuren) {
 
 function gaaTilVerden(n) {
   helt.verden = n;
+  helt.hoyesteVerden = Math.max(helt.hoyesteVerden || 1, n);
   helt.sjekkpunkt = 0;
   helt.portalApen = false;
   fiender = []; kuler = []; piler = []; mynter = []; kanonkuler = []; lyn = []; ringer = []; fiendeskudd = [];
@@ -2851,12 +2887,13 @@ function oppdaterMeny() {
   const lagretEl = document.getElementById('menyLagret');
   lagretEl.classList.toggle('stats', tilstand === 'seier');
   document.getElementById('menyNyRunde').hidden = tilstand !== 'seier';
+  document.getElementById('menyEpoker').hidden = !((tilstand === 'start' || tilstand === 'seier') && tidsreiseApen());
   if (tilstand === 'seier') {
     const v = vg();
     document.getElementById('menyTittel').textContent = '🏆 Du klarte det!';
     document.getElementById('menyEpoke').textContent = 'Du slo Tidsherren og reddet hele tiden – fra steinalderen til Tidsvirvelen!';
     lagretEl.textContent = '⏱️ ' + spilletidTekst(helt.spilletid || 0) + ' · ⭐ Nivå ' + helt.niva + ' · 👑 ' + (helt.bosser || 0) + ' bosser · 💀 ' + (helt.dodsfall || 0) + ' ganger slått ut · ' + v.ikon + ' ' + v.navn + ((helt.runde || 0) ? ' · Runde ' + (helt.runde + 1) : '');
-    document.getElementById('menyMaal').textContent = 'Vil du spille videre, eller prøve en ny runde der fiendene er sterkere? Du beholder basen og nivået.';
+    document.getElementById('menyMaal').textContent = 'Vil du spille videre, eller prøve en ny runde der fiendene er sterkere? Du beholder basen og nivået. Med «Velg tidsepoke» kan du spille en tidligere tidsepoke på nytt.';
     document.getElementById('menyStart').textContent = '♾️ Fortsett å spille';
   }
 }
@@ -2868,6 +2905,43 @@ for (const b of document.querySelectorAll('#menyVansk button')) {
   });
 }
 document.getElementById('menyNyRunde').addEventListener('click', e => { e.stopPropagation(); nyRunde(); });
+
+// ===================== VELG TIDSEPOKE =====================
+// Når du har nådd siste tidsepoke, kan du velge hvilken epoke du vil spille fra startkortet og seiersskjermen.
+// Sett TIDSREISE_FRA til 2 hvis du vil kunne velge mellom epokene du har vært i, med en gang.
+const TIDSREISE_FRA = SISTE_VERDEN;
+function tidsreiseApen() { return (helt.hoyesteVerden || 1) >= TIDSREISE_FRA; }
+const epokeKart = document.getElementById('epokeKart');
+let kartFra = null;
+function epokeKartApent() { return epokeKart.style.display === 'flex'; }
+function visEpokeKart() {
+  kartFra = tilstand;
+  const hoy = helt.hoyesteVerden || 1;
+  document.getElementById('epokeInfo').textContent = '⏳ Du har vært i ' + hoy + ' av ' + SISTE_VERDEN + ' tidsepoker' + (helt.seiret ? ' og slått Tidsherren 🏆' : '');
+  const liste = document.getElementById('epokeListe'); liste.innerHTML = '';
+  for (let n = 1; n <= SISTE_VERDEN; n++) {
+    const apen = n <= hoy, navn = VERDENSNAVN[n].replace(' ' + VERDENSIKON[n], '');
+    const el = document.createElement(apen ? 'button' : 'div');
+    el.className = 'epoke-kort' + (apen ? '' : ' last') + (n === helt.verden ? ' her' : '');
+    const status = !apen ? '🔒 Låst' : n === helt.verden ? '📍 Her er du' : (n < hoy || (n === SISTE_VERDEN && helt.seiret)) ? '✅ Klart' : '▶ Spill';
+    el.innerHTML = '<span class="nr">' + n + '</span><span class="ik">' + VERDENSIKON[n] + '</span><b>' + navn + '</b><span>' + status + '</span>';
+    if (apen) { el.type = 'button'; el.addEventListener('click', e => { e.stopPropagation(); velgEpoke(n); }); }
+    else el.setAttribute('aria-label', 'Tidsepoke ' + n + ', ' + navn + ', låst');
+    liste.appendChild(el);
+  }
+  document.getElementById('meny').style.display = 'none';
+  epokeKart.style.display = 'flex';
+  const forste = liste.querySelector('button'); if (forste) forste.focus();
+}
+function lukkEpokeKart() { epokeKart.style.display = 'none'; menyVist = ''; } // startkortet eller seiersskjermen vises igjen
+function velgEpoke(n) {
+  epokeKart.style.display = 'none';
+  if (kartFra === 'seier') fortsettEtterSeier(); else startSpill();
+  if (n !== helt.verden) gaaTilVerden(n);
+}
+document.getElementById('menyEpoker').addEventListener('click', e => { e.stopPropagation(); visEpokeKart(); });
+document.getElementById('epokeTilbake').addEventListener('click', e => { e.stopPropagation(); lukkEpokeKart(); });
+epokeKart.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); lukkEpokeKart(); } });
 document.getElementById('menyStart').addEventListener('click', e => { if (tilstand === 'seier') { e.stopPropagation(); fortsettEtterSeier(); } });
 document.getElementById('meny').addEventListener('click', () => { if (tilstand === 'start' || tilstand === 'slutt') startSpill(); });
 document.getElementById('meny').addEventListener('touchstart', () => { erTouch = true; mus.brukt = false; }, { passive: true });
@@ -2962,13 +3036,14 @@ EVNNullstill({
 
 helt = hentLagring(); // fortsett lagret spill hvis det finnes
 // E-coins: det lagringen viser er klart, gir E-coins én gang (også for fremgang fra før E-coins fantes).
-// Lagringen husker bare nåværende epoke: epoker før den er fullført, og sjekkpunkt ≥ 5 betyr at epokens boss er slått.
+// Epoker før den høyeste som er nådd, er fullført, og sjekkpunkt ≥ 5 betyr at epokens boss er slått.
 setTimeout(() => { try {
   if (!window.EVNEcoins) return;
   const ider = [], alt = helt.seiret || (helt.runde || 0) > 0;
-  const naa = alt ? SISTE_VERDEN + 1 : Math.max(1, helt.verden | 0);
+  // Høyeste epoke spilleren har nådd (tidsreisen lar spilleren gå tilbake til tidligere epoker)
+  const naa = alt ? SISTE_VERDEN + 1 : Math.max(1, helt.verden | 0, helt.hoyesteVerden | 0);
   for (let n = 1; n < naa; n++) { ider.push('era.boss.' + n); if (n < SISTE_VERDEN) ider.push('era.epoke.' + n); }
-  if (!alt) { if ((helt.sjekkpunkt | 0) >= BOSS_HVER) ider.push('era.boss.' + naa); if (helt.portalApen) ider.push('era.epoke.' + naa); }
+  if (!alt && (helt.verden | 0) === naa) { if ((helt.sjekkpunkt | 0) >= BOSS_HVER) ider.push('era.boss.' + naa); if (helt.portalApen) ider.push('era.epoke.' + naa); }
   if (alt) ider.push('era.seier');
   EVNEcoins.avstem(ider);
 } catch (e) {} }, 800);

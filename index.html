@@ -43,13 +43,12 @@
     background: rgba(8,12,26,.72); backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
     border-bottom: 1px solid var(--kant); }
   header .bredde { display: flex; align-items: center; gap: 22px; height: 76px; }
-  .logo { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .logo { display: flex; align-items: center; gap: 12px; flex-shrink: 0; min-height: 44px; }
   .logo img { height: 50px; filter: drop-shadow(0 4px 18px rgba(47,107,255,.45)); transition: transform .25s; }
   .logo:hover img { transform: scale(1.04); }
   nav { display: flex; gap: 4px; }
-  nav a { padding: 10px 16px; border-radius: 12px; font-weight: 800; color: var(--dempet); transition: color .15s, background .15s; }
+  nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 16px; border-radius: 12px; font-weight: 800; color: var(--dempet); transition: color .15s, background .15s; }
   nav a:hover { color: var(--tekst); background: rgba(255,255,255,.06); }
-  header .knapp { margin-left: auto; }
 
   /* ===== Knapper ===== */
   .knapp { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
@@ -61,43 +60,15 @@
   .knapp::after { content: ""; position: absolute; inset: 0; transform: translateX(-120%);
     background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%); transition: transform .6s; }
   .knapp:hover::after { transform: translateX(120%); }
-  .knapp.stor { font-size: clamp(20px, 2.6vw, 26px); padding: 20px 40px; border-radius: 20px; min-height: 68px; }
   .knapp .trekant { width: 0; height: 0; border-left: 16px solid #fff; border-top: 10px solid transparent; border-bottom: 10px solid transparent; }
 
-  /* ===== Hovedspill ===== */
-  .hero { position: relative; margin-top: 26px; border-radius: 28px; overflow: hidden; isolation: isolate;
-    min-height: clamp(400px, 52vh, 560px); display: flex; align-items: flex-end;
-    border: 1px solid var(--kant); box-shadow: 0 40px 80px -20px rgba(0,0,0,.7), 0 0 0 1px rgba(47,107,255,.08); }
-  .hero .bakgrunn { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover;
-    animation: drift 30s ease-in-out infinite alternate; will-change: transform; }
-  @keyframes drift { from { transform: scale(1.04) translate(0, 0); } to { transform: scale(1.1) translate(-1.5%, -1%); } }
-  .hero::before { content: ""; position: absolute; inset: 0; z-index: -1;
-    background:
-      linear-gradient(90deg, rgba(8,12,26,.96) 0%, rgba(8,12,26,.82) 34%, rgba(8,12,26,.18) 70%, rgba(8,12,26,.05) 100%),
-      linear-gradient(0deg, rgba(8,12,26,.92) 0%, rgba(8,12,26,0) 42%); }
-  .hero .innhold { width: 100%; padding: clamp(24px, 5vw, 56px); display: grid; grid-template-columns: minmax(0, 560px) 1fr; gap: 32px; align-items: end; }
-  .merker { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  /* ===== Merke («Nytt») på spillkort ===== */
   .merke { font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; padding: 7px 12px; border-radius: 999px;
     background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
   .merke.klar { background: rgba(25,195,255,.16); border-color: rgba(25,195,255,.55); color: #8fe6ff; }
   .merke.klar::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #39d98a;
     margin-right: 7px; vertical-align: 1px; box-shadow: 0 0 0 0 rgba(57,217,138,.6); animation: puls 2.2s infinite; }
   @keyframes puls { 70% { box-shadow: 0 0 0 8px rgba(57,217,138,0); } 100% { box-shadow: 0 0 0 0 rgba(57,217,138,0); } }
-  .hero h1 { font-family: var(--tittel); font-weight: 900; font-size: clamp(40px, 5vw, 68px); white-space: nowrap; line-height: .95; margin: 0 0 16px;
-    letter-spacing: -.02em; text-shadow: 0 6px 30px rgba(0,0,0,.5); }
-  .hero h1 span { background: var(--gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .hero p { font-size: clamp(16px, 1.8vw, 20px); color: #d6dcf5; margin: 0 0 26px; max-width: 34em; }
-  .hero .under { margin-top: 14px; color: var(--dempet); font-size: 14px; font-weight: 700; }
-
-  /* Sju tidsepoker – ekte skjermbilder */
-  .epoker { justify-self: end; align-self: end; background: rgba(8,12,26,.55); border: 1px solid var(--kant); border-radius: 18px;
-    padding: 14px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); max-width: 430px; }
-  .epoker h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--dempet); margin: 0 0 10px; font-family: var(--brod); }
-  .epoker ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-  .epoker li { text-align: center; font-size: 12px; overflow-wrap: anywhere; hyphens: auto; font-weight: 800; color: #d6dcf5; }
-  .epoker img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 2px solid rgba(255,255,255,.12);
-    margin-bottom: 6px; }
-
   /* ===== Seksjoner ===== */
   section { scroll-margin-top: 92px; }
   #spill .seksjonstopp { margin-top: 28px; }
@@ -108,13 +79,11 @@
   .seksjonstopp p { margin: 0; color: var(--dempet); font-weight: 700; }
 
   /* ===== Spillkort ===== */
-  .spill-liste { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 26px; }
+  .spill-liste { display: grid; }
   .spillkort { position: relative; display: flex; flex-direction: column; border-radius: var(--radius); overflow: hidden;
-    background: var(--flate); border: 1px solid var(--kant); transition: transform .25s, box-shadow .25s, border-color .25s; }
-  .spillkort:hover { transform: translateY(-6px); border-color: rgba(25,195,255,.55); box-shadow: 0 26px 50px -14px rgba(25,195,255,.28); }
+    background: var(--flate); border: 1px solid var(--kant); }
   .spillkort .bilde { position: relative; aspect-ratio: 16 / 10; overflow: hidden; }
-  .spillkort .bilde img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
-  .spillkort:hover .bilde img { transform: scale(1.06); }
+  .spillkort .bilde img { width: 100%; height: 100%; object-fit: cover; }
   .spillkort .bilde::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(19,26,58,.95) 0%, rgba(19,26,58,0) 45%); }
   .spillkort .merke { position: absolute; top: 14px; left: 14px; z-index: 1; background: rgba(8,12,26,.65); }
   .spillkort .avspill { position: absolute; z-index: 1; left: 50%; top: 45%; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%;
@@ -124,22 +93,18 @@
   .spillkort:hover .avspill { opacity: 1; transform: scale(1); }
   .spillkort .tekst { position: relative; margin-top: -64px; z-index: 1; padding: 0 24px 24px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
   .spillkort h3 { font-family: var(--tittel); font-weight: 800; font-size: clamp(24px, 2.6vw, 32px); margin: 0; text-shadow: 0 3px 16px rgba(0,0,0,.6); }
-  .spillkort .stikkord { display: flex; flex-wrap: wrap; gap: 6px; }
+  .spillkort .stikkord { display: flex; flex-wrap: wrap; gap: 8px; }
   .spillkort .stikkord i { font-style: normal; }
-  .spillkort .stikkord span { font-size: 13px; font-weight: 800; color: #c9d1f5; background: rgba(255,255,255,.07); border: 1px solid var(--kant);
-    padding: 4px 10px; border-radius: 999px; }
+  .spillkort .stikkord span { font-weight: 800; border-radius: 999px; }
   .spillkort p { margin: 0; color: var(--dempet); }
   .spillkort .knapp { margin-top: auto; width: 100%; padding: 16px; font-size: 19px; }
 
   /* ===== Siste nytt ===== */
   .nytt { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
-  .nyhet { background: var(--flate); border: 1px solid var(--kant); border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 8px;
-    transition: transform .2s, border-color .2s; }
-  .nyhet:hover { transform: translateY(-3px); border-color: rgba(138,61,255,.5); }
-  .nyhet time { font-size: 13px; font-weight: 800; color: var(--cyan); letter-spacing: .04em; }
+  .nyhet { border: 1px solid var(--kant); border-radius: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .nyhet time { font-size: 13px; font-weight: 800; letter-spacing: .04em; }
   .nyhet h3 { font-family: var(--tittel); font-size: 20px; margin: 0; }
   .nyhet p { margin: 0; color: var(--dempet); }
-  .nyhet .ikon { font-size: 30px; line-height: 1; }
 
   /* ===== Om ===== */
   .om { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; }
@@ -149,23 +114,14 @@
   .boks ol { padding-left: 20px; }
   .boks .liten { font-size: 14px; color: var(--dempet); }
 
-  footer { margin-top: 72px; border-top: 1px solid var(--kant); color: var(--dempet); font-size: 14px; padding-bottom: env(safe-area-inset-bottom); }
-  footer .bredde { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 26px; padding-bottom: 32px; }
-  footer img { height: 34px; opacity: .85; }
-  footer a { text-decoration: underline; text-underline-offset: 3px; }
-  footer a:hover { color: var(--tekst); }
+  footer { color: var(--dempet); font-size: 14px; padding-bottom: env(safe-area-inset-bottom); }
 
-  @media (max-height: 500px) and (orientation: landscape) {
-    .hero { min-height: 0; margin-top: 12px; } .hero .innhold { padding: 18px 24px; grid-template-columns: 1fr; }
-    .epoker { display: none; } .hero .merker { display: none; } .hero h1 { font-size: 34px; margin-bottom: 8px; } .hero p { display: none; } }
   /* Diskret inntoning når seksjoner kommer til syne */
   .js .inn { opacity: 0; transform: translateY(26px); }
   .js .inn.synlig { opacity: 1; transform: none; transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.25,1); transition-delay: calc(var(--i, 0) * 110ms); }
 
   /* ===== Nettbrett ===== */
   @media (max-width: 980px) {
-    .hero .innhold { grid-template-columns: 1fr; }
-    .epoker { justify-self: start; max-width: 520px; }
     .nytt { grid-template-columns: 1fr 1fr; }
     .nytt .nyhet:last-child { grid-column: 1 / -1; }
   }
@@ -174,37 +130,12 @@
     header .bredde { height: 64px; gap: 10px; }
     .logo img { height: 40px; }
     nav a { padding: 8px 10px; }
-    header .knapp { display: none; }
-    .hero { margin-top: 14px; border-radius: 22px; min-height: 0; }
-    .hero::before { background: linear-gradient(0deg, rgba(8,12,26,.98) 0%, rgba(8,12,26,.86) 46%, rgba(8,12,26,.2) 82%); }
-    .hero .innhold { padding-top: 84px; }
-    .hero p { font-size: 15px; }
-    .hero .merker { margin-bottom: 10px; }
-    .hero p { margin-bottom: 18px; }
-    .epoker { display: none; }
     header .slagord { display: none; }
     #spill .seksjonstopp { margin-top: 22px; }
-    .spill-liste { gap: 14px; }
-    .spillkort { flex-direction: row; min-height: 150px; }
-    .spillkort .bilde { width: 40%; aspect-ratio: auto; flex-shrink: 0; }
-    .spillkort .bilde::after { background: linear-gradient(270deg, rgba(19,26,58,.9) 0%, rgba(19,26,58,0) 40%); }
-    .spillkort .tekst { margin-top: 0; padding: 14px 14px 14px 12px; gap: 6px; }
-    .spillkort h3 { font-size: 22px; }
-    .spillkort p { font-size: 14px; line-height: 1.35; }
-    .spillkort .stikkord span { font-size: 11px; padding: 2px 8px; }
-    .spillkort .knapp { padding: 10px; font-size: 16px; }
-    .spillkort .avspill { display: none; }
-    .hero .knapp.stor { width: 100%; }
-    .epoker { padding: 10px; }
-    .epoker ol { gap: 6px; }
-    .epoker li { font-size: 11px; }
-    .spill-liste, .nytt, .om { grid-template-columns: 1fr; }
+    .nytt, .om { grid-template-columns: 1fr; }
     .nytt .nyhet:last-child { grid-column: auto; }
-    .spillkort .avspill { opacity: 1; transform: scale(.8); }
     .seksjonstopp { margin-top: 52px; flex-direction: column; gap: 4px; }
   }
-  /* Berøringsskjermer: vis alltid avspillingsknappen */
-  @media (hover: none) { .spillkort .avspill { opacity: 1; transform: scale(.85); } }
   /* Respekter ønske om mindre bevegelse */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
@@ -229,13 +160,13 @@
     .velg .gratis { font-size: 14px; }
     #spill .spill-liste { grid-template-columns: 1fr; gap: 14px; }
     .spillkort { flex-direction: column; min-height: 0; }
-    .spillkort .bilde { width: 100%; aspect-ratio: 2 / 1; }
+    .spillkort .bilde { width: 100%; aspect-ratio: 2 / 1; flex-shrink: 0; }
+    .spillkort .bilde img.topp { object-position: 50% 0; } /* robothodet står høyt i bildet: vis toppen når bildet beskjæres til 2:1 */
     .spillkort .bilde::after { background: linear-gradient(0deg, rgba(19,26,58,.95) 0%, rgba(19,26,58,0) 50%); }
     .spillkort .tekst { margin-top: -40px; padding: 0 14px 14px; gap: 6px; }
     .spillkort h3 { font-size: 28px; line-height: 1.05; }
-    .spillkort .stikkord span { font-size: 12px; padding: 2px 9px; }
     .spillkort p { font-size: 15px; line-height: 1.35; }
-    .spillkort .knapp { min-height: 52px; font-size: 19px; margin-top: 4px; }
+    .spillkort .knapp { min-height: 52px; padding: 10px; font-size: 19px; margin-top: 4px; }
   }
 
   /* ===== Designrunde 1.11.2026: mer liv i kort, nyheter og footer ===== */
@@ -267,7 +198,6 @@
   }
   .boks a { text-decoration: underline; text-underline-offset: 3px; color: var(--tekst); }
   /* Stikkord: større og fargerike */
-  .spillkort .stikkord { gap: 8px; }
   .spillkort .stikkord span { --t: 160,175,255; font-size: 14.5px; padding: 5px 12px; color: rgb(var(--t)); background: rgba(var(--t), .14);
     border: 1px solid rgba(var(--t), .45); filter: brightness(1.25); }
   .spillkort .stikkord .t-kamp { --t: 255,120,110; }
@@ -285,7 +215,7 @@
     transition: transform .3s cubic-bezier(.2,.8,.25,1.2), border-color .3s, box-shadow .3s; }
   .nyhet::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: linear-gradient(90deg, rgb(var(--f)), rgba(var(--f), .2)); }
   .nyhet.n1 { --f: 25,195,255; } .nyhet.n2 { --f: 120,214,120; } .nyhet.n3 { --f: 255,176,46; }
-  .nyhet .ikon { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 16px; font-size: 30px;
+  .nyhet .ikon { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 16px; font-size: 30px; line-height: 1;
     background: rgba(var(--f), .18); border: 1px solid rgba(var(--f), .45); transition: transform .35s cubic-bezier(.2,.8,.25,1.4); }
   .nyhet time { color: rgb(var(--f)); filter: brightness(1.2); }
   .nyhet h3 a::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
@@ -298,7 +228,7 @@
   .nyhet:hover .mer::after { transform: translateX(5px); }
 
   /* Footer: kompakt og diskret – liten logo og © til venstre, tekstlenker til høyre */
-  footer { margin-top: 84px; position: relative; border-top: 0; }
+  footer { margin-top: 84px; position: relative; }
   footer::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--gradient); opacity: .55; }
   footer .bredde { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 24px; padding-top: 18px; padding-bottom: 20px; }
   footer .fot-merke { display: flex; align-items: center; gap: 14px; margin: 0; font-size: 14px; color: var(--dempet); }
@@ -416,7 +346,7 @@
 
       <a class="spillkort k-dyr inn" style="--i:3" href="spill/dyrepatruljen/">
         <div class="bilde">
-          <img src="bilder/dyrepatruljen.jpg" srcset="bilder/dyrepatruljen.jpg 800w, bilder/dyrepatruljen-1200.jpg 1200w" sizes="(max-width: 680px) 100vw, 300px" alt="Skjermbilde fra Dyrepatruljen: den gule roboten med håven sniker seg innpå en rev og en rotte på torget i byen">
+          <img class="topp" src="bilder/dyrepatruljen.jpg" srcset="bilder/dyrepatruljen.jpg 800w, bilder/dyrepatruljen-1200.jpg 1200w" sizes="(max-width: 680px) 100vw, 400px" alt="Skjermbilde fra Dyrepatruljen: den gule roboten med håven i dyreparken, med papegøye og skilpadde ved dammen i jungelområdet">
           <span class="merke klar">Nytt</span>
           <span class="avspill" aria-hidden="true"></span>
         </div>
@@ -430,7 +360,7 @@
 
       <a class="spillkort k-egg inn" style="--i:4" href="spill/magiske-egg/">
         <div class="bilde">
-          <img src="bilder/magiske-egg.jpg" srcset="bilder/magiske-egg.jpg 800w, bilder/magiske-egg-1200.jpg 1200w" sizes="(max-width: 680px) 100vw, 400px" alt="Skjermbilde fra Magiske egg: EVN-roboten står blant kosedyr foran en regnbue">
+          <img class="topp" src="bilder/magiske-egg.jpg" srcset="bilder/magiske-egg.jpg 800w, bilder/magiske-egg-1200.jpg 1200w" sizes="(max-width: 680px) 100vw, 400px" alt="Skjermbilde fra Magiske egg: den gule roboten og en regnbuesebra foran en regnbue">
           <span class="merke klar">Nytt</span>
           <span class="avspill" aria-hidden="true"></span>
         </div>
@@ -453,25 +383,25 @@
     </div>
     <div class="nytt">
       <article class="nyhet n1 inn" style="--i:0">
-        <span class="ikon" aria-hidden="true">🦖</span>
-        <time datetime="2026-11-01">1. november 2026</time>
-        <h3><a href="spill/morkeskogen/">Klarer du å slå Skjelett-T-rex-kongen?</a></h3>
-        <p>Følg stien inn i Dinoverdenen og kjemp deg opp gjennom Beinslottet. På taket venter Skjelett-T-rex-kongen, og vinneren får en skjelettbue!</p>
-        <span class="mer" aria-hidden="true">Spill Mørkeskogen</span>
+        <span class="ikon" aria-hidden="true">🥚</span>
+        <time datetime="2026-11-03">3. november 2026</time>
+        <h3><a href="spill/magiske-egg/">Nytt spill: Magiske egg!</a></h3>
+        <p>Klekk magiske egg og samle 15 søte dyr i seks områder. Gi dyrene mat, så vokser de!</p>
+        <span class="mer" aria-hidden="true">Spill Magiske egg</span>
       </article>
       <article class="nyhet n2 inn" style="--i:1">
-        <span class="ikon" aria-hidden="true">🤠</span>
-        <time datetime="2026-11-01">1. november 2026</time>
-        <h3><a href="spill/morkeskogen/">Hjelp Lasso-Lars, og få din egen lasso!</a></h3>
-        <p>Lasso-Lars i Kaktusbyen trenger fem deler, én fra hver verden. Finner du alle, får du en cowboy-lasso som gjør ville dyr til tamme venner.</p>
-        <span class="mer" aria-hidden="true">Spill Mørkeskogen</span>
+        <span class="ikon" aria-hidden="true">🤖</span>
+        <time datetime="2026-11-03">3. november 2026</time>
+        <h3><a href="#spill">Hei, EVN! Roboten er med i alle spillene.</a></h3>
+        <p>Nå styrer du den gule roboten i Era Defenders, Fossil Zoo, Dyrepatruljen og Magiske egg. I Era Defenders får den nytt utstyr i hver tidsepoke!</p>
+        <span class="mer" aria-hidden="true">Se spillene</span>
       </article>
       <article class="nyhet n3 inn" style="--i:2">
-        <span class="ikon" aria-hidden="true">⏸️</span>
-        <time datetime="2026-11-01">1. november 2026</time>
-        <h3><a href="#spill">Nå kan du ta pause og se kartet!</a></h3>
-        <p>Trykk ⏸️ når du vil ta en pause, så står spillet stille. Trykk 🗺️ for å se hvor du er. Det virker i alle tre spillene.</p>
-        <span class="mer" aria-hidden="true">Se spillene</span>
+        <span class="ikon" aria-hidden="true">🦊</span>
+        <time datetime="2026-11-02">2. november 2026</time>
+        <h3><a href="spill/dyrepatruljen/">Nytt spill: Dyrepatruljen!</a></h3>
+        <p>Snik deg innpå dyr som har gått seg vill, og fang dem med håven. Det er 15 verdener med 10 dyr i hver, og dyrene flytter inn i dyreparken din.</p>
+        <span class="mer" aria-hidden="true">Spill Dyrepatruljen</span>
       </article>
     </div>
   </section>
