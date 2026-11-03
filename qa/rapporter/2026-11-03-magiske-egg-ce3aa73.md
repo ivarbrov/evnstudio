@@ -1,4 +1,4 @@
-# EVN Game QA: Magiske egg 0.9.1
+# EVN Game QA: Magiske egg (magiske-egg) 0.9.1
 Grunnlag: agent 2.2 (utkast), standard 1.2 (utkast, ikke godkjent; gjeldende er 1.1, S2 etter 1.2a) (55d5794116fb74ae842b6d60fed4e7b160157472), commit ce3aa739989256d0a239e4bfb17084dbc3f79ae7
 Testkvittering: evn1 commit=ce3aa739989256d0a239e4bfb17084dbc3f79ae7 tester=2c1a60c04b81 arbeidstre=rent statisk=ok royk=ok statistikk=ikke-innfort ui=ikke-innfort ecoins=ok
 Nivå: full. Versjonen skal foreslås publisert. Selve endringen er på nivå liten: `git diff main...HEAD` endrer 3 linjer i `spill/magiske-egg/index.html` (`<title>`, `#versjon` og `const VERSJON`) og legger til 1 rad i `ENDRINGSLOGG.md`. Ingenting annet er endret.
@@ -38,6 +38,7 @@ Alle punktene under er kjente fra tidligere rapporter (`qa/rapporter/2026-11-03-
    - `test/statistikk/` er ikke innført (ST8, kjent).
 6. **T3, mulig problem (kjent):** `gesturestart` blokkeres under spilling uten at `modalApen()` sjekkes (linje 5455). Med redusert bevegelse er animasjonen på Start `none` (målt), men `bump` og 3D-effektene fortsetter (kodelest).
 7. **Dokumentasjon (kjent):** Oversikten «Hvilke krav gjelder for hvert spill» i standarden mangler fortsatt Magiske egg. Ut fra koden gjelder B1, B2 og B3. B4–B7 gjelder ikke.
+   - Tittelen har mappenavnet i parentes («Magiske egg (magiske-egg)»). Siden spillet mangler i oversikten, sammenligner publiseringssjekken (`test/publiseringssjekk.mjs`, linje 170–174) tittelen med mappenavnet. Det er den eneste endringen fra forrige utgave av rapporten. Commit og testresultater er de samme.
 
 ## Anbefalte forbedringer
 - Når 0.9.1 publiseres, retter det at 0.9.0 på `main` viser «Versjon 0.8.1» før skriptet har kjørt.
