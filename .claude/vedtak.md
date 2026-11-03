@@ -73,6 +73,16 @@ Beslutningsgrunnlag: `prototype/ecoins/E-COINS-PLAN.md`. Godkjenning: «Dette go
 Det gjelder V1 økonomimodellen, V2 arkitekturen, V3 at fremgang fra før gir E-coins med én samlet melding, V4 presiseringen av S2 (ingen kjøp med ekte penger) og V5 pilotspill. Publisering av den ferdige versjonen krever egen godkjenning etter Evens test og EVN Game QA.
 Evens valg E1 (varer og navn), E2 (Era: valgt antrekk erstatter epokeutstyret, alternativ A brukes til han har valgt) og E3 (ikonet) er ikke tatt ennå.
 
+## 3. november 2026: EVN UI-standard 1.0
+
+Beslutningsgrunnlag: kartleggingen av de fem spillene (dokumentet «EVN Studio – kartlegging og forslag til felles UI-standard», 3.11.2026). Svar fra den voksne eieren, ordrett fra valgene i økta:
+
+- Plassering og kravnivå: «Egen fil, KS for nye versjoner (Anbefalt)». Standarden ligger i `.claude/evn-ui-standard.md`. KS1–KS15 gjelder nye spill straks og eksisterende spill trinn for trinn.
+- Trinn 2: «Her, én PR per spill (Anbefalt)». Rettingene gjøres i standardiseringsøkta, med én PR per spill.
+- Trinn 3: «Vent til trinn 2 er godkjent (Anbefalt)».
+
+Ikke avgjort: symbolet for Avslutt i HUD (Evens valg), pilotspill for EVN-PAUSE v3 og felles lydnøkkel.
+
 ## Ikke vedtatt ennå
 
 - Standard 1.2 og agent 2.0 som gjeldende versjoner (i dag utkast), med statusnivåer, kontrollmetode, klarspråkavsnittet og nye arbeidsregler i `CLAUDE.md`.
