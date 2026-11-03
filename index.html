@@ -224,7 +224,7 @@
   .velg-robot.vink { animation: robot-vink 1.1s steps(8, jump-none) 2; }
   @keyframes robot-vink { from { background-position: 0 0; } to { background-position: 100% 0; } }
   @media (hover: hover) { .velg-robot:hover { transform: translateY(-3px) rotate(-3deg); } }
-  #spill .spill-liste { grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  #spill .spill-liste { grid-template-columns: repeat(3, 1fr); gap: 20px; } /* fem kort: 3 + 2 over 1180 px */
   @media (max-width: 1180px) and (min-width: 981px) { #spill .spill-liste { grid-template-columns: repeat(2, 1fr); } }
   @media (min-width: 1181px) { #spill .spillkort h3 { font-size: clamp(22px, 2vw, 28px); } #spill .spillkort .tekst { padding: 0 20px 22px; } }
   #spill .spillkort .avspill { display: none; } /* «Spill nå»-knappen er nok; runde ikonet dekket navnet på nettbrett */
@@ -290,6 +290,7 @@
   .spillkort .stikkord .t-grav { --t: 240,190,90; }
   .spillkort .stikkord .t-laer { --t: 190,150,255; }
   .spillkort .stikkord .t-dyr { --t: 255,190,110; }
+  .spillkort .stikkord .t-egg { --t: 255,150,210; }
 
   /* Siste nytt: farge per nyhet, ikon i fargesirkel, hele kortet er klikkbart */
   .nyhet { --f: 138,61,255; position: relative; overflow: hidden; padding: 24px 22px 20px;
@@ -436,6 +437,20 @@
           <h3>Dyrepatruljen</h3>
           <div class="stikkord"><span class="t-dyr"><i aria-hidden="true">🐾</i> Dyr</span><span class="t-utforsk"><i aria-hidden="true">🌍</i> Utforsking</span></div>
           <p>Redd dyr i 15 verdener med håven.</p>
+          <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill nå</span>
+        </div>
+      </a>
+
+      <a class="spillkort k-egg inn" style="--i:4" href="spill/magiske-egg/">
+        <div class="bilde">
+          <img src="bilder/magiske-egg.jpg" srcset="bilder/magiske-egg.jpg 800w, bilder/magiske-egg-1200.jpg 1200w" sizes="(max-width: 680px) 100vw, 400px" alt="Skjermbilde fra Magiske egg: helten står blant kosedyr som sebra, ildrev og enhjørning foran en regnbue">
+          <span class="merke klar">Nytt</span>
+          <span class="avspill" aria-hidden="true"></span>
+        </div>
+        <div class="tekst">
+          <h3>Magiske egg</h3>
+          <div class="stikkord"><span class="t-egg"><i aria-hidden="true">🥚</i> Samling</span><span class="t-dyr"><i aria-hidden="true">🐾</i> Dyr</span></div>
+          <p>Klekk egg og samle magiske dyr.</p>
           <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill nå</span>
         </div>
       </a>
