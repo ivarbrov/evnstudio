@@ -6,8 +6,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://gc.zgo.at; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://evnstudio.goatcounter.com; connect-src 'self' https://evnstudio.goatcounter.com; media-src 'self' data: blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Era Defenders – v0.21.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Era Defenders – v0.21.1</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="ikoner/ikon-192.png">
 <link rel="apple-touch-icon" href="ikoner/apple-touch-icon.png">
@@ -21,9 +21,9 @@
   /* Zoom er tillatt (WCAG 1.4.4). Spillflaten bruker knip/dra selv; knapper og menyer slipper dobbelttrykk-zoom. */
   button, a, summary, [role="button"] { touch-action: manipulation; }
   canvas { display: block; width: 100%; height: 100%; cursor: none; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-  #baseKnapp { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); padding: 10px 16px; font-size: 16px; font-weight: bold;
+  #baseKnapp { position: fixed; top: calc(16px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); padding: 10px 16px; font-size: 16px; font-weight: bold;
     background: #6b4a2b; color: #ffe9b0; border: 3px solid #3d2a17; border-radius: 10px; cursor: pointer; display: none; }
-  #avsluttKnapp { position: fixed; top: 16px; right: 16px; min-height: 44px; box-sizing: border-box; padding: 10px 14px; font-size: 15px; font-weight: bold;
+  #avsluttKnapp { position: fixed; top: calc(16px + env(safe-area-inset-top)); right: calc(16px + env(safe-area-inset-right)); min-height: 44px; box-sizing: border-box; padding: 10px 14px; font-size: 15px; font-weight: bold;
     background: rgba(0,0,0,0.6); color: #fff; border: 2px solid rgba(255,255,255,0.4); border-radius: 10px;
     text-decoration: none; display: none; z-index: 25; }
   #avsluttKnapp:hover { background: rgba(0,0,0,0.8); }
@@ -152,9 +152,9 @@
   #evnBli { background: #3a6fd8; color: #fff; border: 0; }
   #evnGaa { background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.35); }
   /* Mobil: Basen-knappen under livslinjene i stedet for oppå dem (E5) */
-  @media (max-width: 700px) { #baseKnapp { top: 150px; left: 16px; transform: none; padding: 8px 12px; font-size: 15px; min-height: 44px; }
+  @media (max-width: 700px) { #baseKnapp { top: calc(150px + env(safe-area-inset-top)); left: calc(16px + env(safe-area-inset-left)); transform: none; padding: 8px 12px; font-size: 15px; min-height: 44px; }
     #baseKnapp:hover { transform: none; } }
-  #tilbake { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(420px, calc(100% - 32px));
+  #tilbake { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(420px, calc(100% - 32px));
     padding: 16px 22px; font-size: 20px; font-weight: bold; border-radius: 14px; border: 3px solid #1f3f80;
     background: #3a6fd8; color: #fff; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.6); z-index: 10; }
 </style>
@@ -200,7 +200,7 @@ addEventListener('keydown',function(){t(false);},true);})();
   <button class="andre" id="menyNyRunde" hidden>⭐ Ny runde – sterkere fiender</button>
   <button class="andre" id="menyEpoker" hidden>🌍 Velg tidsepoke</button>
   <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-  <div class="evn-ver">Versjon 0.21.0 · 7 tidsepoker</div>
+  <div class="evn-ver">Versjon 0.21.1 · 7 tidsepoker</div>
 </div></div>
 <div id="epokeKart" role="dialog" aria-modal="true" aria-labelledby="epokeTittel"><div class="boks">
   <span class="evn-merke">EVN STUDIO</span>
@@ -1136,8 +1136,23 @@ const spak = { aktiv: false, id: null, sx: 0, sy: 0, x: 0, y: 0 };
 const holdtKnapp = { sverd: false, magi: false, pistol: false };
 const knappFinger = {}; // hvilken finger holder hvilken knapp
 
+// Trygge skjermkanter (hakk og hjemlinje), lest fra CSS env(safe-area-inset-*). 0 på skjermer uten hakk.
+const kant = { t: 0, r: 0, b: 0, l: 0 };
+function lesKanter() {
+  try {
+    let p = document.getElementById('evnKantProbe');
+    if (!p) { p = document.createElement('div'); p.id = 'evnKantProbe'; p.setAttribute('aria-hidden', 'true');
+      p.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
+      document.body.appendChild(p); }
+    const cs = getComputedStyle(p);
+    kant.t = parseFloat(cs.paddingTop) || 0; kant.r = parseFloat(cs.paddingRight) || 0; kant.b = parseFloat(cs.paddingBottom) || 0; kant.l = parseFloat(cs.paddingLeft) || 0;
+  } catch (e) {}
+}
+window.addEventListener('resize', lesKanter); window.addEventListener('orientationchange', () => setTimeout(lesKanter, 300));
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', lesKanter); else lesKanter();
+
 function mobilKnapper() {
-  const w = canvas.width, h = canvas.height;
+  const w = canvas.width - kant.r, h = canvas.height - kant.b;
   return [
     { id: 'sverd', ikon: VAAPENIKON[epoke().naer], x: w - 85,  y: h - 95,  r: 50, farge: 'rgba(230,230,230,0.35)' },
     { id: 'magi',  ikon: VAAPENIKON[epoke().avstand], x: w - 195, y: h - 65,  r: 40, farge: 'rgba(160,110,255,0.4)' },
@@ -1220,7 +1235,7 @@ function tegnMobilKontroller() {
     sirkel(spak.sx + (d ? dx / d * m : 0), spak.sy + (d ? dy / d * m : 0), 26, 'rgba(255,255,255,0.6)');
   } else {
     ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '14px system-ui'; ctx.textAlign = 'left';
-    ctx.fillText('👆 Dra her for å gå', 20, canvas.height - 130);
+    ctx.fillText('👆 Dra her for å gå', 20 + kant.l, canvas.height - 130 - kant.b);
   }
   for (const k of mobilKnapper()) {
     const holdt = holdtKnapp[k.id];
@@ -2694,6 +2709,7 @@ function tegnLinje(x, y, b, verdi, maks, farge, tekst) {
 }
 
 function tegnPanel() {
+  ctx.save(); ctx.translate(kant.l, kant.t);   // statusfeltet holder avstand til hakket
   tegnLinje(16, 16, 240, helt.liv, helt.maksLiv, '#e53935', '❤️ Liv ' + helt.liv + '/' + helt.maksLiv);
   tegnLinje(16, 42, 240, helt.mana, helt.maksMana, '#7e57c2', VAAPENIKON[epoke().avstand] + ' Kraft ' + Math.floor(helt.mana));
   tegnLinje(16, 68, 240, helt.xp, xpTilNesteNiva(), '#29b6f6', '⭐ Nivå ' + helt.niva + '  (' + helt.xp + '/' + xpTilNesteNiva() + ' XP)');
@@ -2701,6 +2717,7 @@ function tegnPanel() {
   ctx.fillStyle = '#ffd54a'; ctx.font = 'bold 15px system-ui'; ctx.textAlign = 'left';
   ctx.fillText('💰 ' + helt.penger + (helt.drikker > 0 ? '   🧪 ' + helt.drikker : '') + '   ' + VERDENSIKON[helt.verden] + ' Bølge ' + bolge, 24, 111);
   if (antallBygget('mur')) tegnLinje(16, 122, 240, helt.murLiv, murMaks(), '#9e9e9e', '🧱 Mur ' + helt.murLiv + '/' + murMaks() + (helt.murLiv === 0 ? '  KNUST!' : ''));
+  ctx.restore();
   ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '13px system-ui';
   if (!erTouch) ctx.fillText('Piler/WASD: gå   Mellomrom: ' + VAAPENNAVN[epoke().naer] + '   E/klikk: ' + VAAPENNAVN[epoke().avstand] + (antallBygget('pistol') ? '   F/høyreklikk: pistol' : '') + '   B: basen   M: kart   P: pause', canvas.width - 16, canvas.height - 16);
 }
@@ -2998,7 +3015,7 @@ try {
 EVNPause({
   mappe: 'eventyrspill', avsluttId: 'avsluttKnapp',
   tema: { panel: 'rgba(28,36,54,.97)', ink: '#fff', hi: '#ffd54a', btn: '#ffd54a', btnInk: '#2b1d00' },
-  knapp: (b, k) => { b.style.cssText = 'position:fixed;top:68px;right:16px;z-index:24'; k.style.cssText = 'position:fixed;top:68px;right:72px;z-index:24'; document.body.append(k, b); },
+  knapp: (b, k) => { b.style.cssText = 'position:fixed;top:calc(68px + env(safe-area-inset-top));right:calc(16px + env(safe-area-inset-right));z-index:24'; k.style.cssText = 'position:fixed;top:calc(68px + env(safe-area-inset-top));right:calc(72px + env(safe-area-inset-right));z-index:24'; document.body.append(k, b); },
   kart: {
     forhold: VERDEN_BREDDE / VERDEN_HOYDE,
     info: () => '🟡 Du · 🔴 Monstre · 🏰 Basen',
