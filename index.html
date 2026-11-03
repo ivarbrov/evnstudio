@@ -84,7 +84,7 @@
     background: var(--flate); border: 1px solid var(--kant); }
   .spillkort .bilde { position: relative; aspect-ratio: 16 / 10; overflow: hidden; }
   .spillkort .bilde img { width: 100%; height: 100%; object-fit: cover; }
-  .spillkort .bilde::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(19,26,58,.95) 0%, rgba(19,26,58,0) 45%); }
+  .spillkort .bilde::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgb(19,26,58) 0%, rgba(19,26,58,0) 45%); } /* helt dekkende nederst (= --flate), ellers lyser lyse bilder gjennom og danner en strek mot kortet */
   .spillkort .merke { position: absolute; top: 14px; left: 14px; z-index: 1; background: rgba(8,12,26,.65); }
   .spillkort .avspill { position: absolute; z-index: 1; left: 50%; top: 45%; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%;
     background: var(--gradient); display: grid; place-items: center; box-shadow: 0 12px 30px rgba(0,0,0,.45);
@@ -162,7 +162,7 @@
     .spillkort { flex-direction: column; min-height: 0; }
     .spillkort .bilde { width: 100%; aspect-ratio: 2 / 1; flex-shrink: 0; }
     .spillkort .bilde img.topp { object-position: 50% 0; } /* robothodet står høyt i bildet: vis toppen når bildet beskjæres til 2:1 */
-    .spillkort .bilde::after { background: linear-gradient(0deg, rgba(19,26,58,.95) 0%, rgba(19,26,58,0) 50%); }
+    .spillkort .bilde::after { background: linear-gradient(0deg, rgb(19,26,58) 0%, rgba(19,26,58,0) 50%); }
     .spillkort .tekst { margin-top: -40px; padding: 0 14px 14px; gap: 6px; }
     .spillkort h3 { font-size: 28px; line-height: 1.05; }
     .spillkort p { font-size: 15px; line-height: 1.35; }
