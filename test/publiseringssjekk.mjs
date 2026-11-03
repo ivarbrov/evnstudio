@@ -168,7 +168,10 @@ if (!spill.length && gyldige.length) kontrollerKvittering('Rapporten', gyldige[0
 // ---- 3–5. Full QA, testkvittering og K3 per endret spill ----
 for (const s of spill) {
   const navn = Object.keys(kravsett.mapper).find(n => kravsett.mapper[n] === s) || s;
-  const r = gyldige.find(x => x.niva === 'full' && (x.tittel.includes(navn) || x.tittel.includes(s)));
+  // Spillnavnet i rapportens tittel sammenlignes uten forskjell på store og små bokstaver, og mappenavnet godtas også.
+  const tittelGjelder = x => { const t = x.tittel.toLowerCase(); return t.includes(navn.toLowerCase()) || t.includes(s.toLowerCase()); };
+  if (!kravsett.perSpill[s]) varsler.push(`${navn}: spillet står ikke i standardens oversikt over betingede krav, så bare de obligatoriske kravene og ST1–ST8 er sjekket.`);
+  const r = gyldige.find(x => x.niva === 'full' && tittelGjelder(x));
   if (!r) { feil.push(`${navn}: mangler QA-rapport på fullt nivå for ${kort(kode)}.`); continue; }
   const trengs = [...kravsett.obligatorisk, ...(kravsett.perSpill[s] || [])];
   const mangler = trengs.filter(id => !new RegExp('\\b' + id + '\\b').test(r.tekst));
