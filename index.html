@@ -161,6 +161,7 @@
     #spill .spill-liste { grid-template-columns: 1fr; gap: 14px; }
     .spillkort { flex-direction: column; min-height: 0; }
     .spillkort .bilde { width: 100%; aspect-ratio: 2 / 1; flex-shrink: 0; }
+    .spillkort .bilde img.topp { object-position: 50% 0; } /* robothodet står høyt i bildet: vis toppen når bildet beskjæres til 2:1 */
     .spillkort .bilde::after { background: linear-gradient(0deg, rgba(19,26,58,.95) 0%, rgba(19,26,58,0) 50%); }
     .spillkort .tekst { margin-top: -40px; padding: 0 14px 14px; gap: 6px; }
     .spillkort h3 { font-size: 28px; line-height: 1.05; }
@@ -344,7 +345,7 @@
 
       <a class="spillkort k-dyr inn" style="--i:3" href="spill/dyrepatruljen/">
         <div class="bilde">
-          <img src="bilder/dyrepatruljen.jpg" srcset="bilder/dyrepatruljen.jpg 800w, bilder/dyrepatruljen-1200.jpg 1200w" sizes="(max-width: 680px) 100vw, 400px" alt="Skjermbilde fra Dyrepatruljen: den gule roboten med håven sniker seg innpå en rev og en rotte på torget i byen">
+          <img class="topp" src="bilder/dyrepatruljen.jpg" srcset="bilder/dyrepatruljen.jpg 800w, bilder/dyrepatruljen-1200.jpg 1200w" sizes="(max-width: 680px) 100vw, 400px" alt="Skjermbilde fra Dyrepatruljen: den gule roboten med håven i dyreparken, med papegøye og skilpadde ved dammen i jungelområdet">
           <span class="merke klar">Nytt</span>
           <span class="avspill" aria-hidden="true"></span>
         </div>
@@ -358,7 +359,7 @@
 
       <a class="spillkort k-egg inn" style="--i:4" href="spill/magiske-egg/">
         <div class="bilde">
-          <img src="bilder/magiske-egg.jpg" srcset="bilder/magiske-egg.jpg 800w, bilder/magiske-egg-1200.jpg 1200w" sizes="(max-width: 680px) 100vw, 400px" alt="Skjermbilde fra Magiske egg: EVN-roboten står blant kosedyr foran en regnbue">
+          <img class="topp" src="bilder/magiske-egg.jpg" srcset="bilder/magiske-egg.jpg 800w, bilder/magiske-egg-1200.jpg 1200w" sizes="(max-width: 680px) 100vw, 400px" alt="Skjermbilde fra Magiske egg: den gule roboten og en regnbuesebra foran en regnbue">
           <span class="merke klar">Nytt</span>
           <span class="avspill" aria-hidden="true"></span>
         </div>
@@ -384,7 +385,7 @@
         <span class="ikon" aria-hidden="true">🥚</span>
         <time datetime="2026-11-03">3. november 2026</time>
         <h3><a href="spill/magiske-egg/">Nytt spill: Magiske egg!</a></h3>
-        <p>Klekk magiske egg og samle 15 søte dyr i seks verdener. Gi dyrene mat, så vokser de!</p>
+        <p>Klekk magiske egg og samle 15 søte dyr i seks områder. Gi dyrene mat, så vokser de!</p>
         <span class="mer" aria-hidden="true">Spill Magiske egg</span>
       </article>
       <article class="nyhet n2 inn" style="--i:1">
