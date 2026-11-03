@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>E-shop – prototype · EVN Studio</title>
+<style>
+@font-face{font-family:'Rubik';font-weight:800;src:url(data:font/woff2;base64,/*RUBIK800*/) format('woff2')}
+@font-face{font-family:'Nunito';font-weight:700;src:url(data:font/woff2;base64,/*NUNITO700*/) format('woff2')}
+@font-face{font-family:'Nunito';font-weight:800;src:url(data:font/woff2;base64,/*NUNITO800*/) format('woff2')}
+:root{
+  --bg:#080c1a;--bg2:#0e1430;--flate:#131a3a;--flate2:#1a2350;--kant:rgba(140,160,255,.14);
+  --cyan:#19c3ff;--bla:#2f6bff;--lilla:#8a3dff;--tekst:#f1f4ff;--dempet:#a3add3;--gul:#ffcc00;--gronn:#5fe08a;
+  --gradient:linear-gradient(100deg,var(--cyan) 0%,var(--bla) 45%,var(--lilla) 100%);
+  --tittel:'Rubik',system-ui,sans-serif;--brod:'Nunito',system-ui,sans-serif;--radius:22px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tekst);font-family:var(--brod);font-weight:700}
+body{min-height:100vh;background:radial-gradient(1200px 600px at 10% -10%,rgba(47,107,255,.22),transparent 60%),radial-gradient(900px 500px at 110% 10%,rgba(138,61,255,.18),transparent 60%),var(--bg)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
+.proto{background:#ffcc00;color:#1a1400;text-align:center;font-size:13px;padding:6px 12px;font-weight:800}
+header{display:flex;align-items:center;gap:12px;padding:12px max(16px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left));position:sticky;top:0;z-index:5;background:rgba(8,12,26,.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--kant)}
+.tilbake{min-width:44px;min-height:44px;border-radius:14px;border:1px solid var(--kant);background:var(--flate);display:grid;place-items:center;font-size:20px}
+header h1{font-family:var(--tittel);font-weight:800;font-size:22px;margin:0;flex:1;letter-spacing:.2px}
+header h1 span{background:var(--gradient);-webkit-background-clip:text;background-clip:text;color:transparent}
+.saldo{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 14px 6px 8px;border-radius:999px;background:var(--flate2);border:1px solid var(--kant);font-family:var(--tittel);font-weight:800;font-size:20px}
+.saldo.dunk{animation:dunk .5s}
+@keyframes dunk{40%{transform:scale(1.12)}}
+.ecoin{width:28px;height:28px;flex:none}
+main{display:grid;grid-template-columns:1fr;gap:16px;padding:16px max(16px,env(safe-area-inset-right)) 32px max(16px,env(safe-area-inset-left));max-width:1180px;margin:0 auto}
+@media (min-width:900px){main{grid-template-columns:minmax(360px,440px) 1fr;align-items:start}.scene-kort{position:sticky;top:84px}}
+.scene-kort{scroll-margin-top:80px;background:linear-gradient(180deg,var(--flate2),var(--flate));border:1px solid var(--kant);border-radius:var(--radius);overflow:hidden}
+#scene{width:100%;height:clamp(220px,34vh,380px);display:block;touch-action:pan-y;cursor:grab}
+@media (min-width:900px){#scene{height:440px}}
+.scene-info{display:flex;align-items:center;gap:10px;padding:10px 14px 14px;min-height:64px}
+.scene-info p{margin:0;flex:1;color:var(--dempet);font-size:15px}
+.scene-info b{color:var(--tekst)}
+.knapp{min-height:44px;padding:10px 18px;border-radius:14px;border:1px solid var(--kant);background:var(--flate2);font-weight:800;font-size:16px}
+.knapp.hoved{background:var(--gradient);border:0;color:#fff}
+.knapp.gronn{background:var(--gronn);border:0;color:#062312}
+.knapp:disabled{opacity:1;background:#232a4d;color:#7f89b3;border:1px solid var(--kant);cursor:not-allowed}
+.faner{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px;background:var(--flate);border:1px solid var(--kant);border-radius:18px}
+.faner button{min-height:48px;white-space:nowrap;border:0;border-radius:13px;background:transparent;font-family:var(--tittel);font-weight:800;font-size:17px;color:var(--dempet)}
+.faner button[aria-selected=true]{background:var(--flate2);color:var(--tekst);box-shadow:inset 0 -3px 0 var(--cyan)}
+.panel{margin-top:14px}
+.filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filter button{min-height:44px;padding:8px 16px;border-radius:999px;border:1px solid var(--kant);background:var(--flate);font-weight:800}
+.filter button[aria-pressed=true]{background:var(--flate2);border-color:var(--cyan)}
+.rutenett{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.vare{background:var(--flate);border:2px solid var(--kant);border-radius:18px;padding:10px;display:flex;flex-direction:column;gap:8px;position:relative}
+.vare.valgt{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(25,195,255,.18)}
+.vare .bilde{width:100%;aspect-ratio:1;border-radius:12px;background:radial-gradient(circle at 50% 40%,#26306a,#121836);display:block;border:0;padding:0}
+.vare .bilde img{width:100%;height:100%;object-fit:contain;display:block}
+.vare h3{margin:0;font-family:var(--tittel);font-weight:800;font-size:17px}
+.pris{display:flex;align-items:center;gap:6px;font-family:var(--tittel);font-weight:800;font-size:18px}
+.pris .ecoin{width:22px;height:22px}
+.eid{display:inline-flex;align-items:center;gap:6px;color:var(--gronn);font-weight:800}
+.vare .knapper{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vare .knapper .knapp{padding:8px 6px;font-size:15px}
+.mangler{font-size:13px;color:var(--dempet);min-height:18px}
+.merke{position:absolute;top:16px;left:16px;background:rgba(8,12,26,.8);border-radius:999px;padding:4px 10px;font-size:13px}
+.plass h2,.lomme h2{font-family:var(--tittel);font-weight:800;font-size:19px;margin:18px 0 10px}
+.plass h2:first-child{margin-top:4px}
+.rad{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory}
+.rad button{flex:none;width:104px;scroll-snap-align:start;border-radius:16px;border:2px solid var(--kant);background:var(--flate);padding:6px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:14px}
+.rad button img{width:88px;height:88px;border-radius:10px;background:radial-gradient(circle at 50% 40%,#26306a,#121836)}
+.rad button .ingen{width:88px;height:88px;border-radius:10px;display:grid;place-items:center;font-size:30px;background:#121836;color:var(--dempet)}
+.rad button[aria-pressed=true]{border-color:var(--gronn);box-shadow:0 0 0 3px rgba(95,224,138,.2)}
+.lagret{color:var(--gronn);font-size:15px;min-height:22px;margin-top:6px}
+.tom{color:var(--dempet);background:var(--flate);border:1px dashed var(--kant);border-radius:16px;padding:14px}
+.tall{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tall div{background:var(--flate);border:1px solid var(--kant);border-radius:16px;padding:12px;text-align:center}
+.tall b{display:flex;justify-content:center;align-items:center;gap:6px;font-family:var(--tittel);font-weight:800;font-size:26px}
+.tall b .ecoin{width:24px;height:24px}
+.tall>div>span{color:var(--dempet);font-size:14px}
+details.spill{background:var(--flate);border:1px solid var(--kant);border-radius:16px;margin-bottom:10px}
+details.spill summary{min-height:56px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none}
+details.spill summary::-webkit-details-marker{display:none}
+details.spill summary .navn{flex:1;font-family:var(--tittel);font-weight:800;font-size:17px}
+details.spill summary .igjen{color:var(--dempet);font-size:14px;text-align:right}
+.mal{height:8px;border-radius:99px;background:#0b1026;overflow:hidden;margin:0 14px 12px}
+.mal i{display:block;height:100%;background:var(--gradient)}
+details.spill ul{list-style:none;margin:0;padding:0 14px 12px}
+details.spill li{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--kant);font-size:15px}
+details.spill li .ok{width:22px;flex:none}
+details.spill li .t{flex:1}
+details.spill li.gjort{color:var(--tekst)} details.spill li:not(.gjort){color:var(--dempet)}
+.kommer{opacity:.75}
+.forklar{color:var(--dempet);font-size:14px;line-height:1.45}
+/* dialog */
+.slor{position:fixed;inset:0;background:rgba(3,6,16,.72);display:grid;place-items:center;z-index:20;padding:16px}
+.slor[hidden]{display:none}
+.dialog{width:min(420px,100%);background:linear-gradient(180deg,var(--flate2),var(--flate));border:1px solid var(--kant);border-radius:24px;padding:20px;text-align:center}
+.dialog img{width:150px;height:150px;border-radius:16px;background:radial-gradient(circle at 50% 40%,#26306a,#121836)}
+.dialog h2{font-family:var(--tittel);font-weight:800;font-size:22px;margin:12px 0 6px}
+.dialog p{margin:6px 0;color:var(--dempet);font-size:16px;line-height:1.4}
+.dialog p b{color:var(--tekst)}
+.dialog .knapper{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+/* melding */
+.melding{position:fixed;left:50%;top:76px;transform:translate(-50%,-20px);opacity:0;z-index:30;display:flex;align-items:center;gap:10px;padding:10px 18px 10px 12px;border-radius:999px;background:#0e1430;border:2px solid var(--cyan);font-family:var(--tittel);font-weight:800;font-size:18px;pointer-events:none;transition:opacity .25s,transform .25s;max-width:calc(100vw - 32px)}
+.melding.vis{opacity:1;transform:translate(-50%,0)}
+.melding small{display:block;font-family:var(--brod);font-size:13px;color:var(--dempet);font-weight:700}
+/* testpanel */
+.test{margin-top:22px;border:2px dashed rgba(255,204,0,.5);border-radius:18px;padding:12px 14px;background:rgba(255,204,0,.04)}
+.test summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:800;color:#ffd84a}
+.test .grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.test .knapp{font-size:14px;padding:8px 12px}
+.test p{font-size:13px;color:var(--dempet);margin:10px 0 0}
+.test pre{font-size:12px;white-space:pre-wrap;background:#060914;border-radius:10px;padding:10px;max-height:200px;overflow:auto;color:#b9c4ee}
+@media (max-width:420px){.faner button{font-size:15px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="proto" role="note">PROTOTYPE – ingenting lagres. Tallene er forslag til Even og voksne.</div>
+<header>
+  <button class="tilbake" aria-label="Tilbake til EVN Studio" title="Tilbake">←</button>
+  <h1><span>E-shop</span></h1>
+  <button class="saldo" id="saldoKnapp" aria-label="Du har 0 E-coins. Åpne lommeboka"><svg class="ecoin" aria-hidden="true"><use href="#ecoin"/></svg><span id="saldo">0</span></button>
+</header>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs><linearGradient id="eg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#19c3ff"/><stop offset=".5" stop-color="#2f6bff"/><stop offset="1" stop-color="#8a3dff"/></linearGradient></defs>
+  <symbol id="ecoin" viewBox="0 0 32 32"><path d="M16 1.5 28.6 8.75v14.5L16 30.5 3.4 23.25V8.75Z" fill="url(#eg)" stroke="#dfe8ff" stroke-width="1.6"/><path d="M11.5 9h9.5v3h-6v2.6h5.2v2.8H15V20h6.2v3h-9.7z" fill="#fff"/></symbol>
+</svg>
+
+<main>
+  <section class="scene-kort" aria-label="Roboten din">
+    <canvas id="scene" aria-label="Den gule EVN-roboten. Dra for å snu den."></canvas>
+    <div class="scene-info"><p id="sceneTekst">Dra i roboten for å snu den.</p><button class="knapp" id="tilbakestill" hidden>Ta av</button></div>
+  </section>
+
+  <section>
+    <div class="faner" role="tablist" aria-label="E-shop">
+      <button role="tab" id="fane-butikk" aria-controls="p-butikk" aria-selected="true">🛒 Butikk</button>
+      <button role="tab" id="fane-garderobe" aria-controls="p-garderobe" aria-selected="false" tabindex="-1">👕 Garderobe</button>
+      <button role="tab" id="fane-lomme" aria-controls="p-lomme" aria-selected="false" tabindex="-1">👛 Lommebok</button>
+    </div>
+
+    <div class="panel" id="p-butikk" role="tabpanel" aria-labelledby="fane-butikk">
+      <div class="filter" role="group" aria-label="Vis">
+        <button aria-pressed="true" data-f="alle">Alle</button>
+        <button aria-pressed="false" data-f="hode">🎩 På hodet</button>
+        <button aria-pressed="false" data-f="rygg">🦸 På ryggen</button>
+      </div>
+      <div class="rutenett" id="varer"></div>
+    </div>
+
+    <div class="panel plass" id="p-garderobe" role="tabpanel" aria-labelledby="fane-garderobe" hidden>
+      <h2>🎩 På hodet</h2><div class="rad" id="rad-hode" role="group" aria-label="På hodet"></div>
+      <h2>🦸 På ryggen</h2><div class="rad" id="rad-rygg" role="group" aria-label="På ryggen"></div>
+      <div class="lagret" id="lagret" aria-live="polite"></div>
+      <p class="forklar">Det du velger her, har roboten på i alle EVN-spillene. Klærne er bare til pynt. De gjør ikke roboten raskere eller sterkere.</p>
+    </div>
+
+    <div class="panel lomme" id="p-lomme" role="tabpanel" aria-labelledby="fane-lomme" hidden>
+      <div class="tall">
+        <div><b><svg class="ecoin" aria-hidden="true"><use href="#ecoin"/></svg><span id="l-saldo">0</span></b><span>Du har nå</span></div>
+        <div><b id="l-tjent">0</b><span>Tjent totalt</span></div>
+        <div><b id="l-brukt">0</b><span>Brukt</span></div>
+      </div>
+      <h2>Slik tjener du E-coins</h2>
+      <p class="forklar">Du får E-coins første gang du klarer noe stort i et spill. Hver ting gir E-coins bare én gang.</p>
+      <div id="spilliste"></div>
+      <p class="forklar">E-coins og klær lagres i denne nettleseren på denne enheten. Bytter du nettbrett eller nettleser, starter du på nytt der.</p>
+    </div>
+
+    <details class="test">
+      <summary>🧪 Testpanel for prototypen (bare for å prøve)</summary>
+      <div class="grid">
+        <button class="knapp" data-sp="dyrepatruljen">+ milepæl Dyrepatruljen</button>
+        <button class="knapp" data-sp="fossil">+ milepæl Fossil Zoo</button>
+        <button class="knapp" data-sp="era">+ milepæl Era Defenders</button>
+        <button class="knapp" data-sp="magiske-egg">+ milepæl Magiske egg</button>
+        <button class="knapp" id="dobbel">Send samme milepæl én gang til</button>
+        <button class="knapp" id="avbrudd">Kjøp som avbrytes midt i</button>
+      </div>
+      <div class="grid">
+        <button class="knapp" data-profil="ny">Ny spiller</button>
+        <button class="knapp" data-profil="eksempel">Eksempel (175)</button>
+        <button class="knapp" data-profil="vanlig">Vanlig spiller</button>
+        <button class="knapp" data-profil="aktiv">Svært aktiv</button>
+      </div>
+      <p>Lagringen vises slik den blir i nettleseren. Saldoen lagres ikke – den regnes ut av «tjent» minus «kjøpt».</p>
+      <pre id="lager"></pre>
+    </details>
+  </section>
+</main>
+
+<div class="slor" id="slor" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="d-tittel" aria-describedby="d-tekst">
+    <img id="d-bilde" alt="">
+    <h2 id="d-tittel"></h2>
+    <div id="d-tekst"></div>
+    <div class="knapper" id="d-knapper"></div>
+  </div>
+</div>
+<div class="melding" id="melding" role="status" aria-live="polite"></div>
+
+<script>/*THREE*/</script>
+/*GLTF*/
+<script>window.EVN_HELT_B64="/*ROBOT*/";</script>
+<script>
+'use strict';
+/* ====================== Data (fra økonomimodellen) ====================== */
+const MODELL = /*MODELL*/;
+const SPILL = [
+  {id:'dyrepatruljen', navn:'Dyrepatruljen'}, {id:'fossil', navn:'Fossil Zoo'},
+  {id:'era', navn:'Era Defenders'}, {id:'magiske-egg', navn:'Magiske egg'},
+  {id:'morkeskogen-2', navn:'Mørkeskogen 2.0', kommer:true}];
+const VARER = MODELL.varer.filter(v => v.kilde !== 'reserve');
+const VARE = Object.fromEntries(VARER.map(v => [v.id, v]));
+const MILEPAEL = {}; for (const s in MODELL.milepaeler) for (const m of MODELL.milepaeler[s]) MILEPAEL[m.id] = {...m, spill:s};
+
+/* ====================== Lommebok (samme logikk som felles modul) ======================
+   Lagring: ett objekt. Saldo lagres ALDRI – den regnes ut. Da kan saldo og eierskap ikke komme ut av takt. */
+let lager = tomtLager();
+function tomtLager(){ return {v:1, regler:1, tjent:{}, kjopt:{}, antrekk:{hode:null, rygg:null}}; }
+function sum(o, f){ let s = 0; for (const k in o) s += o[k][f]; return s; }
+function tjentTotalt(){ return sum(lager.tjent, 'e'); }
+function brukt(){ return sum(lager.kjopt, 'pris'); }
+function saldo(){ return tjentTotalt() - brukt(); }
+function eier(id){ return !!lager.kjopt[id]; }
+function skriv(nytt){ lager = JSON.parse(JSON.stringify(nytt)); }   // i spillet: localStorage.setItem i ett steg
+
+function belonn(id){
+  const m = MILEPAEL[id]; if (!m) return {ok:false, grunn:'ukjent'};
+  if (lager.tjent[id]) return {ok:false, grunn:'allerede'};          // ingen dobbeltbelønning
+  const nytt = JSON.parse(JSON.stringify(lager));
+  nytt.tjent[id] = {e:m.E, spill:m.spill, t:Date.now()};             // beløpet låses ved utdeling
+  skriv(nytt); return {ok:true, e:m.E, m};
+}
+function kjop(id, avbryt){
+  const v = VARE[id];
+  if (!v) return {ok:false, grunn:'ukjent'};
+  if (eier(id)) return {ok:false, grunn:'eid'};
+  if (saldo() < v.pris) return {ok:false, grunn:'rad'};
+  const nytt = JSON.parse(JSON.stringify(lager));
+  nytt.kjopt[id] = {pris:v.pris, t:Date.now()};
+  if (avbryt) return {ok:false, grunn:'avbrutt'};                      // skjer før skriving → ingenting endres
+  skriv(nytt); return {ok:true};
+}
+function taPa(plass, id){
+  if (id && !eier(id)) return false;
+  const nytt = JSON.parse(JSON.stringify(lager)); nytt.antrekk[plass] = id; skriv(nytt); return true;
+}
+
+/* ====================== 3D: roboten og tilbehøret ====================== */
+const lerret = document.getElementById('scene');
+const redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let renderer, scene, kamera, mix, klipp = {}, robot, omdreier, tilbehor = {}, bilder = {}, hodeBox, kroppBox;
+let sokkel, ring, snu = -0.35, snuMal = -0.35, prover = null;
+
+function farge(hex){ return new THREE.Color(hex).convertSRGBToLinear(); }
+function lagTilbehor(modell){
+  let hodeBein, kroppBein, hodeMesh;
+  modell.traverse(o => {
+    if (o.isBone && /^Head(_\d+)?$/.test(o.name) && !hodeBein) hodeBein = o;
+    if (o.isBone && o.name === 'Torso_1') kroppBein = o;
+    if (o.isMesh && o.name === 'Head_3') hodeMesh = o; });
+  modell.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(modell), H = box.max.y - box.min.y;
+  const hb = new THREE.Box3().setFromObject(hodeMesh), hMidt = hb.getCenter(new THREE.Vector3());
+  hodeBox = hb.clone(); kroppBox = box.clone();
+  const w = hb.max.x - hb.min.x, T = hb.max.y, cx = hMidt.x, cz = hMidt.z, by = box.min.y;
+  const mat = (c, o = {}) => { const e = o.emissive; delete o.emissive; const m = new THREE.MeshStandardMaterial({color:farge(c), flatShading:true, roughness:.8, ...o}); if (e) m.emissive = farge(e); return m; };
+  const M = (g, m, p = [0,0,0], rr = [0,0,0], s = [1,1,1]) => { const x = new THREE.Mesh(g, m); x.position.set(...p); x.rotation.set(...rr); x.scale.set(...s); return x; };
+  const fest = (bein, obj) => { scene.add(obj); obj.updateMatrixWorld(true); bein.attach(obj); obj.visible = false; return obj; };
+  // ---- Fra felles/robot/tilbehor.js (Era Defenders, uendret form) ----
+  const HODE = {
+    steinhette: () => { const g = new THREE.Group();
+      g.add(M(new THREE.SphereGeometry(w*.42, 9, 6, 0, Math.PI*2, 0, Math.PI/2), mat(0x6d4c41), [cx, T - w*.06, cz], [0,0,0], [1,.55,1]));
+      const b = mat(0xf3eadb); g.add(M(new THREE.CylinderGeometry(w*.045, w*.045, w*.62, 6), b, [cx, T + w*.16, cz + w*.05], [0,0,Math.PI/2]));
+      for (const s of [-1,1]) g.add(M(new THREE.SphereGeometry(w*.07, 6, 4), b, [cx + s*w*.32, T + w*.16, cz + w*.05])); return g; },
+    faraokrone: () => { const g = new THREE.Group();
+      g.add(M(new THREE.CylinderGeometry(w*.5, w*.52, w*.1, 12), mat(0xd4a04a, {metalness:.5, roughness:.4}), [cx, T - w*.1, cz]));
+      g.add(M(new THREE.BoxGeometry(w*.1, w*.3, w*.8), mat(0xc62828), [cx, T + w*.08, cz])); return g; },
+    ridderhjelm: () => { const g = new THREE.Group();
+      g.add(M(new THREE.CylinderGeometry(w*.5, w*.52, w*.1, 12), mat(0xb0bec5, {metalness:.6, roughness:.35}), [cx, T - w*.1, cz]));
+      g.add(M(new THREE.ConeGeometry(w*.1, w*.5, 6), mat(0xb3261e), [cx + w*.12, T + w*.14, cz - w*.1], [-.5,0,-.25])); return g; },
+    pirathatt: () => { const g = new THREE.Group(), s = mat(0x1d1d24);
+      g.add(M(new THREE.CylinderGeometry(w*.62, w*.62, w*.05, 3), s, [cx, T - w*.03, cz], [0, Math.PI/6, 0]));
+      g.add(M(new THREE.CylinderGeometry(w*.28, w*.36, w*.28, 10), s, [cx, T + w*.1, cz]));
+      g.add(M(new THREE.SphereGeometry(w*.07, 6, 4), mat(0xffffff), [cx, T + w*.12, cz + w*.33])); return g; },
+    vernehjelm: () => { const g = new THREE.Group(), o = mat(0xff6d00);
+      g.add(M(new THREE.SphereGeometry(w*.4, 10, 6, 0, Math.PI*2, 0, Math.PI/2), o, [cx, T - w*.05, cz], [0,0,0], [1,.6,1]));
+      g.add(M(new THREE.CylinderGeometry(w*.5, w*.5, w*.04, 14), o, [cx, T - w*.05, cz + w*.05])); return g; },
+    romhjelm: () => { const g = new THREE.Group();
+      g.add(M(new THREE.SphereGeometry(w*.72, 18, 12), mat(0x9fd8ff, {transparent:true, opacity:.28, roughness:.1, metalness:.2, flatShading:false, depthWrite:false}), [cx, hMidt.y + w*.04, cz]));
+      g.add(M(new THREE.CylinderGeometry(w*.73, w*.73, w*.08, 18), mat(0xeceff1), [cx, hb.min.y - w*.02, cz])); return g; },
+    trollmannshatt: () => { const g = new THREE.Group(), l = mat(0x5e35b1);
+      g.add(M(new THREE.CylinderGeometry(w*.55, w*.55, w*.04, 14), l, [cx, T - w*.04, cz]));
+      g.add(M(new THREE.ConeGeometry(w*.32, w*.75, 10), l, [cx, T + w*.33, cz], [-.15, 0, .12]));
+      for (const [a, b] of [[.15,.2],[-.1,.45],[.05,.65]]) g.add(M(new THREE.OctahedronGeometry(w*.05), mat(0xffd54a, {emissive:0x6b5200}), [cx + a*w, T + b*w, cz + w*.22 - b*w*.18]));
+      return g; },
+    // ---- Nye forslag ----
+    vikinghjelm: () => { const g = new THREE.Group(), j = mat(0x90a4ae, {metalness:.55, roughness:.4}), h = mat(0xf3eadb);
+      g.add(M(new THREE.SphereGeometry(w*.44, 12, 7, 0, Math.PI*2, 0, Math.PI/2), j, [cx, T - w*.07, cz], [0,0,0], [1,.62,1]));
+      g.add(M(new THREE.CylinderGeometry(w*.46, w*.46, w*.07, 14), mat(0x8d6e63), [cx, T - w*.07, cz]));
+      for (const s of [-1,1]) g.add(M(new THREE.ConeGeometry(w*.07, w*.42, 7), h, [cx + s*w*.47, T + w*.12, cz], [0, 0, -s*.75]));
+      return g; },
+    gullkrone: () => { const g = new THREE.Group(), gull = mat(0xffc107, {metalness:.7, roughness:.3});
+      g.add(M(new THREE.CylinderGeometry(w*.38, w*.36, w*.14, 16, 1, true), mat(0xffc107, {metalness:.7, roughness:.3, side:THREE.DoubleSide}), [cx, T - w*.0, cz]));
+      for (let i = 0; i < 6; i++){ const a = i/6*Math.PI*2;
+        g.add(M(new THREE.ConeGeometry(w*.07, w*.2, 5), gull, [cx + Math.sin(a)*w*.37, T + w*.16, cz + Math.cos(a)*w*.37]));
+        g.add(M(new THREE.OctahedronGeometry(w*.045), mat(i%2 ? 0x2f6bff : 0xe53935, {roughness:.2, metalness:.1, emissive: i%2 ? 0x0a1a55 : 0x4a0000}), [cx + Math.sin(a)*w*.39, T, cz + Math.cos(a)*w*.39])); }
+      return g; },
+  };
+  const kappe = (fargeH, prikker) => () => { const g = new THREE.Group(), m = mat(fargeH, {side:THREE.DoubleSide});
+    g.add(M(new THREE.CylinderGeometry(H*.2, H*.3, H*.4, 10, 1, true, Math.PI*.6, Math.PI*.8), m, [0, by + H*.27, -H*.015]));
+    if (prikker) for (const [x, y] of [[-.1,.3],[.08,.22],[-.02,.15],[.12,.36]]) g.add(M(new THREE.OctahedronGeometry(H*.018), mat(prikker, {emissive:0x6b5200}), [x*H, by + y*H, -H*.27 - .02]));
+    return g; };
+  const RYGG = {
+    rod_kappe: kappe(0xc62828), svart_kappe: kappe(0x263238), stjernekappe: kappe(0x4527a0, 0xffd54a),
+    verktoybelte: () => { const g = new THREE.Group();
+      g.add(M(new THREE.TorusGeometry(H*.1, H*.022, 5, 14), mat(0x5d4037), [0, by + H*.33, 0], [Math.PI/2, 0, 0], [1.05, 1, .8]));
+      g.add(M(new THREE.BoxGeometry(H*.05, H*.07, H*.03), mat(0x9e9e9e), [H*.09, by + H*.3, H*.06])); return g; },
+    oksygentank: () => { const g = new THREE.Group();
+      g.add(M(new THREE.BoxGeometry(H*.2, H*.2, H*.09), mat(0xb0bec5), [0, by + H*.45, -H*.15]));
+      g.add(M(new THREE.SphereGeometry(H*.02, 6, 4), mat(0x76ff03, {emissive:0x2e7d00}), [0, by + H*.52, -H*.2])); return g; },
+    // Nytt forslag
+    ryggsekk: () => { const g = new THREE.Group(), s = mat(0x2e7d32), l = mat(0x1b5e20);
+      g.add(M(new THREE.BoxGeometry(H*.17, H*.19, H*.08), s, [0, by + H*.45, -H*.15]));
+      g.add(M(new THREE.BoxGeometry(H*.175, H*.07, H*.085), l, [0, by + H*.53, -H*.152]));
+      g.add(M(new THREE.BoxGeometry(H*.11, H*.06, H*.03), l, [0, by + H*.41, -H*.2]));
+      for (const x of [-1,1]) g.add(M(new THREE.BoxGeometry(H*.02, H*.2, H*.02), mat(0x5d4037), [x*H*.06, by + H*.46, -H*.1]));
+      return g; },
+  };
+  for (const v of VARER){
+    const lag = v.plass === 'hode' ? HODE[v.id] : RYGG[v.id];
+    if (!lag) { console.warn('mangler modell', v.id); continue; }
+    const obj = fest(v.plass === 'hode' ? hodeBein : kroppBein, lag());
+    obj.traverse(x => { if (x.isMesh) x.renderOrder = 1; });
+    tilbehor[v.id] = obj;
+  }
+}
+
+function visAntrekk(){
+  const a = {...lager.antrekk};
+  if (prover) a[VARE[prover].plass] = prover;
+  for (const id in tilbehor) tilbehor[id].visible = (a.hode === id || a.rygg === id);
+}
+
+function start3d(){
+  renderer = new THREE.WebGLRenderer({canvas:lerret, antialias:true, alpha:true, preserveDrawingBuffer:true});
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+  renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+  scene = new THREE.Scene();
+  kamera = new THREE.PerspectiveCamera(32, 1, .1, 100);
+  scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x2a2350, 0.55));
+  const sol = new THREE.DirectionalLight(0xfff2d6, 1.15); sol.position.set(3, 6, 5); scene.add(sol);
+  const kant = new THREE.DirectionalLight(0x8a9dff, 0.45); kant.position.set(-4, 3, -5); scene.add(kant);
+  sokkel =  new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.25, .12, 40), new THREE.MeshStandardMaterial({color:farge(0x1a2350), roughness:.6}));
+  sokkel.position.y = -.06; scene.add(sokkel);
+  ring = new THREE.Mesh(new THREE.TorusGeometry(1.2, .02, 8, 60), new THREE.MeshBasicMaterial({color:0x19c3ff}));
+  ring.rotation.x = Math.PI/2; ring.position.y = .002; scene.add(ring);
+
+  const bin = atob(window.EVN_HELT_B64), buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  new THREE.GLTFLoader().parse(buf.buffer, '', gltf => {
+    robot = gltf.scene;
+    robot.traverse(o => { if (o.isMesh){ o.frustumCulled = false; if (o.material && o.material.name === 'Main') o.material.color.setHex(0xffcc00).convertSRGBToLinear(); } });
+    mix = new THREE.AnimationMixer(robot);
+    for (const a of gltf.animations) klipp[a.name] = mix.clipAction(a);
+    klipp.Idle.play(); mix.update(0);
+    scene.add(robot);
+    lagTilbehor(robot);                     // i hvilestilling, før skalering
+    const box = new THREE.Box3().setFromObject(robot), k = 2 / (box.max.y - box.min.y);
+    omdreier = new THREE.Group(); scene.add(omdreier);
+    robot.scale.setScalar(k); robot.position.y = -box.min.y * k; omdreier.add(robot);
+    hodeBox.min.multiplyScalar(k); hodeBox.max.multiplyScalar(k); hodeBox.translate(new THREE.Vector3(0, -box.min.y*k, 0));
+    lagBilder();
+    visAntrekk(); tegnAlt();
+    storrelse(); requestAnimationFrame(loop);
+  }, e => { document.getElementById('sceneTekst').textContent = 'Roboten kunne ikke lastes. Butikken virker likevel.'; tegnAlt(); });
+}
+
+function lagBilder(){
+  // Ett bilde per vare: roboten med bare denne tingen, tatt med samme kamera og lys som scenen.
+  const r = new THREE.WebGLRenderer({antialias:true, alpha:true, preserveDrawingBuffer:true});
+  r.outputEncoding = THREE.sRGBEncoding; r.toneMapping = THREE.ACESFilmicToneMapping; r.setSize(256, 256); r.setPixelRatio(1);
+  const k = new THREE.PerspectiveCamera(30, 1, .1, 100);
+  const hm = hodeBox.getCenter(new THREE.Vector3());
+  sokkel.visible = ring.visible = false;
+  for (const v of VARER){
+    for (const id in tilbehor) tilbehor[id].visible = id === v.id;
+    if (v.plass === 'hode'){ omdreier.rotation.y = -.45; k.position.set(hm.x + .6, hm.y + .6, hm.z + 2.35); k.lookAt(hm.x, hm.y + .14, hm.z); }
+    else { omdreier.rotation.y = Math.PI * .82; k.position.set(.45, 1.3, 2.7); k.lookAt(0, 0.92, 0); }
+    omdreier.updateMatrixWorld(true);
+    r.render(scene, k); bilder[v.id] = r.domElement.toDataURL('image/png');
+  }
+  r.dispose(); omdreier.rotation.y = snu; sokkel.visible = ring.visible = true;
+}
+
+function storrelse(){
+  const b = lerret.clientWidth, h = lerret.clientHeight; if (!b || !h) return;
+  renderer.setSize(b, h, false); kamera.aspect = b / h;
+  kamera.fov = b / h < .9 ? 38 : 30; kamera.updateProjectionMatrix();
+  kamera.position.set(0, 2.0, b / h < .9 ? 5.9 : 5.0); kamera.lookAt(0, 0.92, 0);
+}
+addEventListener('resize', () => renderer && storrelse());
+
+let forrige = performance.now();
+function loop(n){
+  const dt = Math.min(.05, (n - forrige) / 1000); forrige = n;
+  if (mix) mix.update(dt);
+  if (!dra) snu += (snuMal - snu) * Math.min(1, dt * 6);
+  if (omdreier) omdreier.rotation.y = snu;
+  renderer.render(scene, kamera);
+  requestAnimationFrame(loop);
+}
+let dra = false, dx0 = 0, snu0 = 0;
+lerret.addEventListener('pointerdown', e => { dra = true; dx0 = e.clientX; snu0 = snu; lerret.setPointerCapture(e.pointerId); lerret.style.cursor = 'grabbing'; });
+lerret.addEventListener('pointermove', e => { if (dra){ snu = snu0 + (e.clientX - dx0) * .012; snuMal = snu; } });
+lerret.addEventListener('pointerup', () => { dra = false; lerret.style.cursor = 'grab'; });
+function visRygg(ja){ snuMal = ja ? Math.PI * .8 : -.35; }
+function jubel(){ if (redusert || !klipp.Wave) return; const w = klipp.Wave; w.reset(); w.setLoop(THREE.LoopOnce, 1); w.clampWhenFinished = false; w.crossFadeFrom(klipp.Idle, .2, false).play(); setTimeout(() => { klipp.Idle.reset().play(); klipp.Idle.crossFadeFrom(w, .3, false); }, 1700); }
+
+/* ====================== Grensesnitt ====================== */
+const $ = id => document.getElementById(id);
+const ikon = '<svg class="ecoin" aria-hidden="true"><use href="#ecoin"/></svg>';
+let filter = 'alle';
+
+function tegnSaldo(dunk){
+  $('saldo').textContent = saldo(); $('saldoKnapp').setAttribute('aria-label', `Du har ${saldo()} E-coins. Åpne lommeboka`);
+  if (dunk){ $('saldoKnapp').classList.remove('dunk'); void $('saldoKnapp').offsetWidth; $('saldoKnapp').classList.add('dunk'); }
+}
+function tegnVarer(){
+  const rot = $('varer'); rot.innerHTML = '';
+  for (const v of VARER){
+    if (filter !== 'alle' && v.plass !== filter) continue;
+    const el = document.createElement('article'); el.className = 'vare' + (prover === v.id ? ' valgt' : '');
+    const harRad = saldo() >= v.pris, e = eier(v.id), paa = lager.antrekk[v.plass] === v.id;
+    el.innerHTML = `
+      <button class="bilde" aria-label="Prøv ${v.navn} på roboten">${bilder[v.id] ? `<img src="${bilder[v.id]}" alt="">` : ''}</button>
+      ${paa ? '<span class="merke">På nå</span>' : ''}
+      <h3>${v.navn}</h3>
+      ${e ? '<span class="eid">✓ Du eier denne</span>' : `<span class="pris">${ikon}${v.pris}</span>`}
+      <div class="mangler">${!e && !harRad ? `Du trenger ${v.pris - saldo()} til` : ''}</div>
+      <div class="knapper">
+        <button class="knapp" data-prov>${prover === v.id ? 'Ta av' : 'Prøv'}</button>
+        ${e ? `<button class="knapp gronn" data-paa ${paa ? 'disabled' : ''}>${paa ? 'På ✓' : 'Ta på'}</button>`
+            : `<button class="knapp hoved" data-kjop ${harRad ? '' : 'disabled aria-disabled="true"'}>Kjøp</button>`}
+      </div>`;
+    el.querySelector('.bilde').onclick = el.querySelector('[data-prov]').onclick = () => prov(v.id);
+    const k = el.querySelector('[data-kjop]'); if (k) k.onclick = () => sporKjop(v.id);
+    const p = el.querySelector('[data-paa]'); if (p) p.onclick = () => { taPa(v.plass, v.id); prov(null); oppdater(); visRygg(v.plass === 'rygg'); jubel(); };
+    rot.appendChild(el);
+  }
+}
+function prov(id){
+  prover = id && prover !== id ? id : null;
+  const v = prover && VARE[prover];
+  $('sceneTekst').innerHTML = v ? `Du prøver <b>${v.navn}</b>.` : 'Dra i roboten for å snu den.';
+  $('tilbakestill').hidden = !v;
+  visRygg(v && v.plass === 'rygg'); visAntrekk(); tegnVarer();
+  if (v){ const r = lerret.getBoundingClientRect(); if (r.bottom < 80 || r.top > innerHeight - 80) document.querySelector('.scene-kort').scrollIntoView({behavior: redusert ? 'auto' : 'smooth', block:'start'}); }
+}
+$('tilbakestill').onclick = () => prov(null);
+
+function tegnGarderobe(){
+  for (const plass of ['hode', 'rygg']){
+    const rad = $('rad-' + plass); rad.innerHTML = '';
+    const eide = VARER.filter(v => v.plass === plass && eier(v.id));
+    const valg = [{id:null, navn:'Ingen'}, ...eide];
+    for (const v of valg){
+      const b = document.createElement('button'); b.setAttribute('aria-pressed', String(lager.antrekk[plass] === v.id));
+      b.innerHTML = v.id ? `<img src="${bilder[v.id] || ''}" alt="">${v.navn}` : `<span class="ingen" aria-hidden="true">∅</span>Ingen`;
+      b.onclick = () => { taPa(plass, v.id); prov(null); oppdater(); visRygg(plass === 'rygg' && v.id); $('lagret').textContent = '✓ Lagret. Roboten har dette på i alle spillene.'; };
+      rad.appendChild(b);
+    }
+    if (!eide.length){ const p = document.createElement('p'); p.className = 'tom'; p.textContent = plass === 'hode' ? 'Du har ingen hatter ennå. Se i butikken!' : 'Du har ingenting til ryggen ennå.'; rad.appendChild(p); }
+  }
+}
+function tegnLomme(){
+  $('l-saldo').textContent = saldo(); $('l-tjent').textContent = tjentTotalt(); $('l-brukt').textContent = brukt();
+  const rot = $('spilliste'); const apne = new Set([...rot.querySelectorAll('details[open]')].map(d => d.dataset.s)); rot.innerHTML = '';
+  for (const s of SPILL){
+    const liste = MODELL.milepaeler[s.id], gjort = liste.filter(m => lager.tjent[m.id]);
+    const igjen = liste.filter(m => !lager.tjent[m.id]).reduce((a, m) => a + m.E, 0);
+    const d = document.createElement('details'); d.className = 'spill' + (s.kommer ? ' kommer' : ''); d.dataset.s = s.id; if (apne.has(s.id)) d.open = true;
+    d.innerHTML = `<summary><span class="navn">${s.navn}</span><span class="igjen">${s.kommer ? 'Kommer senere' : `${gjort.length} av ${liste.length} klart<br>${igjen} E-coins igjen å tjene`}</span></summary>
+      <div class="mal"><i style="width:${100 * gjort.length / liste.length}%"></i></div>
+      <ul>${liste.map(m => `<li class="${lager.tjent[m.id] ? 'gjort' : ''}"><span class="ok">${lager.tjent[m.id] ? '✅' : '⬜'}</span><span class="t">${m.tekst}</span><b>${m.E}</b></li>`).join('')}</ul>`;
+    rot.appendChild(d);
+  }
+}
+function tegnLager(){ $('lager').textContent = 'evn-ecoins-v1 = ' + JSON.stringify(lager, (k, v) => k === 't' ? undefined : v); }
+function tegnAlt(){ tegnSaldo(); tegnVarer(); tegnGarderobe(); tegnLomme(); tegnLager(); }
+function oppdater(dunk){ visAntrekk(); tegnSaldo(dunk); tegnVarer(); tegnGarderobe(); tegnLomme(); tegnLager(); }
+
+/* ---- Dialog ---- */
+let fokusForDialog = null;
+function dialog({bilde, tittel, tekst, knapper}){
+  fokusForDialog = document.activeElement;
+  $('d-bilde').src = bilde || ''; $('d-bilde').hidden = !bilde;
+  $('d-tittel').textContent = tittel; $('d-tekst').innerHTML = tekst;
+  const k = $('d-knapper'); k.innerHTML = '';
+  for (const b of knapper){ const el = document.createElement('button'); el.className = 'knapp ' + (b.klasse || ''); el.textContent = b.tekst; el.onclick = () => { lukk(); b.gjor && b.gjor(); }; k.appendChild(el); }
+  $('slor').hidden = false; k.lastElementChild.focus();
+}
+function lukk(){ $('slor').hidden = true; fokusForDialog && fokusForDialog.focus && fokusForDialog.focus(); }
+$('slor').addEventListener('keydown', e => {
+  if (e.key === 'Escape') lukk();
+  if (e.key === 'Tab'){ const f = [...$('d-knapper').children]; const i = f.indexOf(document.activeElement); e.preventDefault(); f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus(); }
+});
+
+function sporKjop(id){
+  const v = VARE[id];
+  if (eier(id)) return;
+  if (saldo() < v.pris) return;
+  dialog({bilde:bilder[id], tittel:`Kjøpe ${v.navn}?`,
+    tekst:`<p>Den koster <b>${v.pris} E-coins</b>.</p><p>Du har ${saldo()}. Etterpå har du <b>${saldo() - v.pris}</b>.</p>`,
+    knapper:[{tekst:'Nei', klasse:''}, {tekst:'Ja, kjøp', klasse:'hoved', gjor:() => utforKjop(id)}]});
+}
+function utforKjop(id, avbryt){
+  const v = VARE[id], r = kjop(id, avbryt);
+  if (r.ok){
+    oppdater(true);
+    dialog({bilde:bilder[id], tittel:`Du kjøpte ${v.navn}! 🎉`, tekst:'<p>Vil du ta den på nå?</p>',
+      knapper:[{tekst:'Senere'}, {tekst:'Ta på', klasse:'gronn', gjor:() => { taPa(v.plass, id); prov(null); oppdater(); visRygg(v.plass === 'rygg'); jubel(); }}]});
+  } else if (r.grunn === 'avbrutt'){
+    melding('Kjøpet ble avbrutt', 'Ingen E-coins ble trukket.');
+  }
+}
+
+/* ---- Melding ---- */
+let mTid;
+function melding(tekst, liten){
+  const m = $('melding'); m.innerHTML = `${ikon}<span>${tekst}${liten ? `<small>${liten}</small>` : ''}</span>`;
+  m.classList.add('vis'); clearTimeout(mTid); mTid = setTimeout(() => m.classList.remove('vis'), 2600);
+}
+
+/* ---- Faner ---- */
+const faner = [...document.querySelectorAll('[role=tab]')];
+function velgFane(f){
+  for (const t of faner){ const s = t === f; t.setAttribute('aria-selected', s); t.tabIndex = s ? 0 : -1; $(t.getAttribute('aria-controls')).hidden = !s; }
+  if (f.id !== 'fane-butikk' && prover) prov(null);
+}
+faner.forEach((t, i) => { t.onclick = () => velgFane(t); t.onkeydown = e => { const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (d){ const n = faner[(i + d + 3) % 3]; n.focus(); velgFane(n); } }; });
+$('saldoKnapp').onclick = () => velgFane($('fane-lomme'));
+document.querySelectorAll('.filter button').forEach(b => b.onclick = () => { filter = b.dataset.f; document.querySelectorAll('.filter button').forEach(x => x.setAttribute('aria-pressed', x === b)); tegnVarer(); });
+document.querySelector('.tilbake').onclick = () => melding('I ekte versjon: tilbake til evnstudio.no');
+
+/* ---- Testpanel ---- */
+let sist = null;
+document.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => {
+  const neste = MODELL.milepaeler[b.dataset.sp].find(m => !lager.tjent[m.id]);
+  if (!neste){ melding('Alt er klart i dette spillet'); return; }
+  const r = belonn(neste.id); sist = neste.id;
+  if (r.ok){ oppdater(true); melding(`Du fikk ${r.e} E-coins!`, r.m.tekst); }
+});
+$('dobbel').onclick = () => {
+  if (!sist){ melding('Gi en milepæl først'); return; }
+  const r = belonn(sist); oppdater();
+  melding(r.ok ? 'FEIL: belønnet to ganger' : 'Ingen nye E-coins', 'Denne milepælen er allerede belønnet.');
+};
+$('avbrudd').onclick = () => {
+  const v = VARER.find(v => !eier(v.id) && saldo() >= v.pris);
+  if (!v){ melding('Ingen vare du har råd til'); return; }
+  const for_ = saldo(); utforKjop(v.id, true);
+  if (saldo() !== for_) melding('FEIL: saldo endret');
+};
+const PROFIL = {
+  ny: {dyrepatruljen:.14, fossil:.15},
+  eksempel: {dyrepatruljen:3/16, fossil:5/16},
+  vanlig: {dyrepatruljen:.45, fossil:.6, era:.4, 'magiske-egg':.5},
+  aktiv: {dyrepatruljen:1, fossil:1, era:1, 'magiske-egg':1}};
+function lastProfil(p){
+  lager = tomtLager(); if (prover) prov(null);
+  for (const s in PROFIL[p]){ const l = MODELL.milepaeler[s]; for (const m of l.slice(0, Math.round(PROFIL[p][s] * l.length))) belonn(m.id); }
+  oppdater(true); visRygg(false);
+}
+document.querySelectorAll('[data-profil]').forEach(b => b.onclick = () => { lastProfil(b.dataset.profil); melding(`${b.textContent}: ${saldo()} E-coins`); });
+
+lastProfil('eksempel');
+try { start3d(); } catch (e) { $('sceneTekst').textContent = '3D virker ikke på denne enheten. Butikken virker likevel.'; tegnAlt(); }
+window.__eshop = {lager:() => lager, saldo, belonn, kjop, taPa};
+</script>
+</body>
+</html>

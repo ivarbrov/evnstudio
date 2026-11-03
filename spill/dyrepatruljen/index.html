@@ -135,7 +135,7 @@ body.touch #pcKnapper{display:none}
     </div>
     <button class="evn-start" id="startBtn">Start ▶</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver">Versjon 0.10.16</div>
+    <div class="evn-ver">Versjon 0.11.0</div>
   </div>
 </div>
 
@@ -173,6 +173,9 @@ body.touch #pcKnapper{display:none}
 </div>
 
 <script src="../../vendor/three-r128.min.js"></script>
+<!-- E-coins (felles for alle EVN-spill). Spillet virker som før hvis disse ikke lastes. -->
+<script src="../../ecoins/ecoins.js"></script>
+<script src="../../ecoins/tilbehor-3d.js"></script>
 <script>
 /* EVN-PAUSE v2: felles pause med spilletid og felles kart (samme kode i alle EVN-spill).
    Kart (v2): 🗺️-knapp ved siden av ⏸ og tasten M åpner et stort kart. Spillet står stille mens kartet er åpent.
@@ -4011,7 +4014,7 @@ window.EVN_HELT_B64="Z2xURgIAAAB0FAcAEEMBAEpTT057ImFzc2V0Ijp7ImdlbmVyYXRvciI6IkZ
    Strukturen er laget for 15 verdener. Hver verden er en
    oppføring i VERDENER; bygde verdener har en bygg()-funksjon.
    ============================================================ */
-const VERSJON = 'v0.10.16';
+const VERSJON = 'v0.11.0';
 const LAGRE_NOKKEL = 'evn-dyrespillet-v1';
 const $ = id => document.getElementById(id);
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
@@ -4121,6 +4124,17 @@ const antallReddet = () => Object.values(lagret.reddet).reduce((s,a)=>s+a.length
 const verdenFerdig = i => reddetI(VERDENER[i].id).length >= DYR_PER_VERDEN;
 const verdenAapen = i => i === 0 || verdenFerdig(i-1);
 lastInn();
+// E-coins: det lagringen viser er klart, gir E-coins én gang (også for fremgang fra før E-coins fantes)
+function ecoinsAvstem(){
+  try {
+    if (!window.EVNEcoins) return;
+    const ider = [];
+    VERDENER.forEach((v, i) => { if (verdenFerdig(i)) ider.push('dyrepatruljen.verden.' + (i+1)); });
+    if (VERDENER.every((v, i) => verdenFerdig(i))) ider.push('dyrepatruljen.alle');
+    EVNEcoins.avstem(ider);
+  } catch(e){}
+}
+setTimeout(ecoinsAvstem, 800);
 
 /* ---------- Lyd (enkle pip, starter etter første trykk). Kan slås av, og valget huskes (B1). ---------- */
 let lydKontekst = null, lydHoved = null;
@@ -5966,6 +5980,12 @@ function lastHelt(){
       for (const [o, i, y] of alle) if (y < grense) fot.push([o, i]);
       const armHvile = ['UpperArmL','LowerArmL','UpperArmR','LowerArmR'].filter(n => ben[n]).map(n => [ben[n], ben[n].quaternion.clone()]);
       helt = {modell, mix, klipp, aktiv:klipp.Idle, ben, armHvile, holdW:0, grunnY:modell.position.y, snik:0, fot, v, haav:(haand && haav) ? haav : null, haavX:haav ? haav.rotation.x : 0, feste:haav ? haav.parent : null};
+      // E-coins: hatt og ryggtilbehør fra garderoben (bare pynt, påvirker ikke kollisjon eller fart)
+      try { if (window.EVNTilbehor && window.EVNEcoins){
+        mix.update(0);
+        const t = EVNTilbehor.lag(THREE, modell);
+        t.vis(EVNEcoins.antrekk()); EVNEcoins.pa(d => t.vis(d.antrekk)); helt.tilbehor = t;
+      } } catch(e){ console.warn('Tilbehøret kunne ikke vises', e); }
     }, e => console.warn('Fant ikke helten', e));
   } catch(e){ console.warn('Helten kunne ikke lastes', e); }
 }
@@ -6346,6 +6366,10 @@ function fang(d){
   beskjed(`Du reddet ${d.def.navn.toLowerCase()}! ${d.type.ikon}` + (ny ? '' : ' (igjen)'));
   oppdaterHud();
   if (ny && r.length >= DYR_PER_VERDEN){
+    try { if (window.EVNEcoins){
+      EVNEcoins.belonn('dyrepatruljen.verden.' + (verdenIndeks+1));
+      if (VERDENER.every((v, i) => verdenFerdig(i))) EVNEcoins.belonn('dyrepatruljen.alle');
+    } } catch(e){}
     setTimeout(()=>{
       tilstand = 'pause'; bokFra = 'spill';
       const neste = VERDENER[verdenIndeks+1];
