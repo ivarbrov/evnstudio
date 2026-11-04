@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.3.1 – EVN Studio</title>
+<title>Fiskespillet 0.4.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -176,12 +176,12 @@
       <p>Kjør ut på havet, fang fisk og bring dem hjem til akvariet ditt! 🎣🐟<br><span style="color:#ffc93c">Oppdrag: Fang Kraken! 🐙</span></p>
     </div>
     <div class="styring">
-      <div class="bare-pc">Piltaster eller WASD for å kjøre båten.<br>E eller mellomrom for å fiske og bruke havna. M for kart.</div>
-      <div class="bare-touch">Dra fingeren for å kjøre båten.<br>Trykk på den gule knappen for å fiske og bruke havna.</div>
+      <div class="bare-pc">⬆️/W fremover, ⬇️/S bakover, ⬅️➡️ eller A/D for å svinge.<br>E eller mellomrom for å fiske og bruke havna. M for kart.</div>
+      <div class="bare-touch">Dra fingeren dit du vil kjøre.<br>Trykk på den gule knappen for å fiske og bruke havna.</div>
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.3.1</div>
+    <div class="evn-ver" id="versjon">Versjon 0.4.0</div>
   </div>
 </div>
 
@@ -503,7 +503,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.3.1';
+const VERSJON = '0.4.0';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -1635,7 +1635,7 @@ $('startBtn').addEventListener('click', () => {
   try { lyd = lyd || new (window.AudioContext || window.webkitAudioContext)(); lyd.resume && lyd.resume(); } catch (e) {}
   lukkLag('start'); $('hud').hidden = false; $('hoyre').hidden = false; spillTilstand = 'spill'; sisteTid = performance.now();
   try { document.dispatchEvent(new Event('evn-start')); } catch (e) {}
-  $('hjelp').innerHTML = document.documentElement.classList.contains('touch') ? 'Dra fingeren for å kjøre båten 👆' : 'Kjør med piltastene eller WASD';
+  $('hjelp').innerHTML = document.documentElement.classList.contains('touch') ? 'Dra fingeren for å kjøre båten 👆' : '⬆️ fremover · ⬅️➡️ svinge · ⬇️ bakover';
   setTimeout(() => $('hjelp').style.opacity = 0, 15000);
   if (tilstand.fanget === 0) melding('Kjør ut på havet og trykk på 🎣 Fisk!<small>Ved boblene 🐟 biter fisken fortere. Oppdrag: Fang Kraken 🐙</small>', 5);
   else melding('Velkommen tilbake, kaptein! ⚓', 3);
@@ -1653,24 +1653,37 @@ function flytt(p, dx, dz, r) {
   p.x = nx; p.z = nz; return traff;
 }
 function oppdaterBaat(dt, t) {
-  let x = 0, z = 0;
+  // Styring som i en bil (Evens funn 4.11.2026: «båten går i sin egen retning» når den kjører mot kameraet).
+  // Kameraet følger bak båten. Tastatur: ⬆️/W fremover, ⬇️/S bakover, ⬅️/A og ➡️/D svinger.
+  // Styrespak (berøring/mus): dra dit du vil kjøre, sett fra kameraet. Båten snur dit og kjører.
+  let gass = 0, ror = 0, jx = 0, jz = 0;
   if (!modalApen()) {
-    if (taster['arrowleft'] || taster['a']) x -= 1; if (taster['arrowright'] || taster['d']) x += 1;
-    if (taster['arrowup'] || taster['w']) z -= 1; if (taster['arrowdown'] || taster['s']) z += 1;
-    if (joy.aktiv) { x += joy.dx; z += joy.dy; }
+    if (taster['arrowup'] || taster['w']) gass += 1; if (taster['arrowdown'] || taster['s']) gass -= 1;
+    if (taster['arrowleft'] || taster['a']) ror += 1; if (taster['arrowright'] || taster['d']) ror -= 1;
+    if (joy.aktiv) {
+      const fx = Math.sin(kamYaw), fz = Math.cos(kamYaw);          // fremover på skjermen
+      jx = fx * -joy.dy + -fz * joy.dx; jz = fz * -joy.dy + fx * joy.dx;
+    }
   }
-  const l = Math.hypot(x, z); if (l > 1) { x /= l; z /= l; }
-  if (fiske && l > 0.3) { if (fiske.fase === 'kamp') { sluttKamp(); for (const te of krakenTentakler) te.userData.opp = 0; melding('Du kjørte fra Kraken! 🐙', 2.5); } else avbrytFiske('Du kjørte fra fisken! 🐟💨'); }
-  // Båten svinger først mot retningen du vil, og kjører fremover bare når baugen peker omtrent dit.
-  // (Før kjørte den fremover mens den snudde, så den gikk «feil vei» et stykke. Evens funn 4.11.2026.)
-  let diff = 0;
-  if (l > 0.05 && !fiske) { diff = Math.atan2(x, z) - spiller.retning; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); }
-  const maks = BATER[tilstand.baat].fart, rett = Math.max(0, Math.cos(diff)), mal = fiske ? 0 : Math.min(1, l) * maks * rett * rett;
-  spiller.fart += (mal - spiller.fart) * Math.min(1, dt * (mal > spiller.fart ? 1.8 : 2.5));
-  let sving = 0;
-  if (l > 0.05 && !fiske) { sving = Math.max(-1, Math.min(1, diff * 2)); const snu = 2.6 * (1.6 - Math.min(1, spiller.fart / maks)); const steg = Math.sign(diff) * Math.min(Math.abs(diff), snu * dt); spiller.retning += steg; }
+  const lj = Math.hypot(jx, jz), bruker = Math.abs(gass) + Math.abs(ror) + lj;
+  if (fiske && bruker > 0.3) { if (fiske.fase === 'kamp') { sluttKamp(); for (const te of krakenTentakler) te.userData.opp = 0; melding('Du kjørte fra Kraken! 🐙', 2.5); } else avbrytFiske('Du kjørte fra fisken! 🐟💨'); }
+  const maks = BATER[tilstand.baat].fart;
+  let mal = 0, sving = 0;
+  if (!fiske) {
+    if (lj > 0.05) {
+      // Styrespak: snu mot retningen, kjør fremover når baugen peker omtrent dit
+      let diff = Math.atan2(jx, jz) - spiller.retning; diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+      const rett = Math.max(0, Math.cos(diff)); mal = Math.min(1, lj) * maks * rett * rett;
+      sving = Math.max(-1, Math.min(1, diff * 2));
+      const snu = 2.6 * (1.6 - Math.min(1, Math.abs(spiller.fart) / maks)); spiller.retning += Math.sign(diff) * Math.min(Math.abs(diff), snu * dt);
+    } else {
+      mal = gass > 0 ? maks : gass < 0 ? -maks * 0.4 : 0;
+      if (ror) { const snu = 1.9 * (1.3 - 0.5 * Math.min(1, Math.abs(spiller.fart) / maks)) * (gass < 0 ? -1 : 1); spiller.retning += ror * snu * dt; sving = ror; }
+    }
+  }
+  spiller.fart += (mal - spiller.fart) * Math.min(1, dt * (Math.abs(mal) > Math.abs(spiller.fart) ? 1.8 : 2.5));
   spiller.svingFart += (sving - spiller.svingFart) * Math.min(1, dt * 4);
-  if (spiller.fart > 0.05) { const s = spiller.fart * dt; if (flytt(spiller.pos, Math.sin(spiller.retning) * s, Math.cos(spiller.retning) * s, 3)) spiller.fart *= 0.9; }
+  if (Math.abs(spiller.fart) > 0.05) { const s = spiller.fart * dt; if (flytt(spiller.pos, Math.sin(spiller.retning) * s, Math.cos(spiller.retning) * s, 3)) spiller.fart *= 0.9; }
   baat.position.set(spiller.pos.x, 0.25 + Math.sin(t * 1.6) * 0.15, spiller.pos.z);
   baat.rotation.set(Math.sin(t * 1.3) * 0.03 - spiller.fart * 0.004, spiller.retning, Math.sin(t * 1.1) * 0.04 - spiller.svingFart * 0.12 * (spiller.fart / maks));
   stang.position.set(0.5, baat.userData.dekkY + 1.3, -baat.userData.L * 0.1);
@@ -1681,17 +1694,19 @@ function oppdaterBaat(dt, t) {
   hjemPil.visible = baatFull() && !iHavna();
   if (hjemPil.visible) { hjemPil.position.set(spiller.pos.x, 6 + Math.sin(t * 3) * 0.4, spiller.pos.z); hjemPil.rotation.y = Math.atan2(HAVN.x - spiller.pos.x, HAVN.z - spiller.pos.z); }
 }
-let kamNaer = 1;
+// Kameraet følger bak båten og snur seg sakte med den (som i Roblox og Fortnite)
+let kamYaw = 0;
 function oppdaterKamera(dt) {
-  // Nær havna ser kameraet mer mot øya, så du ser akvariet og fiskene dine
-  const naer = Math.max(0, Math.min(1, 1 - (Math.hypot(HAVN.x - spiller.pos.x, HAVN.z - spiller.pos.z) - 12) / 40));
-  kamNaer += (naer - kamNaer) * Math.min(1, dt * 2);
-  const mal = new THREE.Vector3().copy(spiller.pos).addScaledVector(KAM, zoom); mal.y += kamNaer * 4;
+  let d = spiller.retning - kamYaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+  kamYaw += d * Math.min(1, dt * 2.2);
+  const fx = Math.sin(kamYaw), fz = Math.cos(kamYaw);
+  const mal = new THREE.Vector3(spiller.pos.x - fx * 30 * zoom, 18 * zoom, spiller.pos.z - fz * 30 * zoom);
   camera.position.lerp(mal, Math.min(1, dt * 4));
-  camera.lookAt(spiller.pos.x, 1, spiller.pos.z - 6 - kamNaer * 22);
+  camera.lookAt(spiller.pos.x + fx * 14, 1.5, spiller.pos.z + fz * 14);
   const sn = HAV_STR / HAV_DEL; hav.position.set(Math.round(spiller.pos.x / sn) * sn, 0, Math.round(spiller.pos.z / sn) * sn);
 }
-camera.position.copy(spiller.pos).add(KAM); camera.position.y += 4; camera.lookAt(spiller.pos.x, 1, spiller.pos.z - 28);
+kamYaw = spiller.retning;
+camera.position.set(spiller.pos.x - Math.sin(kamYaw) * 30, 18, spiller.pos.z - Math.cos(kamYaw) * 30); camera.lookAt(spiller.pos.x, 1.5, spiller.pos.z);
 function oppdaterVerden(dt, t) {
   havUniforms.tid.value = t;
   for (const p of plasser) {
@@ -1766,8 +1781,8 @@ window.__evnP = EVNPause({
   fortsett: () => { spillTilstand = 'spill'; for (const k in taster) taster[k] = false; sisteTid = performance.now(); },
   lagre: lagre,
   styring: () => document.documentElement.classList.contains('touch')
-    ? '👆 Dra fingeren for å kjøre båten<br>🟡 Den gule knappen: fiske og havna<br>📖 Fiskeboka viser fiskene dine<br>🗺️ Kartet viser fiskesteder og Kraken'
-    : '⬆️ Piltaster eller WASD: kjøre båten<br>E eller mellomrom: fiske og havna<br>I: fiskeboka · M: kart · L: lyd<br>P eller Esc: pause'
+    ? '👆 Dra fingeren dit du vil kjøre<br>🟡 Den gule knappen: fiske og havna<br>📖 Fiskeboka viser fiskene dine<br>🗺️ Kartet viser fiskesteder og Kraken'
+    : '⬆️/W fremover · ⬇️/S bakover<br>⬅️➡️ eller A/D: svinge<br>E eller mellomrom: fiske og havna<br>I: fiskeboka · M: kart · L: lyd<br>P eller Esc: pause'
 });
 // Etter EVNPause, så pausens Tab-regel (T2) gjelder også i «Starte helt på nytt?» (nullstillboksen stopper alle andre taster)
 EVNNullstill({
