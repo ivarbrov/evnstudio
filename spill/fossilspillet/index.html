@@ -1947,7 +1947,7 @@ if('ontouchstart' in window || navigator.maxTouchPoints>0){ document.getElementB
 
 document.getElementById('fakta').onclick=()=>document.getElementById('fakta').classList.remove('show');
 // 0.8.2: trykk på dybdevisningen (📏) viser teksten om tiden du graver i igjen
-function visSoneFakta(){ if(curZone<0) return; const Z=zones()[curZone]; showFact(`${Z.ikon} ${Z.navn}`, Z.tekst, 10000); }
+function visSoneFakta(){ if(curZone<0 || paused || document.getElementById('start').classList.contains('show')) return; const Z=zones()[curZone]; showFact(`${Z.ikon} ${Z.navn}`, Z.tekst, 10000); }
 const pDepthEl=document.getElementById('pDepth');
 pDepthEl.addEventListener('click',e=>{ e.stopPropagation(); visSoneFakta(); });
 pDepthEl.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); visSoneFakta(); } });
@@ -1959,7 +1959,7 @@ const zoomet=()=>!!(window.visualViewport&&visualViewport.scale>1.01);
 ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>{ if(!zoomet()) e.preventDefault(); },{passive:false}));
 if(window.visualViewport) visualViewport.addEventListener('resize',()=>{ const z=zoomet()?'manipulation':''; for(const el of [document.documentElement,document.body,document.getElementById('cv'),document.getElementById('pad')]) if(el) el.style.touchAction=z; });
 let lastTouchEnd=0;
-document.addEventListener('touchend',e=>{ const n=Date.now(); if(n-lastTouchEnd<350 && !e.target.closest('button,a,summary,input')) e.preventDefault(); lastTouchEnd=n; },{passive:false});
+document.addEventListener('touchend',e=>{ const n=Date.now(); if(n-lastTouchEnd<350 && !e.target.closest('button,a,summary,input,[role=button]')) e.preventDefault(); lastTouchEnd=n; },{passive:false});
 document.addEventListener('touchmove',e=>{ if(e.touches.length>1 && !zoomet()) e.preventDefault(); },{passive:false});
 document.addEventListener('wheel',e=>{ if(e.ctrlKey) e.preventDefault(); },{passive:false});
 addEventListener('keydown',e=>{ if((e.ctrlKey||e.metaKey) && ['+','-','=','0'].includes(e.key)) e.preventDefault(); });
