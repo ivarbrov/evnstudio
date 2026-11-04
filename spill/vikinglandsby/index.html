@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<!-- EVN-SIKKERHET start: gjelder bare evnstudio.no (se /sikkerhet/). Tas ut i Claude-artefaktene. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://gc.zgo.at; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://evnstudio.goatcounter.com; connect-src 'self' https://evnstudio.goatcounter.com; media-src 'self' data: blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- EVN-SIKKERHET slutt -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vikinglandsby 0.1.0 – EVN Studio</title>
+<link rel="stylesheet" href="../../fonter/fonter.css">
+<link rel="icon" href="../../favicon.png">
+<style>
+  :root { --gull:#ffc93c; --tre:#6b4426; --mork:#2a1d12; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#9fcbe8; font-family:'Nunito',system-ui,sans-serif; color:#fff; overscroll-behavior:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
+  canvas#c { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+  button { font-family:inherit; touch-action:manipulation; cursor:pointer; }
+  .vh { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+
+  /* Statuslinje øverst til venstre */
+  #hud { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); right:calc(250px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; flex-wrap:wrap; align-items:flex-start; }
+  #hud[hidden], #hoyre[hidden] { display:none !important; }
+  .pille { background:rgba(42,29,18,.76); border:2px solid rgba(255,255,255,.25); border-radius:999px; padding:6px 14px; font-weight:800; font-size:18px; min-height:44px; display:flex; align-items:center; gap:6px; color:#fff; }
+  .pille.bump { animation:bump .3s; }
+  @keyframes bump { 50% { transform:scale(1.15); } }
+  #onskeKnapp { border-color:rgba(255,201,60,.7); text-align:left; max-width:340px; }
+  #onskeKnapp .tekst { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #hoyre { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; }
+  .rund { width:48px; height:48px; border-radius:50%; background:rgba(42,29,18,.76); border:2px solid rgba(255,255,255,.25); color:#fff; font-size:22px; display:flex; align-items:center; justify-content:center; padding:0; }
+  .rund:focus-visible, .pille:focus-visible, #handling:focus-visible, #byggKnapp:focus-visible { outline:3px solid #fff; outline-offset:2px; }
+  #evnAvslutt { width:auto; padding:0 14px; border-radius:24px; font-size:18px; font-weight:800; gap:6px; }
+  @media (max-width:600px) { #evnAvslutt { width:48px; padding:0; border-radius:50%; } #evnAvslutt .evn-avs-tekst { display:none; } }
+
+  #melding { position:fixed; top:calc(68px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); background:rgba(42,29,18,.92); border:2px solid var(--gull); border-radius:16px; padding:10px 18px; font-weight:800; font-size:18px; max-width:min(92vw,520px); text-align:center; z-index:6; opacity:0; transition:opacity .3s; pointer-events:none; }
+  #melding.vis { opacity:1; }
+  @media (prefers-reduced-motion: reduce) { #melding { transition:none; } }
+
+  /* Handlinger nede til høyre */
+  #handlinger { position:fixed; right:calc(16px + env(safe-area-inset-right)); bottom:calc(18px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; align-items:flex-end; gap:12px; z-index:5; }
+  #handlinger[hidden] { display:none; }
+  #handling { min-width:170px; min-height:80px; padding:10px 22px; border-radius:22px; border:3px solid #fff; background:linear-gradient(#ffd75e,#f0a91c); color:#4a2a00; font-family:'Lilita One',sans-serif; font-size:24px; box-shadow:0 6px 0 #b8770c; display:none; }
+  #handling:active { transform:translateY(4px); box-shadow:0 2px 0 #b8770c; }
+  #byggKnapp { min-width:64px; min-height:64px; padding:6px 16px; border-radius:20px; border:3px solid #fff; background:linear-gradient(#8fd17a,#3f8f3a); color:#fff; font-family:'Lilita One',sans-serif; font-size:22px; box-shadow:0 5px 0 #2a6127; }
+  #byggKnapp:active { transform:translateY(3px); box-shadow:0 2px 0 #2a6127; }
+  .tast { font-size:14px; opacity:.75; margin-left:6px; font-family:'Nunito',sans-serif; font-weight:800; }
+  html.touch .tast { display:none; }
+
+  #hjelp { position:fixed; left:calc(12px + env(safe-area-inset-left)); bottom:calc(14px + env(safe-area-inset-bottom)); background:rgba(42,29,18,.62); border-radius:12px; padding:8px 12px; font-size:15px; font-weight:700; z-index:4; max-width:50vw; pointer-events:none; transition:opacity 1s; }
+  #hjelp:empty { display:none; }
+  #joy { position:fixed; width:110px; height:110px; margin:-55px 0 0 -55px; border-radius:50%; border:3px solid rgba(255,255,255,.55); background:rgba(255,255,255,.12); pointer-events:none; display:none; z-index:4; }
+  #joy i { position:absolute; left:50%; top:50%; width:44px; height:44px; margin:-22px 0 0 -22px; border-radius:50%; background:var(--gull); box-shadow:0 2px 8px rgba(0,0,0,.3); }
+
+  /* Byggemodus: liste med hus nederst */
+  #byggPanel { position:fixed; left:calc(8px + env(safe-area-inset-left)); right:calc(8px + env(safe-area-inset-right)); bottom:calc(8px + env(safe-area-inset-bottom)); z-index:6; display:flex; gap:8px; align-items:stretch; background:rgba(42,29,18,.88); border:2px solid rgba(255,201,60,.6); border-radius:20px; padding:8px; }
+  #byggPanel[hidden] { display:none; }
+  #byggListe { flex:1; display:flex; gap:8px; overflow-x:auto; scrollbar-width:thin; }
+  .hus { flex:none; width:118px; min-height:96px; border-radius:14px; border:3px solid transparent; background:rgba(255,255,255,.1); color:#fff; padding:6px 4px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-weight:800; font-size:14px; line-height:1.15; }
+  .hus .ik { font-size:30px; line-height:1; }
+  .hus small { font-size:13px; opacity:.95; font-weight:800; }
+  .hus[aria-pressed="true"] { border-color:var(--gull); background:rgba(255,201,60,.22); }
+  .hus.mangler small { color:#ffb3a8; }
+  .hus.last { opacity:.6; }
+  .hus:focus-visible, .pk:focus-visible { outline:3px solid #fff; outline-offset:2px; }
+  .pkolonne { display:flex; flex-direction:column; gap:8px; justify-content:center; }
+  .pk { min-width:96px; min-height:48px; border-radius:14px; border:3px solid #fff; font-weight:800; font-size:17px; padding:4px 10px; }
+  .pk.ja { background:linear-gradient(#8fd17a,#3f8f3a); color:#fff; }
+  .pk.ferdig { background:rgba(255,255,255,.14); color:#fff; border-color:rgba(255,255,255,.6); }
+  .pk[hidden] { display:none; }
+  #byggHjelp { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(132px + env(safe-area-inset-bottom)); background:rgba(42,29,18,.85); border-radius:14px; padding:8px 14px; font-weight:800; font-size:16px; z-index:6; text-align:center; max-width:min(92vw,520px); pointer-events:none; }
+  #byggHjelp:empty, #byggHjelp[hidden] { display:none; }
+
+  /* Kort og lag */
+  .lag { position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:10; padding:16px; background:rgba(30,20,10,.55); overflow:auto; }
+  .lag.vis { display:flex; }
+  .kort { background:linear-gradient(#7a4f2c,#3b2716); border:3px solid rgba(255,220,160,.35); border-radius:26px; padding:22px 24px; max-width:460px; width:100%; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.4); margin:auto; }
+  .evn-merke { font-family:'Lilita One',sans-serif; letter-spacing:2px; font-size:14px; color:var(--gull); opacity:.9; }
+  h1 { font-family:'Lilita One',sans-serif; font-weight:400; font-size:44px; margin:4px 0 10px; color:#fff; text-shadow:0 4px 0 #5a3418; }
+  h2 { font-family:'Lilita One',sans-serif; font-weight:400; font-size:30px; margin:4px 0 10px; }
+  .maal { display:flex; align-items:center; gap:12px; text-align:left; margin:8px 0 12px; }
+  .maal img { width:70px; height:auto; max-height:120px; flex:none; }
+  .maal p { margin:0; font-size:19px; font-weight:800; }
+  .styring { font-size:16px; opacity:.92; margin:6px 0 16px; line-height:1.45; }
+  .bare-touch { display:none; } html.touch .bare-touch { display:block; } html.touch .bare-pc { display:none; }
+  .stor { font-family:'Lilita One',sans-serif; font-size:28px; padding:14px 40px; border-radius:20px; border:3px solid #fff; background:linear-gradient(#ffd75e,#f0a91c); color:#4a2a00; box-shadow:0 6px 0 #b8770c; min-height:60px; }
+  .stor:focus-visible { outline:3px solid #fff; outline-offset:3px; }
+  .evn-start { animation:puls 1.6s ease-in-out infinite; }
+  @keyframes puls { 50% { transform:scale(1.05); } }
+  @media (prefers-reduced-motion: reduce) { .evn-start, .pille.bump { animation:none; } }
+  #startBtn:disabled { opacity:.6; cursor:default; animation:none; }
+  .ingen3d { margin:10px 0 0; font-weight:700; font-size:16px; line-height:1.4; }
+  .evn-ver { font-size:13px; opacity:.8; margin-top:12px; }
+  .evn-tilbake { display:block; color:#fff; font-weight:800; text-decoration:underline; text-underline-offset:3px; opacity:.85; padding:10px 0; min-height:44px; margin-top:6px; }
+  .evn-tilbake[hidden] { display:none; }
+  .lukk { margin-top:12px; font-size:24px; padding:10px 34px; min-height:52px; }
+
+  /* Ønskelista */
+  .onsker { text-align:left; margin:6px 0 4px; display:grid; gap:6px; }
+  .onske { display:flex; gap:10px; align-items:center; background:rgba(255,255,255,.08); border-radius:12px; padding:8px 10px; font-weight:800; font-size:16px; }
+  .onske .ik { font-size:22px; width:28px; text-align:center; flex:none; }
+  .onske.ferdig { opacity:.7; }
+  .onske.na { background:rgba(255,201,60,.22); border:2px solid var(--gull); }
+  .onske.senere { opacity:.5; }
+  .onske small { display:block; font-size:13px; opacity:.9; }
+
+  #feil { position:fixed; inset:0; z-index:100001; display:none; place-items:center; background:rgba(20,12,5,.85); padding:16px; }
+  #feil.vis { display:grid; }
+
+  @media (max-width:640px) {
+    .pille { font-size:16px; padding:4px 11px; }
+    h1 { font-size:36px; }
+    #hjelp { font-size:13px; }
+    #handling { font-size:20px; min-width:130px; }
+    .hus { width:100px; min-height:88px; font-size:13px; }
+  }
+  @media (max-width:520px) {
+    #hud { right:calc(232px + env(safe-area-inset-right)); gap:6px; }
+    .pille { font-size:14px; padding:2px 8px; min-height:32px; gap:4px; }
+    #onskeKnapp { min-height:44px; max-width:100%; }
+    #melding { top:calc(130px + env(safe-area-inset-top)); font-size:16px; }
+    .pk { min-width:84px; min-height:44px; font-size:15px; }
+    #byggPanel { padding:6px; gap:6px; }
+  }
+  @media (max-height:460px) {
+    .maal img { display:none; }
+    .kort { padding:14px 18px; }
+    h1 { font-size:30px; margin:2px 0 6px; }
+    .styring { margin:4px 0 10px; }
+    .hus { min-height:72px; width:96px; } .hus .ik { font-size:22px; }
+    #byggHjelp { bottom:calc(100px + env(safe-area-inset-bottom)); font-size:14px; }
+    #handling { min-height:64px; }
+  }
+</style>
+<script src="../../statistikk.js" data-spill="vikinglandsby" defer></script>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud" hidden>
+  <div class="pille" id="pTre" title="Tre">🪵 <span id="tre">0</span></div>
+  <div class="pille" id="pStein" title="Stein">🪨 <span id="stein">0</span></div>
+  <div class="pille" id="pMat" title="Mat">🍓 <span id="mat">0</span></div>
+  <div class="pille" id="pFolk" title="Vikinger i landsbyen / plass i langhusene">👥 <span id="folk">0/0</span></div>
+  <button class="pille" id="onskeKnapp" type="button" title="Landsbyens ønsker"><span aria-hidden="true">📜</span><span class="tekst" id="onskeTekst"></span></button>
+</div>
+<div id="hoyre" hidden>
+  <button class="rund" id="lydKnapp" type="button" title="Lyd av/på (L)" aria-label="Lyd av eller på">🔊</button>
+  <a class="rund" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none;text-decoration:none">🚪<span class="evn-avs-tekst"> Avslutt</span></a>
+</div>
+<div id="melding" role="status" aria-live="polite"></div>
+<div id="handlinger" hidden>
+  <button id="handling" type="button"></button>
+  <button id="byggKnapp" type="button" title="Bygg (B)">🔨 Bygg<span class="tast">(B)</span></button>
+</div>
+<div id="hjelp"></div>
+<div id="joy"><i></i></div>
+
+<div id="byggHjelp" role="status" aria-live="polite" hidden></div>
+<div id="byggPanel" hidden role="group" aria-label="Velg hva du vil bygge">
+  <div id="byggListe"></div>
+  <div class="pkolonne">
+    <button class="pk ja" id="byggHer" type="button" hidden>✔ Bygg her</button>
+    <button class="pk ferdig" id="byggFerdig" type="button">✕ Ferdig</button>
+  </div>
+</div>
+
+<!-- Startkort -->
+<div class="lag vis" id="start">
+  <div class="kort">
+    <div class="evn-merke">EVN STUDIO</div>
+    <h1>Vikinglandsby</h1>
+    <div class="maal">
+      <img src="../../bilder/robot-start-vink-130.webp" srcset="../../bilder/robot-start-vink-130.webp 1x, ../../bilder/robot-start-vink-260.webp 2x" width="244" height="260" alt="" decoding="async" onerror="this.remove()">
+      <p>Du er robothøvdingen! 👑 Samle tre, stein og mat, og bygg en vikinglandsby ved fjorden. ⚔️🏠</p>
+    </div>
+    <div class="styring">
+      <div class="bare-pc">Piltaster eller WASD for å gå.<br>E eller mellomrom for å hogge, plukke og fiske.<br>B for å bygge. M for kart.</div>
+      <div class="bare-touch">Dra fingeren for å gå.<br>Trykk på den gule knappen for å hogge, plukke og fiske.<br>Trykk på 🔨 Bygg for å bygge.</div>
+    </div>
+    <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
+    <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
+    <div class="evn-ver" id="versjon">Versjon 0.1.0</div>
+  </div>
+</div>
+
+<!-- Landsbyens ønsker -->
+<div class="lag" id="onskeKort" role="dialog" aria-modal="true" aria-labelledby="onskeTittel">
+  <div class="kort">
+    <h2 id="onskeTittel">📜 Landsbyens ønsker</h2>
+    <div class="onsker" id="onskeListe"></div>
+    <button class="stor lukk" id="lukkOnske" type="button">Lukk</button>
+  </div>
+</div>
+
+<!-- Ønske oppfylt / nye vikinger -->
+<div class="lag" id="jubel" role="dialog" aria-modal="true" aria-labelledby="jubelTittel">
+  <div class="kort">
+    <div id="jubelIkon" style="font-size:64px;line-height:1.1"></div>
+    <h2 id="jubelTittel"></h2>
+    <p id="jubelTekst" style="font-size:18px;font-weight:700;margin:6px 0 16px"></p>
+    <button class="stor" id="jubelOk" type="button">Så bra! 🎉</button>
+  </div>
+</div>
+
+<!-- Vennlig feilmelding (K2, KS15) -->
+<div id="feil" role="alertdialog" aria-modal="true" aria-labelledby="feilTittel">
+  <div class="kort">
+    <h2 id="feilTittel">Oi, noe gikk galt 🛠️</h2>
+    <p style="font-size:18px;font-weight:700">Landsbyen din er lagret. Trykk på knappen for å starte spillet på nytt.</p>
+    <button class="stor" id="feilLast" type="button">🔄 Last på nytt</button>
+  </div>
+</div>
+
+<script>
+/* EVN-NULLSTILL v1: «Start helt på nytt» på startskjermen (samme kode i alle EVN-spill).
+   Vises bare når det finnes lagring. Spør først i en egen boks. Sletter bare spillets egne lagringsnøkler
+   (ikke grafikkvalg eller spilletid), og laster siden på nytt. */
+window.EVNNullstill = function (cfg) {
+  var t = cfg.tema || {};
+  var harLagring = function () { if (cfg.harLagring) try { return !!cfg.harLagring(); } catch (e) { return false; } try { return cfg.nokler.some(function (k) { return localStorage.getItem(k) !== null; }); } catch (e) { return false; } };
+  var css = document.createElement('style');
+  css.textContent =
+    '#evnNullstill{display:block;margin:-8px auto 0;min-height:44px;padding:8px 14px;background:transparent;border:0;color:inherit;opacity:.75;font:700 15px ' + (t.font || 'system-ui,sans-serif') + ';text-decoration:underline;text-underline-offset:3px;cursor:pointer;touch-action:manipulation}' +
+    '#evnNullstill:hover,#evnNullstill:focus-visible{opacity:1}#evnNullstill[hidden]{display:none!important}' +
+    '#evnNullstillBoks{position:fixed;inset:0;z-index:99995;display:none;place-items:center;padding:16px;background:rgba(0,0,0,.7);touch-action:manipulation}' +
+    '#evnNullstillBoks.vis{display:grid}' +
+    '#evnNullstillBoks .kort{background:' + (t.panel || '#1c2436') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:20px;width:min(340px,100%);text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnNullstillBoks h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:28px;line-height:1.1;margin:0 0 10px;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnNullstillBoks p{margin:0 0 6px;font-size:17px;line-height:1.4;font-weight:700}' +
+    '#evnNullstillBoks button{display:block;width:100%;min-height:52px;margin:10px 0 0;border-radius:12px;font:800 19px ' + (t.font || 'system-ui,sans-serif') + ';cursor:pointer}' +
+    '#evnNullstillNei{background:' + (t.btn || '#ffd54a') + ';color:' + (t.btnInk || '#2b1d00') + ';border:0}' +
+    '#evnNullstillJa{background:transparent;color:inherit;border:2px solid #e05252}' +
+    '#evnNullstillBoks button:focus-visible,#evnNullstill:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}';
+  document.head.appendChild(css);
+
+  var lenke = document.createElement('button');
+  lenke.type = 'button'; lenke.id = 'evnNullstill'; lenke.textContent = '🗑️ Start helt på nytt';
+  cfg.plasser(lenke);
+  var boks = document.createElement('div');
+  boks.id = 'evnNullstillBoks'; boks.setAttribute('role', 'dialog'); boks.setAttribute('aria-modal', 'true'); boks.setAttribute('aria-labelledby', 'evnNullstillTittel');
+  boks.innerHTML = '<div class="kort"><h2 id="evnNullstillTittel">Starte helt på nytt?</h2>' +
+    '<p>' + cfg.tekst + '</p><p>Det kan ikke angres.</p>' +
+    '<button type="button" id="evnNullstillNei">Nei, behold alt</button>' +
+    '<button type="button" id="evnNullstillJa">Ja, slett alt</button></div>';
+  document.body.appendChild(boks);
+  ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (ev) {
+    boks.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+    lenke.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+  });
+  var $ = function (id) { return document.getElementById(id); };
+  var apen = false, forrige = null;
+  function oppdater() { lenke.hidden = !harLagring() || (cfg.vis ? !cfg.vis() : false); }
+  function apne() { apen = true; forrige = document.activeElement; boks.classList.add('vis'); $('evnNullstillNei').focus(); }
+  function lukk() { apen = false; boks.classList.remove('vis'); try { (forrige || lenke).focus(); } catch (e) {} }
+  lenke.addEventListener('click', apne);
+  $('evnNullstillNei').addEventListener('click', lukk);
+  $('evnNullstillJa').addEventListener('click', function () {
+    try {
+      // Spillet lagrer gjerne når siden lukkes (pagehide). Stopp skriving til disse nøklene, så lagringen ikke kommer tilbake.
+      var orig = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) { if (this === window.localStorage && cfg.nokler.indexOf(k) !== -1) return; return orig.call(this, k, v); };
+      cfg.nokler.forEach(function (k) { localStorage.removeItem(k); });
+    } catch (e) {}
+    location.reload();
+  });
+  window.addEventListener('keydown', function (e) {
+    if (!apen) return;
+    e.stopImmediatePropagation();                                    // spillet får ingen taster mens boksen er åpen
+    if (e.key === 'Escape') { e.preventDefault(); lukk(); }
+  }, true);
+  oppdater(); setInterval(oppdater, 500);
+};
+</script>
+<script>
+/* EVN-PAUSE v2: felles pause med spilletid og felles kart (samme kode i alle EVN-spill).
+   Kart (v2): 🗺️-knapp ved siden av ⏸ og tasten M åpner et stort kart. Spillet står stille mens kartet er åpent.
+   Spilletid lagres i localStorage 'evn-spilletid-<mappe>' = {dag, iDag, totalt} (millisekunder).
+   Tiden telles bare når spillet er aktivt, fanen synes, pausen ikke er åpen og noen har rørt tast/mus/skjerm siste 3 min. */
+window.EVNPause = function (cfg) {
+  var NOKKEL = 'evn-spilletid-' + cfg.mappe, LEDIG = 180000, t = cfg.tema || {};
+  var idag = function () { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); };
+  var tid = { dag: idag(), iDag: 0, totalt: 0 };
+  try { var l = JSON.parse(localStorage.getItem(NOKKEL)); if (l && typeof l.totalt === 'number') tid = l; } catch (e) {}
+  function lagreTid() { try { localStorage.setItem(NOKKEL, JSON.stringify(tid)); } catch (e) {} }
+  function fmt(ms) { var m = Math.floor(ms / 60000), h = Math.floor(m / 60); return ms < 60000 ? 'under 1 min' : h ? h + ' t ' + (m % 60) + ' min' : m + ' min'; }
+
+  var css = document.createElement('style');
+  css.textContent =
+    '#evnPauseKnapp,#evnKartKnapp{min-width:48px;min-height:48px;border-radius:12px;border:2px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;font:700 20px system-ui,sans-serif;cursor:pointer;touch-action:manipulation;pointer-events:auto;padding:0 10px}' +
+    '#evnPauseKnapp[hidden],#evnKartKnapp[hidden]{display:none!important}' +
+    '#evnKart{position:fixed;inset:0;z-index:99990;display:none;place-items:center;padding:12px;background:rgba(0,0,0,.55);touch-action:manipulation}' +
+    '#evnKart.vis{display:grid}' +
+    '#evnKart .kort{background:' + (t.panel || 'rgba(16,24,15,.95)') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:12px;max-width:100%;max-height:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnKart .topp{display:flex;align-items:center;gap:10px;margin:0 0 8px}' +
+    '#evnKart h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:26px;line-height:1;margin:0;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnKart .info{flex:1;font-size:14px;font-weight:700;opacity:.85;line-height:1.3}' +
+    '#evnKart button{width:44px;height:44px;flex:none;border-radius:12px;border:0;background:rgba(127,127,127,.28);color:inherit;font:800 20px system-ui,sans-serif;cursor:pointer}' +
+    '#evnKart canvas{display:block;border-radius:10px;image-rendering:pixelated}' +
+    '#evnKart button:focus-visible,#evnKartKnapp:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}' +
+    '#evnPause{position:fixed;inset:0;z-index:99990;display:none;place-items:center;padding:16px;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);touch-action:manipulation}' +
+    '#evnPause.vis{display:grid}' +
+    '#evnPause .kort{background:' + (t.panel || 'rgba(16,24,15,.95)') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:18px 20px;width:min(320px,100%);max-height:100%;overflow:auto;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnPause h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:38px;line-height:1;margin:0 0 6px;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnPause .tider{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 6px}' +
+    '#evnPause .tid{border-radius:12px;padding:8px 6px;background:rgba(127,127,127,.18)}' +
+    '#evnPause .tid b{display:block;font-size:22px;line-height:1.15}#evnPause .tid small{font-size:13px;font-weight:700;opacity:.85}' +
+    '#evnPause button{display:block;width:100%;min-height:48px;margin:8px 0 0;border-radius:12px;border:0;font:800 18px ' + (t.font || 'system-ui,sans-serif') + ';cursor:pointer}' +
+    '#evnPause .fortsett{background:' + (t.btn || '#ffd54a') + ';color:' + (t.btnInk || '#2b1d00') + ';font-size:22px;min-height:56px' + (t.head ? ';font-family:' + t.head + ';font-weight:' + (t.headW || 800) : '') + '}' +
+    '#evnPause .liten{background:rgba(127,127,127,.25);color:inherit}' +
+    '#evnPause .styr{text-align:left;font-size:15px;line-height:1.45;margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(127,127,127,.15)}' +
+    '#evnPause .tips{font-size:14px;opacity:.85;margin:10px 0 0}' +
+    '#evnPause button:focus-visible,#evnPauseKnapp:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}';
+  document.head.appendChild(css);
+
+  var knapp = document.createElement('button');
+  knapp.id = 'evnPauseKnapp'; knapp.type = 'button'; knapp.textContent = '⏸'; knapp.title = 'Pause (P)'; knapp.setAttribute('aria-label', 'Pause'); knapp.hidden = true;
+  var kartKnapp = null;
+  if (cfg.kart) {
+    kartKnapp = document.createElement('button');
+    kartKnapp.id = 'evnKartKnapp'; kartKnapp.type = 'button'; kartKnapp.textContent = '🗺️'; kartKnapp.title = 'Kart (M)'; kartKnapp.setAttribute('aria-label', 'Kart'); kartKnapp.hidden = true;
+  }
+  if (cfg.knapp) cfg.knapp(knapp, kartKnapp); else { if (kartKnapp) document.body.appendChild(kartKnapp); document.body.appendChild(knapp); }
+
+  var bak = document.createElement('div');
+  bak.id = 'evnPause'; bak.setAttribute('role', 'dialog'); bak.setAttribute('aria-modal', 'true'); bak.setAttribute('aria-labelledby', 'evnPauseTittel');
+  bak.innerHTML = '<div class="kort"><h2 id="evnPauseTittel">Pause</h2>' +
+    '<div class="tider"><div class="tid"><small>I dag</small><b id="evnPauseIdag"></b></div><div class="tid"><small>Totalt</small><b id="evnPauseTot"></b></div></div>' +
+    '<button class="fortsett" id="evnPauseFortsett" type="button">▶ Fortsett</button>' +
+    '<button class="liten" id="evnPauseStyrKnapp" type="button" aria-expanded="false">🎮 Slik styrer du</button>' +
+    '<div class="styr" id="evnPauseStyr" hidden></div>' +
+    '<button class="liten" id="evnPauseAvslutt" type="button">🚪 Avslutt</button>' +
+    '<p class="tips" id="evnPauseTips"></p></div>';
+  document.body.appendChild(bak);
+  var $ = function (id) { return document.getElementById(id); };
+  var kartBak = null;
+  if (cfg.kart) {
+    kartBak = document.createElement('div');
+    kartBak.id = 'evnKart'; kartBak.setAttribute('role', 'dialog'); kartBak.setAttribute('aria-modal', 'true'); kartBak.setAttribute('aria-labelledby', 'evnKartTittel');
+    kartBak.innerHTML = '<div class="kort"><div class="topp"><h2 id="evnKartTittel">🗺️ Kart</h2><span class="info" id="evnKartInfo"></span>' +
+      '<button type="button" id="evnKartLukk" aria-label="Lukk kartet">✕</button></div><canvas id="evnKartCv" role="img" aria-label="Kart over spillverdenen"></canvas></div>';
+    document.body.appendChild(kartBak);
+  }
+  [bak, knapp, kartBak, kartKnapp].forEach(function (el) {
+    if (el) ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (ev) { el.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
+  });
+
+  var apen = false, apnetTid = 0, venterAvslutt = false, kartApen = false;
+  var avsluttLenke = function () { var a = $(cfg.avsluttId); return a && getComputedStyle(a).display !== 'none' ? a : null; };
+  var sporsmal = function () { return $('evnSporsmal'); };
+  var sporsmalApent = function () { var s = sporsmal(); return !!s && s.style.display === 'grid'; };
+  function kan() { return !apen && !kartApen && !venterAvslutt && !sporsmalApent() && cfg.kanPause(); }
+
+  // ---------- Kart ----------
+  function tegnKart() {
+    if (!kartApen) return;
+    var K = cfg.kart, cv = $('evnKartCv'), f = K.forhold || 1;
+    var maksB = Math.min(innerWidth - 48, 900), maksH = innerHeight - 110;
+    var b = Math.max(120, Math.min(maksB, maksH * f)), h = b / f;
+    var d = Math.min(2, window.devicePixelRatio || 1);
+    cv.style.width = Math.round(b) + 'px'; cv.style.height = Math.round(h) + 'px';
+    cv.width = Math.round(b * d); cv.height = Math.round(h * d);
+    kartBak.querySelector('.kort').style.width = Math.round(b + 24) + 'px';   // kortet like bredt som kartet
+    var c = cv.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
+    try { K.tegn(c, cv.width, cv.height, cv); } catch (e) {}
+    $('evnKartInfo').textContent = K.info ? K.info() : '';
+  }
+  function apneKart() {
+    if (!cfg.kart || !kan()) return;
+    cfg.pause(); kartApen = true; apnetTid = performance.now();
+    kartBak.classList.add('vis'); knapp.hidden = true; kartKnapp.hidden = true;
+    tegnKart();
+    try { $('evnKartLukk').focus({ preventScroll: true }); } catch (e) {}
+  }
+  function lukkKart(fraKlikk) {
+    if (!kartApen) return;
+    kartApen = false; kartBak.classList.remove('vis');
+    cfg.fortsett(!!fraKlikk);
+  }
+  if (cfg.kart) {
+    kartKnapp.addEventListener('click', function () { apneKart(); });
+    $('evnKartLukk').addEventListener('click', function () { lukkKart(true); });
+    kartBak.addEventListener('click', function (e) { if (e.target === kartBak) lukkKart(true); });   // trykk utenfor kartet lukker
+    window.addEventListener('resize', tegnKart);
+  }
+
+  function apne(grunn) {
+    if (!kan()) return;
+    cfg.pause();
+    apen = true; apnetTid = performance.now();
+    $('evnPauseIdag').textContent = fmt(tid.iDag); $('evnPauseTot').textContent = fmt(tid.totalt);
+    $('evnPauseTips').textContent = grunn || 'Spillet står stille. Ingenting er borte.';
+    $('evnPauseStyr').hidden = true; $('evnPauseStyrKnapp').setAttribute('aria-expanded', 'false');
+    $('evnPauseAvslutt').hidden = !avsluttLenke() || !sporsmal();
+    bak.classList.add('vis'); knapp.hidden = true; lagreTid();
+    try { $('evnPauseFortsett').focus({ preventScroll: true }); } catch (e) {}
+  }
+  function lukk(fraKlikk) {
+    if (!apen) return;
+    apen = false; bak.classList.remove('vis');
+    cfg.fortsett(!!fraKlikk);
+  }
+  knapp.addEventListener('click', function () { apne(); });
+  $('evnPauseFortsett').addEventListener('click', function () { lukk(true); });
+  $('evnPauseStyrKnapp').addEventListener('click', function () {
+    var s = $('evnPauseStyr'); if (s.hidden) s.innerHTML = cfg.styring(); s.hidden = !s.hidden; this.setAttribute('aria-expanded', String(!s.hidden));
+  });
+  // Avslutt fra pausen: spillet står stille mens «Vil du avslutte?» vises. «Nei, spill videre» = fortsett.
+  function visSporsmal() { venterAvslutt = true; var s = sporsmal(); s.style.display = 'grid'; var b = $('evnBli'); if (b) b.focus(); }
+  $('evnPauseAvslutt').addEventListener('click', function () { apen = false; bak.classList.remove('vis'); if (cfg.lagre) cfg.lagre(); visSporsmal(); });
+  // Avslutt-knappen i spillet: spillet stopper også mens spørsmålet vises
+  document.addEventListener('click', function (e) {
+    var a = avsluttLenke(); if (!a || !a.contains(e.target) || venterAvslutt || apen || !cfg.kanPause()) return;
+    cfg.pause(); venterAvslutt = true;
+  }, true);
+  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; cfg.fortsett(false); }
+  document.addEventListener('click', function (e) { var b = $('evnBli'); if (b && b.contains(e.target)) setTimeout(nei, 0); }, true);
+
+  window.addEventListener('keydown', function (e) {
+    var k = e.code || e.key;
+    if (venterAvslutt && sporsmalApent()) { if (k === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); nei(); } return; }
+    if (kartApen) {
+      e.stopImmediatePropagation();                                  // spillet får ingen taster mens kartet er åpent
+      if ((k === 'Escape' || k === 'KeyM') && !e.repeat && performance.now() - apnetTid > 200) { e.preventDefault(); lukkKart(false); }
+      return;
+    }
+    if (k === 'KeyM' && cfg.kart && !e.repeat && kan()) { e.preventDefault(); e.stopImmediatePropagation(); apneKart(); return; }
+    if (apen) {
+      e.stopImmediatePropagation();                                  // spillet får ingen taster mens pausen er åpen
+      if ((k === 'Escape' || k === 'KeyP') && !e.repeat && performance.now() - apnetTid > 300) { e.preventDefault(); lukk(k === 'KeyP'); }
+      return;
+    }
+    if ((k === 'KeyP' || (k === 'Escape' && (typeof cfg.escPause === 'function' ? cfg.escPause() : cfg.escPause !== false))) && !e.repeat && kan()) { e.preventDefault(); e.stopImmediatePropagation(); apne(); }
+  }, true);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) { apne('Pause fordi du byttet fane eller app.'); lagreTid(); } });
+  window.addEventListener('blur', function () { apne('Pause fordi du gikk ut av spillet.'); });
+  window.addEventListener('pagehide', lagreTid);
+
+  var sistRort = performance.now(), sist = performance.now(), sistLagret = 0;
+  ['keydown', 'pointerdown', 'pointermove', 'touchstart', 'wheel'].forEach(function (ev) { window.addEventListener(ev, function () { sistRort = performance.now(); }, { passive: true, capture: true }); });
+  setInterval(function () {
+    var naa = performance.now(), dt = Math.min(2000, naa - sist); sist = naa;
+    knapp.hidden = apen || kartApen || venterAvslutt || !cfg.kanPause();
+    if (kartKnapp) kartKnapp.hidden = knapp.hidden;
+    var dag = idag(); if (tid.dag !== dag) { tid.dag = dag; tid.iDag = 0; }
+    if (!apen && !venterAvslutt && !document.hidden && naa - sistRort < LEDIG && cfg.aktiv()) { tid.iDag += dt; tid.totalt += dt; }
+    if (naa - sistLagret > 15000) { sistLagret = naa; lagreTid(); }
+  }, 250);
+  return { apne: apne, lukk: lukk, apneKart: apneKart, lukkKart: lukkKart, erApen: function () { return apen || kartApen; }, tid: function () { return tid; } };
+};
+</script>
+<script src="../../vendor/three-r128.min.js"></script>
+<!-- E-coins (felles for alle EVN-spill): bare robotens antrekk. Spillet virker som før hvis disse ikke lastes. -->
+<script src="../../ecoins/ecoins.js"></script>
+<script src="../../ecoins/tilbehor-3d.js"></script>
+<script src="../../ecoins/gltfloader-r128.js"></script>
+<script>
+'use strict';
+const VERSJON = '0.1.0';
+const LAGRING = 'evn-vikinglandsby-v1';
+const LYD_NOKKEL = 'evn-vikinglandsby-lyd';
+const TEST = location.hash === '#test';
+
+// ======================================================
+//  INNSTILLINGER – Even kan endre tallene her
+// ======================================================
+const INNST = {
+  fart: 13,                 // hvor fort roboten går
+  rekkevidde: 4.5,          // hvor nær du må stå for å hogge, hakke og plukke
+  slag: 0.4,                // sekunder mellom hvert hugg når du holder knappen inne
+  treIGjen: 4,   treVokser: 45,     // tre per tre, og sekunder før treet vokser opp igjen
+  steinIGjen: 5, steinVokser: 60,   // stein per stein
+  baerIGjen: 3,  baerVokser: 30,    // bær per busk
+  fiskIGjen: 3,  fiskVokser: 25,    // fisk per fiskeplass
+  jobbTid: { tre: 9, stein: 12, mat: 9 },   // sekunder før en arbeider har samlet 1 til deg
+  vikingFart: 5,
+};
+if (TEST) Object.assign(INNST, { treVokser: 5, steinVokser: 5, baerVokser: 5, fiskVokser: 5, jobbTid: { tre: 2, stein: 2, mat: 2 } });
+
+// ---------- Husene du kan bygge ----------
+const HUS = {
+  langhus: { navn: 'Langhus',     ikon: '🏠', pris: { tre: 10, stein: 4, mat: 4 },   r: 6.5, plass: 2, tekst: 'To nye vikinger flytter inn.' },
+  hytte:   { navn: 'Tømmerhytte', ikon: '🪓', pris: { tre: 6, stein: 2 },          r: 4.5, jobb: 'tre', yrke: 'tømmerhugger', tekst: 'En tømmerhugger samler tre til deg.' },
+  brudd:   { navn: 'Steinbrudd',  ikon: '⛏️', pris: { tre: 8 },                    r: 4.5, jobb: 'stein', yrke: 'steinhugger', tekst: 'En steinhugger samler stein til deg.' },
+  brygge:  { navn: 'Fiskebrygge', ikon: '🎣', pris: { tre: 8, stein: 2 },          r: 4.5, jobb: 'mat', yrke: 'fisker', vann: true, tekst: 'En fisker skaffer mat. Må stå ved fjorden.' },
+  hall:    { navn: 'Høvdinghall', ikon: '👑', pris: { tre: 30, stein: 20, mat: 12 }, r: 9, unik: true, tekst: 'Robothøvdingens store hall!' },
+};
+const REKKE = ['langhus', 'hytte', 'brudd', 'brygge', 'hall'];
+const RES = { tre: { ikon: '🪵', navn: 'tre' }, stein: { ikon: '🪨', navn: 'stein' }, mat: { ikon: '🍓', navn: 'mat' } };
+const NAVN = ['Ragnhild', 'Olav', 'Sigrid', 'Bjørn', 'Astrid', 'Leif', 'Gyda', 'Harald', 'Tora', 'Eirik', 'Ingrid', 'Sven', 'Frøya', 'Ulf', 'Solveig', 'Knut'];
+
+// ---------- Landsbyens ønsker (rekkefølgen er fremgangen i spillet) ----------
+const ONSKER = [
+  { ik: '🪵', tekst: 'Hogg 5 tre',                       hint: 'Gå bort til et tre og trykk på den gule knappen.', ok: () => t.samlet.tre >= 5 },
+  { ik: '🪨', tekst: 'Hakk 3 stein',                     hint: 'Steinene ligger mot fjellet i øst (til høyre).', ok: () => t.samlet.stein >= 3 },
+  { ik: '🍓', tekst: 'Finn 4 mat',                       hint: 'Plukk bær fra buskene, eller fisk ved fjorden.', ok: () => t.samlet.mat >= 4 },
+  { ik: '🏠', tekst: 'Bygg et langhus',                  hint: 'Trykk på 🔨 Bygg og velg Langhus.', ok: () => antall('langhus') >= 1 },
+  { ik: '🪓', tekst: 'Gi en viking jobb i en tømmerhytte', hint: 'Bygg en tømmerhytte. Gå bort til den og trykk «Gi jobb».', ok: () => harArbeider('hytte') },
+  { ik: '⛏️', tekst: 'Gi en viking jobb i et steinbrudd',  hint: 'Bygg et steinbrudd og gi en viking jobb der.', ok: () => harArbeider('brudd') },
+  { ik: '🏠', tekst: 'Bygg et langhus til',              hint: 'Flere hus gir plass til flere vikinger.', ok: () => antall('langhus') >= 2 },
+  { ik: '🎣', tekst: 'Gi en viking jobb på en fiskebrygge', hint: 'Fiskebrygga må stå helt nede ved fjorden.', ok: () => harArbeider('brygge') },
+  { ik: '👥', tekst: 'Få 6 vikinger i landsbyen',         hint: 'Hvert langhus gir plass til 2 vikinger.', ok: () => t.vikinger.length >= 6 },
+  { ik: '👑', tekst: 'Bygg høvdinghallen',               hint: 'Den koster mye. La arbeiderne hjelpe deg å samle!', ok: () => antall('hall') >= 1 },
+];
+
+// ======================================================
+//  Tilstand
+// ======================================================
+const t = {
+  tre: 0, stein: 0, mat: 0,
+  samlet: { tre: 0, stein: 0, mat: 0 },
+  onske: 0,
+  bygg: [],        // { type, x, z, rot, g, arbeider, tid }
+  vikinger: [],    // { navn, hjem, jobb, g, ... }
+};
+if (TEST) { t.tre = 200; t.stein = 200; t.mat = 200; }
+const antall = type => t.bygg.filter(b => b.type === type).length;
+const harArbeider = type => t.bygg.some(b => b.type === type && b.arbeider !== null);
+const plass = () => antall('langhus') * HUS.langhus.plass;
+
+// ======================================================
+//  Oppsett av 3D
+// ======================================================
+const $ = id => document.getElementById(id);
+$('versjon').textContent = 'Versjon ' + VERSJON + (TEST ? ' · testmodus' : '');
+// KS14: oppsettet følger siste inndata, og kan bytte tilbake
+const erTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+if (erTouch) document.documentElement.classList.add('touch');
+addEventListener('pointerdown', e => document.documentElement.classList.toggle('touch', e.pointerType === 'touch' || e.pointerType === 'pen'), { capture: true, passive: true });
+addEventListener('keydown', () => document.documentElement.classList.remove('touch'), { capture: true, passive: true });
+const touchNa = () => document.documentElement.classList.contains('touch');
+
+const canvas = $('c');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: !erTouch }); }
+catch (e) {
+  const knapp = $('startBtn'); if (knapp) { knapp.disabled = true; knapp.textContent = '3D virker ikke her'; }
+  const m = document.createElement('p'); m.className = 'ingen3d'; m.setAttribute('role', 'alert');
+  m.textContent = 'Denne nettleseren kan ikke vise 3D-grafikk, så Vikinglandsby kan ikke starte. Prøv en annen nettleser eller en annen maskin.';
+  if (knapp) knapp.after(m);
+  throw e;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, erTouch ? 1.5 : 2));   // B3: lavere oppløsning på mobil
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+const SKYGGER = !erTouch;
+if (SKYGGER) { renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; }
+
+const C = h => new THREE.Color(h).convertSRGBToLinear();
+const scene = new THREE.Scene();
+const HIMMEL = 0xbfe0f5;
+scene.background = C(HIMMEL);
+scene.fog = new THREE.Fog(C(HIMMEL), 140, 330);
+const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 700);
+const KAM = new THREE.Vector3(0, 17, 25);
+const KAM_BYGG = new THREE.Vector3(0, 62, 26);
+let zoom = 1, zoomBygg = 1;
+
+scene.add(new THREE.HemisphereLight(C(0xffffff), C(0x4a6a3a), 0.85));
+const sol = new THREE.DirectionalLight(C(0xfff0d8), 1.5);
+sol.position.set(40, 80, 30); scene.add(sol); scene.add(sol.target);
+if (SKYGGER) { sol.castShadow = true; sol.shadow.mapSize.set(1024, 1024); const s = sol.shadow.camera; s.left = s.bottom = -60; s.right = s.top = 60; s.near = 10; s.far = 200; sol.shadow.bias = -0.0008; }
+
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.fov = w < h ? 64 : 50;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+const rnd = (a, b) => a + Math.random() * (b - a);
+const SPH = new THREE.SphereGeometry(1, 14, 10);
+const SPH_L = new THREE.SphereGeometry(1, 8, 6);
+const CYL = new THREE.CylinderGeometry(1, 1, 1, 10);
+const CONE = new THREE.ConeGeometry(1, 1, 8);
+const BOX = new THREE.BoxGeometry(1, 1, 1);
+const PRISME = new THREE.CylinderGeometry(1, 1, 1, 3); PRISME.rotateZ(Math.PI / 2); PRISME.rotateX(-Math.PI / 2);   // tak: trekant langs x, spissen opp (høyde 1,5, bredde 1,73)
+const STEIN = new THREE.DodecahedronGeometry(1, 0);
+const matCache = {};
+function M(hex, ekstra) { const k = hex + JSON.stringify(ekstra || {}); return matCache[k] || (matCache[k] = new THREE.MeshStandardMaterial(Object.assign({ color: C(hex), roughness: 0.8, flatShading: true }, ekstra || {}))); }
+function del(geo, mat, sx, sy, sz, x, y, z, foreldre) {
+  const m = new THREE.Mesh(geo, mat); m.scale.set(sx, sy, sz); m.position.set(x, y, z);
+  if (SKYGGER) { m.castShadow = true; m.receiveShadow = true; }
+  foreldre.add(m); return m;
+}
+// Skilt med tekst som alltid vender mot kameraet
+function skilt(tekst, h, bak) {
+  const cv = document.createElement('canvas'), x = cv.getContext('2d'), f = 56;
+  x.font = `800 ${f}px Nunito, system-ui, sans-serif`;
+  const b = Math.ceil(x.measureText(tekst).width) + 44;
+  cv.width = b; cv.height = f + 30;
+  x.font = `800 ${f}px Nunito, system-ui, sans-serif`;
+  x.fillStyle = bak || 'rgba(42,29,18,.82)';
+  const r = 30; x.beginPath(); x.moveTo(r, 0); x.arcTo(b, 0, b, cv.height, r); x.arcTo(b, cv.height, 0, cv.height, r); x.arcTo(0, cv.height, 0, 0, r); x.arcTo(0, 0, b, 0, r); x.fill();
+  x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(tekst, b / 2, cv.height / 2 + 3);
+  const tx = new THREE.CanvasTexture(cv); tx.encoding = THREE.sRGBEncoding;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, depthWrite: false, fog: false }));
+  s.scale.set(h * b / cv.height, h, 1); return s;
+}
+
+// ======================================================
+//  Verden: eng, fjord og fjell
+// ======================================================
+const KYST = 40;                       // her begynner fjorden (z)
+const GRENSE = { x: 82, zMin: -82, zMaks: KYST + 1 };
+const SPAWN = new THREE.Vector3(-84, 0, -6);   // her kommer nye vikinger gående inn
+
+// Bakken
+{ const g = new THREE.PlaneGeometry(420, 420); g.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(g, M(0x7fbf5a, { flatShading: false })); m.position.set(0, 0, -60); if (SKYGGER) m.receiveShadow = true; scene.add(m); }
+// Sandstrand
+{ const g = new THREE.PlaneGeometry(420, 6); g.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(g, M(0xe8d39a, { flatShading: false })); m.position.set(0, 0.03, KYST - 2); if (SKYGGER) m.receiveShadow = true; scene.add(m); }
+// Sti fra vest inn til landsbyen
+{ const g = new THREE.PlaneGeometry(90, 5); g.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(g, M(0xc9a66b, { flatShading: false })); m.position.set(-48, 0.02, -4); m.rotation.y = 0.04; if (SKYGGER) m.receiveShadow = true; scene.add(m); }
+// Fjorden
+const vannMat = new THREE.MeshStandardMaterial({ color: C(0x2f86c6), roughness: 0.25, metalness: 0.1, transparent: true, opacity: 0.92 });
+{ const g = new THREE.PlaneGeometry(420, 160, 40, 16); g.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(g, vannMat); m.position.set(0, 0.08, KYST + 80); scene.add(m); window.__vann = m; }
+// Fjell rundt dalen og på andre siden av fjorden
+const fjell = [];
+function lagFjell(x, z, r, h) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  del(CONE, M(0x7d8590), r, h, r, 0, h / 2, 0, g);
+  del(CONE, M(0xf4f7fb), r * 0.38, h * 0.38, r * 0.38, 0, h * 0.81 + 0.05, 0, g);
+  fjell.push({ x, z, r });
+}
+for (let x = -150; x <= 150; x += 22) lagFjell(x + rnd(-6, 6), -112 + rnd(-10, 10), rnd(20, 30), rnd(34, 56));
+for (let z = -90; z <= 30; z += 22) { lagFjell(-118 + rnd(-8, 8), z + rnd(-5, 5), rnd(18, 26), rnd(28, 46)); lagFjell(118 + rnd(-8, 8), z + rnd(-5, 5), rnd(18, 26), rnd(28, 46)); }
+for (let x = -160; x <= 160; x += 26) lagFjell(x + rnd(-8, 8), KYST + 95 + rnd(-8, 12), rnd(22, 32), rnd(30, 52));
+// Skyer
+const skyer = [];
+for (let i = 0; i < 9; i++) { const g = new THREE.Group(); for (let j = 0; j < 4; j++) del(SPH_L, M(0xffffff, { flatShading: false }), rnd(5, 9), rnd(3, 5), rnd(5, 8), j * 7 - 10, rnd(-1, 1), rnd(-2, 2), g); g.position.set(rnd(-200, 200), rnd(60, 80), rnd(-180, 60)); g.traverse(o => { o.castShadow = false; o.receiveShadow = false; }); scene.add(g); skyer.push(g); }
+
+// ======================================================
+//  Ressurser: trær, steiner, bærbusker og fiskeplasser
+// ======================================================
+const noder = [];   // { type, x, z, r, igjen, maks, timer, g, ... }
+function ledig(x, z, r) {
+  if (Math.hypot(x, z) < 15) return false;                       // midt i landsbyen skal det være plass
+  if (Math.abs(z + 4) < 5 && x < -12) return false;              // stien
+  for (const n of noder) if (Math.hypot(n.x - x, n.z - z) < n.r + r + 1.5) return false;
+  return true;
+}
+function plasserNode(type, sx, sz, tries, lagFn) {
+  for (let i = 0; i < tries; i++) {
+    const x = typeof sx === 'function' ? sx() : sx, z = typeof sz === 'function' ? sz() : sz;
+    const n = lagFn(x, z);
+    if (!n) continue;
+    return n;
+  }
+}
+function lagTre(x, z) {
+  if (!ledig(x, z, 1.4)) return null;
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  const s = rnd(0.85, 1.25);
+  const stamme = del(CYL, M(0x6b4426), 0.45 * s, 2.4 * s, 0.45 * s, 0, 1.2 * s, 0, g);
+  const krone = new THREE.Group(); g.add(krone);
+  const gronn = [0x2f7d3a, 0x3a8f45, 0x2a6e35][Math.floor(rnd(0, 3))];
+  del(CONE, M(gronn), 2.4 * s, 3.6 * s, 2.4 * s, 0, 3.6 * s, 0, krone);
+  del(CONE, M(gronn), 1.9 * s, 3.0 * s, 1.9 * s, 0, 5.2 * s, 0, krone);
+  del(CONE, M(gronn), 1.3 * s, 2.4 * s, 1.3 * s, 0, 6.6 * s, 0, krone);
+  g.rotation.y = rnd(0, 6.28);
+  const n = { type: 'tre', x, z, r: 0.9, igjen: INNST.treIGjen, maks: INNST.treIGjen, timer: 0, g, krone, stamme, s, rist: 0 };
+  noder.push(n); return n;
+}
+function lagStein(x, z) {
+  if (!ledig(x, z, 2.4)) return null;
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  const blokk = new THREE.Group(); g.add(blokk);
+  del(STEIN, M(0x8d939b), 2.0, 1.5, 1.8, 0, 1.0, 0, blokk);
+  del(STEIN, M(0x9aa1a9), 1.1, 0.9, 1.1, 1.2, 0.6, 0.8, blokk);
+  del(STEIN, M(0x7b828a), 0.9, 0.8, 0.9, -1.1, 0.5, -0.6, blokk);
+  del(STEIN, M(0x8d939b), 0.5, 0.35, 0.5, 0.4, 0.15, -1.6, g);   // småstein som blir liggende
+  g.rotation.y = rnd(0, 6.28);
+  const n = { type: 'stein', x, z, r: 2.0, igjen: INNST.steinIGjen, maks: INNST.steinIGjen, timer: 0, g, blokk, rist: 0 };
+  noder.push(n); return n;
+}
+function lagBusk(x, z) {
+  if (!ledig(x, z, 1.4)) return null;
+  const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+  del(SPH_L, M(0x3e8f3a), 1.5, 1.1, 1.4, 0, 0.9, 0, g);
+  del(SPH_L, M(0x4ea347), 1.0, 0.9, 1.0, 0.8, 1.2, 0.3, g);
+  const baer = [];
+  for (let i = 0; i < 8; i++) { const v = i / 8 * 6.28; baer.push(del(SPH_L, M(0xe0304a, { flatShading: false, emissive: C(0x400008) }), 0.22, 0.22, 0.22, Math.cos(v) * 1.35, 0.9 + Math.sin(i * 1.7) * 0.4, Math.sin(v) * 1.25, g)); }
+  const n = { type: 'baer', x, z, r: 1.2, igjen: INNST.baerIGjen, maks: INNST.baerIGjen, timer: 0, g, baer, rist: 0 };
+  noder.push(n); return n;
+}
+function lagFiskeplass(x) {
+  const z = KYST + 4.5;
+  const g = new THREE.Group(); g.position.set(x, 0.12, z); scene.add(g);
+  const ringer = [];
+  for (let i = 0; i < 3; i++) { const m = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.15, 24), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, depthWrite: false })); m.rotation.x = -Math.PI / 2; g.add(m); ringer.push(m); }
+  const fisk = new THREE.Group(); g.add(fisk);
+  del(SPH_L, M(0xc0c8d0, { flatShading: false }), 0.7, 0.32, 0.25, 0, 0, 0, fisk);
+  del(CONE, M(0xa0aab4), 0.3, 0.5, 0.12, -0.75, 0, 0, fisk).rotation.z = Math.PI / 2;
+  fisk.visible = false;
+  const n = { type: 'fisk', x, z, r: 1, igjen: INNST.fiskIGjen, maks: INNST.fiskIGjen, timer: 0, g, ringer, fisk, hopp: rnd(1, 4) };
+  noder.push(n); return n;
+}
+// Litt av alt nær landsbyen, så det er lett å komme i gang
+for (const [x, z] of [[-18, -10], [-22, -16], [-14, -20], [-24, -6], [-19, -24], [-28, -14]]) lagTre(x, z);
+for (const [x, z] of [[20, -14], [25, -6], [18, -24]]) lagStein(x, z);
+for (const [x, z] of [[-14, 22], [-20, 18], [10, 26], [16, 21]]) lagBusk(x, z);
+// Skogen i vest og nord
+let n0 = 0; while (n0 < 70) { if (plasserNode('tre', () => rnd(-80, -30), () => rnd(-80, 30), 20, lagTre)) n0++; else break; }
+n0 = 0; while (n0 < 35) { if (plasserNode('tre', () => rnd(-30, 25), () => rnd(-80, -45), 20, lagTre)) n0++; else break; }
+// Steiner mot fjellet i øst og nordøst
+n0 = 0; while (n0 < 26) { if (plasserNode('stein', () => rnd(32, 80), () => rnd(-80, 25), 20, lagStein)) n0++; else break; }
+// Bærbusker rundt omkring
+n0 = 0; while (n0 < 10) { if (plasserNode('baer', () => rnd(-70, 70), () => rnd(5, KYST - 6), 20, (x, z) => Math.hypot(x, z) < 26 ? null : lagBusk(x, z))) n0++; else break; }
+// Fiskeplasser langs fjorden
+for (const x of [-58, -32, -8, 22, 50]) lagFiskeplass(x);
+
+// ======================================================
+//  Roboten (spilleren)
+// ======================================================
+const spiller = { pos: new THREE.Vector3(0, 0, 10), retning: Math.PI, fart: 0 };
+const helt = new THREE.Group(); scene.add(helt);
+const reserve = new THREE.Group(); helt.add(reserve);   // enkel gul figur til roboten er lastet
+del(CYL, M(0xffcc00), 0.6, 1.4, 0.5, 0, 0.9, 0, reserve); del(SPH, M(0xffcc00), 0.55, 0.5, 0.5, 0, 2.0, 0, reserve);
+// Ring under roboten, så du ser hvor du står
+const ring = new THREE.Mesh(new THREE.RingGeometry(1.1, 1.4, 28), new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.55, depthWrite: false }));
+ring.rotation.x = -Math.PI / 2; ring.position.y = 0.06; scene.add(ring);
+
+// Roboten fra Mørkeskogen 2.0 (RobotExpressive av Tomás Laulhé/Quaternius, endret av Don McCurdy – CC0 1.0).
+let robot = null;
+function brukRobot(gltf) {
+  const modell = gltf.scene;
+  const box = new THREE.Box3().setFromObject(modell), k = 3.0 / (box.max.y - box.min.y);
+  modell.scale.setScalar(k); modell.position.y = -box.min.y * k;
+  modell.traverse(o => { if (o.isMesh) { o.frustumCulled = false; if (SKYGGER) o.castShadow = true; if (o.material && o.material.name === 'Main') o.material.color.setHex(0xffcc00).convertSRGBToLinear(); } });
+  const mix = new THREE.AnimationMixer(modell), klipp = {};
+  for (const c of gltf.animations) klipp[c.name] = mix.clipAction(c);
+  if (!klipp.Idle) return;
+  for (const n of ['ThumbsUp', 'Wave', 'Yes', 'Jump', 'Dance', 'Punch']) if (klipp[n]) { klipp[n].setLoop(THREE.LoopOnce, 1); klipp[n].clampWhenFinished = true; }
+  reserve.visible = false; helt.add(modell);
+  klipp.Idle.play();
+  robot = { modell, mix, klipp, aktiv: klipp.Idle, igjen: 0, gar: false };
+  // Robothøvdingen har vikinghjelm. Har spilleren valgt noe på hodet i Garderoben, vises det i stedet.
+  try { if (window.EVNTilbehor && window.EVNEcoins) {
+    mix.update(0);
+    const tb = EVNTilbehor.lag(THREE, modell);
+    const vis = a => { a = a || {}; tb.vis({ hode: a.hode || (tb.finnes('vikinghjelm') ? 'vikinghjelm' : null), rygg: a.rygg || null }); };
+    vis(EVNEcoins.antrekk()); EVNEcoins.pa(dd => vis(dd.antrekk)); robot.tilbehor = tb;
+  } } catch (e) { console.warn('Tilbehøret kunne ikke vises', e); }
+}
+(function lastRobot() {
+  if (!THREE.GLTFLoader) return;
+  const parse = buf => new THREE.GLTFLoader().parse(buf, '', brukRobot, e => console.warn('Fant ikke roboten', e));
+  try {
+    if (window.EVN_HELT_B64) { const bin = atob(window.EVN_HELT_B64), buf = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i); parse(buf.buffer); }
+    else fetch('../../ecoins/helt-robot.glb').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(parse).catch(e => console.warn('Roboten kunne ikke lastes', e));
+  } catch (e) { console.warn('Roboten kunne ikke lastes', e); }
+})();
+function byttTil(navn, fade) {
+  const ny = robot.klipp[navn]; if (!ny || ny === robot.aktiv) return;
+  ny.reset(); ny.play(); robot.aktiv.crossFadeTo(ny, fade || 0.2, false); robot.aktiv = ny;
+}
+function robotGjor(navn, tid) {
+  if (!robot || !robot.klipp[navn]) return;
+  robot.aktiv = robot.aktiv === robot.klipp[navn] ? robot.klipp.Idle : robot.aktiv;   // samme klipp igjen: start på nytt
+  byttTil(navn, 0.12); robot.igjen = tid || 1.2;
+}
+function robotAnimasjon(dt) {
+  if (!robot) return;
+  if (robot.igjen > 0) robot.igjen -= dt;
+  else { const gar = spiller.fart > 1.5 && !bygg.aktiv; byttTil(gar ? (spiller.fart > 10 && robot.klipp.Running ? 'Running' : 'Walking') : 'Idle', 0.25); }
+  robot.mix.update(dt);
+}
+
+// ======================================================
+//  Husene
+// ======================================================
+function tak(g, lengde, bredde, hoyde, veggTopp, farge) {
+  const sy = hoyde / 1.5, m = del(PRISME, M(farge), lengde, sy, bredde / 1.732, 0, veggTopp + 0.5 * sy, 0, g);
+  return m;
+}
+function lagHusModell(type) {
+  const g = new THREE.Group();
+  const TRE = 0x8a5a33, MORK = 0x5a3a20, TORV = 0x6f8a3a, STRA = 0xc9a24a;
+  if (type === 'langhus') {
+    del(BOX, M(TRE), 12, 3.2, 6, 0, 1.6, 0, g);
+    tak(g, 13, 7.4, 2.6, 3.2, TORV);
+    del(BOX, M(MORK), 1.6, 2.2, 0.3, 0, 1.1, 3.05, g);                              // dør
+    for (const s of [-1, 1]) { const d = del(CONE, M(MORK), 0.35, 1.6, 0.35, s * 6.8, 5.1, 0, g); d.rotation.z = -s * 0.6; }   // dragehoder
+    for (const x of [-4.5, 4.5]) del(BOX, M(0xf1e2b5), 1.0, 0.8, 0.2, x, 2.0, 3.05, g);   // vinduer
+  } else if (type === 'hytte') {
+    del(BOX, M(TRE), 5, 2.6, 4, 0, 1.3, 0, g);
+    tak(g, 5.6, 5, 1.8, 2.6, STRA);
+    del(BOX, M(MORK), 1.2, 1.9, 0.25, 0, 0.95, 2.05, g);
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3 - i; j++) { const l = del(CYL, M(0x9b6a3f), 0.32, 2.4, 0.32, 3.4, 0.35 + i * 0.6, -1 + j * 0.7 + i * 0.35, g); l.rotation.x = Math.PI / 2; }
+    del(CYL, M(0x7a5030), 0.55, 0.8, 0.55, -3.2, 0.4, 1.4, g);                          // hoggestabbe
+  } else if (type === 'brudd') {
+    del(STEIN, M(0x8d939b), 2.2, 1.6, 2, 0, 1, -0.8, g);
+    del(STEIN, M(0x9aa1a9), 1.3, 1.1, 1.3, 2, 0.7, 1, g);
+    del(STEIN, M(0x7b828a), 1.1, 0.9, 1.1, -2, 0.6, 1.2, g);
+    for (const x of [-2.6, 2.6]) del(BOX, M(TRE), 0.35, 4.4, 0.35, x, 2.2, -2.4, g);   // kranstativ
+    del(BOX, M(TRE), 5.6, 0.35, 0.35, 0, 4.4, -2.4, g);
+    del(BOX, M(MORK), 1.6, 0.8, 1.2, 0.5, 0.4, 2.6, g);                                 // trillebår
+  } else if (type === 'brygge') {
+    del(BOX, M(0x9b6a3f), 3.6, 0.35, 10, 0, 0.7, 2.5, g);                                // brygga ut i vannet
+    for (const z of [-1, 2.5, 6.5]) for (const x of [-1.6, 1.6]) del(CYL, M(MORK), 0.22, 1.6, 0.22, x, 0.2, z, g);
+    del(BOX, M(TRE), 3.6, 2.4, 3, -3.4, 1.2, -2.6, g);                                   // lite naust
+    tak(g, 4.2, 3.6, 1.5, 2.4, TORV);
+    for (const x of [2.4, 4]) del(BOX, M(MORK), 0.2, 2.2, 0.2, x, 1.1, -2.6, g);         // tørkestativ for fisk
+    del(BOX, M(MORK), 1.8, 0.15, 0.15, 3.2, 2.1, -2.6, g);
+    for (const x of [2.7, 3.2, 3.7]) del(SPH_L, M(0xc0c8d0), 0.18, 0.45, 0.12, x, 1.6, -2.6, g);
+  } else if (type === 'hall') {
+    del(BOX, M(TRE), 17, 4.6, 8.4, 0, 2.3, 0, g);
+    tak(g, 18.4, 10.2, 3.8, 4.6, TORV);
+    del(BOX, M(MORK), 2.4, 3.2, 0.3, 0, 1.6, 4.25, g);
+    for (const s of [-1, 1]) { const d = del(CONE, M(0xffc93c, { metalness: 0.4, roughness: 0.4 }), 0.5, 2.4, 0.5, s * 9.6, 7.3, 0, g); d.rotation.z = -s * 0.6; }
+    for (const x of [-6, -3, 3, 6]) { const sk = del(CYL, M([0xc0392b, 0x1f6fb2][(x + 9) % 2], {}), 0.75, 0.15, 0.75, x, 2.6, 4.3, g); sk.rotation.x = Math.PI / 2; }   // skjold
+    del(CYL, M(MORK), 0.15, 7, 0.15, 7.5, 3.5, 5.6, g);                                   // flaggstang
+    del(BOX, M(0xffc93c), 2, 1.2, 0.08, 8.5, 6.2, 5.6, g);
+  }
+  return g;
+}
+function byggHus(type, x, z, rot, stille) {
+  const g = lagHusModell(type); g.position.set(x, 0, z); g.rotation.y = rot * Math.PI / 2; scene.add(g);
+  const b = { type, x, z, rot, g, arbeider: null, tid: 0, vokse: stille ? 0 : 0.6 };
+  t.bygg.push(b);
+  // Trær, steiner og busker under huset forsvinner
+  for (let i = noder.length - 1; i >= 0; i--) { const n = noder[i]; if (n.type !== 'fisk' && Math.hypot(n.x - x, n.z - z) < HUS[type].r + n.r) { scene.remove(n.g); noder.splice(i, 1); } }
+  return b;
+}
+// Hvor huset står i forhold til fjorden (fiskebrygga peker ut i vannet)
+function husFotavtrykk(type, x, z) { return { x, z, r: HUS[type].r }; }
+
+// ======================================================
+//  Vikingene
+// ======================================================
+const HUD_FARGER = [0xf2c8a0, 0xe0b088, 0xc68e64, 0xf5d5b8];
+const KLAER = [0x2e6db4, 0xb0392b, 0x2f8f4e, 0x8e44ad, 0xd68a1e, 0x546e7a];
+const HAAR = [0xe9c46a, 0xb5651d, 0x7a4a22, 0xd9d0c0, 0xc0392b];
+function lagVikingModell(i) {
+  const g = new THREE.Group();
+  const hud = M(HUD_FARGER[i % 4]), klaer = M(KLAER[i % KLAER.length]), haar = M(HAAR[(i * 3) % HAAR.length]);
+  const bein = [];
+  for (const s of [-1, 1]) { const p = new THREE.Group(); p.position.set(s * 0.3, 1.0, 0); g.add(p); del(BOX, M(0x5a4030), 0.35, 1.0, 0.4, 0, -0.5, 0, p); bein.push(p); }
+  del(CYL, klaer, 0.62, 1.5, 0.5, 0, 1.75, 0, g);
+  del(BOX, M(0x4a3020), 1.15, 0.18, 0.95, 0, 1.25, 0, g);                       // belte
+  const armer = [];
+  for (const s of [-1, 1]) { const p = new THREE.Group(); p.position.set(s * 0.72, 2.4, 0); g.add(p); del(BOX, klaer, 0.28, 1.1, 0.3, 0, -0.5, 0, p); del(SPH_L, hud, 0.18, 0.18, 0.18, 0, -1.1, 0, p); armer.push(p); }
+  del(SPH, hud, 0.5, 0.52, 0.5, 0, 2.95, 0, g);
+  del(SPH_L, M(0x222222), 0.07, 0.09, 0.05, -0.18, 3.0, 0.46, g); del(SPH_L, M(0x222222), 0.07, 0.09, 0.05, 0.18, 3.0, 0.46, g);
+  if (i % 2 === 0) { const sk = del(CONE, haar, 0.42, 0.8, 0.3, 0, 2.5, 0.32, g); sk.rotation.x = Math.PI; }   // skjegg
+  else { del(SPH_L, haar, 0.54, 0.4, 0.5, 0, 2.9, -0.18, g); del(BOX, haar, 0.25, 0.9, 0.25, -0.38, 2.5, -0.3, g); del(BOX, haar, 0.25, 0.9, 0.25, 0.38, 2.5, -0.3, g); }   // fletter
+  if (i % 3 !== 1) { del(SPH_L, M(0x9aa4ad, { metalness: 0.5, roughness: 0.4 }), 0.55, 0.38, 0.55, 0, 3.22, 0, g); del(BOX, M(0x9aa4ad, { metalness: 0.5, roughness: 0.4 }), 0.1, 0.45, 0.08, 0, 3.05, 0.52, g); }   // hjelm med neseskjerm
+  g.userData = { bein, armer };
+  return g;
+}
+function nyViking(hjem, kommerGaende) {
+  const i = t.vikinger.length;
+  const v = { navn: NAVN[i % NAVN.length], hjem, jobb: null, g: lagVikingModell(i), mal: new THREE.Vector3(), vent: 0, gange: 0, fremme: false, i };
+  const h = t.bygg[hjem];
+  if (kommerGaende) v.g.position.set(SPAWN.x + rnd(-2, 2), 0, SPAWN.z + rnd(-2, 2));
+  else v.g.position.set(h.x + rnd(-6, 6), 0, h.z + rnd(5, 8));
+  v.mal.set(h.x + rnd(-6, 6), 0, h.z + rnd(5, 9));
+  scene.add(v.g); t.vikinger.push(v);
+  return v;
+}
+function arbeidsplass(b) {
+  // Arbeideren står litt foran huset (brygga: ute på brygga)
+  const r = b.rot * Math.PI / 2, lx = b.type === 'brygge' ? 0 : 0, lz = b.type === 'brygge' ? 6 : HUS[b.type].r + 0.5;
+  return new THREE.Vector3(b.x + lx * Math.cos(r) + lz * Math.sin(r), 0, b.z - lx * Math.sin(r) + lz * Math.cos(r));
+}
+function giJobb(b) {
+  const v = t.vikinger.find(x => x.jobb === null); if (!v || b.arbeider !== null) return false;
+  v.jobb = t.bygg.indexOf(b); b.arbeider = t.vikinger.indexOf(v); b.tid = 0; v.fremme = false;
+  v.mal.copy(arbeidsplass(b)); v.vent = 0;
+  melding(`${v.navn} er ${HUS[b.type].yrke} nå! ${HUS[b.type].ikon}`);
+  lydJobb(); robotGjor('ThumbsUp', 1.4);
+  return true;
+}
+
+// ======================================================
+//  Lagring (automatisk, KS11)
+// ======================================================
+function lagre() {
+  try {
+    localStorage.setItem(LAGRING, JSON.stringify({
+      v: 1, tre: t.tre, stein: t.stein, mat: t.mat, samlet: t.samlet, onske: t.onske,
+      bygg: t.bygg.map(b => ({ t: b.type, x: Math.round(b.x * 10) / 10, z: Math.round(b.z * 10) / 10, r: b.rot, a: b.arbeider })),
+      vikinger: t.vikinger.map(v => ({ h: v.hjem, j: v.jobb })),
+      sp: { x: Math.round(spiller.pos.x), z: Math.round(spiller.pos.z) },
+    }));
+  } catch (e) {}
+}
+function lastInn() {
+  let s = null; try { s = JSON.parse(localStorage.getItem(LAGRING)); } catch (e) { throw e; }
+  if (!s || typeof s !== 'object' || s.v !== 1) return false;
+  const heltall = (v, min, maks, std) => { v = Math.floor(+v); return isFinite(v) ? Math.min(maks, Math.max(min, v)) : std; };
+  const tall = (v, min, maks, std) => { v = +v; return isFinite(v) ? Math.min(maks, Math.max(min, v)) : std; };
+  t.tre = heltall(s.tre, 0, 1e6, 0); t.stein = heltall(s.stein, 0, 1e6, 0); t.mat = heltall(s.mat, 0, 1e6, 0);
+  const sa = s.samlet || {}; t.samlet = { tre: heltall(sa.tre, 0, 1e9, 0), stein: heltall(sa.stein, 0, 1e9, 0), mat: heltall(sa.mat, 0, 1e9, 0) };
+  t.onske = heltall(s.onske, 0, ONSKER.length, 0);
+  for (const b of Array.isArray(s.bygg) ? s.bygg.slice(0, 200) : []) {
+    if (!b || !HUS[b.t]) continue;
+    if (HUS[b.t].unik && antall(b.t)) continue;
+    byggHus(b.t, tall(b.x, -GRENSE.x, GRENSE.x, 0), tall(b.z, GRENSE.zMin, KYST + 6, 0), heltall(b.r, 0, 3, 0), true);
+  }
+  const maksFolk = plass();
+  for (const v of Array.isArray(s.vikinger) ? s.vikinger.slice(0, maksFolk) : []) {
+    let h = heltall(v && v.h, 0, t.bygg.length - 1, -1);
+    if (h < 0 || !t.bygg[h] || t.bygg[h].type !== 'langhus') h = t.bygg.findIndex(b => b.type === 'langhus');
+    if (h < 0) break;
+    nyViking(h, false);
+  }
+  // Jobbene: sjekk at viking og arbeidsplass peker på hverandre
+  (s.vikinger || []).slice(0, t.vikinger.length).forEach((v, i) => {
+    const j = heltall(v && v.j, -1, t.bygg.length - 1, -1), b = t.bygg[j];
+    if (j >= 0 && b && HUS[b.type].jobb && b.arbeider === null) { b.arbeider = i; const vk = t.vikinger[i]; vk.jobb = j; vk.g.position.copy(arbeidsplass(b)); vk.mal.copy(vk.g.position); vk.fremme = true; }
+  });
+  if (s.sp) { spiller.pos.x = tall(s.sp.x, -GRENSE.x, GRENSE.x, 0); spiller.pos.z = tall(s.sp.z, GRENSE.zMin, GRENSE.zMaks, 10); }
+  return true;
+}
+
+// ======================================================
+//  Lyd (små lyder laget i nettleseren, KS9)
+// ======================================================
+let lyd = null, lydPa = true;
+try { lydPa = localStorage.getItem(LYD_NOKKEL) !== 'av'; } catch (e) {}
+function pip(frek, varighet = 0.12, type = 'sine', vol = 0.08, glid = 0, forsink = 0) {
+  if (!lyd || !lydPa) return; try {
+    const o = lyd.createOscillator(), g = lyd.createGain(), tt = lyd.currentTime + forsink;
+    o.type = type; o.frequency.setValueAtTime(frek, tt); if (glid) o.frequency.exponentialRampToValueAtTime(frek * glid, tt + varighet);
+    g.gain.setValueAtTime(vol, tt); g.gain.exponentialRampToValueAtTime(0.001, tt + varighet);
+    o.connect(g); g.connect(lyd.destination); o.start(tt); o.stop(tt + varighet + 0.02);
+  } catch (e) {}
+}
+const lydHogg = () => { pip(180, 0.12, 'square', 0.06, 0.5); pip(90, 0.15, 'triangle', 0.08, 0.7, 0.02); };
+const lydHakk = () => { pip(1400, 0.06, 'square', 0.04, 0.6); pip(700, 0.08, 'triangle', 0.05, 0.5, 0.03); };
+const lydPlukk = () => { pip(880, 0.08, 'sine', 0.06); pip(1175, 0.1, 'sine', 0.05, 0, 0.06); };
+const lydPlask = () => pip(320, 0.25, 'triangle', 0.08, 0.35);
+const lydBygg = () => [262, 330, 392, 523].forEach((f, i) => pip(f, 0.16, 'triangle', 0.07, 0, i * 0.09));
+const lydJobb = () => { pip(523, 0.1, 'square', 0.04); pip(784, 0.14, 'square', 0.04, 0, 0.1); };
+const lydHorn = () => { pip(147, 0.7, 'sawtooth', 0.05, 1.0); pip(220, 0.9, 'sawtooth', 0.04, 1.0, 0.45); };
+const lydNei = () => pip(200, 0.18, 'square', 0.05, 0.8);
+const lydFanfare = () => [392, 523, 659, 784, 1047].forEach((f, i) => pip(f, 0.2, 'triangle', 0.07, 0, i * 0.12));
+let visPauseLyd = null;
+function settLyd(pa) {
+  lydPa = pa; if (visPauseLyd) visPauseLyd(); $('lydKnapp').textContent = pa ? '🔊' : '🔇'; $('lydKnapp').setAttribute('aria-pressed', String(!pa));
+  try { localStorage.setItem(LYD_NOKKEL, pa ? 'pa' : 'av'); } catch (e) {}
+}
+$('lydKnapp').addEventListener('click', e => { e.stopPropagation(); settLyd(!lydPa); });
+settLyd(lydPa);
+
+// ======================================================
+//  Statuslinje, meldinger og flytende tall
+// ======================================================
+let meldingTid = 0;
+function melding(html, sek = 3) { const m = $('melding'); m.innerHTML = html; m.classList.add('vis'); meldingTid = sek; }
+function oppdaterMelding(dt) { if (meldingTid > 0) { meldingTid -= dt; if (meldingTid <= 0) $('melding').classList.remove('vis'); } }
+function bump(id) { const e = $(id); e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); }
+const prisTekst = p => Object.keys(p).map(k => RES[k].ikon + p[k]).join(' ');
+function oppdaterHud() {
+  $('tre').textContent = t.tre; $('stein').textContent = t.stein; $('mat').textContent = t.mat;
+  $('folk').textContent = t.vikinger.length + '/' + plass();
+  const o = ONSKER[t.onske];
+  $('onskeTekst').textContent = o ? o.ik + ' ' + o.tekst : '🎉 Bygg videre som du vil!';
+}
+const flytere = [];
+function flyt(tekst, pos) { const s = skilt(tekst, 1.4); s.position.copy(pos); scene.add(s); flytere.push({ s, t: 0 }); }
+function fa(res, n, pos) {
+  t[res] += n; t.samlet[res] += n; oppdaterHud();
+  bump(res === 'tre' ? 'pTre' : res === 'stein' ? 'pStein' : 'pMat');
+  if (pos) flyt('+' + n + ' ' + RES[res].ikon, pos);
+}
+const partikler = [];
+function sprut(pos, farge, n) {
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.Mesh(BOX, M(farge)); m.scale.setScalar(rnd(0.15, 0.3)); m.position.copy(pos); scene.add(m);
+    partikler.push({ m, v: new THREE.Vector3(rnd(-4, 4), rnd(4, 8), rnd(-4, 4)), t: 0, liv: rnd(0.5, 0.9) });
+  }
+}
+
+// ======================================================
+//  Handlinger: hogge, hakke, plukke, fiske og gi jobb
+// ======================================================
+let handling = null, handlingTekst = '', nesteSlag = 0, holder = false;
+function nesteNode() {
+  let best = null, bd = 1e9;
+  for (const n of noder) {
+    if (n.igjen <= 0) continue;
+    const d = Math.hypot(n.x - spiller.pos.x, n.z - spiller.pos.z) - n.r;
+    const maks = n.type === 'fisk' ? 5.5 : INNST.rekkevidde;
+    if (d < maks && d < bd) { bd = d; best = n; }
+  }
+  return best;
+}
+function finnHandling() {
+  const ledigViking = t.vikinger.some(v => v.jobb === null);
+  if (ledigViking) for (const b of t.bygg) {
+    if (!HUS[b.type].jobb || b.arbeider !== null) continue;
+    const p = b.type === 'brygge' ? arbeidsplass(b) : b;
+    if (Math.hypot(p.x - spiller.pos.x, p.z - spiller.pos.z) < HUS[b.type].r + 4) return { tekst: '👷 Gi jobb', gjor: () => giJobb(b) };
+  }
+  const n = nesteNode(); if (!n) return null;
+  const T = { tre: '🪓 Hogg', stein: '⛏️ Hakk', baer: '🍓 Plukk', fisk: '🎣 Fisk' };
+  return { tekst: T[n.type], node: n, gjor: () => hent(n) };
+}
+function hent(n) {
+  if (n.igjen <= 0) return;
+  n.igjen--; n.rist = 0.25; n.timer = 0;
+  spiller.retning = Math.atan2(n.x - spiller.pos.x, n.z - spiller.pos.z);
+  const topp = new THREE.Vector3(n.x, n.type === 'tre' ? 5 : 3, n.z);
+  if (n.type === 'tre') {
+    fa('tre', 1, topp); lydHogg(); robotGjor('Punch', 0.5); sprut(new THREE.Vector3(n.x, 1.4, n.z), 0xc9a26b, 4);
+    if (n.igjen <= 0) { n.krone.visible = false; n.stamme.scale.y = 0.5 * n.s; n.stamme.position.y = 0.25 * n.s; sprut(new THREE.Vector3(n.x, 3, n.z), 0x3a8f45, 10); }
+  } else if (n.type === 'stein') {
+    fa('stein', 1, topp); lydHakk(); robotGjor('Punch', 0.5); sprut(new THREE.Vector3(n.x, 1.2, n.z), 0x9aa1a9, 5);
+    n.blokk.scale.setScalar(0.45 + 0.55 * n.igjen / n.maks); n.blokk.visible = n.igjen > 0;
+  } else if (n.type === 'baer') {
+    fa('mat', 1, topp); lydPlukk(); robotGjor('Yes', 0.7);
+    n.baer.forEach((b, i) => b.visible = i < Math.ceil(8 * n.igjen / n.maks));
+  } else if (n.type === 'fisk') {
+    fa('mat', 1, topp); lydPlask(); robotGjor('Yes', 0.7); sprut(new THREE.Vector3(n.x, 0.4, n.z), 0x8fd3ff, 8);
+    if (n.igjen <= 0) n.g.visible = false;
+  }
+}
+function gjorHandling() {
+  if (spillTilstand !== 'spill' || modalApen() || bygg.aktiv) return;
+  const na = performance.now(); if (na < nesteSlag) return;   // tiden følger klokka, også når bildefrekvensen er lav
+  const h = finnHandling(); if (!h) return;
+  h.gjor(); nesteSlag = na + INNST.slag * 1000;
+}
+function oppdaterHandling() {
+  handling = spillTilstand === 'spill' && !modalApen() && !bygg.aktiv ? finnHandling() : null;
+  const el = $('handling');
+  const tekst = handling ? handling.tekst + '<span class="tast">(E)</span>' : '';
+  if (tekst !== handlingTekst) { handlingTekst = tekst; el.innerHTML = tekst; el.style.display = handling ? 'block' : 'none'; }
+}
+// Hold knappen inne for å fortsette å hogge
+$('handling').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); holder = true; gjorHandling(); });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => $('handling').addEventListener(ev, () => { holder = false; }));
+$('handling').addEventListener('click', e => { if (e.detail === 0) gjorHandling(); });   // Enter eller mellomrom når knappen har fokus
+
+// ======================================================
+//  Byggemodus
+// ======================================================
+const bygg = { aktiv: false, valgt: null, rot: 0, senter: new THREE.Vector3(), mal: new THREE.Vector3(), gyldig: false, grunn: '', spokelse: null, sistInn: 'tast' };
+const spokMat = new THREE.MeshBasicMaterial({ color: 0x5bd16a, transparent: true, opacity: 0.55, depthWrite: false });
+const spokRing = new THREE.Mesh(new THREE.RingGeometry(0.92, 1, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false }));
+spokRing.rotation.x = -Math.PI / 2; spokRing.position.y = 0.1; spokRing.visible = false; scene.add(spokRing);
+// Felt som viser hvor fiskebrygga kan stå
+const kystFelt = new THREE.Mesh(new THREE.PlaneGeometry(2 * GRENSE.x, 7), new THREE.MeshBasicMaterial({ color: 0x9fffb0, transparent: true, opacity: 0.25, depthWrite: false }));
+kystFelt.rotation.x = -Math.PI / 2; kystFelt.position.set(0, 0.12, KYST - 0.5); kystFelt.visible = false; scene.add(kystFelt);
+
+function laast(type) {
+  if (HUS[type].unik && antall(type)) return 'Du har allerede bygd den';
+  if (type === 'hall' && t.vikinger.length < 6) return '🔒 Trenger 6 vikinger';
+  if (type !== 'langhus' && type !== 'hall' && antall('langhus') < 1) return '🔒 Bygg et langhus først';
+  return '';
+}
+function mangler(type) { const p = HUS[type].pris, m = {}; for (const k in p) if (t[k] < p[k]) m[k] = p[k] - t[k]; return m; }
+function byggListe() {
+  $('byggListe').innerHTML = REKKE.map((type, i) => {
+    const h = HUS[type], l = laast(type), m = Object.keys(mangler(type)).length > 0;
+    return `<button class="hus${l ? ' last' : m ? ' mangler' : ''}" type="button" data-type="${type}" aria-pressed="${bygg.valgt === type}">` +
+      `<span class="ik" aria-hidden="true">${h.ikon}</span>${h.navn}<span class="tast">${i + 1}</span><small>${l || prisTekst(h.pris)}</small></button>`;
+  }).join('');
+}
+$('byggListe').addEventListener('click', e => { const b = e.target.closest('.hus'); if (b) velgHus(b.dataset.type); });
+function velgHus(type) {
+  const l = laast(type);
+  if (l) { melding(l.replace('🔒 ', '🔒 ') + '.'); lydNei(); return; }
+  const m = mangler(type);
+  if (Object.keys(m).length) { melding(`Du trenger mer: ${prisTekst(m)}`, 3.5); lydNei(); return; }
+  if (bygg.valgt === type) { velgBort(); return; }
+  bygg.valgt = type; bygg.rot = 0;
+  if (bygg.spokelse) scene.remove(bygg.spokelse);
+  bygg.spokelse = lagHusModell(type); bygg.spokelse.traverse(o => { if (o.isMesh) { o.material = spokMat; o.castShadow = false; o.receiveShadow = false; } }); scene.add(bygg.spokelse);
+  spokRing.scale.setScalar(HUS[type].r); spokRing.visible = true;
+  kystFelt.visible = !!HUS[type].vann;
+  if (bygg.sistInn !== 'mus') bygg.mal.copy(bygg.senter);
+  byggListe(); oppdaterByggHjelp();
+}
+function velgBort() {
+  bygg.valgt = null; if (bygg.spokelse) { scene.remove(bygg.spokelse); bygg.spokelse = null; }
+  spokRing.visible = false; kystFelt.visible = false; if (snuKnapp) snuKnapp.hidden = true; byggListe(); oppdaterByggHjelp();
+}
+function sjekkPlass(type, x, z) {
+  const h = HUS[type], r = h.r;
+  if (Math.abs(x) > GRENSE.x - r * 0.5 || z < GRENSE.zMin + r * 0.5) return 'For nær fjellet';
+  if (h.vann) { if (z < KYST - 4 || z > KYST + 3) return 'Fiskebrygga må stå ved fjorden'; }
+  else if (z > KYST - r * 0.6 - 1) return 'Huset kan ikke stå i vannet';
+  for (const b of t.bygg) { const rr = b.type === 'brygge' && h.vann ? 3 : 1; if (Math.hypot(b.x - x, b.z - z) < HUS[b.type].r + r - rr) return 'Det står et hus der'; }
+  if (Math.hypot(SPAWN.x - x, SPAWN.z - z) < r + 3) return 'Her kommer nye vikinger gående';
+  return '';
+}
+function oppdaterByggHjelp() {
+  const el = $('byggHjelp'); if (!bygg.aktiv) { el.hidden = true; return; }
+  el.hidden = false; el.style.bottom = `calc(${$('byggPanel').offsetHeight + 16}px + env(safe-area-inset-bottom))`;
+  if (!bygg.valgt) el.textContent = touchNa() ? 'Velg et hus nederst. Dra for å flytte kartet.' : 'Velg et hus nederst (1–5). Piltastene flytter kartet.';
+  else if (bygg.grunn) el.textContent = '❌ ' + bygg.grunn;
+  else el.textContent = touchNa() ? 'Trykk der huset skal stå, så ✔ Bygg her. ↻ snur huset.' : bygg.sistInn === 'mus' ? 'Klikk der huset skal stå. R snur huset.' : 'E eller Enter bygger. R snur huset.';
+  $('byggHer').hidden = !bygg.valgt || !touchNa();
+  $('byggHer').disabled = !bygg.gyldig;
+}
+let snuKnapp = null;
+{ snuKnapp = document.createElement('button'); snuKnapp.className = 'pk ferdig'; snuKnapp.type = 'button'; snuKnapp.id = 'byggSnu'; snuKnapp.textContent = '↻ Snu'; snuKnapp.hidden = true; $('byggHer').after(snuKnapp);
+  snuKnapp.addEventListener('click', () => snu()); }
+function snu() { if (!bygg.valgt || HUS[bygg.valgt].vann) return;   // fiskebrygga peker alltid ut i fjorden
+  bygg.rot = (bygg.rot + 1) % 4; }
+function apneBygg() {
+  if (spillTilstand !== 'spill' || modalApen() || bygg.aktiv) return;
+  bygg.aktiv = true; bygg.senter.copy(spiller.pos); bygg.mal.copy(spiller.pos); slippAlt(); for (const k in taster) taster[k] = false;
+  $('handlinger').hidden = true; $('byggPanel').hidden = false; $('hjelp').style.opacity = 0;
+  byggListe(); oppdaterByggHjelp();
+  setTimeout(() => { const f = $('byggListe').querySelector('.hus:not(.last):not(.mangler)') || $('byggFerdig'); try { f.focus({ preventScroll: true }); } catch (e) {} }, 30);
+}
+function lukkBygg() {
+  if (!bygg.aktiv) return;
+  velgBort(); bygg.aktiv = false; $('byggPanel').hidden = true; $('handlinger').hidden = false; oppdaterByggHjelp(); slippAlt();
+  try { $('byggKnapp').focus({ preventScroll: true }); } catch (e) {}
+}
+$('byggKnapp').addEventListener('click', e => { e.stopPropagation(); apneBygg(); });
+$('byggFerdig').addEventListener('click', () => lukkBygg());
+$('byggHer').addEventListener('click', () => plasser());
+function plasser() {
+  if (!bygg.aktiv || !bygg.valgt) return;
+  const type = bygg.valgt, x = bygg.mal.x, z = bygg.mal.z;
+  const grunn = sjekkPlass(type, x, z); if (grunn) { melding('❌ ' + grunn); lydNei(); return; }
+  const m = mangler(type); if (Object.keys(m).length) { melding(`Du trenger mer: ${prisTekst(m)}`); lydNei(); velgBort(); return; }
+  for (const k in HUS[type].pris) t[k] -= HUS[type].pris[k];
+  const b = byggHus(type, x, z, bygg.rot, false);
+  sprut(new THREE.Vector3(x, 2, z), 0xc9a66b, 16); lydBygg();
+  // Roboten skal ikke stå fast inni huset
+  if (Math.hypot(spiller.pos.x - x, spiller.pos.z - z) < HUS[type].r + 1) { const v = Math.atan2(spiller.pos.x - x, spiller.pos.z - z); spiller.pos.x = x + Math.sin(v) * (HUS[type].r + 1.5); spiller.pos.z = z + Math.cos(v) * (HUS[type].r + 1.5); klemSpiller(); }
+  for (const v of t.vikinger) if (Math.hypot(v.g.position.x - x, v.g.position.z - z) < HUS[type].r) v.g.position.x += HUS[type].r + 2;
+  if (type === 'langhus') {
+    const hjem = t.bygg.indexOf(b), nye = [];
+    for (let i = 0; i < HUS.langhus.plass; i++) nye.push(nyViking(hjem, true));
+    lydHorn();
+    jubelKo.push({ ik: '👥', tittel: 'Nye vikinger flytter inn!', tekst: `${nye.map(v => v.navn).join(' og ')} kommer gående til landsbyen din. Gi dem en jobb, så hjelper de deg å samle.` });
+  } else melding(`${HUS[type].ikon} ${HUS[type].navn} er bygd!` + (HUS[type].jobb ? ' Gå bort og gi en viking jobb.' : ''), 4);
+  velgBort(); oppdaterHud(); lagre();
+}
+
+// ======================================================
+//  Styring
+// ======================================================
+const taster = {};
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (k === 'escape') {
+    // KS7: Esc lukker det øverste som er åpent
+    for (const id of ['jubel', 'onskeKort']) if ($(id).classList.contains('vis')) { e.preventDefault(); e.stopImmediatePropagation(); lukkLag(id); return; }
+    if (bygg.aktiv && !modalApen()) { e.preventDefault(); e.stopImmediatePropagation(); if (bygg.valgt) velgBort(); else lukkBygg(); return; }
+  }
+  if (k === 'l' && !e.repeat && $('evnPause') && $('evnPause').classList.contains('vis')) { settLyd(!lydPa); return; }   // L virker også i pausen
+  if (modalApen()) { if (k === 'enter' && $('jubel').classList.contains('vis') && document.activeElement !== $('jubelOk')) { e.preventDefault(); lukkLag('jubel'); } return; }
+  if (spillTilstand !== 'spill') return;
+  if (k === 'l' && !e.repeat) { settLyd(!lydPa); return; }
+  if (k === 'b' && !e.repeat) { e.preventDefault(); if (bygg.aktiv) lukkBygg(); else apneBygg(); return; }
+  if (bygg.aktiv) {
+    if (k === 'r' && !e.repeat) { snu(); return; }
+    if (/^[1-5]$/.test(k) && !e.repeat) { velgHus(REKKE[+k - 1]); return; }
+    const pa = document.activeElement;
+    if ((k === 'e' || k === 'enter' || k === ' ') && !(pa && pa.closest && pa.closest('#byggPanel'))) { e.preventDefault(); if (!e.repeat) { bygg.sistInn = 'tast'; plasser(); } return; }
+  }
+  const pa = document.activeElement, paKnapp = pa && pa.tagName === 'BUTTON' && pa !== $('handling');
+  if ((k === 'e' || (k === ' ' && !paKnapp)) && !bygg.aktiv) { e.preventDefault(); if (!e.repeat) { holder = true; gjorHandling(); } return; }
+  if (k.startsWith('arrow') || 'wasd'.includes(k)) { taster[k] = true; if (bygg.aktiv) bygg.sistInn = 'tast'; if (k.startsWith('arrow')) e.preventDefault(); }
+}, true);
+addEventListener('keyup', e => { const k = e.key.toLowerCase(); taster[k] = false; if (k === 'e' || k === ' ') holder = false; });
+addEventListener('blur', () => { for (const k in taster) taster[k] = false; holder = false; slippAlt(); });
+addEventListener('wheel', e => {
+  if (spillTilstand !== 'spill' || modalApen()) return;
+  const f = e.deltaY > 0 ? 1.08 : 0.92;
+  if (bygg.aktiv) zoomBygg = Math.min(1.5, Math.max(0.55, zoomBygg * f)); else zoom = Math.min(1.6, Math.max(0.6, zoom * f));
+}, { passive: true });
+
+const joy = { aktiv: false, id: null, sx: 0, sy: 0, dx: 0, dy: 0 };
+const joyEl = $('joy'), knott = joyEl.querySelector('i');
+function slippAlt() { joy.aktiv = false; joy.id = null; joy.dx = joy.dy = 0; joyEl.style.display = 'none'; dra.id = null; }
+// Byggemodus: dra for å flytte kartet, trykk/klikk for å velge plass
+const dra = { id: null, sx: 0, sy: 0, lx: 0, ly: 0, flyttet: false, type: '' };
+const raycaster = new THREE.Raycaster(), bakkePlan = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), treff = new THREE.Vector3();
+function bakkePunkt(cx, cy) {
+  const r = canvas.getBoundingClientRect();
+  raycaster.setFromCamera({ x: (cx - r.left) / r.width * 2 - 1, y: -(cy - r.top) / r.height * 2 + 1 }, camera);
+  return raycaster.ray.intersectPlane(bakkePlan, treff) ? treff : null;
+}
+canvas.addEventListener('pointerdown', e => {
+  if (spillTilstand !== 'spill' || modalApen()) return;
+  try { if (lyd && lyd.state === 'suspended') lyd.resume(); } catch (er) {}
+  if (bygg.aktiv) {
+    if (dra.id !== null) return;
+    dra.id = e.pointerId; dra.sx = dra.lx = e.clientX; dra.sy = dra.ly = e.clientY; dra.flyttet = false; dra.type = e.pointerType;
+    canvas.setPointerCapture(e.pointerId); e.preventDefault(); return;
+  }
+  if (joy.aktiv) return;
+  joy.aktiv = true; joy.id = e.pointerId; joy.sx = e.clientX; joy.sy = e.clientY; joy.dx = joy.dy = 0;
+  joyEl.style.left = e.clientX + 'px'; joyEl.style.top = e.clientY + 'px'; joyEl.style.display = 'block'; knott.style.transform = '';
+  canvas.setPointerCapture(e.pointerId); e.preventDefault();
+});
+canvas.addEventListener('pointermove', e => {
+  if (bygg.aktiv) {
+    if (e.pointerType === 'mouse' && dra.id === null) { bygg.sistInn = 'mus'; const p = bakkePunkt(e.clientX, e.clientY); if (p) bygg.mal.copy(p); return; }
+    if (e.pointerId !== dra.id) return;
+    if (Math.hypot(e.clientX - dra.sx, e.clientY - dra.sy) > 10) dra.flyttet = true;
+    if (dra.flyttet) {
+      const a = bakkePunkt(dra.lx, dra.ly), ax = a ? a.x : 0, az = a ? a.z : 0, b = bakkePunkt(e.clientX, e.clientY);
+      if (a && b) { bygg.senter.x -= b.x - ax; bygg.senter.z -= b.z - az; klemSenter(); }
+      if (e.pointerType === 'mouse') { const p = bakkePunkt(e.clientX, e.clientY); if (p) bygg.mal.copy(p); }
+    }
+    dra.lx = e.clientX; dra.ly = e.clientY; return;
+  }
+  if (!joy.aktiv || e.pointerId !== joy.id) return;
+  let dx = e.clientX - joy.sx, dy = e.clientY - joy.sy; const l = Math.hypot(dx, dy), R = 55;
+  if (l > R) { dx *= R / l; dy *= R / l; }
+  joy.dx = l < 10 ? 0 : dx / R; joy.dy = l < 10 ? 0 : dy / R;
+  knott.style.transform = `translate(${dx}px,${dy}px)`;
+});
+const slipp = e => {
+  if (dra.id !== null && e.pointerId === dra.id) {
+    const var_ = dra; dra.id = null;
+    if (!var_.flyttet && e.type === 'pointerup' && bygg.aktiv && bygg.valgt) {
+      const p = bakkePunkt(e.clientX, e.clientY);
+      if (p) { bygg.mal.copy(p); if (var_.type === 'mouse') { bygg.sistInn = 'mus'; snapp(); plasser(); } else bygg.sistInn = 'touch'; }
+    }
+    return;
+  }
+  if (e.pointerId === joy.id) slippAlt();
+};
+canvas.addEventListener('pointerup', slipp); canvas.addEventListener('pointercancel', slipp);
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('gesturestart', e => { if (spillTilstand === 'spill') e.preventDefault(); });
+document.addEventListener('touchmove', e => { if (spillTilstand === 'spill' && e.touches.length > 1 && !modalApen()) e.preventDefault(); }, { passive: false });
+
+// ======================================================
+//  Lag (kort som legger seg over spillet)
+// ======================================================
+let spillTilstand = 'start';
+const LAG = ['start', 'onskeKort', 'jubel'];
+const evnApen = () => ['evnPause', 'evnKart', 'evnNullstillBoks'].some(id => { const e = $(id); return e && e.classList.contains('vis'); }) || (() => { const e = $('evnSporsmal'); return !!e && e.style.display === 'grid'; })();
+const modalApen = () => LAG.some(id => $(id).classList.contains('vis')) || evnApen() || $('feil').classList.contains('vis');
+let forrigeFokus = null;
+function apneLag(id) {
+  forrigeFokus = document.activeElement; slippAlt(); holder = false; for (const k in taster) taster[k] = false;
+  $(id).classList.add('vis');
+  const b = $(id).querySelector('button.stor'); if (b) setTimeout(() => b.focus({ preventScroll: true }), 50);
+}
+function lukkLag(id) { $(id).classList.remove('vis'); sisteTid = performance.now(); try { if (forrigeFokus && forrigeFokus.focus) forrigeFokus.focus({ preventScroll: true }); } catch (e) {} }
+// KS12: fokus blir i det åpne kortet
+addEventListener('keydown', e => {
+  if (e.key !== 'Tab') return;
+  const apent = LAG.map(id => $(id)).concat([$('feil')]).find(el => el.classList.contains('vis')); if (!apent) return;
+  const f = [...apent.querySelectorAll('button:not(:disabled), a[href]:not([hidden])')].filter(x => x.offsetParent !== null); if (!f.length) return;
+  const i = f.indexOf(document.activeElement);
+  if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); }
+  else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+});
+
+// Ønskelista
+function byggOnsker() {
+  $('onskeListe').innerHTML = ONSKER.map((o, i) => {
+    const kl = i < t.onske ? 'ferdig' : i === t.onske ? 'na' : 'senere';
+    return `<div class="onske ${kl}"><span class="ik" aria-hidden="true">${i < t.onske ? '✅' : o.ik}</span><div>${o.tekst}${i === t.onske ? `<small>${o.hint}</small>` : ''}${i < t.onske ? '<span class="vh"> (ferdig)</span>' : ''}</div></div>`;
+  }).join('') + (t.onske >= ONSKER.length ? '<div class="onske na"><span class="ik">🎉</span><div>Alle ønskene er oppfylt!<small>Bygg videre som du vil. Snart kommer vikingskip og nye øyer ⛵</small></div></div>' : '');
+}
+$('onskeKnapp').addEventListener('click', e => { e.stopPropagation(); if (spillTilstand !== 'spill' || modalApen()) return; byggOnsker(); apneLag('onskeKort'); });
+$('lukkOnske').addEventListener('click', () => lukkLag('onskeKort'));
+const jubelKo = [];
+function visJubel() {
+  if (!jubelKo.length || modalApen() || spillTilstand !== 'spill') return;
+  const j = jubelKo.shift();
+  $('jubelIkon').textContent = j.ik; $('jubelTittel').textContent = j.tittel; $('jubelTekst').textContent = j.tekst;
+  apneLag('jubel'); if (j.fanfare) lydFanfare();
+}
+$('jubelOk').addEventListener('click', () => lukkLag('jubel'));
+function sjekkOnsker() {
+  let endret = false;
+  while (t.onske < ONSKER.length && ONSKER[t.onske].ok()) {
+    const ferdig = ONSKER[t.onske]; t.onske++; endret = true;
+    const neste = ONSKER[t.onske];
+    if (t.onske >= ONSKER.length) jubelKo.push({ ik: '👑', tittel: 'Du er en ekte vikinghøvding!', tekst: 'Alle ønskene er oppfylt, og landsbyen har en høvdinghall. Bygg videre som du vil. Snart kan du bygge vikingskip og seile til nye øyer! ⛵', fanfare: true });
+    else jubelKo.push({ ik: '✅', tittel: 'Ønsket er oppfylt!', tekst: `${ferdig.ik} ${ferdig.tekst}: ferdig! Neste ønske: ${neste.ik} ${neste.tekst}. ${neste.hint}`, fanfare: true });
+    robotGjor(t.onske >= ONSKER.length ? 'Dance' : 'ThumbsUp', 1.6);
+  }
+  if (endret) { oppdaterHud(); bump('onskeKnapp'); lagre(); }
+}
+
+// Kartet: nord er opp, som på skjermen
+const kartLerret = document.createElement('canvas'); kartLerret.width = 600; kartLerret.height = 480;
+const KART = { x0: -100, x1: 100, z0: -100, z1: 60 };
+function tegnKart() {
+  const cv = kartLerret, x = cv.getContext('2d'), W = cv.width, H = cv.height;
+  const px = wx => (wx - KART.x0) / (KART.x1 - KART.x0) * W, py = wz => (wz - KART.z0) / (KART.z1 - KART.z0) * H, k = W / (KART.x1 - KART.x0);
+  x.clearRect(0, 0, W, H);
+  x.fillStyle = '#86c463'; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#2f86c6'; x.fillRect(0, py(KYST), W, H - py(KYST));
+  x.fillStyle = '#e8d39a'; x.fillRect(0, py(KYST - 4), W, 4 * k);
+  x.fillStyle = '#c9a66b'; x.fillRect(px(-93), py(-6.5), 81 * k, 5 * k);
+  for (const f of fjell) { x.fillStyle = '#7d8590'; x.beginPath(); x.arc(px(f.x), py(f.z), f.r * k * 0.9, 0, 6.283); x.fill(); x.fillStyle = '#f4f7fb'; x.beginPath(); x.arc(px(f.x), py(f.z), f.r * k * 0.3, 0, 6.283); x.fill(); }
+  for (const n of noder) {
+    if (n.type === 'fisk') { if (n.igjen > 0) { x.font = '18px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('🐟', px(n.x), py(n.z)); } continue; }
+    x.fillStyle = n.type === 'tre' ? (n.igjen > 0 ? '#2a6e35' : '#8a6a4a') : n.type === 'stein' ? (n.igjen > 0 ? '#5f6670' : '#a0a6ad') : (n.igjen > 0 ? '#e0304a' : '#4ea347');
+    x.beginPath(); x.arc(px(n.x), py(n.z), Math.max(3, n.r * k * (n.type === 'tre' ? 1.8 : 1)), 0, 6.283); x.fill();
+  }
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  for (const b of t.bygg) { x.fillStyle = 'rgba(90,58,32,.85)'; x.beginPath(); x.arc(px(b.x), py(b.z), HUS[b.type].r * k, 0, 6.283); x.fill(); x.font = '22px sans-serif'; x.fillText(HUS[b.type].ikon, px(b.x), py(b.z)); }
+  for (const v of t.vikinger) { x.fillStyle = '#ffffff'; x.strokeStyle = '#2a1d12'; x.lineWidth = 2; x.beginPath(); x.arc(px(v.g.position.x), py(v.g.position.z), 4, 0, 6.283); x.fill(); x.stroke(); }
+  x.save(); x.translate(px(spiller.pos.x), py(spiller.pos.z)); x.rotate(-spiller.retning + Math.PI);
+  x.fillStyle = '#ffc93c'; x.strokeStyle = '#2a1d12'; x.lineWidth = 3;
+  x.beginPath(); x.moveTo(0, -18); x.lineTo(12, 12); x.lineTo(0, 6); x.lineTo(-12, 12); x.closePath(); x.fill(); x.stroke();
+  x.restore();
+  x.font = '800 16px Nunito, sans-serif'; x.fillStyle = 'rgba(255,255,255,.9)'; x.fillText('Fjorden', W / 2, py(KYST + 12)); x.fillText('Skogen', px(-55), py(-60)); x.fillText('Steinene', px(56), py(-60));
+  const cx = W - 44, cy = 40; x.fillStyle = 'rgba(42,29,18,.85)'; x.beginPath(); x.arc(cx, cy, 30, 0, 6.283); x.fill();
+  x.fillStyle = '#ff5f5f'; x.beginPath(); x.moveTo(cx, cy - 20); x.lineTo(cx + 6, cy); x.lineTo(cx - 6, cy); x.fill();
+  x.fillStyle = '#fff'; x.beginPath(); x.moveTo(cx, cy + 20); x.lineTo(cx + 6, cy); x.lineTo(cx - 6, cy); x.fill();
+  x.font = '800 14px Nunito, sans-serif'; x.fillText('N', cx, cy - 25);
+}
+
+$('startBtn').addEventListener('click', () => {
+  try { lyd = lyd || new (window.AudioContext || window.webkitAudioContext)(); lyd.resume && lyd.resume(); } catch (e) {}
+  lukkLag('start'); $('hud').hidden = false; $('hoyre').hidden = false; $('handlinger').hidden = false; spillTilstand = 'spill'; sisteTid = performance.now();
+  try { document.dispatchEvent(new Event('evn-start')); } catch (e) {}
+  $('hjelp').innerHTML = touchNa() ? 'Dra fingeren for å gå 👆' : 'Gå med piltastene eller WASD';
+  setTimeout(() => $('hjelp').style.opacity = 0, 15000);
+  if (!t.bygg.length && t.onske === 0) { melding('Velkommen, robothøvding! 👑 Gå bort til et tre og hogg 5 tre.', 6); robotGjor('Wave', 2); }
+  else melding('Velkommen tilbake til landsbyen! ⚔️', 3);
+});
+
+// ======================================================
+//  Oppdatering hvert bilde
+// ======================================================
+let sisteTid = performance.now(), tid = 0, lagreTid = 0;
+const tmp = new THREE.Vector3();
+function kollisjon(p, r) {
+  for (const n of noder) {
+    if (n.type === 'fisk' || (n.type === 'tre' && n.igjen <= 0) || (n.type === 'stein' && n.igjen <= 0)) continue;
+    const ax = p.x - n.x, az = p.z - n.z, d = Math.hypot(ax, az), min = n.r + r;
+    if (d < min && d > 0.0001) { p.x = n.x + ax / d * min; p.z = n.z + az / d * min; }
+  }
+  for (const b of t.bygg) {
+    const rr = HUS[b.type].r * (b.type === 'brygge' ? 0.5 : 0.75);
+    const ax = p.x - b.x, az = p.z - b.z, d = Math.hypot(ax, az), min = rr + r;
+    if (d < min && d > 0.0001) { p.x = b.x + ax / d * min; p.z = b.z + az / d * min; }
+  }
+}
+function klemSpiller() { const p = spiller.pos; p.x = Math.max(-GRENSE.x, Math.min(GRENSE.x, p.x)); p.z = Math.max(GRENSE.zMin, Math.min(GRENSE.zMaks, p.z)); }
+function klemSenter() { const p = bygg.senter; p.x = Math.max(-GRENSE.x, Math.min(GRENSE.x, p.x)); p.z = Math.max(GRENSE.zMin, Math.min(KYST + 4, p.z)); }
+function retningInn() {
+  let x = 0, z = 0;
+  if (taster['arrowleft'] || taster['a']) x -= 1; if (taster['arrowright'] || taster['d']) x += 1;
+  if (taster['arrowup'] || taster['w']) z -= 1; if (taster['arrowdown'] || taster['s']) z += 1;
+  if (joy.aktiv) { x += joy.dx; z += joy.dy; }
+  const l = Math.hypot(x, z); if (l > 1) { x /= l; z /= l; }
+  return { x, z, l };
+}
+function oppdaterSpiller(dt) {
+  const { x, z, l } = bygg.aktiv ? { x: 0, z: 0, l: 0 } : retningInn();
+  const mal = Math.min(1, l) * INNST.fart; spiller.fart += (mal - spiller.fart) * Math.min(1, dt * 10);
+  if (l > 0.05) { const r = Math.atan2(x, z); let diff = r - spiller.retning; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); spiller.retning += diff * Math.min(1, dt * 12); }
+  if (spiller.fart > 0.1) {
+    const s = spiller.fart * dt * (l > 0.05 ? 1 : 0.6);
+    spiller.pos.x += Math.sin(spiller.retning) * s; spiller.pos.z += Math.cos(spiller.retning) * s;
+    kollisjon(spiller.pos, 0.9); klemSpiller();
+  }
+  helt.position.copy(spiller.pos); helt.rotation.y = spiller.retning;
+  reserve.position.y = Math.abs(Math.sin(tid * 10)) * 0.2 * Math.min(1, spiller.fart / INNST.fart);
+  ring.position.set(spiller.pos.x, 0.06, spiller.pos.z);
+  if (holder) gjorHandling();
+}
+function snapp() { bygg.mal.x = Math.round(bygg.mal.x); bygg.mal.z = Math.round(bygg.mal.z); }
+function oppdaterBygg(dt) {
+  const { x, z, l } = retningInn();
+  if (l > 0.05) { bygg.senter.x += x * 40 * zoomBygg * dt; bygg.senter.z += z * 40 * zoomBygg * dt; klemSenter(); }
+  if (bygg.sistInn === 'tast') bygg.mal.copy(bygg.senter);
+  if (!bygg.valgt || !bygg.spokelse) return;
+  snapp();
+  const grunn = sjekkPlass(bygg.valgt, bygg.mal.x, bygg.mal.z);
+  if (grunn !== bygg.grunn || bygg.gyldig !== !grunn) { bygg.grunn = grunn; bygg.gyldig = !grunn; oppdaterByggHjelp(); }
+  spokMat.color.set(bygg.gyldig ? 0x5bd16a : 0xff5a5a);
+  bygg.spokelse.position.set(bygg.mal.x, 0.05, bygg.mal.z); bygg.spokelse.rotation.y = bygg.rot * Math.PI / 2;
+  spokRing.position.set(bygg.mal.x, 0.1, bygg.mal.z);
+  snuKnapp.hidden = !touchNa() || !!HUS[bygg.valgt].vann;
+}
+function oppdaterRessurser(dt) {
+  for (const n of noder) {
+    if (n.rist > 0) { n.rist -= dt; const a = Math.sin(n.rist * 60) * n.rist * 0.6; n.g.rotation.z = a; } else if (n.g.rotation.z) n.g.rotation.z = 0;
+    if (n.igjen < n.maks) {
+      n.timer += dt;
+      const vokse = { tre: INNST.treVokser, stein: INNST.steinVokser, baer: INNST.baerVokser, fisk: INNST.fiskVokser }[n.type];
+      if (n.timer >= vokse) {
+        n.igjen = n.maks; n.timer = 0;
+        if (n.type === 'tre') { n.krone.visible = true; n.stamme.scale.y = 2.4 * n.s; n.stamme.position.y = 1.2 * n.s; n.vokse = 1; }
+        if (n.type === 'stein') { n.blokk.visible = true; n.blokk.scale.setScalar(1); }
+        if (n.type === 'baer') n.baer.forEach(b => b.visible = true);
+        if (n.type === 'fisk') n.g.visible = true;
+      }
+    }
+    if (n.vokse > 0) { n.vokse -= dt * 1.5; const s = 1 - Math.max(0, n.vokse); n.krone.scale.setScalar(Math.max(0.05, s)); }
+    if (n.type === 'fisk' && n.g.visible) {
+      n.ringer.forEach((m, i) => { const f = ((tid * 0.5 + i / 3) % 1); m.scale.setScalar(0.6 + f * 1.6); m.material.opacity = 0.6 * (1 - f); });
+      n.hopp -= dt;
+      if (n.hopp < 0) { const f = -n.hopp / 0.7; n.fisk.visible = f < 1; n.fisk.position.set(-1 + f * 2, Math.sin(f * Math.PI) * 1.4, 0); n.fisk.rotation.z = (0.5 - f) * 2; if (f >= 1) n.hopp = rnd(2, 5); }
+    }
+  }
+}
+function oppdaterHus(dt) {
+  for (const b of t.bygg) {
+    if (b.vokse > 0) { b.vokse = Math.max(0, b.vokse - dt); const s = 1 - b.vokse / 0.6; b.g.scale.set(1, Math.max(0.05, s * (1 + Math.sin(s * Math.PI) * 0.12)), 1); }
+    const j = HUS[b.type].jobb; if (!j || b.arbeider === null) continue;
+    const v = t.vikinger[b.arbeider]; if (!v || !v.fremme) continue;
+    b.tid += dt;
+    if (b.tid >= INNST.jobbTid[j]) { b.tid = 0; fa(j, 1, new THREE.Vector3(v.g.position.x, 4.5, v.g.position.z)); }
+  }
+}
+function oppdaterVikinger(dt) {
+  for (const v of t.vikinger) {
+    const g = v.g, u = g.userData;
+    tmp.set(v.mal.x - g.position.x, 0, v.mal.z - g.position.z); const avst = tmp.length();
+    let gar = false;
+    if (v.jobb !== null) {
+      if (avst > 0.3) { gar = true; v.fremme = false; }
+      else if (!v.fremme) { v.fremme = true; const b = t.bygg[v.jobb]; if (b) g.rotation.y = Math.atan2(b.x - g.position.x, b.z - g.position.z) + (b.type === 'brygge' ? Math.PI : 0); }
+    } else if (v.vent > 0) v.vent -= dt;
+    else if (avst < 0.5) { v.vent = rnd(2, 6); const h = t.bygg[v.hjem]; if (h) v.mal.set(h.x + rnd(-9, 9), 0, h.z + rnd(5, 11)); v.mal.z = Math.min(v.mal.z, KYST - 2); }
+    else gar = true;
+    if (gar) {
+      const fart = INNST.vikingFart * (avst > 30 ? 1.5 : 1);
+      tmp.normalize(); g.position.addScaledVector(tmp, Math.min(avst, fart * dt));
+      const r = Math.atan2(tmp.x, tmp.z); let diff = r - g.rotation.y; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); g.rotation.y += diff * Math.min(1, dt * 6);
+      v.gange += dt * 9;
+    }
+    const sv = gar ? Math.sin(v.gange) * 0.6 : 0;
+    u.bein[0].rotation.x = sv; u.bein[1].rotation.x = -sv;
+    if (v.fremme && v.jobb !== null) { const s = Math.sin(tid * 6 + v.i); u.armer[0].rotation.x = -1.2 + s * 0.8; u.armer[1].rotation.x = -1.2 + s * 0.8; }
+    else { u.armer[0].rotation.x = -sv; u.armer[1].rotation.x = sv; }
+    g.position.y = gar ? Math.abs(Math.sin(v.gange)) * 0.12 : 0;
+  }
+}
+function oppdaterEffekter(dt) {
+  for (let i = flytere.length - 1; i >= 0; i--) { const f = flytere[i]; f.t += dt; f.s.position.y += dt * 2.5; f.s.material.opacity = 1 - f.t / 1.3; if (f.t > 1.3) { scene.remove(f.s); f.s.material.map.dispose(); f.s.material.dispose(); flytere.splice(i, 1); } }
+  for (let i = partikler.length - 1; i >= 0; i--) { const p = partikler[i]; p.t += dt; p.v.y -= 18 * dt; p.m.position.addScaledVector(p.v, dt); p.m.rotation.x += dt * 6; if (p.t > p.liv || p.m.position.y < 0) { scene.remove(p.m); partikler.splice(i, 1); } }
+}
+function oppdaterKamera(dt) {
+  if (bygg.aktiv) {
+    tmp.copy(bygg.senter).addScaledVector(KAM_BYGG, zoomBygg);
+    camera.position.lerp(tmp, Math.min(1, dt * 5));
+    camera.lookAt(camera.position.x, 0, camera.position.z - KAM_BYGG.z * zoomBygg);
+  } else {
+    tmp.copy(spiller.pos).addScaledVector(KAM, zoom);
+    camera.position.lerp(tmp, Math.min(1, dt * 6));
+    camera.lookAt(camera.position.x, 2, camera.position.z - KAM.z * zoom);
+  }
+  const f = bygg.aktiv ? bygg.senter : spiller.pos;
+  sol.position.set(f.x + 40, 80, f.z + 30); sol.target.position.set(f.x, 0, f.z);
+}
+camera.position.copy(spiller.pos).add(KAM); camera.lookAt(spiller.pos);
+
+function loop(na) {
+  requestAnimationFrame(loop);
+  let dt = (na - sisteTid) / 1000; sisteTid = na; if (!(dt > 0)) dt = 0; dt = Math.min(dt, 0.05);   // Y2: tiden følger klokka, ikke skjermfrekvensen
+  tid += dt;
+  const spill = spillTilstand === 'spill' && !modalApen();
+  if (spill) {
+    if (bygg.aktiv) oppdaterBygg(dt);
+    oppdaterSpiller(dt); oppdaterRessurser(dt); oppdaterVikinger(dt); oppdaterHus(dt); sjekkOnsker(); visJubel();
+    lagreTid += dt; if (lagreTid > 5) { lagreTid = 0; lagre(); }
+  }
+  if (spillTilstand !== 'pause') { robotAnimasjon(dt); oppdaterEffekter(dt); for (const s of skyer) { s.position.x += dt * 1.2; if (s.position.x > 220) s.position.x = -220; } }
+  if (spillTilstand === 'start') { const v = tid * 0.08; camera.position.set(Math.sin(v) * 60, 34, 40 + Math.cos(v) * 20); camera.lookAt(0, 2, 0); }
+  else oppdaterKamera(dt);
+  oppdaterMelding(dt); oppdaterHandling();
+  renderer.render(scene, camera);
+}
+addEventListener('pagehide', lagre);
+
+// Vennlig feilmelding ved uventede feil (K2, KS15)
+let feilVist = false;
+function visFeil() { if (feilVist) return; feilVist = true; try { lagre(); } catch (er) {} $('feil').classList.add('vis'); try { $('feilLast').focus(); } catch (er) {} }
+addEventListener('error', e => { if (!e.error || spillTilstand === 'start') return; visFeil(); });
+addEventListener('unhandledrejection', () => { if (spillTilstand !== 'start') visFeil(); });
+canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); visFeil(); });   // B3
+$('feilLast').addEventListener('click', () => location.reload());
+
+// ======================================================
+//  Start
+// ======================================================
+try { lastInn(); }
+catch (e) {
+  // F3: lagringen kunne ikke leses. Ta vare på en kopi og start på nytt i stedet for å stoppe.
+  try { localStorage.setItem(LAGRING + '-kopi', localStorage.getItem(LAGRING) || ''); } catch (e2) {}
+  console.warn('Lagringen kunne ikke leses. En kopi ligger i ' + LAGRING + '-kopi.', e);
+}
+oppdaterHud();
+helt.position.copy(spiller.pos);
+
+EVNNullstill({
+  nokler: [LAGRING],
+  tema: { panel: '#5a3a20', ink: '#fff', hi: '#ffc93c', btn: '#ffc93c', btnInk: '#4a2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400 },
+  tekst: 'Alle husene, vikingene og materialene blir borte.',
+  harLagring: () => t.bygg.length > 0 || t.samlet.tre + t.samlet.stein + t.samlet.mat > 0,
+  plasser: el => $('evnTilbake').after(el),
+  vis: () => $('start').classList.contains('vis')
+});
+window.__evnP = EVNPause({
+  mappe: 'vikinglandsby', avsluttId: 'evnAvslutt',
+  tema: { panel: 'rgba(90,58,32,.97)', ink: '#fff', hi: '#ffc93c', btn: '#ffc93c', btnInk: '#4a2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400 },
+  knapp: (b, k) => { for (const x of [k, b]) { x.className = 'rund'; x.style.cssText = 'padding:0;font-size:22px'; } $('hoyre').insertBefore(k, $('evnAvslutt')); $('hoyre').insertBefore(b, $('evnAvslutt')); },
+  kart: {
+    forhold: 600 / 480,
+    info: () => '🔺 Du · ⚪ Vikinger · 🟢 Trær · ⚫ Stein · 🔴 Bær · 🐟 Fisk',
+    tegn: (c, w, h) => { tegnKart(); c.drawImage(kartLerret, 0, 0, w, h); }
+  },
+  escPause: () => !bygg.aktiv,
+  kanPause: () => spillTilstand === 'spill' && !LAG.some(id => $(id).classList.contains('vis')),
+  aktiv: () => spillTilstand === 'spill',
+  pause: () => { spillTilstand = 'pause'; for (const k in taster) taster[k] = false; holder = false; slippAlt(); lagre(); },
+  fortsett: () => { spillTilstand = 'spill'; for (const k in taster) taster[k] = false; sisteTid = performance.now(); },
+  lagre: lagre,
+  styring: () => touchNa()
+    ? '👆 Dra fingeren for å gå<br>🟡 Den gule knappen: hogg, hakk, plukk, fisk og gi jobb (hold inne for å fortsette)<br>🔨 Bygg: velg hus, trykk der det skal stå, og trykk ✔ Bygg her<br>📜 Ønskene viser hva landsbyen trenger<br>🗺️ Kartet viser hvor alt er'
+    : '⬆️ Piltaster eller WASD: gå<br>E eller mellomrom: hogg, hakk, plukk, fisk og gi jobb (hold inne)<br>B: bygg · 1–5: velg hus · R: snu huset<br>Klikk med musa der huset skal stå, eller E/Enter<br>M: kart · L: lyd · P eller Esc: pause'
+});
+// KS9: lydbryter også i pausen (lagt til av spillet, den felles pausekoden er uendret)
+{ const k = document.createElement('button'); k.type = 'button'; k.className = 'liten'; k.id = 'pauseLyd';
+  const vis = () => { k.textContent = lydPa ? '🔊 Lyd: på (L)' : '🔇 Lyd: av (L)'; k.setAttribute('aria-pressed', String(!lydPa)); };
+  k.addEventListener('click', () => settLyd(!lydPa));
+  $('evnPauseAvslutt').before(k); visPauseLyd = vis; vis(); }
+requestAnimationFrame(loop);
+// Til testing
+window.__spill = { t, spiller, noder, INNST, HUS, ONSKER, bygg, gjorHandling, finnHandling, hent, giJobb, apneBygg, lukkBygg, velgHus, plasser, sjekkPlass, byggHus, nyViking, lagre, lastInn, scene, camera, renderer, sjekkOnsker, get spillTilstand() { return spillTilstand; } };
+</script>
+<!-- EVN Studio: knapp tilbake til forsiden (vises bare under /spill/) -->
+<style>
+#evnSporsmal{position:fixed;inset:0;z-index:100000;display:none;place-items:center;background:rgba(15,20,40,.7);padding:16px}
+#evnSporsmal .boks{background:linear-gradient(#7a4f2c,#3b2716);border:3px solid #ffc93c;border-radius:20px;padding:22px;max-width:340px;display:grid;gap:14px;text-align:center;color:#fff;font:800 19px 'Nunito',system-ui,sans-serif}
+#evnSporsmal button{min-height:52px;border-radius:14px;font:800 19px 'Nunito',system-ui,sans-serif;cursor:pointer;touch-action:manipulation}
+#evnBli{background:linear-gradient(#ffd75e,#f0a91c);color:#4a2a00;border:3px solid #fff}
+#evnGaa{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5)}
+</style>
+<div id="evnSporsmal" role="dialog" aria-modal="true"><div class="boks">
+  <div>Vil du avslutte og gå tilbake til forsiden? Landsbyen din er lagret.</div>
+  <button type="button" id="evnBli">Nei, spill videre</button><button type="button" id="evnGaa">Ja, avslutt</button>
+</div></div>
+<script>
+try {
+  if (location.pathname.indexOf('/spill/') !== -1) {
+    var av = document.getElementById('evnAvslutt'), sp = document.getElementById('evnSporsmal');
+    av.style.display = 'flex';
+    var tb = document.getElementById('evnTilbake'); if (tb) tb.hidden = false;
+    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new Event('blur')); sp.style.display = 'grid'; document.getElementById('evnBli').focus(); });
+    addEventListener('keydown', function (e) { if (e.key === 'Escape' && sp.style.display === 'grid') { e.preventDefault(); sp.style.display = 'none'; } });
+    ['pointerdown', 'mousedown', 'touchstart'].forEach(function (ev) { sp.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); av.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
+    document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; });
+    document.getElementById('evnGaa').addEventListener('click', function () { location.href = '../../'; });
+  }
+} catch (e) {}
+</script>
+
+</body>
+</html>

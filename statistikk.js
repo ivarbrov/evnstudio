@@ -90,6 +90,13 @@
         var k = e.target && e.target.closest && e.target.closest('#startBtn');
         if (k) spillStartet();
       }, true);
+    },
+    // Vikinglandsby: knappen «▶ Start»
+    vikinglandsby: function () {
+      document.addEventListener('click', function (e) {
+        var k = e.target && e.target.closest && e.target.closest('#startBtn');
+        if (k) spillStartet();
+      }, true);
     }
   };
   if (oppdagere[spill]) oppdagere[spill]();
