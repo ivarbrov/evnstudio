@@ -1398,9 +1398,11 @@ function visBaseRadHint(tekst) {
   h.textContent = tekst; h.hidden = false;
   const b = h.offsetWidth, venstre = Math.max(16, Math.min(k.left + k.width / 2 - b / 2, innerWidth - b - 16));
   h.style.left = venstre + 'px'; h.style.top = (k.bottom + 8) + 'px';
-  clearTimeout(visBaseRadHint.t); visBaseRadHint.t = setTimeout(() => { h.hidden = true; }, 4000);
+  // skjules etter 4 s, eller med en gang spillet ikke lenger er i gang (død, seier, basen)
+  const slutt = performance.now() + 4000; clearInterval(visBaseRadHint.t);
+  visBaseRadHint.t = setInterval(() => { if (tilstand === 'pause') return; if (tilstand !== 'spill' || performance.now() > slutt) { h.hidden = true; clearInterval(visBaseRadHint.t); } }, 100);
 }
-document.getElementById('baseRad').addEventListener('animationend', e => e.target.classList.remove('ny'));
+['animationend', 'animationcancel'].forEach(t => document.getElementById('baseRad').addEventListener(t, e => e.target.classList.remove('ny')));
 function oppdaterBaseRad() {
   const rad = document.getElementById('baseRad'); if (!rad || tilstand !== 'spill') return;
   const kan = kjopbareBygg(), n = kan.length;
