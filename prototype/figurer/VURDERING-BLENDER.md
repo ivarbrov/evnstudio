@@ -229,7 +229,28 @@ Status er per kjent informasjon høsten 2026 og bør sjekkes på nytt før et ev
 
 ---
 
-## 9. Forslag til pilot: reven
+## 9. KI-verktøy for skisser: ForgeGUI
+
+Lagt til 4.11.2026 etter ønske fra eieren. ForgeGUI er **ikke prøvd**. Vurderingen bygger på produktets nettside (forgegui.com) og omtaler på nett. En av omtalene er skrevet av en konkurrent (Nilo).
+
+**Hva det er:** En lukket nettjeneste som lager spillgrafikk fra tekst eller referansebilder. Den er sterkest på 2D (ikoner, knapper, grensesnitt). For 3D lager den et bilde, bygger en modell av det og leverer en GLB med tekstur. Gratisnivå med kreditter, ellers betalte planer. Ingen spillmotor og ingen del av Blender.
+
+| | Vurdering |
+|---|---|
+| Raske utkast | Kan gi mange forslag til hvordan reven kan se ut, som Even kan velge mellom |
+| Ikoner til E-shop | Mulig, men E-shop har i dag ikoner laget fra de samme 3D-formene som tilbehøret. Det bør ikke blandes uten vedtak |
+| Skjelett og animasjon | Ikke nevnt av leverandøren. Slike modeller har normalt rotete former og må bygges på nytt i Blender før de kan animeres |
+| EVN-stilen | Leverer malte teksturer, mens EVN-stilen er flate farger (punkt 2) |
+| Budsjettet | Trekanttall og teksturstørrelse er ikke oppgitt. Må måles med `sjekk-glb.mjs` |
+| Personvern | Det som lages på gratisnivået, kan bli lagt ut i en offentlig samling. Evens idé kan bli synlig før han har godkjent den. Betalte planer er private som standard. Bruk av opplastede bilder og aldersgrense er ikke lest i vilkårene |
+| Konto | Krever konto. En voksen må opprette og styre den |
+| Rettigheter | Leverandøren sier at resultatet er brukerens og kan brukes kommersielt. En omtale nevner en påstand om at et eksempelbilde lignet mye på et eksisterende spill. Opphavet er altså ikke sikkert |
+
+**Vurdering:** Kan brukes til **skisser og forslag**, på linje med Evens tegninger, men ikke som kilde til ferdige figurer i spillene. Den ferdige reven lages i Blender etter EVN-stilen og budsjettet. Hvis ForgeGUI prøves, har en voksen kontoen og bruker en privat plan, og utkastene lagres i `kilde/figurer/rev/referanse/` og ikke i `felles/`.
+
+---
+
+## 10. Forslag til pilot: reven
 
 **Mål:** Finne ut om arbeidsflyten Blender → GLB → Three.js virker for EVN, med én figur, uten å røre noe spill.
 
@@ -244,13 +265,15 @@ Status er per kjent informasjon høsten 2026 og bør sjekkes på nytt før et ev
 | Installere Blender (gratis, åpen kildekode) på maskinen | En voksen |
 | `.blend` i Git LFS i samme repo, eller egen privat repo | En voksen |
 | Hvem som former reven i Blender (Even med hjelp, en voksen, eller Claude med skript) | Even og en voksen |
+| Om ForgeGUI skal prøves til utkast (trinn 2a), med hvilken plan og hvem som har kontoen | En voksen |
 
 ### Trinn
 
 | # | Trinn | Resultat | Godkjennes av |
 |---|---|---|---|
 | 1 | Egen gren `figur/rev-pilot`. Oppsett av mappene i punkt 3, `eksporter.py` og `sjekk-glb.mjs` | Tom struktur og verktøy som virker | – |
-| 2 | Grovmodell (form og farger, ingen rigg). Bilder forfra, fra siden, skrått ovenfra, ved siden av roboten, og i 128, 96 og 50 px | Bildeark | **Even: utseende** |
+| 2a | Valgfritt: 4–6 utkast fra ForgeGUI (eller Evens tegninger) som Even velger mellom. Én utkast-GLB måles med `sjekk-glb.mjs` for å se hvor langt den er fra budsjettet | Utkast og måling i `kilde/figurer/rev/referanse/` | **Even: retning** |
+| 2 | Grovmodell i Blender (form og farger, ingen rigg). Bilder forfra, fra siden, skrått ovenfra, ved siden av roboten, og i 128, 96 og 50 px | Bildeark | **Even: utseende** |
 | 3 | Rettinger etter Evens tilbakemelding, til Even er fornøyd | Godkjent form | **Even** |
 | 4 | Rigg, feste-punkter og 5 klipp: `Idle`, `Walking`, `Running`, `Jump`, `Wave` | `felles/figurer/rev/rev.glb` | – |
 | 5 | Testside `prototype/figurer/rev.html` (ikke lenket fra noe): reven i r128 og r187 med samme fil, roboten ved siden av, to hatter og en kappe fra garderoben, fargebytte, teller for tegnekall | Side som kan åpnes lokalt | – |
@@ -277,4 +300,5 @@ Hvis én av disse ikke holder, skriver vi hvorfor og foreslår å justere eller 
 - **Referansemobil (Y1) er ikke valgt.** Budsjettene bygger på én iPhone.
 - **Roboten skal ikke endres nå.** At den bruker 19 tegnekall, er bare notert. En retting ville vært et eget forslag med egen godkjenning.
 - **Mørkeskogens `LISENSER.md`** kaller roboten «midlertidig helt – byttes ut med endelig helt», mens `felles/robot/README.md` sier at Even har valgt den som hovedkarakter. Teksten i `LISENSER.md` bør oppdateres en gang.
+- ForgeGUI er ikke prøvd. Vilkår, personvernerklæring og aldersgrense er ikke lest.
 - `KHR_mesh_quantization`, størrelsen på Godots webeksport og status for Unreal er ikke prøvd her. De er vurdert ut fra dokumentasjon og koden i repoet.
