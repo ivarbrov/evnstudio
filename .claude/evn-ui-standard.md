@@ -1,6 +1,6 @@
 # EVN UI-standard
 
-Versjon 1.0, revidert 4. november 2026 etter eierens beslutninger (`.claude/vedtak.md`, 4. november 2026 kl. 10:02). Ikke slått sammen med `main` ennå.
+Versjon 1.0, revidert 4. november 2026 etter eierens beslutninger (`.claude/vedtak.md`, 4. november 2026 kl. 10:02). Plassering og kravnivå ble godkjent 3. november 2026. Den reviderte ordlyden er skrevet av Claude Code og godkjennes av eieren når PR #18 slås sammen. Den er ikke slått sammen med `main` ennå.
 
 Standarden gir felles betjening, navigasjon og symboler på tvers av spillene på evnstudio.no. Målet er at et barn som kan ett EVN-spill, raskt forstår de andre.
 Grunnregel: Lik funksjon har lik betjening, likt symbol og samme plass. Ulik spillmekanikk kan ha ulik betjening.
@@ -14,6 +14,8 @@ Denne standarden lager ingen egne versjoner av krav som allerede finnes. Hvert K
 - **Tar i bruk:** kravet gjør en del av UI1–UI10 gjeldende for nye spill. For eksisterende spill har UI1–UI10 samme status som før: godkjent hovedløsning.
 - **Nytt:** kravet finnes ikke fra før.
 
+Har et krav både en presisering og en ny del, står begge i kolonnen «Rolle».
+
 Ved motstrid gjelder EVN Game Standard. I spill der UI1–UI10 er tatt i bruk, går UI3 (én inngang ☰ til alt annet) foran KS1, KS2 og KS5. Da regnes ☰ som pauseinngangen, og 🚪 og 🗺️ står ved siden av den.
 
 ## Hvordan kravene gjelder
@@ -25,25 +27,25 @@ Ved motstrid gjelder EVN Game Standard. I spill der UI1–UI10 er tatt i bruk, g
 
 Ingen krav i denne standarden er publiseringsblokkerende. `test/publiseringssjekk.mjs` leser bare `.claude/evn-game-standard.md`, og blokkerende kontroller derfra gjelder som før. Et KS-krav kan bli blokkerende først når to ting er på plass: kontrollen er prøvd på minst ett spill, og en voksen har godkjent kravet særskilt. Det skjer da ved å flytte kravet inn i EVN Game Standard. Ingen eksisterende kontroll svekkes.
 
-## Obligatorisk fellesstandard (KS1–KS15)
+## Felles krav (KS1–KS15, obligatoriske for nye spill, rådgivende i kontrollen)
 
 | ID | Krav | Rolle | Kontroll |
 |---|---|---|---|
 | KS1 | P og Esc åpner og lukker pausen. ⏸ står i topplinjen til høyre. | Presiserer F1, UI10 | A |
 | KS2 | Spill med kart: M og 🗺️ åpner kartet, og 🗺️ står rett til venstre for ⏸. | Presiserer B2 | A |
 | KS3 | «🎮 Slik styrer du» står i pausen og viser bare det som faktisk virker, for inndataen som brukes nå. | Presiserer U2 | Q |
-| KS4 | Vei ut: Avslutt er synlig under spilling og på alle skjermer der spilleren kan bli stående (valgskjermer, tap, seier). Avslutt bruker felles `#evnAvslutt` og `#evnSporsmal`. Symbolet er foreløpig 🚪 (se ikonordboka). | Presiserer U1 | A, Q |
+| KS4 | Vei ut: Avslutt er synlig under spilling og på alle skjermer der spilleren kan bli stående (valgskjermer, tap, seier). Avslutt bruker felles `#evnAvslutt` og `#evnSporsmal`. Symbolet er foreløpig 🚪 (se ikonordboka). | Presiserer U1 og F1. Nytt: synlig under spilling og på tap- og seiersskjermer | A, Q |
 | KS5 | Toppknapper fra høyre hjørne: Avslutt, ⏸, 🗺️, deretter spillets egne. Rekkefølgen og hjørnet er de samme på alle skjermstørrelser. | Nytt | A |
 | KS6 | Ett symbol har én betydning i alle spill (ikonordboka). | Nytt (støtter U2, U3) | Q |
 | KS7 | Esc lukker det øverste som er åpent: dialog, kart, undermeny eller valgskjerm. Er ingenting åpent, åpner Esc pausen. Alt som lukkes med Esc, har også en synlig lukkeknapp. | Presiserer UI10 | A |
-| KS8 | Esc, P, M og Tab brukes ikke til spillhandlinger. Tab flytter bare fokus. | Presiserer T2 | A |
+| KS8 | Esc, P, M og Tab brukes aldri til noe annet. Tab flytter bare fokus. L slår lyden av og på. | Presiserer T2 | A |
 | KS9 | Spill med lyd har en lydbryter 🔊/🔇 i pausen og tasten L. Valget huskes i spillet. | Presiserer B1 | A, E |
-| KS10 | Avslutt og sletting bekreftes med felles dialog, ikke med «trykk to ganger». | Presiserer F2 | A |
+| KS10 | Avslutt og sletting bekreftes med felles dialog, ikke med «trykk to ganger». | Presiserer F2 (sletting). Nytt: bekreftelse ved Avslutt | A |
 | KS11 | Lagringen er automatisk, Avslutt lagrer før spillet forlates, og det finnes ingen lagre-knapp. | Presiserer F2 | A |
 | KS12 | Dialoger: fokus flyttes inn, holdes inne (`inert`) og settes tilbake ved lukking. Fokus er synlig med `:focus-visible`. | Presiserer T2 | A |
 | KS13 | Faste elementer bruker `env(safe-area-inset-*)`, og viewport har `viewport-fit=cover`. | Tar i bruk UI7 (safe area) | A, E |
 | KS14 | Oppsettet for mobil eller PC følger siste inndata og kan bytte tilbake. | Tar i bruk UI1 | A |
-| KS15 | Uventet feil gir en vennlig melding med «Last inn på nytt». | Presiserer K2 | A |
+| KS15 | Uventet feil gir den felles meldingen (EVN-FEIL) med «Last inn på nytt». | Presiserer K2 | A |
 
 ## Anbefalt fellesstandard (KA1–KA8)
 
@@ -54,7 +56,7 @@ Avvik fra en anbefaling begrunnes i spillets plan. Endringer som påvirker styri
 | KA1 | E = bruk eller gjør noe med det du står ved. Mellomrom = hopp i spill med hopp, ellers hovedhandling. |
 | KA2 | I = samling eller sekk. B = bygg, bare i spill som bygger. |
 | KA3 | Prinsipp for mobil styrespak: den starter i nedre venstre del av skjermen og er synlig i hvile. Fast plassert styrespak er også i tråd med prinsippet. Andre løsninger kan brukes når spillmekanikken krever det. |
-| KA4 | Handlingsknapper står nede til høyre, og hovedhandlingen er størst. Knapper som ikke kan brukes nå, skjules (UI4). Grå knapper skal ikke kunne trykkes. |
+| KA4 | Handlingsknapper står nede til høyre, og hovedhandlingen er størst (minst 80 px). Knapper som ikke kan brukes nå, skjules (UI4). Grå knapper skal ikke kunne trykkes. |
 | KA5 | Prinsipp for 3D-kamera: på PC dras det med høyre museknapp (pekerlås er tillatt i actionspill). På mobil dras det utenfor styrespaksonen. Venstre-dra flytter ikke helten. Fast kamera er tillatt når spillet er laget for det. |
 | KA6 | PC viser hurtigtasten på knappen (UI6). |
 | KA7 | Start-knappen er synlig uten rulling i 740×360 og 375×812. Bare Start-knappen starter spillet, ikke hele kortet. |
@@ -102,8 +104,9 @@ Slik hindres avvik mellom kopiene:
 2. **Ny versjon ved endring:** en endring gir nytt versjonsnummer (v3 → v4). En kopi i et spill rettes aldri på stedet.
 3. **Merkede kopier:** kopien står mellom faste merker, for eksempel `<!-- EVN-PAUSE v3 start -->` og `<!-- EVN-PAUSE v3 slutt -->`. Alt som er spillspesifikt, ligger utenfor merkene, i spillets eget oppsett.
 4. **Register:** tabellen under viser hvilken versjon hvert spill har. Den oppdateres når et spill publiseres med en ny versjon.
-5. **Kontroll:** et skript sammenligner hver merket kopi tegn for tegn med kilden for samme versjon. Kontrollen er rådgivende til den er godkjent (se «Hvordan kravene gjelder»). Til da sjekker EVN Game QA kopien ved hver kontroll.
-6. **Spillsamtaler:** de flytter ikke kode inn i eller ut av merkene. Trengs en endring, meldes den til standardiseringsøkta.
+5. **Kontroll:** et skript sammenligner hver merket kopi tegn for tegn med kilden for samme versjon. Kontrollen er rådgivende til den er godkjent (se «Hvordan kravene gjelder»). EVN Game QA rapporterer resultatet når skriptet finnes.
+6. **Overgang:** punkt 1–5 gjelder fra den første kildefila i `felles/ui/` (planlagt med EVN-PAUSE v3). Dagens kopier av v2 og v1 har bare et startmerke i JS og sammenlignes ikke før de får kildefil.
+7. **Spillsamtaler:** de flytter ikke kode inn i eller ut av merkene. Trengs en endring, meldes den til standardiseringsøkta.
 
 | Komponent | Kilde | Era | Mørkeskogen | Fossil Zoo | Dyrepatruljen | Magiske egg |
 |---|---|---|---|---|---|---|
@@ -115,7 +118,7 @@ Slik hindres avvik mellom kopiene:
 
 ## Innføring
 
-Prioriteringen følger vedtaket 4. november 2026. Først rettes konkrete problemer som ikke krever ny spillopplevelse: manglende vei tilbake og ut, safe area, tastaturnavigasjon og fokus i dialoger. Deretter kommer felles pause v3, med pilot i Magiske egg. Endringer i styring, kamera, styrespak og symboler kommer etter at Even har prøvd dem.
+Prioriteringen følger vedtaket 4. november 2026. Først rettes konkrete problemer som ikke krever ny spillopplevelse: manglende vei tilbake og ut, safe area, tastaturnavigasjon og fokus i dialoger. Deretter kommer felles pause v3, med Magiske egg som pilot. Piloten koordineres med E-coins-økta, slik at bare én økt endrer pausen og E-coins-koden om gangen. Pause v3 beholder det `ecoins/ecoins.js` er avhengig av (`#evnPause .kort` og hendelsen `evn-ecoins-klar`). Endringer i styring, kamera, styrespak og symboler kommer etter at Even har prøvd dem.
 
 Oppgaver per spill, pilot og testplan står i prosjektfila `claude/evn-ui-oppgaver.md`.
 
@@ -123,6 +126,6 @@ Oppgaver per spill, pilot og testplan står i prosjektfila `claude/evn-ui-oppgav
 
 | Versjon | Dato | Endring |
 |---|---|---|
-| 1.0 utkast | 3. november 2026 | Første utkast: KS1–KS15, KA1–KA9, ikonordbok, komponenter og plan |
+| 1.0 | 3. november 2026 | Plassering og kravnivå godkjent. Første tekst: KS1–KS15, KA1–KA9, ikonordbok, komponenter og plan |
 | 1.0 utkast | 4. november 2026 kl. 07 | 🚪 for Avslutt og ✕ for Lukk (kalt 1.1 i PR #18) |
 | 1.0 revidert | 4. november 2026 kl. 10 | Eierens ti beslutninger: rollen til hvert krav er gjort tydelig mot eksisterende standarder, kravene er rådgivende og ikke blokkerende, 🚪 er et foreløpig valg, felles lydnøkkel (KA9) er tatt ut, KA3 og KA5 er prinsipper, og kopikontrollen er beskrevet |
