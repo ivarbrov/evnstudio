@@ -27,7 +27,7 @@ Denne filen er et utkast på kvalitetsgrenene (`kvalitet/…`). Regler merket «
 
 ## Grensesnitt (utkast)
 
-- Felles betjening, navigasjon og symboler på tvers av spillene står i `.claude/evn-ui-standard.md` (EVN UI-standard 1.1, godkjent 4. november 2026). KS1–KS15 gjelder nye spill fra første versjon, og eksisterende spill når trinnet som innfører kravet er godkjent og publisert.
+- Felles betjening, navigasjon og symboler på tvers av spillene står i `.claude/evn-ui-standard.md` (EVN UI-standard 1.0, revidert 4. november 2026). KS1–KS15 gjelder nye spill fra første versjon, og eksisterende spill når trinnet som innfører kravet er godkjent og publisert. Kravene er rådgivende og stopper ikke publisering før de er godkjent særskilt.
 - UI1–UI10 er godkjent hovedløsning for grensesnitt under spilling. De brukes i `prototype/ui/` og er tenkt for Mørkeskogen 2.0.
 - Ikke bygg om grensesnittet i eksisterende spill etter UI1–UI10 uten at Even har prøvd løsningen og en voksen har godkjent det for spillet.
 - Tallene i UI8a–c er foreløpige og skal aldri alene godkjenne et grensesnitt.

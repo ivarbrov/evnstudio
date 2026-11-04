@@ -89,7 +89,27 @@ Anbefaling fra Claude Code: «🚪 Avslutt» i toppraden, og ✕ bare for å luk
 Godkjenning fra den voksne eieren, ordrett: «Enig. Iverksette».
 Spørsmålet var tidligere lagt til Even. Even kan fortsatt be om å endre valget før trinn 3 bygges.
 
+## 4. november 2026 kl. 10:02: EVN UI-standard 1.0 revidert
+
+Beslutninger fra den voksne eieren, gjengitt i kortform (fullt ordlyd i økta 4.11.2026):
+
+1. EVN UI-standard 1.0 er en egen standard, tydelig koblet til EVN Game Standard og UI1–UI10, uten motstridende eller dupliserte krav.
+2. 🚪 Avslutt er felles symbol for å avslutte spillet, og ✕ lukker menyer og dialoger. Valget er foreløpig. Even skal vurdere det før det endres i spillene.
+3. Standarden gjelder nye spill. Eksisterende spill oppdateres gradvis etter godkjent plan.
+4. Først rettes konkrete problemer: manglende tilbakeknapper, avslutningsmuligheter, safe area, tastaturnavigasjon og dialogfokus.
+5. Magiske egg kan være pilot for EVN-PAUSE v3, koordinert med E-coins-prosjektet så øktene ikke endrer de samme komponentene.
+6. Alle spill med lyd har en gjenkjennelig lydbryter og samme hurtigtast. Felles lagret lydinnstilling på tvers av spill innføres ikke før konsekvensene er vurdert.
+7. Kamera og styrespak følger felles prinsipper der det passer, men tvinges ikke til å være like når spillmekanikken krever noe annet. Endringer i spillfølelsen testes av Even.
+8. Versjonerte felles komponenter med kontrollerte kopier beholdes, og det dokumenteres hvordan avvik mellom kopiene hindres.
+9. Nye publiseringsblokkerende QA-krav innføres ikke før de er kontrollert og godkjent. De innføres gradvis uten å svekke eksisterende kontroller.
+10. Avvikene kontrolleres mot siste `main` før implementering.
+
+Følger: Oppføringen «Symbol for Avslutt (1.1)» over er erstattet av punkt 2, og versjonsnummeret 1.1 er trukket tilbake. Tolkningen fra 3. november («gjelder når trinnet er godkjent og publisert») er beholdt, men kravene er rådgivende til de er godkjent særskilt.
+
 ## Ikke vedtatt ennå
 
 - Standard 1.2 og agent 2.0 som gjeldende versjoner (i dag utkast), med statusnivåer, kontrollmetode, klarspråkavsnittet og nye arbeidsregler i `CLAUDE.md`.
 - Arbeidsflyten og testplanen i `.claude/arbeidsflyt.md` (forslag fra trinn 2).
+- Evens vurdering av 🚪 og ✕.
+- Felles lagret lydinnstilling på tvers av spill.
+- Hvilke KS-krav som skal bli publiseringsblokkerende (flyttes i så fall inn i EVN Game Standard).
