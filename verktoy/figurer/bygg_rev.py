@@ -2,13 +2,18 @@
 # Formene kommer fra godkjenningsmodellen (hent-rev.cjs). Leddnavn som roboten der de finnes (Hips, Torso, Neck, Head,
 # UpperArm.*, Palm2.*, UpperLeg.*, LowerLeg.*), pluss Tail1-3 og Ear.L/R. Klippnavn som roboten (Idle, Walking, Running, Jump,
 # Punch, Wave) pluss Sneak.
-# Kjøres: blender --background --factory-startup --python bygg_rev.py -- <rev-former.json> <ut.glb> <ut.blend>
+# Kjøres: blender --background --factory-startup --python bygg_rev.py -- <rev-former.json> <ut.glb> <ut.blend> [v1|v2] [vinkel] [bredde]
+# v2 (standard): samme forbedring som roboten v2: avfasede kanter med hardede normaler, myk skyggelegging, mer levende overflate.
+# v1: fasettert uten avfasing (som godkjenningsmodellen), brukes som «før» i sammenligningen.
 import bpy, bmesh, sys, json, math
 from mathutils import Vector
 
 a = sys.argv[sys.argv.index('--') + 1:]
 d = json.load(open(a[0], encoding='utf-8'))
 UT, BLEND = a[1], a[2]
+VERSJON = a[3] if len(a) > 3 else 'v2'
+VINKEL = math.radians(float(a[4]) if len(a) > 4 else 40)
+BREDDE = float(a[5]) if len(a) > 5 else 0.006    # andel av robotens høyde (1)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 sc = bpy.context.scene; sc.render.fps = 30
 
@@ -29,6 +34,8 @@ def lin(h):
     c = [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]
     return [x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4 for x in c] + [1]
 MAT = { 'Pels': ('#f39a3c', .75, 0), 'Lys': ('#f6eee0', .7, 0), 'Mork': ('#2a1f1b', .45, 0), 'Gul': ('#ffcc00', .5, .1) }
+if VERSJON == 'v2':   # som roboten v2: pels litt silkemyk, øyne og nese blanke, halsbåndet som lakkert metall
+    MAT = { 'Pels': ('#f39a3c', .6, 0), 'Lys': ('#f6eee0', .65, 0), 'Mork': ('#2a1f1b', .32, 0), 'Gul': ('#ffcc00', .4, .25) }
 FARGE_TIL = { '#f39a3c': 'Pels', '#f6eee0': 'Lys', '#fefefe': 'Lys', '#2a1f1b': 'Mork', '#fecc00': 'Gul', '#ffcc00': 'Gul' }
 mats = {}
 for n, (h, r, m) in MAT.items():
@@ -56,9 +63,18 @@ for navn, dl in grupper.items():
             try: bm.faces.new(nye[k:k + 3])
             except ValueError: pass
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-6)
+    if VERSJON == 'v2':                                            # merk skarpe kanter for avfasing
+        lag = bm.edges.layers.float.get('bevel_weight_edge') or bm.edges.layers.float.new('bevel_weight_edge')
+        for e in bm.edges:
+            if len(e.link_faces) == 2 and e.calc_face_angle(0) > VINKEL: e[lag] = 1.0
     bm.to_mesh(me); bm.free()
     for n in leddnavn: o.vertex_groups.new(name=n)
-    for p in me.polygons: p.use_smooth = False                     # fasettert, som roboten
+    for p in me.polygons: p.use_smooth = VERSJON == 'v2'           # v2: myk mellom små fasetter, skarpe kanter avfases
+    if VERSJON == 'v2':
+        mod = o.modifiers.new('EVN-avfasing', 'BEVEL'); mod.limit_method = 'WEIGHT'; mod.width = BREDDE; mod.segments = 1
+        mod.harden_normals = True; mod.miter_outer = 'MITER_ARC'
+        bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); bpy.context.view_layer.objects.active = o
+        bpy.ops.object.modifier_apply(modifier=mod.name)          # vektene følger med til de nye hjørnene
     me.materials.append(mats['Pels' if navn == 'Head_3' else navn])
     o.parent = arm; md = o.modifiers.new('Skjelett', 'ARMATURE'); md.object = arm
     objekter.append(o)

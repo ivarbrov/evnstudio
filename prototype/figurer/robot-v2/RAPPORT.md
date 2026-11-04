@@ -26,11 +26,28 @@ Se: `for-etter.html` (åpnes fra en lokal server i repoet), bilder i `bilder/`.
 |---|---|---|---|---|
 | Robot før | 19 | 3 237 | 14 | 464 kB |
 | Robot etter | 5 | 7 668 | 14 | 475 kB |
-| Reven (Blender) | 5 | 2 152 | 7 | 296 kB |
+| Reven før (fasettert) | 5 | 2 152 | 7 | 296 kB |
+| Reven etter (samme behandling som roboten) | 5 | 5 330 | 7 | 311 kB |
 
 30 roboter som går: **571 tegnekall før**, beregnet **151 etter** (30 × 5 + bakke). Bildefrekvensen i den hodeløse testnettleseren (SwiftShader) sier ingenting om mobil og er ikke brukt.
 
 **Mobil er ikke målt.** Ytelsesknappene på `for-etter.html` (30 roboter før, 30 etter, 30 rever) viser bilder per sekund etter 8 s og bør kjøres på Evens iPhone, samme måte som i Mørkeskogen 2.0 (lader, autolås av). Forventning ut fra tidligere iPhone-målinger: færre tegnekall gir bedre ytelse, mens flere trekanter betyr lite.
+
+## Reven: samme forbedring
+
+Reven er laget i Blender (`verktoy/figurer/bygg_rev.py`) fra godkjenningsmodellen og har fått samme behandling som roboten v2 (vedtak 5.11.2026: «forbedre reven også i Blender på samme måte»):
+
+| Område | Før | Etter |
+|---|---|---|
+| Kanter | Skarpe, fasettert | Avfaset (0,6 % av høyden) på kanter skarpere enn 40°, hardede normaler |
+| Øyne, poter, hale | Fasetterte | Runde og myke |
+| Overflate | Pels ruhet 0,75, mørkt 0,45, halsbånd 0,5 | Pels 0,6, øyne og nese 0,32 (blanke), halsbånd 0,4 med litt metall |
+| Form, farger, ledd, animasjoner, festepunkter | – | Uendret |
+| Trekanter | 2 152 | 5 330 |
+| Tegnekall | 5 | 5 |
+| Fil | 296 kB | 311 kB |
+
+Se «Reven før og etter» og «Reven nærbilde» i `for-etter.html`.
 
 ## Hvordan v2 lages (kan gjentas)
 
