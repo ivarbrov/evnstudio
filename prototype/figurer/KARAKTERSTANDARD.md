@@ -16,14 +16,14 @@ Prinsipp: **Felles der det gjør integrasjonen enkel, eget der det gir figuren u
 | Klippnavn | `Idle`, `Walking`, `Running`, `Jump`, `Punch`, `Wave` (de spillene bruker) | Bevegelsene selv. Ekstra klipp med egne navn | + `Dance`, `Death`, `Yes`, `No`, `Sitting`, `Standing`, `ThumbsUp`, `WalkJump` | + `Sneak` |
 | Festepunkt hode | Ledd `Head` + mesh `Head_3` (garderoben måler hodet med den) | Hvor hodet er | `Head_3` = ansiktsflaten | `Head_3` = hodeformen |
 | Festepunkt rygg | Ledd `Torso` | – | Ja | Ja |
-| Ledd synes ikke som glipe | Armer og bein henger fast i kroppen i alle animasjoner (kuleledd eller overlapp) | Hvordan | Ja (skjulte ledd) | Kuleledd i hofter, skuldre og knær, og bekken |
+| Ledd synes ikke som glipe | Armer og bein henger fast i kroppen i alle animasjoner (kuleledd eller overlapp) | Hvordan | Ja (skjulte ledd) | Kuleledd i hofter, skuldre og knær, og bekken. Deler på samme ledd er smeltet sammen i Blender. Ørefoten står inne i hodet |
 | Festepunkt hånd | Ledd `Palm2.R` / `Palm2.L` (GLTFLoader gjør navnet til `Palm2R`) | Grepet | Ja | Ja |
 | Kanter og skyggelegging | Avfasing 0,6 % av høyden på kanter > 40°, hardede normaler, myk skyggelegging mellom små fasetter (v2) | – | Ja | Ja |
 | Materialprinsipp | Flate farger, ingen teksturer, ≤ 3 materialer + ett lite gult kjennetegn, PBR med ruhet 0,3–0,8 | Fargene | `Main`, `Grey`, `Black` | `Pels`, `Lys`, `Mork`, `Gul` |
 | Hovedfarge | Figuren oppgir navnet på materialet som kan farges | – | `Main` (spillene farger det gult) | `Pels` (bevisst ikke `Main`, så spill som farger `Main` gult, ikke gjør reven gul) |
 | Tegnekall | ≤ 5 per figur | – | 5 (v2) | 5 |
-| Trekanter | ≤ 8 000 | – | 7 668 (v2) | 6 654 (v2) |
-| Fil | Mål ≤ 250 kB, tak 500 kB | – | 475 kB | 371 kB |
+| Trekanter | ≤ 8 000 | – | 7 668 (v2) | 7 326 (v2) |
+| Fil | Mål ≤ 250 kB, tak 500 kB | – | 475 kB | 379 kB |
 
 Garderoben (`ecoins/tilbehor-3d.js`) virker på begge uten endring fordi begge har `Head`, `Torso` og `Head_3`. På sikt bør garderoben bruke egne festepunkter (`EVN_hode`, `EVN_rygg`) i stedet for å måle `Head_3`. Det er en egen endring i E-coins-arbeidet.
 

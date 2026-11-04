@@ -27,7 +27,7 @@ Se: `for-etter.html` (åpnes fra en lokal server i repoet), bilder i `bilder/`.
 | Robot før | 19 | 3 237 | 14 | 464 kB |
 | Robot etter | 5 | 7 668 | 14 | 475 kB |
 | Reven før (fasettert) | 5 | 2 616 | 7 | 344 kB |
-| Reven etter (samme behandling som roboten) | 5 | 6 654 | 7 | 371 kB |
+| Reven etter (samme behandling som roboten) | 5 | 7 326 | 7 | 379 kB |
 
 30 roboter som går: **571 tegnekall før**, beregnet **151 etter** (30 × 5 + bakke). Bildefrekvensen i den hodeløse testnettleseren (SwiftShader) sier ingenting om mobil og er ikke brukt.
 
@@ -44,9 +44,12 @@ Reven er laget i Blender (`verktoy/figurer/bygg_rev.py`) fra godkjenningsmodelle
 | Overflate | Pels ruhet 0,75, mørkt 0,45, halsbånd 0,5 | Pels 0,6, øyne og nese 0,32 (blanke), halsbånd 0,4 med litt metall |
 | Form, farger, ledd, animasjoner, festepunkter | – | Uendret |
 | Ledd i kroppen | Tynne armer og bein som sluttet ved kroppen (glipe i bevegelse) | Kuleledd i hofter, skuldre og knær og et bekken, så armer og bein henger fast i kroppen også når de beveger seg (eierens ønske 5.11.2026) |
-| Trekanter | 2 616 | 6 654 |
+| Sammensmelting i Blender | Delene lå oppå hverandre | Deler som følger samme ledd (lår og hofteledd, overarm og skulderledd, halen, ørene, kroppen og bekkenet) er smeltet til én overflate med boolsk union, og skjøtene er avfaset. Mellom ulike ledd sitter kuleledd i kroppen. Å smelte på tvers av ledd ga strekk i overflaten når armer og bein beveget seg, og ble derfor ikke brukt |
+| Ører | Ytterkanten av ørefoten fløt over hodet når øret hellet utover | Ørefoten står godt inne i hodet (eierens ønske 5.11.2026) |
+| Avfasing | – | Kanter skarpere enn 50° (samme utseende som 40°, færre trekanter) |
+| Trekanter | 2 616 | 7 326 |
 | Tegnekall | 5 | 5 |
-| Fil | 344 kB | 371 kB |
+| Fil | 344 kB | 379 kB |
 
 Se «Reven før og etter», «Reven nærbilde» og «Revens ledd i bevegelse» i `for-etter.html`. Både «før» og «etter» har de nye leddene, så forskjellen mellom dem er bare overflaten.
 

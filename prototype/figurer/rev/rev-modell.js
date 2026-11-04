@@ -116,13 +116,14 @@ function lagRev(uttrykk = 'nysgjerrig', stilling = 'sta') {
     del(new THREE.BoxGeometry(.1, .026, .03), M.mork, hode, [sx * ox, oyY + .125 + L[0], hz * .78], [1, 1, 1], [0, sx * .38, -sx * L[1]]);
   }
   // ører: brede (forslag 2), lys innside, mørk spiss
-  const oreH = .21, oreB = .12, oreVinkel = { lei: .9, snike: .65 }[uttrykk] || .26;
+  // Ørene står med foten godt inne i hodet (senket .07), så ingen kant flyter over hodet når øret heller utover
+  const oreH = .27, oreB = .12, senk = .07, oreVinkel = { lei: .9, snike: .65 }[uttrykk] || .26;
   for (const sx of [-1, 1]) {
-    const ore = ledd(sx < 0 ? 'Ear.L' : 'Ear.R', hode, [sx * hx * .5, hy * .8, -hz * .12]); ore.rotation.z = -sx * oreVinkel;
+    const ore = ledd(sx < 0 ? 'Ear.L' : 'Ear.R', hode, [sx * hx * .46, hy * .72, -hz * .12]); ore.rotation.z = -sx * oreVinkel;
     if (uttrykk === 'snike' || uttrykk === 'lei') ore.rotation.x = -.5;
-    del(new THREE.ConeGeometry(oreB, oreH, 4), M.main, ore, [0, oreH / 2, 0], [1, 1, .5], [0, Math.PI / 4, 0]);
-    del(new THREE.ConeGeometry(oreB * .62, oreH * .68, 4), M.lys, ore, [0, oreH * .4, oreB * .2], [1, 1, .25], [0, Math.PI / 4, 0]);
-    del(new THREE.ConeGeometry(oreB * .38, oreH * .34, 4), M.mork, ore, [0, oreH * .85, 0], [1, 1, .55], [0, Math.PI / 4, 0]);
+    del(new THREE.ConeGeometry(oreB, oreH, 4), M.main, ore, [0, oreH / 2 - senk, 0], [1, 1, .5], [0, Math.PI / 4, 0]);
+    del(new THREE.ConeGeometry(oreB * .6, oreH * .58, 4), M.lys, ore, [0, oreH * .47 - senk, oreB * .2], [1, 1, .25], [0, Math.PI / 4, 0]);
+    del(new THREE.ConeGeometry(oreB * .36, oreH * .28, 4), M.mork, ore, [0, oreH * .87 - senk, 0], [1, 1, .55], [0, Math.PI / 4, 0]);
   }
   rot.updateMatrixWorld(true);
   return rot;

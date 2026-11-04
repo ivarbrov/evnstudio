@@ -3,7 +3,8 @@
 # UpperArm.*, Palm2.*, UpperLeg.*, LowerLeg.*), pluss Tail1-3 og Ear.L/R. Klippnavn som roboten (Idle, Walking, Running, Jump,
 # Punch, Wave) pluss Sneak.
 # Kjøres: blender --background --factory-startup --python bygg_rev.py -- <rev-former.json> <ut.glb> <ut.blend> [v1|v2] [vinkel] [bredde]
-# v2 (standard): samme forbedring som roboten v2: avfasede kanter med hardede normaler, myk skyggelegging, mer levende overflate.
+# v2 (standard): deler som følger samme ledd, smeltes sammen (boolsk union), deretter samme forbedring som roboten v2:
+# avfasede kanter og skjøter med hardede normaler, myk skyggelegging, mer levende overflate.
 # v1: fasettert uten avfasing (som godkjenningsmodellen), brukes som «før» i sammenligningen.
 import bpy, bmesh, sys, json, math
 from mathutils import Vector
@@ -12,7 +13,7 @@ a = sys.argv[sys.argv.index('--') + 1:]
 d = json.load(open(a[0], encoding='utf-8'))
 UT, BLEND = a[1], a[2]
 VERSJON = a[3] if len(a) > 3 else 'v2'
-VINKEL = math.radians(float(a[4]) if len(a) > 4 else 40)
+VINKEL = math.radians(float(a[4]) if len(a) > 4 else 50)   # 50°: samme utseende som 40°, færre trekanter
 BREDDE = float(a[5]) if len(a) > 5 else 0.006    # andel av robotens høyde (1)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 sc = bpy.context.scene; sc.render.fps = 30
@@ -63,17 +64,44 @@ for navn, dl in grupper.items():
             try: bm.faces.new(nye[k:k + 3])
             except ValueError: pass
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-6)
-    if VERSJON == 'v2':                                            # merk skarpe kanter for avfasing
+    bmesh.ops.dissolve_degenerate(bm, edges=bm.edges, dist=1e-7)  # polene på kulene gir flater uten areal
+    bm.to_mesh(me); bm.free()
+    for n in leddnavn: o.vertex_groups.new(name=n)
+    bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); bpy.context.view_layer.objects.active = o
+    if VERSJON == 'v2' and navn != 'Head_3':
+        # Smelt sammen delene som er satt sammen og følger samme ledd (for eksempel lår + hofteledd, overarm + skulderledd,
+        # hale-ledd, øre), til én sammenhengende overflate. Mellom ulike ledd brukes kuleledd som sitter i kroppen:
+        # å smelte på tvers av ledd ga strekk i overflaten når armer og bein beveger seg (prøvd 5.11.2026).
+        biter = []
+        for gi_ in range(len(o.vertex_groups)):            # én kopi per ledd med bare det leddets deler
+            k = o.copy(); k.data = o.data.copy(); sc.collection.objects.link(k)
+            bpy.ops.object.select_all(action='DESELECT'); k.select_set(True); bpy.context.view_layer.objects.active = k
+            bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='SELECT')
+            k.vertex_groups.active_index = gi_; bpy.ops.object.vertex_group_deselect()
+            bpy.ops.mesh.delete(type='VERT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.intersect_boolean(operation='UNION', use_self=True, use_swap=False, solver='EXACT')
+            bpy.ops.object.mode_set(mode='OBJECT')
+            # Sammensmeltingen lager nye hjørner uten ledd. Kopien gjelder bare ett ledd, så de nye hjørnene får det.
+            uten = [v.index for v in k.data.vertices if not any(g.weight > 0 for g in v.groups)]
+            if uten: k.vertex_groups[gi_].add(uten, 1.0, 'REPLACE')
+            biter.append(k)
+        bpy.ops.object.select_all(action='DESELECT')
+        for k in biter: k.select_set(True)
+        bpy.context.view_layer.objects.active = biter[0]; bpy.ops.object.join()
+        gammel, gammel_me = o, o.data; o = biter[0]; me = o.data
+        bpy.data.objects.remove(gammel); bpy.data.meshes.remove(gammel_me); o.name = navn; me.name = navn
+        bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); bpy.context.view_layer.objects.active = o
+    if VERSJON == 'v2':                                            # merk skarpe kanter (også nye skjøter) for avfasing
+        bm = bmesh.new(); bm.from_mesh(me)
         lag = bm.edges.layers.float.get('bevel_weight_edge') or bm.edges.layers.float.new('bevel_weight_edge')
         for e in bm.edges:
             if len(e.link_faces) == 2 and e.calc_face_angle(0) > VINKEL: e[lag] = 1.0
-    bm.to_mesh(me); bm.free()
-    for n in leddnavn: o.vertex_groups.new(name=n)
+        bm.to_mesh(me); bm.free()
     for p in me.polygons: p.use_smooth = VERSJON == 'v2'           # v2: myk mellom små fasetter, skarpe kanter avfases
     if VERSJON == 'v2':
         mod = o.modifiers.new('EVN-avfasing', 'BEVEL'); mod.limit_method = 'WEIGHT'; mod.width = BREDDE; mod.segments = 1
         mod.harden_normals = True; mod.miter_outer = 'MITER_ARC'
-        bpy.ops.object.select_all(action='DESELECT'); o.select_set(True); bpy.context.view_layer.objects.active = o
         bpy.ops.object.modifier_apply(modifier=mod.name)          # vektene følger med til de nye hjørnene
     me.materials.append(mats['Pels' if navn == 'Head_3' else navn])
     o.parent = arm; md = o.modifiers.new('Skjelett', 'ARMATURE'); md.object = arm

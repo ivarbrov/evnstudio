@@ -6,7 +6,7 @@ Status: **utkast til Even** (4.11.2026). **Hovedretning valgt 4.11.2026: reven g
 
 - Reven «Nysgjerrig» blir EVN Studios første alternative spillbare karakter. Roboten er fortsatt gratis standard.
 - Reven kan kjøpes i E-shop for **700 E-coins** (vedtak 5.11.2026, før 1 000), én gang, og eies for alltid. Kontrollert mot opptjeningen i `../TEKNISK-PLAN.md`, punkt 4.
-- Reven er bygget i Blender (`rev.glb`, laget av `verktoy/figurer/bygg_rev.py` fra godkjenningsmodellen) og følger `../KARAKTERSTANDARD.md`. Hovedmaterialet heter `Pels`. Reven har fått samme Blender-forbedring som roboten v2 (avfasede kanter, runde blanke øyne). Fasettert utgave beholdes som `rev-v1.glb` til sammenligning. Armer og bein henger fast i kroppen med kuleledd i hofter, skuldre og knær og et bekken (5.11.2026).
+- Reven er bygget i Blender (`rev.glb`, laget av `verktoy/figurer/bygg_rev.py` fra godkjenningsmodellen) og følger `../KARAKTERSTANDARD.md`. Hovedmaterialet heter `Pels`. Reven har fått samme Blender-forbedring som roboten v2 (avfasede kanter, runde blanke øyne). Fasettert utgave beholdes som `rev-v1.glb` til sammenligning. Armer og bein henger fast i kroppen med kuleledd i hofter, skuldre og knær og et bekken, og ørene står med foten inne i hodet. Deler som følger samme ledd, er smeltet sammen i Blender (5.11.2026).
 - Spilleren velger mellom roboten og reven i en felles karaktervelger i garderoben. Valget gjelder i alle spill som støtter karakterbytte.
 - Samme spillmessige egenskaper som roboten (fart, kollisjon, skade, rekkevidde). Byttet endrer bare utseende og nødvendige animasjoner.
 - Roboten, saldoen, kjøpte varer og lagrede spill skal ikke påvirkes.
