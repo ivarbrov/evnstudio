@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.3.0 – EVN Studio</title>
+<title>Fiskespillet 0.3.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -181,7 +181,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.3.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.3.1</div>
   </div>
 </div>
 
@@ -503,7 +503,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.3.0';
+const VERSJON = '0.3.1';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -1661,10 +1661,14 @@ function oppdaterBaat(dt, t) {
   }
   const l = Math.hypot(x, z); if (l > 1) { x /= l; z /= l; }
   if (fiske && l > 0.3) { if (fiske.fase === 'kamp') { sluttKamp(); for (const te of krakenTentakler) te.userData.opp = 0; melding('Du kjørte fra Kraken! 🐙', 2.5); } else avbrytFiske('Du kjørte fra fisken! 🐟💨'); }
-  const maks = BATER[tilstand.baat].fart, mal = fiske ? 0 : Math.min(1, l) * maks;
-  spiller.fart += (mal - spiller.fart) * Math.min(1, dt * (mal > spiller.fart ? 1.8 : 1.2));
+  // Båten svinger først mot retningen du vil, og kjører fremover bare når baugen peker omtrent dit.
+  // (Før kjørte den fremover mens den snudde, så den gikk «feil vei» et stykke. Evens funn 4.11.2026.)
+  let diff = 0;
+  if (l > 0.05 && !fiske) { diff = Math.atan2(x, z) - spiller.retning; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); }
+  const maks = BATER[tilstand.baat].fart, rett = Math.max(0, Math.cos(diff)), mal = fiske ? 0 : Math.min(1, l) * maks * rett * rett;
+  spiller.fart += (mal - spiller.fart) * Math.min(1, dt * (mal > spiller.fart ? 1.8 : 2.5));
   let sving = 0;
-  if (l > 0.05 && !fiske) { const r = Math.atan2(x, z); let diff = r - spiller.retning; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); sving = Math.max(-1, Math.min(1, diff * 2)); spiller.retning += diff * Math.min(1, dt * 3); }
+  if (l > 0.05 && !fiske) { sving = Math.max(-1, Math.min(1, diff * 2)); const snu = 2.6 * (1.6 - Math.min(1, spiller.fart / maks)); const steg = Math.sign(diff) * Math.min(Math.abs(diff), snu * dt); spiller.retning += steg; }
   spiller.svingFart += (sving - spiller.svingFart) * Math.min(1, dt * 4);
   if (spiller.fart > 0.05) { const s = spiller.fart * dt; if (flytt(spiller.pos, Math.sin(spiller.retning) * s, Math.cos(spiller.retning) * s, 3)) spiller.fart *= 0.9; }
   baat.position.set(spiller.pos.x, 0.25 + Math.sin(t * 1.6) * 0.15, spiller.pos.z);
