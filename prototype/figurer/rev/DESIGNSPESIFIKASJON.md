@@ -1,6 +1,6 @@
 # EVN-reven: visuell designspesifikasjon
 
-Status: **utkast til Even** (4.11.2026). Ingenting er modellert, generert eller lagt inn i spill.
+Status: **utkast til Even** (4.11.2026). **Hovedretning valgt 4.11.2026: reven går oppreist på to bein.** Ingenting er modellert, generert eller lagt inn i spill.
 Even velger og godkjenner designet. Punkter merket **☐ Even velger** er åpne valg.
 Hører til `../VURDERING-BLENDER.md` (pilot med reven, trinn 2a–3).
 
@@ -72,7 +72,21 @@ Mål som andel av robotens høyde H. Reven skal være like høy som roboten uten
 | Føtter | store mørke poter | D4. Står stødig |
 | Hale | stor og busket, ca. 0,5 H lang, hvit spiss | Revens andre kjennetegn. Synes fra alle vinkler |
 
-**☐ Even velger: to eller fire bein.** Anbefalingen er **to bein**, slik at reven kan bruke samme styring, redskaper og hatter som roboten. Med fire bein må proporsjonene over lages på nytt.
+**Valgt 4.11.2026: to bein.** Reven er oppreist, passer visuelt sammen med roboten og har tydelige revekjennetegn: store ører, kort snute, poter og busket hale.
+
+### Rolle i spillene
+
+- Reven er en **alternativ spillbar figur**, ikke en erstatning for roboten.
+- Den har **samme spillmessige egenskaper som roboten**: samme høyde, kollisjon, fart, hopp, liv og bruk av utstyr. Valg av figur er bare utseende.
+- Den skal kunne gå, løpe, hoppe og bruke utstyr (øks, håv, bue) med potene.
+- **Kan senere låses opp med E-coins.** I dag har `ecoins/ecoins.js` bare varer for `hode` og `rygg`. En figur som kan låses opp, krever en ny type vare og et eget vedtak. Ingenting er endret.
+
+### Animasjonssystem: gjenbruk og egne klipp
+
+- Reven får **samme leddnavn som roboten** for kropp, armer og bein (`Hips`, `Abdomen`, `Torso`, `Neck`, `Head`, `UpperArm.L/R`, `LowerArm.L/R`, `Palm2.L/R`, `UpperLeg.L/R`, `LowerLeg.L/R`, `Foot.L/R`). Da kan spillkoden bruke samme `AnimationMixer`-oppsett og samme klippnavn, og robotens klipp kan prøves direkte på reven.
+- Robotens klipp vil trolig ikke passe helt, fordi lemmene har andre lengder. De overføres og rettes i Blender, eller lages på nytt med samme navn.
+- Ekstra ledd for hale (3–4) og ører (1 hver) har **egne reveklipp** som spilles oppå (for eksempel halevifting i `Idle`). Spill som ikke kjenner dem, virker likevel.
+- Våpengrep og tilbehør følger samme feste-punkter som roboten (`Palm2.R` / `EVN_hand_H`, `EVN_hode`, `EVN_rygg`).
 
 ### Farger (tre materialer)
 
@@ -176,16 +190,30 @@ KI-utkast flyttes aldri direkte til `felles/`.
 
 ---
 
-## 9. Evens godkjenning
+## 9. Skisser
+
+`skisser.html` viser tre forslag på to bein ved siden av den ekte robotmodellen, med visning forfra, skrått, fra siden, bakfra, ovenfra, silhuett, gråtoner, liten størrelse og fargevarianter (A, B, C, polarrev, sølvrev). Revene er grove skisser av enkle former, ikke spillmodeller. Faste bilder ligger i `skisser/`.
+
+| | Forslag 1 «Klassisk» | Forslag 2 «Nysgjerrig» | Forslag 3 «Modig» |
+|---|---|---|---|
+| Farge | A `#e8742a` | B `#f39a3c` | C `#c9552a` |
+| Uttrykk | Glad | Ett bryn opp, hodet på skrå, vinker | Bryn ned, armene ut |
+| Hode og ører | 40 %, mellomstore ører | 42 %, størst øyne, brede ører | 38 %, lange spisse ører |
+| Gult kjennetegn | Skjerf | Halsbånd med merke | Skjerf med lang flik |
+
+Kjent feil i skissesiden: i silhuettvisningen tegnes robotens hender i utgangsstillingen (ut til siden). De andre visningene er riktige.
+
+## 10. Evens godkjenning
 
 | Hva | Valg | Dato |
 |---|---|---|
-| To eller fire bein | | |
+| To eller fire bein | To bein (hovedretning) | 4.11.2026 |
 | Navn | | |
 | Hovedfarge (A, B, C eller annen) | | |
 | EVN-kjennetegn | | |
 | Munn eller bare bryn og øyne | | |
 | Ører under hjelmer | | |
+| Forslag (1, 2, 3 eller en blanding) | | |
 | Utkast som skal modelleres | | |
 | Grovmodellen i Blender (trinn 2–3) | | |
 

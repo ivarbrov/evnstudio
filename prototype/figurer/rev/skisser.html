@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'">
+<title>EVN-reven – skisser (utkast til Even)</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #131a3a; color: #f1f4ff; }
+  header { padding: 12px 16px 4px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p { margin: 4px 0; color: #a3add3; font-size: 14px; max-width: 70em; }
+  .knapper { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px; }
+  .knapper span { align-self: center; color: #a3add3; font-size: 13px; margin-left: 8px; }
+  button { min-height: 44px; min-width: 44px; padding: 0 12px; border-radius: 10px; border: 2px solid #2f6bff; background: #080c1a; color: #f1f4ff; font-size: 14px; cursor: pointer; }
+  button[aria-pressed="true"] { background: #2f6bff; }
+  #flate { position: relative; margin: 0 16px; border-radius: 12px; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 62vh; min-height: 340px; }
+  #flate.liten canvas { image-rendering: pixelated; }
+  #navn { position: absolute; left: 0; right: 0; bottom: 6px; pointer-events: none; }
+  #navn div { position: absolute; bottom: 0; transform: translateX(-50%); text-align: center; font-size: 13px; background: rgba(8,12,26,.75); padding: 2px 8px; border-radius: 8px; white-space: nowrap; }
+  table { border-collapse: collapse; margin: 12px 16px 24px; font-size: 14px; }
+  td, th { border: 1px solid #2a3566; padding: 6px 10px; text-align: left; vertical-align: top; }
+  th { background: #0d1430; }
+  .prove { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; border: 1px solid #fff4; }
+</style>
+</head>
+<body>
+<header>
+  <h1>EVN-reven på to bein – tre skisser ved siden av EVN-roboten</h1>
+  <p><strong>Utkast til Even, ikke en spillmodell.</strong> Revene er grove skisser bygget av enkle former for å prøve stil, proporsjoner og farger. Roboten er den ekte modellen (<code>ecoins/helt-robot.glb</code>, #ffcc00, hvilestilling). Alle figurene står på samme bakke med samme lys. Den stiplede linja viser robotens høyde.</p>
+</header>
+<div class="knapper" id="vinkler">
+  <button data-vinkel="forfra" aria-pressed="false">Forfra</button>
+  <button data-vinkel="skraatt" aria-pressed="true">Skrått</button>
+  <button data-vinkel="siden" aria-pressed="false">Fra siden</button>
+  <button data-vinkel="bak" aria-pressed="false">Bakfra</button>
+  <button data-vinkel="ovenfra" aria-pressed="false">Ovenfra (som Era)</button>
+</div>
+<div class="knapper">
+  <span>Visning:</span>
+  <button id="silhuett" aria-pressed="false">Silhuett</button>
+  <button id="graa" aria-pressed="false">Gråtoner</button>
+  <button id="liten" aria-pressed="false">Liten (ca. 60 px høy)</button>
+  <button id="farger" aria-pressed="false">Fargevarianter av forslag 1</button>
+  <span>Bakgrunn:</span>
+  <button data-bak="#3a4466" aria-pressed="true">Nøytral</button>
+  <button data-bak="#2e4a2c" aria-pressed="false">Skog</button>
+  <button data-bak="#cdb27e" aria-pressed="false">Sand</button>
+  <button data-bak="#16161f" aria-pressed="false">Hule</button>
+</div>
+<div id="flate"><canvas id="c"></canvas><div id="navn"></div></div>
+
+<table>
+  <tr><th></th><th>Forslag 1 «Klassisk»</th><th>Forslag 2 «Nysgjerrig»</th><th>Forslag 3 «Modig»</th></tr>
+  <tr><th>Hovedfarge</th><td><span class="prove" style="background:#e8742a"></span> A #e8742a</td><td><span class="prove" style="background:#f39a3c"></span> B #f39a3c</td><td><span class="prove" style="background:#c9552a"></span> C #c9552a</td></tr>
+  <tr><th>Uttrykk</th><td>Glad, rolige bryn</td><td>Nysgjerrig, ett bryn opp, hodet på skrå, vinker</td><td>Bestemt, bryn ned, potene i siden</td></tr>
+  <tr><th>Hode og ører</th><td>Hode 40 % av høyden, mellomstore ører</td><td>Størst hode (42 %) og størst øyne, brede ører</td><td>Hode 38 %, smalere, lange spisse ører</td></tr>
+  <tr><th>Gult EVN-kjennetegn</th><td>Skjerf</td><td>Halsbånd med merke</td><td>Skjerf med lang flik</td></tr>
+  <tr><th>Hale</th><td>Stor, buet opp</td><td>Ekstra stor og rund</td><td>Lang og slank</td></tr>
+</table>
+<p style="margin:0 16px 24px">Fargevariantene viser forslag 1 i A, B og C, pluss to mulige skins: polarrev og sølvrev. Skins er bare et forslag. Om de skal kunne kjøpes for E-coins, er ikke bestemt.</p>
+
+<script src="../../../vendor/three-r128.min.js"></script>
+<script src="../../../ecoins/gltfloader-r128.js"></script>
+<script>
+'use strict';
+const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
+const mat = (hex, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: lin(hex), flatShading: true, roughness: .8, metalness: 0 }, o));
+const GUL = 0xffcc00;
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x3a4466);
+scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x2a2350, 0.55));
+const sol = new THREE.DirectionalLight(0xfff2d6, 1.15); sol.position.set(3, 6, 5); scene.add(sol);
+const kant = new THREE.DirectionalLight(0x8a9dff, 0.45); kant.position.set(-4, 3, -5); scene.add(kant);
+const camera = new THREE.PerspectiveCamera(20, 1, 0.1, 100);
+
+// Bakke og høydelinje (robotens høyde = 1)
+const bakke = new THREE.Mesh(new THREE.CircleGeometry(30, 48), mat(0x59607e)); bakke.rotation.x = -Math.PI / 2; scene.add(bakke);
+const linjeMat = new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: .04, gapSize: .03, transparent: true, opacity: .6 });
+const linje = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-2.6, 1, 0), new THREE.Vector3(2.6, 1, 0)]), linjeMat);
+linje.computeLineDistances(); scene.add(linje);
+
+// ---------- Reven (skisse av enkle former, H = robotens høyde = 1) ----------
+function lagRev(o) {
+  const M = { main: mat(o.main), lys: mat(o.lys || 0xf3eadb), mork: mat(o.mork || 0x2a1f1b), gul: mat(GUL), hvit: mat(0xffffff, { roughness: .3 }) };
+  const G = new THREE.Group();
+  const del = (geo, m, p, s = [1, 1, 1], r = [0, 0, 0], forelder = G) => { const x = new THREE.Mesh(geo, m); x.position.set(...p); x.scale.set(...s); x.rotation.set(...r); forelder.add(x); return x; };
+  const kule = (seg = 7) => new THREE.SphereGeometry(1, seg, Math.max(4, seg - 2));
+  const syl = (r1, r2, h, s = 6) => new THREE.CylinderGeometry(r1, r2, h, s);
+
+  // Føtter (store mørke poter) og bein (mørke «sokker» nederst, som en ekte rev)
+  for (const sx of [-1, 1]) {
+    del(kule(6), M.mork, [sx * .11, .04, .035], [.075, .045, .115]);
+    del(syl(.05, .055, .16), M.mork, [sx * .11, .14, 0]);
+    del(syl(.04, .05, .12), M.main, [sx * .1, .27, 0]);
+  }
+  // Overkropp (pæreform) og mage
+  const kroppH = o.kropp || 1;
+  del(kule(7), M.main, [0, .45, 0], [.17 * kroppH, .19, .15]);
+  del(kule(6), M.lys, [0, .44, .07], [.11 * kroppH, .14, .085]);
+
+  // Armer: tynne med store votter (som roboten). Stilling etter uttrykk
+  const armer = o.armer || 'ned';
+  for (const sx of [-1, 1]) {
+    const skulder = new THREE.Group(); skulder.position.set(sx * .165, .56, 0); G.add(skulder);
+    let rz = sx * .35, rx = 0;
+    if (armer === 'hofte') { rz = sx * .65; rx = .35; }
+    if (armer === 'vink' && sx === 1) { rz = 2.55; }
+    skulder.rotation.set(rx, 0, rz);
+    del(syl(.03, .03, .2), M.main, [0, -.1, 0], [1, 1, 1], [0, 0, 0], skulder);
+    del(kule(6), M.mork, [0, -.22, 0], [.06, .065, .06], [0, 0, 0], skulder);
+  }
+
+  // EVN-kjennetegn i robotgult
+  if (o.gult === 'skjerf' || o.gult === 'flik') {
+    del(new THREE.TorusGeometry(.13, .04, 5, 9), M.gul, [0, .6, 0], [1, 1, .9], [Math.PI / 2, 0, 0]);
+    del(new THREE.BoxGeometry(.07, o.gult === 'flik' ? .2 : .12, .025), M.gul, [.07, o.gult === 'flik' ? .48 : .52, .14], [1, 1, 1], [.15, 0, .2]);
+  } else if (o.gult === 'halsband') {
+    del(new THREE.TorusGeometry(.12, .022, 4, 10), M.gul, [0, .61, 0], [1, 1, .9], [Math.PI / 2, 0, 0]);
+    del(new THREE.CylinderGeometry(.04, .04, .015, 8), M.gul, [0, .56, .12], [1, 1, 1], [Math.PI / 2, 0, 0]);
+  }
+
+  // Hale: busket, buet opp bak, hvit spiss
+  const hs = o.hale || 1, hl = o.haleLengde || 1;
+  del(kule(6), M.main, [0, .27, -.14 - .06 * hl], [.08 * hs, .08 * hs, .12 * hl], [.6, 0, 0]);
+  del(kule(6), M.main, [0, .35, -.17 - .14 * hl], [.11 * hs, .12 * hs, .13 * hl], [.9, 0, 0]);
+  del(kule(6), M.lys, [0, .47 + .02 * (hl - 1), -.2 - .18 * hl], [.085 * hs, .095 * hs, .085 * hl], [1.2, 0, 0]);
+
+  // Hode
+  const hode = new THREE.Group(); const hH = o.hode || .40; hode.position.set(0, 1 - hH / 2, 0); hode.rotation.z = o.hodeSkraa || 0; G.add(hode);
+  const hb = o.hodeBredde || .52, hx = hb / 2, hy = hH / 2, hz = hx * .9;
+  del(kule(8), M.main, [0, 0, 0], [hx, hy, hz], [0, 0, 0], hode);
+  // Hvite kinn
+  for (const sx of [-1, 1]) del(new THREE.ConeGeometry(.065, .13, 4), M.lys, [sx * hx * .74, -hy * .5, hz * .4], [1, 1, .8], [0, 0, sx * 2.45], hode);
+  // Snute (kort og butt) med nese
+  const sn = o.snute || .14;
+  del(new THREE.ConeGeometry(.1, sn, 5), M.lys, [0, -hy * .32, hz + sn * .35], [1, .8, 1], [Math.PI / 2, 0, 0], hode);
+  del(new THREE.ConeGeometry(.085, sn * .9, 5), M.main, [0, -hy * .2, hz + sn * .25], [1, .55, 1], [Math.PI / 2 - .12, 0, 0], hode);
+  del(kule(5), M.mork, [0, -hy * .3, hz + sn * .82], [.035, .028, .03], [0, 0, 0], hode);
+  // Øyne: store og mørke med hvitt glanspunkt
+  const oy = o.oyne || 1, ox = hx * .4;
+  for (const sx of [-1, 1]) {
+    del(kule(7), M.mork, [sx * ox, hy * .12, hz * .86], [.075 * oy, .085 * oy, .04], [0, sx * .35, 0], hode);
+    del(kule(4), M.hvit, [sx * ox - .022, hy * .12 + .03 * oy, hz * .86 + .035], [.018, .018, .01], [0, 0, 0], hode);
+  }
+  // Bryn
+  const bryn = o.bryn || [0, 0];
+  for (const sx of [-1, 1]) {
+    const i = sx < 0 ? 0 : 1, løft = bryn[i];
+    del(new THREE.BoxGeometry(.09, .024, .03), M.mork, [sx * ox, hy * .12 + .1 * oy + løft * .03, hz * .8], [1, 1, 1], [0, sx * .35, -sx * løft * .25 + (o.brynVinkel || 0) * sx], hode);
+  }
+  // Ører: store, spisse, mørk spiss og lys innside
+  const oh = o.oreH || .22, ob = o.oreB || .1;
+  for (const sx of [-1, 1]) {
+    const ore = new THREE.Group(); ore.position.set(sx * hx * .52, hy * .78, -hz * .1); ore.rotation.z = -sx * (o.oreVinkel || .28); hode.add(ore);
+    del(new THREE.ConeGeometry(ob, oh, 4), M.main, [0, oh / 2, 0], [1, 1, .55], [0, Math.PI / 4, 0], ore);
+    del(new THREE.ConeGeometry(ob * .6, oh * .7, 4), M.lys, [0, oh * .4, ob * .2], [1, 1, .3], [0, Math.PI / 4, 0], ore);
+    del(new THREE.ConeGeometry(ob * .38, oh * .34, 4), M.mork, [0, oh * .85, 0], [1, 1, .6], [0, Math.PI / 4, 0], ore);
+  }
+  G.userData.mat = M;
+  return G;
+}
+
+const FORSLAG = [
+  { navn: 'Forslag 1 «Klassisk»', main: 0xe8742a, gult: 'skjerf', bryn: [0, 0], brynVinkel: -.08 },
+  { navn: 'Forslag 2 «Nysgjerrig»', main: 0xf39a3c, gult: 'halsband', hode: .42, hodeBredde: .56, oyne: 1.15, oreB: .12, oreH: .2, bryn: [0, 1.2], hodeSkraa: .14, hale: 1.25, armer: 'vink' },
+  { navn: 'Forslag 3 «Modig»', main: 0xc9552a, gult: 'flik', hode: .38, hodeBredde: .48, oreH: .27, oreB: .09, oreVinkel: .18, brynVinkel: .32, snute: .16, hale: .85, haleLengde: 1.2, armer: 'hofte', kropp: .95 },
+];
+const VARIANTER = [
+  { navn: 'A #e8742a', main: 0xe8742a },
+  { navn: 'B #f39a3c', main: 0xf39a3c },
+  { navn: 'C #c9552a', main: 0xc9552a },
+  { navn: 'Skin: polarrev', main: 0xe9eef2, lys: 0xffffff, mork: 0x3d4652 },
+  { navn: 'Skin: sølvrev', main: 0x6c727c, lys: 0xe9e9ee, mork: 0x1c1d22 },
+];
+
+// ---------- Oppstilling ----------
+const figurer = [];   // { obj, navn }
+let robot = null;
+function oppstilling(variant) {
+  for (const f of figurer) if (f.obj !== robot) scene.remove(f.obj);
+  figurer.length = 0;
+  const liste = variant
+    ? VARIANTER.map(v => ({ navn: v.navn, lag: () => lagRev(Object.assign({}, FORSLAG[0], v)) }))
+    : FORSLAG.map(v => ({ navn: v.navn, lag: () => lagRev(v) }));
+  const alle = [{ navn: 'EVN-roboten', robot: true }].concat(liste);
+  const avstand = variant ? .78 : .95, x0 = -(alle.length - 1) * avstand / 2;
+  alle.forEach((f, i) => {
+    const obj = f.robot ? robot : f.lag();
+    if (!obj) return;
+    obj.position.set(x0 + i * avstand, 0, 0); if (!f.robot) scene.add(obj);
+    figurer.push({ obj, navn: f.navn });
+  });
+  vinkel(aktivVinkel);
+}
+
+// ---------- Kamera og visning ----------
+let aktivVinkel = 'skraatt', fokus = null;
+const VINKLER = { forfra: [0, .12, 1], skraatt: [.4, .28, 1], siden: [0, .12, 1], bak: [0, .2, 1], ovenfra: [0, .75, 1] };
+function vinkel(n) {
+  aktivVinkel = n; storrelse();
+  const rot = { siden: Math.PI / 2, bak: Math.PI }[n] || 0; for (const f of figurer) f.obj.rotation.y = rot;
+  const [x, y, z] = VINKLER[n], bredde = figurer.length * .95 + .6, d = bredde / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect) + 1;
+  const v = new THREE.Vector3(x, y, z).normalize().multiplyScalar(Math.max(d * 1.25, 8));
+  const mål = new THREE.Vector3(0, .5, 0);
+  if (fokus != null && figurer[fokus]) { mål.set(figurer[fokus].obj.position.x - .05, .55, 0); v.setLength(4.2); }
+  camera.position.copy(v).add(mål); camera.lookAt(mål);
+    tegn();
+}
+function storrelse() {
+  const r = canvas.getBoundingClientRect(), liten = document.getElementById('flate').classList.contains('liten');
+  if (!(r.width > 0 && r.height > 0)) return;
+  camera.aspect = r.width / r.height; camera.updateProjectionMatrix();
+  renderer.setPixelRatio(liten ? 60 / (r.height * .5) : Math.min(2, devicePixelRatio));
+  renderer.setSize(r.width, r.height, false);
+}
+const sort = new THREE.MeshBasicMaterial({ color: 0x000000 });
+function tegn() {
+  storrelse();
+  const sil = document.getElementById('silhuett').getAttribute('aria-pressed') === 'true';
+  scene.overrideMaterial = sil ? sort : null; bakke.visible = !sil;
+  const bak = scene.background; if (sil) scene.background = new THREE.Color(0xffffff);
+  renderer.render(scene, camera);
+  if (sil) scene.background = bak;
+  const navn = document.getElementById('navn'); navn.innerHTML = '';
+  const r = canvas.getBoundingClientRect();
+  for (const f of figurer) {
+    const p = f.obj.position.clone(); p.y = 0; p.project(camera);
+    const d = document.createElement('div'); d.textContent = f.navn; d.style.left = ((p.x + 1) / 2 * r.width) + 'px'; navn.appendChild(d);
+  }
+}
+function trykk(gruppe, knapp) { for (const b of gruppe) b.setAttribute('aria-pressed', b === knapp ? 'true' : 'false'); }
+const vk = document.querySelectorAll('[data-vinkel]'); vk.forEach(b => b.onclick = () => { trykk(vk, b); vinkel(b.dataset.vinkel); });
+const bk = document.querySelectorAll('[data-bak]'); bk.forEach(b => b.onclick = () => { trykk(bk, b); scene.background = new THREE.Color(parseInt(b.dataset.bak.slice(1), 16)); bakke.material.color = lin(parseInt(b.dataset.bak.slice(1), 16)).multiplyScalar(1.6); tegn(); });
+const veksle = (id, f) => { const b = document.getElementById(id); b.onclick = () => { const p = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', p); f(p); tegn(); }; };
+veksle('silhuett', () => {});
+veksle('graa', p => { canvas.style.filter = p ? 'grayscale(1)' : ''; });
+veksle('liten', p => { document.getElementById('flate').classList.toggle('liten', p); });
+veksle('farger', p => oppstilling(p));
+addEventListener('resize', tegn);
+// Valg i adressen, for faste bilder: #vinkel=siden&farger&silhuett&graa&liten&bak=skog
+function fraAdresse() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  for (const id of ['farger', 'silhuett', 'graa', 'liten']) if (h.has(id)) document.getElementById(id).click();
+  const bak = { skog: '#2e4a2c', sand: '#cdb27e', hule: '#16161f' }[h.get('bak')]; if (bak) document.querySelector('[data-bak="' + bak + '"]').click();
+  if (h.has('fokus')) fokus = +h.get('fokus');
+  const v = h.get('vinkel'); if (v) document.querySelector('[data-vinkel="' + v + '"]').click();
+}
+
+// ---------- Roboten (ekte modell) ----------
+new THREE.GLTFLoader().load('../../../ecoins/helt-robot.glb', gltf => {
+  const modell = gltf.scene;
+  const mix = new THREE.AnimationMixer(modell), idle = gltf.animations.find(a => a.name === 'Idle');
+  if (idle) { mix.clipAction(idle).play(); mix.update(0); }
+  modell.traverse(o => { if (o.isMesh && o.material && o.material.name === 'Main') o.material.color = lin(GUL); if (o.isMesh) o.frustumCulled = false; });
+  modell.updateMatrixWorld(true);
+  // Høyden måles på de ferdig bøyde hjørnene i hvilestillingen (Box3 bruker utgangsstillingen og blir for høy)
+  let mn = Infinity, mx = -Infinity; const v = new THREE.Vector3();
+  modell.traverse(o => { if (!o.isMesh) return; const pos = o.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i); if (o.isSkinnedMesh) o.boneTransform(i, v); v.applyMatrix4(o.matrixWorld); mn = Math.min(mn, v.y); mx = Math.max(mx, v.y); } });
+  const k = 1 / (mx - mn);
+  modell.scale.setScalar(k); modell.position.y = -mn * k;
+  robot = new THREE.Group(); robot.add(modell); scene.add(robot);
+  oppstilling(false); fraAdresse();
+}, undefined, e => { console.error('Fant ikke roboten', e); oppstilling(false); });
+oppstilling(false);
+</script>
+</body>
+</html>
