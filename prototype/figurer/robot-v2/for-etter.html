@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'">
+<title>EVN-roboten før og etter (utkast til Even)</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #131a3a; color: #f1f4ff; }
+  header { padding: 12px 16px 4px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p { margin: 4px 0; color: #a3add3; font-size: 14px; max-width: 74em; }
+  .knapper { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px; }
+  button { min-height: 44px; min-width: 44px; padding: 0 12px; border-radius: 10px; border: 2px solid #2f6bff; background: #080c1a; color: #f1f4ff; font-size: 14px; cursor: pointer; }
+  button[aria-pressed="true"] { background: #2f6bff; }
+  #flate { position: relative; margin: 0 16px 8px; border-radius: 12px; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 64vh; min-height: 360px; }
+  #navn { position: absolute; left: 0; right: 0; bottom: 6px; pointer-events: none; }
+  #navn div { position: absolute; bottom: 0; transform: translateX(-50%); text-align: center; font-size: 13px; background: rgba(8,12,26,.78); padding: 2px 8px; border-radius: 8px; white-space: nowrap; }
+  pre { margin: 0 16px 24px; font-size: 13px; color: #a3add3; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1>EVN-roboten: før og etter (Blender)</h1>
+  <p><strong>Utkast til Even.</strong> «Før» er dagens robot (<code>ecoins/helt-robot.glb</code>, uendret). «Etter» er samme robot med myke kanter, færre deler og litt blankere overflate, laget i Blender. Skjelett, ledd, animasjoner, farger, ansikt og alle navn spillene bruker, er nøyaktig som før. Begge står i samme lys med skygger.</p>
+</header>
+<div class="knapper">
+  <button data-vis="stille" aria-pressed="true">Forfra, siden, bakfra</button>
+  <button data-vis="naer" aria-pressed="false">Nærbilde</button>
+  <button data-vis="bevegelse" aria-pressed="false">Hvile, gange, løping, hopp</button>
+  <button data-vis="garderobe" aria-pressed="false">Med garderobevarer</button>
+  <button data-vis="rev" aria-pressed="false">Med reven</button>
+  <button data-vis="revbevegelse" aria-pressed="false">Revens bevegelser</button>
+  <button data-vis="revgarderobe" aria-pressed="false">Begge med garderobevarer</button>
+  <button data-vis="ytelse-for" aria-pressed="false">Ytelse: 30 roboter før</button>
+  <button data-vis="ytelse-etter" aria-pressed="false">Ytelse: 30 roboter etter</button>
+  <button data-vis="ytelse-rev" aria-pressed="false">Ytelse: 30 rever</button>
+</div>
+<div id="flate"><canvas id="c"></canvas><div id="navn"></div></div>
+<pre id="maal">Måler …</pre>
+
+<script src="../../../vendor/three-r128.min.js"></script>
+<script src="../../../ecoins/gltfloader-r128.js"></script>
+<script src="../../../ecoins/tilbehor-3d.js"></script>
+<script>
+'use strict';
+const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
+const GUL = 0xffcc00;
+const KILDER = { for: '../../../ecoins/helt-robot.glb', etter: 'robot-v2.glb', rev: '../rev/rev.glb' };
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x3a4466);
+scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x2a2350, 0.55));
+const sol = new THREE.DirectionalLight(0xfff2d6, 1.15); sol.position.set(3, 6, 5); sol.castShadow = true;
+sol.shadow.mapSize.set(2048, 2048); Object.assign(sol.shadow.camera, { left: -6, right: 6, top: 4, bottom: -2, near: .5, far: 20 }); sol.shadow.bias = -.0005; sol.shadow.normalBias = .01; scene.add(sol);
+const kant = new THREE.DirectionalLight(0x8a9dff, 0.45); kant.position.set(-4, 3, -5); scene.add(kant);
+const bakke = new THREE.Mesh(new THREE.CircleGeometry(30, 48), new THREE.MeshStandardMaterial({ color: lin(0x59607e), roughness: 1 }));
+bakke.rotation.x = -Math.PI / 2; bakke.receiveShadow = true; scene.add(bakke);
+const camera = new THREE.PerspectiveCamera(20, 1, 0.1, 100);
+
+// ---------- last en robot (egen lasting per figur, så hver har sitt skjelett) ----------
+const lastet = {};
+function lastGLB(url) { return new Promise((ok, feil) => new THREE.GLTFLoader().load(url, ok, undefined, feil)); }
+async function lagRobot(hvilken, klipp = 'Idle', tid = 0, antrekk = null) {
+  const gltf = await lastGLB(KILDER[hvilken]);
+  const modell = gltf.scene;
+  const erRev = hvilken === 'rev';
+  modell.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; if (!erRev && o.material && o.material.name === 'Main') o.material.color = lin(GUL); } });
+  const mix = new THREE.AnimationMixer(modell), c = gltf.animations.find(a => a.name === 'Idle');
+  if (c) { mix.clipAction(c).play(); mix.update(0); }
+  modell.updateMatrixWorld(true);
+  // høyde målt på bøyd geometri i hvilestilling (samme mål for før og etter)
+  let mn = Infinity, mx = -Infinity; const v = new THREE.Vector3();
+  modell.traverse(o => { if (!o.isMesh) return; const pos = o.geometry.attributes.position; for (let i = 0; i < pos.count; i += 3) { v.fromBufferAttribute(pos, i); if (o.isSkinnedMesh) o.boneTransform(i, v); v.applyMatrix4(o.matrixWorld); mn = Math.min(mn, v.y); mx = Math.max(mx, v.y); } });
+  if (!erRev) { const k = 1 / (mx - mn); modell.scale.setScalar(k); modell.position.y = -mn * k; }   // reven er modellert i robotens høyde (1)
+  const rot = new THREE.Group(); rot.add(modell); rot.updateMatrixWorld(true);
+  if (antrekk) { const t = EVNTilbehor.lag(THREE, modell); t.vis(antrekk); }
+  if (klipp !== 'Idle') { mix.stopAllAction(); const a = gltf.animations.find(x => x.name === klipp); if (a) { mix.clipAction(a).play(); mix.setTime(tid * a.duration); } }
+  rot.userData.mix = mix; rot.userData.gltf = gltf;
+  return rot;
+}
+
+// ---------- visninger ----------
+let figurer = [];
+const nullstill = () => { for (const f of figurer) scene.remove(f.obj); figurer = []; };
+const legg = (obj, navn, x, ry = 0) => { obj.position.x = x; obj.rotation.y = ry; scene.add(obj); figurer.push({ obj, navn }); };
+const VIS = {
+  async stille() {
+    const v = [['forfra', 0], ['siden', Math.PI / 2], ['bakfra', Math.PI]];
+    let x = -3.3;
+    for (const [n, r] of v) { legg(await lagRobot('for'), 'Før ' + n, x, r); legg(await lagRobot('etter'), 'Etter ' + n, x + 1.05, r); x += 2.4; }
+  },
+  async naer() { legg(await lagRobot('for'), 'Før', -.6, -.35); legg(await lagRobot('etter'), 'Etter', .6, -.35); },
+  async bevegelse() {
+    const v = [['Hvile', 'Idle', 0], ['Gange', 'Walking', .3], ['Løping', 'Running', .3], ['Hopp', 'Jump', .45]];
+    let x = -4.1;
+    for (const [n, c, t] of v) { legg(await lagRobot('for', c, t), 'Før ' + n.toLowerCase(), x, -.4); legg(await lagRobot('etter', c, t), 'Etter ' + n.toLowerCase(), x + 1.05, -.4); x += 2.4; }
+  },
+  async garderobe() {
+    const v = [['pirathatt', 'ryggsekk'], ['romhjelm', 'oksygentank'], ['trollmannshatt', 'stjernekappe']];
+    let x = -3.3;
+    for (const [h, r] of v) { legg(await lagRobot('for', 'Idle', 0, { hode: h, rygg: r }), 'Før', x, .5); legg(await lagRobot('etter', 'Idle', 0, { hode: h, rygg: r }), 'Etter', x + 1.05, .5); x += 2.4; }
+  },
+  async rev() {
+    legg(await lagRobot('etter'), 'Roboten (etter)', -1.6, 0);
+    legg(await lagRobot('rev'), 'Reven (Blender)', -.5, 0);
+    legg(await lagRobot('etter', 'Wave', .35), 'Roboten vinker', .7, -.4);
+    legg(await lagRobot('rev', 'Wave', .4), 'Reven vinker', 1.8, -.4);
+  },
+  async revbevegelse() {
+    const v = [['Hvile', 'Idle', 0], ['Gange', 'Walking', .25], ['Løping', 'Running', .25], ['Hopp', 'Jump', .42], ['Snike', 'Sneak', .25], ['Slag', 'Punch', .3]];
+    let x = -2.75; for (const [n, c, t] of v) { legg(await lagRobot('rev', c, t), 'Reven: ' + n.toLowerCase(), x, -.6); x += 1.1; }
+  },
+  async revgarderobe() {
+    const v = [['pirathatt', 'ryggsekk'], ['romhjelm', 'oksygentank'], ['trollmannshatt', 'stjernekappe']];
+    let x = -3.3;
+    for (const [h, r] of v) { legg(await lagRobot('etter', 'Idle', 0, { hode: h, rygg: r }), 'Roboten', x, .5); legg(await lagRobot('rev', 'Idle', 0, { hode: h, rygg: r }), 'Reven', x + 1.05, .5); x += 2.4; }
+  },
+};
+let løkke = null;
+async function ytelse(hvilken) {
+  for (let i = 0; i < 30; i++) { const r = await lagRobot(hvilken, 'Walking', (i % 10) / 10); r.position.z = -Math.floor(i / 10) * 1.2; legg(r, i === 15 ? ({ for: 'Robot før', etter: 'Robot etter', rev: 'Reven' })[hvilken] + ' × 30, går, med skygger' : '', (i % 10) * .62 - 2.8, -.5); }
+  const klokke = new THREE.Clock(); let bilder = 0, start = performance.now(), kall = 0;
+  const steg = () => { const dt = klokke.getDelta(); for (const f of figurer) f.obj.userData.mix && f.obj.userData.mix.update(dt); renderer.render(scene, camera); kall = renderer.info.render.calls; bilder++;
+    const t = performance.now() - start;
+    if (t > 8000) { document.getElementById('maal').textContent += `
+30 × ${hvilken}: ${(bilder / t * 1000).toFixed(1)} bilder/s, ${kall} tegnekall per bilde (med skygger). Tallet gjelder denne enheten.`; løkke = null; return; }
+    løkke = requestAnimationFrame(steg); };
+  løkke = requestAnimationFrame(steg);
+}
+VIS['ytelse-for'] = () => ytelse('for'); VIS['ytelse-etter'] = () => ytelse('etter'); VIS['ytelse-rev'] = () => ytelse('rev');
+async function vis(n) {
+  if (løkke) { cancelAnimationFrame(løkke); løkke = null; }
+  nullstill(); await VIS[n]();
+  const xs = figurer.map(f => f.obj.position.x), midt = (Math.min(...xs) + Math.max(...xs)) / 2, bredde = Math.max(...xs) - Math.min(...xs) + 1.1;
+  storrelse();
+  const d = bredde / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect) * 1.1;
+  const naer = n === 'naer';
+  camera.position.set(midt + (naer ? .5 : 0), naer ? .9 : .55 + d * .1, naer ? 3.2 : Math.max(d, 5)); camera.lookAt(midt, naer ? .7 : .5, 0);
+  tegn();
+}
+function storrelse() { const r = canvas.getBoundingClientRect(); if (!(r.width > 0 && r.height > 0)) return; camera.aspect = r.width / r.height; camera.updateProjectionMatrix(); renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.setSize(r.width, r.height, false); }
+function tegn() {
+  storrelse(); renderer.render(scene, camera);
+  const navn = document.getElementById('navn'), r = canvas.getBoundingClientRect(); navn.innerHTML = '';
+  for (const f of figurer) { const p = f.obj.position.clone(); p.y = 0; p.project(camera); const d = document.createElement('div'); d.textContent = f.navn; d.style.left = ((p.x + 1) / 2 * r.width) + 'px'; navn.appendChild(d); }
+}
+const knapper = document.querySelectorAll('[data-vis]');
+knapper.forEach(b => b.onclick = () => { knapper.forEach(k => k.setAttribute('aria-pressed', k === b)); vis(b.dataset.vis); });
+addEventListener('resize', tegn);
+
+// ---------- måling: tegnekall og trekanter for én robot ----------
+async function maal() {
+  const ut = [];
+  for (const h of ['for', 'etter', 'rev']) {
+    const s2 = new THREE.Scene(); s2.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
+    const r = await lagRobot(h); s2.add(r);
+    renderer.info.autoReset = false; renderer.info.reset(); renderer.shadowMap.enabled = false;
+    renderer.render(s2, camera); const i = renderer.info.render;
+    let bytes = 0; try { bytes = (await (await fetch(KILDER[h])).arrayBuffer()).byteLength; } catch (e) {}
+    ut.push(`${{ for: 'Robot før  ', etter: 'Robot etter', rev: 'Reven      ' }[h]}: ${i.calls} tegnekall, ${i.triangles} trekanter, ${r.userData.gltf.animations.length} animasjoner, ${(bytes / 1024).toFixed(0)} kB`);
+    renderer.info.autoReset = true; renderer.shadowMap.enabled = true;
+  }
+  document.getElementById('maal').textContent = 'Én figur uten skygge, målt i nettleseren:\n' + ut.join('\n');
+  document.title = 'KLAR ' + document.title;
+}
+(async () => {
+  await maal();
+  const h = new URLSearchParams(location.hash.slice(1)).get('vis');
+  const b = h && document.querySelector('[data-vis="' + h + '"]'); if (b) b.click(); else vis('stille');
+})();
+</script>
+</body>
+</html>

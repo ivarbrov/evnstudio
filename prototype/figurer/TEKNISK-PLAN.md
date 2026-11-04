@@ -15,6 +15,8 @@ Grunnlag: `origin/main` (ff61022), `ecoins/ecoins.js` 1.0, `ecoins/tilbehor-3d.j
 8. Reven følger forslag 2 «Nysgjerrig», går på to bein og har de valgte revekjennetegnene.
 9. Roboten, saldoen, kjøpte varer og lagrede spill skal ikke påvirkes negativt.
 
+**Vedtak 5.11.2026 (eieren):** Prisen er **700 E-coins** (erstatter 1 000). Arbeidet utvides til en felles karakterpilot: EVN-roboten forbedres grafisk i Blender (v2), med originalen uendret som referanse. Reven bygges i Blender. Begge følger `KARAKTERSTANDARD.md`. Magiske egg er første pilotspill når begge er godkjent.
+
 Even godkjenner utseendet før noe bygges inn. En voksen godkjenner publisering.
 
 ---
@@ -74,10 +76,17 @@ Regnet ut fra milepælene i `ecoins/ecoins.js` 1.0. Prisen er **ikke endret**.
 | Mørkeskogen 2.0 (19, «kommer», gir ikke E-coins ennå) | 440 |
 | Alt når Mørkeskogen er med | 2 153 |
 | Alle 15 varer i E-shop | 1 585 |
-| Reven | 1 000 |
-| **Alle varer + reven** | **2 585** |
+| Reven (vedtak 5.11.2026) | 700 |
+| **Alle varer + reven** | **2 285** |
 
-### Funn
+### Funn med 700 E-coins (vedtak 5.11.2026)
+
+- Reven koster **41 %** av alt som kan tjenes i dag (33 % når Mørkeskogen er med). Hele Era Defenders (495) eller hele Dyrepatruljen (475) og omtrent halvparten av et spill til er nok.
+- Det går fortsatt ikke an å eie alt: 2 285 mot 1 713 i dag (mangler 572) og 2 153 med Mørkeskogen (mangler 132).
+- Et barn som har kjøpt hatter for 500, må tjene 1 200 totalt (70 % av alt i dag).
+- Vurdering: 700 er et mer realistisk mål enn 1 000 for 7–12 år. Forslaget om å vise «Du sparer til reven» gjelder fortsatt.
+
+### Funn med 1 000 E-coins (opprinnelig pris)
 
 1. **Reven koster 58 % av alt som kan tjenes i dag** (46 % når Mørkeskogen er med). Ingen enkelt spill gir 1 000. Barnet må fullføre nesten tre spill helt, for eksempel hele Era Defenders og Dyrepatruljen og litt av et tredje.
 2. **Det går ikke an å eie alt.** Alle varer og reven koster 2 585, mens det finnes 1 713 E-coins i dag og 2 153 med Mørkeskogen. Mangler 872 i dag og 432 med Mørkeskogen.
@@ -126,10 +135,11 @@ Hvert trinn er en egen gren og PR, med automatiske tester, EVN Game QA og Evens 
 
 | # | Trinn | Filer | Eier | Godkjenning |
 |---|---|---|---|---|
-| 0 | Even godkjenner revens utseende (`modell.html`). En voksen bestemmer prisen etter punkt 4 | – | Denne økta | **Even**, voksen |
-| 1 | Ferdig modell i Blender: `felles/figurer/rev/rev.glb` med `Idle`, `Walking`, `Running`, `Jump`, `Punch`, `Wave`, `Sneak`, ledd med robotens navn, feste-punkter. Kontroll mot budsjettet og alle 15 varer | `kilde/figurer/rev/`, `felles/figurer/rev/` | Denne økta | **Even**: den ferdige modellen |
+| 0 | Even godkjenner før og etter for roboten og reven fra Blender (`robot-v2/for-etter.html`). Pris: 700 (vedtatt) | – | Denne økta | **Even** |
+| 0b | Ytelse på Evens iPhone med knappene «Ytelse» i `for-etter.html` | – | Even og en voksen | – |
+| 1 | Ferdige modeller: `felles/figurer/robot/robot-v2.glb` (originalen beholdes) og `felles/figurer/rev/rev.glb` med `Idle`, `Walking`, `Running`, `Jump`, `Punch`, `Wave`, `Sneak`, ledd med robotens navn, feste-punkter. Kontroll mot budsjettet og alle 15 varer | `kilde/figurer/rev/`, `felles/figurer/rev/` | Denne økta | **Even**: den ferdige modellen |
 | 2 | `felles/figurer/figur.js` og en testside som laster robot og rev i r128 og r187 med samme høyde | `felles/figurer/` | Denne økta | – |
-| 3 | E-coins: varetypen `figur`, `figur.rev` til avtalt pris, `evn-figur-v1`, `figur()` og `velgFigur()`. Garderoben får «Karakter». Test for eldre `ecoins.js` | `ecoins/ecoins.js`, `butikk/`, `test/ecoins/` | **E-coins-økta** | Voksen: publisering |
+| 3 | E-coins: varetypen `figur`, `figur.rev` til 700, `evn-figur-v1`, `figur()` og `velgFigur()`. Garderoben får «Karakter». Test for eldre `ecoins.js` | `ecoins/ecoins.js`, `butikk/`, `test/ecoins/` | **E-coins-økta** | Voksen: publisering |
 | 4 | **Første spill: Magiske egg.** Bruker bare `Idle`, `Walking`, `Running` og `Wave`, og ingen redskaper i hånda. Minst risiko | `spill/magiske-egg/index.html` | **Magiske egg-økta** | Even: spilltest. Voksen: publisering |
 | 5 | Dyrepatruljen: håven i begge poter, `Punch` og sniking | `spill/dyrepatruljen/index.html` | **Dyrepatruljen-økta** | Som over |
 | 6 | Mørkeskogen 2.0: øks, våpen og `Jump`. Når Mørkeskogen får E-coins | `spill/morkeskogen/` | **Mørkeskogen-økta** | Som over |
@@ -168,7 +178,7 @@ Denne økta fant ingen E-coins-økt eller spilløkter i Claude-appen på denne m
 
 | Trinn | Økt | Gren | Status |
 |---|---|---|---|
-| 0–2 | Figur/Blender (denne) | `figur/rev-pilot` | Trinn 0 venter på Even |
+| 0–2 | Figur/Blender (denne) | `figur/rev-pilot`, `figur/karakterpilot` | Trinn 0 venter på Even |
 | 3 | E-coins | – | Ikke startet |
 | 4 | Magiske egg | – | Ikke startet |
 
