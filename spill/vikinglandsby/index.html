@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Vikinglandsby 0.1.0 – EVN Studio</title>
+<title>Vikinglandsby 0.1.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -179,7 +179,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.1.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.1.1</div>
   </div>
 </div>
 
@@ -455,7 +455,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.1.0';
+const VERSJON = '0.1.1';
 const LAGRING = 'evn-vikinglandsby-v1';
 const LYD_NOKKEL = 'evn-vikinglandsby-lyd';
 const TEST = location.hash === '#test';
@@ -892,14 +892,15 @@ function lagre() {
 }
 function lastInn() {
   let s = null; try { s = JSON.parse(localStorage.getItem(LAGRING)); } catch (e) { throw e; }
-  if (!s || typeof s !== 'object' || s.v !== 1) return false;
+  if (!s || typeof s !== 'object') return false;
+  if (s.v !== 1) { try { localStorage.setItem(LAGRING + '-kopi', localStorage.getItem(LAGRING)); } catch (e) {} return false; }   // ukjent versjon: ta vare på en kopi
   const heltall = (v, min, maks, std) => { v = Math.floor(+v); return isFinite(v) ? Math.min(maks, Math.max(min, v)) : std; };
   const tall = (v, min, maks, std) => { v = +v; return isFinite(v) ? Math.min(maks, Math.max(min, v)) : std; };
   t.tre = heltall(s.tre, 0, 1e6, 0); t.stein = heltall(s.stein, 0, 1e6, 0); t.mat = heltall(s.mat, 0, 1e6, 0);
   const sa = s.samlet || {}; t.samlet = { tre: heltall(sa.tre, 0, 1e9, 0), stein: heltall(sa.stein, 0, 1e9, 0), mat: heltall(sa.mat, 0, 1e9, 0) };
   t.onske = heltall(s.onske, 0, ONSKER.length, 0);
   for (const b of Array.isArray(s.bygg) ? s.bygg.slice(0, 200) : []) {
-    if (!b || !HUS[b.t]) continue;
+    if (!b || !Object.prototype.hasOwnProperty.call(HUS, b.t)) continue;
     if (HUS[b.t].unik && antall(b.t)) continue;
     byggHus(b.t, tall(b.x, -GRENSE.x, GRENSE.x, 0), tall(b.z, GRENSE.zMin, KYST + 6, 0), heltall(b.r, 0, 3, 0), true);
   }
@@ -1094,12 +1095,14 @@ function sjekkPlass(type, x, z) {
 }
 function oppdaterByggHjelp() {
   const el = $('byggHjelp'); if (!bygg.aktiv) { el.hidden = true; return; }
-  el.hidden = false; el.style.bottom = `calc(${$('byggPanel').offsetHeight + 16}px + env(safe-area-inset-bottom))`;
+  el.hidden = false;
   if (!bygg.valgt) el.textContent = touchNa() ? 'Velg et hus nederst. Dra for å flytte kartet.' : 'Velg et hus nederst (1–5). Piltastene flytter kartet.';
   else if (bygg.grunn) el.textContent = '❌ ' + bygg.grunn;
   else el.textContent = touchNa() ? 'Trykk der huset skal stå, så ✔ Bygg her. ↻ snur huset.' : bygg.sistInn === 'mus' ? 'Klikk der huset skal stå. R snur huset.' : 'E eller Enter bygger. R snur huset.';
   $('byggHer').hidden = !bygg.valgt || !touchNa();
   $('byggHer').disabled = !bygg.gyldig;
+  if (snuKnapp) snuKnapp.hidden = !bygg.valgt || !touchNa() || !!HUS[bygg.valgt].vann;
+  el.style.bottom = `calc(${$('byggPanel').offsetHeight + 16}px + env(safe-area-inset-bottom))`;   // etter at knappene er vist eller skjult
 }
 let snuKnapp = null;
 { snuKnapp = document.createElement('button'); snuKnapp.className = 'pk ferdig'; snuKnapp.type = 'button'; snuKnapp.id = 'byggSnu'; snuKnapp.textContent = '↻ Snu'; snuKnapp.hidden = true; $('byggHer').after(snuKnapp);
@@ -1300,7 +1303,7 @@ function tegnKart() {
   for (const f of fjell) { x.fillStyle = '#7d8590'; x.beginPath(); x.arc(px(f.x), py(f.z), f.r * k * 0.9, 0, 6.283); x.fill(); x.fillStyle = '#f4f7fb'; x.beginPath(); x.arc(px(f.x), py(f.z), f.r * k * 0.3, 0, 6.283); x.fill(); }
   for (const n of noder) {
     if (n.type === 'fisk') { if (n.igjen > 0) { x.font = '18px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('🐟', px(n.x), py(n.z)); } continue; }
-    x.fillStyle = n.type === 'tre' ? (n.igjen > 0 ? '#2a6e35' : '#8a6a4a') : n.type === 'stein' ? (n.igjen > 0 ? '#5f6670' : '#a0a6ad') : (n.igjen > 0 ? '#e0304a' : '#4ea347');
+    x.fillStyle = n.type === 'tre' ? (n.igjen > 0 ? '#2a6e35' : '#8a6a4a') : n.type === 'stein' ? (n.igjen > 0 ? '#3d434b' : '#a0a6ad') : (n.igjen > 0 ? '#e0304a' : '#4ea347');
     x.beginPath(); x.arc(px(n.x), py(n.z), Math.max(3, n.r * k * (n.type === 'tre' ? 1.8 : 1)), 0, 6.283); x.fill();
   }
   x.textAlign = 'center'; x.textBaseline = 'middle';
@@ -1380,7 +1383,6 @@ function oppdaterBygg(dt) {
   spokMat.color.set(bygg.gyldig ? 0x5bd16a : 0xff5a5a);
   bygg.spokelse.position.set(bygg.mal.x, 0.05, bygg.mal.z); bygg.spokelse.rotation.y = bygg.rot * Math.PI / 2;
   spokRing.position.set(bygg.mal.x, 0.1, bygg.mal.z);
-  snuKnapp.hidden = !touchNa() || !!HUS[bygg.valgt].vann;
 }
 function oppdaterRessurser(dt) {
   for (const n of noder) {
@@ -1508,12 +1510,12 @@ window.__evnP = EVNPause({
   knapp: (b, k) => { for (const x of [k, b]) { x.className = 'rund'; x.style.cssText = 'padding:0;font-size:22px'; } $('hoyre').insertBefore(k, $('evnAvslutt')); $('hoyre').insertBefore(b, $('evnAvslutt')); },
   kart: {
     forhold: 600 / 480,
-    info: () => '🔺 Du · ⚪ Vikinger · 🟢 Trær · ⚫ Stein · 🔴 Bær · 🐟 Fisk',
+    info: () => '🟡 Du · ⚪ Vikinger · 🟢 Trær · ⚫ Stein · 🔴 Bær · 🐟 Fisk',
     tegn: (c, w, h) => { tegnKart(); c.drawImage(kartLerret, 0, 0, w, h); }
   },
   escPause: () => !bygg.aktiv,
   kanPause: () => spillTilstand === 'spill' && !LAG.some(id => $(id).classList.contains('vis')),
-  aktiv: () => spillTilstand === 'spill',
+  aktiv: () => spillTilstand === 'spill' && !modalApen(),   // ST2: ønskelista og jubelkortet teller ikke
   pause: () => { spillTilstand = 'pause'; for (const k in taster) taster[k] = false; holder = false; slippAlt(); lagre(); },
   fortsett: () => { spillTilstand = 'spill'; for (const k in taster) taster[k] = false; sisteTid = performance.now(); },
   lagre: lagre,
