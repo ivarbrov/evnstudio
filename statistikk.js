@@ -93,6 +93,9 @@
     }
   };
   if (oppdagere[spill]) oppdagere[spill]();
+  // Spill som selv sender hendelsen «evn-start» (ST1), for eksempel Fiskespillet.
+  // Midlertidig tillegg til den godkjente statistikken (feature/statistikk) er tatt inn. spillStartet() teller bare én gang.
+  document.addEventListener('evn-start', spillStartet);
 
   // ---- Omtrentlig spilletid: teller aktive minutter mens fanen er synlig ----
   function startTidtaking() {

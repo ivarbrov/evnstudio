@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.2.0 – EVN Studio</title>
+<title>Fiskespillet 0.2.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -87,6 +87,7 @@
   .info { font-size:15px; margin:0 0 8px; opacity:.95; }
   .liste { max-height:min(52vh,460px); overflow:auto; text-align:left; padding-right:4px; }
   .evn-tilbake[hidden] { display:none; }
+  #start #evnNullstill { margin-top:4px; }   /* felles EVN-NULLSTILL har margin:-8px, som overlapper Tilbake-lenka her */
   .rad { display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center; background:rgba(255,255,255,.08); border-radius:14px; padding:8px 10px; margin:6px 0; border-left:6px solid #8fdc6a; }
   .rad .ik { font-size:28px; line-height:1; }
   .rad b { display:block; font-size:16px; }
@@ -99,6 +100,10 @@
   .tom { text-align:center; padding:18px 6px; font-weight:800; opacity:.9; }
   .samlet { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:8px 0 2px; }
   .lukk { margin-top:12px; font-size:24px; padding:10px 34px; min-height:52px; }
+  /* Mobil: ✕ øverst som alltid er synlig, så man slipper å rulle ned til Lukk */
+  .kryss { position:sticky; top:0; float:right; z-index:2; width:48px; height:48px; margin:-10px -12px 0 8px; border-radius:14px; border:2px solid rgba(255,255,255,.5); background:rgba(13,36,64,.92); color:#fff; font:800 22px system-ui,sans-serif; cursor:pointer; touch-action:manipulation; }
+  .kryss:focus-visible { outline:3px solid #ffc93c; outline-offset:2px; }
+  #evnKart .kort { overflow:auto; }   /* kartet blir ikke kuttet i lavt liggende format */
   .ny { display:inline-block; background:#ff5fa8; color:#fff; border-radius:999px; padding:1px 8px; font-size:12px; font-weight:800; margin-left:4px; vertical-align:middle; }
   @media (max-width:520px) { .rad { grid-template-columns:auto 1fr; } .knapper { grid-column:1 / -1; justify-content:stretch; } .knapper .kn { flex:1; } }
 
@@ -176,13 +181,14 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.2.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.2.1</div>
   </div>
 </div>
 
 <!-- Havna -->
 <div class="lag" id="havna" role="dialog" aria-modal="true" aria-labelledby="havnaTittel">
   <div class="kort bred">
+    <button class="kryss" type="button" data-lukk="havna" aria-label="Lukk havna">✕</button>
     <h2 id="havnaTittel">⚓ Havna</h2>
     <div class="faner" role="tablist">
       <button class="fane" type="button" role="tab" data-fane="lever" aria-selected="true">🐟 Lever fisk</button>
@@ -197,6 +203,7 @@
 <!-- Fiskeboka -->
 <div class="lag" id="bok" role="dialog" aria-modal="true" aria-labelledby="bokTittel">
   <div class="kort bred">
+    <button class="kryss" type="button" data-lukk="bok" aria-label="Lukk fiskeboka">✕</button>
     <h2 id="bokTittel">📖 Fiskeboka</h2>
     <div class="info" id="bokTekst"></div>
     <div class="framdrift"><i id="bokStolpe" style="width:0"></i></div>
@@ -270,8 +277,8 @@ window.EVNNullstill = function (cfg) {
   var $ = function (id) { return document.getElementById(id); };
   var apen = false, forrige = null;
   function oppdater() { lenke.hidden = !harLagring() || (cfg.vis ? !cfg.vis() : false); }
-  function apne() { apen = true; forrige = document.activeElement; boks.classList.add('vis'); $('evnNullstillNei').focus(); }
-  function lukk() { apen = false; boks.classList.remove('vis'); try { (forrige || lenke).focus(); } catch (e) {} }
+  function apne() { apen = true; forrige = document.activeElement; boks.classList.add('vis'); if (window.EVNPauseInert) window.EVNPauseInert(boks); $('evnNullstillNei').focus(); }
+  function lukk() { apen = false; boks.classList.remove('vis'); if (window.EVNPauseInert) window.EVNPauseInert(null); try { (forrige || lenke).focus(); } catch (e) {} }
   lenke.addEventListener('click', apne);
   $('evnNullstillNei').addEventListener('click', lukk);
   $('evnNullstillJa').addEventListener('click', function () {
@@ -365,6 +372,26 @@ window.EVNPause = function (cfg) {
   });
 
   var apen = false, apnetTid = 0, venterAvslutt = false, kartApen = false;
+  // T2: mens en dialog er åpen, kan ingenting bak den få fokus eller trykk (inert), og Tab blir i dialogen.
+  var inertListe = [], aktivDialog = null;
+  function settInert(dlg) {
+    inertListe.forEach(function (el) { el.inert = false; }); inertListe = [];
+    aktivDialog = dlg || null;
+    if (!dlg) return;
+    Array.prototype.forEach.call(document.body.children, function (el) {
+      if (el !== dlg && !el.contains(dlg) && !el.inert && el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') { el.inert = true; inertListe.push(el); }
+    });
+  }
+  window.EVNPauseInert = settInert;
+  // Tab og Shift+Tab går rundt i den åpne dialogen i stedet for ut av siden (på window, før pausens egen tastaturhåndtering)
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab' || !aktivDialog) return;
+    var f = Array.prototype.filter.call(aktivDialog.querySelectorAll('button, a[href], input, [tabindex]:not([tabindex="-1"])'), function (el) { return !el.disabled && !el.hidden && el.getClientRects().length > 0; });
+    if (!f.length) return;
+    var i = f.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+  }, true);
   var avsluttLenke = function () { var a = $(cfg.avsluttId); return a && getComputedStyle(a).display !== 'none' ? a : null; };
   var sporsmal = function () { return $('evnSporsmal'); };
   var sporsmalApent = function () { var s = sporsmal(); return !!s && s.style.display === 'grid'; };
@@ -387,13 +414,13 @@ window.EVNPause = function (cfg) {
   function apneKart() {
     if (!cfg.kart || !kan()) return;
     cfg.pause(); kartApen = true; apnetTid = performance.now();
-    kartBak.classList.add('vis'); knapp.hidden = true; kartKnapp.hidden = true;
+    kartBak.classList.add('vis'); knapp.hidden = true; kartKnapp.hidden = true; settInert(kartBak);
     tegnKart();
     try { $('evnKartLukk').focus({ preventScroll: true }); } catch (e) {}
   }
   function lukkKart(fraKlikk) {
     if (!kartApen) return;
-    kartApen = false; kartBak.classList.remove('vis');
+    kartApen = false; kartBak.classList.remove('vis'); settInert(null);
     cfg.fortsett(!!fraKlikk);
   }
   if (cfg.kart) {
@@ -411,12 +438,12 @@ window.EVNPause = function (cfg) {
     $('evnPauseTips').textContent = grunn || 'Spillet står stille. Ingenting er borte.';
     $('evnPauseStyr').hidden = true; $('evnPauseStyrKnapp').setAttribute('aria-expanded', 'false');
     $('evnPauseAvslutt').hidden = !avsluttLenke() || !sporsmal();
-    bak.classList.add('vis'); knapp.hidden = true; lagreTid();
+    bak.classList.add('vis'); knapp.hidden = true; lagreTid(); settInert(bak);
     try { $('evnPauseFortsett').focus({ preventScroll: true }); } catch (e) {}
   }
   function lukk(fraKlikk) {
     if (!apen) return;
-    apen = false; bak.classList.remove('vis');
+    apen = false; bak.classList.remove('vis'); settInert(null);
     cfg.fortsett(!!fraKlikk);
   }
   knapp.addEventListener('click', function () { apne(); });
@@ -425,14 +452,14 @@ window.EVNPause = function (cfg) {
     var s = $('evnPauseStyr'); if (s.hidden) s.innerHTML = cfg.styring(); s.hidden = !s.hidden; this.setAttribute('aria-expanded', String(!s.hidden));
   });
   // Avslutt fra pausen: spillet står stille mens «Vil du avslutte?» vises. «Nei, spill videre» = fortsett.
-  function visSporsmal() { venterAvslutt = true; var s = sporsmal(); s.style.display = 'grid'; var b = $('evnBli'); if (b) b.focus(); }
+  function visSporsmal() { venterAvslutt = true; var s = sporsmal(); s.style.display = 'grid'; settInert(s); var b = $('evnBli'); if (b) b.focus(); }
   $('evnPauseAvslutt').addEventListener('click', function () { apen = false; bak.classList.remove('vis'); if (cfg.lagre) cfg.lagre(); visSporsmal(); });
   // Avslutt-knappen i spillet: spillet stopper også mens spørsmålet vises
   document.addEventListener('click', function (e) {
     var a = avsluttLenke(); if (!a || !a.contains(e.target) || venterAvslutt || apen || !cfg.kanPause()) return;
     cfg.pause(); venterAvslutt = true;
   }, true);
-  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; cfg.fortsett(false); }
+  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; settInert(null); cfg.fortsett(false); }
   document.addEventListener('click', function (e) { var b = $('evnBli'); if (b && b.contains(e.target)) setTimeout(nei, 0); }, true);
 
   window.addEventListener('keydown', function (e) {
@@ -476,7 +503,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.2.0';
+const VERSJON = '0.2.1';
 const LAGRING = 'evn-fiskespillet-v1';
 const LYD_NOKKEL = 'evn-fiskespillet-lyd';
 const TEST = location.hash === '#test';
@@ -1149,12 +1176,14 @@ function antallFunnetForm(f) { let n = 0; for (let i = f * 200; i < f * 200 + 20
 const tilB64 = u => { let s = ''; for (const b of u) s += String.fromCharCode(b); return btoa(s); };
 function lagre() {
   try {
-    localStorage.setItem(LAGRING, JSON.stringify({ v: 1, penger: Math.floor(tilstand.penger), stang: tilstand.stang, agn: tilstand.agn, baat: tilstand.baat, plass: tilstand.plass, akvPlass: tilstand.akvPlass, last: tilstand.last, akv: tilstand.akv, funnet: tilB64(tilstand.funnet), fanget: tilstand.fanget, rest: tilstand.rest, kraken: tilstand.kraken, best: tilstand.best }));
+    localStorage.setItem(LAGRING, JSON.stringify({ v: 1, penger: Number.isFinite(tilstand.penger) ? Math.floor(tilstand.penger) : 0, stang: tilstand.stang, agn: tilstand.agn, baat: tilstand.baat, plass: tilstand.plass, akvPlass: tilstand.akvPlass, last: tilstand.last, akv: tilstand.akv, funnet: tilB64(tilstand.funnet), fanget: tilstand.fanget, rest: tilstand.rest, kraken: tilstand.kraken, best: tilstand.best }));
   } catch (e) {}
 }
 function lastInn() {
   let s = null; try { s = JSON.parse(localStorage.getItem(LAGRING)); } catch (e) { throw e; }
-  if (!s || typeof s !== 'object' || s.v !== 1) return false;
+  if (!s || typeof s !== 'object') return false;
+  // Lagring fra en annen versjon av formatet: ta vare på en kopi før den blir overskrevet.
+  if (s.v !== 1) { try { localStorage.setItem(LAGRING + '-kopi', localStorage.getItem(LAGRING) || ''); } catch (e) {} return false; }
   const heltall = (v, min, maks, std) => { v = Math.floor(+v); return isFinite(v) ? Math.min(maks, Math.max(min, v)) : std; };
   const gyldig = a => Array.isArray(a) ? a.map(x => Math.floor(+x)).filter(x => x >= 0 && x < ANTALL_FISKER) : [];
   tilstand.penger = heltall(s.penger, 0, 1e9, 0);
@@ -1163,6 +1192,9 @@ function lastInn() {
   tilstand.baat = heltall(s.baat, 0, BATER.length - 1, 0);
   tilstand.plass = heltall(s.plass, INNST.startPlass, Math.min(INNST.maksPlass, BATER[tilstand.baat].maks), INNST.startPlass);
   tilstand.akvPlass = heltall(s.akvPlass, INNST.startAkvarium, INNST.maksAkvarium, INNST.startAkvarium);
+  // Plass kjøpes 5 om gangen. Rund ned til et gyldig trinn, så butikken alltid finner en pris (ellers NaN).
+  tilstand.plass -= (tilstand.plass - INNST.startPlass) % 5;
+  tilstand.akvPlass -= (tilstand.akvPlass - INNST.startAkvarium) % 5;
   tilstand.last = gyldig(s.last).slice(0, tilstand.plass);
   tilstand.akv = gyldig(s.akv).slice(0, tilstand.akvPlass);
   tilstand.fanget = heltall(s.fanget, 0, 1e9, 0);
@@ -1212,7 +1244,7 @@ function oppdaterHud() {
   $('last').textContent = tilstand.last.length + '/' + tilstand.plass;
   $('pLast').classList.toggle('full', tilstand.last.length >= tilstand.plass);
   $('akv').textContent = tilstand.akv.length + '/' + tilstand.akvPlass;
-  $('funnet').textContent = tall(antallFunnet()) + '/' + tall(ANTALL_FISKER);
+  $('funnet').textContent = tall(antallFunnet()) + ' av ' + ANTALL_FISKER;
 }
 
 // Fisk som ligger i båten
@@ -1342,6 +1374,7 @@ function dra() {
   oppdaterKampBar();
   if (fiske.kamp >= 100) { sluttKamp(); fangKraken(); }
 }
+const MINDRE_BEVEGELSE = matchMedia('(prefers-reduced-motion: reduce)');
 function oppdaterKamp(dt, t) {
   const f = fiske;
   f.nesteSint -= dt;
@@ -1351,7 +1384,7 @@ function oppdaterKamp(dt, t) {
   f.kamp -= dt * (INNST.krakenSlipp * (0.7 + f.kamp / 150) + (f.sint > 0 ? INNST.krakenSint : 0));
   dupp.position.copy(f.mal); dupp.position.y = -0.6 + Math.sin(t * (f.sint > 0 ? 40 : 20)) * 0.3;
   for (const te of krakenTentakler) te.userData.opp = 0.6 + f.kamp / 100 * 0.9 + (f.sint > 0 ? 0.3 : 0);
-  camera.position.x += (Math.random() - 0.5) * (f.sint > 0 ? 0.5 : 0.15);
+  if (!MINDRE_BEVEGELSE.matches) camera.position.x += (Math.random() - 0.5) * (f.sint > 0 ? 0.5 : 0.15);   // T3: ingen risting med «reduser bevegelse»
   oppdaterKampBar();
   if (f.kamp >= 100) { sluttKamp(); fangKraken(); }
   else if (f.kamp <= 0) { sluttKamp(); for (const te of krakenTentakler) te.userData.opp = 0; lydPlask(); melding('🐙💨 Kraken slapp unna! Prøv igjen.<small>Tips: trykk fortere når Kraken er sint.</small>', 4); }
@@ -1441,7 +1474,7 @@ $('havna').addEventListener('click', e => {
   const forste = $('havnaInnhold').querySelector('button:not(:disabled)'); if (forste) forste.focus({ preventScroll: true }); else $('lukkHavna').focus({ preventScroll: true });
 });
 function kjop(hva) {
-  const betal = p => { if (tilstand.penger < p) return false; tilstand.penger -= p; lydSjelden(); bump('pPenger'); return true; };
+  const betal = p => { if (!Number.isFinite(p) || p < 0 || tilstand.penger < p) return false; tilstand.penger -= p; lydSjelden(); bump('pPenger'); return true; };
   if (hva === 'stang' && betal(STENGER[tilstand.stang + 1].pris)) { tilstand.stang++; melding(`Du har ny fiskestang: ${STENGER[tilstand.stang].navn}! ${STENGER[tilstand.stang].ikon}`); if (tilstand.stang === STENGER.length - 1 && !tilstand.kraken) setTimeout(() => melding('Nå kan du fange Kraken! Se etter 🐙 på kartet.', 4), 3000); }
   else if (hva === 'agn' && betal(AGN[tilstand.agn + 1].pris)) { tilstand.agn++; melding(`Nytt agn: ${AGN[tilstand.agn].navn} ${AGN[tilstand.agn].ikon}`); }
   else if (hva === 'plass' && tilstand.plass < BATER[tilstand.baat].maks && betal(PLASS_PRIS[(tilstand.plass - INNST.startPlass) / 5])) { tilstand.plass += 5; melding(`Båten har nå plass til ${tilstand.plass} fisker! 📦`); }
@@ -1467,6 +1500,11 @@ function byggBok() {
 }
 $('bokKnapp').addEventListener('click', e => { e.stopPropagation(); if (spillTilstand !== 'spill' || modalApen()) return; byggBok(); apneLag('bok'); });
 $('lukkBok').addEventListener('click', () => lukkLag('bok'));
+for (const id of ['havna', 'bok']) {
+  $(id).querySelector('[data-lukk]').addEventListener('click', () => lukkLag(id));
+  // Trykk utenfor kortet lukker også
+  $(id).addEventListener('click', e => { if (e.target === $(id)) lukkLag(id); });
+}
 $('fangstOk').addEventListener('click', () => lukkLag('fangst'));
 
 // ======================================================
@@ -1537,7 +1575,7 @@ canvas.addEventListener('pointermove', e => {
 });
 const slippJoy = e => { if (e.pointerId === joy.id) slippAlt(); };
 canvas.addEventListener('pointerup', slippJoy); canvas.addEventListener('pointercancel', slippJoy);
-document.addEventListener('gesturestart', e => { if (spillTilstand === 'spill') e.preventDefault(); });
+document.addEventListener('gesturestart', e => { if (spillTilstand === 'spill' && !modalApen()) e.preventDefault(); });
 document.addEventListener('touchmove', e => { if (spillTilstand === 'spill' && e.touches.length > 1 && !modalApen()) e.preventDefault(); }, { passive: false });
 
 // ======================================================
@@ -1556,7 +1594,7 @@ function apneLag(id) {
 function lukkLag(id) { $(id).classList.remove('vis'); sisteTid = performance.now(); try { if (forrigeFokus && forrigeFokus.focus) forrigeFokus.focus({ preventScroll: true }); } catch (e) {} }
 // Fokus blir i det åpne kortet (T2)
 addEventListener('keydown', e => {
-  if (e.key !== 'Tab') return;
+  if (e.key !== 'Tab' || e.defaultPrevented || evnApen()) return;   // felles dialoger (pause, kart, avslutt, nullstill) styrer fokus selv
   const apent = LAG.map(id => $(id)).find(el => el.classList.contains('vis')); if (!apent) return;
   const f = [...apent.querySelectorAll('button:not(:disabled), a[href]:not([hidden])')].filter(x => x.offsetParent !== null); if (!f.length) return;
   const i = f.indexOf(document.activeElement);
@@ -1705,14 +1743,6 @@ catch (e) {
 byggBaat(); byggLast(); byggAkvarium(); oppdaterHud();
 baat.position.copy(spiller.pos);
 
-EVNNullstill({
-  nokler: [LAGRING],
-  tema: { panel: '#155a8a', ink: '#fff', hi: '#ffc93c', btn: '#ffc93c', btnInk: '#4a2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400 },
-  tekst: 'Alle fiskene, pengene, båtene og fiskeboka blir borte.',
-  harLagring: () => tilstand.fanget > 0 || tilstand.penger > INNST.startPenger || tilstand.stang > 0 || tilstand.baat > 0,
-  plasser: el => $('evnTilbake').after(el),
-  vis: () => $('start').classList.contains('vis')
-});
 window.__evnP = EVNPause({
   mappe: 'fiskespillet', avsluttId: 'evnAvslutt',
   tema: { panel: 'rgba(21,90,138,.97)', ink: '#fff', hi: '#ffc93c', btn: '#ffc93c', btnInk: '#4a2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400 },
@@ -1730,6 +1760,15 @@ window.__evnP = EVNPause({
   styring: () => document.documentElement.classList.contains('touch')
     ? '👆 Dra fingeren for å kjøre båten<br>🟡 Den gule knappen: fiske og havna<br>📖 Fiskeboka viser fiskene dine<br>🗺️ Kartet viser fiskesteder og Kraken'
     : '⬆️ Piltaster eller WASD: kjøre båten<br>E eller mellomrom: fiske og havna<br>I: fiskeboka · M: kart · L: lyd<br>P eller Esc: pause'
+});
+// Etter EVNPause, så pausens Tab-regel (T2) gjelder også i «Starte helt på nytt?» (nullstillboksen stopper alle andre taster)
+EVNNullstill({
+  nokler: [LAGRING],
+  tema: { panel: '#155a8a', ink: '#fff', hi: '#ffc93c', btn: '#ffc93c', btnInk: '#4a2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400 },
+  tekst: 'Alle fiskene, pengene, båtene og fiskeboka blir borte.',
+  harLagring: () => tilstand.fanget > 0 || tilstand.penger > INNST.startPenger || tilstand.stang > 0 || tilstand.baat > 0,
+  plasser: el => $('evnTilbake').after(el),
+  vis: () => $('start').classList.contains('vis')
 });
 requestAnimationFrame(loop);
 // Til testing
@@ -1753,10 +1792,10 @@ try {
     var av = document.getElementById('evnAvslutt'), sp = document.getElementById('evnSporsmal');
     av.style.display = 'flex';
     var tb = document.getElementById('evnTilbake'); if (tb) tb.hidden = false;
-    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new Event('blur')); sp.style.display = 'grid'; document.getElementById('evnBli').focus(); });
-    addEventListener('keydown', function (e) { if (e.key === 'Escape' && sp.style.display === 'grid') { e.preventDefault(); sp.style.display = 'none'; } });
+    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new Event('blur')); sp.style.display = 'grid'; if (window.EVNPauseInert) window.EVNPauseInert(sp); document.getElementById('evnBli').focus(); });
+    addEventListener('keydown', function (e) { if (e.key === 'Escape' && sp.style.display === 'grid') { e.preventDefault(); sp.style.display = 'none'; if (window.EVNPauseInert) window.EVNPauseInert(null); } });
     ['pointerdown', 'mousedown', 'touchstart'].forEach(function (ev) { sp.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); av.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
-    document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; });
+    document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; if (window.EVNPauseInert) window.EVNPauseInert(null); });
     document.getElementById('evnGaa').addEventListener('click', function () { location.href = '../../'; });
   }
 } catch (e) {}
