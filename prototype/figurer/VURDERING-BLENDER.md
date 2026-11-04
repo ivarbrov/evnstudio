@@ -1,6 +1,6 @@
 # Blender, GLB og Three.js for EVN-figurer: teknisk vurdering og forslag til pilot med reven
 
-Status: **forslag, ikke godkjent** (4.11.2026). Ingen spill, modeller eller sider er endret. Ingenting er publisert.
+Status: **forslag, ikke godkjent** (4.11.2026). ForgeGUI-delen (punkt 9) er tatt med etter vedtak samme dag. Ingen spill, modeller eller sider er endret. Ingenting er publisert.
 Even godkjenner figurens utseende. En voksen godkjenner planen og eventuell publisering.
 
 Grunnlag: `origin/main` per 4.11.2026, grenene `robot/felles`, `ecoins/robot-verktoy` og `morkeskogen-2.0`, og ytelsesmålingene i `spill/morkeskogen-2/FASE0.md` og `FASE1.md` på `morkeskogen-2.0`.
@@ -246,7 +246,19 @@ Lagt til 4.11.2026 etter ønske fra eieren. ForgeGUI er **ikke prøvd**. Vurderi
 | Konto | Krever konto. En voksen må opprette og styre den |
 | Rettigheter | Leverandøren sier at resultatet er brukerens og kan brukes kommersielt. En omtale nevner en påstand om at et eksempelbilde lignet mye på et eksisterende spill. Opphavet er altså ikke sikkert |
 
-**Vurdering:** Kan brukes til **skisser og forslag**, på linje med Evens tegninger, men ikke som kilde til ferdige figurer i spillene. Den ferdige reven lages i Blender etter EVN-stilen og budsjettet. Hvis ForgeGUI prøves, har en voksen kontoen og bruker en privat plan, og utkastene lagres i `kilde/figurer/rev/referanse/` og ikke i `felles/`.
+### Vedtak 4.11.2026 (eieren)
+
+ForgeGUI tas med som et **valgfritt** verktøy i vurderingen. Det opprettes ingen konto og kjøpes ikke abonnement nå. Det startes ingen generering. Disse prinsippene gjelder:
+
+1. ForgeGUI kan brukes til skisser og konseptutvikling, men skal ikke automatisk levere ferdige figurer til spillene.
+2. Evens egne tegninger er et likeverdig alternativ.
+3. Blender er foreløpig hovedverktøyet for å ferdigstille og optimalisere 3D-modeller.
+4. Alle nye figurer skal følge EVNs felles visuelle identitet (se `rev/DESIGNSPESIFIKASJON.md`, punkt 2).
+5. Even velger og godkjenner karakterdesignet.
+6. Før ForgeGUI eventuelt tas i bruk, kontrolleres vilkår, rettigheter, personvern og kostnader mot produsentens egne opplysninger.
+7. KI-utkast og ferdige spillressurser lagres hver for seg (`kilde/figurer/<figur>/referanse/ki/` og `felles/figurer/`).
+
+**Vurdering:** Kan brukes til **skisser og forslag**, på linje med Evens tegninger, men ikke som kilde til ferdige figurer i spillene. Den ferdige reven lages i Blender etter EVN-stilen og budsjettet. Hvis ForgeGUI prøves, har en voksen kontoen og bruker en privat plan, og utkastene lagres i `kilde/figurer/rev/referanse/ki/` og aldri i `felles/`.
 
 ---
 
@@ -265,14 +277,14 @@ Lagt til 4.11.2026 etter ønske fra eieren. ForgeGUI er **ikke prøvd**. Vurderi
 | Installere Blender (gratis, åpen kildekode) på maskinen | En voksen |
 | `.blend` i Git LFS i samme repo, eller egen privat repo | En voksen |
 | Hvem som former reven i Blender (Even med hjelp, en voksen, eller Claude med skript) | Even og en voksen |
-| Om ForgeGUI skal prøves til utkast (trinn 2a), med hvilken plan og hvem som har kontoen | En voksen |
+| Om ForgeGUI skal prøves til utkast (trinn 2a). Ikke aktuelt nå (vedtak 4.11.2026). Krever først kontroll av vilkår, rettigheter, personvern og kostnader | En voksen |
 
 ### Trinn
 
 | # | Trinn | Resultat | Godkjennes av |
 |---|---|---|---|
 | 1 | Egen gren `figur/rev-pilot`. Oppsett av mappene i punkt 3, `eksporter.py` og `sjekk-glb.mjs` | Tom struktur og verktøy som virker | – |
-| 2a | Valgfritt: 4–6 utkast fra ForgeGUI (eller Evens tegninger) som Even velger mellom. Én utkast-GLB måles med `sjekk-glb.mjs` for å se hvor langt den er fra budsjettet | Utkast og måling i `kilde/figurer/rev/referanse/` | **Even: retning** |
+| 2a | Utkast etter `rev/DESIGNSPESIFIKASJON.md`: Evens tegninger, og eventuelt (senere, etter kontroll) KI-utkast. Even velger retning | Tegninger i `kilde/figurer/rev/referanse/even/`, KI-utkast i `kilde/figurer/rev/referanse/ki/` | **Even: retning** |
 | 2 | Grovmodell i Blender (form og farger, ingen rigg). Bilder forfra, fra siden, skrått ovenfra, ved siden av roboten, og i 128, 96 og 50 px | Bildeark | **Even: utseende** |
 | 3 | Rettinger etter Evens tilbakemelding, til Even er fornøyd | Godkjent form | **Even** |
 | 4 | Rigg, feste-punkter og 5 klipp: `Idle`, `Walking`, `Running`, `Jump`, `Wave` | `felles/figurer/rev/rev.glb` | – |
