@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.2.1 – EVN Studio</title>
+<title>Fiskespillet 0.3.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -181,7 +181,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.2.1</div>
+    <div class="evn-ver" id="versjon">Versjon 0.3.0</div>
   </div>
 </div>
 
@@ -503,10 +503,11 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.2.1';
-const LAGRING = 'evn-fiskespillet-v1';
-const LYD_NOKKEL = 'evn-fiskespillet-lyd';
+const VERSJON = '0.3.0';
 const TEST = location.hash === '#test';
+// Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
+const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
+const LYD_NOKKEL = 'evn-fiskespillet-lyd';
 
 // ======================================================
 //  INNSTILLINGER – Even kan endre tallene her
@@ -1705,9 +1706,12 @@ function oppdaterVerden(dt, t) {
   for (const s of skyer) { s.position.x += dt * 1.5; if (s.position.x > spiller.pos.x + 650) s.position.x = spiller.pos.x - 650; }
   for (const c of akvGruppe.children) if (c.userData.tang !== undefined) c.rotation.z = Math.sin(t * 1.5 + c.userData.tang) * 0.15;
 }
-// Akvariet gir penger mens du spiller
+// Akvariet gir penger mens du spiller – ikke når ingen har rørt spillet på 3 minutter (samme regel som spilletiden i EVN-PAUSE)
+const AKV_LEDIG = 180000;
+let sistAktiv = performance.now();
+['keydown', 'pointerdown', 'pointermove', 'touchstart', 'wheel'].forEach(ev => addEventListener(ev, () => { sistAktiv = performance.now(); }, { passive: true, capture: true }));
 function oppdaterInntekt(dt) {
-  if (!tilstand.akv.length) return;
+  if (!tilstand.akv.length || performance.now() - sistAktiv > AKV_LEDIG) return;
   tilstand.rest += akvPerMinutt() * dt / 60;
   if (tilstand.rest >= 1) { const n = Math.floor(tilstand.rest); tilstand.rest -= n; tilstand.penger += n; oppdaterHud(); }
 }
@@ -1728,7 +1732,7 @@ addEventListener('pagehide', lagre);
 
 // Vennlig feilmelding ved uventede feil (K2)
 let feilVist = false;
-addEventListener('error', e => { if (feilVist || !e.error || spillTilstand === 'start') return; feilVist = true; try { lagre(); } catch (er) {} $('feil').classList.add('vis'); $('feilLast').focus(); });
+addEventListener('error', e => { if (feilVist || !e.error || spillTilstand === 'start') return; feilVist = true; try { lagre(); } catch (er) {} try { if (window.EVNPauseInert) window.EVNPauseInert($('feil')); } catch (er) {} $('feil').classList.add('vis'); $('feilLast').focus(); });   // K2: feilkortet virker også over pause og kart
 $('feilLast').addEventListener('click', () => location.reload());
 
 // ======================================================
