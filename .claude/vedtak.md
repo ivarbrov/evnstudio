@@ -83,6 +83,12 @@ Beslutningsgrunnlag: kartleggingen av de fem spillene (dokumentet «EVN Studio �
 
 Ikke avgjort: symbolet for Avslutt i HUD (Evens valg), pilotspill for EVN-PAUSE v3 og felles lydnøkkel.
 
+## 4. november 2026: Symbol for Avslutt (EVN UI-standard 1.1)
+
+Anbefaling fra Claude Code: «🚪 Avslutt» i toppraden, og ✕ bare for å lukke noe som er åpent. Byttet i spillene tas sammen med felles pause i trinn 3.
+Godkjenning fra den voksne eieren, ordrett: «Enig. Iverksette».
+Spørsmålet var tidligere lagt til Even. Even kan fortsatt be om å endre valget før trinn 3 bygges.
+
 ## Ikke vedtatt ennå
 
 - Standard 1.2 og agent 2.0 som gjeldende versjoner (i dag utkast), med statusnivåer, kontrollmetode, klarspråkavsnittet og nye arbeidsregler i `CLAUDE.md`.

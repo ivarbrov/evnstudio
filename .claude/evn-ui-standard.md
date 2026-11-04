@@ -1,6 +1,6 @@
 # EVN UI-standard
 
-Versjon 1.0, godkjent 3. november 2026 (vedtak i `.claude/vedtak.md`).
+Versjon 1.1, godkjent 4. november 2026 (versjon 1.0 godkjent 3. november 2026). Vedtakene står i `.claude/vedtak.md`.
 
 Felles betjening, navigasjon og symboler på tvers av spillene på evnstudio.no. Målet er at et barn som kan ett EVN-spill, raskt forstår de andre.
 Standarden supplerer EVN Game Standard (`.claude/evn-game-standard.md`). Den endrer ingen krav der. Den er ikke det samme som UI1–UI10 (vedtak 2. november 2026), som fortsatt har status godkjent hovedløsning.
@@ -28,7 +28,7 @@ Status per spill står nederst og oppdateres når et trinn er publisert.
 | KS1 | Pause: P og Esc åpner og lukker. ⏸ står i topplinjen til høyre (Avslutt står ytterst, se KS5). Spillet står stille. | F1, UI10 | A |
 | KS2 | Kart (spill med verden): M og 🗺️, rett til venstre for ⏸. | B2 | A |
 | KS3 | Hjelp: «🎮 Slik styrer du» i pausen. Teksten viser bare det som faktisk virker, for den inndataen som brukes nå. | U2 | Q |
-| KS4 | Vei ut: Avslutt er synlig under spilling og på alle skjermer der spilleren kan bli stående (valgskjermer, tap, seier). Bruker felles `#evnAvslutt` og `#evnSporsmal`. | U1 | A, Q |
+| KS4 | Vei ut: Avslutt er synlig under spilling og på alle skjermer der spilleren kan bli stående (valgskjermer, tap, seier). Knappen heter «🚪 Avslutt», og bare 🚪 vises der plassen er liten. Bruker felles `#evnAvslutt` og `#evnSporsmal`. | U1 | A, Q |
 | KS5 | Toppknapper, fra høyre hjørne: Avslutt, ⏸, 🗺️, deretter spillets egne (🔊, 📖, 🌍 …). Rekkefølgen og høyre hjørne beholdes på alle skjermstørrelser. | UI3 | A |
 | KS6 | Symboler betyr det samme i alle spill (ikonordboka under). Ett symbol har én betydning. | Nytt krav (støtter U2 og U3) | Q |
 | KS7 | Esc lukker alltid det øverste som er åpent (dialog, kart, undermeny, valgskjerm). Er ingenting åpent, åpner Esc pausen. Alt som kan lukkes med Esc, har også en synlig lukkeknapp. | UI10 | A |
@@ -66,8 +66,8 @@ Skal ikke gjøres like: kameramodell (fast i Magiske egg, ingen i 2D-spillene), 
 | ⏸ | Pause | |
 | 🗺️ | Kart over verdenen | Verdensvalg (bruk 🌍) |
 | 🌍 | Velg verden eller tidsepoke | Kart |
-| ✕ | Lukk det som er åpent | Ikke avgjort: Avslutt bruker i dag også ✕ i HUD. Even velger mellom 🚪 Avslutt og ✕ Avslutt med tekst |
-| 🚪 | Avslutt spillet | |
+| ✕ | Lukk det som er åpent (kart, bok, sekk, dialog) | Avslutt spillet |
+| 🚪 | Avslutt spillet, både i toppraden, i pausen og på tap- og valgskjermer | Lukk |
 | 🎮 / ❓ | Slik styrer du | |
 | 🔊 / 🔇 | Lyd på / av | |
 | ▶ | Start eller fortsett | |
@@ -85,7 +85,7 @@ Felles grensesnittkode limes inn i hvert spill som merkede kopier (for eksempel 
 | EVN-PAUSE v2, EVN-NULLSTILL v1, startkort, `#evnSporsmal` | I bruk i alle spill |
 | `#evnAvslutt` | I bruk i alle spill unntatt Era Defenders, som har egen `#avsluttKnapp` |
 | EVN-PAUSE v3 (lydbryter, `inert`-fokus, `EVNAktivTid`, Esc-stabel, fast toppknapperad) | Planlagt, trinn 3. Pilot i Magiske egg |
-| EVN-AVSLUTT, EVN-INNDATA, EVN-FEIL | Planlagt |
+| EVN-AVSLUTT («🚪 Avslutt» i toppraden), EVN-INNDATA, EVN-FEIL | Planlagt. Byttet fra ✕ til 🚪 i spillene gjøres sammen med EVN-PAUSE v3 i trinn 3 |
 
 ## Innføringsplan
 
@@ -100,14 +100,15 @@ Felles grensesnittkode limes inn i hvert spill som merkede kopier (for eksempel 
 
 | Spill | Publisert versjon | Trinn 2 | Kjente brudd på KS (forbedringsforslag til trinnet er publisert) |
 |---|---|---|---|
-| Era Defenders | 0.21.0 | PR åpnet 3.11.2026 | KS4, KS5, KS12, KS13, KS14, KS15 |
-| Mørkeskogen | 2.0.0 | PR åpnet 3.11.2026 | KS4, KS5, KS8, KS9, KS10, KS12, KS14, KS15 |
-| Fossil Zoo | 0.8.0 | PR åpnet 3.11.2026 | KS5, KS7, KS9, KS12, KS13, KS14, KS15 |
-| Dyrepatruljen | 0.11.0 | PR åpnet 3.11.2026 | KS4, KS7, KS13, KS14, KS15 |
-| Magiske egg | 0.9.0 | PR åpnet 3.11.2026 | KS9, KS12, KS14, KS15 |
+| Era Defenders | 0.21.0 | PR åpnet 3.11.2026 | KS4, KS5, KS6, KS12, KS13, KS14, KS15 |
+| Mørkeskogen | 2.0.0 | PR åpnet 3.11.2026 | KS4, KS5, KS6, KS8, KS9, KS10, KS12, KS14, KS15 |
+| Fossil Zoo | 0.8.0 | PR åpnet 3.11.2026 | KS5, KS6, KS7, KS9, KS12, KS13, KS14, KS15 |
+| Dyrepatruljen | 0.11.0 | PR åpnet 3.11.2026 | KS4, KS6, KS7, KS13, KS14, KS15 |
+| Magiske egg | 0.9.0 | PR åpnet 3.11.2026 | KS6, KS9, KS12, KS14, KS15 |
 
 ## Versjonshistorikk
 
 | Versjon | Dato | Endring |
 |---|---|---|
 | 1.0 | 3. november 2026 | Første versjon: KS1–KS15, KA1–KA9, ikonordbok, komponenter og plan |
+| 1.1 | 4. november 2026 | Avslutt bruker 🚪, ✕ betyr bare Lukk (KS4, ikonordboka). KS6 lagt til i bruddlistene, fordi alle spill i dag bruker ✕ for Avslutt i toppraden |
