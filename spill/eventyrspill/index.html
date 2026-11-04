@@ -163,6 +163,8 @@
   .base-rad.ny { animation: baseRadNy 0.6s ease-out 1; }
   @keyframes baseRadNy { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
   @media (prefers-reduced-motion: reduce) { .base-rad.ny { animation: none; } }
+  #baseRadHint { position: fixed; z-index: 24; max-width: min(300px, calc(100vw - 32px)); box-sizing: border-box; padding: 8px 12px; border-radius: 10px; background: #ffd54a; color: #3d2a17; font-size: 15px; font-weight: bold; box-shadow: 0 4px 14px rgba(0,0,0,0.4); pointer-events: none; }
+  #baseRadHint[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -176,6 +178,7 @@ addEventListener('keydown',function(){t(false);},true);})();
 </script>
 <canvas id="spill"></canvas>
 <button id="baseKnapp">🏰 Basen<span class="bare-pc"> (B)</span><span id="baseRad" class="base-rad" hidden></span></button>
+<div id="baseRadHint" role="status" hidden></div>
 <div id="meny"><div class="boks">
   <span class="evn-merke">EVN STUDIO</span>
   <h1 id="menyTittel">Era Defenders</h1>
@@ -990,7 +993,7 @@ basenavnFelt.addEventListener('change', () => { basenavnFelt.value = helt.basena
 
 function apneBase() {
   if (tilstand !== 'spill') return;
-  baseApnetIOkta = true;
+  baseApnetIOkta = true; document.getElementById('baseRadHint').hidden = true;
   tilstand = 'base';
   basenavnFelt.value = helt.basenavn || '';
   visBase();
@@ -1389,17 +1392,27 @@ function kjopbareBygg() {
     return !last && !ferdig && helt.penger >= byggePris(b, antall);
   });
 }
+// Meldingen vises som tekst rett under Basen-knappen i 4 s, så den kan leses også på små skjermer
+function visBaseRadHint(tekst) {
+  const h = document.getElementById('baseRadHint'), k = document.getElementById('baseKnapp').getBoundingClientRect();
+  h.textContent = tekst; h.hidden = false;
+  const b = h.offsetWidth, venstre = Math.max(16, Math.min(k.left + k.width / 2 - b / 2, innerWidth - b - 16));
+  h.style.left = venstre + 'px'; h.style.top = (k.bottom + 8) + 'px';
+  clearTimeout(visBaseRadHint.t); visBaseRadHint.t = setTimeout(() => { h.hidden = true; }, 4000);
+}
+document.getElementById('baseRad').addEventListener('animationend', e => e.target.classList.remove('ny'));
 function oppdaterBaseRad() {
   const rad = document.getElementById('baseRad'); if (!rad || tilstand !== 'spill') return;
   const kan = kjopbareBygg(), n = kan.length;
   if (n === baseRadVist) return;
   rad.hidden = n === 0; rad.textContent = '⬆ ' + n;
-  document.getElementById('baseKnapp').setAttribute('aria-label', n ? 'Basen. Du har råd til ' + n + ' ting.' : 'Basen');
+  const knapp = document.getElementById('baseKnapp'), pc = getComputedStyle(knapp.querySelector('.bare-pc')).display !== 'none';
+  knapp.setAttribute('aria-label', 'Basen' + (pc ? ' (B)' : '') + (n ? '. Du har råd til ' + n + ' ting.' : ''));
   if (n > baseRadVist) { rad.classList.remove('ny'); void rad.offsetWidth; rad.classList.add('ny'); }
   // Én gang per økt, og bare før spilleren har åpnet basen selv
   if (n > 0 && baseRadVist === 0 && !baseApnetIOkta && !baseRadHintVist) {
     baseRadHintVist = true;
-    visTekst('💰 Du har råd til ' + kan[0].ikon + ' ' + kan[0].navn + '! Trykk på Basen 🏰', helt.x, helt.y - 185, '#ffd54a', 18);
+    visBaseRadHint('💰 Du har råd til ' + kan[0].ikon + ' ' + kan[0].navn + '! Trykk på Basen 🏰');
   }
   baseRadVist = n;
 }
