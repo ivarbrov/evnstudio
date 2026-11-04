@@ -34,6 +34,7 @@
   <button data-vis="rev" aria-pressed="false">Med reven</button>
   <button data-vis="revforetter" aria-pressed="false">Reven før og etter</button>
   <button data-vis="revnaer" aria-pressed="false">Reven nærbilde</button>
+  <button data-vis="revledd" aria-pressed="false">Revens ledd i bevegelse</button>
   <button data-vis="revbevegelse" aria-pressed="false">Revens bevegelser</button>
   <button data-vis="revgarderobe" aria-pressed="false">Begge med garderobevarer</button>
   <button data-vis="ytelse-for" aria-pressed="false">Ytelse: 30 roboter før</button>
@@ -119,6 +120,7 @@ const VIS = {
     for (const [n, r] of v) { legg(await lagRobot('revfor'), 'Før ' + n, x, r); legg(await lagRobot('rev'), 'Etter ' + n, x + 1.05, r); x += 2.4; }
   },
   async revnaer() { legg(await lagRobot('revfor'), 'Reven før', -.6, -.35); legg(await lagRobot('rev'), 'Reven etter', .6, -.35); },
+  async revledd() { legg(await lagRobot('rev', 'Running', .25), 'Løping', -.75, -.9); legg(await lagRobot('rev', 'Walking', .75), 'Gange', .2, -.7); legg(await lagRobot('rev', 'Jump', .2), 'Sats til hopp', 1.15, -1.1); },
   async revbevegelse() {
     const v = [['Hvile', 'Idle', 0], ['Gange', 'Walking', .25], ['Løping', 'Running', .25], ['Hopp', 'Jump', .42], ['Snike', 'Sneak', .25], ['Slag', 'Punch', .3]];
     let x = -2.75; for (const [n, c, t] of v) { legg(await lagRobot('rev', c, t), 'Reven: ' + n.toLowerCase(), x, -.6); x += 1.1; }
@@ -147,8 +149,9 @@ async function vis(n) {
   const xs = figurer.map(f => f.obj.position.x), midt = (Math.min(...xs) + Math.max(...xs)) / 2, bredde = Math.max(...xs) - Math.min(...xs) + 1.1;
   storrelse();
   const d = bredde / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect) * 1.1;
-  const naer = n === 'naer' || n === 'revnaer';
-  camera.position.set(midt + (naer ? .5 : 0), naer ? .9 : .55 + d * .1, naer ? 3.2 : Math.max(d, 5)); camera.lookAt(midt, naer ? .7 : .5, 0);
+  const naer = n === 'naer' || n === 'revnaer' || n === 'revledd';
+  const ledd = n === 'revledd';
+  camera.position.set(midt + (naer ? .5 : 0), ledd ? .75 : naer ? .9 : .55 + d * .1, ledd ? 4.6 : naer ? 3.2 : Math.max(d, 5)); camera.lookAt(midt, ledd ? .5 : naer ? .7 : .5, 0);
   tegn();
 }
 function storrelse() { const r = canvas.getBoundingClientRect(); if (!(r.width > 0 && r.height > 0)) return; camera.aspect = r.width / r.height; camera.updateProjectionMatrix(); renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.setSize(r.width, r.height, false); }

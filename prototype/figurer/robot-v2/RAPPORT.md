@@ -26,8 +26,8 @@ Se: `for-etter.html` (åpnes fra en lokal server i repoet), bilder i `bilder/`.
 |---|---|---|---|---|
 | Robot før | 19 | 3 237 | 14 | 464 kB |
 | Robot etter | 5 | 7 668 | 14 | 475 kB |
-| Reven før (fasettert) | 5 | 2 152 | 7 | 296 kB |
-| Reven etter (samme behandling som roboten) | 5 | 5 330 | 7 | 311 kB |
+| Reven før (fasettert) | 5 | 2 616 | 7 | 344 kB |
+| Reven etter (samme behandling som roboten) | 5 | 6 654 | 7 | 371 kB |
 
 30 roboter som går: **571 tegnekall før**, beregnet **151 etter** (30 × 5 + bakke). Bildefrekvensen i den hodeløse testnettleseren (SwiftShader) sier ingenting om mobil og er ikke brukt.
 
@@ -43,11 +43,14 @@ Reven er laget i Blender (`verktoy/figurer/bygg_rev.py`) fra godkjenningsmodelle
 | Øyne, poter, hale | Fasetterte | Runde og myke |
 | Overflate | Pels ruhet 0,75, mørkt 0,45, halsbånd 0,5 | Pels 0,6, øyne og nese 0,32 (blanke), halsbånd 0,4 med litt metall |
 | Form, farger, ledd, animasjoner, festepunkter | – | Uendret |
-| Trekanter | 2 152 | 5 330 |
+| Ledd i kroppen | Tynne armer og bein som sluttet ved kroppen (glipe i bevegelse) | Kuleledd i hofter, skuldre og knær og et bekken, så armer og bein henger fast i kroppen også når de beveger seg (eierens ønske 5.11.2026) |
+| Trekanter | 2 616 | 6 654 |
 | Tegnekall | 5 | 5 |
-| Fil | 296 kB | 311 kB |
+| Fil | 344 kB | 371 kB |
 
-Se «Reven før og etter» og «Reven nærbilde» i `for-etter.html`.
+Se «Reven før og etter», «Reven nærbilde» og «Revens ledd i bevegelse» i `for-etter.html`. Både «før» og «etter» har de nye leddene, så forskjellen mellom dem er bare overflaten.
+
+Fila er over målet på 250 kB (under taket på 500 kB). Mest geometri: flate fasetter gir egne hjørner per flate. Tiltak før utrulling: `KHR_mesh_quantization` eller vekter som byte.
 
 ## Hvordan v2 lages (kan gjentas)
 

@@ -27,9 +27,11 @@ function lagRev(uttrykk = 'nysgjerrig', stilling = 'sta') {
     const lår = ledd(sx < 0 ? 'UpperLeg.L' : 'UpperLeg.R', hofte, [sx * .085, 0, 0]);
     let sving = 0; if (stilling === 'ga') sving = sx * .45; if (stilling === 'hopp') sving = sx < 0 ? -.7 : .25; if (lav) sving = sx * .2 - .35;
     lår.rotation.x = sving;
-    del(syl(.045, .04, .14), M.main, lår, [0, -.07, 0]);
+    del(kule(8, 6), M.main, lår, [0, 0, 0], [.058, .058, .058]);           // hofteledd: låret henger fast i kroppen
+    del(syl(.05, .042, .18), M.main, lår, [0, -.06, 0]);                    // låret går litt inn i kroppen
     const legg = ledd(sx < 0 ? 'LowerLeg.L' : 'LowerLeg.R', lår, [0, -.14, 0]);
     if (stilling === 'hopp' && sx < 0) legg.rotation.x = 1.1; if (lav) legg.rotation.x = .55;
+    del(kule(7, 5), M.mork, legg, [0, 0, 0], [.05, .05, .05]);              // kne: ingen glipe når beinet bøyes
     del(syl(.048, .052, .13), M.mork, legg, [0, -.07, 0]);
     del(kule(7, 5), M.mork, legg, [0, -.14, .035], [.072, .045, .11]);
     for (const tx of [-1, 0, 1]) del(kule(5, 4), M.mork, legg, [tx * .03, -.15, .12], [.022, .022, .022]);
@@ -37,6 +39,7 @@ function lagRev(uttrykk = 'nysgjerrig', stilling = 'sta') {
 
   // Overkropp: pæreform, lys mage formet som en dråpe
   del(kule(9, 7), M.main, kropp, [0, .02, 0], [.165, .17, .145], [0, 0, 0], 'Torso_1');
+  del(kule(8, 6), M.main, hofte, [0, .03, 0], [.13, .085, .115]);          // bekken: binder kroppen og beina sammen
   del(kule(8, 6), M.lys, kropp, [0, .0, .075], [.105, .135, .08]);
   del(new THREE.ConeGeometry(.06, .1, 6), M.lys, kropp, [0, .14, .1], [1, 1, .5], [Math.PI, 0, 0]);
 
@@ -47,7 +50,7 @@ function lagRev(uttrykk = 'nysgjerrig', stilling = 'sta') {
 
   // Armer: korte, med store votteformede poter og en tommel (kan holde redskaper)
   for (const sx of [-1, 1]) {
-    const sk = ledd(sx < 0 ? 'UpperArm.L' : 'UpperArm.R', kropp, [sx * .155, .1, 0]);
+    const sk = ledd(sx < 0 ? 'UpperArm.L' : 'UpperArm.R', kropp, [sx * .132, .1, 0]);   // skulderen inne i kroppen
     let rz = sx * .32, rx = 0;
     if (stilling === 'vink' && sx > 0) { rz = 2.5; }
     if (uttrykk === 'jubel') { rz = sx * 2.6; }
@@ -55,7 +58,8 @@ function lagRev(uttrykk = 'nysgjerrig', stilling = 'sta') {
     if (stilling === 'hav') { rx = -1.0; rz = sx * .15; }
     if (lav) { rx = -.6; rz = sx * .25; }
     sk.rotation.set(rx, 0, rz);
-    del(syl(.034, .03, .18), M.main, sk, [0, -.09, 0]);
+    del(kule(7, 5), M.main, sk, [0, 0, 0], [.048, .048, .048]);            // skulderledd
+    del(syl(.036, .031, .21), M.main, sk, [0, -.085, 0]);
     const pote = ledd(sx < 0 ? 'Palm2.L' : 'Palm2.R', sk, [0, -.2, 0]);
     del(kule(7, 5), M.mork, pote, [0, 0, 0], [.058, .064, .055]);
     del(kule(5, 4), M.mork, pote, [-sx * .045, .01, .03], [.022, .03, .022]);
