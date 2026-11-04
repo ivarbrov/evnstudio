@@ -1,6 +1,15 @@
 # EVN-reven: visuell designspesifikasjon
 
-Status: **utkast til Even** (4.11.2026). **Hovedretning valgt 4.11.2026: reven går oppreist på to bein.** Ingenting er modellert, generert eller lagt inn i spill.
+Status: **utkast til Even** (4.11.2026). **Hovedretning valgt 4.11.2026: reven går oppreist på to bein. Even har valgt forslag 2 «Nysgjerrig».**
+
+## Vedtak 4.11.2026
+
+- Reven «Nysgjerrig» blir EVN Studios første alternative spillbare karakter. Roboten er fortsatt gratis standard.
+- Reven kan kjøpes i E-shop for 1 000 E-coins, én gang, og eies for alltid. Prisen er kontrollert mot opptjeningen i `../TEKNISK-PLAN.md`, punkt 4 (ikke endret).
+- Spilleren velger mellom roboten og reven i en felles karaktervelger i garderoben. Valget gjelder i alle spill som støtter karakterbytte.
+- Samme spillmessige egenskaper som roboten (fart, kollisjon, skade, rekkevidde). Byttet endrer bare utseende og nødvendige animasjoner.
+- Roboten, saldoen, kjøpte varer og lagrede spill skal ikke påvirkes.
+- Raffinert modell til godkjenning: `modell.html`. Teknisk plan: `../TEKNISK-PLAN.md`. Ingenting er modellert, generert eller lagt inn i spill.
 Even velger og godkjenner designet. Punkter merket **☐ Even velger** er åpne valg.
 Hører til `../VURDERING-BLENDER.md` (pilot med reven, trinn 2a–3).
 
@@ -209,11 +218,12 @@ Kjent feil i skissesiden: i silhuettvisningen tegnes robotens hender i utgangsst
 |---|---|---|
 | To eller fire bein | To bein (hovedretning) | 4.11.2026 |
 | Navn | | |
-| Hovedfarge (A, B, C eller annen) | | |
-| EVN-kjennetegn | | |
+| Hovedfarge (A, B, C eller annen) | B `#f39a3c` (følger forslag 2) | 4.11.2026 |
+| EVN-kjennetegn | Halsbånd med merke (følger forslag 2) | 4.11.2026 |
 | Munn eller bare bryn og øyne | | |
 | Ører under hjelmer | | |
-| Forslag (1, 2, 3 eller en blanding) | | |
+| Forslag (1, 2, 3 eller en blanding) | Forslag 2 «Nysgjerrig» | 4.11.2026 |
+| Raffinert modell (`modell.html`) | | |
 | Utkast som skal modelleres | | |
 | Grovmodellen i Blender (trinn 2–3) | | |
 

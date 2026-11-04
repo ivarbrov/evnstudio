@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'">
+<title>Reven «Nysgjerrig» – modell til godkjenning (utkast)</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #131a3a; color: #f1f4ff; }
+  header { padding: 12px 16px 4px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p { margin: 4px 0; color: #a3add3; font-size: 14px; max-width: 72em; }
+  .knapper { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px; }
+  button { min-height: 44px; min-width: 44px; padding: 0 12px; border-radius: 10px; border: 2px solid #2f6bff; background: #080c1a; color: #f1f4ff; font-size: 14px; cursor: pointer; }
+  button[aria-pressed="true"] { background: #2f6bff; }
+  #flate { position: relative; margin: 0 16px 16px; border-radius: 12px; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 64vh; min-height: 360px; }
+  #navn { position: absolute; left: 0; right: 0; bottom: 6px; pointer-events: none; }
+  #navn div { position: absolute; bottom: 0; transform: translateX(-50%); text-align: center; font-size: 13px; background: rgba(8,12,26,.78); padding: 2px 8px; border-radius: 8px; white-space: nowrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Reven «Nysgjerrig» – modell til Evens godkjenning</h1>
+  <p><strong>Utkast, ikke en spillmodell.</strong> Bygget etter forslag 2 og designspesifikasjonen, av enkle former med flat skyggelegging som roboten. Roboten er den ekte modellen. Hattene og ryggtingene er de ekte varene fra garderoben (<code>ecoins/tilbehor-3d.js</code>), festet til revens hode- og kroppsledd uten egen kode for reven.</p>
+</header>
+<div class="knapper" id="visninger">
+  <button data-vis="rundt" aria-pressed="true">Rundt reven</button>
+  <button data-vis="uttrykk" aria-pressed="false">Uttrykk</button>
+  <button data-vis="stillinger" aria-pressed="false">Stillinger</button>
+  <button data-vis="hatter" aria-pressed="false">Hatter</button>
+  <button data-vis="rygg" aria-pressed="false">Ryggting</button>
+</div>
+<div id="flate"><canvas id="c"></canvas><div id="navn"></div></div>
+
+<script src="../../../vendor/three-r128.min.js"></script>
+<script src="../../../ecoins/gltfloader-r128.js"></script>
+<script src="../../../ecoins/tilbehor-3d.js"></script>
+<script>
+'use strict';
+const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
+const mat = (hex, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: lin(hex), flatShading: true, roughness: .8, metalness: 0 }, o));
+const FARGE = { main: 0xf39a3c, lys: 0xf6eee0, mork: 0x2a1f1b, gul: 0xffcc00 };   // forslag 2: B «lys rev»
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x3a4466);
+scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x2a2350, 0.55));
+const sol = new THREE.DirectionalLight(0xfff2d6, 1.15); sol.position.set(3, 6, 5); scene.add(sol);
+const kant = new THREE.DirectionalLight(0x8a9dff, 0.45); kant.position.set(-4, 3, -5); scene.add(kant);
+const bakke = new THREE.Mesh(new THREE.CircleGeometry(30, 48), mat(0x59607e)); bakke.rotation.x = -Math.PI / 2; scene.add(bakke);
+const linje = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-4, 1, 0), new THREE.Vector3(4, 1, 0)]),
+  new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: .04, gapSize: .03, transparent: true, opacity: .55 }));
+linje.computeLineDistances(); scene.add(linje);
+const camera = new THREE.PerspectiveCamera(20, 1, 0.1, 100);
+
+// ---------- Reven «Nysgjerrig» (H = robotens høyde = 1, ansiktet mot +Z) ----------
+// uttrykk: glad | nysgjerrig | jubel | snike | lei
+// stilling: sta | ga | vink | hopp | hav
+function lagRev(uttrykk = 'nysgjerrig', stilling = 'sta') {
+  const M = { main: mat(FARGE.main), lys: mat(FARGE.lys), mork: mat(FARGE.mork), gul: mat(FARGE.gul, { roughness: .5 }), hvit: mat(0xffffff, { roughness: .25 }) };
+  const kule = (a = 8, b = 6) => new THREE.SphereGeometry(1, a, b);
+  const syl = (r1, r2, h, s = 7) => new THREE.CylinderGeometry(r1, r2, h, s);
+  const del = (geo, m, forelder, p, s = [1, 1, 1], r = [0, 0, 0], navn) => { const x = new THREE.Mesh(geo, m); x.position.set(...p); x.scale.set(...s); x.rotation.set(...r); if (navn) x.name = navn; forelder.add(x); return x; };
+  const ledd = (navn, forelder, p) => { const b = new THREE.Bone(); b.name = navn; b.position.set(...p); forelder.add(b); return b; };
+
+  const rot = new THREE.Group();
+  const hofte = ledd('Hips', rot, [0, .3, 0]);
+  const kropp = ledd('Torso', hofte, [0, .14, 0]);            // samme navn som robotens ledd, så garderoben finner det
+  const lav = stilling === 'snike' || uttrykk === 'snike';
+  if (lav) { hofte.position.y = .27; kropp.rotation.x = .22; }
+  if (stilling === 'hopp') rot.position.y = .12;
+
+  // Bein med mørke «sokker» og store poter
+  for (const sx of [-1, 1]) {
+    const lår = ledd(sx < 0 ? 'UpperLeg.L' : 'UpperLeg.R', hofte, [sx * .085, 0, 0]);
+    let sving = 0; if (stilling === 'ga') sving = sx * .45; if (stilling === 'hopp') sving = sx < 0 ? -.7 : .25; if (lav) sving = sx * .2 - .35;
+    lår.rotation.x = sving;
+    del(syl(.045, .04, .14), M.main, lår, [0, -.07, 0]);
+    const legg = ledd(sx < 0 ? 'LowerLeg.L' : 'LowerLeg.R', lår, [0, -.14, 0]);
+    if (stilling === 'hopp' && sx < 0) legg.rotation.x = 1.1; if (lav) legg.rotation.x = .55;
+    del(syl(.048, .052, .13), M.mork, legg, [0, -.07, 0]);
+    del(kule(7, 5), M.mork, legg, [0, -.14, .035], [.072, .045, .11]);
+    for (const tx of [-1, 0, 1]) del(kule(5, 4), M.mork, legg, [tx * .03, -.15, .12], [.022, .022, .022]);
+  }
+
+  // Overkropp: pæreform, lys mage formet som en dråpe
+  del(kule(9, 7), M.main, kropp, [0, .02, 0], [.165, .17, .145], [0, 0, 0], 'Torso_1');
+  del(kule(8, 6), M.lys, kropp, [0, .0, .075], [.105, .135, .08]);
+  del(new THREE.ConeGeometry(.06, .1, 6), M.lys, kropp, [0, .14, .1], [1, 1, .5], [Math.PI, 0, 0]);
+
+  // Halsbånd med merke i robotgult (EVN-kjennetegnet)
+  del(new THREE.TorusGeometry(.115, .024, 5, 12), M.gul, kropp, [0, .15, 0], [1, 1, .92], [Math.PI / 2, 0, 0]);
+  del(syl(.042, .042, .016, 10), M.gul, kropp, [0, .1, .128], [1, 1, 1], [Math.PI / 2 - .2, 0, 0]);
+  del(syl(.022, .022, .018, 8), M.mork, kropp, [0, .1, .136], [1, 1, 1], [Math.PI / 2 - .2, 0, 0]);
+
+  // Armer: korte, med store votteformede poter og en tommel (kan holde redskaper)
+  for (const sx of [-1, 1]) {
+    const sk = ledd(sx < 0 ? 'UpperArm.L' : 'UpperArm.R', kropp, [sx * .155, .1, 0]);
+    let rz = sx * .32, rx = 0;
+    if (stilling === 'vink' && sx > 0) { rz = 2.5; }
+    if (uttrykk === 'jubel') { rz = sx * 2.6; }
+    if (stilling === 'ga') rx = -sx * .5;
+    if (stilling === 'hav') { rx = -1.0; rz = sx * .15; }
+    if (lav) { rx = -.6; rz = sx * .25; }
+    sk.rotation.set(rx, 0, rz);
+    del(syl(.034, .03, .18), M.main, sk, [0, -.09, 0]);
+    const pote = ledd(sx < 0 ? 'Palm2.L' : 'Palm2.R', sk, [0, -.2, 0]);
+    del(kule(7, 5), M.mork, pote, [0, 0, 0], [.058, .064, .055]);
+    del(kule(5, 4), M.mork, pote, [-sx * .045, .01, .03], [.022, .03, .022]);
+  }
+  if (stilling === 'hav') {   // håv i begge poter, skrått foran kroppen (som i Dyrepatruljen)
+    const hav = new THREE.Group(); hav.position.set(0, .34, .2); hav.rotation.set(.5, 0, .5); rot.add(hav);
+    del(syl(.012, .012, .7, 6), mat(0x8d6e63), hav, [0, 0, 0]);
+    del(new THREE.TorusGeometry(.12, .012, 4, 14), mat(0x8d6e63), hav, [0, .44, 0], [1, 1, 1], [Math.PI / 2, 0, 0]);
+    del(new THREE.ConeGeometry(.11, .18, 10, 1, true), mat(0xe9f2f5, { transparent: true, opacity: .6, side: THREE.DoubleSide }), hav, [0, .35, 0], [1, 1, 1], [Math.PI, 0, 0]);
+  }
+
+  // Hale: stor og rund (forslag 2), fire ledd, hvit spiss
+  const hale = ledd('Tail1', hofte, [0, .02, -.12]);
+  hale.rotation.x = uttrykk === 'jubel' ? .2 : lav ? 1.1 : .55; hale.rotation.z = uttrykk === 'jubel' ? .35 : 0;
+  del(kule(7, 5), M.main, hale, [0, 0, -.07], [.075, .075, .1]);
+  const h2 = ledd('Tail2', hale, [0, .03, -.15]); h2.rotation.x = -.35;
+  del(kule(8, 6), M.main, h2, [0, .02, -.05], [.125, .13, .14]);
+  const h3 = ledd('Tail3', h2, [0, .08, -.14]); h3.rotation.x = -.45;
+  del(kule(8, 6), M.main, h3, [0, .03, -.02], [.115, .12, .12]);
+  del(kule(7, 5), M.lys, h3, [0, .09, .01], [.085, .095, .085]);
+
+  // Hode (42 % av høyden, bredt) med hodeleddet «Head» og hodemeshen «Head_3» som garderoben bruker
+  const hH = .42, hx = .28, hy = hH / 2, hz = .245;
+  const nakke = ledd('Neck', kropp, [0, .16, 0]);
+  const hode = ledd('Head', nakke, [0, (1 - hy) - .6, 0]);
+  hode.rotation.z = uttrykk === 'nysgjerrig' ? .14 : 0;
+  if (lav) hode.rotation.x = -.15;
+  del(kule(10, 8), M.main, hode, [0, 0, 0], [hx, hy, hz], [0, 0, 0], 'Head_3');
+  // kinn: tre lyse dotter på hver side
+  for (const sx of [-1, 1]) {
+    del(new THREE.ConeGeometry(.06, .13, 4), M.lys, hode, [sx * hx * .82, -hy * .42, hz * .3], [1, 1, .7], [0, 0, sx * 2.25]);
+    del(new THREE.ConeGeometry(.05, .1, 4), M.lys, hode, [sx * hx * .7, -hy * .62, hz * .42], [1, 1, .7], [0, 0, sx * 2.7]);
+    del(kule(6, 5), M.lys, hode, [sx * hx * .5, -hy * .55, hz * .62], [.07, .055, .07]);
+  }
+  // snute: kort og butt, lys underside, nese
+  del(kule(8, 6), M.lys, hode, [0, -hy * .47, hz * .98], [.085, .058, .09]);
+  del(kule(8, 6), M.main, hode, [0, -hy * .24, hz * 1.0], [.07, .055, .085]);
+  del(kule(6, 5), M.mork, hode, [0, -hy * .3, hz * 1.33], [.034, .026, .026]);
+  // munn bare ved jubel (åpent spørsmål til Even)
+  if (uttrykk === 'jubel') del(new THREE.TorusGeometry(.03, .008, 4, 8, Math.PI), M.mork, hode, [0, -hy * .6, hz * 1.14], [1, 1, 1], [0, 0, Math.PI]);
+  // øyne: store, mørke, to glanspunkt
+  const ox = .115, oyY = hy * .1;
+  const lukket = uttrykk === 'jubel', halv = uttrykk === 'snike';
+  for (const sx of [-1, 1]) {
+    if (lukket) {
+      del(new THREE.TorusGeometry(.05, .013, 4, 8, Math.PI), M.mork, hode, [sx * ox, oyY - .01, hz * .9], [1, 1, 1], [0, sx * .35, 0]);
+    } else {
+      del(kule(9, 7), M.mork, hode, [sx * ox, oyY, hz * .84], [.088, halv ? .055 : .1, .045], [0, sx * .38, 0]);
+      del(kule(5, 4), M.hvit, hode, [sx * ox - .028, oyY + (halv ? .015 : .035), hz * .84 + .04], [.022, .022, .012]);
+      del(kule(4, 3), M.hvit, hode, [sx * ox + .022, oyY - .025, hz * .84 + .042], [.01, .01, .008]);
+    }
+    // bryn
+    const L = { glad: [0, 0], nysgjerrig: sx < 0 ? [.02, -.1] : [.06, .3], jubel: [.05, .15], snike: [-.01, -.32], lei: [.02, .35] }[uttrykk] || [0, 0];
+    del(new THREE.BoxGeometry(.1, .026, .03), M.mork, hode, [sx * ox, oyY + .125 + L[0], hz * .78], [1, 1, 1], [0, sx * .38, -sx * L[1]]);
+  }
+  // ører: brede (forslag 2), lys innside, mørk spiss
+  const oreH = .21, oreB = .12, oreVinkel = { lei: .9, snike: .65 }[uttrykk] || .26;
+  for (const sx of [-1, 1]) {
+    const ore = ledd(sx < 0 ? 'Ear.L' : 'Ear.R', hode, [sx * hx * .5, hy * .8, -hz * .12]); ore.rotation.z = -sx * oreVinkel;
+    if (uttrykk === 'snike' || uttrykk === 'lei') ore.rotation.x = -.5;
+    del(new THREE.ConeGeometry(oreB, oreH, 4), M.main, ore, [0, oreH / 2, 0], [1, 1, .5], [0, Math.PI / 4, 0]);
+    del(new THREE.ConeGeometry(oreB * .62, oreH * .68, 4), M.lys, ore, [0, oreH * .4, oreB * .2], [1, 1, .25], [0, Math.PI / 4, 0]);
+    del(new THREE.ConeGeometry(oreB * .38, oreH * .34, 4), M.mork, ore, [0, oreH * .85, 0], [1, 1, .55], [0, Math.PI / 4, 0]);
+  }
+  rot.updateMatrixWorld(true);
+  return rot;
+}
+
+// ---------- Visninger ----------
+let robot = null, figurer = [];
+function nullstill() { for (const f of figurer) scene.remove(f.obj); figurer = []; }
+function legg(obj, navn, x, roty = 0) { obj.position.x = x; obj.rotation.y = roty; scene.add(obj); figurer.push({ obj, navn }); }
+function medTilbehor(antrekk) {
+  const rev = lagRev('glad');
+  try { const t = EVNTilbehor.lag(THREE, rev); t.vis(antrekk); rev.userData.tilbehor = t; } catch (e) { console.error(e); }
+  return rev;
+}
+function klon(r) { const c = r.clone(true); return c; }
+const VIS = {
+  rundt: () => {
+    if (robot) legg(robot, 'EVN-roboten', -2.2);
+    [['Forfra', 0], ['Skrått', -.75], ['Fra siden', -Math.PI / 2], ['Bakfra', Math.PI]].forEach(([n, r], i) => legg(lagRev('nysgjerrig'), n, -1.1 + i * 1.1, r));
+  },
+  uttrykk: () => {
+    [['Glad', 'glad'], ['Nysgjerrig', 'nysgjerrig'], ['Jubel', 'jubel'], ['Konsentrert (snike)', 'snike'], ['Litt lei seg', 'lei']].forEach(([n, u], i) => legg(lagRev(u, u === 'snike' ? 'snike' : 'sta'), n, -2.2 + i * 1.1, -.2));
+  },
+  stillinger: () => {
+    if (robot) legg(robot, 'EVN-roboten', -2.2, -.3);
+    [['Står', 'sta'], ['Går', 'ga'], ['Vinker', 'vink'], ['Hopper', 'hopp'], ['Håv (Dyrepatruljen)', 'hav']].forEach(([n, s], i) => legg(lagRev(s === 'vink' ? 'glad' : 'nysgjerrig', s), n, -1.1 + i * 1.1, -.45));
+  },
+  hatter: () => {
+    ['vernehjelm', 'steinhette', 'pirathatt', 'vikinghjelm', 'ridderhjelm', 'faraokrone', 'romhjelm', 'trollmannshatt', 'gullkrone'].forEach((id, i) => legg(medTilbehor({ hode: id }), id, -4 + i * 1.0, -.35));
+  },
+  rygg: () => {
+    ['ryggsekk', 'rod_kappe', 'stjernekappe', 'oksygentank', 'verktoybelte'].forEach((id, i) => legg(medTilbehor({ rygg: id }), id.replace('_', ' '), -2.2 + i * 1.1, Math.PI * .78));
+  },
+};
+let aktiv = 'rundt';
+function vis(n) {
+  aktiv = n; nullstill(); VIS[n]();
+  const xs = figurer.map(f => f.obj.position.x), midt = (Math.min(...xs) + Math.max(...xs)) / 2, bredde = Math.max(...xs) - Math.min(...xs) + 1.2;
+  storrelse();
+  const d = bredde / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect) * 1.12;
+  camera.position.set(midt, .55 + d * .12, Math.max(d, 5)); camera.lookAt(midt, .5, 0);
+  tegn();
+}
+function storrelse() { const r = canvas.getBoundingClientRect(); if (!(r.width > 0 && r.height > 0)) return; camera.aspect = r.width / r.height; camera.updateProjectionMatrix(); renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.setSize(r.width, r.height, false); }
+function tegn() {
+  storrelse(); renderer.render(scene, camera);
+  const navn = document.getElementById('navn'), r = canvas.getBoundingClientRect(); navn.innerHTML = '';
+  for (const f of figurer) { const p = f.obj.position.clone(); p.y = 0; p.project(camera); const d = document.createElement('div'); d.textContent = f.navn; d.style.left = ((p.x + 1) / 2 * r.width) + 'px'; navn.appendChild(d); }
+}
+const knapper = document.querySelectorAll('[data-vis]');
+knapper.forEach(b => b.onclick = () => { knapper.forEach(k => k.setAttribute('aria-pressed', k === b)); vis(b.dataset.vis); });
+addEventListener('resize', tegn);
+
+new THREE.GLTFLoader().load('../../../ecoins/helt-robot.glb', gltf => {
+  const modell = gltf.scene, mix = new THREE.AnimationMixer(modell), idle = gltf.animations.find(a => a.name === 'Idle');
+  if (idle) { mix.clipAction(idle).play(); mix.update(0); }
+  modell.traverse(o => { if (o.isMesh && o.material && o.material.name === 'Main') o.material.color = lin(FARGE.gul); if (o.isMesh) o.frustumCulled = false; });
+  modell.updateMatrixWorld(true);
+  let mn = Infinity, mx = -Infinity; const v = new THREE.Vector3();
+  modell.traverse(o => { if (!o.isMesh) return; const pos = o.geometry.attributes.position; for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i); if (o.isSkinnedMesh) o.boneTransform(i, v); v.applyMatrix4(o.matrixWorld); mn = Math.min(mn, v.y); mx = Math.max(mx, v.y); } });
+  const k = 1 / (mx - mn); modell.scale.setScalar(k); modell.position.y = -mn * k;
+  robot = new THREE.Group(); robot.add(modell);
+  const h = new URLSearchParams(location.hash.slice(1)).get('vis');
+  const b = h && document.querySelector('[data-vis="' + h + '"]'); if (b) b.click(); else vis('rundt');
+}, undefined, e => { console.error('Fant ikke roboten', e); vis('rundt'); });
+</script>
+</body>
+</html>
