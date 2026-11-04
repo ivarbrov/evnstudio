@@ -1,5 +1,5 @@
 // EVN-reven «Nysgjerrig» – godkjenningsmodell bygget av enkle former (three.js r128). Ikke spillmodellen.
-// Brukes av modell.html og ../robot-v2/for-etter.html. Krever THREE.
+// Brukes av modell.html, og av verktoy/figurer/hent-rev.cjs som henter formene til Blender. Krever THREE.
 (function () {
 'use strict';
 const lin = hex => new THREE.Color(hex).convertSRGBToLinear();

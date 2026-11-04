@@ -3,6 +3,8 @@
 Status: **utkast til Even** (5.11.2026). Originalen `ecoins/helt-robot.glb` (og kopiene i spillene) er **ikke endret** og er fortsatt referanse og tilbakestilling. Ingen spill bruker v2.
 Se: `for-etter.html` (åpnes fra en lokal server i repoet), bilder i `bilder/`.
 
+Filstørrelser er i kB (1 000 byte).
+
 ## Hva er gjort
 
 | Område | Før | Etter (v2) | Hvorfor |
