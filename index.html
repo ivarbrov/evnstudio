@@ -91,7 +91,8 @@
     opacity: 0; transform: scale(.85); transition: opacity .25s, transform .25s; }
   .spillkort .avspill::before { content: ""; border-left: 26px solid #fff; border-top: 16px solid transparent; border-bottom: 16px solid transparent; margin-left: 6px; }
   .spillkort:hover .avspill { opacity: 1; transform: scale(1); }
-  .spillkort .tekst { position: relative; margin-top: -64px; z-index: 1; padding: 0 24px 24px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .spillkort .tekst { --overlapp: 64px; position: relative; margin-top: calc(-1 * var(--overlapp)); z-index: 1; padding: 0 24px 24px; display: flex; flex-direction: column; gap: 10px; flex: 1;
+    background: linear-gradient(transparent calc(var(--overlapp) - 5px), var(--flate) calc(var(--overlapp) - 1px)); } /* dekker bildets nederste kant: bilde og toning kantutjevnes hver for seg og ga en lys strek ved brøkdelspiksler */
   .spillkort h3 { font-family: var(--tittel); font-weight: 800; font-size: clamp(24px, 2.6vw, 32px); margin: 0; text-shadow: 0 3px 16px rgba(0,0,0,.6); }
   .spillkort .stikkord { display: flex; flex-wrap: wrap; gap: 8px; }
   .spillkort .stikkord i { font-style: normal; }
@@ -163,7 +164,7 @@
     .spillkort .bilde { width: 100%; aspect-ratio: 2 / 1; flex-shrink: 0; }
     .spillkort .bilde img.topp { object-position: 50% 0; } /* robothodet står høyt i bildet: vis toppen når bildet beskjæres til 2:1 */
     .spillkort .bilde::after { background: linear-gradient(0deg, rgb(19,26,58) 0%, rgba(19,26,58,0) 50%); }
-    .spillkort .tekst { margin-top: -40px; padding: 0 14px 14px; gap: 6px; }
+    .spillkort .tekst { --overlapp: 40px; padding: 0 14px 14px; gap: 6px; }
     .spillkort h3 { font-size: 28px; line-height: 1.05; }
     .spillkort p { font-size: 15px; line-height: 1.35; }
     .spillkort .knapp { min-height: 52px; padding: 10px; font-size: 19px; margin-top: 4px; }
@@ -320,7 +321,7 @@
 
       <a class="spillkort k-mork inn" style="--i:1" href="spill/morkeskogen/">
         <div class="bilde">
-          <img src="bilder/morkeskogen.jpg" alt="Skjermbilde fra Mørkeskogen: spilleren ved bålet i skogen">
+          <img src="bilder/morkeskogen.jpg" srcset="bilder/morkeskogen.jpg 800w, bilder/morkeskogen-1200.jpg 1200w" sizes="(max-width: 680px) 100vw, 400px" alt="Skjermbilde fra Mørkeskogen 2.0: den gule roboten ved bålet i skogen">
           <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
