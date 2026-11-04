@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.4.0 – EVN Studio</title>
+<title>Fiskespillet 0.5.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -35,10 +35,13 @@
   #melding { position:fixed; top:calc(68px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); background:rgba(13,36,64,.9); border:2px solid var(--gull); border-radius:16px; padding:10px 18px; font-weight:800; font-size:18px; max-width:min(92vw,560px); text-align:center; z-index:6; opacity:0; transition:opacity .25s; pointer-events:none; }
   #melding.vis { opacity:1; }
   #melding small { display:block; font-size:15px; opacity:.9; }
+  #melding.stor { border-width:3px; font-size:21px; padding:12px 22px; background:linear-gradient(rgba(70,30,120,.95),rgba(13,36,64,.95)); box-shadow:0 0 0 3px rgba(255,201,60,.35), 0 8px 30px rgba(0,0,0,.35); }
+  #melding .ny { font-size:13px; }
 
   /* Kampen mot Kraken */
   #kamp { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(110px + env(safe-area-inset-bottom)); width:min(86vw,460px); display:flex; align-items:center; gap:8px; background:rgba(40,10,60,.85); border:3px solid #c79bff; border-radius:18px; padding:8px 12px; font-weight:800; font-size:17px; z-index:6; }
   #kamp[hidden] { display:none; }
+  #kamp .kamptid { min-width:46px; text-align:right; font-variant-numeric:tabular-nums; }
   #kamp.sint { border-color:#ff5f5f; animation:rist .15s infinite; }
   @keyframes rist { 50% { transform:translateX(calc(-50% + 3px)); } }
   @media (prefers-reduced-motion: reduce) { #kamp.sint { animation:none; } }
@@ -97,6 +100,9 @@
   .kn.bla { background:linear-gradient(#8fe3ff,#3aa7e0); color:#05263f; }
   .kn:disabled { background:#8a8ea3; color:#2a2d3a; border-color:#c5c8d6; cursor:default; }
   .kn:focus-visible, .fane:focus-visible { outline:3px solid #fff; outline-offset:2px; }
+  .kn small { display:block; font-size:11px; font-weight:800; opacity:.85; }
+  .kn.stjerne { background:linear-gradient(#fff3b0,#ffc93c); min-width:min(100%,360px); padding:6px 14px; font-size:16px; }
+  .svakere, .permin { font-size:12px; font-weight:800; opacity:.85; align-self:center; max-width:110px; text-align:right; }
   .tom { text-align:center; padding:18px 6px; font-weight:800; opacity:.9; }
   .samlet { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:8px 0 2px; }
   .lukk { margin-top:12px; font-size:24px; padding:10px 34px; min-height:52px; }
@@ -110,6 +116,14 @@
   /* Fiskeboka */
   .framdrift { height:14px; background:rgba(255,255,255,.15); border-radius:999px; overflow:hidden; margin:6px 0 12px; }
   .framdrift i { display:block; height:100%; background:linear-gradient(90deg,#ffd75e,#ff8fd0,#8fe3ff); }
+  .bokmaal { display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:left; font-size:16px; }
+  .bokmaal .framdrift { margin:4px 0 8px; }
+  .sonelinje { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin:0 0 8px; }
+  .sonelinje span { background:rgba(255,255,255,.1); border-radius:999px; padding:4px 10px; font-size:14px; font-weight:800; }
+  .art .mini { height:6px; background:rgba(255,255,255,.15); border-radius:999px; overflow:hidden; margin:4px 4px 2px; }
+  .art .mini i { display:block; height:100%; background:#ffc93c; }
+  .art.alle { border-color:#ffc93c; }
+  @media (max-width:420px) { .bokmaal { grid-template-columns:1fr; gap:0; } }
   .rutenett { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
   .art { background:rgba(255,255,255,.08); border:3px solid rgba(255,255,255,.15); border-radius:14px; padding:8px 4px; }
   .art .ik { font-size:30px; line-height:1.2; }
@@ -161,7 +175,7 @@
   <a class="rund" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none;text-decoration:none">🚪<span class="evn-avs-tekst"> Avslutt</span></a>
 </div>
 <div id="melding" role="status" aria-live="polite"></div>
-<div id="kamp" hidden><span>🐙 Kraken</span><div class="kampbar"><i id="kampFyll"></i></div><span>🏆</span></div>
+<div id="kamp" hidden><span>🐙 Kraken</span><div class="kampbar" role="progressbar" aria-label="Hvor langt opp Kraken er"><i id="kampFyll"></i></div><span>🏆</span><span id="kampTid" class="kamptid" aria-label="Sekunder igjen">⏱ 60</span></div>
 <button id="handling" type="button"></button>
 <div id="hjelp"></div>
 <div id="joy"><i></i></div>
@@ -181,7 +195,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.4.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.5.0</div>
   </div>
 </div>
 
@@ -205,8 +219,12 @@
   <div class="kort bred">
     <button class="kryss" type="button" data-lukk="bok" aria-label="Lukk fiskeboka">✕</button>
     <h2 id="bokTittel">📖 Fiskeboka</h2>
+    <div class="bokmaal">
+      <div><b>🐟 Arter</b> <span id="bokArter">0 av 25</span><div class="framdrift"><i id="bokArtStolpe" style="width:0"></i></div></div>
+      <div><b>✨ Varianter</b> <span id="bokVar">0 av 5000</span><div class="framdrift"><i id="bokStolpe" style="width:0"></i></div></div>
+    </div>
+    <div class="sonelinje" id="bokSoner"></div>
     <div class="info" id="bokTekst"></div>
-    <div class="framdrift"><i id="bokStolpe" style="width:0"></i></div>
     <div class="rutenett" id="rutenett"></div>
     <div class="sjanser">
       🎣 <b>Bedre fiskestang</b> gir større fisker. Kjempestore fisker får du bare med gullstang eller superstang.<br>
@@ -503,7 +521,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.4.0';
+const VERSJON = '0.5.0';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -528,6 +546,7 @@ const INNST = {
   krakenDra: 3.5,            // hvor mye ett trykk på «Dra!» trekker Kraken opp
   krakenSlipp: 6,          // hvor mye Kraken drar seg ned igjen hvert sekund
   krakenSint: 6,           // ekstra drag når Kraken er sint
+  krakenTid: 60,           // sekunder kampen varer høyst. Er Kraken ikke oppe da, svømmer den ned i dypet
   krakenPremie: 10000,     // penger for å fange Kraken
 };
 if (TEST) { INNST.startPenger = 20000; INNST.ventMin = 0.5; INNST.ventMaks = 0.8; INNST.krakenVent = 1.5; INNST.aapentVann = 1; }
@@ -1236,7 +1255,7 @@ settLyd(lydPa);
 //  Statuslinje og meldinger
 // ======================================================
 let meldingTid = 0;
-function melding(html, sek = 3) { const m = $('melding'); m.innerHTML = html; m.classList.add('vis'); meldingTid = sek; }
+function melding(html, sek = 3, stor) { const m = $('melding'); m.innerHTML = html; m.classList.add('vis'); m.classList.toggle('stor', !!stor); meldingTid = sek; }
 function oppdaterMelding(dt) { if (meldingTid > 0) { meldingTid -= dt; if (meldingTid <= 0) $('melding').classList.remove('vis'); } }
 function bump(id) { const e = $(id); e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); }
 const tall = n => Math.floor(n).toLocaleString('nb-NO');
@@ -1338,6 +1357,7 @@ function oppdaterFiske(dt, t) {
 function fangFisk() {
   const f = fiske; fiske = null; dupp.visible = false; snore.visible = false;
   const id = nyFisk(f.plass ? f.plass.sone : soneFor(f.mal.x, f.mal.z)), ny = !harFunnet(id), sj = sjeldenhet(id), verdi = fiskVerdi(id), S = SJELDENHET[sj];
+  const nyArt = antallFunnetForm(fiskDel(id).f) === 0, nyRekord = tilstand.best >= 0 && verdi > fiskVerdi(tilstand.best);
   settFunnet(id); tilstand.last.push(id); tilstand.fanget++;
   if (tilstand.best < 0 || verdi > fiskVerdi(tilstand.best)) tilstand.best = id;
   if (f.plass) f.plass.igjen--; if (f.plass && f.plass.igjen <= 0) { fjernPlass(f.plass); melding('Fiskestedet er tomt. Finn et nytt! 🫧', 2.5); }
@@ -1347,10 +1367,21 @@ function fangFisk() {
   lydPlask(); if (sj >= 2) lydSjelden(); else lydMynt();
   robotGjor(sj >= 3 ? 'Jump' : 'ThumbsUp', sj >= 3 ? 1.2 : 1.5);
   oppdaterHud(); bump('pLast'); lagre();
-  const stjerner = '⭐'.repeat(S.stjerner);
-  if (sj >= 3) visStorFangst(id, ny);
-  else melding(`${FORMER[fiskDel(id).f].ikon} ${fiskNavn(id)}${ny ? '<span class="ny">NY</span>' : ''}<small style="color:${S.farge}">${S.navn} ${stjerner} · verdi 💰 ${tall(verdi)}</small>`, 3.2);
+  visFangst(id, { ny, nyArt, nyRekord, sj, verdi });
   if (baatFull()) setTimeout(() => { if (spillTilstand === 'spill') melding('Båten er full! Kjør hjem til havna ⚓', 3.5); }, 3300);
+}
+// Tilbakemelding etter fangst (forbedret i 0.5.0):
+// - Stort kort som stopper spillet: bare en NY legendarisk variant, eller en NY episk variant høyst én gang i minuttet.
+// - Stor melding uten pause: ny art i fiskeboka, ny rekord, eller en episk/legendarisk fisk du har fått før.
+// - Kort melding: alt annet. Fisk du har fått før, gir en enda kortere melding.
+let sistStorFangst = -1e9;
+function visFangst(id, o) {
+  const S = SJELDENHET[o.sj], ikon = FORMER[fiskDel(id).f].ikon, stjerner = '⭐'.repeat(S.stjerner);
+  const linje = `<small style="color:${S.farge}">${S.navn} ${stjerner} · 💰 ${tall(o.verdi)}</small>`;
+  if (o.ny && (o.sj >= 4 || (o.sj >= 3 && performance.now() - sistStorFangst > 60000))) { sistStorFangst = performance.now(); visStorFangst(id, true); return; }
+  if (o.nyArt) { melding(`📖 Ny art i fiskeboka: ${FORMER[fiskDel(id).f].navn}! ${ikon}<small>${fiskNavn(id)}</small>${linje}`, 4.5, true); return; }
+  if (o.sj >= 3 || o.nyRekord) { melding(`${o.nyRekord ? '🏆 Ny rekord! ' : ''}${ikon} ${fiskNavn(id)}${o.ny ? '<span class="ny">NY</span>' : ''}${linje}`, 4, true); return; }
+  melding(`${ikon} ${fiskNavn(id)}${o.ny ? '<span class="ny">NY</span>' : ''}${linje}`, o.ny ? 2.8 : 2);
 }
 function visStorFangst(id, ny) {
   const sj = sjeldenhet(id), S = SJELDENHET[sj];
@@ -1364,6 +1395,7 @@ function visStorFangst(id, ny) {
 // Kampen mot Kraken: trykk «Dra!» fort for å trekke den opp. Den drar seg ned igjen, og innimellom blir den sint.
 function startKamp() {
   fiske.fase = 'kamp'; fiske.t = 0; fiske.kamp = INNST.krakenStart; fiske.sint = 0; fiske.nesteSint = rnd(4, 6);
+  fiske.igjen = INNST.krakenTid; fiske.sist = performance.now();
   for (const te of krakenTentakler) te.userData.opp = 1;
   $('kamp').hidden = false; oppdaterKampBar();
   melding('🐙 KRAKEN BITER! Trykk <b>Dra!</b> fort, fort, fort!', 3);
@@ -1376,8 +1408,14 @@ function dra() {
   if (fiske.kamp >= 100) { sluttKamp(); fangKraken(); }
 }
 const MINDRE_BEVEGELSE = matchMedia('(prefers-reduced-motion: reduce)');
-function oppdaterKamp(dt, t) {
+function oppdaterKamp(_dt, t) {
   const f = fiske;
+  // Kampen regnes i ekte tid, ikke spilltid. Spilltiden har et tak per bilde (0,05 s), så på trege enheter
+  // gikk Kraken saktere mens trykkene telte fullt, og kampen ble lettere. Nå er den like vanskelig ved alle bildefrekvenser.
+  // Har kampen stått stille (pause, kart, fiskebok), regnes ikke den tiden med.
+  const naa = performance.now(), gap = (naa - f.sist) / 1000; f.sist = naa;
+  const dt = gap > 1 ? 0 : gap;   // over 1 s uten oppdatering = kampen sto på pause
+  f.igjen -= dt;
   f.nesteSint -= dt;
   if (f.sint > 0) { f.sint -= dt; if (f.sint <= 0) { f.nesteSint = rnd(5, 8); melding('Kraken er sliten. Dra! 💪', 1.5); } }
   else if (f.nesteSint <= 0) { f.sint = rnd(2.5, 3.5); melding('😡 Kraken blir sint og drar! Hold ut!', 2); pip(110, 0.5, 'sawtooth', 0.06, 0.6); }
@@ -1388,10 +1426,16 @@ function oppdaterKamp(dt, t) {
   if (!MINDRE_BEVEGELSE.matches) camera.position.x += (Math.random() - 0.5) * (f.sint > 0 ? 0.5 : 0.15);   // T3: ingen risting med «reduser bevegelse»
   oppdaterKampBar();
   if (f.kamp >= 100) { sluttKamp(); fangKraken(); }
-  else if (f.kamp <= 0) { sluttKamp(); for (const te of krakenTentakler) te.userData.opp = 0; lydPlask(); melding('🐙💨 Kraken slapp unna! Prøv igjen.<small>Tips: trykk fortere når Kraken er sint.</small>', 4); }
+  else if (f.kamp <= 0) krakenSlipper('🐙💨 Kraken slapp unna! Prøv igjen.<small>Tips: trykk fortere når Kraken er sint.</small>');
+  else if (f.igjen <= 0) krakenSlipper('🐙💤 Kraken ble lei og svømte ned i dypet. Prøv igjen!<small>Du har ' + INNST.krakenTid + ' sekunder på deg.</small>');
 }
+function krakenSlipper(tekst) { sluttKamp(); for (const te of krakenTentakler) te.userData.opp = 0; lydPlask(); melding(tekst, 4); }
 function sluttKamp() { fiske = null; dupp.visible = false; snore.visible = false; $('kamp').hidden = true; }
-function oppdaterKampBar() { if (!fiske) return; $('kampFyll').style.width = Math.max(0, fiske.kamp).toFixed(1) + '%'; $('kamp').classList.toggle('sint', fiske.sint > 0); }
+function oppdaterKampBar() {
+  if (!fiske) return;
+  $('kampFyll').style.width = Math.max(0, fiske.kamp).toFixed(1) + '%'; $('kamp').classList.toggle('sint', fiske.sint > 0);
+  const t = Math.max(0, Math.ceil(fiske.igjen)); if ($('kampTid').textContent !== '⏱ ' + t) $('kampTid').textContent = '⏱ ' + t;
+}
 function fangKraken() {
   for (const te of krakenTentakler) te.userData.opp = 0;
   const forste = !tilstand.kraken;
@@ -1422,23 +1466,40 @@ function fiskRad(id, knapper) {
 }
 function sortertIndekser(liste) { return liste.map((id, i) => i).sort((a, b) => fiskVerdi(liste[b]) - fiskVerdi(liste[a])); }
 function akvPerMinutt() { return tilstand.akv.reduce((s, id) => s + fiskVerdi(id) * INNST.akvInntekt, 0); }
+const perMin = id => fiskVerdi(id) * INNST.akvInntekt;
+const minTekst = v => v < 10 ? v.toFixed(1).replace('.', ',') : tall(v);   // små beløp per minutt med én desimal
+function svakesteIAkv() { let i = -1; tilstand.akv.forEach((id, k) => { if (i < 0 || fiskVerdi(id) < fiskVerdi(tilstand.akv[i])) i = k; }); return i; }
+// «Beste i akvariet»: de mest verdifulle av fiskene i båten og akvariet havner i akvariet. Resten selges. Én handling.
+function besteOppsett() {
+  const alle = tilstand.akv.map(id => ({ id, fra: 'akv' })).concat(tilstand.last.map(id => ({ id, fra: 'last' })))
+    .sort((a, b) => fiskVerdi(b.id) - fiskVerdi(a.id) || (a.fra === 'akv' ? -1 : 1));
+  const inn = alle.slice(0, tilstand.akvPlass), ut = alle.slice(tilstand.akvPlass);
+  return { inn, ut, nyeInn: inn.filter(x => x.fra === 'last').length, utAkv: ut.filter(x => x.fra === 'akv').length, salg: ut.reduce((s, x) => s + fiskVerdi(x.id), 0),
+    okning: inn.reduce((s, x) => s + perMin(x.id), 0) - akvPerMinutt() };
+}
 function byggHavna() {
   document.querySelectorAll('#havna .fane').forEach(b => b.setAttribute('aria-selected', String(b.dataset.fane === fane)));
   let h = '';
   if (fane === 'lever') {
-    const fullt = tilstand.akv.length >= tilstand.akvPlass;
+    const fullt = tilstand.akv.length >= tilstand.akvPlass, sv = svakesteIAkv(), svId = sv >= 0 ? tilstand.akv[sv] : -1;
     if (!tilstand.last.length) h = '<div class="tom">Båten er tom. Kjør ut og fisk! 🎣</div>';
     else {
-      const sum = tilstand.last.reduce((s, id) => s + fiskVerdi(id), 0);
-      h = `<p class="info">Velg for hver fisk: legg den i akvariet 🐠 (gir penger hele tiden) eller selg den 💰 (penger med en gang).${fullt ? '<br><b>Akvariet er fullt.</b> Kjøp et større i butikken, eller selg noen derfra.' : ''}</p>`;
-      h += '<div class="liste">' + sortertIndekser(tilstand.last).map(i => fiskRad(tilstand.last[i],
-        `<button class="kn bla" type="button" data-akv="${i}" ${fullt ? 'disabled' : ''}>🐠 Akvariet</button><button class="kn" type="button" data-selg="${i}">💰 Selg</button>`)).join('') + '</div>';
-      h += `<div class="samlet"><button class="kn" type="button" id="selgAlle">💰 Selg alle (${tall(sum)})</button></div>`;
+      const sum = tilstand.last.reduce((s, id) => s + fiskVerdi(id), 0), b = besteOppsett();
+      h = `<p class="info">🐠 i akvariet gir penger hvert minutt. 💰 Selg gir penger med en gang.<br>Akvariet: <b>${tilstand.akv.length} av ${tilstand.akvPlass}</b>${fullt && svId >= 0 ? ` · svakeste: ${FORMER[fiskDel(svId).f].ikon} 💰 ${tall(fiskVerdi(svId))}` : ''}</p>`;
+      if (b.nyeInn > 0) h += `<div class="samlet"><button class="kn stjerne" type="button" id="besteAkv">⭐ Beste i akvariet, selg resten<small>${b.nyeInn} inn${b.utAkv ? `, ${b.utAkv} ut av akvariet` : ''} · +💰 ${minTekst(b.okning)}/min · selger for 💰 ${tall(b.salg)}</small></button></div>`;
+      h += '<div class="liste">' + sortertIndekser(tilstand.last).map(i => {
+        const id = tilstand.last[i], bedre = fullt && svId >= 0 && fiskVerdi(id) > fiskVerdi(svId);
+        const akvKnapp = !fullt ? `<button class="kn bla" type="button" data-akv="${i}">🐠 Akvariet<small>+${minTekst(perMin(id))}/min</small></button>`
+          : bedre ? `<button class="kn bla" type="button" data-bytt="${i}" aria-label="Bytt med den svakeste i akvariet og selg den">🔄 Bytt<small>+${minTekst(perMin(id) - perMin(svId))}/min</small></button>`
+          : `<span class="svakere">Svakere enn alle i akvariet</span>`;
+        return fiskRad(id, akvKnapp + `<button class="kn" type="button" data-selg="${i}">💰 Selg</button>`);
+      }).join('') + '</div>';
+      h += `<div class="samlet"><button class="kn" type="button" id="selgAlle">💰 Selg alle i båten (${tall(sum)})</button></div>`;
     }
   } else if (fane === 'akvarium') {
-    h = `<p class="info">Akvariet har ${tilstand.akv.length} av ${tilstand.akvPlass} plasser i bruk. Fiskene gir 💰 ${tall(akvPerMinutt())} hvert minutt mens du spiller.</p>`;
+    h = `<p class="info">Akvariet har ${tilstand.akv.length} av ${tilstand.akvPlass} plasser i bruk. Fiskene gir 💰 ${tall(akvPerMinutt())} hvert minutt mens du spiller (ikke når ingen har rørt spillet på 3 minutter).</p>`;
     if (!tilstand.akv.length) h += '<div class="tom">Akvariet er tomt. Lever fisk fra båten! 🐠</div>';
-    else h += '<div class="liste">' + sortertIndekser(tilstand.akv).map(i => fiskRad(tilstand.akv[i], `<button class="kn" type="button" data-selgakv="${i}">💰 Selg</button>`)).join('') + '</div>';
+    else h += '<div class="liste">' + sortertIndekser(tilstand.akv).map(i => fiskRad(tilstand.akv[i], `<span class="permin">💰 ${minTekst(perMin(tilstand.akv[i]))}/min</span><button class="kn" type="button" data-selgakv="${i}">💰 Selg</button>`)).join('') + '</div>';
   } else {
     const vare = (ikon, navn, tekst, pris, status, data) => `<div class="rad" style="border-left-color:#ffc93c"><span class="ik" aria-hidden="true">${ikon}</span><span><b>${navn}</b><small>${tekst}</small></span><span class="knapper">${status ? `<button class="kn" type="button" disabled>${status}</button>` : `<button class="kn" type="button" data-kjop="${data}" ${tilstand.penger < pris ? 'disabled' : ''}>💰 ${tall(pris)}</button>`}</span></div>`;
     h = `<p class="info">Du har 💰 ${tall(tilstand.penger)}.${tilstand.kraken ? '' : ' <b>Oppdrag:</b> Kjøp ⚡ Superstangen og fang Kraken! 🐙'}</p><div class="liste">`;
@@ -1465,6 +1526,16 @@ $('havna').addEventListener('click', e => {
     byggAkvarium(); byggLast();
   } else if (b.dataset.selg !== undefined) {
     const [id] = tilstand.last.splice(+b.dataset.selg, 1); tilstand.penger += fiskVerdi(id); lydMynt(); byggLast(); bump('pPenger');
+  } else if (b.dataset.bytt !== undefined) {
+    const sv = svakesteIAkv(); if (sv < 0) return;
+    const [ut] = tilstand.akv.splice(sv, 1), [inn] = tilstand.last.splice(+b.dataset.bytt, 1);
+    tilstand.akv.push(inn); tilstand.penger += fiskVerdi(ut); lydMynt(); pip(880, 0.15, 'sine', 0.06, 1.5); byggAkvarium(); byggLast(); bump('pPenger');
+    melding(`🔄 ${FORMER[fiskDel(inn).f].ikon} inn i akvariet, ${FORMER[fiskDel(ut).f].ikon} solgt for 💰 ${tall(fiskVerdi(ut))}`, 2.5);
+  } else if (b.id === 'besteAkv') {
+    const o = besteOppsett();
+    tilstand.akv = o.inn.map(x => x.id); tilstand.last = []; tilstand.penger += o.salg;
+    lydMynt(); pip(880, 0.15, 'sine', 0.06, 1.5); byggAkvarium(); byggLast(); bump('pPenger');
+    melding(`⭐ Akvariet gir nå 💰 ${tall(akvPerMinutt())}/min. Solgt for 💰 ${tall(o.salg)}.`, 3);
   } else if (b.id === 'selgAlle') {
     tilstand.penger += tilstand.last.reduce((s, id) => s + fiskVerdi(id), 0); tilstand.last = []; lydMynt(); byggLast(); bump('pPenger');
   } else if (b.dataset.selgakv !== undefined) {
@@ -1487,16 +1558,26 @@ $('lukkHavna').addEventListener('click', () => lukkLag('havna'));
 // ======================================================
 //  Fiskeboka
 // ======================================================
+function fargerFunnetForm(f) { const c = new Set(); for (let i = f * 200; i < f * 200 + 200; i++) if (harFunnet(i)) c.add(Math.floor(i / 20) % 10); return c.size; }
 function byggBok() {
-  const n = antallFunnet();
-  $('bokTekst').innerHTML = `Du har funnet <b>${tall(n)} av ${tall(ANTALL_FISKER)}</b> fisker. Du har fanget ${tall(tilstand.fanget)} fisker i alt.` +
+  // To mål vises hver for seg: de 25 artene (formene) og de 5000 variantene. Varianter = art × farge × mønster × størrelse.
+  const n = antallFunnet(), per = FORMER.map((f, i) => antallFunnetForm(i)), arter = per.filter(a => a > 0).length;
+  $('bokArter').textContent = `${arter} av ${FORMER.length}`; $('bokArtStolpe').style.width = (arter / FORMER.length * 100).toFixed(1) + '%';
+  $('bokVar').textContent = `${tall(n)} av ${tall(ANTALL_FISKER)}`; $('bokStolpe').style.width = Math.max(n ? 1 : 0, n / ANTALL_FISKER * 100).toFixed(2) + '%';
+  $('bokSoner').innerHTML = SONER.map((z, k) => { const i = FORMER.map((f, j) => j).filter(j => FORMER[j].soner.includes(k)); return `<span>${z.ikon} ${z.navn}: ${i.filter(j => per[j]).length}/${i.length}</span>`; }).join('');
+  // Neste mål: en art du mangler i den nærmeste sonen der det fortsatt finnes nye arter
+  let maal = '';
+  for (let k = 0; k < SONER.length && !maal; k++) { const mangler = FORMER.filter((f, j) => f.soner.includes(k) && !per[j]).length; if (mangler) maal = `Neste mål: finn ${mangler === 1 ? 'den siste nye arten' : 'en ny art'} i ${SONER[k].ikon} ${SONER[k].navn} (${mangler} igjen).`; }
+  if (!maal) maal = 'Du har funnet alle 25 artene! 🎉 Neste mål: alle 10 farger av hver art.';
+  $('bokTekst').innerHTML = maal + ` Du har fanget ${tall(tilstand.fanget)} fisker i alt.` +
     (tilstand.best >= 0 ? `<br>Beste fangst: <b style="color:${sjFarge(tilstand.best)}">${fiskNavn(tilstand.best)}</b> (💰 ${tall(fiskVerdi(tilstand.best))})` : '') +
     `<br>${tilstand.kraken ? '🏆 Du har fanget Kraken!' : '🐙 Oppdrag: Fang Kraken med Superstangen.'}`;
-  $('bokStolpe').style.width = (n / ANTALL_FISKER * 100).toFixed(2) + '%';
   $('rutenett').innerHTML = FORMER.map((f, i) => {
-    const a = antallFunnetForm(i), sone = SONER[Math.max(...f.soner)];
-    return a ? `<div class="art"><div class="ik">${f.ikon}</div><div class="nv">${f.navn.charAt(0).toUpperCase() + f.navn.slice(1)}</div><div class="tall">${a}/200</div><div class="tall">${f.soner.map(s => SONER[s].ikon).join('')}</div></div>`
-             : `<div class="art ukjent"><div class="ik">❓</div><div class="nv">???</div><div class="tall">0/200</div><div class="tall">${sone.ikon}</div></div>`;
+    const a = per[i], sone = SONER[Math.min(...f.soner)];
+    if (!a) return `<div class="art ukjent"><div class="ik">❓</div><div class="nv">???</div><div class="tall">${sone.ikon} ${sone.navn}</div></div>`;
+    const c = fargerFunnetForm(i);
+    return `<div class="art${c === 10 ? ' alle' : ''}"><div class="ik">${f.ikon}</div><div class="nv">${f.navn.charAt(0).toUpperCase() + f.navn.slice(1)}</div>` +
+      `<div class="tall">🎨 ${c}/10 farger${c === 10 ? ' ✔' : ''}</div><div class="mini" aria-hidden="true"><i style="width:${Math.max(2, a / 2).toFixed(1)}%"></i></div><div class="tall">${a}/200 varianter</div></div>`;
   }).join('');
 }
 $('bokKnapp').addEventListener('click', e => { e.stopPropagation(); if (spillTilstand !== 'spill' || modalApen()) return; byggBok(); apneLag('bok'); });
@@ -1557,13 +1638,13 @@ addEventListener('keyup', e => { taster[e.key.toLowerCase()] = false; });
 addEventListener('blur', () => { for (const k in taster) taster[k] = false; slippAlt(); });
 addEventListener('wheel', e => { if (spillTilstand === 'spill') zoom = Math.min(1.6, Math.max(0.6, zoom * (e.deltaY > 0 ? 1.08 : 0.92))); }, { passive: true });
 
-const joy = { aktiv: false, id: null, sx: 0, sy: 0, dx: 0, dy: 0 };
+const joy = { aktiv: false, id: null, yaw: 0, sx: 0, sy: 0, dx: 0, dy: 0 };
 const joyEl = $('joy'), knott = joyEl.querySelector('i');
 function slippAlt() { joy.aktiv = false; joy.id = null; joy.dx = joy.dy = 0; joyEl.style.display = 'none'; }
 canvas.addEventListener('pointerdown', e => {
   if (spillTilstand !== 'spill' || joy.aktiv || modalApen()) return;
   try { if (lyd && lyd.state === 'suspended') lyd.resume(); } catch (er) {}
-  joy.aktiv = true; joy.id = e.pointerId; joy.sx = e.clientX; joy.sy = e.clientY; joy.dx = joy.dy = 0;
+  joy.aktiv = true; joy.id = e.pointerId; joy.yaw = kamYaw; joy.sx = e.clientX; joy.sy = e.clientY; joy.dx = joy.dy = 0;
   joyEl.style.left = e.clientX + 'px'; joyEl.style.top = e.clientY + 'px'; joyEl.style.display = 'block'; knott.style.transform = '';
   canvas.setPointerCapture(e.pointerId); e.preventDefault();
 });
@@ -1661,7 +1742,9 @@ function oppdaterBaat(dt, t) {
     if (taster['arrowup'] || taster['w']) gass += 1; if (taster['arrowdown'] || taster['s']) gass -= 1;
     if (taster['arrowleft'] || taster['a']) ror += 1; if (taster['arrowright'] || taster['d']) ror -= 1;
     if (joy.aktiv) {
-      const fx = Math.sin(kamYaw), fz = Math.cos(kamYaw);          // fremover på skjermen
+      // Retningen låses til kameraet slik det sto da fingeren ble satt ned. Ellers snur kameraet seg etter båten,
+      // og en finger som holdes til siden får båten til å kjøre i ring.
+      const fx = Math.sin(joy.yaw), fz = Math.cos(joy.yaw);          // fremover på skjermen da fingeren ble satt ned
       jx = fx * -joy.dy + -fz * joy.dx; jz = fz * -joy.dy + fx * joy.dx;
     }
   }
@@ -1795,7 +1878,7 @@ EVNNullstill({
 });
 requestAnimationFrame(loop);
 // Til testing
-window.__spill = { tilstand, spiller, plasser, INNST, FORMER, nyFisk, fiskNavn, fiskVerdi, sjeldenhet, fiskDel, gjorHandling, startFiske, dra, get fiske() { return fiske; }, lagre, HAVN, KRAKEN_POS, scene, camera, oppdaterHud, byggAkvarium, byggLast, byggBaat, lagFiskModell, renderer };
+window.__spill = { visFangst, besteOppsett, tilstand, spiller, plasser, INNST, FORMER, nyFisk, fiskNavn, fiskVerdi, sjeldenhet, fiskDel, gjorHandling, startFiske, dra, get fiske() { return fiske; }, lagre, HAVN, KRAKEN_POS, scene, camera, oppdaterHud, byggAkvarium, byggLast, byggBaat, lagFiskModell, renderer };
 </script>
 <!-- EVN Studio: knapp tilbake til forsiden (vises bare under /spill/) -->
 <style>
