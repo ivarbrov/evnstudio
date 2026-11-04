@@ -1756,7 +1756,7 @@ window.__evnP = EVNPause({
     info: () => '🔺 Du · ⚓ Havna · 🐟 Fiskested · 🐙 Kraken',
     tegn: (c, w, h) => { tegnKart(); c.drawImage(kartLerret, 0, 0, w, h); }
   },
-  kanPause: () => spillTilstand === 'spill' && !LAG.some(id => $(id).classList.contains('vis')),
+  kanPause: () => spillTilstand === 'spill' && !LAG.some(id => $(id).classList.contains('vis')) && !$('feil').classList.contains('vis'),   // K2: pausen legger seg ikke over feilkortet
   aktiv: () => spillTilstand === 'spill',
   pause: () => { spillTilstand = 'pause'; for (const k in taster) taster[k] = false; slippAlt(); lagre(); },
   fortsett: () => { spillTilstand = 'spill'; for (const k in taster) taster[k] = false; sisteTid = performance.now(); },
