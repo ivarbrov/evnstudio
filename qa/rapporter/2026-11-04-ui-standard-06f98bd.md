@@ -1,8 +1,8 @@
 # EVN Game QA: EVN UI-standard 1.1 (dokumentasjon, ingen spillversjon)
 Grunnlag: agent 2.2 (utkast), standard 1.2 (utkast, gjeldende 1.1) med 1.2b (119ac87f3b1a36769c7e1339cc640fe3c895880f), commit 06f98bd482d0d1ca71a1efe0dd824f7dce376d32
-Testkvittering: `evn1 commit=06f98bd482d0d1ca71a1efe0dd824f7dce376d32 tester=2c1a60c04b81 arbeidstre=rent statisk=ok royk=ok statistikk=ikke-innfort ui=ikke-innfort ecoins=ok` (oppgitt i oppdraget med 85 ok og 0 feil. Jeg har ikke kjørt suiten på nytt, slik oppdraget ba om.)
+Testkvittering: evn1 commit=06f98bd482d0d1ca71a1efe0dd824f7dce376d32 tester=2c1a60c04b81 arbeidstre=rent statisk=ok royk=ok statistikk=ikke-innfort ui=ikke-innfort ecoins=ok
 Nivå: liten – Commit 06f98bd endrer bare dokumentasjon (`.claude/evn-ui-standard.md`, `.claude/vedtak.md`, `CLAUDE.md`). Sammenslåingen 9702b68 tar inn kode fra `main` som allerede er kontrollert der, og den endrer ikke koden. `git diff ff61022 9702b68` viser bare grenens egne filer.
-Testet: Statisk kontroll med git på Linux. Jeg har lest diffene, sammenlignet standarden med `origin/main` og søkt etter Avslutt-elementene i `spill/*/index.html` på `origin/main` (ff61022). Jeg har ikke kjørt spillene i nettleser.
+Testet: Statisk kontroll med git på Linux. Jeg har lest diffene, sammenlignet standarden med `origin/main` og søkt etter Avslutt-elementene i `spill/*/index.html` på `origin/main` (ff61022). Jeg har ikke kjørt spillene i nettleser. Testkvitteringen er oppgitt i oppdraget (85 ok, 0 feil). Jeg har ikke kjørt suiten på nytt, slik oppdraget ba om.
 
 ## Oppfylte krav
 - **Commit:** `git rev-parse HEAD` gir 06f98bd482d0d1ca71a1efe0dd824f7dce376d32, som forventet. Agentfila i repoet er versjon 2.2.
