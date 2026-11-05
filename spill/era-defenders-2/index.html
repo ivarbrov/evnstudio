@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<!-- EVN-SIKKERHET start: gjelder bare evnstudio.no (se /sikkerhet/). Tas ut i Claude-artefaktene. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://gc.zgo.at; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://evnstudio.goatcounter.com; connect-src 'self' https://evnstudio.goatcounter.com; media-src 'self' data: blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- EVN-SIKKERHET slutt -->
+<link rel="icon" href="../../favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Era Defenders 2 – EVN Studio</title>
+<script>
+/* EVN-statistikk (ST1): felles statistikk.js lastes bare på evnstudio.no, så prøveversjoner ikke får 404 eller sender data. */
+(function () { try { if (/(^|\.)evnstudio\.no$/.test(location.hostname)) { var s = document.createElement('script'); s.src = '../../statistikk.js'; s.defer = true; s.setAttribute('data-spill', 'era-defenders-2'); document.head.appendChild(s); } } catch (e) {} })();
+</script>
+<style>
+  :root { --gull:#ffc93c; --mork:#141a33; --neon:#3ee6ff; --rosa:#ff4fd8; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#0b1026; font-family:'Nunito',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; color:#fff; overscroll-behavior:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
+  canvas#c { display:block; position:fixed; inset:0; width:100%; height:100%; touch-action:none; }
+  button { font-family:inherit; touch-action:manipulation; cursor:pointer; }
+  .hidden { display:none !important; }
+
+  /* HUD: status øverst til venstre, knapper øverst til høyre */
+  #hud { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); right:calc(190px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; flex-wrap:wrap; align-items:flex-start; pointer-events:none; }
+  #hud[hidden], #hoyre[hidden], #bunn[hidden] { display:none !important; }
+  .pille { background:rgba(20,26,51,.82); border:2px solid rgba(62,230,255,.45); border-radius:999px; padding:6px 14px; font-weight:800; font-size:18px; min-height:44px; display:flex; align-items:center; gap:6px; color:#fff; }
+  .pille .lav { color:#ff8a8a; }
+  .pille[hidden] { display:none; }
+  html.bygger #joy { display:none !important; }
+  #hoyre { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; }
+  .rund { width:48px; height:48px; border-radius:50%; background:rgba(20,26,51,.82); border:2px solid rgba(255,255,255,.3); color:#fff; font-size:22px; display:flex; align-items:center; justify-content:center; padding:0; }
+  #evnAvslutt { width:auto; padding:0 14px; border-radius:24px; font-size:18px; font-weight:800; gap:6px; }
+  @media (max-width:600px) { #evnAvslutt { width:48px; padding:0; border-radius:50%; } #evnAvslutt .evn-avs-tekst { display:none; } }
+
+  #melding { position:fixed; top:calc(66px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); background:rgba(20,26,51,.92); border:2px solid var(--gull); border-radius:16px; padding:10px 18px; font-weight:800; font-size:18px; opacity:0; transition:opacity .25s; pointer-events:none; text-align:center; max-width:min(90vw,520px); z-index:6; }
+  #melding.vis { opacity:1; }
+
+  /* Nede til høyre: Bygg og Neste bølge */
+  #bunn { position:fixed; right:calc(14px + env(safe-area-inset-right)); bottom:calc(14px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; align-items:flex-end; gap:10px; z-index:5; }
+  .handling { min-height:60px; min-width:150px; padding:10px 18px; border-radius:20px; border:3px solid #fff; background:linear-gradient(#45d06f,#26a04e); color:#fff; font-weight:900; font-size:19px; box-shadow:0 5px 0 rgba(0,0,0,.3); }
+  .handling.bygg { background:linear-gradient(#5aa8ff,#2f6fe0); }
+  .handling.bygg[aria-pressed="true"] { background:linear-gradient(#ffd75e,#f0a91c); color:#4a2a00; }
+  .handling .tast { font-size:13px; opacity:.75; margin-left:6px; }
+  html.touch .handling .tast { display:none; }
+
+  /* Byggelinja (som i Bloons: velg, så trykk på kartet) */
+  #byggLinje { position:fixed; left:calc(10px + env(safe-area-inset-left)); bottom:calc(10px + env(safe-area-inset-bottom)); z-index:6; display:flex; gap:8px; padding:8px; background:rgba(20,26,51,.92); border:2px solid rgba(62,230,255,.5); border-radius:18px; max-width:calc(100vw - 220px - env(safe-area-inset-left) - env(safe-area-inset-right)); overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  #byggLinje[hidden] { display:none; }
+  .bk { flex:0 0 auto; width:82px; min-height:84px; border-radius:14px; border:2px solid rgba(255,255,255,.3); background:rgba(255,255,255,.08); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:4px; font-weight:800; }
+  .bk .ik { font-size:28px; line-height:1; }
+  .bk .nv { font-size:12px; line-height:1.1; text-align:center; }
+  .bk .pr { font-size:13px; color:var(--gull); }
+  .bk.valgt { border-color:var(--gull); background:rgba(255,201,60,.25); }
+  .bk:disabled { opacity:.45; }
+  .bk .ny { font-size:10px; background:var(--rosa); border-radius:6px; padding:0 4px; }
+  #byggHjelp { position:fixed; left:calc(10px + env(safe-area-inset-left)); bottom:calc(112px + env(safe-area-inset-bottom)); z-index:6; background:var(--gull); color:#3a2600; border:3px solid #fff; border-radius:16px; padding:6px 14px; font-weight:900; font-size:16px; text-align:center; max-width:min(calc(100vw - 230px),460px); pointer-events:none; }
+  #byggHjelp[hidden] { display:none; }
+
+  /* Styrespak nede til venstre, bare ved berøring */
+  #joy { position:fixed; left:calc(20px + env(safe-area-inset-left)); bottom:calc(24px + env(safe-area-inset-bottom)); width:124px; height:124px; border-radius:50%; background:rgba(255,255,255,.15); border:3px solid rgba(255,255,255,.55); z-index:5; touch-action:none; display:none; }
+  html.touch #joy.klar { display:block; }
+  #knob { position:absolute; left:37px; top:37px; width:50px; height:50px; border-radius:50%; background:var(--gull); box-shadow:0 2px 8px rgba(0,0,0,.3); }
+
+  /* Lag og kort */
+  .lag { position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:10; padding:16px; background:rgba(8,12,30,.6); overflow:auto; touch-action:manipulation; }
+  .lag.vis { display:flex; }
+  .kort { background:linear-gradient(#24305e,#141a33); border:3px solid var(--neon); border-radius:24px; padding:22px 24px; max-width:460px; width:100%; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,.5); margin:auto; }
+  h1 { font-family:'Lilita One','Nunito',system-ui,sans-serif; font-size:42px; margin:4px 0 8px; color:var(--gull); text-shadow:0 3px 0 #7a4a00; line-height:1.05; }
+  h2 { margin:0 0 10px; font-size:24px; }
+  .evn-merke { font-weight:900; letter-spacing:3px; font-size:13px; opacity:.8; }
+  .maal { display:flex; align-items:center; gap:12px; justify-content:center; text-align:left; }
+  .maal p { font-size:18px; font-weight:800; }
+  .styring { font-size:15px; opacity:.9; margin:8px 0 14px; line-height:1.45; }
+  .bare-touch { display:none; } html.touch .bare-touch { display:block; } html.touch .bare-pc { display:none; }
+  .stor { min-height:64px; width:100%; border-radius:18px; border:3px solid #fff; background:linear-gradient(#45d06f,#26a04e); color:#fff; font-weight:900; font-size:24px; box-shadow:0 5px 0 rgba(0,0,0,.3); }
+  @keyframes puls { 50% { transform:scale(1.04); } }
+  .evn-start { animation:puls 1.6s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .evn-start { animation:none; } #melding { transition:none; } }
+  .evn-ver { font-size:13px; opacity:.75; margin-top:12px; }
+  .evn-tilbake { display:block; color:#fff; font-weight:800; text-decoration:underline; text-underline-offset:3px; opacity:.85; padding:10px 0; min-height:44px; margin-top:6px; }
+  .ingen3d { margin:10px 0 0; font-weight:700; font-size:16px; line-height:1.4; }
+  .valg { display:block; width:100%; min-height:52px; margin:10px 0 0; border-radius:14px; border:2px solid rgba(255,255,255,.35); background:rgba(255,255,255,.1); color:#fff; font-weight:800; font-size:18px; }
+  .valg.hoved { background:linear-gradient(#ffd75e,#f0a91c); color:#4a2a00; border:3px solid #fff; }
+  .valg:disabled { opacity:.45; }
+  .kort p { font-size:17px; line-height:1.45; margin:6px 0; }
+  button:focus-visible, a:focus-visible { outline:3px solid var(--gull); outline-offset:2px; }
+  .info-ik { font-size:46px; line-height:1; }
+  @media (max-width:520px) {
+    #hud { right:calc(176px + env(safe-area-inset-right)); gap:6px; }
+    .pille { font-size:15px; padding:2px 10px; min-height:36px; gap:4px; }
+    h1 { font-size:34px; }
+    .handling { min-width:120px; font-size:17px; min-height:54px; }
+    #byggHjelp { max-width:calc(100vw - 20px); }
+    #byggLinje { left:8px; right:8px; max-width:none; bottom:calc(150px + env(safe-area-inset-bottom)); }
+    #byggHjelp { bottom:calc(250px + env(safe-area-inset-bottom)); }
+    .bk { width:70px; min-height:76px; }
+  }
+  @media (max-height:460px) {
+    .maal img { display:none; }
+    .kort { padding:14px 18px; }
+    h1 { font-size:30px; margin:2px 0 6px; }
+    .styring { margin:4px 0 10px; }
+    .bk { min-height:66px; width:68px; } .bk .ik { font-size:22px; }
+    #byggHjelp { bottom:calc(92px + env(safe-area-inset-bottom)); }
+  }
+</style>
+<script src="../../vendor/three-r128.min.js"></script>
+<script src="../../ecoins/gltfloader-r128.js"></script>
+<script src="helt-robot.js"></script>
+</head>
+<body>
+<div id="hud" hidden>
+  <div class="pille" title="Mynter">🪙 <span id="mynter">0</span></div>
+  <div class="pille" title="Basens liv">🏰 <span id="baseLiv">0</span></div>
+  <div class="pille" title="Bølge">🌊 <span id="bolge">1</span>/10</div>
+  <div class="pille" id="pSkjold" title="Kraftskjold" hidden>🛡️ <span id="skjold">0</span></div>
+</div>
+<div id="hoyre" hidden>
+  <a class="rund" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none;text-decoration:none">✕<span class="evn-avs-tekst"> Avslutt</span></a>
+</div>
+<div id="melding" role="status" aria-live="polite"></div>
+<div id="bunn" hidden>
+  <button class="handling" id="nesteKnapp" type="button">▶ Neste bølge<span class="tast">Mellomrom</span></button>
+  <button class="handling bygg" id="byggKnapp" type="button" aria-pressed="false">🏗️ Bygg<span class="tast">B</span></button>
+</div>
+<div id="byggLinje" role="toolbar" aria-label="Bygg" hidden></div>
+<div id="byggHjelp" role="status" hidden></div>
+<div id="joy"><div id="knob"></div></div>
+
+<!-- Startkort -->
+<div class="lag vis" id="start">
+  <div class="kort">
+    <div class="evn-merke">EVN STUDIO</div>
+    <h1>Era Defenders 2</h1>
+    <div class="maal">
+      <p>🌆 Verden 1: Framtiden<br>Robotmonstre angriper basen din! Slåss, samle mynter og bygg tårn.</p>
+    </div>
+    <div class="styring">
+      <div class="bare-pc">Piltaster eller WASD for å gå. Roboten skyter selv.<br>B for å bygge, 1–9 for å velge. Mellomrom for neste bølge.</div>
+      <div class="bare-touch">Bruk styrespaken for å gå. Roboten skyter selv.<br>Trykk 🏗️ Bygg, velg noe og trykk på kartet.</div>
+    </div>
+    <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
+    <p class="ingen3d hidden" id="noGL">😕 Denne nettleseren kan ikke vise 3D. Prøv en annen nettleser, eller be en voksen om hjelp.</p>
+    <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
+    <div class="evn-ver" id="versjon">Versjon 0.1.0 · prøveversjon</div>
+  </div>
+</div>
+
+<!-- Info om en bygning: oppgrader eller selg. Spillet står stille imens. -->
+<div class="lag" id="infoLag" role="dialog" aria-modal="true" aria-labelledby="infoTittel">
+  <div class="kort">
+    <div class="info-ik" id="infoIk"></div>
+    <h2 id="infoTittel"></h2>
+    <p id="infoTekst"></p>
+    <button class="valg hoved" id="infoOpp" type="button"></button>
+    <button class="valg" id="infoSelg" type="button"></button>
+    <button class="valg" id="infoLukk" type="button">✕ Lukk</button>
+  </div>
+</div>
+
+<!-- Basen falt / seier -->
+<div class="lag" id="sluttLag" role="dialog" aria-modal="true" aria-labelledby="sluttTittel">
+  <div class="kort">
+    <h2 id="sluttTittel"></h2>
+    <p id="sluttTekst"></p>
+    <button class="valg hoved" id="sluttIgjen" type="button"></button>
+    <button class="valg" id="sluttNy" type="button">🔄 Start verden 1 på nytt</button>
+  </div>
+</div>
+
+<!-- K2: vennlig melding ved uventet feil -->
+<div class="lag" id="feilLag" role="alertdialog" aria-modal="true" aria-labelledby="feilTittel" style="z-index:100001">
+  <div class="kort">
+    <h2 id="feilTittel">Oi! Noe gikk galt 😕</h2>
+    <p>Fremgangen din er lagret ved starten av bølgen. Last inn spillet på nytt for å fortsette.</p>
+    <button class="valg hoved" id="feilLast" type="button">🔄 Last inn på nytt</button>
+  </div>
+</div>
+<script>
+/* K2: uventede feil gir en vennlig melding med mulighet til å laste på nytt */
+(function () {
+  var vist = false;
+  function vis() { if (vist) return; vist = true; try { if (window.save) window.save(); } catch (e) {} var l = document.getElementById('feilLag'); if (l) { l.classList.add('vis'); var b = document.getElementById('feilLast'); if (b) b.focus(); } }
+  window.addEventListener('error', function (e) { if (window.__ingen3d) return; if (e && e.target && e.target !== window && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'IMG')) return; vis(); });
+  window.addEventListener('unhandledrejection', vis);
+  document.getElementById('feilLast').addEventListener('click', function () { location.reload(); });
+})();
+</script>
+<script>
+/* EVN-NULLSTILL v1: «Start helt på nytt» på startskjermen (samme kode i alle EVN-spill).
+   Vises bare når det finnes lagring. Spør først i en egen boks. Sletter bare spillets egne lagringsnøkler
+   (ikke grafikkvalg eller spilletid), og laster siden på nytt. */
+window.EVNNullstill = function (cfg) {
+  var t = cfg.tema || {};
+  var harLagring = function () { if (cfg.harLagring) try { return !!cfg.harLagring(); } catch (e) { return false; } try { return cfg.nokler.some(function (k) { return localStorage.getItem(k) !== null; }); } catch (e) { return false; } };
+  var css = document.createElement('style');
+  css.textContent =
+    '#evnNullstill{display:block;margin:-8px auto 0;min-height:44px;padding:8px 14px;background:transparent;border:0;color:inherit;opacity:.75;font:700 15px ' + (t.font || 'system-ui,sans-serif') + ';text-decoration:underline;text-underline-offset:3px;cursor:pointer;touch-action:manipulation}' +
+    '#evnNullstill:hover,#evnNullstill:focus-visible{opacity:1}#evnNullstill[hidden]{display:none!important}' +
+    '#evnNullstillBoks{position:fixed;inset:0;z-index:99995;display:none;place-items:center;padding:16px;background:rgba(0,0,0,.7);touch-action:manipulation}' +
+    '#evnNullstillBoks.vis{display:grid}' +
+    '#evnNullstillBoks .kort{background:' + (t.panel || '#1c2436') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:20px;width:min(340px,100%);text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnNullstillBoks h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:28px;line-height:1.1;margin:0 0 10px;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnNullstillBoks p{margin:0 0 6px;font-size:17px;line-height:1.4;font-weight:700}' +
+    '#evnNullstillBoks button{display:block;width:100%;min-height:52px;margin:10px 0 0;border-radius:12px;font:800 19px ' + (t.font || 'system-ui,sans-serif') + ';cursor:pointer}' +
+    '#evnNullstillNei{background:' + (t.btn || '#ffd54a') + ';color:' + (t.btnInk || '#2b1d00') + ';border:0}' +
+    '#evnNullstillJa{background:transparent;color:inherit;border:2px solid #e05252}' +
+    '#evnNullstillBoks button:focus-visible,#evnNullstill:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}';
+  document.head.appendChild(css);
+
+  var lenke = document.createElement('button');
+  lenke.type = 'button'; lenke.id = 'evnNullstill'; lenke.textContent = '🗑️ Start helt på nytt';
+  cfg.plasser(lenke);
+  var boks = document.createElement('div');
+  boks.id = 'evnNullstillBoks'; boks.setAttribute('role', 'dialog'); boks.setAttribute('aria-modal', 'true'); boks.setAttribute('aria-labelledby', 'evnNullstillTittel');
+  boks.innerHTML = '<div class="kort"><h2 id="evnNullstillTittel">Starte helt på nytt?</h2>' +
+    '<p>' + cfg.tekst + '</p><p>Det kan ikke angres.</p>' +
+    '<button type="button" id="evnNullstillNei">Nei, behold alt</button>' +
+    '<button type="button" id="evnNullstillJa">Ja, slett alt</button></div>';
+  document.body.appendChild(boks);
+  ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (ev) {
+    boks.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+    lenke.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+  });
+  var $ = function (id) { return document.getElementById(id); };
+  var apen = false, forrige = null;
+  function oppdater() { lenke.hidden = !harLagring() || (cfg.vis ? !cfg.vis() : false); }
+  function apne() { apen = true; forrige = document.activeElement; boks.classList.add('vis'); $('evnNullstillNei').focus(); }
+  function lukk() { apen = false; boks.classList.remove('vis'); try { (forrige || lenke).focus(); } catch (e) {} }
+  lenke.addEventListener('click', apne);
+  $('evnNullstillNei').addEventListener('click', lukk);
+  $('evnNullstillJa').addEventListener('click', function () {
+    try {
+      // Spillet lagrer gjerne når siden lukkes (pagehide). Stopp skriving til disse nøklene, så lagringen ikke kommer tilbake.
+      var orig = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) { if (this === window.localStorage && cfg.nokler.indexOf(k) !== -1) return; return orig.call(this, k, v); };
+      cfg.nokler.forEach(function (k) { localStorage.removeItem(k); });
+    } catch (e) {}
+    location.reload();
+  });
+  window.addEventListener('keydown', function (e) {
+    if (!apen) return;
+    e.stopImmediatePropagation();                                    // spillet får ingen taster mens boksen er åpen
+    if (e.key === 'Escape') { e.preventDefault(); lukk(); }
+  }, true);
+  oppdater(); setInterval(oppdater, 500);
+};
+</script>
+<script>
+/* EVN-PAUSE v2: felles pause med spilletid og felles kart (samme kode i alle EVN-spill).
+   Kart (v2): 🗺️-knapp ved siden av ⏸ og tasten M åpner et stort kart. Spillet står stille mens kartet er åpent.
+   Spilletid lagres i localStorage 'evn-spilletid-<mappe>' = {dag, iDag, totalt} (millisekunder).
+   Tiden telles bare når spillet er aktivt, fanen synes, pausen ikke er åpen og noen har rørt tast/mus/skjerm siste 3 min. */
+window.EVNPause = function (cfg) {
+  var NOKKEL = 'evn-spilletid-' + cfg.mappe, LEDIG = 180000, t = cfg.tema || {};
+  var idag = function () { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); };
+  var tid = { dag: idag(), iDag: 0, totalt: 0 };
+  try { var l = JSON.parse(localStorage.getItem(NOKKEL)); if (l && typeof l.totalt === 'number') tid = l; } catch (e) {}
+  function lagreTid() { try { localStorage.setItem(NOKKEL, JSON.stringify(tid)); } catch (e) {} }
+  function fmt(ms) { var m = Math.floor(ms / 60000), h = Math.floor(m / 60); return ms < 60000 ? 'under 1 min' : h ? h + ' t ' + (m % 60) + ' min' : m + ' min'; }
+
+  var css = document.createElement('style');
+  css.textContent =
+    '#evnPauseKnapp,#evnKartKnapp{min-width:48px;min-height:48px;border-radius:12px;border:2px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;font:700 20px system-ui,sans-serif;cursor:pointer;touch-action:manipulation;pointer-events:auto;padding:0 10px}' +
+    '#evnPauseKnapp[hidden],#evnKartKnapp[hidden]{display:none!important}' +
+    '#evnKart{position:fixed;inset:0;z-index:99990;display:none;place-items:center;padding:12px;background:rgba(0,0,0,.55);touch-action:manipulation}' +
+    '#evnKart.vis{display:grid}' +
+    '#evnKart .kort{background:' + (t.panel || 'rgba(16,24,15,.95)') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:12px;max-width:100%;max-height:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnKart .topp{display:flex;align-items:center;gap:10px;margin:0 0 8px}' +
+    '#evnKart h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:26px;line-height:1;margin:0;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnKart .info{flex:1;font-size:14px;font-weight:700;opacity:.85;line-height:1.3}' +
+    '#evnKart button{width:44px;height:44px;flex:none;border-radius:12px;border:0;background:rgba(127,127,127,.28);color:inherit;font:800 20px system-ui,sans-serif;cursor:pointer}' +
+    '#evnKart canvas{display:block;border-radius:10px;image-rendering:pixelated}' +
+    '#evnKart button:focus-visible,#evnKartKnapp:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}' +
+    '#evnPause{position:fixed;inset:0;z-index:99990;display:none;place-items:center;padding:16px;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);touch-action:manipulation}' +
+    '#evnPause.vis{display:grid}' +
+    '#evnPause .kort{background:' + (t.panel || 'rgba(16,24,15,.95)') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:18px 20px;width:min(320px,100%);max-height:100%;overflow:auto;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnPause h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:38px;line-height:1;margin:0 0 6px;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnPause .tider{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 6px}' +
+    '#evnPause .tid{border-radius:12px;padding:8px 6px;background:rgba(127,127,127,.18)}' +
+    '#evnPause .tid b{display:block;font-size:22px;line-height:1.15}#evnPause .tid small{font-size:13px;font-weight:700;opacity:.85}' +
+    '#evnPause button{display:block;width:100%;min-height:48px;margin:8px 0 0;border-radius:12px;border:0;font:800 18px ' + (t.font || 'system-ui,sans-serif') + ';cursor:pointer}' +
+    '#evnPause .fortsett{background:' + (t.btn || '#ffd54a') + ';color:' + (t.btnInk || '#2b1d00') + ';font-size:22px;min-height:56px' + (t.head ? ';font-family:' + t.head + ';font-weight:' + (t.headW || 800) : '') + '}' +
+    '#evnPause .liten{background:rgba(127,127,127,.25);color:inherit}' +
+    '#evnPause .styr{text-align:left;font-size:15px;line-height:1.45;margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(127,127,127,.15)}' +
+    '#evnPause .tips{font-size:14px;opacity:.85;margin:10px 0 0}' +
+    '#evnPause button:focus-visible,#evnPauseKnapp:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}';
+  document.head.appendChild(css);
+
+  var knapp = document.createElement('button');
+  knapp.id = 'evnPauseKnapp'; knapp.type = 'button'; knapp.textContent = '⏸'; knapp.title = 'Pause (P)'; knapp.setAttribute('aria-label', 'Pause'); knapp.hidden = true;
+  var kartKnapp = null;
+  if (cfg.kart) {
+    kartKnapp = document.createElement('button');
+    kartKnapp.id = 'evnKartKnapp'; kartKnapp.type = 'button'; kartKnapp.textContent = '🗺️'; kartKnapp.title = 'Kart (M)'; kartKnapp.setAttribute('aria-label', 'Kart'); kartKnapp.hidden = true;
+  }
+  if (cfg.knapp) cfg.knapp(knapp, kartKnapp); else { if (kartKnapp) document.body.appendChild(kartKnapp); document.body.appendChild(knapp); }
+
+  var bak = document.createElement('div');
+  bak.id = 'evnPause'; bak.setAttribute('role', 'dialog'); bak.setAttribute('aria-modal', 'true'); bak.setAttribute('aria-labelledby', 'evnPauseTittel');
+  bak.innerHTML = '<div class="kort"><h2 id="evnPauseTittel">Pause</h2>' +
+    '<div class="tider"><div class="tid"><small>I dag</small><b id="evnPauseIdag"></b></div><div class="tid"><small>Totalt</small><b id="evnPauseTot"></b></div></div>' +
+    '<button class="fortsett" id="evnPauseFortsett" type="button">▶ Fortsett</button>' +
+    '<button class="liten" id="evnPauseStyrKnapp" type="button" aria-expanded="false">🎮 Slik styrer du</button>' +
+    '<div class="styr" id="evnPauseStyr" hidden></div>' +
+    '<button class="liten" id="evnPauseAvslutt" type="button">🚪 Avslutt</button>' +
+    '<p class="tips" id="evnPauseTips"></p></div>';
+  document.body.appendChild(bak);
+  var $ = function (id) { return document.getElementById(id); };
+  var kartBak = null;
+  if (cfg.kart) {
+    kartBak = document.createElement('div');
+    kartBak.id = 'evnKart'; kartBak.setAttribute('role', 'dialog'); kartBak.setAttribute('aria-modal', 'true'); kartBak.setAttribute('aria-labelledby', 'evnKartTittel');
+    kartBak.innerHTML = '<div class="kort"><div class="topp"><h2 id="evnKartTittel">🗺️ Kart</h2><span class="info" id="evnKartInfo"></span>' +
+      '<button type="button" id="evnKartLukk" aria-label="Lukk kartet">✕</button></div><canvas id="evnKartCv" role="img" aria-label="Kart over spillverdenen"></canvas></div>';
+    document.body.appendChild(kartBak);
+  }
+  [bak, knapp, kartBak, kartKnapp].forEach(function (el) {
+    if (el) ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (ev) { el.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
+  });
+
+  var apen = false, apnetTid = 0, venterAvslutt = false, kartApen = false;
+  var avsluttLenke = function () { var a = $(cfg.avsluttId); return a && getComputedStyle(a).display !== 'none' ? a : null; };
+  var sporsmal = function () { return $('evnSporsmal'); };
+  var sporsmalApent = function () { var s = sporsmal(); return !!s && s.style.display === 'grid'; };
+  function kan() { return !apen && !kartApen && !venterAvslutt && !sporsmalApent() && cfg.kanPause(); }
+
+  // ---------- Kart ----------
+  function tegnKart() {
+    if (!kartApen) return;
+    var K = cfg.kart, cv = $('evnKartCv'), f = K.forhold || 1;
+    var maksB = Math.min(innerWidth - 48, 900), maksH = innerHeight - 110;
+    var b = Math.max(120, Math.min(maksB, maksH * f)), h = b / f;
+    var d = Math.min(2, window.devicePixelRatio || 1);
+    cv.style.width = Math.round(b) + 'px'; cv.style.height = Math.round(h) + 'px';
+    cv.width = Math.round(b * d); cv.height = Math.round(h * d);
+    kartBak.querySelector('.kort').style.width = Math.round(b + 24) + 'px';   // kortet like bredt som kartet
+    var c = cv.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
+    try { K.tegn(c, cv.width, cv.height, cv); } catch (e) {}
+    $('evnKartInfo').textContent = K.info ? K.info() : '';
+  }
+  function apneKart() {
+    if (!cfg.kart || !kan()) return;
+    cfg.pause(); kartApen = true; apnetTid = performance.now();
+    kartBak.classList.add('vis'); knapp.hidden = true; kartKnapp.hidden = true;
+    tegnKart();
+    try { $('evnKartLukk').focus({ preventScroll: true }); } catch (e) {}
+  }
+  function lukkKart(fraKlikk) {
+    if (!kartApen) return;
+    kartApen = false; kartBak.classList.remove('vis');
+    cfg.fortsett(!!fraKlikk);
+  }
+  if (cfg.kart) {
+    kartKnapp.addEventListener('click', function () { apneKart(); });
+    $('evnKartLukk').addEventListener('click', function () { lukkKart(true); });
+    kartBak.addEventListener('click', function (e) { if (e.target === kartBak) lukkKart(true); });   // trykk utenfor kartet lukker
+    window.addEventListener('resize', tegnKart);
+  }
+
+  function apne(grunn) {
+    if (!kan()) return;
+    cfg.pause();
+    apen = true; apnetTid = performance.now();
+    $('evnPauseIdag').textContent = fmt(tid.iDag); $('evnPauseTot').textContent = fmt(tid.totalt);
+    $('evnPauseTips').textContent = grunn || 'Spillet står stille. Ingenting er borte.';
+    $('evnPauseStyr').hidden = true; $('evnPauseStyrKnapp').setAttribute('aria-expanded', 'false');
+    $('evnPauseAvslutt').hidden = !avsluttLenke() || !sporsmal();
+    bak.classList.add('vis'); knapp.hidden = true; lagreTid();
+    try { $('evnPauseFortsett').focus({ preventScroll: true }); } catch (e) {}
+  }
+  function lukk(fraKlikk) {
+    if (!apen) return;
+    apen = false; bak.classList.remove('vis');
+    cfg.fortsett(!!fraKlikk);
+  }
+  knapp.addEventListener('click', function () { apne(); });
+  $('evnPauseFortsett').addEventListener('click', function () { lukk(true); });
+  $('evnPauseStyrKnapp').addEventListener('click', function () {
+    var s = $('evnPauseStyr'); if (s.hidden) s.innerHTML = cfg.styring(); s.hidden = !s.hidden; this.setAttribute('aria-expanded', String(!s.hidden));
+  });
+  // Avslutt fra pausen: spillet står stille mens «Vil du avslutte?» vises. «Nei, spill videre» = fortsett.
+  function visSporsmal() { venterAvslutt = true; var s = sporsmal(); s.style.display = 'grid'; var b = $('evnBli'); if (b) b.focus(); }
+  $('evnPauseAvslutt').addEventListener('click', function () { apen = false; bak.classList.remove('vis'); if (cfg.lagre) cfg.lagre(); visSporsmal(); });
+  // Avslutt-knappen i spillet: spillet stopper også mens spørsmålet vises
+  document.addEventListener('click', function (e) {
+    var a = avsluttLenke(); if (!a || !a.contains(e.target) || venterAvslutt || apen || !cfg.kanPause()) return;
+    cfg.pause(); venterAvslutt = true;
+  }, true);
+  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; cfg.fortsett(false); }
+  document.addEventListener('click', function (e) { var b = $('evnBli'); if (b && b.contains(e.target)) setTimeout(nei, 0); }, true);
+
+  window.addEventListener('keydown', function (e) {
+    var k = e.code || e.key;
+    if (venterAvslutt && sporsmalApent()) { if (k === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); nei(); } return; }
+    if (kartApen) {
+      e.stopImmediatePropagation();                                  // spillet får ingen taster mens kartet er åpent
+      if ((k === 'Escape' || k === 'KeyM') && !e.repeat && performance.now() - apnetTid > 200) { e.preventDefault(); lukkKart(false); }
+      return;
+    }
+    if (k === 'KeyM' && cfg.kart && !e.repeat && kan()) { e.preventDefault(); e.stopImmediatePropagation(); apneKart(); return; }
+    if (apen) {
+      e.stopImmediatePropagation();                                  // spillet får ingen taster mens pausen er åpen
+      if ((k === 'Escape' || k === 'KeyP') && !e.repeat && performance.now() - apnetTid > 300) { e.preventDefault(); lukk(k === 'KeyP'); }
+      return;
+    }
+    if ((k === 'KeyP' || (k === 'Escape' && (typeof cfg.escPause === 'function' ? cfg.escPause() : cfg.escPause !== false))) && !e.repeat && kan()) { e.preventDefault(); e.stopImmediatePropagation(); apne(); }
+  }, true);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) { apne('Pause fordi du byttet fane eller app.'); lagreTid(); } });
+  window.addEventListener('blur', function () { apne('Pause fordi du gikk ut av spillet.'); });
+  window.addEventListener('pagehide', lagreTid);
+
+  var sistRort = performance.now(), sist = performance.now(), sistLagret = 0;
+  ['keydown', 'pointerdown', 'pointermove', 'touchstart', 'wheel'].forEach(function (ev) { window.addEventListener(ev, function () { sistRort = performance.now(); }, { passive: true, capture: true }); });
+  setInterval(function () {
+    var naa = performance.now(), dt = Math.min(2000, naa - sist); sist = naa;
+    knapp.hidden = apen || kartApen || venterAvslutt || !cfg.kanPause();
+    if (kartKnapp) kartKnapp.hidden = knapp.hidden;
+    var dag = idag(); if (tid.dag !== dag) { tid.dag = dag; tid.iDag = 0; }
+    if (!apen && !venterAvslutt && !document.hidden && naa - sistRort < LEDIG && cfg.aktiv()) { tid.iDag += dt; tid.totalt += dt; }
+    if (naa - sistLagret > 15000) { sistLagret = naa; lagreTid(); }
+  }, 250);
+  return { apne: apne, lukk: lukk, apneKart: apneKart, lukkKart: lukkKart, erApen: function () { return apen || kartApen; }, tid: function () { return tid; } };
+};
+</script>
+
+<script>
+"use strict";
+/* ================= Era Defenders 2 – v0.1.0 (prøveversjon) =================
+   Evens idé (5.11.2026): 3D, forsvar basen, nye tidsepoker, 8 verdener. Verden 1 = Framtiden.
+   Kamera som i Bloons TD 6: fast, ovenfra og litt på skrå, hele kartet synes.
+   Monstrene går fritt (ingen vei) rett mot basen. Ni ting å bygge: fem fra Era Defenders 1, fire nye. */
+const VERSJON="0.1.0";
+const SAVE_KEY="evn-era-defenders-2-v1";
+const $=id=>document.getElementById(id);
+const html=document.documentElement;
+const TOUCH=(window.matchMedia&&matchMedia("(pointer: coarse)").matches)||("ontouchstart" in window);
+if(TOUCH)html.classList.add("touch");
+const RM=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+$("versjon").textContent="Versjon "+VERSJON+" · prøveversjon";
+document.title="Era Defenders 2 "+VERSJON+" – EVN Studio";
+function ingen3d(){window.__ingen3d=true;$("noGL").classList.remove("hidden");$("startBtn").hidden=true}
+if(!window.THREE){ingen3d();throw new Error("THREE mangler")}
+
+// ================= Scene og kamera =================
+let renderer;try{renderer=new THREE.WebGLRenderer({antialias:true})}catch(e){ingen3d();throw e}
+renderer.domElement.id="c";document.body.insertBefore(renderer.domElement,document.body.firstChild);
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x0b1026);scene.fog=new THREE.Fog(0x0b1026,80,160);
+const camera=new THREE.PerspectiveCamera(40,1,1,400);
+scene.add(new THREE.HemisphereLight(0xa8dcff,0x22183a,0.75));
+const sol=new THREE.DirectionalLight(0xffffff,0.85);sol.position.set(18,40,22);sol.castShadow=true;
+sol.shadow.mapSize.set(2048,2048);Object.assign(sol.shadow.camera,{left:-38,right:38,top:30,bottom:-30,near:5,far:100});scene.add(sol);
+
+const KX=25,KZ=16;                 // kartet går fra -KX til KX og -KZ til KZ
+const BASE_R=3.2;
+const kam={fx:0,fz:-1,rx:1,rz:0};  // «opp» og «høyre» på skjermen, målt på bakken
+function tilpassKamera(){
+  const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;
+  const portrett=w<h*0.9;
+  const halvB=(portrett?KZ:KX)+1.5,halvD=(portrett?KX:KZ)+1.5;
+  const tilt=THREE.MathUtils.degToRad(60),vf=THREE.MathUtils.degToRad(camera.fov)/2,hf=Math.atan(Math.tan(vf)*camera.aspect);
+  const dB=halvB/Math.tan(hf),dD=(halvD*Math.sin(tilt))/Math.tan(vf)+halvD*Math.cos(tilt);
+  const d=Math.max(dB,dD)*1.16;     // litt luft til HUD øverst og knappene nederst
+  const y=d*Math.sin(tilt),s=d*Math.cos(tilt);
+  if(portrett)camera.position.set(s,y,0);else camera.position.set(0,y,s);
+  scene.fog.near=d*1.1;scene.fog.far=d*2.6;
+  const mål=new THREE.Vector3(0,0,portrett?0:-0.6);camera.lookAt(mål);camera.updateProjectionMatrix();
+  const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();
+  kam.fx=f.x;kam.fz=f.z;kam.rx=-f.z;kam.rz=f.x;
+}
+addEventListener("resize",tilpassKamera);tilpassKamera();
+
+// ================= Framtiden: bakke, rutenett, by =================
+const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:0.6,metalness:0.2},o));
+(function lagVerden(){
+  const bakke=new THREE.Mesh(new THREE.PlaneGeometry(2*KX+2,2*KZ+2),M(0x1c2650,{roughness:0.85}));
+  bakke.rotation.x=-Math.PI/2;bakke.receiveShadow=true;scene.add(bakke);
+  const ute=new THREE.Mesh(new THREE.PlaneGeometry(260,200),M(0x0e1430,{roughness:1}));
+  ute.rotation.x=-Math.PI/2;ute.position.y=-0.05;ute.receiveShadow=true;scene.add(ute);
+  const p=[];for(let x=-KX;x<=KX;x+=2)p.push(x,0.02,-KZ,x,0.02,KZ);for(let z=-KZ;z<=KZ;z+=2)p.push(-KX,0.02,z,KX,0.02,z);
+  const lg=new THREE.BufferGeometry();lg.setAttribute("position",new THREE.Float32BufferAttribute(p,3));
+  scene.add(new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0x2e5aa8,transparent:true,opacity:0.55})));
+  const kant=M(0x3ee6ff,{emissive:0x3ee6ff,emissiveIntensity:0.9});
+  [[0,-KZ-0.5,2*KX+2,0.4],[0,KZ+0.5,2*KX+2,0.4],[-KX-0.5,0,0.4,2*KZ+2],[KX+0.5,0,0.4,2*KZ+2]].forEach(([x,z,w,d])=>{const k=new THREE.Mesh(new THREE.BoxGeometry(w,0.3,d),kant);k.position.set(x,0.15,z);scene.add(k)});
+  // Byen rundt kartet: høye hus med lysende vinduer
+  const husFarger=[0x2a3570,0x3a2a6a,0x24406a,0x1f2d58],vindu=[0x3ee6ff,0xff4fd8,0xffc93c];
+  let frø=7;const rnd=()=>(frø=(frø*9301+49297)%233280)/233280;
+  for(let i=0;i<70;i++){
+    let x,z;const side=i%4;
+    if(side===0){x=-KX-6+rnd()*(2*KX+12);z=-KZ-4-rnd()*14}else if(side===1){x=-KX-6+rnd()*(2*KX+12);z=KZ+4+rnd()*10}
+    else if(side===2){x=-KX-4-rnd()*14;z=-KZ+rnd()*2*KZ}else{x=KX+4+rnd()*14;z=-KZ+rnd()*2*KZ}
+    const hh=4+rnd()*(side===1?6:16),b=2+rnd()*3;
+    const hus=new THREE.Mesh(new THREE.BoxGeometry(b,hh,b),M(husFarger[i%4],{roughness:0.5,metalness:0.4}));hus.position.set(x,hh/2,z);hus.castShadow=true;scene.add(hus);
+    const vm=M(vindu[i%3],{emissive:vindu[i%3],emissiveIntensity:1});
+    for(let y=1.2;y<hh-0.5;y+=1.6){const s=new THREE.Mesh(new THREE.BoxGeometry(b+0.04,0.25,b+0.04),vm);s.position.set(x,y,z);scene.add(s)}
+  }
+})();
+
+// ================= Basen i midten =================
+const basen={g:new THREE.Group(),niv:1,hp:100,cd:0};
+const BASE_NIV=[null,{maks:150},{maks:230,pris:200,rek:9,skade:3,tid:0.8},{maks:320,pris:400,rek:11,skade:5,tid:0.55}];
+let baseKanon=null;
+function byggBasen(){
+  const g=basen.g;while(g.children.length)g.remove(g.children[0]);
+  const plattform=new THREE.Mesh(new THREE.CylinderGeometry(BASE_R,BASE_R+0.4,0.8,6),M(0x8fa3c8,{metalness:0.6,roughness:0.35}));plattform.position.y=0.4;plattform.castShadow=plattform.receiveShadow=true;g.add(plattform);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(BASE_R-0.2,0.12,8,6),M(0x3ee6ff,{emissive:0x3ee6ff,emissiveIntensity:1.2}));ring.rotation.x=Math.PI/2;ring.rotation.z=Math.PI/6;ring.position.y=0.82;g.add(ring);
+  const h=1.8+basen.niv*0.7;
+  const torn=new THREE.Mesh(new THREE.CylinderGeometry(0.9,1.3,h,8),M(0xdfe8ff,{metalness:0.5,roughness:0.3}));torn.position.y=0.8+h/2;torn.castShadow=true;g.add(torn);
+  const topp=new THREE.Mesh(new THREE.SphereGeometry(0.7,16,12),M(0xffc93c,{emissive:0xffa000,emissiveIntensity:0.8}));topp.position.y=0.8+h+0.3;g.add(topp);
+  for(let i=0;i<basen.niv;i++){const b=new THREE.Mesh(new THREE.TorusGeometry(1.15,0.08,6,16),M(0xff4fd8,{emissive:0xff4fd8,emissiveIntensity:1}));b.rotation.x=Math.PI/2;b.position.y=1.4+i*0.7;g.add(b)}
+  baseKanon=null;
+  if(basen.niv>=2){baseKanon=new THREE.Group();const r=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,1.4,8),M(0x333a55));r.rotation.x=Math.PI/2;r.position.z=0.6;baseKanon.add(r);baseKanon.position.y=0.8+h+0.3;g.add(baseKanon)}
+}
+scene.add(basen.g);byggBasen();
+// Kraftskjold: blå boble rundt basen
+const skjold={niv:0,hp:0,R:6,mesh:null};
+const SKJOLD_NIV=[null,{maks:80,pris:150},{maks:160,pris:120},{maks:280,pris:220}];
+skjold.mesh=new THREE.Mesh(new THREE.SphereGeometry(skjold.R,32,16,0,Math.PI*2,0,Math.PI/2),new THREE.MeshStandardMaterial({color:0x56b8ff,emissive:0x2266ff,emissiveIntensity:0.5,transparent:true,opacity:0.22,depthWrite:false,side:THREE.DoubleSide}));
+skjold.mesh.visible=false;scene.add(skjold.mesh);
+const skjoldAktiv=()=>skjold.niv>0&&skjold.hp>0;
+
+// ================= Helten: den gule EVN-roboten =================
+const helt={g:new THREE.Group(),x:0,z:6,hp:100,maks:100,nede:0,cd:0,fart:9,rek:10,skade:3};
+(function(){const k=new THREE.Mesh(new THREE.CylinderGeometry(0.6,0.6,2,10),M(0xffcc00));k.position.y=1.1;k.castShadow=true;helt.g.add(k)})();
+scene.add(helt.g);
+let rMixer=null,rAct={},rCur=null,rEn=false;
+function spillR(n,f=0.2){const a=rAct[n];if(!a||rCur===a)return;a.reset().fadeIn(f).play();if(rCur)rCur.fadeOut(f);rCur=a}
+function spillEn(n){const a=rAct[n];if(!a)return;a.setLoop(THREE.LoopOnce,1);a.clampWhenFinished=true;rEn=true;const f=rCur;a.reset().fadeIn(0.1).play();if(f&&f!==a)f.fadeOut(0.1);rCur=a}
+if(THREE.GLTFLoader)Promise.resolve().then(()=>{if(!window.EVN_ROBOT_GLB)throw new Error("mangler");const bin=atob(window.EVN_ROBOT_GLB),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer}).then(buf=>new THREE.GLTFLoader().parse(buf,"",gl=>{
+  const m=gl.scene;m.traverse(o=>{if(o.isMesh){o.frustumCulled=false;o.castShadow=true;if(o.material&&o.material.name==="Main")o.material.color.setHex(0xffcc00).convertSRGBToLinear()}});
+  const box=new THREE.Box3().setFromObject(m),k=2.6/(box.max.y-box.min.y);m.scale.setScalar(k);m.position.y=-box.min.y*k;
+  helt.g.children.forEach(c=>c.visible=false);helt.g.add(m);
+  rMixer=new THREE.AnimationMixer(m);gl.animations.forEach(a=>rAct[a.name]=rMixer.clipAction(a));
+  rMixer.addEventListener("finished",()=>{rEn=false});spillR("Idle",0);
+},e=>console.warn("robot",e))).catch(e=>console.warn("robot",e));
+
+// ================= Felles hjelpere =================
+const sjekkGeo={liv:new THREE.PlaneGeometry(1,0.16)};
+function lagLivsbar(bredde,hoyde){
+  const g=new THREE.Group(),bak=new THREE.Mesh(sjekkGeo.liv,new THREE.MeshBasicMaterial({color:0x220a14,depthTest:false})),fram=new THREE.Mesh(sjekkGeo.liv,new THREE.MeshBasicMaterial({color:0x58e070,depthTest:false}));
+  bak.scale.x=bredde;fram.scale.x=bredde;fram.position.z=0.01;bak.renderOrder=fram.renderOrder=10;g.add(bak,fram);g.position.y=hoyde;g.userData={fram,bredde};return g;
+}
+function settLiv(bar,andel){const f=bar.userData.fram;andel=Math.max(0,Math.min(1,andel));f.scale.x=bar.userData.bredde*Math.max(0.001,andel);f.position.x=-(bar.userData.bredde*(1-andel))/2;f.material.color.setHex(andel>0.5?0x58e070:andel>0.25?0xffc93c:0xff5050);bar.visible=andel<0.999}
+const avst=(ax,az,bx,bz)=>Math.hypot(ax-bx,az-bz);
+// Gnister når noe blir truffet eller ødelagt
+const gnister=[],gnistGeo=new THREE.BoxGeometry(0.25,0.25,0.25);
+function gnist(x,y,z,farge,n=8){if(RM)n=Math.min(n,3);for(let i=0;i<n&&gnister.length<160;i++){const m=new THREE.Mesh(gnistGeo,new THREE.MeshBasicMaterial({color:farge,transparent:true}));m.position.set(x,y,z);scene.add(m);gnister.push({m,vx:(Math.random()-0.5)*8,vy:3+Math.random()*5,vz:(Math.random()-0.5)*8,t:0.6})}}
+
+const heltBar=lagLivsbar(1.6,3.1);helt.g.add(heltBar);
+// ================= Monstre: robotmonstre =================
+const TYPER={
+  smaa:{navn:"Småbot",hp:6,fart:3.4,skade:2,r:0.6,bel:5,farge:0xff5a5a,str:0.75},
+  kamp:{navn:"Kampbot",hp:15,fart:2.6,skade:4,r:0.85,bel:8,farge:0xa04dff,str:1.05},
+  tank:{navn:"Tankbot",hp:48,fart:1.6,skade:8,r:1.2,bel:16,farge:0x8892a6,str:1.55},
+  boss1:{navn:"Superboten",hp:240,fart:1.5,skade:15,r:1.9,bel:80,farge:0xff2e9a,str:2.5,boss:true},
+  boss2:{navn:"Framtidskongen",hp:480,fart:1.3,skade:22,r:2.3,bel:150,farge:0xffc93c,str:3.1,boss:true}
+};
+const monstre=[];
+function lagMonster(type,x,z,hpFaktor){
+  const T=TYPER[type],s=T.str,g=new THREE.Group(),mat=M(T.farge,{metalness:0.5,roughness:0.4});
+  const kropp=new THREE.Mesh(new THREE.BoxGeometry(1.1*s,1.0*s,0.8*s),mat);kropp.position.y=1.15*s;kropp.castShadow=true;g.add(kropp);
+  const hode=new THREE.Mesh(new THREE.BoxGeometry(0.8*s,0.6*s,0.7*s),M(0x2a2f45,{metalness:0.6}));hode.position.y=1.95*s;hode.castShadow=true;g.add(hode);
+  const oye=new THREE.Mesh(new THREE.BoxGeometry(0.55*s,0.14*s,0.05),M(T.boss?0xff2020:0x3ee6ff,{emissive:T.boss?0xff2020:0x3ee6ff,emissiveIntensity:1.6}));oye.position.set(0,1.98*s,0.36*s);g.add(oye);
+  const ant=new THREE.Mesh(new THREE.CylinderGeometry(0.03*s,0.03*s,0.5*s,4),M(0x999999));ant.position.y=2.45*s;g.add(ant);
+  const lys=new THREE.Mesh(new THREE.SphereGeometry(0.09*s,8,6),M(0xff4040,{emissive:0xff4040,emissiveIntensity:1.5}));lys.position.y=2.72*s;g.add(lys);
+  const ben=[-1,1].map(sd=>{const b=new THREE.Mesh(new THREE.BoxGeometry(0.3*s,0.65*s,0.35*s),M(0x3a3f55));b.position.set(sd*0.3*s,0.33*s,0);b.castShadow=true;g.add(b);return b});
+  if(T.boss){const krone=new THREE.Mesh(new THREE.ConeGeometry(0.45*s,0.5*s,5),M(0xffd700,{metalness:0.8,emissive:0x664400}));krone.position.y=2.5*s;g.add(krone)}
+  const bar=lagLivsbar(Math.max(1.2,1.3*s),3.0*s);g.add(bar);
+  g.scale.setScalar(1.25);g.position.set(x,0,z);scene.add(g);
+  const hp=Math.round(T.hp*hpFaktor);
+  const mo={type,T,g,mat,ben,bar,x,z,hp,maks:hp,cd:0,fase:Math.random()*6,blink:0,saktere:1};
+  settLiv(bar,1);monstre.push(mo);return mo;
+}
+function skadMonster(mo,d,farge=0xffffff){
+  if(mo.hp<=0)return;mo.hp-=d;mo.blink=0.12;settLiv(mo.bar,mo.hp/mo.maks);
+  if(mo.hp<=0){gnist(mo.x,1.2*mo.T.str,mo.z,mo.T.farge,mo.T.boss?30:10);slippMynter(mo.x,mo.z,mo.T.bel);scene.remove(mo.g);monstre.splice(monstre.indexOf(mo),1);if(mo.T.boss)melding("💥 Du slo "+mo.T.navn+"!")}
+}
+
+// ================= Mynter =================
+let mynter=250;
+const myntListe=[],myntGeo=new THREE.CylinderGeometry(0.35,0.35,0.1,14),myntMat=M(0xffc93c,{metalness:0.8,roughness:0.25,emissive:0x664400});
+function slippMynter(x,z,verdi){
+  const n=Math.min(5,Math.max(1,Math.round(verdi/4)));let rest=verdi;
+  for(let i=0;i<n;i++){const v=i===n-1?rest:Math.floor(verdi/n);rest-=v;const m=new THREE.Mesh(myntGeo,myntMat);m.rotation.x=Math.PI/2;m.position.set(x+(Math.random()-0.5)*1.5,0.6,z+(Math.random()-0.5)*1.5);scene.add(m);myntListe.push({m,v,x:m.position.x,z:m.position.z,flyr:false,t:0})}
+}
+function samleAlleMynter(){myntListe.forEach(c=>c.flyr=true)}
+
+// ================= Bygg =================
+const BYGG=[
+  {id:"laser",ik:"🔫",navn:"Lasertårn",pris:100,ny:true,r:1.1,tekst:"Skyter røde laserstråler på monstrene.",niv:[{rek:10,skade:5,tid:0.6},{rek:11.5,skade:8,tid:0.5,pris:120},{rek:13,skade:10,tid:0.4,pris:220,dobbel:true}]},
+  {id:"vakt",ik:"🗼",navn:"Vakttårn",pris:60,r:1.0,tekst:"Ser langt og skyter energikuler.",niv:[{rek:12,skade:3,tid:1.2},{rek:14,skade:5,tid:1.0,pris:80},{rek:16,skade:8,tid:0.8,pris:150}]},
+  {id:"mur",ik:"🧱",navn:"Mur",pris:25,r:1.6,flere:true,tekst:"Stopper monstrene. De må slå den i stykker først.",niv:[{hp:60},{hp:130,pris:40},{hp:240,pris:80}]},
+  {id:"hjelper",ik:"🤖",navn:"Robothjelper",pris:120,ny:true,maks:3,r:0.8,tekst:"En liten robot som slåss mot monstre i nærheten.",niv:[{hp:40,skade:3,tid:0.7,rek:8},{hp:70,skade:5,tid:0.6,rek:9,pris:100},{hp:110,skade:8,tid:0.5,rek:10,pris:180}]},
+  {id:"felle",ik:"⚡",navn:"Strømfelle",pris:70,ny:true,r:2.4,tekst:"Strøm i bakken. Monstrene blir trege og får skade.",niv:[{rek:2.4,skade:1,saktere:0.5},{rek:3,skade:2,saktere:0.45,pris:60},{rek:3.6,skade:3,saktere:0.35,pris:110}]},
+  {id:"pynt",ik:"🌸",navn:"Pynt",pris:10,r:0.7,flere:true,tekst:"Gjør basen fin. Trykk på pynten for å bytte.",niv:[{}]},
+  {id:"skjold",ik:"🛡️",navn:"Kraftskjold",ny:true,handling:true,tekst:"En blå boble som beskytter basen. Den blir hel igjen etter hver bølge."},
+  {id:"reparer",ik:"🔧",navn:"Reparer basen",handling:true,tekst:"Gir basen 40 liv."},
+  {id:"basen",ik:"⬆️",navn:"Oppgrader basen",handling:true,tekst:"Basen tåler mer og får en kanon på toppen."}
+];
+const BY=Object.fromEntries(BYGG.map(b=>[b.id,b]));
+const bygg=[];
+const PYNT_FARGER=[0xff4fd8,0x3ee6ff,0xffc93c,0x7dff6a];
+function pynMesh(v){
+  const g=new THREE.Group(),f=PYNT_FARGER[v%4];
+  if(v%4===0){const s=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.1,1.6,6),M(0x667799));s.position.y=0.8;g.add(s);const l=new THREE.Mesh(new THREE.SphereGeometry(0.35,12,8),M(f,{emissive:f,emissiveIntensity:1.2}));l.position.y=1.7;g.add(l)}
+  else if(v%4===1){const p=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.3,0.4,8),M(0x445577));p.position.y=0.2;g.add(p);for(let i=0;i<5;i++){const b=new THREE.Mesh(new THREE.ConeGeometry(0.12,0.9,5),M(f,{emissive:f,emissiveIntensity:0.6}));b.position.set(Math.cos(i*1.26)*0.15,0.8,Math.sin(i*1.26)*0.15);b.rotation.z=Math.cos(i*1.26)*0.4;b.rotation.x=Math.sin(i*1.26)*0.4;g.add(b)}}
+  else if(v%4===2){const s=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.5,0.6),M(0x8899bb));s.position.y=0.25;g.add(s);const st=new THREE.Mesh(new THREE.OctahedronGeometry(0.45),M(f,{emissive:f,emissiveIntensity:0.7,metalness:0.8}));st.position.y=1.0;st.userData.snurr=true;g.add(st)}
+  else{const s=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,2,6),M(0xccccdd));s.position.y=1;g.add(s);const fl=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.5,0.04),M(f,{emissive:f,emissiveIntensity:0.6}));fl.position.set(0.42,1.7,0);g.add(fl)}
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true});return g;
+}
+function murRetning(x,z){const l=Math.hypot(x,z)||1;return{tx:-z/l,tz:x/l}}
+function lagByggMesh(t,niv,v,x,z){
+  const g=new THREE.Group();
+  if(t==="laser"){
+    const fot=new THREE.Mesh(new THREE.CylinderGeometry(0.9,1.1,1.2+niv*0.3,8),M(0xe8eeff,{metalness:0.5,roughness:0.3}));fot.position.y=(1.2+niv*0.3)/2;fot.castShadow=true;g.add(fot);
+    const hode=new THREE.Group();hode.position.y=1.2+niv*0.3+0.35;
+    const kule=new THREE.Mesh(new THREE.SphereGeometry(0.55,16,10),M(0x30364f,{metalness:0.7}));hode.add(kule);
+    const lop=(ox)=>{const l=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.13,1.1,8),M(0x30364f,{metalness:0.7}));l.rotation.x=Math.PI/2;l.position.set(ox,0,0.6);hode.add(l);const tupp=new THREE.Mesh(new THREE.SphereGeometry(0.13,8,6),M(0xff3030,{emissive:0xff2020,emissiveIntensity:2}));tupp.position.set(ox,0,1.15);hode.add(tupp)};
+    if(niv>=3){lop(-0.22);lop(0.22)}else lop(0);
+    for(let i=0;i<niv;i++){const r=new THREE.Mesh(new THREE.TorusGeometry(0.95,0.06,6,16),M(0xff3030,{emissive:0xff2020,emissiveIntensity:1.2}));r.rotation.x=Math.PI/2;r.position.y=0.3+i*0.35;g.add(r)}
+    g.add(hode);g.userData.hode=hode;g.userData.topp=1.2+niv*0.3+0.35;
+  }else if(t==="vakt"){
+    const h=2.4+niv*0.5;
+    for(const [ox,oz] of [[-0.5,-0.5],[0.5,-0.5],[-0.5,0.5],[0.5,0.5]]){const s=new THREE.Mesh(new THREE.BoxGeometry(0.16,h,0.16),M(0x9aa8c8,{metalness:0.6}));s.position.set(ox,h/2,oz);s.castShadow=true;g.add(s)}
+    const hus=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.8,1.4),M(0x3b4a7a,{metalness:0.4}));hus.position.y=h+0.3;hus.castShadow=true;g.add(hus);
+    const tak=new THREE.Mesh(new THREE.ConeGeometry(1.1,0.7,4),M(0x3ee6ff,{emissive:0x1a8aa0,emissiveIntensity:0.6}));tak.position.y=h+1.05;tak.rotation.y=Math.PI/4;g.add(tak);
+    const lys=new THREE.Mesh(new THREE.SphereGeometry(0.2,8,6),M(0x3ee6ff,{emissive:0x3ee6ff,emissiveIntensity:2}));lys.position.y=h+0.3;lys.position.z=0.72;g.add(lys);
+    g.userData.topp=h+0.3;
+  }else if(t==="mur"){
+    const mur=new THREE.Mesh(new THREE.BoxGeometry(3,1.2+niv*0.3,0.7),M(niv>=3?0x9aa8c8:niv===2?0x7c88a8:0x5d6888,{metalness:0.5,roughness:0.4}));mur.position.y=(1.2+niv*0.3)/2;mur.castShadow=mur.receiveShadow=true;g.add(mur);
+    const strek=new THREE.Mesh(new THREE.BoxGeometry(3.02,0.12,0.72),M(0x3ee6ff,{emissive:0x3ee6ff,emissiveIntensity:1}));strek.position.y=1.0+niv*0.3;g.add(strek);
+    const r=murRetning(x,z);g.rotation.y=Math.atan2(-r.tz,r.tx);
+  }else if(t==="hjelper"){
+    const kropp=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.6),M(0x4aa8ff,{metalness:0.5}));kropp.position.y=0.9;kropp.castShadow=true;g.add(kropp);
+    const hode=new THREE.Mesh(new THREE.SphereGeometry(0.38,12,10),M(0xe8eeff,{metalness:0.4}));hode.position.y=1.6;g.add(hode);
+    const oye=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.1,0.05),M(0x7dff6a,{emissive:0x7dff6a,emissiveIntensity:1.5}));oye.position.set(0,1.62,0.36);g.add(oye);
+    for(const sd of [-1,1]){const b=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.5,0.3),M(0x2a3f70));b.position.set(sd*0.22,0.25,0);g.add(b)}
+    for(let i=1;i<niv;i++){const s=new THREE.Mesh(new THREE.SphereGeometry(0.1,6,4),M(0xffc93c,{emissive:0xffc93c}));s.position.set(-0.2+i*0.2,1.15,0.31);g.add(s)}
+  }else if(t==="felle"){
+    const rek=BY.felle.niv[niv-1].rek;
+    const plate=new THREE.Mesh(new THREE.CylinderGeometry(rek,rek,0.08,32),new THREE.MeshStandardMaterial({color:0x2266ff,emissive:0x2266ff,emissiveIntensity:0.5,transparent:true,opacity:0.35}));plate.position.y=0.05;g.add(plate);
+    const midt=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.45,0.35,8),M(0x30364f));midt.position.y=0.18;g.add(midt);
+    const lyn=new THREE.Mesh(new THREE.OctahedronGeometry(0.25),M(0x9fe8ff,{emissive:0x3ee6ff,emissiveIntensity:2}));lyn.position.y=0.6;lyn.userData.snurr=true;g.add(lyn);
+    g.userData.plate=plate;
+  }else if(t==="pynt"){g.add(pynMesh(v||0))}
+  g.position.set(x,0,z);return g;
+}
+function rekkeviddeAv(b){const n=BY[b.t].niv&&BY[b.t].niv[b.niv-1];return n&&n.rek||0}
+function nyttBygg(t,x,z,niv=1,v=0){
+  const D=BY[t],g=lagByggMesh(t,niv,v,x,z);scene.add(g);
+  const b={t,x,z,niv,v,g,cd:0,hp:0,maks:0,hx:x,hz:z,nede:false,bar:null,brukt:D.pris};
+  if(t==="mur"||t==="hjelper"){b.maks=b.hp=D.niv[niv-1].hp;b.bar=lagLivsbar(t==="mur"?2.4:1.2,t==="mur"?2.4:2.4);g.add(b.bar);settLiv(b.bar,1)}
+  if(t==="mur"){const r=murRetning(x,z);b.ax=x-r.tx*1.5;b.az=z-r.tz*1.5;b.bx=x+r.tx*1.5;b.bz=z+r.tz*1.5}
+  bygg.push(b);return b;
+}
+function fjernBygg(b){scene.remove(b.g);const i=bygg.indexOf(b);if(i>=0)bygg.splice(i,1)}
+function oppgraderMesh(b){const keep={hp:b.hp,maks:b.maks};scene.remove(b.g);b.g=lagByggMesh(b.t,b.niv,b.v,b.hx,b.hz);scene.add(b.g);if(b.bar){b.bar=lagLivsbar(b.t==="mur"?2.4:1.2,2.4);b.g.add(b.bar)}const ny=BY[b.t].niv[b.niv-1].hp;if(ny){b.maks=ny;b.hp=Math.min(ny,keep.hp+(ny-keep.maks))}if(b.t==="hjelper"){b.g.position.set(b.x,0,b.z)}if(b.bar)settLiv(b.bar,b.hp/b.maks)}
+function punktMurAvstand(px,pz,b){const vx=b.bx-b.ax,vz=b.bz-b.az,l2=vx*vx+vz*vz;let t=((px-b.ax)*vx+(pz-b.az)*vz)/l2;t=Math.max(0,Math.min(1,t));return Math.hypot(px-(b.ax+vx*t),pz-(b.az+vz*t))}
+
+// Skudd: laserstråler (straks) og energikuler (flyr)
+const kuler=[],kuleGeo=new THREE.SphereGeometry(0.2,8,6);
+const kuleMat={helt:M(0xffe066,{emissive:0xffcc00,emissiveIntensity:2}),vakt:M(0x9fe8ff,{emissive:0x3ee6ff,emissiveIntensity:2}),base:M(0xff9ff0,{emissive:0xff4fd8,emissiveIntensity:2})};
+function skyt(fra,x,y,z,mål,skade,fart=26){const m=new THREE.Mesh(kuleGeo,kuleMat[fra]);m.position.set(x,y,z);scene.add(m);kuler.push({m,mål,skade,fart,t:1.4,fra})}
+const straaler=[];
+function laserStråle(x,y,z,mo,farge){
+  const fra=new THREE.Vector3(x,y,z),til=new THREE.Vector3(mo.x,1.2*mo.T.str,mo.z),l=fra.distanceTo(til);
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,l,6),new THREE.MeshBasicMaterial({color:farge,transparent:true,opacity:0.95}));
+  m.position.copy(fra).lerp(til,0.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),til.clone().sub(fra).normalize());scene.add(m);straaler.push({m,t:0.12});
+}
+// Det farligste monsteret i rekkevidde: nærmest basen (som «Første» i Bloons)
+function velgMål(x,z,rek){let best=null,bd=1e9;for(const mo of monstre){if(avst(x,z,mo.x,mo.z)>rek+mo.T.r)continue;const d=Math.hypot(mo.x,mo.z);if(d<bd){bd=d;best=mo}}return best}
+function nærmeste(x,z,rek){let best=null,bd=rek;for(const mo of monstre){const d=avst(x,z,mo.x,mo.z)-mo.T.r;if(d<bd){bd=d;best=mo}}return best}
+
+// ================= Bølger =================
+let bolge=1,fase="bygg",koe=[],spawnT=0,started=false,paused=false,seier=false;
+const MAKS_BOLGE=10;
+function lagBolge(n){
+  const k=[];const antall=3+n*2;
+  for(let i=0;i<antall;i++){let t="smaa";if(n>=2&&i%3===1)t="kamp";if(n>=4&&i%5===4)t="tank";if(n>=7&&i%4===2)t="kamp";if(n>=8&&i%6===0)t="tank";k.push(t)}
+  if(n===5)k.push("boss1");if(n===10){k.push("boss1");k.push("boss2")}
+  return k;
+}
+function kantPunkt(){const s=Math.floor(Math.random()*4),u=Math.random()*2-1;return s===0?[u*KX,-KZ-1]:s===1?[u*KX,KZ+1]:s===2?[-KX-1,u*KZ]:[KX+1,u*KZ]}
+function startBolge(){
+  if(fase!=="bygg"||!started||paused)return;
+  lagre();fase="kamp";koe=lagBolge(bolge);spawnT=0.5;avbrytPlassering();lukkByggLinje();
+  melding(bolge===MAKS_BOLGE?"⚠️ Siste bølge! Framtidskongen kommer!":bolge===5?"⚠️ Bølge 5: Superboten kommer!":"🌊 Bølge "+bolge+" kommer!");
+  oppdaterHud();
+}
+function bolgeFerdig(){
+  const bonus=40+bolge*8;mynter+=bonus;samleAlleMynter();
+  if(skjold.niv>0)skjold.hp=SKJOLD_NIV[skjold.niv].maks;
+  for(const b of bygg)if(b.t==="hjelper"){b.nede=false;b.hp=b.maks;settLiv(b.bar,1);b.g.rotation.z=0}
+  helt.hp=helt.maks;
+  if(bolge>=MAKS_BOLGE){seier=true;fase="slutt";bolge=MAKS_BOLGE+1;lagre();visSlutt(true);return}
+  melding("🎉 Bølge "+bolge+" klart! +"+bonus+" 🪙");
+  bolge++;fase="bygg";lagre();oppdaterHud();
+}
+function baseFalt(){fase="slutt";gnist(0,2,0,0xffc93c,40);visSlutt(false)}
+
+// ================= Lagring =================
+// Lagres når en bølge starter og når den er klart. Taper du, starter du bølgen på nytt fra lagringen.
+function tilstand(){return{v:1,verden:1,bolge,mynter,baseNiv:basen.niv,baseHp:Math.max(1,Math.round(basen.hp)),skjoldNiv:skjold.niv,seier,
+  bygg:bygg.map(b=>({t:b.t,x:+b.hx.toFixed(2),z:+b.hz.toFixed(2),niv:b.niv,v:b.v,hp:b.t==="mur"?Math.round(b.hp):undefined,brukt:b.brukt}))}}
+function lagre(){if(fase==="kamp")return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(tilstand()))}catch(e){}}
+window.save=()=>lagre();
+function lesLagring(){let raw=null;try{raw=localStorage.getItem(SAVE_KEY)}catch(e){}if(!raw)return null;
+  try{const s=JSON.parse(raw);if(!s||s.v!==1)throw 0;return s}catch(e){try{localStorage.setItem(SAVE_KEY+"-kopi",raw)}catch(e2){}console.warn("Lagringen kunne ikke leses. En kopi ligger i "+SAVE_KEY+"-kopi.");return null}}
+function nullstillVerden(){
+  while(monstre.length){scene.remove(monstre[0].g);monstre.shift()}
+  while(bygg.length)fjernBygg(bygg[0]);
+  while(myntListe.length){scene.remove(myntListe[0].m);myntListe.shift()}
+  while(kuler.length){scene.remove(kuler[0].m);kuler.shift()}
+  koe=[];
+}
+function brukLagring(s){
+  nullstillVerden();
+  const ok=(n,a,b)=>Number.isFinite(n)&&n>=a&&n<=b;
+  if(!s){bolge=1;mynter=250;basen.niv=1;basen.hp=BASE_NIV[1].maks;skjold.niv=0;seier=false}
+  else{
+    bolge=ok(s.bolge,1,MAKS_BOLGE+1)?Math.floor(s.bolge):1;mynter=ok(s.mynter,0,1e7)?Math.floor(s.mynter):250;
+    basen.niv=ok(s.baseNiv,1,3)?Math.floor(s.baseNiv):1;basen.hp=ok(s.baseHp,1,BASE_NIV[basen.niv].maks)?s.baseHp:BASE_NIV[basen.niv].maks;
+    skjold.niv=ok(s.skjoldNiv,0,3)?Math.floor(s.skjoldNiv):0;seier=!!s.seier;
+    (Array.isArray(s.bygg)?s.bygg:[]).slice(0,200).forEach(o=>{if(!o||!BY[o.t]||BY[o.t].handling||!ok(o.x,-KX,KX)||!ok(o.z,-KZ,KZ))return;const n=ok(o.niv,1,BY[o.t].niv.length)?Math.floor(o.niv):1;const b=nyttBygg(o.t,o.x,o.z,n,ok(o.v,0,3)?Math.floor(o.v):0);b.brukt=ok(o.brukt,0,1e6)?o.brukt:BY[o.t].pris;if(o.t==="mur"&&ok(o.hp,1,b.maks)){b.hp=o.hp;settLiv(b.bar,b.hp/b.maks)}});
+  }
+  if(bolge>MAKS_BOLGE){bolge=MAKS_BOLGE;}
+  skjold.hp=skjold.niv?SKJOLD_NIV[skjold.niv].maks:0;
+  byggBasen();helt.x=0;helt.z=6;helt.hp=helt.maks;helt.nede=0;fase="bygg";oppdaterHud();oppdaterByggLinje();
+}
+addEventListener("pagehide",()=>lagre());
+
+// ================= HUD, meldinger og kort =================
+let meldT=0;function melding(t,ms=2600){const m=$("melding");m.textContent=t;m.classList.add("vis");clearTimeout(meldT);meldT=setTimeout(()=>m.classList.remove("vis"),ms)}
+function oppdaterHud(){
+  $("mynter").textContent=mynter;
+  const bl=$("baseLiv");bl.textContent=Math.ceil(Math.max(0,basen.hp))+"/"+BASE_NIV[basen.niv].maks;bl.className=basen.hp<BASE_NIV[basen.niv].maks*0.3?"lav":"";
+  $("bolge").textContent=Math.min(bolge,MAKS_BOLGE);
+  $("pSkjold").hidden=!skjold.niv;$("skjold").textContent=Math.ceil(skjold.hp);
+  $("nesteKnapp").hidden=fase!=="bygg";
+  $("nesteKnapp").firstChild.textContent=bolge===1&&!bygg.length?"▶ Start bølge 1":"▶ Neste bølge";
+  oppdaterByggLinje();
+}
+const gameModalOpen=()=>$("infoLag").classList.contains("vis")||$("sluttLag").classList.contains("vis");
+function visSlutt(vant){
+  paused=true;avbrytPlassering();lukkByggLinje();
+  $("sluttTittel").textContent=vant?"🏆 Du klarte Framtiden!":"💥 Basen falt!";
+  $("sluttTekst").textContent=vant?"Alle ti bølgene er slått, og Framtidskongen er borte! Verden 2 kommer snart.":"Robotmonstrene kom seg inn i basen på bølge "+bolge+". Prøv igjen. Tips: bygg murer og lasertårn rundt basen.";
+  $("sluttIgjen").textContent=vant?"🔁 Spill bølge 10 en gang til":"▶ Prøv bølge "+bolge+" igjen";
+  $("sluttLag").classList.add("vis");$("sluttIgjen").focus();
+}
+$("sluttIgjen").addEventListener("click",()=>{const s=lesLagring();if(s&&seier){s.bolge=MAKS_BOLGE}brukLagring(s);if(seier){bolge=MAKS_BOLGE}$("sluttLag").classList.remove("vis");paused=false;oppdaterHud()});
+$("sluttNy").addEventListener("click",()=>{brukLagring(null);lagre();$("sluttLag").classList.remove("vis");paused=false;melding("🌆 Verden 1: Framtiden. Bygg et lasertårn!")});
+
+// ================= Byggelinja og plassering =================
+let byggApen=false,valgt=null,spøkelse=null,ring=null,peker={x:0,z:0,på:false};
+function prisFor(D){if(D.id==="skjold")return skjold.niv>=3?null:SKJOLD_NIV[skjold.niv+1].pris;if(D.id==="basen")return basen.niv>=3?null:BASE_NIV[basen.niv+1].pris;if(D.id==="reparer")return 30;return D.pris}
+function antall(t){return bygg.filter(b=>b.t===t).length}
+(function lagByggLinje(){const l=$("byggLinje");BYGG.forEach((D,i)=>{const b=document.createElement("button");b.type="button";b.className="bk";b.dataset.id=D.id;b.title=D.navn+" ("+(i+1)+") – "+D.tekst;
+  b.innerHTML='<span class="ik" aria-hidden="true">'+D.ik+'</span><span class="nv">'+D.navn+'</span><span class="pr"></span>'+(D.ny?'<span class="ny">NY</span>':'');
+  b.addEventListener("click",()=>velg(D.id));l.appendChild(b)})})();
+function oppdaterByggLinje(){document.querySelectorAll("#byggLinje .bk").forEach(b=>{const D=BY[b.dataset.id],p=prisFor(D);let tekst=p==null?"Maks":p+" 🪙";
+  if(D.id==="reparer"&&basen.hp>=BASE_NIV[basen.niv].maks)tekst="Hel";if(D.maks&&antall(D.id)>=D.maks)tekst="Maks";
+  b.querySelector(".pr").textContent=tekst;b.classList.toggle("valgt",valgt===D.id);b.setAttribute("aria-disabled",String(p==null||p>mynter||tekst==="Maks"||tekst==="Hel"));b.style.opacity=b.getAttribute("aria-disabled")==="true"?0.5:1})}
+function apneByggLinje(){if(!started||fase==="slutt")return;byggApen=true;$("byggLinje").hidden=false;$("byggKnapp").setAttribute("aria-pressed","true");html.classList.add("bygger");$("joy").classList.remove("klar");oppdaterByggLinje()}
+function lukkByggLinje(){byggApen=false;$("byggLinje").hidden=true;$("byggKnapp").setAttribute("aria-pressed","false");html.classList.remove("bygger");if(started)$("joy").classList.add("klar");avbrytPlassering()}
+$("byggKnapp").addEventListener("click",()=>byggApen?lukkByggLinje():apneByggLinje());
+$("nesteKnapp").addEventListener("click",()=>startBolge());
+function velg(id){
+  const D=BY[id],p=prisFor(D);
+  if(D.handling){
+    if(p==null){melding(D.id==="basen"?"Basen er allerede på høyeste nivå.":"Kraftskjoldet er allerede på høyeste nivå.");return}
+    if(id==="reparer"&&basen.hp>=BASE_NIV[basen.niv].maks){melding("Basen er helt hel 💪");return}
+    if(mynter<p){melding("Du trenger "+(p-mynter)+" 🪙 til");return}
+    mynter-=p;
+    if(id==="reparer"){basen.hp=Math.min(BASE_NIV[basen.niv].maks,basen.hp+40);gnist(0,3,0,0x7dff6a,12);melding("🔧 Basen er reparert!")}
+    else if(id==="basen"){const før=BASE_NIV[basen.niv].maks;basen.niv++;basen.hp+=BASE_NIV[basen.niv].maks-før;byggBasen();gnist(0,4,0,0xffc93c,20);melding("⬆️ Basen er nivå "+basen.niv+" og har fått en kanon!")}
+    else if(id==="skjold"){skjold.niv++;skjold.hp=SKJOLD_NIV[skjold.niv].maks;melding(skjold.niv===1?"🛡️ Kraftskjoldet er på!":"🛡️ Kraftskjoldet er nivå "+skjold.niv+"!")}
+    oppdaterHud();lagre();return;
+  }
+  if(D.maks&&antall(id)>=D.maks){melding("Du kan ha "+D.maks+" "+D.navn.toLowerCase()+"e.");return}
+  if(mynter<p){melding("Du trenger "+(p-mynter)+" 🪙 til");return}
+  if(valgt===id){avbrytPlassering();return}
+  avbrytPlassering();valgt=id;
+  const pv=Math.floor(Math.random()*4);spøkelse=lagByggMesh(id,1,pv,0,0);spøkelse.userData.v=pv;spøkelse.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=0.55;o.castShadow=false}});spøkelse.visible=false;scene.add(spøkelse);
+  const rek=D.niv[0].rek;if(rek&&id!=="felle"){ring=new THREE.Mesh(new THREE.RingGeometry(rek-0.12,rek,48),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.5,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=0.06;ring.visible=false;scene.add(ring)}
+  $("byggHjelp").textContent=(TOUCH?"Trykk":"Klikk")+" på kartet for å sette ut "+D.ik+" "+D.navn+". "+D.tekst;$("byggHjelp").hidden=false;
+  oppdaterByggLinje();if(peker.på)flyttSpøkelse(peker.x,peker.z);
+}
+function avbrytPlassering(){valgt=null;if(spøkelse){scene.remove(spøkelse);spøkelse=null}if(ring){scene.remove(ring);ring=null}$("byggHjelp").hidden=true;oppdaterByggLinje()}
+function snapp(v){return Math.round(v*2)/2}
+function kanPlassere(id,x,z){
+  const D=BY[id];if(Math.abs(x)>KX-1||Math.abs(z)>KZ-1)return false;
+  if(Math.hypot(x,z)<BASE_R+D.r+0.4)return false;
+  for(const b of bygg){if(b.t==="felle"&&id!=="felle")continue;if(id==="felle"&&b.t!=="felle")continue;
+    const rB=BY[b.t].r;if(avst(x,z,b.hx,b.hz)<(b.t==="mur"&&id==="mur"?2.6:rB+D.r))return false}
+  return true;
+}
+function flyttSpøkelse(x,z){if(!spøkelse)return;x=snapp(x);z=snapp(z);spøkelse.visible=true;spøkelse.position.set(x,0,z);
+  if(valgt==="mur"){const r=murRetning(x,z);spøkelse.rotation.y=Math.atan2(-r.tz,r.tx)}
+  const ok=kanPlassere(valgt,x,z);spøkelse.traverse(o=>{if(o.isMesh)o.material.emissive&&o.material.emissive.setHex(ok?0x114411:0x661111)});
+  if(ring){ring.visible=true;ring.position.x=x;ring.position.z=z;ring.material.color.setHex(ok?0xffffff:0xff5050)}}
+function plasser(x,z){
+  if(!valgt)return;x=snapp(x);z=snapp(z);const D=BY[valgt];
+  if(!kanPlassere(valgt,x,z)){melding("Her er det ikke plass");return}
+  if(mynter<D.pris){melding("Du trenger "+(D.pris-mynter)+" 🪙 til");avbrytPlassering();return}
+  mynter-=D.pris;const b=nyttBygg(valgt,x,z,1,spøkelse?spøkelse.userData.v||0:0);gnist(x,0.8,z,0x3ee6ff,8);
+  if(valgt==="hjelper"){b.x=x;b.z=z}
+  if(bolge===1&&fase==="bygg"&&bygg.length===1)melding("Bra! Trykk ▶ Neste bølge når du er klar.",3600);
+  const fortsett=D.flere&&mynter>=D.pris;oppdaterHud();lagre();if(!fortsett)avbrytPlassering();else oppdaterByggLinje();
+}
+
+// ================= Info: oppgrader eller selg =================
+let infoB=null;
+function apneInfo(b){
+  infoB=b;paused=true;const D=BY[b.t],neste=D.niv[b.niv];
+  $("infoIk").textContent=D.ik;$("infoTittel").textContent=D.navn+(D.niv.length>1?" · nivå "+b.niv:"");
+  $("infoTekst").textContent=D.tekst+(b.maks?" Liv: "+Math.ceil(b.hp)+"/"+b.maks+".":"");
+  const opp=$("infoOpp");
+  if(b.t==="pynt"){opp.textContent="🎨 Bytt pynt (gratis)";opp.disabled=false}
+  else if(!neste){opp.textContent="⭐ Høyeste nivå";opp.disabled=true}
+  else{opp.textContent="⬆️ Oppgrader til nivå "+(b.niv+1)+" ("+neste.pris+" 🪙)";opp.disabled=mynter<neste.pris}
+  $("infoSelg").textContent="💰 Selg (+"+Math.floor(b.brukt/2)+" 🪙)";
+  $("infoLag").classList.add("vis");(opp.disabled?$("infoLukk"):opp).focus();
+}
+function lukkInfo(){$("infoLag").classList.remove("vis");infoB=null;paused=false;last=performance.now()}
+$("infoLukk").addEventListener("click",lukkInfo);
+$("infoLag").addEventListener("click",e=>{if(e.target===$("infoLag"))lukkInfo()});
+$("infoOpp").addEventListener("click",()=>{const b=infoB;if(!b)return;
+  if(b.t==="pynt"){b.v=(b.v+1)%4;oppgraderMesh(b);lagre();apneInfo(b);return}
+  const n=BY[b.t].niv[b.niv];if(!n||mynter<n.pris)return;mynter-=n.pris;b.brukt+=n.pris;b.niv++;oppgraderMesh(b);gnist(b.hx,1.5,b.hz,0xffc93c,14);oppdaterHud();lagre();apneInfo(b)});
+$("infoSelg").addEventListener("click",()=>{const b=infoB;if(!b)return;mynter+=Math.floor(b.brukt/2);fjernBygg(b);oppdaterHud();lagre();lukkInfo();melding("💰 Solgt!")});
+
+// ================= Styring =================
+const taster=new Set();
+addEventListener("keydown",e=>{
+  if(!started||gameModalOpen())return;
+  const k=e.code;
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD"].includes(k)){taster.add(k);e.preventDefault()}
+  if(e.repeat)return;
+  if(k==="KeyB"){byggApen?lukkByggLinje():apneByggLinje()}
+  else if(/^Digit[1-9]$/.test(k)){if(!byggApen)apneByggLinje();velg(BYGG[+k.slice(5)-1].id)}
+  else if(k==="Escape"&&valgt){e.preventDefault();avbrytPlassering()}
+  else if((k==="Space"||k==="Enter")&&fase==="bygg"&&!(document.activeElement&&document.activeElement.tagName==="BUTTON"&&document.activeElement.offsetParent!==null)){e.preventDefault();startBolge()}
+});
+addEventListener("keyup",e=>taster.delete(e.code));
+function clearInput(){taster.clear();joy.x=joy.y=0;joy.id=null;$("knob").style.transform=""}
+// Styrespak (berøring)
+const joy={x:0,y:0,id:null};
+(function(){const j=$("joy"),kn=$("knob");
+  const flytt=e=>{const r=j.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy;const l=Math.hypot(dx,dy),m=r.width/2-10;if(l>m){dx*=m/l;dy*=m/l}joy.x=dx/m;joy.y=dy/m;kn.style.transform="translate("+dx+"px,"+dy+"px)"};
+  j.addEventListener("pointerdown",e=>{joy.id=e.pointerId;j.setPointerCapture(e.pointerId);flytt(e);e.preventDefault()});
+  j.addEventListener("pointermove",e=>{if(e.pointerId===joy.id)flytt(e)});
+  const slipp=e=>{if(e.pointerId!==joy.id)return;joy.id=null;joy.x=joy.y=0;kn.style.transform=""};
+  j.addEventListener("pointerup",slipp);j.addEventListener("pointercancel",slipp);
+})();
+// Trykk på kartet: plassere, eller åpne en bygning
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2(),plan=new THREE.Plane(new THREE.Vector3(0,1,0),0),treff=new THREE.Vector3();
+function bakkePunkt(cx,cy){ndc.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.setFromCamera(ndc,camera);return ray.ray.intersectPlane(plan,treff)?{x:treff.x,z:treff.z}:null}
+let ned=null;
+renderer.domElement.addEventListener("pointerdown",e=>{if(!started||paused)return;ned={x:e.clientX,y:e.clientY,id:e.pointerId};const p=bakkePunkt(e.clientX,e.clientY);if(p){peker.x=p.x;peker.z=p.z;peker.på=true;flyttSpøkelse(p.x,p.z)}});
+renderer.domElement.addEventListener("pointermove",e=>{const p=bakkePunkt(e.clientX,e.clientY);if(!p)return;peker.x=p.x;peker.z=p.z;peker.på=true;if(!paused)flyttSpøkelse(p.x,p.z)});
+renderer.domElement.addEventListener("pointerup",e=>{if(!ned||e.pointerId!==ned.id)return;const kort=Math.hypot(e.clientX-ned.x,e.clientY-ned.y)<(TOUCH?40:12);ned=null;if(!kort||!started||paused)return;
+  const p=bakkePunkt(e.clientX,e.clientY);if(!p)return;
+  if(valgt){plasser(p.x,p.z);return}
+  let best=null,bd=1e9;for(const b of bygg){const d=b.t==="mur"?punktMurAvstand(p.x,p.z,b):avst(p.x,p.z,b.t==="hjelper"?b.x:b.hx,b.t==="hjelper"?b.z:b.hz);const grense=b.t==="felle"?BY.felle.niv[b.niv-1].rek:BY[b.t].r+0.9;if(d<grense&&d<bd){bd=d;best=b}}
+  if(best)apneInfo(best);
+});
+renderer.domElement.addEventListener("pointerleave",()=>{peker.på=false;if(spøkelse&&!TOUCH){spøkelse.visible=false;if(ring)ring.visible=false}});
+
+// ================= Oppdatering =================
+let last=performance.now(),tid=0;
+function oppdater(dt){
+  tid+=dt;
+  // Helten
+  if(helt.nede>0){helt.nede-=dt;if(helt.nede<=0){helt.x=0;helt.z=BASE_R+1.5;helt.hp=helt.maks;melding("🤖 Roboten er tilbake!");spillR("Idle")}}
+  else{
+    let ix=0,iz=0;
+    if(taster.has("ArrowUp")||taster.has("KeyW"))iz-=1;if(taster.has("ArrowDown")||taster.has("KeyS"))iz+=1;if(taster.has("ArrowLeft")||taster.has("KeyA"))ix-=1;if(taster.has("ArrowRight")||taster.has("KeyD"))ix+=1;
+    ix+=joy.x;iz+=joy.y;const l=Math.hypot(ix,iz);
+    let beveger=false;
+    if(l>0.15){const s=Math.min(1,l);ix/=l;iz/=l;const vx=kam.rx*ix-kam.fx*iz,vz=kam.rz*ix-kam.fz*iz;
+      helt.x+=vx*helt.fart*s*dt;helt.z+=vz*helt.fart*s*dt;helt.g.rotation.y=Math.atan2(vx,vz);beveger=true}
+    helt.x=Math.max(-KX+0.8,Math.min(KX-0.8,helt.x));helt.z=Math.max(-KZ+0.8,Math.min(KZ-0.8,helt.z));
+    const db=Math.hypot(helt.x,helt.z);if(db<BASE_R+0.6){const k=(BASE_R+0.6)/(db||1);helt.x*=k;helt.z*=k}
+    helt.cd-=dt;const mål=nærmeste(helt.x,helt.z,helt.rek);
+    if(mål&&helt.cd<=0){helt.cd=0.3;skyt("helt",helt.x,1.6,helt.z,mål,helt.skade,30);if(!beveger){helt.g.rotation.y=Math.atan2(mål.x-helt.x,mål.z-helt.z);if(!rEn)spillEn("Punch")}}
+    if(!rEn)spillR(beveger?"Running":"Idle");
+  }
+  helt.g.position.set(helt.x,0,helt.z);settLiv(heltBar,helt.nede>0?0:helt.hp/helt.maks);heltBar.visible=helt.nede<=0&&helt.hp<helt.maks;heltBar.quaternion.copy(camera.quaternion).premultiply(helt.g.quaternion.clone().invert());
+  if(rMixer)rMixer.update(dt);
+
+  // Nye monstre
+  if(fase==="kamp"&&koe.length){spawnT-=dt;if(spawnT<=0){const [x,z]=kantPunkt();const t=koe.shift();lagMonster(t,x,z,1+(bolge-1)*0.12);if(TYPER[t].boss)melding("👑 "+TYPER[t].navn+" kommer!");spawnT=Math.max(0.45,1.25-bolge*0.07)}}
+
+  // Monstrene
+  for(const mo of monstre.slice()){
+    const T=mo.T;mo.cd-=dt;mo.saktere=1;
+    for(const b of bygg)if(b.t==="felle"&&avst(mo.x,mo.z,b.hx,b.hz)<BY.felle.niv[b.niv-1].rek+T.r*0.5)mo.saktere=Math.min(mo.saktere,BY.felle.niv[b.niv-1].saktere);
+    // Hva angriper monsteret? Helten eller en hjelper i nærheten, en mur i veien, skjoldet eller basen.
+    let mx=-mo.x,mz=-mo.z,angrip=null;
+    if(helt.nede<=0&&avst(mo.x,mo.z,helt.x,helt.z)<4+T.r){mx=helt.x-mo.x;mz=helt.z-mo.z;if(avst(mo.x,mo.z,helt.x,helt.z)<T.r+0.9)angrip={helt:true}}
+    else{const hj=bygg.find(b=>b.t==="hjelper"&&!b.nede&&avst(mo.x,mo.z,b.x,b.z)<T.r+1.0);if(hj)angrip={b:hj}}
+    const dBase=Math.hypot(mo.x,mo.z);
+    if(!angrip&&skjoldAktiv()&&dBase<skjold.R+T.r)angrip={skjold:true};
+    if(!angrip&&dBase<BASE_R+T.r+0.2)angrip={base:true};
+    if(!angrip){
+      const l=Math.hypot(mx,mz)||1,steg=T.fart*mo.saktere*dt,nx=mo.x+mx/l*steg,nz=mo.z+mz/l*steg;
+      const mur=bygg.find(b=>b.t==="mur"&&punktMurAvstand(nx,nz,b)<T.r+0.4);
+      if(mur)angrip={b:mur};
+      else{mo.x=nx;mo.z=nz;mo.g.rotation.y=Math.atan2(mx,mz);mo.fase+=dt*T.fart*2.2;mo.ben[0].rotation.x=Math.sin(mo.fase)*0.6;mo.ben[1].rotation.x=-Math.sin(mo.fase)*0.6}
+    }
+    if(angrip&&mo.cd<=0){mo.cd=1;
+      if(angrip.helt){helt.hp-=T.skade;gnist(helt.x,1.5,helt.z,0xffcc00,5);if(helt.hp<=0){helt.nede=5;gnist(helt.x,1,helt.z,0xffcc00,20);spillEn("Death");melding("😵 Roboten må lade opp. Tilbake om 5 sekunder.")}}
+      else if(angrip.b){const b=angrip.b;b.hp-=T.skade;settLiv(b.bar,b.hp/b.maks);gnist(b.t==="mur"?mo.x:b.x,1,b.t==="mur"?mo.z:b.z,0xaab4d0,4);
+        if(b.hp<=0){if(b.t==="mur"){gnist(b.hx,1,b.hz,0x9aa8c8,16);fjernBygg(b);melding("🧱 En mur ble ødelagt!")}else{b.nede=true;b.g.rotation.z=Math.PI/2;melding("🤖 En robothjelper er slått ut til neste bølge.")}}}
+      else if(angrip.skjold){skjold.hp-=T.skade;gnist(mo.x*0.9,1.5,mo.z*0.9,0x56b8ff,5);if(skjold.hp<=0){skjold.hp=0;melding("🛡️ Kraftskjoldet sprakk! Det blir helt igjen etter bølgen.")}oppdaterHud()}
+      else if(angrip.base){basen.hp-=T.skade;gnist(mo.x*0.7,1.5,mo.z*0.7,0xff5050,6);oppdaterHud();if(basen.hp<=0){basen.hp=0;baseFalt();return}}
+      if(angrip.helt||angrip.b){mo.g.rotation.y=Math.atan2(mx,mz)}
+    }
+    mo.mat.emissive.setHex(mo.blink>0?0x884444:0x000000);mo.blink-=dt;
+    mo.g.position.set(mo.x,0,mo.z);mo.bar.quaternion.copy(camera.quaternion).premultiply(mo.g.quaternion.clone().invert());
+  }
+  // Monstrene dytter litt på hverandre så de ikke står oppå hverandre
+  for(let i=0;i<monstre.length;i++)for(let j=i+1;j<monstre.length;j++){const a=monstre[i],b=monstre[j],dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz),m=(a.T.r+b.T.r)*0.8;if(d>0.001&&d<m){const p=(m-d)/2/d;a.x-=dx*p;a.z-=dz*p;b.x+=dx*p;b.z+=dz*p}}
+
+  // Bygningene
+  for(const b of bygg){
+    const D=BY[b.t],n=D.niv[b.niv-1];
+    if(b.t==="laser"||b.t==="vakt"){b.cd-=dt;const mo=velgMål(b.hx,b.hz,n.rek);
+      if(mo){if(b.g.userData.hode)b.g.userData.hode.rotation.y=Math.atan2(mo.x-b.hx,mo.z-b.hz);
+        if(b.cd<=0){b.cd=n.tid;const y=b.g.userData.topp||2;
+          if(b.t==="laser"){laserStråle(b.hx,y,b.hz,mo,0xff3030);skadMonster(mo,n.skade);if(n.dobbel){const mo2=monstre.find(m=>m!==mo&&avst(b.hx,b.hz,m.x,m.z)<n.rek);if(mo2){laserStråle(b.hx,y,b.hz,mo2,0xff3030);skadMonster(mo2,n.skade)}}}
+          else skyt("vakt",b.hx,y,b.hz,mo,n.skade,22)}}}
+    else if(b.t==="felle"){b.cd-=dt;if(b.cd<=0){b.cd=0.5;for(const mo of monstre.slice())if(avst(mo.x,mo.z,b.hx,b.hz)<n.rek+mo.T.r*0.5){skadMonster(mo,n.skade);if(Math.random()<0.3)gnist(mo.x,0.3,mo.z,0x9fe8ff,2)}}
+      if(b.g.userData.plate&&!RM)b.g.userData.plate.material.emissiveIntensity=0.4+Math.sin(tid*8)*0.2}
+    else if(b.t==="hjelper"&&!b.nede){b.cd-=dt;const mo=nærmeste(b.hx,b.hz,n.rek);let tx=b.hx,tz=b.hz;
+      if(mo&&avst(b.x,b.z,mo.x,mo.z)<n.rek+2){tx=mo.x;tz=mo.z}
+      const dx=tx-b.x,dz=tz-b.z,d=Math.hypot(dx,dz);
+      if(mo&&d<mo.T.r+1.1){if(b.cd<=0){b.cd=n.tid;skadMonster(mo,n.skade);gnist(mo.x,1,mo.z,0x7dff6a,3)}b.g.rotation.y=Math.atan2(dx,dz)}
+      else if(d>0.3){const s=Math.min(d,6*dt);b.x+=dx/d*s;b.z+=dz/d*s;b.g.rotation.y=Math.atan2(dx,dz);b.g.position.y=Math.abs(Math.sin(tid*12))*0.15}
+      else b.g.position.y=0;
+      b.g.position.x=b.x;b.g.position.z=b.z;}
+    if(b.bar)b.bar.quaternion.copy(camera.quaternion).premultiply(b.g.quaternion.clone().invert());
+    if(!RM)b.g.traverse(o=>{if(o.userData.snurr)o.rotation.y+=dt*2});
+  }
+  // Basen sin kanon (nivå 2 og 3)
+  if(basen.niv>=2){const n=BASE_NIV[basen.niv];basen.cd-=dt;const mo=velgMål(0,0,n.rek);if(mo){if(baseKanon)baseKanon.rotation.y=Math.atan2(mo.x,mo.z);if(basen.cd<=0){basen.cd=n.tid;skyt("base",0,baseKanon?baseKanon.position.y:4,0,mo,n.skade,24)}}}
+  // Skjoldet
+  skjold.mesh.visible=skjoldAktiv();if(skjold.mesh.visible)skjold.mesh.material.opacity=0.12+0.14*(skjold.hp/SKJOLD_NIV[skjold.niv].maks)+(RM?0:Math.sin(tid*3)*0.03);
+
+  // Kuler
+  for(let i=kuler.length-1;i>=0;i--){const k=kuler[i];k.t-=dt;const mo=k.mål;
+    if(k.t<=0||!monstre.includes(mo)){scene.remove(k.m);kuler.splice(i,1);continue}
+    const ty=1.2*mo.T.str,dx=mo.x-k.m.position.x,dy=ty-k.m.position.y,dz=mo.z-k.m.position.z,d=Math.hypot(dx,dy,dz);
+    if(d<0.5+mo.T.r*0.6){skadMonster(mo,k.skade);gnist(k.m.position.x,k.m.position.y,k.m.position.z,k.fra==="helt"?0xffcc00:0x9fe8ff,3);scene.remove(k.m);kuler.splice(i,1);continue}
+    const s=Math.min(d,k.fart*dt);k.m.position.x+=dx/d*s;k.m.position.y+=dy/d*s;k.m.position.z+=dz/d*s}
+  for(let i=straaler.length-1;i>=0;i--){const s=straaler[i];s.t-=dt;s.m.material.opacity=Math.max(0,s.t/0.12);if(s.t<=0){scene.remove(s.m);s.m.geometry.dispose();straaler.splice(i,1)}}
+
+  // Mynter: magnet rundt roboten
+  for(let i=myntListe.length-1;i>=0;i--){const c=myntListe[i];c.t+=dt;c.m.rotation.z+=dt*4;c.m.position.y=0.6+(RM?0:Math.sin(c.t*4)*0.15);
+    const d=avst(c.m.position.x,c.m.position.z,helt.x,helt.z);
+    if(c.t>5&&helt.nede<=0)c.flyr=true;
+    if(c.flyr||(helt.nede<=0&&d<4)){const s=Math.min(d,(c.flyr?30:16)*dt)||0.01;c.m.position.x+=(helt.x-c.m.position.x)/(d||1)*s;c.m.position.z+=(helt.z-c.m.position.z)/(d||1)*s;
+      if(d<0.8){mynter+=c.v;scene.remove(c.m);myntListe.splice(i,1);oppdaterHud()}}}
+  // Gnister
+  for(let i=gnister.length-1;i>=0;i--){const g=gnister[i];g.t-=dt;g.vy-=18*dt;g.m.position.x+=g.vx*dt;g.m.position.y=Math.max(0.1,g.m.position.y+g.vy*dt);g.m.position.z+=g.vz*dt;g.m.material.opacity=Math.max(0,g.t/0.6);if(g.t<=0){scene.remove(g.m);g.m.material.dispose();gnister.splice(i,1)}}
+
+  if(fase==="kamp"&&!koe.length&&!monstre.length)bolgeFerdig();
+}
+function lokke(naa){
+  requestAnimationFrame(lokke);
+  let dt=(naa-last)/1000;last=naa;if(!(dt>0))dt=0;dt=Math.min(dt,0.05);
+  if(started&&!paused&&fase!=="slutt")oppdater(dt);
+  else{if(rMixer)rMixer.update(dt);helt.g.position.set(helt.x,0,helt.z)}
+  renderer.render(scene,camera);
+}
+
+// ================= Start =================
+const lagret=lesLagring();
+brukLagring(lagret);
+if(lagret&&(lagret.bolge>1||(lagret.bygg&&lagret.bygg.length))&&!lagret.seier)$("startBtn").textContent="▶ Fortsett (bølge "+bolge+")";
+$("startBtn").addEventListener("click",()=>{
+  $("start").classList.remove("vis");$("hud").hidden=false;$("hoyre").hidden=false;$("bunn").hidden=false;$("joy").classList.add("klar");
+  started=true;paused=false;last=performance.now();oppdaterHud();try{$("startBtn").blur()}catch(e){}
+  try{document.dispatchEvent(new Event("evn-start"))}catch(e){}
+  if(seier){bolge=MAKS_BOLGE;melding("🏆 Du har klart Framtiden! Spill bølge 10 igjen, eller start på nytt fra pausen.",4000)}
+  else melding(bolge===1&&!bygg.length?"🌆 Framtiden! Trykk 🏗️ Bygg og sett ut et lasertårn.":"🌊 Klar for bølge "+bolge+"!",3600);
+});
+requestAnimationFrame(lokke);
+
+// «Start helt på nytt» på startkortet (EVN-NULLSTILL v1)
+EVNNullstill({
+  nokler:[SAVE_KEY,SAVE_KEY+"-kopi"],
+  tema:{panel:"#141a33",ink:"#fff",hi:"#ffc93c",btn:"#ffc93c",btnInk:"#4a2a00",font:"'Nunito', system-ui, sans-serif"},
+  tekst:"Alle byggene, myntene og bølgene du har klart, blir borte.",
+  harLagring:()=>!!lesLagring(),
+  plasser:el=>$("evnTilbake").after(el),
+  vis:()=>$("start").classList.contains("vis")
+});
+// Felles pause med spilletid (⏸ / P / Esc). Spilletid lagres i 'evn-spilletid-era-defenders-2'.
+window.__evnP=EVNPause({
+  mappe:"era-defenders-2",avsluttId:"evnAvslutt",
+  tema:{panel:"rgba(20,26,51,.97)",ink:"#fff",hi:"#ffc93c",btn:"#ffc93c",btnInk:"#4a2a00",font:"'Nunito', system-ui, sans-serif"},
+  knapp:b=>{b.className="rund";b.style.cssText="padding:0;font-size:22px";$("hoyre").insertBefore(b,$("evnAvslutt"))},
+  kanPause:()=>started&&!gameModalOpen(),
+  aktiv:()=>started&&!paused,
+  escPause:()=>!valgt,
+  pause:()=>{paused=true;clearInput();lagre()},
+  fortsett:()=>{paused=false;clearInput();last=performance.now()},
+  lagre:()=>lagre(),
+  styring:()=>html.classList.contains("touch")
+    ?"🕹️ Styrespaken: gå. Roboten skyter selv.<br>🏗️ Bygg: velg noe og trykk på kartet<br>👆 Trykk på noe du har bygget: oppgrader eller selg<br>▶ Neste bølge: når du er klar"
+    :"⬆️ Piltaster eller WASD: gå. Roboten skyter selv.<br>B: bygg · 1–9: velg · Esc: avbryt<br>🖱️ Klikk på noe du har bygget: oppgrader eller selg<br>Mellomrom: neste bølge · P eller Esc: pause"
+});
+window.__spill={get mynter(){return mynter},set mynter(v){mynter=v;oppdaterHud()},get bolge(){return bolge},get fase(){return fase},get started(){return started},get paused(){return paused},
+  basen,skjold,helt,bygg,monstre,startBolge,velg,plasser,avbrytPlassering,kanPlassere,lagre,lesLagring,TYPER,BYGG,
+  hopp:(n)=>{bolge=n;oppdaterHud()},steg:(sek,dt=1/30)=>{for(let t=0;t<sek&&fase!=="slutt";t+=dt)oppdater(dt)},drepAlle:()=>monstre.slice().forEach(m=>skadMonster(m,1e6)),tilstand};
+</script>
+<!-- EVN Studio: Avslutt med spørsmål (vises bare under /spill/ på evnstudio.no) -->
+<style>
+#evnSporsmal{position:fixed;inset:0;z-index:100000;display:none;place-items:center;background:rgba(15,20,40,.7);padding:16px}
+#evnSporsmal .boks{background:linear-gradient(#2d4a6e,#1d2440);border:3px solid #ffc93c;border-radius:20px;padding:22px;max-width:340px;display:grid;gap:14px;text-align:center;color:#fff;font:800 19px 'Nunito',system-ui,sans-serif}
+#evnSporsmal button{min-height:52px;border-radius:14px;font:800 19px 'Nunito',system-ui,sans-serif;cursor:pointer;touch-action:manipulation}
+#evnBli{background:linear-gradient(#ffd75e,#f0a91c);color:#4a2a00;border:3px solid #fff}
+#evnGaa{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5)}
+</style>
+<div id="evnSporsmal" role="dialog" aria-modal="true"><div class="boks">
+  <div>Vil du avslutte og gå tilbake til forsiden? Fremgangen din er lagret ved starten av bølgen.</div>
+  <button type="button" id="evnBli">Nei, spill videre</button><button type="button" id="evnGaa">Ja, avslutt</button>
+</div></div>
+<script>
+try {
+  if (location.pathname.indexOf('/spill/') !== -1) {
+    var av = document.getElementById('evnAvslutt'), sp = document.getElementById('evnSporsmal');
+    av.style.display = 'flex';
+    var tb = document.getElementById('evnTilbake'); if (tb) tb.hidden = false;
+    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new Event('blur')); sp.style.display = 'grid'; document.getElementById('evnBli').focus(); });
+    addEventListener('keydown', function (e) { if (e.key === 'Escape' && sp.style.display === 'grid') { e.preventDefault(); sp.style.display = 'none'; } });
+    ['pointerdown', 'mousedown', 'touchstart'].forEach(function (ev) { sp.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); av.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
+    document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; });
+    document.getElementById('evnGaa').addEventListener('click', function () { location.href = '../../'; });
+  }
+} catch (e) {}
+</script>
+</body>
+</html>
