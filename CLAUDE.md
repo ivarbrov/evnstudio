@@ -39,6 +39,16 @@ Denne filen er et utkast på kvalitetsgrenene (`kvalitet/…`). Regler merket «
 
 Publiser aldri uten at en voksen har godkjent den konkrete versjonen. En QA-rapport er ikke en godkjenning.
 
+## Publisering med «Publiser» (fra 5. november 2026)
+
+Full beskrivelse: `.claude/arbeidsflyt.md`, avsnittet «Fra utvikling til publisering».
+
+- Claude oppretter gren og PR, tester, retter, kjører EVN Game QA, holder grenen oppdatert mot `main` og gir én samlet status når versjonen er klar. Dette krever ingen egen godkjenning.
+- Bare når eieren skriver «Publiser [spill] [versjon]» (eller «Publiser PR #N»), kan Claude slå sammen PR-en eller slå på auto-merge. Godkjenningen gjelder den versjonen, den PR-en og spillets kodecommit som står i statusen.
+- «Ser bra ut», Evens godkjenning, grønne sjekker eller en QA-rapport er ikke publiseringsgodkjenning.
+- Godkjenningen faller bort hvis spillets filer eller felles kode endres etterpå. Claude slår da av auto-merge og ber om ny godkjenning. Å hente `main` inn i grenen med ny test og QA er tillatt når det ikke endrer spillets egne filer.
+- Unntak fra regelen for `main` (PR-er som endrer `test/` eller `.github/`) brukes bare når eieren har godkjent nettopp den endringen.
+
 ## Publiserte spill
 
 Funn fra EVN Game QA skal ikke føre til automatiske endringer i publiserte spill. Rettinger foreslås først og følger samme godkjenning som andre versjoner.

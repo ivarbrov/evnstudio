@@ -1,6 +1,6 @@
 # Arbeidsflyt og automatiske tester
 
-Status: forslag. Testene i trinn 3 er laget og kan kjøres lokalt. Ingenting kjører automatisk ennå. Punkter som endrer autentisering, tillatelser eller GitHub-innstillinger, krever godkjenning fra eieren først.
+Status: testene og begge sjekkene kjører i GitHub Actions og kreves av regelen `main` (fra 3.11.2026). Avsnittet «Fra utvikling til publisering» gjelder fra 5.11.2026. Punkter som endrer autentisering, tillatelser eller GitHub-innstillinger, krever godkjenning fra eieren først.
 
 Målet er en enklere og mer pålitelig utviklingsprosess, ikke mer administrasjon.
 
@@ -11,9 +11,38 @@ Målet er en enklere og mer pålitelig utviklingsprosess, ikke mer administrasjo
 | 1. Automatiske tester | `test/kjor.mjs`, senere GitHub Actions | Objektive krav merket A i standarden | Testtabell og testkvittering. Senere en sjekk på committen og i PR-en | Ja, ved feil i gjeldende krav |
 | 2. EVN Game QA | QA-agenten | Krav merket Q: skjønn, kodelesing og nettlesertest | `qa/rapporter/<dato>-<spill>-<kort-sha>.md` | Ja, ved kritiske feil |
 | 3. Spilltest | Even | Spillopplevelsen (V) og test på faktisk enhet (E) | Avkrysning i PR-en | Ja, Even avgjør spillopplevelsen |
-| 4. Godkjenning | En voksen | At den konkrete versjonen kan publiseres | Sammenslåing av PR-en til `main` | Ja. Sammenslåingen er publiseringen |
+| 4. Godkjenning | En voksen | At den konkrete versjonen kan publiseres | «Publiser [spill] [versjon]» i Claude, ført som kommentar i PR-en | Ja. Sammenslåingen er publiseringen |
 
 Ett lag erstatter aldri et annet. Grønne tester er ikke en QA-vurdering, og en QA-rapport er ikke en godkjenning.
+
+## Fra utvikling til publisering
+
+**Lag 1–2: Claude gjør selv, uten egen godkjenning**
+1. Én gren og én PR per spillversjon. Flere endringer i samme spill samles i samme PR. Urelaterte endringer får egne PR-er.
+2. Kjør `node test/kjor.mjs` og spillets egne tester. Rett feil og commit.
+3. EVN Game QA på fullt nivå for siste kodecommit. Rapporten i egen commit.
+4. Følg opp sjekkene i PR-en. Er grenen bak `main`: hent `main`, kjør test og QA på nytt.
+5. Gi én samlet status når begge sjekkene er grønne:
+
+```
+[Spill] [versjon] er klar til publisering – PR #N, kodecommit abc1234
+Automatiske tester: grønn · QA før publisering: grønn
+EVN Game QA: JA / JA MED FORBEHOLD (rapport) · Even: testet / ikke testet
+Forbehold: … · Endrer test/ eller .github/: nei
+Svar «Publiser [spill] [versjon]» for å publisere.
+```
+
+**Lag 3: Even.** Even spiller versjonen. Eieren sier fra i Claude, og Claude krysser av i PR-en. Mangler Evens test ved en spillendring, står det i statusen.
+
+**Lag 4: «Publiser [spill] [versjon]».** Gjelder bare den versjonen og den PR-en. Claude:
+1. Kontrollerer at versjonen på startkortet og i `ENDRINGSLOGG.md` stemmer, og skriver godkjenningen med kodecommit som kommentar i PR-en.
+2. Slår sammen med merge-commit, låst til godkjent SHA, når sjekkene er grønne. Ellers slås auto-merge på, så GitHub slår sammen når sjekkene blir grønne.
+3. Kontrollerer at `main` har merge-commiten, at utrullingen til `github-pages` for den commiten er «success», og at versjonen på `main` er riktig. Evnstudio.no kontrolleres i nettleseren når det er mulig, ellers rapporteres «ikke kontrollert live».
+4. Rapporterer versjon, merge-commit, utrulling og eventuelle feil.
+
+**Godkjenningen faller bort** hvis spillets filer eller felles kode endres etter godkjenningen. Claude slår da av auto-merge og ber om ny godkjenning. Å hente `main` inn i grenen, med ny test og QA, er tillatt når det ikke endrer spillets egne filer.
+
+**Ingen automatisk publisering.** Uten «Publiser …» slår Claude aldri sammen til `main` og slår aldri på auto-merge.
 
 ## GitHub: push uten manuelt arbeid
 
@@ -142,7 +171,7 @@ Ingen av kjøringene startet publisering. Alle de 32 publiseringene til `github-
 
 **Forslag til regel for `main` (Settings → Rules → Rulesets → New branch ruleset):**
 - Navn `main`, Enforcement «Active», Target «Default branch».
-- Bypass list: «Repository admin», med «For pull requests only». Unntaket brukes bare for PR-er som endrer `test/` eller `.github/`, etter manuell gjennomgang.
+- Bypass list: «Repository admin», med «For pull requests only». Unntaket brukes bare for PR-er som endrer `test/` eller `.github/`, etter manuell gjennomgang. **Merk (5.11.2026):** den aktive regelen har ingen unntak (`bypass_actors` er tom). PR-er som endrer `test/` eller `.github/`, kan derfor ikke slås sammen i dag.
 - Restrict deletions: på. Block force pushes: på.
 - Require a pull request before merging: på, med 0 godkjenninger. Sammenslåingen er eierens godkjenning.
 - Require status checks to pass: på, med «Require branches to be up to date before merging». Obligatoriske kontroller:
