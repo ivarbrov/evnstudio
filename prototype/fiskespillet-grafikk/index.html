@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiskespillet – ny grafikk (testscener)</title>
+<!-- Testscener for Evens valg av grafikk (5.11.2026). Prototype: endrer ikke spillet. -->
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0e2a4a; font-family: Nunito, system-ui, sans-serif; color: #fff; }
+  canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #topp { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 5; }
+  #topp button, #bytt { font: 800 17px Nunito, system-ui, sans-serif; border: 3px solid #ffd34d; background: #1d2440; color: #fff; border-radius: 14px; padding: 8px 14px; min-height: 48px; cursor: pointer; }
+  #topp button[aria-pressed="true"] { background: #ffd34d; color: #1d2440; }
+  #bytt { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 5; background: #ffd34d; color: #1d2440; font-size: 19px; padding: 10px 22px; }
+  #merke { position: fixed; top: 72px; left: 50%; transform: translateX(-50%); z-index: 5; background: rgba(29,36,64,.85); border-radius: 12px; padding: 6px 14px; font-weight: 800; font-size: 18px; text-align: center; }
+  #merke small { display: block; font-weight: 600; font-size: 14px; opacity: .85; }
+  #foer { position: fixed; inset: 0; z-index: 3; background: #0e2a4a center/contain no-repeat; display: none; }
+  #foer.vis { display: block; }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  @media (max-width: 520px) { #topp button { font-size: 15px; padding: 6px 9px; } #merke { top: 66px; font-size: 16px; } }
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="Testscene med ny grafikk"></canvas>
+<div id="foer" role="img" aria-label="Slik ser det ut i spillet nå"></div>
+<nav id="topp" aria-label="Velg testscene">
+  <button type="button" data-scene="fisk" aria-pressed="true">🐟 Fisk</button>
+  <button type="button" data-scene="baat" aria-pressed="false">⛵ Båter</button>
+  <button type="button" data-scene="hav" aria-pressed="false">🌊 Hav og øy</button>
+</nav>
+<div id="merke" aria-live="polite"></div>
+<button type="button" id="bytt">👀 Se hvordan det er nå</button>
+
+<script src="../../vendor/three-r128.min.js"></script>
+<script>
+'use strict';
+// ======================================================
+//  Oppsett
+// ======================================================
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const mobil = matchMedia('(pointer: coarse)').matches;
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobil ? 1.5 : 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const C = h => new THREE.Color(h).convertSRGBToLinear();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight; camera.fov = innerWidth < innerHeight ? 60 : 45; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+function lerret(w, h, tegn) { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; tegn(cv.getContext('2d'), w, h); return cv; }
+function tekstur(cv, gjenta) { const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; if (gjenta) { t.wrapS = t.wrapT = THREE.RepeatWrapping; } return t; }
+function dataTekstur(cv, gjenta) { const t = new THREE.CanvasTexture(cv); t.anisotropy = 4; if (gjenta) { t.wrapS = t.wrapT = THREE.RepeatWrapping; } return t; }
+const rnd = (a, b) => a + Math.random() * (b - a);
+// Enkel verdistøy (for øya og steiner)
+function hash(x, y) { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); }
+function stoy(x, y) { const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+  return (hash(ix, iy) * (1 - u) + hash(ix + 1, iy) * u) * (1 - v) + (hash(ix, iy + 1) * (1 - u) + hash(ix + 1, iy + 1) * u) * v; }
+function fbm(x, y) { return stoy(x, y) * 0.55 + stoy(x * 2.1, y * 2.1) * 0.3 + stoy(x * 4.3, y * 4.3) * 0.15; }
+
+// ======================================================
+//  Felles himmel og lys
+// ======================================================
+function lagHimmel(scene, topp, horisont) {
+  const mat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, uniforms: { topp: { value: C(topp) }, hor: { value: C(horisont) }, sol: { value: new THREE.Vector3(0.45, 0.55, -0.7).normalize() } },
+    vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: `uniform vec3 topp, hor, sol; varying vec3 vD;
+      void main(){ float h = clamp(vD.y, 0.0, 1.0); vec3 c = mix(hor, topp, pow(h, 0.55));
+        float s = max(dot(normalize(vD), sol), 0.0); c += vec3(1.0, 0.85, 0.6) * (pow(s, 600.0) * 4.0 + pow(s, 12.0) * 0.25);
+        if (vD.y < 0.0) c = hor; gl_FragColor = vec4(c, 1.0); }` });
+  const m = new THREE.Mesh(new THREE.SphereGeometry(900, 32, 16), mat); scene.add(m);
+  // Myke skyer
+  const sky = tekstur(lerret(256, 128, (x, w, h) => { for (let i = 0; i < 14; i++) { const cx = rnd(50, 206), cy = rnd(55, 80), r = rnd(22, 42); const g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h); } }));
+  for (let i = 0; i < 10; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: sky, transparent: true, depthWrite: false, fog: false, opacity: 0.9 })); const v = rnd(0, Math.PI * 2), d = rnd(380, 600); s.position.set(Math.cos(v) * d, rnd(90, 180), Math.sin(v) * d); s.scale.set(rnd(160, 260), rnd(70, 100), 1); scene.add(s); }
+  return m;
+}
+function lagLys(scene, skygge, omraade) {
+  scene.add(new THREE.HemisphereLight(C(0xdff3ff), C(0x2f6f8f), 0.75));
+  const sol = new THREE.DirectionalLight(C(0xfff0d8), 2.1); sol.position.set(40, 55, -50);
+  if (skygge) { sol.castShadow = true; sol.shadow.mapSize.set(mobil ? 1024 : 2048, mobil ? 1024 : 2048); const s = sol.shadow.camera; s.left = s.bottom = -omraade; s.right = s.top = omraade; s.near = 1; s.far = 220; sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.03; }
+  scene.add(sol); scene.add(sol.target); return sol;
+}
+
+// ======================================================
+//  Vannet (brukes i alle scenene): bølger, glans fra sola, skum
+// ======================================================
+function lagVann(storrelse, deler, oyR) {
+  const u = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
+    tid: { value: 0 }, grunn: { value: C(0x46e0d2) }, kyst: { value: C(0x1fb2d0) }, dyp: { value: C(0x0d4f9e) }, himmel: { value: C(0xbfe6ff) },
+    sol: { value: new THREE.Vector3(40, 55, -50).normalize() }, oyR: { value: oyR || 0 }, kamera: { value: new THREE.Vector3() } }]);
+  const mat = new THREE.ShaderMaterial({ uniforms: u, fog: true, transparent: false,
+    vertexShader: `
+      uniform float tid; varying vec3 vW; varying vec3 vN; varying float vH;
+      #include <fog_pars_vertex>
+      // Fire bølger med ulik retning, lengde og fart. Normalen regnes ut av de deriverte.
+      void bolge(vec2 d, float k, float a, float f, vec2 p, inout float h, inout vec2 dh) {
+        float ph = dot(d, p) * k + tid * f; h += a * sin(ph); dh += d * a * k * cos(ph); }
+      void main() {
+        vec4 w = modelMatrix * vec4(position, 1.0); float h = 0.0; vec2 dh = vec2(0.0);
+        bolge(normalize(vec2(1.0, 0.3)), 0.11, 0.32, 1.1, w.xz, h, dh);
+        bolge(normalize(vec2(-0.4, 1.0)), 0.17, 0.2, 1.5, w.xz, h, dh);
+        bolge(normalize(vec2(0.7, -0.8)), 0.31, 0.09, 2.2, w.xz, h, dh);
+        bolge(normalize(vec2(-1.0, -0.2)), 0.53, 0.045, 3.1, w.xz, h, dh);
+        w.y += h; vH = h; vW = w.xyz; vN = normalize(vec3(-dh.x, 1.0, -dh.y));
+        vec4 mvPosition = viewMatrix * w; gl_Position = projectionMatrix * mvPosition;
+        #include <fog_vertex>
+      }`,
+    fragmentShader: `
+      uniform float tid, oyR; uniform vec3 grunn, kyst, dyp, himmel, sol, kamera; varying vec3 vW; varying vec3 vN; varying float vH;
+      #include <fog_pars_fragment>
+      float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float st(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+        return mix(mix(h21(i), h21(i+vec2(1,0)), f.x), mix(h21(i+vec2(0,1)), h21(i+vec2(1,1)), f.x), f.y); }
+      void main() {
+        vec3 n = normalize(vN + vec3(st(vW.xz*0.9+tid*0.6)-0.5, 0.0, st(vW.zx*0.8-tid*0.5)-0.5) * 0.18);
+        vec3 v = normalize(kamera - vW);
+        float d = length(vW.xz);
+        vec3 c = oyR > 0.0 ? mix(grunn, kyst, smoothstep(oyR + 1.0, oyR + 26.0, d)) : kyst;
+        c = mix(c, dyp, oyR > 0.0 ? smoothstep(oyR + 30.0, oyR + 160.0, d) : 0.35);
+        float fres = pow(1.0 - max(dot(n, v), 0.0), 4.0);
+        c = mix(c, himmel, fres * 0.65);
+        vec3 r = reflect(-sol, n); float spec = pow(max(dot(r, v), 0.0), 220.0);
+        c += vec3(1.0, 0.95, 0.85) * spec * 2.2;
+        // Skum på bølgetoppene og langs stranda
+        float skum = smoothstep(0.6, 0.78, vH + st(vW.xz * 3.1 + tid) * 0.18) * 0.35;
+        if (oyR > 0.0) { float s2 = smoothstep(oyR + 4.5, oyR + 0.8, d + sin(tid * 1.6 + atan(vW.z, vW.x) * 9.0) * 0.8);
+          skum = max(skum, s2 * (0.55 + 0.45 * st(vW.xz * 2.5 + tid * 1.5))); }
+        c = mix(c, vec3(0.97), skum);
+        gl_FragColor = vec4(c, 1.0);
+        #include <fog_fragment>
+        #include <encodings_fragment>
+      }` });
+  const geo = new THREE.PlaneGeometry(storrelse, storrelse, deler, deler); geo.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(geo, mat); m.receiveShadow = false; m.userData.u = u; return m;
+}
+
+// ======================================================
+//  1) Fisk: myk kropp, skjell, gjennomsiktige finner, ekte øyne
+// ======================================================
+function skjellTekstur() {
+  return dataTekstur(lerret(256, 256, (x, w, h) => {
+    x.fillStyle = '#808080'; x.fillRect(0, 0, w, h);
+    const r = 16;
+    for (let j = -1; j < h / (r * 0.8) + 1; j++) for (let i = -1; i < w / r + 1; i++) {
+      const cx = i * r + (j % 2 ? r / 2 : 0), cy = j * r * 0.8;
+      const g = x.createRadialGradient(cx, cy - r * 0.2, 1, cx, cy, r * 0.7); g.addColorStop(0, '#d0d0d0'); g.addColorStop(0.8, '#8a8a8a'); g.addColorStop(1, '#505050');
+      x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r * 0.62, 0, Math.PI); x.fill();
+    }
+  }), true);
+}
+const SKJELL = skjellTekstur(); SKJELL.repeat.set(5, 2.5);
+function moenster(type, farge, ekstra) {
+  return tekstur(lerret(512, 256, (x, w, h) => {
+    // Mørk rygg, lys mage (u: hale→hode, v: mage→rygg)
+    const g = x.createLinearGradient(0, h, 0, 0); g.addColorStop(0, ekstra.mage); g.addColorStop(0.42, farge); g.addColorStop(1, ekstra.rygg); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    if (type === 'striper') { for (const sx of [0.3, 0.58, 0.82]) { x.fillStyle = '#fff'; x.fillRect(sx * w - 18, 0, 36, h); x.fillStyle = '#1b1b1b'; x.fillRect(sx * w - 22, 0, 4, h); x.fillRect(sx * w + 18, 0, 4, h); } }
+    if (type === 'prikker') { x.fillStyle = 'rgba(255,255,255,.85)'; for (let i = 0; i < 70; i++) { x.beginPath(); x.arc(rnd(0, w), rnd(h * 0.35, h), rnd(4, 11), 0, 7); x.fill(); } }
+    if (type === 'gull') { for (let i = 0; i < 260; i++) { x.fillStyle = `rgba(255,255,${rnd(150, 255) | 0},${rnd(0.3, 0.9)})`; x.fillRect(rnd(0, w), rnd(0, h), 2, 2); } }
+  }));
+}
+function finneTekstur(farge) {
+  return tekstur(lerret(128, 128, (x, w, h) => {
+    const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, farge); g.addColorStop(1, 'rgba(255,255,255,0.35)'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.strokeStyle = 'rgba(0,0,0,.25)'; x.lineWidth = 2; for (let i = 0; i < 12; i++) { x.beginPath(); x.moveTo(w / 2, h); x.lineTo(i / 11 * w, 0); x.stroke(); }
+  }));
+}
+function finne(punkter, mat) {
+  const s = new THREE.Shape(); s.moveTo(punkter[0][0], punkter[0][1]);
+  for (let i = 1; i < punkter.length; i += 2) s.quadraticCurveTo(punkter[i][0], punkter[i][1], punkter[i + 1][0], punkter[i + 1][1]);
+  const geo = new THREE.ShapeGeometry(s, 12);
+  // UV fra boksen
+  geo.computeBoundingBox(); const b = geo.boundingBox, p = geo.attributes.position, uv = geo.attributes.uv;
+  for (let i = 0; i < p.count; i++) uv.setXY(i, (p.getX(i) - b.min.x) / (b.max.x - b.min.x), (p.getY(i) - b.min.y) / (b.max.y - b.min.y));
+  return new THREE.Mesh(geo, mat);
+}
+function lagNyFisk(o) {
+  const g = new THREE.Group(), kropp = new THREE.Group(); g.add(kropp);
+  const L = o.L || 3, H = o.H || 1.3, W = o.W || 0.75;
+  // Kroppen: en kule som smalner av mot halen og er litt flat i buken
+  const geo = new THREE.SphereGeometry(1, 64, 40); geo.rotateZ(-Math.PI / 2);
+  const p = geo.attributes.position, uv = geo.attributes.uv;
+  for (let i = 0; i < p.count; i++) {
+    let x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    const t = (x + 1) / 2;                                   // 0 = hale, 1 = hode
+    const smal = t < 0.55 ? 0.18 + 0.82 * Math.pow(Math.sin(t / 0.55 * Math.PI / 2), 0.8) : 1;
+    y *= smal; z *= smal;
+    if (y < 0) y *= 0.85;                                    // flatere buk
+    y += (t < 0.3 ? 0 : 0.06 * Math.sin((t - 0.3) / 0.7 * Math.PI));  // litt pukkel
+    p.setXYZ(i, x * L / 2, y * H / 2, z * W / 2);
+    uv.setXY(i, t, (y + 1) / 2);
+  }
+  geo.computeVertexNormals();
+  const mat = new THREE.MeshPhysicalMaterial({ map: moenster(o.moenster, o.farge, o), bumpMap: SKJELL, bumpScale: 0.012, roughness: o.metall ? 0.28 : 0.38, metalness: o.metall ? 0.75 : 0.05, clearcoat: 0.8, clearcoatRoughness: 0.18 });
+  const k = new THREE.Mesh(geo, mat); k.castShadow = true; kropp.add(k);
+  const fm = new THREE.MeshStandardMaterial({ map: finneTekstur(o.finne), transparent: true, opacity: 0.88, side: THREE.DoubleSide, roughness: 0.4, depthWrite: false });
+  // Halefinne (gaffelformet)
+  const hale = new THREE.Group(); hale.position.x = -L * 0.46; kropp.add(hale);
+  const hf = finne([[0, 0], [-L * 0.18, H * 0.25], [-L * 0.34, H * 0.55], [-L * 0.24, 0.02], [-L * 0.34, -H * 0.55], [-L * 0.18, -H * 0.25], [0, 0]], fm); hale.add(hf);
+  // Ryggfinne og bukfinne
+  const rf = finne([[L * 0.22, H * 0.42], [L * 0.02, H * 0.95], [-L * 0.22, H * 0.36]], fm); kropp.add(rf);
+  const bf = finne([[L * 0.02, -H * 0.36], [-L * 0.08, -H * 0.72], [-L * 0.2, -H * 0.3]], fm); kropp.add(bf);
+  // Sidefinner som vifter
+  const sider = [];
+  for (const s of [-1, 1]) { const sf = finne([[0, 0], [-L * 0.12, -H * 0.05], [-L * 0.2, -H * 0.3], [-L * 0.06, -H * 0.18], [0, 0]], fm); sf.position.set(L * 0.2, -H * 0.12, s * W * 0.42); sf.rotation.y = s * 0.5; kropp.add(sf); sider.push(sf); }
+  // Øyne med glans
+  const hvit = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.15, clearcoat: 1 }), iris = new THREE.MeshStandardMaterial({ color: C(o.iris || 0x2a5a2a), roughness: 0.3 }), svart = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.1 }), glans = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  for (const s of [-1, 1]) {
+    const oy = new THREE.Group(); oy.position.set(L * 0.33, H * 0.12, s * W * 0.33); oy.rotation.y = s * -0.35; kropp.add(oy);
+    const r = H * 0.16;
+    const a = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 16), hvit); a.scale.z = 0.6; oy.add(a);
+    const b = new THREE.Mesh(new THREE.SphereGeometry(r * 0.62, 20, 14), iris); b.position.z = s * r * 0.42; b.scale.z = 0.5; oy.add(b);
+    const c = new THREE.Mesh(new THREE.SphereGeometry(r * 0.36, 16, 12), svart); c.position.z = s * r * 0.58; c.scale.z = 0.5; oy.add(c);
+    const d = new THREE.Mesh(new THREE.SphereGeometry(r * 0.12, 8, 6), glans); d.position.set(r * 0.18, r * 0.2, s * r * 0.72); oy.add(d);
+  }
+  // Munn
+  const munn = new THREE.Mesh(new THREE.TorusGeometry(H * 0.08, H * 0.025, 8, 16, Math.PI), new THREE.MeshStandardMaterial({ color: C(o.rygg), roughness: 0.5 }));
+  munn.position.set(L * 0.485, -H * 0.06, 0); munn.rotation.set(0, Math.PI / 2, Math.PI); kropp.add(munn);
+  // Glitter for legendarisk fisk
+  if (o.glitter) {
+    const pg = new THREE.BufferGeometry(), n = 40, pos = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { pos[i * 3] = rnd(-L * 0.6, L * 0.6); pos[i * 3 + 1] = rnd(-H, H); pos[i * 3 + 2] = rnd(-W, W); }
+    pg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const st = tekstur(lerret(64, 64, (x) => { const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,220,1)'); gr.addColorStop(0.25, 'rgba(255,230,120,.8)'); gr.addColorStop(1, 'rgba(255,200,0,0)'); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); }));
+    const pts = new THREE.Points(pg, new THREE.PointsMaterial({ size: 0.35, map: st, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); g.add(pts); g.userData.glitter = pts;
+  }
+  g.userData.anim = (t) => { hale.rotation.y = Math.sin(t * 7 + (o.fase || 0)) * 0.45; kropp.rotation.y = Math.sin(t * 7 + (o.fase || 0) + 1.2) * 0.07; sider.forEach((s, i) => s.rotation.x = Math.sin(t * 5 + i) * 0.35);
+    if (g.userData.glitter) g.userData.glitter.material.opacity = 0.6 + 0.4 * Math.sin(t * 6); };
+  return g;
+}
+function lagFiskScene() {
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(C(0x1b8cc0), 0.035);
+  scene.background = C(0x1b8cc0);
+  // Undervannslys: lys ovenfra og «lysstråler»
+  scene.add(new THREE.HemisphereLight(C(0xbff0ff), C(0x0a3a5a), 1.0));
+  const sol = new THREE.DirectionalLight(C(0xffffff), 1.8); sol.position.set(3, 10, 4); sol.castShadow = true; sol.shadow.mapSize.set(1024, 1024); scene.add(sol);
+  const raa = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { tid: { value: 0 } },
+    vertexShader: 'varying vec2 vU; void main(){ vU = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: 'uniform float tid; varying vec2 vU; void main(){ float s = pow(max(0.0, sin(vU.x*22.0 + tid*0.6) * sin(vU.x*9.0 - tid*0.4)), 3.0); gl_FragColor = vec4(vec3(0.6,0.9,1.0), s * 0.22 * vU.y); }' });
+  const straaler = new THREE.Mesh(new THREE.PlaneGeometry(30, 16), raa); straaler.position.set(0, 4, -6); straaler.rotation.z = 0.25; scene.add(straaler);
+  // Sandbunn med tang og steiner
+  const sand = new THREE.Mesh(new THREE.PlaneGeometry(60, 60, 60, 60), new THREE.MeshStandardMaterial({ color: C(0xe8d3a0), roughness: 1 }));
+  sand.rotation.x = -Math.PI / 2; sand.position.y = -2.4; sand.receiveShadow = true;
+  { const p = sand.geometry.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, (fbm(p.getX(i) * 0.25, p.getY(i) * 0.25) - 0.5) * 0.8); sand.geometry.computeVertexNormals(); }
+  scene.add(sand);
+  const tang = new THREE.MeshStandardMaterial({ color: C(0x2f9e4f), roughness: 0.6, side: THREE.DoubleSide });
+  const tangListe = [];
+  for (let i = 0; i < 18; i++) { const geo = new THREE.PlaneGeometry(0.35, rnd(2, 4), 1, 8); geo.translate(0, geo.parameters.height / 2, 0); const m = new THREE.Mesh(geo, tang); m.position.set(rnd(-9, 9), -2.4, rnd(-7, -2)); m.rotation.y = rnd(0, 3); scene.add(m); tangListe.push(m); }
+  const stein = new THREE.MeshStandardMaterial({ color: C(0x8a96a3), roughness: 0.9, flatShading: true });
+  for (let i = 0; i < 7; i++) { const geo = new THREE.IcosahedronGeometry(rnd(0.4, 1.1), 1); const p = geo.attributes.position; for (let j = 0; j < p.count; j++) p.setXYZ(j, p.getX(j) * rnd(0.85, 1.15), p.getY(j) * rnd(0.6, 0.9), p.getZ(j) * rnd(0.85, 1.15)); geo.computeVertexNormals(); const m = new THREE.Mesh(geo, stein); m.position.set(rnd(-8, 8), -2.3, rnd(-6, -1)); m.castShadow = m.receiveShadow = true; scene.add(m); }
+  // Tre fisker: vanlig, sjelden, legendarisk
+  const fisker = [
+    lagNyFisk({ navn: 'Klovnefisk (vanlig)', farge: '#ff7a1a', mage: '#ffc58a', rygg: '#c2410c', moenster: 'striper', finne: 'rgba(255,140,40,.9)', L: 2.4, H: 1.2, W: 0.7, fase: 0 }),
+    lagNyFisk({ navn: 'Blåprikk (sjelden)', farge: '#2f7de1', mage: '#cfe8ff', rygg: '#123a7a', moenster: 'prikker', finne: 'rgba(90,170,255,.85)', L: 3.2, H: 1.25, W: 0.75, fase: 2, iris: 0x7a4a10 }),
+    lagNyFisk({ navn: 'Gullfisk (legendarisk)', farge: '#ffc23a', mage: '#fff2b0', rygg: '#b8740a', moenster: 'gull', finne: 'rgba(255,215,90,.9)', L: 2.8, H: 1.5, W: 0.8, fase: 4, metall: true, glitter: true }),
+  ];
+  fisker.forEach((f, i) => { f.position.set((i - 1) * 3.6, 0.2 + (i % 2) * 0.5, 0); f.rotation.y = -0.35; scene.add(f); });
+  return { scene, mal: new THREE.Vector3(0, 0.2, 0), avstand: 11, hoyde: 1.2, vinkel: 0,
+    tekst: '🐟 Fisk: myk kropp, skjell, glans og gjennomsiktige finner', foer: 'na-fisk.webp',
+    oppdater(t) { raa.uniforms.tid.value = t; fisker.forEach((f, i) => { f.userData.anim(t); f.position.y = 0.2 + (i % 2) * 0.5 + Math.sin(t * 1.3 + i) * 0.15; });
+      tangListe.forEach((m, i) => m.rotation.z = Math.sin(t * 1.2 + i) * 0.12); } };
+}
+
+// ======================================================
+//  2) Båter: buet skrog med planker, ripe, tofter, årer og motor
+// ======================================================
+function treTekstur(farge, mork) {
+  return tekstur(lerret(512, 512, (x, w, h) => {
+    x.fillStyle = farge; x.fillRect(0, 0, w, h);
+    const n = 8;
+    for (let j = 0; j < n; j++) {
+      x.fillStyle = `rgba(0,0,0,${rnd(0, 0.12)})`; x.fillRect(0, j * h / n, w, h / n);
+      for (let k = 0; k < 40; k++) { x.strokeStyle = `rgba(60,30,10,${rnd(0.05, 0.18)})`; x.lineWidth = rnd(0.5, 2); x.beginPath(); const y = j * h / n + rnd(2, h / n - 2); x.moveTo(0, y); x.bezierCurveTo(w * 0.3, y + rnd(-4, 4), w * 0.6, y + rnd(-4, 4), w, y + rnd(-3, 3)); x.stroke(); }
+      x.fillStyle = mork; x.fillRect(0, j * h / n, w, 3);
+    }
+  }), true);
+}
+function malTekstur(farge, stripe) {
+  return tekstur(lerret(256, 256, (x, w, h) => {
+    x.fillStyle = '#c94a3a'; x.fillRect(0, 0, w, h * 0.32);          // bunnstoff
+    x.fillStyle = farge; x.fillRect(0, h * 0.32, w, h);
+    x.fillStyle = stripe; x.fillRect(0, h * 0.8, w, h * 0.06);
+    for (let i = 0; i < 300; i++) { x.fillStyle = `rgba(255,255,255,${rnd(0, 0.04)})`; x.fillRect(rnd(0, w), rnd(0, h), 3, 1); }
+  }));
+}
+// Skroget: u går fra akterspeilet (0) til baugen (1), theta rundt fra babord via kjølen til styrbord
+function skrog(o) {
+  const nu = 48, nv = 24, pos = [], uv = [], idx = [];
+  const w = u => o.B / 2 * (u < o.bred ? 0.82 + 0.18 * Math.sin(u / o.bred * Math.PI / 2) : Math.pow(Math.cos((u - o.bred) / (1 - o.bred) * Math.PI / 2), 0.75));
+  const ripe = u => o.ripe + o.spring * Math.pow(u, 3);
+  const dyp = u => o.D * (0.75 + 0.25 * Math.sin(Math.min(1, u * 1.3) * Math.PI / 2)) * (u > 0.85 ? 1 - (u - 0.85) * 2.2 : 1);
+  const pkt = (u, th) => { const x = w(u) * Math.sin(th), topp = ripe(u), d = dyp(u);
+    const k = o.v ? Math.pow(Math.abs(Math.sin(th)), 0.6) : Math.abs(Math.sin(th));
+    const y = o.v ? topp - (topp + d) * (1 - k) : topp - (topp + d) * Math.cos(th);
+    return [x, y, (u - 0.5) * o.L]; };
+  for (let i = 0; i <= nu; i++) for (let j = 0; j <= nv; j++) { const u = i / nu, th = -Math.PI / 2 + j / nv * Math.PI; pos.push(...pkt(u, th)); uv.push(u * 3, Math.abs(j / nv - 0.5) * 2); }
+  for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) { const a = i * (nv + 1) + j, b = a + nv + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
+  const g = new THREE.Group();
+  const ut = new THREE.Mesh(geo, o.mat); ut.castShadow = true; g.add(ut);
+  const inn = new THREE.Mesh(geo, o.innMat); inn.material.side = THREE.BackSide; g.add(inn);
+  // Akterspeil
+  const s = new THREE.Shape(); for (let j = 0; j <= nv; j++) { const p = pkt(0, -Math.PI / 2 + j / nv * Math.PI); j ? s.lineTo(p[0], p[1]) : s.moveTo(p[0], p[1]); }
+  const sp = new THREE.Mesh(new THREE.ShapeGeometry(s), o.mat); sp.position.z = -o.L / 2; sp.rotation.y = Math.PI; sp.scale.x = -1; g.add(sp);
+  const sp2 = sp.clone(); sp2.material = o.innMat; sp2.rotation.y = 0; sp2.scale.x = 1; sp2.position.z = -o.L / 2 + 0.01; g.add(sp2);
+  // Ripa (rekkverket langs kanten)
+  for (const side of [-1, 1]) {
+    const pk = []; for (let i = 0; i <= 30; i++) { const u = i / 30, p = pkt(u, side * Math.PI / 2); pk.push(new THREE.Vector3(p[0], p[1] + 0.04, p[2])); }
+    const t = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pk), 60, 0.09, 8), o.ripeMat); t.castShadow = true; g.add(t);
+  }
+  g.userData = { w, ripe, dyp, pkt };
+  return g;
+}
+function lagRobaat() {
+  const tre = treTekstur('#b5773d', 'rgba(70,35,10,.6)'); tre.repeat.set(1, 1);
+  const g = skrog({ L: 7.5, B: 2.9, D: 1.0, ripe: 0.55, spring: 0.55, bred: 0.55, mat: new THREE.MeshStandardMaterial({ map: tre, roughness: 0.75 }), innMat: new THREE.MeshStandardMaterial({ map: treTekstur('#c98f52', 'rgba(90,45,15,.5)'), roughness: 0.8 }), ripeMat: new THREE.MeshStandardMaterial({ color: C(0x6b3f1d), roughness: 0.6 }) });
+  const sete = new THREE.MeshStandardMaterial({ map: treTekstur('#d6a066', 'rgba(90,45,15,.5)'), roughness: 0.7 });
+  for (const u of [0.18, 0.5, 0.78]) { const b = g.userData.w(u) * 1.92; const m = new THREE.Mesh(new THREE.BoxGeometry(b, 0.12, 0.55), sete); m.position.set(0, g.userData.ripe(u) - 0.25, (u - 0.5) * 7.5); m.castShadow = m.receiveShadow = true; g.add(m); }
+  // Årer i tollegangene
+  const aare = new THREE.MeshStandardMaterial({ color: C(0xd9b07a), roughness: 0.6 });
+  for (const s of [-1, 1]) {
+    const a = new THREE.Group(); a.position.set(s * 1.38, 0.62, 0.2); a.rotation.set(0, 0, s * 1.25); a.rotation.y = s * 0.25; g.add(a);
+    const skaft = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 4.2, 8), aare); skaft.position.y = -0.6; a.add(skaft);
+    const blad = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.1, 0.06), aare); blad.position.y = -2.6; a.add(blad);
+    skaft.castShadow = blad.castShadow = true;
+  }
+  // Tauring i baugen
+  const tau = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.07, 8, 24), new THREE.MeshStandardMaterial({ color: C(0xe8d7a8), roughness: 0.9 })); tau.rotation.x = Math.PI / 2; tau.position.set(0, 0.25, 2.6); g.add(tau);
+  return g;
+}
+function lagMotorbaat() {
+  const g = skrog({ L: 9, B: 3.4, D: 1.15, ripe: 0.75, spring: 0.5, bred: 0.5, v: true, mat: new THREE.MeshPhysicalMaterial({ map: malTekstur('#f6f7f9', '#e5483f'), roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12 }), innMat: new THREE.MeshStandardMaterial({ color: C(0xe9edf2), roughness: 0.6 }), ripeMat: new THREE.MeshStandardMaterial({ color: C(0xc7ced6), roughness: 0.25, metalness: 0.8 }) });
+  // Dekk av teak
+  const teak = treTekstur('#b07a45', 'rgba(40,20,5,.8)'); teak.repeat.set(1, 2);
+  const dekk = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 6.2), new THREE.MeshStandardMaterial({ map: teak, roughness: 0.7 })); dekk.rotation.x = -Math.PI / 2; dekk.position.set(0, 0.05, -0.8); dekk.receiveShadow = true; g.add(dekk);
+  // Styrehus med avrundede kanter og vinduer
+  const form = new THREE.Shape(), b = 2.2, h = 1.3, r = 0.35;
+  form.moveTo(-b / 2 + r, 0); form.lineTo(b / 2 - r, 0); form.quadraticCurveTo(b / 2, 0, b / 2, r); form.lineTo(b / 2, h - r); form.quadraticCurveTo(b / 2, h, b / 2 - r, h); form.lineTo(-b / 2 + r, h); form.quadraticCurveTo(-b / 2, h, -b / 2, h - r); form.lineTo(-b / 2, r); form.quadraticCurveTo(-b / 2, 0, -b / 2 + r, 0);
+  const hus = new THREE.Mesh(new THREE.ExtrudeGeometry(form, { depth: 2.2, bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.1, bevelSegments: 3 }), new THREE.MeshPhysicalMaterial({ color: C(0xffffff), roughness: 0.3, clearcoat: 1 }));
+  hus.position.set(0, 0.1, 0.2); hus.castShadow = true; g.add(hus);
+  const glass = new THREE.MeshPhysicalMaterial({ color: C(0x2b4a66), roughness: 0.05, metalness: 0.2, clearcoat: 1, envMapIntensity: 1 });
+  const front = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.6), glass); front.position.set(0, 0.95, 2.53); g.add(front);
+  for (const s of [-1, 1]) { const sv = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.55), glass); sv.position.set(s * 1.21, 0.95, 1.3); sv.rotation.y = s * Math.PI / 2; g.add(sv); }
+  // Rekkverk i rustfritt stål
+  const staal = new THREE.MeshStandardMaterial({ color: C(0xdfe5ea), roughness: 0.2, metalness: 0.9 });
+  for (const s of [-1, 1]) {
+    const pk = []; for (let i = 0; i <= 12; i++) { const u = 0.62 + i / 12 * 0.3, p = g.userData.pkt(u, s * Math.PI / 2); pk.push(new THREE.Vector3(p[0] * 0.92, p[1] + 0.55, p[2])); }
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pk), 30, 0.035, 6), staal));
+    for (let i = 0; i <= 3; i++) { const q = pk[i * 4]; const st = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.55, 6), staal); st.position.set(q.x, q.y - 0.27, q.z); g.add(st); }
+  }
+  // Påhengsmotor
+  const motor = new THREE.Group(); motor.position.set(0, 0.55, -4.75); g.add(motor);
+  const svartM = new THREE.MeshPhysicalMaterial({ color: C(0x1d2440), roughness: 0.35, clearcoat: 0.8 });
+  const topp = new THREE.Mesh(new THREE.SphereGeometry(0.55, 24, 16), svartM); topp.scale.set(1, 0.85, 1.25); topp.castShadow = true; motor.add(topp);
+  const skaft = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.6, 0.4), new THREE.MeshStandardMaterial({ color: C(0x3a4357), roughness: 0.5 })); skaft.position.y = -1.0; motor.add(skaft);
+  const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.18), new THREE.MeshBasicMaterial({ color: 0xffd34d })); logo.position.set(0.56, 0.05, 0); logo.rotation.y = Math.PI / 2; motor.add(logo);
+  // Flagg
+  const stang = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.6, 6), staal); stang.position.set(0, 1.4, -4.2); g.add(stang);
+  const flagg = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.55, 8, 1), new THREE.MeshStandardMaterial({ color: C(0xffcc00), side: THREE.DoubleSide, roughness: 0.8 })); flagg.position.set(0, 1.9, -4.65); flagg.rotation.y = Math.PI / 2; g.add(flagg); g.userData.flagg = flagg;
+  return g;
+}
+function lagBaatScene() {
+  const scene = new THREE.Scene(); scene.fog = new THREE.Fog(C(0xcfeeff), 60, 380);
+  lagHimmel(scene, 0x3f9be8, 0xcfeeff); const sol = lagLys(scene, true, 14);
+  const vann = lagVann(400, mobil ? 140 : 220, 0); scene.add(vann);
+  const rob = lagRobaat(), mot = lagMotorbaat();
+  rob.position.set(-3.6, 0, 0); rob.rotation.y = 0.55; mot.position.set(4.2, 0, -1.5); mot.rotation.y = -0.45;
+  scene.add(rob, mot);
+  return { scene, mal: new THREE.Vector3(0, 0.6, 0), avstand: 15, hoyde: 4.5, vinkel: 0.35, vann,
+    tekst: '⛵ Båter: buet skrog med planker, ripe, årer, motor og styrehus', foer: 'na-baat.webp',
+    oppdater(t) { vann.material.uniforms.tid.value = t; vann.material.uniforms.kamera.value.copy(camera.position);
+      for (const [b, f] of [[rob, 0], [mot, 1.7]]) { b.position.y = 0.1 + Math.sin(t * 1.1 + f) * 0.12; b.rotation.z = Math.sin(t * 0.9 + f) * 0.04; b.rotation.x = Math.sin(t * 0.7 + f) * 0.03; }
+      const fl = mot.userData.flagg.geometry.attributes.position; for (let i = 0; i < fl.count; i++) { const x = fl.getX(i); fl.setZ(i, Math.sin(t * 6 + x * 5) * 0.08 * (x + 0.45)); } fl.needsUpdate = true; } };
+}
+
+// ======================================================
+//  3) Hav og øy: bølger med glans og skum, strand, gress, palmer, brygge
+// ======================================================
+function bladTekstur() {
+  return tekstur(lerret(128, 512, (x, w, h) => {
+    x.clearRect(0, 0, w, h);
+    for (let i = 0; i < 34; i++) { const y = 20 + i / 34 * (h - 40), l = (w / 2 - 6) * Math.sin(Math.PI * (0.15 + 0.85 * (1 - i / 34)));
+      x.fillStyle = i % 2 ? '#3aa64a' : '#2f9442'; x.beginPath(); x.moveTo(w / 2, y); x.quadraticCurveTo(w / 2 - l * 0.6, y - 6, w / 2 - l, y + 14); x.lineTo(w / 2, y + 10); x.fill();
+      x.beginPath(); x.moveTo(w / 2, y); x.quadraticCurveTo(w / 2 + l * 0.6, y - 6, w / 2 + l, y + 14); x.lineTo(w / 2, y + 10); x.fill(); }
+    x.strokeStyle = '#6c8a2a'; x.lineWidth = 5; x.beginPath(); x.moveTo(w / 2, 0); x.lineTo(w / 2, h); x.stroke();
+  }));
+}
+const BLAD = bladTekstur();
+function lagPalme(h, boy) {
+  const g = new THREE.Group();
+  const pk = []; for (let i = 0; i <= 10; i++) { const t = i / 10; pk.push(new THREE.Vector3(Math.sin(t * 1.4) * boy * h * 0.25, t * h, 0)); }
+  const kurve = new THREE.CatmullRomCurve3(pk);
+  // Stammen med ringer (vertex-farger)
+  const geo = new THREE.TubeGeometry(kurve, 40, 0.32, 10); const p = geo.attributes.position, farger = [];
+  for (let i = 0; i < p.count; i++) { const ring = Math.floor(i / 11); const m = ring % 3 === 0 ? 0.72 : 1; farger.push(0.55 * m, 0.38 * m, 0.22 * m); }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(farger, 3));
+  // Smalere mot toppen
+  for (let i = 0; i < p.count; i++) { const ring = Math.floor(i / 11) / 40, c = kurve.getPoint(ring), k = 1 - ring * 0.4; p.setXYZ(i, c.x + (p.getX(i) - c.x) * k, p.getY(i), c.z + (p.getZ(i) - c.z) * k); }
+  geo.computeVertexNormals();
+  const stamme = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 })); stamme.castShadow = true; g.add(stamme);
+  const topp = kurve.getPoint(1);
+  const bladMat = new THREE.MeshStandardMaterial({ map: BLAD, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 0.7 });
+  for (let i = 0; i < 9; i++) {
+    const bg = new THREE.PlaneGeometry(1.4, 5, 1, 10); bg.translate(0, 2.5, 0);
+    const bp = bg.attributes.position; for (let j = 0; j < bp.count; j++) { const y = bp.getY(j); bp.setZ(j, -Math.pow(y / 5, 2) * 2.2); }
+    bg.computeVertexNormals();
+    const b = new THREE.Mesh(bg, bladMat); b.castShadow = true; b.position.copy(topp);
+    b.rotation.order = 'YXZ'; b.rotation.y = i / 9 * Math.PI * 2 + rnd(-0.2, 0.2); b.rotation.x = -rnd(0.9, 1.25); g.add(b);
+  }
+  const kokos = new THREE.MeshStandardMaterial({ color: C(0x6b4a2a), roughness: 0.7 });
+  for (let i = 0; i < 3; i++) { const k = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), kokos); k.position.copy(topp).add(new THREE.Vector3(Math.cos(i * 2.1) * 0.35, -0.3, Math.sin(i * 2.1) * 0.35)); g.add(k); }
+  return g;
+}
+function lagOyScene() {
+  const scene = new THREE.Scene(); scene.fog = new THREE.Fog(C(0xcfeeff), 120, 620);
+  lagHimmel(scene, 0x3f9be8, 0xcfeeff); const sol = lagLys(scene, true, 46);
+  const R = 38;
+  const vann = lagVann(1200, mobil ? 170 : 260, R); scene.add(vann);
+  // Øya: høydekart med strand, våt sand og gress
+  const geo = new THREE.CircleGeometry(R + 10, 96, 0, Math.PI * 2); geo.rotateX(-Math.PI / 2);
+  // Del opp mer: bruk en flate med mange ruter i stedet
+  const tg = new THREE.PlaneGeometry(2 * (R + 10), 2 * (R + 10), 140, 140); tg.rotateX(-Math.PI / 2);
+  const p = tg.attributes.position, farger = [];
+  const sand = new THREE.Color(0xf2dca5).convertSRGBToLinear(), vaat = new THREE.Color(0xc9ad74).convertSRGBToLinear(), gress = new THREE.Color(0x6cc24a).convertSRGBToLinear(), gress2 = new THREE.Color(0x4ea83b).convertSRGBToLinear();
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), z = p.getZ(i), d = Math.hypot(x, z) + (fbm(x * 0.06, z * 0.06) - 0.5) * 8;
+    let y = d < R - 8 ? 3.4 + fbm(x * 0.08, z * 0.08) * 1.6 : d < R + 2 ? 3.4 * (1 - THREE.MathUtils.smoothstep(d, R - 8, R + 2)) + 0.6 : 0.6 - (d - R - 2) * 0.35;
+    p.setY(i, y);
+    const c = new THREE.Color(); const gr = THREE.MathUtils.smoothstep(R - 10 - d, -1, 2);
+    c.copy(d > R ? vaat : sand).lerp(gress.clone().lerp(gress2, fbm(x * 0.2, z * 0.2)), gr * (y > 3 ? 1 : 0));
+    farger.push(c.r, c.g, c.b);
+  }
+  tg.setAttribute('color', new THREE.Float32BufferAttribute(farger, 3)); tg.computeVertexNormals();
+  const oy = new THREE.Mesh(tg, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 })); oy.receiveShadow = true; oy.position.y = -0.4; scene.add(oy);
+  // Palmer
+  [[-22, -10, 1.1], [-6, -24, 1], [24, 4, 0.95], [-26, 8, 0.85], [2, -8, 0.8], [14, -26, 0.9], [-14, 20, 0.75]].forEach(([x, z, s], i) => { const pl = lagPalme(8 * s, i % 2 ? 1 : -1); pl.position.set(x, 3.2, z); pl.rotation.y = rnd(0, 6); pl.scale.setScalar(s); scene.add(pl); });
+  // Steiner i strandkanten
+  const stein = new THREE.MeshStandardMaterial({ color: C(0x8e98a2), roughness: 0.9, flatShading: true });
+  for (let i = 0; i < 16; i++) { const v = rnd(0, Math.PI * 2), d = rnd(R - 2, R + 4); const geo2 = new THREE.IcosahedronGeometry(rnd(0.7, 1.8), 1); const q = geo2.attributes.position; for (let j = 0; j < q.count; j++) q.setXYZ(j, q.getX(j) * rnd(0.8, 1.2), q.getY(j) * rnd(0.55, 0.85), q.getZ(j) * rnd(0.8, 1.2)); geo2.computeVertexNormals(); const m = new THREE.Mesh(geo2, stein); m.position.set(Math.cos(v) * d, 0.3, Math.sin(v) * d); m.castShadow = m.receiveShadow = true; scene.add(m); }
+  // Brygga med planker og påler
+  const plank = new THREE.MeshStandardMaterial({ map: treTekstur('#c9955c', 'rgba(60,30,10,.7)'), roughness: 0.8 }), paal = new THREE.MeshStandardMaterial({ color: C(0x6b4a2a), roughness: 0.9 });
+  for (let i = 0; i < 26; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(6, 0.18, 0.9), plank); m.position.set(rnd(-0.06, 0.06), 2.4, R - 3 + i * 1.0); m.rotation.y = rnd(-0.015, 0.015); m.castShadow = m.receiveShadow = true; scene.add(m); }
+  for (let i = 0; i < 6; i++) for (const s of [-1, 1]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 4.4, 10), paal); m.position.set(s * 2.9, 0.4, R + i * 4.6); m.castShadow = true; scene.add(m); }
+  // Fyrtårn med glans
+  const fyr = new THREE.Group(); fyr.position.set(12, 3.6, -16); scene.add(fyr);
+  for (let i = 0; i < 5; i++) { const m = new THREE.Mesh(new THREE.CylinderGeometry(2.45 - i * 0.25, 2.7 - i * 0.25, 3.2, 28), new THREE.MeshPhysicalMaterial({ color: C(i % 2 ? 0xffffff : 0xe5483f), roughness: 0.4, clearcoat: 0.6 })); m.position.y = 1.6 + i * 3.2; m.castShadow = true; fyr.add(m); }
+  const lys = new THREE.Mesh(new THREE.SphereGeometry(1.2, 20, 14), new THREE.MeshBasicMaterial({ color: C(0xfff3a8) })); lys.position.y = 17.3; fyr.add(lys);
+  const tak = new THREE.Mesh(new THREE.ConeGeometry(2.4, 2, 28), new THREE.MeshPhysicalMaterial({ color: C(0xe5483f), roughness: 0.35, clearcoat: 0.8 })); tak.position.y = 19.3; tak.castShadow = true; fyr.add(tak);
+  return { scene, mal: new THREE.Vector3(0, 3, 4), avstand: 95, hoyde: 34, vinkel: 0.3, vann,
+    tekst: '🌊 Hav og øy: glans fra sola, skum, myk strand, nye palmer og brygge', foer: 'na-oy.webp',
+    oppdater(t) { vann.material.uniforms.tid.value = t; vann.material.uniforms.kamera.value.copy(camera.position); lys.material.color.setHSL(0.14, 1, 0.75 + 0.15 * Math.sin(t * 3)); } };
+}
+
+// ======================================================
+//  Visning: velg scene, dra for å se rundt, bytt mellom før og etter
+// ======================================================
+const scener = { fisk: lagFiskScene(), baat: lagBaatScene(), hav: lagOyScene() };
+let aktiv = 'fisk', visFoer = false;
+const merke = document.getElementById('merke'), foer = document.getElementById('foer'), bytt = document.getElementById('bytt');
+function velg(navn) {
+  aktiv = navn; const s = scener[navn]; s.vinkelNaa = s.vinkel; s.hoydeNaa = s.hoyde;
+  document.querySelectorAll('#topp button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.scene === navn)));
+  foer.style.backgroundImage = `url(${s.foer})`; settFoer(false);
+}
+function settFoer(v) {
+  visFoer = v; foer.classList.toggle('vis', v);
+  const s = scener[aktiv];
+  merke.innerHTML = v ? 'NÅ: slik er det i spillet i dag<small>Trykk «Se ny grafikk» for å sammenligne</small>' : `NY: ${s.tekst}<small>Dra for å se rundt</small>`;
+  bytt.textContent = v ? '✨ Se ny grafikk' : '👀 Se hvordan det er nå';
+}
+document.querySelectorAll('#topp button').forEach(b => b.addEventListener('click', () => velg(b.dataset.scene)));
+bytt.addEventListener('click', () => settFoer(!visFoer));
+// Dra for å rotere
+let drar = null;
+canvas.addEventListener('pointerdown', e => { drar = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove', e => { if (!drar) return; const s = scener[aktiv]; s.vinkelNaa -= (e.clientX - drar.x) * 0.006; s.hoydeNaa = Math.max(s.hoyde * 0.2, Math.min(s.hoyde * 2.2, s.hoydeNaa + (e.clientY - drar.y) * 0.03 * s.avstand / 10)); drar = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', () => drar = null); canvas.addEventListener('pointercancel', () => drar = null);
+velg('fisk');
+const klokke = new THREE.Clock();
+function loop() {
+  requestAnimationFrame(loop);
+  if (visFoer) return;
+  const t = klokke.getElapsedTime(), s = scener[aktiv];
+  if (!drar) s.vinkelNaa += 0.0015;
+  camera.position.set(s.mal.x + Math.sin(s.vinkelNaa) * s.avstand, s.mal.y + s.hoydeNaa, s.mal.z + Math.cos(s.vinkelNaa) * s.avstand);
+  camera.lookAt(s.mal);
+  s.oppdater(t);
+  renderer.render(s.scene, camera);
+}
+loop();
+window.__test = { velg, scener, renderer };
+</script>
+</body>
+</html>
