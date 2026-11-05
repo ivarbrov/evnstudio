@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.5.2 – EVN Studio</title>
+<title>Fiskespillet 0.5.3 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -35,7 +35,7 @@
   #melding { position:fixed; top:calc(68px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); background:rgba(13,36,64,.9); border:2px solid var(--gull); border-radius:16px; padding:10px 18px; font-weight:800; font-size:18px; max-width:min(92vw,560px); text-align:center; z-index:6; opacity:0; transition:opacity .25s; pointer-events:none; }
   #melding.vis { opacity:1; }
   #melding small { display:block; font-size:15px; opacity:.9; }
-  #melding.stor { border-width:3px; font-size:21px; padding:12px 22px; background:linear-gradient(rgba(70,30,120,.95),rgba(13,36,64,.95)); box-shadow:0 0 0 3px rgba(255,201,60,.35), 0 8px 30px rgba(0,0,0,.35); }
+  #melding.viktig { color:#fff; border-width:3px; font-size:21px; padding:12px 22px; background:linear-gradient(rgba(70,30,120,.95),rgba(13,36,64,.95)); box-shadow:0 0 0 3px rgba(255,201,60,.35), 0 8px 30px rgba(0,0,0,.35); }
   #melding .ny { font-size:13px; }
 
   /* Kampen mot Kraken */
@@ -195,7 +195,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.5.2</div>
+    <div class="evn-ver" id="versjon">Versjon 0.5.3</div>
   </div>
 </div>
 
@@ -521,7 +521,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.5.2';
+const VERSJON = '0.5.3';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -1287,7 +1287,7 @@ settLyd(lydPa);
 //  Statuslinje og meldinger
 // ======================================================
 let meldingTid = 0;
-function melding(html, sek = 3, stor) { const m = $('melding'); m.innerHTML = html; m.classList.add('vis'); m.classList.toggle('stor', !!stor); meldingTid = sek; }
+function melding(html, sek = 3, stor) { const m = $('melding'); m.innerHTML = html; m.classList.add('vis'); m.classList.toggle('viktig', !!stor); meldingTid = sek; }
 function oppdaterMelding(dt) { if (meldingTid > 0) { meldingTid -= dt; if (meldingTid <= 0) $('melding').classList.remove('vis'); } }
 function bump(id) { const e = $(id); e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); }
 const tall = n => Math.floor(n).toLocaleString('nb-NO');
@@ -1468,13 +1468,78 @@ function oppdaterKampBar() {
   $('kampFyll').style.width = Math.max(0, fiske.kamp).toFixed(1) + '%'; $('kamp').classList.toggle('sint', fiske.sint > 0);
   const t = Math.max(0, Math.ceil(fiske.igjen)); if ($('kampTid').textContent !== '⏱ ' + t) $('kampTid').textContent = '⏱ ' + t;
 }
+// Når Kraken er fanget, kommer den opp i båten og dykker så ned i dypet igjen (Evens ønske 5.11.2026).
+// Fremgangen lagres med en gang. Feiringskortet kommer når Kraken er borte.
+const krakenFigur = new THREE.Group(); krakenFigur.visible = false; scene.add(krakenFigur);
+const krakenArmer = [];
+{
+  const hud = M(0x8a3aa0, { roughness: 0.45 }), lys = M(0xc77ad8, { roughness: 0.5 }), sug = M(0xf6d2ee);
+  del(SPH, hud, 1.7, 2.1, 1.7, 0, 2.6, -0.3, krakenFigur);                       // hodet
+  del(SPH, lys, 1.75, 1.0, 1.75, 0, 1.2, 0, krakenFigur);                         // underdelen
+  for (const s of [-1, 1]) {
+    del(SPH_L, M(0xffffff), 0.5, 0.55, 0.4, s * 0.75, 1.9, 1.35, krakenFigur);
+    del(SPH_L, M(0x1d0a26), 0.26, 0.32, 0.2, s * 0.78, 1.85, 1.68, krakenFigur);
+    del(SPH_L, M(0xffffff), 0.08, 0.08, 0.06, s * 0.7, 1.98, 1.82, krakenFigur);
+  }
+  const krone = del(new THREE.CylinderGeometry(0.75, 0.9, 0.5, 5, 1, true), M(0xffc93c, { metalness: 0.5, roughness: 0.3, side: THREE.DoubleSide }), 1, 1, 1, 0, 4.75, -0.3, krakenFigur);
+  for (let i = 0; i < 5; i++) { const v = i / 5 * Math.PI * 2; del(CONE, M(0xffc93c, { metalness: 0.5, roughness: 0.3 }), 0.18, 0.45, 0.18, Math.sin(v) * 0.8, 5.15, -0.3 + Math.cos(v) * 0.8, krakenFigur); }
+  for (let i = 0; i < 8; i++) {
+    const v = i / 8 * Math.PI * 2, arm = new THREE.Group(); arm.position.set(Math.sin(v) * 1.1, 0.9, Math.cos(v) * 1.1); arm.rotation.y = v; krakenFigur.add(arm);
+    let ledd = arm; const deler = [];
+    for (let k = 0; k < 5; k++) {
+      const s = new THREE.Group(); s.position.z = k ? 0.75 : 0; ledd.add(s);
+      del(SPH, hud, 0.36 - k * 0.055, 0.32 - k * 0.05, 0.5, 0, 0, 0.35, s);
+      del(SPH_L, sug, 0.12 - k * 0.015, 0.06, 0.12 - k * 0.015, 0, -0.26 + k * 0.04, 0.35, s);
+      deler.push(s); ledd = s;
+    }
+    krakenArmer.push({ arm, deler, fase: i * 0.8 });
+  }
+}
+let krakenShow = null;   // { t, forste, fra }
+const plaskRinger = [];
+function plask(x, z, stor) {
+  const m = new THREE.Mesh(new THREE.RingGeometry(0.8, 1.6, 28), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.position.set(x, 0.5, z); scene.add(m); plaskRinger.push({ m, t: 0, stor: stor || 1 }); lydPlask();
+}
+function oppdaterPlask(dt) {
+  for (let i = plaskRinger.length - 1; i >= 0; i--) {
+    const p = plaskRinger[i]; p.t += dt; p.m.scale.setScalar(1 + p.t * 6 * p.stor); p.m.material.opacity = Math.max(0, 0.9 - p.t * 0.9);
+    if (p.t > 1) { scene.remove(p.m); p.m.geometry.dispose(); p.m.material.dispose(); plaskRinger.splice(i, 1); }
+  }
+}
+const KRAKEN_TIDER = { opp: 1.4, hopp: 0.9, sitt: 2.6, ut: 0.9, ned: 1.2 };
+function oppdaterKrakenShow(dt, t) {
+  const k = krakenShow; if (!k) return;
+  k.t += dt;
+  const T = KRAKEN_TIDER, fx = Math.sin(spiller.retning), fz = Math.cos(spiller.retning);
+  const ute = new THREE.Vector3(spiller.pos.x + fx * 10, 0, spiller.pos.z + fz * 10);
+  const iBaat = new THREE.Vector3(spiller.pos.x + fx * 2.4, baat.position.y + baat.userData.dekkY, spiller.pos.z + fz * 1.4);
+  const myk = x => x * x * (3 - 2 * x);
+  let tt = k.t, y = 0, pos = ute, skala = 1, viftet = 1;
+  if (tt < T.opp) { const a = myk(tt / T.opp); pos = ute; y = -7 + a * 7; viftet = 0.6; }
+  else if ((tt -= T.opp) < T.hopp) { const a = tt / T.hopp; pos = ute.clone().lerp(iBaat, myk(a)); y = Math.sin(a * Math.PI) * 6 + (iBaat.y - 0) * a; skala = 1 - 0.15 * a; if (!k.landet && a > 0.95) { k.landet = true; lydMynt(); robotGjor('Dance', 3.2); } }
+  else if ((tt -= T.hopp) < T.sitt) { pos = iBaat; y = iBaat.y + Math.abs(Math.sin(tt * 4)) * 0.3; skala = 0.85; viftet = 1.6; krakenFigur.rotation.z = Math.sin(tt * 3) * 0.12; }
+  else if ((tt -= T.sitt) < T.ut) { const a = tt / T.ut; pos = iBaat.clone().lerp(ute, myk(a)); y = iBaat.y * (1 - a) + Math.sin(a * Math.PI) * 7; skala = 0.85 + 0.15 * a; if (!k.plasket && a > 0.9) { k.plasket = true; plask(ute.x, ute.z, 1.4); } }
+  else if ((tt -= T.ut) < T.ned) { const a = myk(tt / T.ned); pos = ute; y = -a * 9; viftet = 0.5; }
+  else { krakenFigur.visible = false; krakenShow = null; visKrakenKort(k.forste); return; }
+  krakenFigur.visible = true;
+  krakenFigur.position.set(pos.x, y, pos.z);
+  krakenFigur.scale.setScalar(skala);
+  krakenFigur.rotation.y = spiller.retning + Math.PI;   // ser mot roboten og kameraet
+  for (const a of krakenArmer) a.deler.forEach((d, i) => { d.rotation.x = 0.35 + Math.sin(t * 4 * viftet + a.fase + i * 0.7) * 0.28 * viftet; });
+}
 function fangKraken() {
   for (const te of krakenTentakler) te.userData.opp = 0;
   const forste = !tilstand.kraken;
   tilstand.kraken = true;
   if (forste) tilstand.penger += INNST.krakenPremie;
-  lydSjelden(); setTimeout(lydSjelden, 500); robotGjor('Dance', 4);
   oppdaterHud(); lagre();
+  lydSjelden(); setTimeout(lydSjelden, 500);
+  plask(spiller.pos.x + Math.sin(spiller.retning) * 10, spiller.pos.z + Math.cos(spiller.retning) * 10, 1.4);
+  melding('🐙 Du fikk Kraken! Se, den kommer opp i båten!', 3, true);
+  krakenShow = { t: 0, forste };
+}
+function visKrakenKort(forste) {
   $('fangstTopp').textContent = forste ? '🏆 OPPDRAGET ER KLART! 🏆' : 'Du fanget Kraken igjen!';
   $('fangstIkon').textContent = '🐙👑';
   $('fangstNavn').textContent = 'Kraken';
@@ -1482,6 +1547,7 @@ function fangKraken() {
   $('fangstTekst').textContent = forste
     ? `Du fanget Kraken med Superstangen! Den svømte tilbake i dypet, men du fikk 💰 ${tall(INNST.krakenPremie)}. Nå kan du jakte på resten av de 5000 fiskene!`
     : 'Kraken er sterk, men du er sterkere! Den svømte tilbake i dypet.';
+  lydSjelden();
   apneLag('fangst');
 }
 
@@ -1626,6 +1692,7 @@ $('fangstOk').addEventListener('click', () => lukkLag('fangst'));
 // ======================================================
 let handling = null, handlingTekst = '';
 function finnHandling() {
+  if (krakenShow) return { tekst: '🐙 Wow!', av: true };
   if (fiske && fiske.fase === 'kamp') return { tekst: '💪 Dra!', gjor: dra };
   if (fiske) return { tekst: fiske.kraken ? '🐙 Vent …' : '⏳ Vent på napp …', av: true };
   if (iHavna()) return { tekst: '⚓ Havna', gjor: () => { fane = tilstand.last.length ? 'lever' : 'butikk'; byggHavna(); apneLag('havna'); } };
@@ -1770,7 +1837,7 @@ function oppdaterBaat(dt, t) {
   // Kameraet følger bak båten. Tastatur: ⬆️/W fremover, ⬇️/S bakover, ⬅️/A og ➡️/D svinger.
   // Styrespak (berøring/mus): dra dit du vil kjøre, sett fra kameraet. Båten snur dit og kjører.
   let gass = 0, ror = 0, jx = 0, jz = 0;
-  if (!modalApen()) {
+  if (!modalApen() && !krakenShow) {
     if (taster['arrowup'] || taster['w']) gass += 1; if (taster['arrowdown'] || taster['s']) gass -= 1;
     if (taster['arrowleft'] || taster['a']) ror += 1; if (taster['arrowright'] || taster['d']) ror -= 1;
     if (joy.aktiv) {
@@ -1856,10 +1923,10 @@ function loop(na) {
   tid += dt;
   const spill = spillTilstand === 'spill' && !modalApen();
   if (spill) {
-    oppdaterBaat(dt, tid); oppdaterFiske(dt, tid); oppdaterInntekt(dt);
+    oppdaterBaat(dt, tid); oppdaterFiske(dt, tid); oppdaterKrakenShow(dt, tid); oppdaterInntekt(dt);
     lagreTid += dt; if (lagreTid > 5) { lagreTid = 0; lagre(); }
   } else { baat.position.y = 0.25 + Math.sin(tid * 1.6) * 0.15; }
-  if (spillTilstand !== 'pause') { oppdaterVerden(dt, tid); oppdaterAkvarium(dt, tid); oppdaterSkum(dt); robotAnimasjon(dt); for (const m of lastGruppe.children) animerFisk(m, tid * 0.3, 0.5); }
+  if (spillTilstand !== 'pause') { oppdaterVerden(dt, tid); oppdaterAkvarium(dt, tid); oppdaterSkum(dt); oppdaterPlask(dt); robotAnimasjon(dt); for (const m of lastGruppe.children) animerFisk(m, tid * 0.3, 0.5); }
   oppdaterMelding(dt); oppdaterHandling(); oppdaterKamera(dt);
   renderer.render(scene, camera);
 }
@@ -1911,7 +1978,7 @@ EVNNullstill({
 });
 requestAnimationFrame(loop);
 // Til testing
-window.__spill = { visFangst, besteOppsett, tilstand, spiller, plasser, INNST, FORMER, nyFisk, fiskNavn, fiskVerdi, sjeldenhet, fiskDel, gjorHandling, startFiske, dra, get fiske() { return fiske; }, lagre, HAVN, KRAKEN_POS, scene, camera, oppdaterHud, byggAkvarium, byggLast, byggBaat, lagFiskModell, renderer };
+window.__spill = { get krakenShow() { return krakenShow; }, visFangst, besteOppsett, tilstand, spiller, plasser, INNST, FORMER, nyFisk, fiskNavn, fiskVerdi, sjeldenhet, fiskDel, gjorHandling, startFiske, dra, get fiske() { return fiske; }, lagre, HAVN, KRAKEN_POS, scene, camera, oppdaterHud, byggAkvarium, byggLast, byggBaat, lagFiskModell, renderer };
 </script>
 <!-- EVN Studio: knapp tilbake til forsiden (vises bare under /spill/) -->
 <style>
