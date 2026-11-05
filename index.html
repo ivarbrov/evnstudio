@@ -149,7 +149,7 @@
   .velg h1 { font-family: var(--tittel); font-weight: 900; font-size: clamp(30px, 4vw, 44px); margin: 0 0 4px; letter-spacing: -.01em; }
   .velg p { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
   .velg .gratis { color: var(--dempet); font-weight: 700; font-size: 15px; }
-  #spill .spill-liste { grid-template-columns: repeat(3, 1fr); gap: 20px; } /* fem kort: 3 + 2 over 1180 px */
+  #spill .spill-liste { grid-template-columns: repeat(3, 1fr); gap: 20px; } /* seks kort: 3 + 3 over 1180 px */
   @media (max-width: 1180px) and (min-width: 981px) { #spill .spill-liste { grid-template-columns: repeat(2, 1fr); } }
   @media (min-width: 1181px) { #spill .spillkort h3 { font-size: clamp(22px, 2vw, 28px); } #spill .spillkort .tekst { padding: 0 20px 22px; } }
   #spill .spillkort .avspill { display: none; } /* «Spill nå»-knappen er nok; runde ikonet dekket navnet på nettbrett */
@@ -209,6 +209,7 @@
   .spillkort .stikkord .t-laer { --t: 190,150,255; }
   .spillkort .stikkord .t-dyr { --t: 255,190,110; }
   .spillkort .stikkord .t-egg { --t: 255,150,210; }
+  .spillkort .stikkord .t-fisk { --t: 110,200,255; }
 
   /* Siste nytt: farge per nyhet, ikon i fargesirkel, hele kortet er klikkbart */
   .nyhet { --f: 138,61,255; position: relative; overflow: hidden; padding: 24px 22px 20px;
@@ -348,7 +349,6 @@
       <a class="spillkort k-dyr inn" style="--i:3" href="spill/dyrepatruljen/">
         <div class="bilde">
           <img class="topp" src="bilder/dyrepatruljen.jpg" srcset="bilder/dyrepatruljen.jpg 800w, bilder/dyrepatruljen-1200.jpg 1200w" sizes="(max-width: 680px) 100vw, 400px" alt="Skjermbilde fra Dyrepatruljen: den gule roboten med håven i dyreparken, med papegøye og skilpadde ved dammen i jungelområdet">
-          <span class="merke klar">Nytt</span>
           <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
@@ -362,13 +362,26 @@
       <a class="spillkort k-egg inn" style="--i:4" href="spill/magiske-egg/">
         <div class="bilde">
           <img class="topp" src="bilder/magiske-egg.jpg" srcset="bilder/magiske-egg.jpg 800w, bilder/magiske-egg-1200.jpg 1200w" sizes="(max-width: 680px) 100vw, 400px" alt="Skjermbilde fra Magiske egg: den gule roboten og en regnbuesebra foran en regnbue">
-          <span class="merke klar">Nytt</span>
           <span class="avspill" aria-hidden="true"></span>
         </div>
         <div class="tekst">
           <h3>Magiske egg</h3>
           <div class="stikkord"><span class="t-egg"><i aria-hidden="true">🥚</i> Samling</span><span class="t-dyr"><i aria-hidden="true">🐾</i> Dyr</span></div>
           <p>Klekk egg og samle magiske dyr.</p>
+          <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill nå</span>
+        </div>
+      </a>
+
+      <a class="spillkort k-fisk inn" style="--i:5" href="spill/fiskespillet/">
+        <div class="bilde">
+          <img class="topp" src="bilder/fiskespillet.jpg" srcset="bilder/fiskespillet.jpg 800w, bilder/fiskespillet-1200.jpg 1200w" sizes="(max-width: 680px) 100vw, 400px" alt="Skjermbilde fra Fiskespillet: den gule roboten i en båt med fiskestang foran øya med havna, akvariet og fyrtårnet" loading="lazy">
+          <span class="merke klar">Nytt</span>
+          <span class="avspill" aria-hidden="true"></span>
+        </div>
+        <div class="tekst">
+          <h3>Fiskespillet</h3>
+          <div class="stikkord"><span class="t-fisk"><i aria-hidden="true">🎣</i> Fiske</span><span class="t-utforsk"><i aria-hidden="true">🌊</i> Utforsking</span></div>
+          <p>Fisk på havet, fyll akvariet og fang Kraken.</p>
           <span class="knapp"><span class="trekant" aria-hidden="true"></span>Spill nå</span>
         </div>
       </a>
@@ -384,25 +397,25 @@
     </div>
     <div class="nytt">
       <article class="nyhet n1 inn" style="--i:0">
+        <span class="ikon" aria-hidden="true">🎣</span>
+        <time datetime="2026-11-05">5. november 2026</time>
+        <h3><a href="spill/fiskespillet/">Nytt spill: Fiskespillet!</a></h3>
+        <p>Kjør båten ut på havet, fisk og fyll akvariet. Klarer du å fange Kraken?</p>
+        <span class="mer" aria-hidden="true">Spill Fiskespillet</span>
+      </article>
+      <article class="nyhet n2 inn" style="--i:1">
         <span class="ikon" aria-hidden="true">🥚</span>
         <time datetime="2026-11-03">3. november 2026</time>
         <h3><a href="spill/magiske-egg/">Nytt spill: Magiske egg!</a></h3>
         <p>Klekk magiske egg og samle 15 søte dyr i seks områder. Gi dyrene mat, så vokser de!</p>
         <span class="mer" aria-hidden="true">Spill Magiske egg</span>
       </article>
-      <article class="nyhet n2 inn" style="--i:1">
+      <article class="nyhet n3 inn" style="--i:2">
         <span class="ikon" aria-hidden="true">🤖</span>
         <time datetime="2026-11-03">3. november 2026</time>
         <h3><a href="#spill">Hei, EVN! Roboten er med i alle spillene.</a></h3>
         <p>Nå styrer du den gule roboten i Era Defenders, Fossil Zoo, Dyrepatruljen og Magiske egg. I Era Defenders får den nytt utstyr i hver tidsepoke!</p>
         <span class="mer" aria-hidden="true">Se spillene</span>
-      </article>
-      <article class="nyhet n3 inn" style="--i:2">
-        <span class="ikon" aria-hidden="true">🦊</span>
-        <time datetime="2026-11-02">2. november 2026</time>
-        <h3><a href="spill/dyrepatruljen/">Nytt spill: Dyrepatruljen!</a></h3>
-        <p>Snik deg innpå dyr som har gått seg vill, og fang dem med håven. Det er 15 verdener med 10 dyr i hver, og dyrene flytter inn i dyreparken din.</p>
-        <span class="mer" aria-hidden="true">Spill Dyrepatruljen</span>
       </article>
     </div>
   </section>
