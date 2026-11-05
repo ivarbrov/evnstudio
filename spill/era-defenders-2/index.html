@@ -33,9 +33,9 @@
   html.touch.spiller #kamp { display:block; }
   .vk { position:fixed; border-radius:50%; border:3px solid rgba(255,255,255,.7); color:#fff; display:flex; align-items:center; justify-content:center; padding:0; z-index:5; touch-action:none; box-shadow:0 4px 0 rgba(0,0,0,.3); }
   #kSverd { width:88px; height:88px; font-size:40px; right:calc(18px + env(safe-area-inset-right)); bottom:calc(22px + env(safe-area-inset-bottom)); background:rgba(125,252,255,.35); }
-  #kMagi { width:68px; height:68px; font-size:30px; right:calc(122px + env(safe-area-inset-right)); bottom:calc(18px + env(safe-area-inset-bottom)); background:rgba(176,64,255,.45); }
+  #kMagi { width:68px; height:68px; font-size:30px; right:calc(122px + env(safe-area-inset-right)); bottom:calc(18px + env(safe-area-inset-bottom)); background:rgba(80,150,255,.45); }
   #kPistol { width:60px; height:60px; font-size:26px; right:calc(110px + env(safe-area-inset-right)); bottom:calc(98px + env(safe-area-inset-bottom)); background:rgba(62,230,255,.35); }
-  #kMagi.tom { opacity:.45; }
+  #kMagi.tom, #kPistol.tom { opacity:.45; }
   html.touch #bunn { bottom:calc(172px + env(safe-area-inset-bottom)); }
   html.touch.bygger #kamp { display:none; }
   html.touch.bygger #bunn { bottom:calc(14px + env(safe-area-inset-bottom)); }
@@ -125,7 +125,7 @@
   <div class="pille" title="Mynter">🪙 <span id="mynter">0</span></div>
   <div class="pille" title="Robotens liv">❤️ <span id="heltLiv">0</span></div>
   <div class="pille" title="Bølge">🌊 <span id="bolge">1</span>/10</div>
-  <div class="pille" title="Mana til magien">🔮 <span id="mana">100</span></div>
+  <div class="pille" title="Kraft til kraftdyttet">🌀 <span id="mana">100</span></div>
   <div class="pille" id="pSkjold" title="Kraftskjold" hidden>🛡️ <span id="skjold">0</span></div>
   <div class="pille" id="pNed" title="Neste bølge kommer" hidden>⏱️ <span id="ned">5</span></div>
 </div>
@@ -141,8 +141,8 @@
 <div id="joy"><div id="knob"></div></div>
 <div id="kamp" aria-label="Våpen">
   <button class="vk" id="kSverd" type="button" aria-label="Lasersverd">⚔️</button>
-  <button class="vk" id="kMagi" type="button" aria-label="Plasmamagi">🔮</button>
-  <button class="vk" id="kPistol" type="button" aria-label="Laserpistol">🔫</button>
+  <button class="vk" id="kMagi" type="button" aria-label="Kraftdytt">🌀</button>
+  <button class="vk" id="kPistol" type="button" aria-label="Sverdkast">🪃</button>
 </div>
 
 <!-- Startkort -->
@@ -151,16 +151,16 @@
     <div class="evn-merke">EVN STUDIO</div>
     <h1>Era Defenders 2</h1>
     <div class="maal">
-      <p>🌆 Verden 1: Framtiden<br>Robotmonstre jakter på roboten din! Slåss med lasersverd, samle mynter og bygg tårn.</p>
+      <p>🌆 Verden 1: Framtiden<br>Du er en romridder med lasersverd! Stopp robotmonstrene, samle mynter og bygg tårn.</p>
     </div>
     <div class="styring">
-      <div class="bare-pc">Piltaster eller WASD: gå. Mellomrom: ⚔️ lasersverd.<br>E eller klikk: 🔮 plasmamagi. F eller høyreklikk: 🔫 laserpistol.<br>B: bygg, 1–9: velg.</div>
-      <div class="bare-touch">Styrespaken: gå. ⚔️ 🔮 🔫: slåss.<br>Trykk 🏗️ Bygg, velg noe og trykk på kartet.</div>
+      <div class="bare-pc">Piltaster eller WASD: gå. Mellomrom: ⚔️ lasersverd.<br>E eller klikk: 🌀 kraftdytt. F eller høyreklikk: 🪃 sverdkast.<br>B: bygg, 1–9: velg.</div>
+      <div class="bare-touch">Styrespaken: gå. ⚔️ 🌀 🪃: slåss.<br>Trykk 🏗️ Bygg, velg noe og trykk på kartet.</div>
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <p class="ingen3d hidden" id="noGL">😕 Denne nettleseren kan ikke vise 3D. Prøv en annen nettleser, eller be en voksen om hjelp.</p>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.3.0 · prøveversjon</div>
+    <div class="evn-ver" id="versjon">Versjon 0.4.0 · prøveversjon</div>
   </div>
 </div>
 
@@ -449,8 +449,10 @@ window.EVNPause = function (cfg) {
    Kamera som i Bloons TD 6: fast, ovenfra og litt på skrå, hele kartet synes.
    Monstrene går fritt (ingen vei) og jakter på roboten. Ni ting å bygge: fem fra Era Defenders 1, fire nye.
    v0.3.0 (Evens ønske): som i Era Defenders 1 – ingen base i midten, du slåss selv med lasersverd, plasmamagi og
-   laserpistol, bølgene kommer av seg selv, og roboten har romdrakt i Framtiden. */
-const VERSJON="0.3.0";
+   laserpistol, bølgene kommer av seg selv, og roboten har romdrakt i Framtiden.
+   v0.4.0 (Evens ønske): romridder-tema med lasersverd. Egne navn og figurer (ikke kopi av beskyttet innhold):
+   lasersverd som blokkerer laserskudd, kraftdytt og sverdkast, kappe, og skuddboter som skyter laser. */
+const VERSJON="0.4.0";
 const SAVE_KEY="evn-era-defenders-2-v1";
 const $=id=>document.getElementById(id);
 const html=document.documentElement;
@@ -546,20 +548,21 @@ if(THREE.GLTFLoader)Promise.resolve().then(()=>{if(!window.EVN_ROBOT_GLB)throw n
 
 // Framtidsdrakt (Evens ønske C): romhjelm, jetpakke og lasersverd. Festes til robotens bein, så de følger animasjonene.
 function fest(bein,obj,x,y,z){bein.updateWorldMatrix(true,false);const ws=new THREE.Vector3();bein.getWorldScale(ws);obj.scale.set(1/ws.x,1/ws.y,1/ws.z);obj.position.set(x/ws.x,y/ws.y,z/ws.z);bein.add(obj)}
+const SVERD_FARGE=0x4fb8ff;
 function kleRobot(m){
   const bein={};m.traverse(o=>{if(o.isBone){const n=o.name.replace(/_\d+$/,"").replace(/[^A-Za-z]/g,"");if(!bein[n])bein[n]=o}});helt.g.updateMatrixWorld(true);
-  if(bein.Head){const h=new THREE.Group();
-    const glass=new THREE.Mesh(new THREE.SphereGeometry(1.0,28,18),new THREE.MeshStandardMaterial({color:0xbff6ff,transparent:true,opacity:0.22,roughness:0.05,metalness:0.1,depthWrite:false}));h.add(glass);
-    const krage=new THREE.Mesh(new THREE.TorusGeometry(0.72,0.08,8,28),M(0xdfe8ff,{metalness:0.7}));krage.rotation.x=Math.PI/2;krage.position.y=-0.62;h.add(krage);
-    const ant=new THREE.Mesh(new THREE.SphereGeometry(0.07,8,6),M(0x3ee6ff,{emissive:0x3ee6ff,emissiveIntensity:2}));ant.position.set(0.55,0.75,0);h.add(ant);
-    fest(bein.Head,h,0,0.5,0)}
+  // Romridderkappe: brun kappe på ryggen
   const rygg=bein.Torso||bein.Abdomen||bein.Body;
-  if(rygg){const p=new THREE.Group();const boks=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.7,0.3),M(0xdfe8ff,{metalness:0.6}));p.add(boks);
-    for(const sx of [-0.18,0.18]){const d=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.12,0.25,8),M(0x30364f));d.position.set(sx,-0.45,0);p.add(d);const f=new THREE.Mesh(new THREE.ConeGeometry(0.09,0.25,8),M(0x3ee6ff,{emissive:0x3ee6ff,emissiveIntensity:2}));f.rotation.x=Math.PI;f.position.set(sx,-0.68,0);p.add(f)}
-    fest(rygg,p,0,0.1,-0.42)}
+  if(rygg){const k=new THREE.Group();const stoff=M(0x7a5232,{roughness:0.95,metalness:0,side:THREE.DoubleSide});
+    const kappe=new THREE.Mesh(new THREE.CylinderGeometry(0.62,0.95,1.55,16,1,true,Math.PI*0.5,Math.PI),stoff);kappe.position.y=-0.55;k.add(kappe);
+    const krage=new THREE.Mesh(new THREE.TorusGeometry(0.5,0.12,8,20,Math.PI),stoff);krage.rotation.x=Math.PI/2;krage.rotation.z=Math.PI;krage.position.y=0.2;k.add(krage);
+    k.traverse(o=>{if(o.isMesh)o.castShadow=true});fest(rygg,k,0,0.15,-0.05)}
+  // Lasersverd med lysende kjerne og glød
   const haand=bein.HandR||bein.PalmR||bein.LowerArmR;
-  if(haand){const s=new THREE.Group();const skaft=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.3,8),M(0x30364f,{metalness:0.8}));s.add(skaft);
-    const blad=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,1.6,8),M(0x9ff8ff,{emissive:0x3ee6ff,emissiveIntensity:2.4}));blad.position.y=0.95;s.add(blad);
+  if(haand){const s=new THREE.Group();const skaft=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.4,10),M(0xb8c0d0,{metalness:0.9,roughness:0.25}));s.add(skaft);
+    const ring=new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.085,0.06,10),M(0x222631));ring.position.y=0.12;s.add(ring);
+    const kjerne=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,2.0,8),new THREE.MeshBasicMaterial({color:0xffffff}));kjerne.position.y=1.2;s.add(kjerne);
+    const glod=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,2.1,12),new THREE.MeshBasicMaterial({color:SVERD_FARGE,transparent:true,opacity:0.55,depthWrite:false,blending:THREE.AdditiveBlending}));glod.position.y=1.2;s.add(glod);
     s.rotation.x=Math.PI/2;fest(haand,s,0,0.05,0);helt.sverd=s}
 }
 // ================= Felles hjelpere =================
@@ -577,6 +580,7 @@ function gnist(x,y,z,farge,n=8){if(RM)n=Math.min(n,3);for(let i=0;i<n&&gnister.l
 const heltBar=lagLivsbar(1.6,3.1);helt.g.add(heltBar);
 // ================= Monstre: robotmonstre =================
 const TYPER={
+  skudd:{navn:"Skuddbot",hp:10,fart:2.4,skade:3,r:0.7,bel:7,farge:0x2fbf6a,str:0.9,skyter:true},
   smaa:{navn:"Småbot",hp:6,fart:3.4,skade:2,r:0.6,bel:5,farge:0xff5a5a,str:0.75},
   kamp:{navn:"Kampbot",hp:15,fart:2.6,skade:4,r:0.85,bel:8,farge:0xa04dff,str:1.05},
   tank:{navn:"Tankbot",hp:48,fart:1.6,skade:8,r:1.2,bel:16,farge:0x8892a6,str:1.55},
@@ -704,7 +708,7 @@ let bolge=1,fase="bygg",koe=[],spawnT=0,nedtelling=8,started=false,paused=false,
 const MAKS_BOLGE=10;
 function lagBolge(n){
   const k=[];const antall=3+n*2;
-  for(let i=0;i<antall;i++){let t="smaa";if(n>=2&&i%3===1)t="kamp";if(n>=4&&i%5===4)t="tank";if(n>=7&&i%4===2)t="kamp";if(n>=8&&i%6===0)t="tank";k.push(t)}
+  for(let i=0;i<antall;i++){let t="smaa";if(n>=2&&i%3===1)t="kamp";if(n>=4&&i%5===4)t="tank";if(n>=7&&i%4===2)t="kamp";if(n>=8&&i%6===0)t="tank";if(n>=2&&i%4===3)t="skudd";k.push(t)}
   if(n===5)k.push("boss1");if(n===10){k.push("boss1");k.push("boss2")}
   return k;
 }
@@ -739,7 +743,7 @@ function nullstillVerden(){
   while(bygg.length)fjernBygg(bygg[0]);
   while(myntListe.length){scene.remove(myntListe[0].m);myntListe.shift()}
   while(kuler.length){scene.remove(kuler[0].m);kuler.shift()}
-  koe=[];
+  koe=[];while(fSkudd.length){scene.remove(fSkudd[0].m);fSkudd.shift()}if(kast){scene.remove(kast.g);kast=null;if(helt.sverd)helt.sverd.visible=true}
 }
 function brukLagring(s){
   nullstillVerden();
@@ -899,8 +903,8 @@ renderer.domElement.addEventListener("pointerup",e=>{if(!ned||e.pointerId!==ned.
 renderer.domElement.addEventListener("pointerleave",()=>{peker.på=false;if(spøkelse&&!TOUCH){spøkelse.visible=false;if(ring)ring.visible=false}});
 
 // ================= Kamp som i Era Defenders 1: lasersverd, plasmamagi og laserpistol =================
-// Framtidens våpen. Mellomrom/⚔️ = sverd, E/klikk/🔮 = magi (koster mana), F/høyreklikk/🔫 = pistol.
-const VAAPEN={sverd:{tid:0.33,rek:2.6},magi:{tid:0.6,kost:20,fart:18,liv:1.1,sprut:1.8},pistol:{tid:0.45,fart:34,liv:0.7}};
+// Romridderens våpen. Mellomrom/⚔️ = lasersverd (slår også laserskudd tilbake), E/klikk/🌀 = kraftdytt (koster kraft), F/høyreklikk/🪃 = sverdkast.
+const VAAPEN={sverd:{tid:0.33,rek:2.8},magi:{tid:0.8,kost:25,rek:6,dytt:4.5},pistol:{tid:1.3,fart:22,rek:10}};
 const kamp={mana:100,maksMana:100,manaFart:16,sverdCd:0,magiCd:0,pistolCd:0,snuT:0,holdt:{sverd:false,magi:false,pistol:false}};
 helt.rx=0;helt.rz=1;
 function snu(dx,dz){const l=Math.hypot(dx,dz)||1;helt.rx=dx/l;helt.rz=dz/l;helt.g.rotation.y=Math.atan2(dx,dz)}
@@ -909,11 +913,11 @@ const kanSlass=()=>started&&!paused&&helt.nede<=0&&fase!=="slutt";
 const effekter=[];
 function sverdBue(dx,dz){
   const L=Math.PI*1.1,geo=new THREE.RingGeometry(0.7,VAAPEN.sverd.rek+0.3,24,1,-Math.PI/2-L/2,L);
-  const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0x7dfcff,transparent:true,opacity:0.75,side:THREE.DoubleSide,depthWrite:false}));
+  const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:SVERD_FARGE,transparent:true,opacity:0.75,side:THREE.DoubleSide,depthWrite:false}));
   m.rotation.x=-Math.PI/2;const g=new THREE.Group();g.add(m);g.position.set(helt.x,1.1,helt.z);g.rotation.y=Math.atan2(dx,dz);scene.add(g);effekter.push({m:g,mat:m.material,geo,t:0.15,maks:0.15});
 }
 function sverdHugg(){
-  if(kamp.sverdCd>0||!kanSlass())return;kamp.sverdCd=VAAPEN.sverd.tid;
+  if(kamp.sverdCd>0||kast||!kanSlass())return;kamp.sverdCd=VAAPEN.sverd.tid;
   const [dx,dz]=nærmeste(helt.x,helt.z,VAAPEN.sverd.rek+2)?siktRetning():[helt.rx,helt.rz];snu(dx,dz);kamp.snuT=0.25;spillEn("Punch");
   const sk=BASE_NIV[basen.niv].sverd;
   for(const mo of monstre.slice()){const ex=mo.x-helt.x,ez=mo.z-helt.z,d=Math.hypot(ex,ez);
@@ -922,30 +926,64 @@ function sverdHugg(){
 }
 const rette=[],magiGeo=new THREE.SphereGeometry(0.38,12,10),magiMat=M(0xd27dff,{emissive:0xb040ff,emissiveIntensity:2}),pistolGeo=new THREE.BoxGeometry(0.14,0.14,0.9),pistolMat=M(0x9ff8ff,{emissive:0x3ee6ff,emissiveIntensity:2.5});
 function nyttSkudd(type,dx,dz,fart,liv,skade,sprut){const m=new THREE.Mesh(type==="magi"?magiGeo:pistolGeo,type==="magi"?magiMat:pistolMat);m.position.set(helt.x+dx*0.9,1.5,helt.z+dz*0.9);m.rotation.y=Math.atan2(dx,dz);scene.add(m);rette.push({m,vx:dx*fart,vz:dz*fart,t:liv,skade,sprut:sprut||0,type})}
+// 🌀 Kraftdytt: en bølge som dytter monstrene foran roboten langt bakover
 function skytMagi(dir){
-  if(kamp.magiCd>0||!kanSlass())return;if(kamp.mana<VAAPEN.magi.kost){if(!kamp.manaVarslet){kamp.manaVarslet=true;melding("🔮 Magien må lade seg opp litt!",1600)}return}
-  kamp.magiCd=VAAPEN.magi.tid;kamp.mana-=VAAPEN.magi.kost;const [dx,dz]=dir||siktRetning();snu(dx,dz);kamp.snuT=0.3;if(!rEn)spillEn("Punch");
-  nyttSkudd("magi",dx,dz,VAAPEN.magi.fart,VAAPEN.magi.liv,BASE_NIV[basen.niv].magi,VAAPEN.magi.sprut);
+  if(kamp.magiCd>0||!kanSlass())return;if(kamp.mana<VAAPEN.magi.kost){if(!kamp.manaVarslet){kamp.manaVarslet=true;melding("🌀 Kraften må lade seg opp litt!",1600)}return}
+  kamp.magiCd=VAAPEN.magi.tid;kamp.mana-=VAAPEN.magi.kost;const [dx,dz]=dir||siktRetning();snu(dx,dz);kamp.snuT=0.35;spillEn("Punch");
+  const sk=BASE_NIV[basen.niv].magi;
+  for(const mo of monstre.slice()){const ex=mo.x-helt.x,ez=mo.z-helt.z,d=Math.hypot(ex,ez)||1;
+    if(d<VAAPEN.magi.rek+mo.T.r&&(ex*dx+ez*dz)/d>0.25){const k=mo.T.boss?0.3:1;mo.x+=ex/d*VAAPEN.magi.dytt*k;mo.z+=ez/d*VAAPEN.magi.dytt*k;mo.x=Math.max(-KX-1,Math.min(KX+1,mo.x));mo.z=Math.max(-KZ-1,Math.min(KZ+1,mo.z));mo.cd=Math.max(mo.cd,0.8);gnist(mo.x,1.2,mo.z,0x9fd8ff,4);skadMonster(mo,sk)}}
+  for(const f of fSkudd)if(avst(f.m.position.x,f.m.position.z,helt.x,helt.z)<VAAPEN.magi.rek)slaaTilbake(f);
+  const L=Math.PI*0.75,geo=new THREE.RingGeometry(0.8,VAAPEN.magi.rek,32,1,-Math.PI/2-L/2,L);
+  const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0x9fd8ff,transparent:true,opacity:0.6,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-Math.PI/2;
+  const g=new THREE.Group();g.add(m);g.position.set(helt.x,0.6,helt.z);g.rotation.y=Math.atan2(dx,dz);scene.add(g);effekter.push({m:g,mat:m.material,geo,t:0.3,maks:0.3,y:0.6});
 }
+// 🪃 Sverdkast: lasersverdet snurrer ut og kommer tilbake, og treffer monstrene begge veier
+let kast=null;
 function skytPistol(dir){
-  if(kamp.pistolCd>0||!kanSlass())return;kamp.pistolCd=VAAPEN.pistol.tid;const [dx,dz]=dir||siktRetning();snu(dx,dz);kamp.snuT=0.3;
-  nyttSkudd("pistol",dx,dz,VAAPEN.pistol.fart,VAAPEN.pistol.liv,BASE_NIV[basen.niv].pistol);gnist(helt.x+dx,1.5,helt.z+dz,0x9ff8ff,2);
+  if(kamp.pistolCd>0||kast||!kanSlass())return;kamp.pistolCd=VAAPEN.pistol.tid;const [dx,dz]=dir||siktRetning();snu(dx,dz);kamp.snuT=0.3;spillEn("Punch");
+  const g=new THREE.Group();const kj=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,2.0,8),new THREE.MeshBasicMaterial({color:0xffffff}));kj.rotation.z=Math.PI/2;g.add(kj);
+  const gl=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.14,2.1,10),new THREE.MeshBasicMaterial({color:SVERD_FARGE,transparent:true,opacity:0.55,depthWrite:false,blending:THREE.AdditiveBlending}));gl.rotation.z=Math.PI/2;g.add(gl);
+  g.position.set(helt.x,1.3,helt.z);scene.add(g);if(helt.sverd)helt.sverd.visible=false;
+  kast={g,dx,dz,ut:true,s:0,truffet:new Set()};
+}
+function kastOppdater(dt){
+  if(!kast)return;const k=kast;k.g.rotation.y+=dt*(RM?6:18);
+  if(k.ut){k.s+=VAAPEN.pistol.fart*dt;k.g.position.set(helt.x+k.dx*k.s,1.3,helt.z+k.dz*k.s);if(k.s>=VAAPEN.pistol.rek){k.ut=false;k.truffet.clear()}}
+  else{const dx=helt.x-k.g.position.x,dz=helt.z-k.g.position.z,d=Math.hypot(dx,dz);const st=Math.min(d,VAAPEN.pistol.fart*1.2*dt);k.g.position.x+=dx/(d||1)*st;k.g.position.z+=dz/(d||1)*st;
+    if(d<0.8){scene.remove(k.g);kast=null;if(helt.sverd)helt.sverd.visible=true;return}}
+  const px=k.g.position.x,pz=k.g.position.z;
+  for(const mo of monstre.slice())if(!k.truffet.has(mo)&&avst(px,pz,mo.x,mo.z)<1.1+mo.T.r){k.truffet.add(mo);gnist(mo.x,1.2,mo.z,SVERD_FARGE,5);skadMonster(mo,BASE_NIV[basen.niv].pistol*2)}
+  for(const f of fSkudd)if(avst(px,pz,f.m.position.x,f.m.position.z)<1.2)slaaTilbake(f);
+}
+// Laserskudd fra skuddbotene. Sving lasersverdet (eller bruk kraftdytt) når de kommer, så går de tilbake.
+const fSkudd=[],fGeo=new THREE.BoxGeometry(0.12,0.12,0.9),fMat=new THREE.MeshBasicMaterial({color:0xff3b3b});
+function fiendeSkudd(mo){const dx=helt.x-mo.x,dz=helt.z-mo.z,l=Math.hypot(dx,dz)||1;const m=new THREE.Mesh(fGeo,fMat);m.position.set(mo.x+dx/l,1.5*mo.T.str,mo.z+dz/l);m.rotation.y=Math.atan2(dx,dz);scene.add(m);fSkudd.push({m,vx:dx/l*13,vz:dz/l*13,t:2,fra:mo,tilbake:false,skade:mo.T.skade+2})}
+function slaaTilbake(f){if(f.tilbake)return;f.tilbake=true;const mo=f.fra,tx=(mo&&monstre.includes(mo)?mo.x:f.m.position.x-f.vx),tz=(mo&&monstre.includes(mo)?mo.z:f.m.position.z-f.vz),dx=tx-f.m.position.x,dz=tz-f.m.position.z,l=Math.hypot(dx,dz)||1;f.vx=dx/l*18;f.vz=dz/l*18;f.t=1.5;f.m.material=pistolMat;f.m.rotation.y=Math.atan2(dx,dz);gnist(f.m.position.x,1.5,f.m.position.z,SVERD_FARGE,6);kamp.blokkert=(kamp.blokkert||0)+1;if(kamp.blokkert===1)melding("⚔️ Du slo laserskuddet tilbake!",1800)}
+function fSkuddOppdater(dt){
+  for(let i=fSkudd.length-1;i>=0;i--){const f=fSkudd[i];f.t-=dt;f.m.position.x+=f.vx*dt;f.m.position.z+=f.vz*dt;const px=f.m.position.x,pz=f.m.position.z;let borte=f.t<=0;
+    if(!f.tilbake&&helt.nede<=0&&avst(px,pz,helt.x,helt.z)<0.9){
+      if(kamp.sverdCd>0&&!kast)slaaTilbake(f);
+      else{borte=true;if(skjoldAktiv()){skjold.hp=Math.max(0,skjold.hp-f.skade);gnist(px,1.5,pz,0x56b8ff,4)}else{helt.hp-=f.skade;gnist(px,1.5,pz,0xff3b3b,4);if(helt.hp<=0){helt.hp=0;helt.nede=1.6;gnist(helt.x,1,helt.z,0xffcc00,20);spillEn("Death")}}oppdaterHud()}}
+    else if(f.tilbake){for(const mo of monstre)if(avst(px,pz,mo.x,mo.z)<0.5+mo.T.r){skadMonster(mo,f.skade*2);borte=true;break}}
+    if(borte){scene.remove(f.m);fSkudd.splice(i,1)}}
 }
 function kampOppdater(dt){
+  kastOppdater(dt);fSkuddOppdater(dt);
   kamp.sverdCd-=dt;kamp.magiCd-=dt;kamp.pistolCd-=dt;kamp.snuT-=dt;
-  kamp.mana=Math.min(kamp.maksMana,kamp.mana+kamp.manaFart*dt);const mi=Math.floor(kamp.mana);if(mi!==kamp.vist){kamp.vist=mi;$("mana").textContent=mi;$("kMagi").classList.toggle("tom",kamp.mana<VAAPEN.magi.kost)}if(kamp.mana>=VAAPEN.magi.kost)kamp.manaVarslet=false;
+  kamp.mana=Math.min(kamp.maksMana,kamp.mana+kamp.manaFart*dt);const mi=Math.floor(kamp.mana);if(mi!==kamp.vist){kamp.vist=mi;$("mana").textContent=mi;$("kMagi").classList.toggle("tom",kamp.mana<VAAPEN.magi.kost);$("kPistol").classList.toggle("tom",!!kast)}if(kamp.mana>=VAAPEN.magi.kost)kamp.manaVarslet=false;
   if(kamp.holdt.sverd||taster.has("Space"))sverdHugg();
   if(kamp.holdt.magi||taster.has("KeyE"))skytMagi();
   if(kamp.holdt.pistol||taster.has("KeyF"))skytPistol();
   if(window.__autoKamp){const mo=nærmeste(helt.x,helt.z,14);if(mo){if(avst(mo.x,mo.z,helt.x,helt.z)<VAAPEN.sverd.rek+mo.T.r)sverdHugg();else{skytMagi();skytPistol()}}}
-  for(let i=rette.length-1;i>=0;i--){const r=rette[i];r.t-=dt;r.m.position.x+=r.vx*dt;r.m.position.z+=r.vz*dt;if(r.type==="magi"&&!RM)r.m.rotation.x+=dt*8;
+  for(let i=rette.length-1;i>=0;i--){const r=rette[i];r.t-=dt;r.m.position.x+=r.vx*dt;r.m.position.z+=r.vz*dt;
     const px=r.m.position.x,pz=r.m.position.z;let truffet=null;
     for(const mo of monstre)if(avst(px,pz,mo.x,mo.z)<0.45+mo.T.r*1.1){truffet=mo;break}
     if(truffet){gnist(px,1.4,pz,r.type==="magi"?0xd27dff:0x9ff8ff,r.type==="magi"?8:3);
       if(r.sprut)for(const mo of monstre.slice())if(mo!==truffet&&avst(px,pz,mo.x,mo.z)<r.sprut+mo.T.r)skadMonster(mo,Math.ceil(r.skade/2));
       skadMonster(truffet,r.skade)}
     if(truffet||r.t<=0||Math.abs(px)>KX+4||Math.abs(pz)>KZ+4){scene.remove(r.m);rette.splice(i,1)}}
-  for(let i=effekter.length-1;i>=0;i--){const e=effekter[i];e.t-=dt;e.mat.opacity=0.75*Math.max(0,e.t/e.maks);e.m.position.set(helt.x,1.1,helt.z);if(e.t<=0){scene.remove(e.m);e.geo.dispose();e.mat.dispose();effekter.splice(i,1)}}
+  for(let i=effekter.length-1;i>=0;i--){const e=effekter[i];e.t-=dt;e.mat.opacity=0.75*Math.max(0,e.t/e.maks);e.m.position.set(helt.x,e.y||1.1,helt.z);if(e.y)e.m.scale.setScalar(1+(1-e.t/e.maks)*0.4);if(e.t<=0){scene.remove(e.m);e.geo.dispose();e.mat.dispose();effekter.splice(i,1)}}
 }
 
 // ================= Oppdatering =================
@@ -982,13 +1020,15 @@ function oppdater(dt){
     const hj=bygg.find(b=>b.t==="hjelper"&&!b.nede&&avst(mo.x,mo.z,b.x,b.z)<T.r+1.0);
     if(helt.nede<=0&&dh<T.r+(skjoldAktiv()?skjold.R:0.9))angrip={helt:true};
     else if(hj)angrip={b:hj};
+    // Skuddboter stopper et stykke unna og skyter laser. Lasersverdet kan slå skuddene tilbake.
+    if(!angrip&&T.skyter&&helt.nede<=0&&dh<9&&dh>3.5){mo.g.rotation.y=Math.atan2(mx,mz);mo.skuddCd=(mo.skuddCd||1+Math.random())-dt;if(mo.skuddCd<=0){mo.skuddCd=2.2;fiendeSkudd(mo)}angrip={vent:true}}
     if(!angrip&&helt.nede<=0){
       const l=dh||1,steg=T.fart*mo.saktere*dt;let nx=mo.x+mx/l*steg,nz=mo.z+mz/l*steg;
       const mur=bygg.find(b=>b.t==="mur"&&punktMurAvstand(nx,nz,b)<T.r+0.4);
       if(mur)angrip={b:mur};
       else{mo.x=nx;mo.z=nz;mo.g.rotation.y=Math.atan2(mx,mz);mo.fase+=dt*T.fart*2.2;mo.ben[0].rotation.x=Math.sin(mo.fase)*0.6;mo.ben[1].rotation.x=-Math.sin(mo.fase)*0.6}
     }
-    if(angrip&&mo.cd<=0){mo.cd=1;
+    if(angrip&&!angrip.vent&&mo.cd<=0){mo.cd=1;
       if(angrip.helt&&skjoldAktiv()){skjold.hp-=T.skade;gnist(helt.x,1.5,helt.z,0x56b8ff,5);if(skjold.hp<=0){skjold.hp=0;melding("🛡️ Kraftskjoldet sprakk! Det blir helt igjen etter bølgen.")}oppdaterHud()}
       else if(angrip.helt){helt.hp-=T.skade;gnist(helt.x,1.5,helt.z,0xffcc00,5);oppdaterHud();if(helt.hp<=0){helt.hp=0;helt.nede=1.6;gnist(helt.x,1,helt.z,0xffcc00,20);spillEn("Death")}}
       else if(angrip.b){const b=angrip.b;b.hp-=T.skade;settLiv(b.bar,b.hp/b.maks);gnist(b.t==="mur"?mo.x:b.x,1,b.t==="mur"?mo.z:b.z,0xaab4d0,4);
@@ -1085,12 +1125,12 @@ window.__evnP=EVNPause({
   fortsett:()=>{paused=false;clearInput();last=performance.now()},
   lagre:()=>lagre(),
   styring:()=>html.classList.contains("touch")
-    ?"🕹️ Styrespaken: gå<br>⚔️ Lasersverd · 🔮 Plasmamagi (bruker mana) · 🔫 Laserpistol<br>🏗️ Bygg: velg noe og trykk på kartet<br>👆 Med Bygg åpen: trykk på noe du har bygget for å oppgradere eller selge"
-    :"⬆️ Piltaster eller WASD: gå<br>Mellomrom: ⚔️ lasersverd · E eller klikk: 🔮 plasmamagi · F eller høyreklikk: 🔫 laserpistol<br>B: bygg · 1–9: velg · Esc: avbryt<br>🖱️ Med Bygg åpen: klikk på noe du har bygget for å oppgradere eller selge<br>P eller Esc: pause"
+    ?"🕹️ Styrespaken: gå<br>⚔️ Lasersverd (slår laserskudd tilbake) · 🌀 Kraftdytt (bruker kraft) · 🪃 Sverdkast<br>🏗️ Bygg: velg noe og trykk på kartet<br>👆 Med Bygg åpen: trykk på noe du har bygget for å oppgradere eller selge"
+    :"⬆️ Piltaster eller WASD: gå<br>Mellomrom: ⚔️ lasersverd (slår laserskudd tilbake) · E eller klikk: 🌀 kraftdytt · F eller høyreklikk: 🪃 sverdkast<br>B: bygg · 1–9: velg · Esc: avbryt<br>🖱️ Med Bygg åpen: klikk på noe du har bygget for å oppgradere eller selge<br>P eller Esc: pause"
 });
 window.__spill={get mynter(){return mynter},set mynter(v){mynter=v;oppdaterHud()},get bolge(){return bolge},get fase(){return fase},get started(){return started},get paused(){return paused},
   basen,skjold,helt,bygg,monstre,kamp,camera,startBolge,sverdHugg,skytMagi,skytPistol,velg,plasser,avbrytPlassering,kanPlassere,lagre,lesLagring,TYPER,BYGG,
-  hopp:(n)=>{bolge=n;oppdaterHud()},steg:(sek,dt=1/30)=>{for(let t=0;t<sek&&fase!=="slutt";t+=dt)oppdater(dt)},drepAlle:()=>monstre.slice().forEach(m=>skadMonster(m,1e6)),tilstand};
+  hopp:(n)=>{bolge=n;oppdaterHud()},lagMonster,kastAktiv:()=>!!kast,steg:(sek,dt=1/30)=>{for(let t=0;t<sek&&fase!=="slutt";t+=dt)oppdater(dt)},drepAlle:()=>monstre.slice().forEach(m=>skadMonster(m,1e6)),tilstand};
 </script>
 <!-- EVN Studio: Avslutt med spørsmål (vises bare under /spill/ på evnstudio.no) -->
 <style>
