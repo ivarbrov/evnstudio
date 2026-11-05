@@ -112,7 +112,7 @@
 <body>
 <div id="hud" hidden>
   <div class="pille" title="Mynter">🪙 <span id="mynter">0</span></div>
-  <div class="pille" title="Basens liv">🏰 <span id="baseLiv">0</span></div>
+  <div class="pille" title="Robotens liv">❤️ <span id="heltLiv">0</span></div>
   <div class="pille" title="Bølge">🌊 <span id="bolge">1</span>/10</div>
   <div class="pille" id="pSkjold" title="Kraftskjold" hidden>🛡️ <span id="skjold">0</span></div>
 </div>
@@ -134,7 +134,7 @@
     <div class="evn-merke">EVN STUDIO</div>
     <h1>Era Defenders 2</h1>
     <div class="maal">
-      <p>🌆 Verden 1: Framtiden<br>Robotmonstre angriper basen din! Slåss, samle mynter og bygg tårn.</p>
+      <p>🌆 Verden 1: Framtiden<br>Robotmonstre jakter på roboten din! Slåss, samle mynter og bygg tårn.</p>
     </div>
     <div class="styring">
       <div class="bare-pc">Piltaster eller WASD for å gå. Roboten skyter selv.<br>B for å bygge, 1–9 for å velge. Mellomrom for neste bølge.</div>
@@ -143,7 +143,7 @@
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <p class="ingen3d hidden" id="noGL">😕 Denne nettleseren kan ikke vise 3D. Prøv en annen nettleser, eller be en voksen om hjelp.</p>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.1.0 · prøveversjon</div>
+    <div class="evn-ver" id="versjon">Versjon 0.2.0 · prøveversjon</div>
   </div>
 </div>
 
@@ -431,7 +431,7 @@ window.EVNPause = function (cfg) {
    Evens idé (5.11.2026): 3D, forsvar basen, nye tidsepoker, 8 verdener. Verden 1 = Framtiden.
    Kamera som i Bloons TD 6: fast, ovenfra og litt på skrå, hele kartet synes.
    Monstrene går fritt (ingen vei) rett mot basen. Ni ting å bygge: fem fra Era Defenders 1, fire nye. */
-const VERSJON="0.1.0";
+const VERSJON="0.2.0";
 const SAVE_KEY="evn-era-defenders-2-v1";
 const $=id=>document.getElementById(id);
 const html=document.documentElement;
@@ -502,7 +502,7 @@ const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughnes
 
 // ================= Basen i midten =================
 const basen={g:new THREE.Group(),niv:1,hp:100,cd:0};
-const BASE_NIV=[null,{maks:150},{maks:230,pris:200,rek:9,skade:3,tid:0.8},{maks:320,pris:400,rek:11,skade:5,tid:0.55}];
+const BASE_NIV=[null,{maks:150},{maks:210,pris:200,rek:9,skade:3,tid:0.8},{maks:280,pris:400,rek:11,skade:5,tid:0.55}];
 let baseKanon=null;
 function byggBasen(){
   const g=basen.g;while(g.children.length)g.remove(g.children[0]);
@@ -597,9 +597,9 @@ const BYGG=[
   {id:"hjelper",ik:"🤖",navn:"Robothjelper",pris:120,ny:true,maks:3,r:0.8,tekst:"En liten robot som slåss mot monstre i nærheten.",niv:[{hp:40,skade:3,tid:0.7,rek:8},{hp:70,skade:5,tid:0.6,rek:9,pris:100},{hp:110,skade:8,tid:0.5,rek:10,pris:180}]},
   {id:"felle",ik:"⚡",navn:"Strømfelle",pris:70,ny:true,r:2.4,tekst:"Strøm i bakken. Monstrene blir trege og får skade.",niv:[{rek:2.4,skade:1,saktere:0.5},{rek:3,skade:2,saktere:0.45,pris:60},{rek:3.6,skade:3,saktere:0.35,pris:110}]},
   {id:"pynt",ik:"🌸",navn:"Pynt",pris:10,r:0.7,flere:true,tekst:"Gjør basen fin. Trykk på pynten for å bytte.",niv:[{}]},
-  {id:"skjold",ik:"🛡️",navn:"Kraftskjold",ny:true,handling:true,tekst:"En blå boble som beskytter basen. Den blir hel igjen etter hver bølge."},
-  {id:"reparer",ik:"🔧",navn:"Reparer basen",handling:true,tekst:"Gir basen 40 liv."},
-  {id:"basen",ik:"⬆️",navn:"Oppgrader basen",handling:true,tekst:"Basen tåler mer og får en kanon på toppen."}
+  {id:"skjold",ik:"🛡️",navn:"Kraftskjold",ny:true,handling:true,tekst:"En blå boble rundt basen. Står du inni, kommer ikke monstrene inn før boblen sprekker. Den blir hel igjen etter hver bølge."},
+  {id:"reparer",ik:"🔧",navn:"Reparer",handling:true,tekst:"Roboten får 50 liv, og alle murene blir hele."},
+  {id:"basen",ik:"⬆️",navn:"Oppgrader basen",handling:true,tekst:"Basen får en kanon på toppen, og roboten tåler mer."}
 ];
 const BY=Object.fromEntries(BYGG.map(b=>[b.id,b]));
 const bygg=[];
@@ -671,8 +671,8 @@ function laserStråle(x,y,z,mo,farge){
   const m=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,l,6),new THREE.MeshBasicMaterial({color:farge,transparent:true,opacity:0.95}));
   m.position.copy(fra).lerp(til,0.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),til.clone().sub(fra).normalize());scene.add(m);straaler.push({m,t:0.12});
 }
-// Det farligste monsteret i rekkevidde: nærmest basen (som «Første» i Bloons)
-function velgMål(x,z,rek){let best=null,bd=1e9;for(const mo of monstre){if(avst(x,z,mo.x,mo.z)>rek+mo.T.r)continue;const d=Math.hypot(mo.x,mo.z);if(d<bd){bd=d;best=mo}}return best}
+// Det farligste monsteret i rekkevidde: nærmest roboten
+function velgMål(x,z,rek){let best=null,bd=1e9;for(const mo of monstre){if(avst(x,z,mo.x,mo.z)>rek+mo.T.r)continue;const d=avst(mo.x,mo.z,helt.x,helt.z);if(d<bd){bd=d;best=mo}}return best}
 function nærmeste(x,z,rek){let best=null,bd=rek;for(const mo of monstre){const d=avst(x,z,mo.x,mo.z)-mo.T.r;if(d<bd){bd=d;best=mo}}return best}
 
 // ================= Bølger =================
@@ -700,11 +700,11 @@ function bolgeFerdig(){
   melding("🎉 Bølge "+bolge+" klart! +"+bonus+" 🪙");
   bolge++;fase="bygg";lagre();oppdaterHud();
 }
-function baseFalt(){fase="slutt";gnist(0,2,0,0xffc93c,40);visSlutt(false)}
+function heltFalt(){fase="slutt";visSlutt(false)}
 
 // ================= Lagring =================
 // Lagres når en bølge starter og når den er klart. Taper du, starter du bølgen på nytt fra lagringen.
-function tilstand(){return{v:1,verden:1,bolge,mynter,baseNiv:basen.niv,baseHp:Math.max(1,Math.round(basen.hp)),skjoldNiv:skjold.niv,seier,
+function tilstand(){return{v:1,verden:1,bolge,mynter,baseNiv:basen.niv,skjoldNiv:skjold.niv,seier,
   bygg:bygg.map(b=>({t:b.t,x:+b.hx.toFixed(2),z:+b.hz.toFixed(2),niv:b.niv,v:b.v,hp:b.t==="mur"?Math.round(b.hp):undefined,brukt:b.brukt}))}}
 function lagre(){if(fase==="kamp")return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(tilstand()))}catch(e){}}
 window.save=()=>lagre();
@@ -720,16 +720,16 @@ function nullstillVerden(){
 function brukLagring(s){
   nullstillVerden();
   const ok=(n,a,b)=>Number.isFinite(n)&&n>=a&&n<=b;
-  if(!s){bolge=1;mynter=250;basen.niv=1;basen.hp=BASE_NIV[1].maks;skjold.niv=0;seier=false}
+  if(!s){bolge=1;mynter=250;basen.niv=1;skjold.niv=0;seier=false}
   else{
     bolge=ok(s.bolge,1,MAKS_BOLGE+1)?Math.floor(s.bolge):1;mynter=ok(s.mynter,0,1e7)?Math.floor(s.mynter):250;
-    basen.niv=ok(s.baseNiv,1,3)?Math.floor(s.baseNiv):1;basen.hp=ok(s.baseHp,1,BASE_NIV[basen.niv].maks)?s.baseHp:BASE_NIV[basen.niv].maks;
+    basen.niv=ok(s.baseNiv,1,3)?Math.floor(s.baseNiv):1;
     skjold.niv=ok(s.skjoldNiv,0,3)?Math.floor(s.skjoldNiv):0;seier=!!s.seier;
     (Array.isArray(s.bygg)?s.bygg:[]).slice(0,200).forEach(o=>{if(!o||!BY[o.t]||BY[o.t].handling||!ok(o.x,-KX,KX)||!ok(o.z,-KZ,KZ))return;const n=ok(o.niv,1,BY[o.t].niv.length)?Math.floor(o.niv):1;const b=nyttBygg(o.t,o.x,o.z,n,ok(o.v,0,3)?Math.floor(o.v):0);b.brukt=ok(o.brukt,0,1e6)?o.brukt:BY[o.t].pris;if(o.t==="mur"&&ok(o.hp,1,b.maks)){b.hp=o.hp;settLiv(b.bar,b.hp/b.maks)}});
   }
   if(bolge>MAKS_BOLGE){bolge=MAKS_BOLGE;}
   skjold.hp=skjold.niv?SKJOLD_NIV[skjold.niv].maks:0;
-  byggBasen();helt.x=0;helt.z=6;helt.hp=helt.maks;helt.nede=0;fase="bygg";oppdaterHud();oppdaterByggLinje();
+  byggBasen();helt.maks=BASE_NIV[basen.niv].maks;helt.x=0;helt.z=6;helt.hp=helt.maks;helt.nede=0;spillR("Idle");fase="bygg";oppdaterHud();oppdaterByggLinje();
 }
 addEventListener("pagehide",()=>lagre());
 
@@ -737,7 +737,7 @@ addEventListener("pagehide",()=>lagre());
 let meldT=0;function melding(t,ms=2600){const m=$("melding");m.textContent=t;m.classList.add("vis");clearTimeout(meldT);meldT=setTimeout(()=>m.classList.remove("vis"),ms)}
 function oppdaterHud(){
   $("mynter").textContent=mynter;
-  const bl=$("baseLiv");bl.textContent=Math.ceil(Math.max(0,basen.hp))+"/"+BASE_NIV[basen.niv].maks;bl.className=basen.hp<BASE_NIV[basen.niv].maks*0.3?"lav":"";
+  const bl=$("heltLiv");bl.textContent=Math.ceil(Math.max(0,helt.hp))+"/"+helt.maks;bl.className=helt.hp<helt.maks*0.3?"lav":"";
   $("bolge").textContent=Math.min(bolge,MAKS_BOLGE);
   $("pSkjold").hidden=!skjold.niv;$("skjold").textContent=Math.ceil(skjold.hp);
   $("nesteKnapp").hidden=fase!=="bygg";
@@ -747,8 +747,8 @@ function oppdaterHud(){
 const gameModalOpen=()=>$("infoLag").classList.contains("vis")||$("sluttLag").classList.contains("vis");
 function visSlutt(vant){
   paused=true;avbrytPlassering();lukkByggLinje();
-  $("sluttTittel").textContent=vant?"🏆 Du klarte Framtiden!":"💥 Basen falt!";
-  $("sluttTekst").textContent=vant?"Alle ti bølgene er slått, og Framtidskongen er borte! Verden 2 kommer snart.":"Robotmonstrene kom seg inn i basen på bølge "+bolge+". Prøv igjen. Tips: bygg murer og lasertårn rundt basen.";
+  $("sluttTittel").textContent=vant?"🏆 Du klarte Framtiden!":"😵 Roboten ble slått ut!";
+  $("sluttTekst").textContent=vant?"Alle ti bølgene er slått, og Framtidskongen er borte! Verden 2 kommer snart.":"Robotmonstrene tok roboten din på bølge "+bolge+". Tips: løp unna når mange kommer, bygg lasertårn, og stå inni kraftskjoldet.";
   $("sluttIgjen").textContent=vant?"🔁 Spill bølge 10 en gang til":"▶ Prøv bølge "+bolge+" igjen";
   $("sluttLag").classList.add("vis");$("sluttIgjen").focus();
 }
@@ -758,12 +758,13 @@ $("sluttNy").addEventListener("click",()=>{brukLagring(null);lagre();$("sluttLag
 // ================= Byggelinja og plassering =================
 let byggApen=false,valgt=null,spøkelse=null,ring=null,peker={x:0,z:0,på:false};
 function prisFor(D){if(D.id==="skjold")return skjold.niv>=3?null:SKJOLD_NIV[skjold.niv+1].pris;if(D.id==="basen")return basen.niv>=3?null:BASE_NIV[basen.niv+1].pris;if(D.id==="reparer")return 30;return D.pris}
+function altHelt(){return helt.hp>=helt.maks&&bygg.every(b=>b.t!=="mur"||b.hp>=b.maks)}
 function antall(t){return bygg.filter(b=>b.t===t).length}
 (function lagByggLinje(){const l=$("byggLinje");BYGG.forEach((D,i)=>{const b=document.createElement("button");b.type="button";b.className="bk";b.dataset.id=D.id;b.title=D.navn+" ("+(i+1)+") – "+D.tekst;
   b.innerHTML='<span class="ik" aria-hidden="true">'+D.ik+'</span><span class="nv">'+D.navn+'</span><span class="pr"></span>'+(D.ny?'<span class="ny">NY</span>':'');
   b.addEventListener("click",()=>velg(D.id));l.appendChild(b)})})();
 function oppdaterByggLinje(){document.querySelectorAll("#byggLinje .bk").forEach(b=>{const D=BY[b.dataset.id],p=prisFor(D);let tekst=p==null?"Maks":p+" 🪙";
-  if(D.id==="reparer"&&basen.hp>=BASE_NIV[basen.niv].maks)tekst="Hel";if(D.maks&&antall(D.id)>=D.maks)tekst="Maks";
+  if(D.id==="reparer"&&altHelt())tekst="Hel";if(D.maks&&antall(D.id)>=D.maks)tekst="Maks";
   b.querySelector(".pr").textContent=tekst;b.classList.toggle("valgt",valgt===D.id);b.setAttribute("aria-disabled",String(p==null||p>mynter||tekst==="Maks"||tekst==="Hel"));b.style.opacity=b.getAttribute("aria-disabled")==="true"?0.5:1})}
 function apneByggLinje(){if(!started||fase==="slutt")return;byggApen=true;$("byggLinje").hidden=false;$("byggKnapp").setAttribute("aria-pressed","true");html.classList.add("bygger");$("joy").classList.remove("klar");oppdaterByggLinje()}
 function lukkByggLinje(){byggApen=false;$("byggLinje").hidden=true;$("byggKnapp").setAttribute("aria-pressed","false");html.classList.remove("bygger");if(started)$("joy").classList.add("klar");avbrytPlassering()}
@@ -773,11 +774,11 @@ function velg(id){
   const D=BY[id],p=prisFor(D);
   if(D.handling){
     if(p==null){melding(D.id==="basen"?"Basen er allerede på høyeste nivå.":"Kraftskjoldet er allerede på høyeste nivå.");return}
-    if(id==="reparer"&&basen.hp>=BASE_NIV[basen.niv].maks){melding("Basen er helt hel 💪");return}
+    if(id==="reparer"&&altHelt()){melding("Roboten og murene er helt hele 💪");return}
     if(mynter<p){melding("Du trenger "+(p-mynter)+" 🪙 til");return}
     mynter-=p;
-    if(id==="reparer"){basen.hp=Math.min(BASE_NIV[basen.niv].maks,basen.hp+40);gnist(0,3,0,0x7dff6a,12);melding("🔧 Basen er reparert!")}
-    else if(id==="basen"){const før=BASE_NIV[basen.niv].maks;basen.niv++;basen.hp+=BASE_NIV[basen.niv].maks-før;byggBasen();gnist(0,4,0,0xffc93c,20);melding("⬆️ Basen er nivå "+basen.niv+" og har fått en kanon!")}
+    if(id==="reparer"){helt.hp=Math.min(helt.maks,helt.hp+50);for(const b of bygg)if(b.t==="mur"){b.hp=b.maks;settLiv(b.bar,1)}gnist(helt.x,2,helt.z,0x7dff6a,12);melding("🔧 Roboten fikk 50 liv, og murene er hele!")}
+    else if(id==="basen"){const før=helt.maks;basen.niv++;helt.maks=BASE_NIV[basen.niv].maks;helt.hp+=helt.maks-før;byggBasen();gnist(0,4,0,0xffc93c,20);melding("⬆️ Basen er nivå "+basen.niv+": den har en kanon, og roboten tåler mer!")}
     else if(id==="skjold"){skjold.niv++;skjold.hp=SKJOLD_NIV[skjold.niv].maks;melding(skjold.niv===1?"🛡️ Kraftskjoldet er på!":"🛡️ Kraftskjoldet er nivå "+skjold.niv+"!")}
     oppdaterHud();lagre();return;
   }
@@ -876,7 +877,7 @@ let last=performance.now(),tid=0;
 function oppdater(dt){
   tid+=dt;
   // Helten
-  if(helt.nede>0){helt.nede-=dt;if(helt.nede<=0){helt.x=0;helt.z=BASE_R+1.5;helt.hp=helt.maks;melding("🤖 Roboten er tilbake!");spillR("Idle")}}
+  if(helt.nede>0){helt.nede-=dt;if(helt.nede<=0){heltFalt();return}}
   else{
     let ix=0,iz=0;
     if(taster.has("ArrowUp")||taster.has("KeyW"))iz-=1;if(taster.has("ArrowDown")||taster.has("KeyS"))iz+=1;if(taster.has("ArrowLeft")||taster.has("KeyA"))ix-=1;if(taster.has("ArrowRight")||taster.has("KeyD"))ix+=1;
@@ -900,25 +901,26 @@ function oppdater(dt){
   for(const mo of monstre.slice()){
     const T=mo.T;mo.cd-=dt;mo.saktere=1;
     for(const b of bygg)if(b.t==="felle"&&avst(mo.x,mo.z,b.hx,b.hz)<BY.felle.niv[b.niv-1].rek+T.r*0.5)mo.saktere=Math.min(mo.saktere,BY.felle.niv[b.niv-1].saktere);
-    // Hva angriper monsteret? Helten eller en hjelper i nærheten, en mur i veien, skjoldet eller basen.
-    let mx=-mo.x,mz=-mo.z,angrip=null;
-    if(helt.nede<=0&&avst(mo.x,mo.z,helt.x,helt.z)<4+T.r){mx=helt.x-mo.x;mz=helt.z-mo.z;if(avst(mo.x,mo.z,helt.x,helt.z)<T.r+0.9)angrip={helt:true}}
-    else{const hj=bygg.find(b=>b.t==="hjelper"&&!b.nede&&avst(mo.x,mo.z,b.x,b.z)<T.r+1.0);if(hj)angrip={b:hj}}
-    const dBase=Math.hypot(mo.x,mo.z);
-    if(!angrip&&skjoldAktiv()&&dBase<skjold.R+T.r)angrip={skjold:true};
-    if(!angrip&&dBase<BASE_R+T.r+0.2)angrip={base:true};
-    if(!angrip){
-      const l=Math.hypot(mx,mz)||1,steg=T.fart*mo.saktere*dt,nx=mo.x+mx/l*steg,nz=mo.z+mz/l*steg;
+    // Som i Era Defenders 1: monstrene jakter på roboten. Murer står i veien, og basen (eller skjoldet) må de gå rundt.
+    const hx=helt.x-mo.x,hz=helt.z-mo.z,dh=Math.hypot(hx,hz);let angrip=null,mx=hx,mz=hz;
+    const iSkjold=skjoldAktiv()&&Math.hypot(helt.x,helt.z)<skjold.R-0.3,hinderR=(skjoldAktiv()?skjold.R:BASE_R)+T.r,dBase=Math.hypot(mo.x,mo.z);
+    const hj=bygg.find(b=>b.t==="hjelper"&&!b.nede&&avst(mo.x,mo.z,b.x,b.z)<T.r+1.0);
+    if(helt.nede<=0&&dh<T.r+0.9)angrip={helt:true};
+    else if(hj)angrip={b:hj};
+    else if(iSkjold&&dBase<skjold.R+T.r+0.1)angrip={skjold:true};
+    if(!angrip&&helt.nede<=0){
+      const l=dh||1,steg=T.fart*mo.saktere*dt;let nx=mo.x+mx/l*steg,nz=mo.z+mz/l*steg;
+      const dn=Math.hypot(nx,nz);
+      if(dn<hinderR){const ux=nx/(dn||1),uz=nz/(dn||1),sgn=(ux*hz-uz*hx)>0?-1:1;nx=mo.x+(-uz*sgn)*steg;nz=mo.z+(ux*sgn)*steg;const d2=Math.hypot(nx,nz)||1;if(d2<hinderR){nx*=hinderR/d2;nz*=hinderR/d2}}
       const mur=bygg.find(b=>b.t==="mur"&&punktMurAvstand(nx,nz,b)<T.r+0.4);
       if(mur)angrip={b:mur};
       else{mo.x=nx;mo.z=nz;mo.g.rotation.y=Math.atan2(mx,mz);mo.fase+=dt*T.fart*2.2;mo.ben[0].rotation.x=Math.sin(mo.fase)*0.6;mo.ben[1].rotation.x=-Math.sin(mo.fase)*0.6}
     }
     if(angrip&&mo.cd<=0){mo.cd=1;
-      if(angrip.helt){helt.hp-=T.skade;gnist(helt.x,1.5,helt.z,0xffcc00,5);if(helt.hp<=0){helt.nede=5;gnist(helt.x,1,helt.z,0xffcc00,20);spillEn("Death");melding("😵 Roboten må lade opp. Tilbake om 5 sekunder.")}}
+      if(angrip.helt){helt.hp-=T.skade;gnist(helt.x,1.5,helt.z,0xffcc00,5);oppdaterHud();if(helt.hp<=0){helt.hp=0;helt.nede=1.6;gnist(helt.x,1,helt.z,0xffcc00,20);spillEn("Death")}}
       else if(angrip.b){const b=angrip.b;b.hp-=T.skade;settLiv(b.bar,b.hp/b.maks);gnist(b.t==="mur"?mo.x:b.x,1,b.t==="mur"?mo.z:b.z,0xaab4d0,4);
         if(b.hp<=0){if(b.t==="mur"){gnist(b.hx,1,b.hz,0x9aa8c8,16);fjernBygg(b);melding("🧱 En mur ble ødelagt!")}else{b.nede=true;b.g.rotation.z=Math.PI/2;melding("🤖 En robothjelper er slått ut til neste bølge.")}}}
       else if(angrip.skjold){skjold.hp-=T.skade;gnist(mo.x*0.9,1.5,mo.z*0.9,0x56b8ff,5);if(skjold.hp<=0){skjold.hp=0;melding("🛡️ Kraftskjoldet sprakk! Det blir helt igjen etter bølgen.")}oppdaterHud()}
-      else if(angrip.base){basen.hp-=T.skade;gnist(mo.x*0.7,1.5,mo.z*0.7,0xff5050,6);oppdaterHud();if(basen.hp<=0){basen.hp=0;baseFalt();return}}
       if(angrip.helt||angrip.b){mo.g.rotation.y=Math.atan2(mx,mz)}
     }
     mo.mat.emissive.setHex(mo.blink>0?0x884444:0x000000);mo.blink-=dt;

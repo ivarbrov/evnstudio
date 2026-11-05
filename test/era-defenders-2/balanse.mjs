@@ -20,9 +20,9 @@ const res=await p.evaluate(async(strategi)=>{const S=__spill,log=[];let tid=0;
         if(strategi==='blandet'&&lasere.length>=6&&S.mynter>=25){const a=Math.random()*6.28,r=9;S.avbrytPlassering();S.velg('mur');S.plasser(Math.cos(a)*r,Math.sin(a)*r);S.avbrytPlassering();continue}
         break}}
     const før=S.bolge;S.startBolge();let t=0;while(S.fase==='kamp'&&t<400){S.steg(1);t++}tid+=t;
-    log.push({b:før,fase:S.fase,sek:t,base:Math.round(S.basen.hp),mynter:S.mynter,bygg:S.bygg.length});
+    log.push({b:før,fase:S.fase,sek:t,base:Math.round(S.helt.hp),mynter:S.mynter,bygg:S.bygg.length});
     if(S.fase!=='bygg')break}
   return {log,tid};},strategi);
-console.log(strategi, JSON.stringify(res.log.map(l=>`${l.b}:${l.fase} ${l.sek}s base${l.base} 🪙${l.mynter} b${l.bygg}`)), 'tid', Math.round(res.tid/60),'min');
+console.log(strategi, JSON.stringify(res.log.map(l=>`${l.b}:${l.fase} ${l.sek}s robot${l.base} 🪙${l.mynter} b${l.bygg}`)), 'tid', Math.round(res.tid/60),'min');
 await p.close()}
 await b.close();
