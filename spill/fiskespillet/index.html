@@ -7,19 +7,20 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.5.3 – EVN Studio</title>
+<title>Fiskespillet 0.5.4 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
   :root { --gull:#ffc93c; --hav:#0f3d6e; --mork:#0d2440; }
   * { box-sizing:border-box; }
   html, body { margin:0; height:100%; overflow:hidden; background:#7cc4ee; font-family:'Nunito',system-ui,sans-serif; color:#fff; overscroll-behavior:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
+  canvas#c:focus { outline:none; }
   canvas#c { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }
   button { font-family:inherit; touch-action:manipulation; cursor:pointer; }
   .vh { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
 
   /* Statuslinje øverst til venstre */
-  #hud { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); right:calc(250px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; flex-wrap:wrap; align-items:flex-start; }
+  #hud { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); right:calc(320px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; flex-wrap:wrap; align-items:flex-start; }
   #hud[hidden], #hoyre[hidden] { display:none !important; }
   .pille { background:rgba(13,36,64,.74); border:2px solid rgba(255,255,255,.25); border-radius:999px; padding:6px 14px; font-weight:800; font-size:18px; min-height:44px; display:flex; align-items:center; gap:6px; color:#fff; }
   .pille.full { border-color:#ff6b6b; background:rgba(120,20,30,.8); }
@@ -148,9 +149,13 @@
   }
   @media (max-width:520px) {
     #hud { right:calc(232px + env(safe-area-inset-right)); gap:6px; }
-    .pille { font-size:14px; padding:2px 8px; min-height:32px; gap:4px; }
+    .pille { font-size:14px; padding:2px 8px; min-height:32px; gap:4px; max-width:100%; white-space:nowrap; }
     #bokKnapp { min-height:44px; }
     #melding { top:calc(110px + env(safe-area-inset-top)); font-size:16px; }
+  }
+  @media (max-width:420px) {
+    /* Smale telefoner: statuslinja blir fire rader høy, så meldingen legges under den i stedet for oppå 📖 */
+    #melding { top:calc(176px + env(safe-area-inset-top)); }
   }
   @media (max-height:460px) {
     .maal img { display:none; }
@@ -162,7 +167,7 @@
 <script src="../../statistikk.js" data-spill="fiskespillet" defer></script>
 </head>
 <body>
-<canvas id="c"></canvas>
+<canvas id="c" tabindex="-1" aria-label="Spillverdenen: havet med båten din"></canvas>
 
 <div id="hud" hidden>
   <div class="pille" id="pPenger" title="Pengene dine">💰 <span id="penger">0</span></div>
@@ -195,7 +200,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.5.3</div>
+    <div class="evn-ver" id="versjon">Versjon 0.5.4</div>
   </div>
 </div>
 
@@ -521,11 +526,11 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.5.3';
+const VERSJON = '0.5.4';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
-const LYD_NOKKEL = 'evn-fiskespillet-lyd';
+const LYD_NOKKEL = TEST ? 'evn-fiskespillet-test-lyd' : 'evn-fiskespillet-lyd';
 
 // ======================================================
 //  INNSTILLINGER – Even kan endre tallene her
@@ -1819,7 +1824,8 @@ $('startBtn').addEventListener('click', () => {
   setTimeout(() => $('hjelp').style.opacity = 0, 15000);
   if (tilstand.fanget === 0) melding('Kjør ut på havet og trykk på 🎣 Fisk!<small>Ved boblene 🐟 biter fisken fortere. Oppdrag: Fang Kraken 🐙</small>', 5);
   else melding('Velkommen tilbake, kaptein! ⚓', 3);
-  $('handling').focus({ preventScroll: true });
+  // Fokus til spillverdenen (handlingsknappen er skjult ved start, så fokus havnet før på BODY)
+  canvas.focus({ preventScroll: true });
 });
 
 // ======================================================
@@ -1936,6 +1942,13 @@ addEventListener('pagehide', lagre);
 let feilVist = false;
 addEventListener('error', e => { if (feilVist || !e.error || spillTilstand === 'start') return; feilVist = true; try { lagre(); } catch (er) {} try { if (window.EVNPauseInert) window.EVNPauseInert($('feil')); } catch (er) {} $('feil').classList.add('vis'); $('feilLast').focus(); });   // K2: feilkortet virker også over pause og kart
 $('feilLast').addEventListener('click', () => location.reload());
+// T2: Feilkortet holder på fokus. Den felles pausen fjerner «inert» når den lukkes (settInert(null)) og vet ikke om #feil.
+// Vakten her ligger i spillet, så den felles kopien av EVN-PAUSE er uendret. Bør rettes i kilden (se sluttrapport 5.11.2026).
+function feilApent() { return $('feil').classList.contains('vis'); }
+document.addEventListener('focusin', e => { if (feilApent() && !$('feil').contains(e.target)) $('feilLast').focus(); }, true);
+addEventListener('keydown', e => { if (feilApent() && e.key === 'Tab') { e.preventDefault(); $('feilLast').focus(); } }, true);
+// Hvis nettleseren mister 3D-grafikken (WebGL), vises feilkortet med «Last på nytt» i stedet for en svart skjerm
+canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); if (spillTilstand === 'start' || feilApent()) return; feilVist = true; try { lagre(); } catch (er) {} $('feil').classList.add('vis'); $('feilLast').focus(); });
 
 // ======================================================
 //  Start
@@ -1950,7 +1963,7 @@ byggBaat(); byggLast(); byggAkvarium(); oppdaterHud();
 baat.position.copy(spiller.pos);
 
 window.__evnP = EVNPause({
-  mappe: 'fiskespillet', avsluttId: 'evnAvslutt',
+  mappe: TEST ? 'fiskespillet-test' : 'fiskespillet', avsluttId: 'evnAvslutt',   // testmodus teller spilletid for seg
   tema: { panel: 'rgba(21,90,138,.97)', ink: '#fff', hi: '#ffc93c', btn: '#ffc93c', btnInk: '#4a2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400 },
   knapp: (b, k) => { for (const x of [k, b]) { x.className = 'rund'; x.style.cssText = 'padding:0;font-size:22px'; } $('hoyre').insertBefore(k, $('evnAvslutt')); $('hoyre').insertBefore(b, $('evnAvslutt')); },
   kart: {
@@ -1969,7 +1982,7 @@ window.__evnP = EVNPause({
 });
 // Etter EVNPause, så pausens Tab-regel (T2) gjelder også i «Starte helt på nytt?» (nullstillboksen stopper alle andre taster)
 EVNNullstill({
-  nokler: [LAGRING],
+  nokler: [LAGRING, LAGRING + '-kopi'],
   tema: { panel: '#155a8a', ink: '#fff', hi: '#ffc93c', btn: '#ffc93c', btnInk: '#4a2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400 },
   tekst: 'Alle fiskene, pengene, båtene og fiskeboka blir borte.',
   harLagring: () => tilstand.fanget > 0 || tilstand.penger > INNST.startPenger || tilstand.stang > 0 || tilstand.baat > 0,
