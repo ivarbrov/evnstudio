@@ -31,6 +31,10 @@
     ['pointerdown', 'mousedown', 'touchstart'].forEach(ev => h.addEventListener(ev, e => e.stopPropagation(), { passive: true }));
     h.addEventListener('click', e => { e.stopPropagation(); hjelp(); });
     const kart = $('evnKartKnapp'); rad.insertBefore(h, kart ? kart.nextSibling : null);
+    // Avslutt ytterst til høyre (EVN UI-standard KS5)
+    const avs = $('evnAvslutt'); if (avs && avs.parentNode === rad) rad.appendChild(avs);
+    // Riktig hjelpetekst: kjøres etter EVN-PAUSE sin egen lytter på samme knapp
+    const sk = $('evnPauseStyrKnapp'); if (sk && !sk.dataset.h2Styr) { sk.dataset.h2Styr = '1'; sk.addEventListener('click', skrivStyring); }
     // Netter overlevd: i pausemenyen
     const kort = document.querySelector('#evnPause .kort'), n = $('nights');
     // Lukkeknapp i pausekortet (samme som «Fortsett»; Esc og P virker som før)
@@ -49,6 +53,20 @@
     }
     if (kort && n && !$('h2Netter')) { const p = document.createElement('p'); p.id = 'h2Netter'; p.append('🌙 Netter overlevd: ', n); kort.insertBefore(p, $('evnPauseFortsett')); }
   }
+  // Tab flytter bare fokus (EVN UI-standard KS8, T2). Spillet får ikke Tab, så Tab åpner ikke lenger ryggsekken (I og 🎒 gjør det).
+  // Står fokus på body eller en skjult knapp (for eksempel Start etter oppstart), flyttes det til første synlige knapp i toppraden.
+  // Ellers går Tab ut av siden, og spillet settes på pause (Chrome husker den skjulte Start-knappen som startpunkt).
+  window.addEventListener('keydown', e => { if (e.key !== 'Tab' && e.code !== 'Tab') return; e.stopImmediatePropagation();
+    const a = document.activeElement;
+    if (!a || a === document.body || !a.getClientRects().length) {
+      const f = [...document.querySelectorAll('#evnRad button, #evnRad a, #hotbar button')].find(el => el.getClientRects().length && !el.disabled);
+      if (f) { e.preventDefault(); f.focus(); }
+    } }, true);
+  // «Slik styrer du» i pausen: riktig tekst for musa (første klikk låser), kartknappen, spis og hjelp. Teksten i spill.js er uendret.
+  const STYR_PC = '⌨️ Gå: <b>W A S D</b> eller pilene · Hopp: <b>mellomrom</b><br>🖱️ Første klikk: musa styrer kameraet · Hugg: <b>venstre musknapp</b><br>Se rundt uten å låse musa: <b>høyre musknapp</b> og dra · Zoom: musehjulet<br>Gjør ting: <b>E</b> · Spis: <b>F</b> eller <b>Q</b> · Våpen: <b>1–0</b><br>🔨 Bygg: <b>B</b> · 🎒 Sekk: <b>I</b> · 🗺️ Kart: <b>M</b> · 🎥 Kamera: <b>C</b><br>⏸ Pause: <b>P</b> eller <b>Esc</b> · ❓ Hjelp: <b>H</b>';
+  const STYR_TOUCH = '👆 Gå: dra med fingeren · Se rundt: dra med en annen finger · Zoom: knip<br>🪓 Hugg: trykk øksa · ⤴️ Hopp · ✋ Bruk: trykk hånda<br>🔨 Bygg · 🍖 Spis · 🎥 Kamera · 🗺️ Kart: trykk 🗺️ øverst<br>⏸ Pause · ❓ Hjelp';
+  // Lytteren legges på selve knappen (i knapper()), fordi EVN-PAUSE stopper klikk fra å boble opp fra pausekortet.
+  const skrivStyring = () => { const s = $('evnPauseStyr'); if (s && !s.hidden) s.innerHTML = document.body.classList.contains('touchui') ? STYR_TOUCH : STYR_PC; };
   // Hjelp = pausemenyen med «Slik styrer du» åpen (spillet står stille mens den vises)
   function hjelp() {
     const åpneStyr = () => { const s = $('evnPauseStyrKnapp'); if (s && s.getAttribute('aria-expanded') !== 'true') s.click(); };
