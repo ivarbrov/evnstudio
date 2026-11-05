@@ -175,7 +175,7 @@
     rot.querySelectorAll('details[open]').forEach(function (x) { apne[x.dataset.s] = 1; });
     rot.innerHTML = '';
     E.spill.forEach(function (s) {
-      if (s.kommer) return;
+      if (s.kommer || s.fjernet) return;   // fjernet: spillet er tatt av nettsiden; opptjente E-coins beholdes
       var gjort = s.m.filter(function (m) { return d.tjent[m[0]]; });
       var igjen = s.m.reduce(function (sum, m) { return sum + (d.tjent[m[0]] ? 0 : m[1]); }, 0);
       var el = document.createElement('details'); el.className = 'spill'; el.dataset.s = s.id; if (apne[s.id]) el.open = true;
