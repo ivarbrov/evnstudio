@@ -22,12 +22,13 @@ Ett lag erstatter aldri et annet. Grønne tester er ikke en QA-vurdering, og en 
 2. Kjør `node test/kjor.mjs` og spillets egne tester. Rett feil og commit.
 3. EVN Game QA på fullt nivå for siste kodecommit. Rapporten i egen commit.
 4. Følg opp sjekkene i PR-en. Er grenen bak `main`: hent `main`, kjør test og QA på nytt.
-5. Gi én samlet status når begge sjekkene er grønne:
+5. Gi en kort publiseringsrapport når begge sjekkene er grønne:
 
 ```
-[Spill] [versjon] er klar til publisering – PR #N, kodecommit abc1234
-Automatiske tester: grønn · QA før publisering: grønn
-EVN Game QA: JA / JA MED FORBEHOLD (rapport) · Even: testet / ikke testet
+Publiseringskandidat: [spill] [versjon] – PR #N, kodecommit abc1234
+Endret: …
+QA: JA / JA MED FORBEHOLD (rapport) · Automatiske tester og QA før publisering: grønne
+Evens spilltest: testet / ikke testet
 Forbehold: … · Endrer test/ eller .github/: nei
 Svar «Publiser [spill] [versjon]» for å publisere.
 ```
@@ -43,6 +44,10 @@ Svar «Publiser [spill] [versjon]» for å publisere.
 **Godkjenningen faller bort** hvis spillets filer eller felles kode endres etter godkjenningen. Claude slår da av auto-merge og ber om ny godkjenning. Å hente `main` inn i grenen, med ny test og QA, er tillatt når det ikke endrer spillets egne filer.
 
 **Ingen automatisk publisering.** Uten «Publiser …» slår Claude aldri sammen til `main` og slår aldri på auto-merge.
+
+**Endringer i `test/` og `.github/`** (eierens vedtak 5.11.2026). Claude forklarer endringen, kontrollerer at sikkerhet og testdekning ikke svekkes, kjører uavhengige tester (også en negativ test), og ber om særskilt godkjenning. Unntak fra regelen for `main` brukes bare etter den godkjenningen. Siden 5.11.2026 røyktestes alle spillmapper automatisk med standardstarten `#startBtn`, så nye spill trenger normalt ingen endring i `test/`.
+
+**GitHub-innstillinger (5.11.2026).** Eieren har godkjent auto-merge, sletting av sammenslåtte grener og «Oppdater gren». Claude-miljøet kan ikke endre repo-innstillinger eller regelsett, så eieren slår dem på under Settings → General → Pull Requests. Unntak i regelsettet er ikke aktivert. Det kan ikke begrenses til bestemte filer i et personlig repo, og det gjelder også Claudes tilgang.
 
 ## GitHub: push uten manuelt arbeid
 
@@ -171,7 +176,7 @@ Ingen av kjøringene startet publisering. Alle de 32 publiseringene til `github-
 
 **Forslag til regel for `main` (Settings → Rules → Rulesets → New branch ruleset):**
 - Navn `main`, Enforcement «Active», Target «Default branch».
-- Bypass list: «Repository admin», med «For pull requests only». Unntaket brukes bare for PR-er som endrer `test/` eller `.github/`, etter manuell gjennomgang. **Merk (5.11.2026):** den aktive regelen har ingen unntak (`bypass_actors` er tom). PR-er som endrer `test/` eller `.github/`, kan derfor ikke slås sammen i dag.
+- Bypass list: «Repository admin», med «For pull requests only». Unntaket brukes bare for PR-er som endrer `test/` eller `.github/`, etter manuell gjennomgang. **Merk (5.11.2026):** den aktive regelen har ingen unntak (`bypass_actors` er tom). PR-er som endrer `test/` eller `.github/`, kan derfor ikke slås sammen uten at eieren gir et engangsunntak.
 - Restrict deletions: på. Block force pushes: på.
 - Require a pull request before merging: på, med 0 godkjenninger. Sammenslåingen er eierens godkjenning.
 - Require status checks to pass: på, med «Require branches to be up to date before merging». Obligatoriske kontroller:

@@ -43,11 +43,12 @@ Publiser aldri uten at en voksen har godkjent den konkrete versjonen. En QA-rapp
 
 Full beskrivelse: `.claude/arbeidsflyt.md`, avsnittet «Fra utvikling til publisering».
 
-- Claude oppretter gren og PR, tester, retter, kjører EVN Game QA, holder grenen oppdatert mot `main` og gir én samlet status når versjonen er klar. Dette krever ingen egen godkjenning.
+- Claude oppretter gren og PR, tester, retter, kjører EVN Game QA, holder grenen oppdatert mot `main` og gir en kort publiseringsrapport (spill og versjon, hva som er endret, QA-status, Evens spilltest, forbehold, PR og commit) når versjonen er klar. Dette krever ingen egen godkjenning, og Claude spør ikke unødvendig underveis.
 - Bare når eieren skriver «Publiser [spill] [versjon]» (eller «Publiser PR #N»), kan Claude slå sammen PR-en eller slå på auto-merge. Godkjenningen gjelder den versjonen, den PR-en og spillets kodecommit som står i statusen.
 - «Ser bra ut», Evens godkjenning, grønne sjekker eller en QA-rapport er ikke publiseringsgodkjenning.
 - Godkjenningen faller bort hvis spillets filer eller felles kode endres etterpå. Claude slår da av auto-merge og ber om ny godkjenning. Å hente `main` inn i grenen med ny test og QA er tillatt når det ikke endrer spillets egne filer.
-- Unntak fra regelen for `main` (PR-er som endrer `test/` eller `.github/`) brukes bare når eieren har godkjent nettopp den endringen.
+- Unntak fra regelen for `main` (PR-er som endrer `test/` eller `.github/`) brukes bare når eieren har godkjent nettopp den endringen, etter at Claude har forklart den, vist at sikkerhet og testdekning ikke svekkes, og kjørt uavhengige tester.
+- Publiseringen kontrolleres mot utrullingen til GitHub Pages. Kan evnstudio.no ikke testes live, står det tydelig i rapporten.
 
 ## Publiserte spill
 
