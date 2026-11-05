@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.5.4 – EVN Studio</title>
+<title>Fiskespillet 0.5.5 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -200,7 +200,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.5.4</div>
+    <div class="evn-ver" id="versjon">Versjon 0.5.5</div>
   </div>
 </div>
 
@@ -526,7 +526,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.5.4';
+const VERSJON = '0.5.5';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -1925,11 +1925,11 @@ function oppdaterInntekt(dt) {
 }
 function loop(na) {
   requestAnimationFrame(loop);
-  let dt = (na - sisteTid) / 1000; sisteTid = na; if (!(dt > 0)) dt = 0; dt = Math.min(dt, 0.05);
+  let dt = (na - sisteTid) / 1000; sisteTid = na; if (!(dt > 0)) dt = 0; const ekteDt = Math.min(dt, 0.25); dt = Math.min(dt, 0.05);   // ekteDt: Kraken-visningen varer like lenge ved lav bildefrekvens
   tid += dt;
   const spill = spillTilstand === 'spill' && !modalApen();
   if (spill) {
-    oppdaterBaat(dt, tid); oppdaterFiske(dt, tid); oppdaterKrakenShow(dt, tid); oppdaterInntekt(dt);
+    oppdaterBaat(dt, tid); oppdaterFiske(dt, tid); oppdaterKrakenShow(ekteDt, tid); oppdaterInntekt(dt);
     lagreTid += dt; if (lagreTid > 5) { lagreTid = 0; lagre(); }
   } else { baat.position.y = 0.25 + Math.sin(tid * 1.6) * 0.15; }
   if (spillTilstand !== 'pause') { oppdaterVerden(dt, tid); oppdaterAkvarium(dt, tid); oppdaterSkum(dt); oppdaterPlask(dt); robotAnimasjon(dt); for (const m of lastGruppe.children) animerFisk(m, tid * 0.3, 0.5); }
@@ -1948,7 +1948,7 @@ function feilApent() { return $('feil').classList.contains('vis'); }
 document.addEventListener('focusin', e => { if (feilApent() && !$('feil').contains(e.target)) $('feilLast').focus(); }, true);
 addEventListener('keydown', e => { if (feilApent() && e.key === 'Tab') { e.preventDefault(); $('feilLast').focus(); } }, true);
 // Hvis nettleseren mister 3D-grafikken (WebGL), vises feilkortet med «Last på nytt» i stedet for en svart skjerm
-canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); if (spillTilstand === 'start' || feilApent()) return; feilVist = true; try { lagre(); } catch (er) {} $('feil').classList.add('vis'); $('feilLast').focus(); });
+canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); if (feilApent()) return; feilVist = true; if (spillTilstand !== 'start') { try { lagre(); } catch (er) {} } $('feil').classList.add('vis'); $('feilLast').focus(); });
 
 // ======================================================
 //  Start
