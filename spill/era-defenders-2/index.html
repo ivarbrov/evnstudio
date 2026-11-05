@@ -163,7 +163,7 @@
     <button class="valg" id="startVelg" type="button" hidden>🌍 Velg verden</button>
     <p class="ingen3d hidden" id="noGL">😕 Denne nettleseren kan ikke vise 3D. Prøv en annen nettleser, eller be en voksen om hjelp.</p>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.5.0 · prøveversjon</div>
+    <div class="evn-ver" id="versjon">Versjon 0.5.1 · prøveversjon</div>
   </div>
 </div>
 
@@ -466,7 +466,7 @@ window.EVNPause = function (cfg) {
    lasersverd som blokkerer laserskudd, kraftdytt og sverdkast, kappe, og skuddboter som skyter laser.
    v0.5.0 (Evens ønske): laserpistol i stedet for sverd, fire nye verdener (Isplaneten, Skogmånen, Kampstasjonen,
    Lavaplaneten) med modeller laget i Blender, og bedre grafikk (tonemapping, lys, partikler, hindre og farer). */
-const VERSJON="0.5.0";
+const VERSJON="0.5.1";
 const SAVE_KEY="evn-era-defenders-2-v1";
 const $=id=>document.getElementById(id);
 const html=document.documentElement;
@@ -781,7 +781,7 @@ function pynMesh(v){
   g.traverse(o=>{if(o.isMesh)o.castShadow=true});return g;
 }
 function murRetning(x,z){const l=Math.hypot(x,z)||1;return{tx:-z/l,tz:x/l}}
-function lagByggMesh(t,niv,v,x,z){
+function lagByggMesh(t,niv,v,x,z,rot){
   const g=new THREE.Group();
   if(t==="laser"){
     const fot=new THREE.Mesh(new THREE.CylinderGeometry(0.9,1.1,1.2+niv*0.3,8),M(0xe8eeff,{metalness:0.5,roughness:0.3}));fot.position.y=(1.2+niv*0.3)/2;fot.castShadow=true;g.add(fot);
@@ -801,7 +801,7 @@ function lagByggMesh(t,niv,v,x,z){
   }else if(t==="mur"){
     const mur=new THREE.Mesh(new THREE.BoxGeometry(3,1.2+niv*0.3,0.7),M(niv>=3?0x9aa8c8:niv===2?0x7c88a8:0x5d6888,{metalness:0.5,roughness:0.4}));mur.position.y=(1.2+niv*0.3)/2;mur.castShadow=mur.receiveShadow=true;g.add(mur);
     const strek=new THREE.Mesh(new THREE.BoxGeometry(3.02,0.12,0.72),M(0x3ee6ff,{emissive:0x3ee6ff,emissiveIntensity:1}));strek.position.y=1.0+niv*0.3;g.add(strek);
-    const r=murRetning(x,z);g.rotation.y=Math.atan2(-r.tz,r.tx);
+    if(Number.isFinite(rot))g.rotation.y=rot;else{const r=murRetning(x,z);g.rotation.y=Math.atan2(-r.tz,r.tx)}
   }else if(t==="hjelper"){
     const kropp=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.6),M(0x4aa8ff,{metalness:0.5}));kropp.position.y=0.9;kropp.castShadow=true;g.add(kropp);
     const hode=new THREE.Mesh(new THREE.SphereGeometry(0.38,12,10),M(0xe8eeff,{metalness:0.4}));hode.position.y=1.6;g.add(hode);
@@ -818,15 +818,16 @@ function lagByggMesh(t,niv,v,x,z){
   g.position.set(x,0,z);return g;
 }
 function rekkeviddeAv(b){const n=BY[b.t].niv&&BY[b.t].niv[b.niv-1];return n&&n.rek||0}
-function nyttBygg(t,x,z,niv=1,v=0){
-  const D=BY[t],g=lagByggMesh(t,niv,v,x,z);scene.add(g);
-  const b={t,x,z,niv,v,g,cd:0,hp:0,maks:0,hx:x,hz:z,nede:false,bar:null,brukt:D.pris};
+function nyttBygg(t,x,z,niv=1,v=0,rot){
+  if(t==="mur"&&!Number.isFinite(rot)){const r=murRetning(x,z);rot=Math.atan2(-r.tz,r.tx)}
+  const D=BY[t],g=lagByggMesh(t,niv,v,x,z,rot);scene.add(g);
+  const b={t,x,z,niv,v,g,rot,cd:0,hp:0,maks:0,hx:x,hz:z,nede:false,bar:null,brukt:D.pris};
   if(t==="mur"||t==="hjelper"){b.maks=b.hp=D.niv[niv-1].hp;b.bar=lagLivsbar(t==="mur"?2.4:1.2,t==="mur"?2.4:2.4);g.add(b.bar);settLiv(b.bar,1)}
-  if(t==="mur"){const r=murRetning(x,z);b.ax=x-r.tx*1.5;b.az=z-r.tz*1.5;b.bx=x+r.tx*1.5;b.bz=z+r.tz*1.5}
+  if(t==="mur"){const tx=Math.cos(rot),tz=-Math.sin(rot);b.ax=x-tx*1.5;b.az=z-tz*1.5;b.bx=x+tx*1.5;b.bz=z+tz*1.5}
   bygg.push(b);return b;
 }
 function fjernBygg(b){scene.remove(b.g);const i=bygg.indexOf(b);if(i>=0)bygg.splice(i,1)}
-function oppgraderMesh(b){const keep={hp:b.hp,maks:b.maks};scene.remove(b.g);b.g=lagByggMesh(b.t,b.niv,b.v,b.hx,b.hz);scene.add(b.g);if(b.bar){b.bar=lagLivsbar(b.t==="mur"?2.4:1.2,2.4);b.g.add(b.bar)}const ny=BY[b.t].niv[b.niv-1].hp;if(ny){b.maks=ny;b.hp=Math.min(ny,keep.hp+(ny-keep.maks))}if(b.t==="hjelper"){b.g.position.set(b.x,0,b.z)}if(b.bar)settLiv(b.bar,b.hp/b.maks)}
+function oppgraderMesh(b){const keep={hp:b.hp,maks:b.maks};scene.remove(b.g);b.g=lagByggMesh(b.t,b.niv,b.v,b.hx,b.hz,b.rot);scene.add(b.g);if(b.bar){b.bar=lagLivsbar(b.t==="mur"?2.4:1.2,2.4);b.g.add(b.bar)}const ny=BY[b.t].niv[b.niv-1].hp;if(ny){b.maks=ny;b.hp=Math.min(ny,keep.hp+(ny-keep.maks))}if(b.t==="hjelper"){b.g.position.set(b.x,0,b.z)}if(b.bar)settLiv(b.bar,b.hp/b.maks)}
 function punktMurAvstand(px,pz,b){const vx=b.bx-b.ax,vz=b.bz-b.az,l2=vx*vx+vz*vz;let t=((px-b.ax)*vx+(pz-b.az)*vz)/l2;t=Math.max(0,Math.min(1,t));return Math.hypot(px-(b.ax+vx*t),pz-(b.az+vz*t))}
 
 // Skudd: laserstråler (straks) og energikuler (flyr)
@@ -879,7 +880,7 @@ function heltFalt(){fase="slutt";visSlutt(false)}
 // Lagres når en bølge starter og når den er klart. Taper du, starter du bølgen på nytt fra lagringen.
 // v2 (0.5.0): fire verdener. Bygg hører til verdenen; bytter du verden, får du alle myntene tilbake.
 function tilstand(){return{v:2,verden:verdenIdx,hoyeste:hoyesteVerden,ferdig:ferdigVerden.slice(),bolge,mynter,baseNiv:basen.niv,skjoldNiv:skjold.niv,seier,
-  bygg:bygg.map(b=>({t:b.t,x:+b.hx.toFixed(2),z:+b.hz.toFixed(2),niv:b.niv,v:b.v,hp:b.t==="mur"?Math.round(b.hp):undefined,brukt:b.brukt}))}}
+  bygg:bygg.map(b=>({t:b.t,x:+b.hx.toFixed(2),z:+b.hz.toFixed(2),niv:b.niv,v:b.v,hp:b.t==="mur"?Math.round(b.hp):undefined,rot:b.t==="mur"?+b.rot.toFixed(3):undefined,brukt:b.brukt}))}}
 let lastet=false; // ikke lagre før lagringen er lest inn (ellers kan en tidlig pagehide overskrive fremgangen)
 function lagreNå(){if(!lastet)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(tilstand()))}catch(e){}}
 function lagre(){if(fase==="kamp")return;lagreNå()}
@@ -908,7 +909,7 @@ function brukLagring(s){
     skjold.niv=ok(s.skjoldNiv,0,3)?Math.floor(s.skjoldNiv):0;seier=!!s.seier;
   }
   byggVerden(verdenIdx);
-  if(s)(Array.isArray(s.bygg)?s.bygg:[]).slice(0,200).forEach(o=>{if(!o||!BY[o.t]||BY[o.t].handling||!ok(o.x,-KX,KX)||!ok(o.z,-KZ,KZ))return;const n=ok(o.niv,1,BY[o.t].niv.length)?Math.floor(o.niv):1;const b=nyttBygg(o.t,o.x,o.z,n,ok(o.v,0,3)?Math.floor(o.v):0);b.brukt=ok(o.brukt,0,1e6)?o.brukt:BY[o.t].pris;if(o.t==="mur"&&ok(o.hp,1,b.maks)){b.hp=o.hp;settLiv(b.bar,b.hp/b.maks)}});
+  if(s)(Array.isArray(s.bygg)?s.bygg:[]).slice(0,200).forEach(o=>{if(!o||!BY[o.t]||BY[o.t].handling||!ok(o.x,-KX,KX)||!ok(o.z,-KZ,KZ))return;const n=ok(o.niv,1,BY[o.t].niv.length)?Math.floor(o.niv):1;const b=nyttBygg(o.t,o.x,o.z,n,ok(o.v,0,3)?Math.floor(o.v):0,ok(o.rot,-7,7)?o.rot:undefined);b.brukt=ok(o.brukt,0,1e6)?o.brukt:BY[o.t].pris;if(o.t==="mur"&&ok(o.hp,1,b.maks)){b.hp=o.hp;settLiv(b.bar,b.hp/b.maks)}});
   if(bolge>MAKS_BOLGE){bolge=MAKS_BOLGE;}
   skjold.hp=skjold.niv?SKJOLD_NIV[skjold.niv].maks:0;
   helt.maks=BASE_NIV[basen.niv].maks;helt.x=0;helt.z=0;skyvUt(helt,1);helt.hp=helt.maks;helt.nede=0;spillR("Idle");fase="bygg";nedtelling=6;oppdaterHud();oppdaterByggLinje();
@@ -995,10 +996,10 @@ function velg(id){
   avbrytPlassering();valgt=id;
   const pv=Math.floor(Math.random()*4);spøkelse=lagByggMesh(id,1,pv,0,0);spøkelse.userData.v=pv;spøkelse.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=0.55;o.castShadow=false}});spøkelse.visible=false;scene.add(spøkelse);
   const rek=D.niv[0].rek;if(rek&&id!=="felle"){ring=new THREE.Mesh(new THREE.RingGeometry(rek-0.12,rek,48),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.5,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=0.06;ring.visible=false;scene.add(ring)}
-  $("byggHjelp").textContent=(TOUCH?"Trykk":"Klikk")+" på kartet for å sette ut "+D.ik+" "+D.navn+". "+D.tekst;$("byggHjelp").hidden=false;
+  $("byggHjelp").textContent=(DRA_AVSTAND[id]?(TOUCH?"Trykk og dra":"Klikk og dra")+" på kartet for å bygge mange "+D.ik+". ":(TOUCH?"Trykk":"Klikk")+" på kartet for å sette ut "+D.ik+" "+D.navn+". ")+D.tekst;$("byggHjelp").hidden=false;
   oppdaterByggLinje();if(peker.på)flyttSpøkelse(peker.x,peker.z);
 }
-function avbrytPlassering(){valgt=null;if(spøkelse){scene.remove(spøkelse);spøkelse=null}if(ring){scene.remove(ring);ring=null}$("byggHjelp").hidden=true;oppdaterByggLinje()}
+function avbrytPlassering(){if(dra){dra.pool.forEach(g=>scene.remove(g));dra=null}valgt=null;if(spøkelse){scene.remove(spøkelse);spøkelse=null}if(ring){scene.remove(ring);ring=null}$("byggHjelp").hidden=true;oppdaterByggLinje()}
 function snapp(v){return Math.round(v*2)/2}
 function kanPlassere(id,x,z){
   const D=BY[id];if(Math.abs(x)>KX-1||Math.abs(z)>KZ-1)return false;
@@ -1008,17 +1009,51 @@ function kanPlassere(id,x,z){
   return true;
 }
 function flyttSpøkelse(x,z){if(!spøkelse)return;x=snapp(x);z=snapp(z);spøkelse.visible=true;spøkelse.position.set(x,0,z);
-  if(valgt==="mur"){const r=murRetning(x,z);spøkelse.rotation.y=Math.atan2(-r.tz,r.tx)}
+  if(valgt==="mur")spøkelse.rotation.y=standardRot();
   const ok=kanPlassere(valgt,x,z);spøkelse.traverse(o=>{if(o.isMesh)o.material.emissive&&o.material.emissive.setHex(ok?0x114411:0x661111)});
   if(ring){ring.visible=true;ring.position.x=x;ring.position.z=z;ring.material.color.setHex(ok?0xffffff:0xff5050)}}
-function plasser(x,z){
+function plasser(x,z,rot){
   if(!valgt)return;x=snapp(x);z=snapp(z);const D=BY[valgt];
   if(!kanPlassere(valgt,x,z)){melding("Her er det ikke plass");return}
   if(mynter<D.pris){melding("Du trenger "+(D.pris-mynter)+" 🪙 til");avbrytPlassering();return}
-  mynter-=D.pris;const b=nyttBygg(valgt,x,z,1,spøkelse?spøkelse.userData.v||0:0);gnist(x,0.8,z,0x3ee6ff,8);
+  mynter-=D.pris;const b=nyttBygg(valgt,x,z,1,spøkelse?spøkelse.userData.v||0:0,valgt==="mur"?(Number.isFinite(rot)?rot:standardRot()):undefined);gnist(x,0.8,z,0x3ee6ff,8);
   if(valgt==="hjelper"){b.x=x;b.z=z}
   if(bolge===1&&bygg.length===1)melding("Bra! Nå kan lasertårnet hjelpe deg.",3000);
   const fortsett=D.flere&&mynter>=D.pris;oppdaterHud();lagre();if(!fortsett)avbrytPlassering();else oppdaterByggLinje();
+}
+
+
+// ================= Dra for å bygge mange på en gang (Evens ønske: som i andre byggespill) =================
+// Mur og pynt: trykk, dra og slipp. Retningen låses til 45°, og du ser alle byggene før du slipper.
+const DRA_AVSTAND={mur:3,pynt:1.6};
+let dra=null;
+function standardRot(){return Math.atan2(-kam.rz,kam.rx)}  // langs skjermen, vannrett
+function draPunkter(bx,bz){
+  const st=DRA_AVSTAND[valgt],dx=bx-dra.ax,dz=bz-dra.az,l=Math.hypot(dx,dz);
+  if(l<st*0.6)return{p:[[dra.ax,dra.az]],rot:standardRot()};
+  const a=Math.round(Math.atan2(dz,dx)/(Math.PI/4))*(Math.PI/4),ux=Math.cos(a),uz=Math.sin(a),n=Math.min(30,Math.floor(l/st+0.5)+1),p=[];
+  for(let i=0;i<n;i++)p.push([dra.ax+ux*st*i,dra.az+uz*st*i]);
+  return{p,rot:Math.atan2(-uz,ux)};
+}
+function draVurder(bx,bz){
+  const {p,rot}=draPunkter(bx,bz),D=BY[valgt];let penger=mynter;
+  return{rot,liste:p.map(([x,z])=>{const ok=kanPlassere(valgt,x,z)&&penger>=D.pris;if(ok)penger-=D.pris;return{x,z,ok}})};
+}
+function visDra(bx,bz){
+  const {rot,liste}=draVurder(bx,bz);
+  while(dra.pool.length<liste.length){const g=lagByggMesh(valgt,1,dra.pool.length%4,0,0,0);g.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=0.55;o.castShadow=false}});scene.add(g);dra.pool.push(g)}
+  dra.pool.forEach((g,i)=>{const e=liste[i];g.visible=!!e;if(!e)return;g.position.set(e.x,0,e.z);if(valgt==="mur")g.rotation.y=rot;g.traverse(o=>{if(o.isMesh&&o.material.emissive)o.material.emissive.setHex(e.ok?0x114411:0x661111)})});
+  if(spøkelse)spøkelse.visible=false;if(ring)ring.visible=false;
+  const ant=liste.filter(e=>e.ok).length;$("byggHjelp").textContent=BY[valgt].ik+" "+ant+" × "+BY[valgt].navn.toLowerCase()+" = "+(ant*BY[valgt].pris)+" 🪙"+(ant<liste.length?" (røde får ikke plass eller koster for mye)":"")+". Slipp for å bygge.";
+}
+function avsluttDra(bx,bz,bygg_){
+  if(!dra)return;const {rot,liste}=draVurder(bx,bz);dra.pool.forEach(g=>scene.remove(g));dra=null;
+  if(!bygg_)return;const D=BY[valgt];let n=0;
+  for(const e of liste)if(e.ok&&mynter>=D.pris&&kanPlassere(valgt,e.x,e.z)){mynter-=D.pris;nyttBygg(valgt,e.x,e.z,1,Math.floor(Math.random()*4),valgt==="mur"?rot:undefined);gnist(e.x,0.8,e.z,0x3ee6ff,4);n++}
+  if(!n){melding(mynter<D.pris?"Du trenger "+(D.pris-mynter)+" 🪙 til":"Her er det ikke plass")}
+  else melding(D.ik+" "+n+" "+(n===1?D.navn.toLowerCase():(valgt==="mur"?"murer":"pynt"))+" bygget!",1800);
+  oppdaterHud();lagre();
+  if(mynter<D.pris)avbrytPlassering();else{$("byggHjelp").textContent=(TOUCH?"Trykk":"Klikk")+" og dra på kartet for å bygge flere. "+D.tekst;oppdaterByggLinje()}
 }
 
 // ================= Info: oppgrader eller selg =================
@@ -1070,16 +1105,18 @@ function bakkePunkt(cx,cy){ndc.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.
 let ned=null;
 renderer.domElement.addEventListener("contextmenu",e=>e.preventDefault());
 renderer.domElement.addEventListener("pointerdown",e=>{if(!started||paused)return;
-  if(!byggApen&&e.pointerType==="mouse"){const p=bakkePunkt(e.clientX,e.clientY);if(p){kamp.mus={x:p.x,z:p.z,ned:e.button===0};if(e.button===2)skytMagi(musRetning());else if(e.button===0)skytPistol(musRetning())}return}ned={x:e.clientX,y:e.clientY,id:e.pointerId};const p=bakkePunkt(e.clientX,e.clientY);if(p){peker.x=p.x;peker.z=p.z;peker.på=true;flyttSpøkelse(p.x,p.z)}});
-renderer.domElement.addEventListener("pointermove",e=>{const p=bakkePunkt(e.clientX,e.clientY);if(!p)return;if(kamp.mus&&e.pointerType==="mouse"){kamp.mus.x=p.x;kamp.mus.z=p.z}peker.x=p.x;peker.z=p.z;peker.på=true;if(!paused)flyttSpøkelse(p.x,p.z)});
+  if(!byggApen&&e.pointerType==="mouse"){const p=bakkePunkt(e.clientX,e.clientY);if(p){kamp.mus={x:p.x,z:p.z,ned:e.button===0};if(e.button===2)skytMagi(musRetning());else if(e.button===0)skytPistol(musRetning())}return}ned={x:e.clientX,y:e.clientY,id:e.pointerId};const p=bakkePunkt(e.clientX,e.clientY);if(p){peker.x=p.x;peker.z=p.z;peker.på=true;if(valgt&&DRA_AVSTAND[valgt]){dra={ax:snapp(p.x),az:snapp(p.z),pool:[]};visDra(p.x,p.z)}else flyttSpøkelse(p.x,p.z)}});
+renderer.domElement.addEventListener("pointermove",e=>{const p=bakkePunkt(e.clientX,e.clientY);if(!p)return;if(kamp.mus&&e.pointerType==="mouse"){kamp.mus.x=p.x;kamp.mus.z=p.z}peker.x=p.x;peker.z=p.z;peker.på=true;if(paused)return;if(dra)visDra(p.x,p.z);else flyttSpøkelse(p.x,p.z)});
 addEventListener("pointerup",e=>{if(kamp.mus&&e.button===0)kamp.mus.ned=false});
-renderer.domElement.addEventListener("pointerup",e=>{if(!ned||e.pointerId!==ned.id)return;const kort=Math.hypot(e.clientX-ned.x,e.clientY-ned.y)<(TOUCH?40:12);ned=null;if(!kort||!started||paused)return;
+renderer.domElement.addEventListener("pointerup",e=>{if(!ned||e.pointerId!==ned.id)return;
+  if(dra){ned=null;const p=bakkePunkt(e.clientX,e.clientY)||{x:dra.ax,z:dra.az};avsluttDra(p.x,p.z,started&&!paused);return}const kort=Math.hypot(e.clientX-ned.x,e.clientY-ned.y)<(TOUCH?40:12);ned=null;if(!kort||!started||paused)return;
   const p=bakkePunkt(e.clientX,e.clientY);if(!p)return;
   if(valgt){plasser(p.x,p.z);return}
   if(!byggApen)return;
   let best=null,bd=1e9;for(const b of bygg){const d=b.t==="mur"?punktMurAvstand(p.x,p.z,b):avst(p.x,p.z,b.t==="hjelper"?b.x:b.hx,b.t==="hjelper"?b.z:b.hz);const grense=b.t==="felle"?BY.felle.niv[b.niv-1].rek:BY[b.t].r+0.9;if(d<grense&&d<bd){bd=d;best=b}}
   if(best)apneInfo(best);
 });
+renderer.domElement.addEventListener("pointercancel",()=>{if(dra)avsluttDra(dra.ax,dra.az,false);ned=null});
 renderer.domElement.addEventListener("pointerleave",()=>{peker.på=false;if(spøkelse&&!TOUCH){spøkelse.visible=false;if(ring)ring.visible=false}});
 
 // ================= Kamp: laserpistol, kraftdytt og plasmagranat =================
@@ -1318,7 +1355,7 @@ window.__evnP=EVNPause({
     :"⬆️ Piltaster eller WASD: gå<br>Mellomrom eller klikk (hold inne): 🔫 laserpistol · E eller høyreklikk: 🌀 kraftdytt · F: 💣 plasmagranat<br>Gjem deg bak hindre – de stopper laserskudd<br>B: bygg · 1–9: velg · Esc: avbryt<br>🖱️ Med Bygg åpen: klikk på noe du har bygget for å oppgradere eller selge<br>P eller Esc: pause"
 });
 window.__spill={get mynter(){return mynter},set mynter(v){mynter=v;oppdaterHud()},get bolge(){return bolge},get fase(){return fase},get started(){return started},get paused(){return paused},
-  basen,skjold,helt,bygg,monstre,kamp,camera,startBolge,skytMagi,skytPistol,kastGranat,byttVerden,apneVerdenValg,VERDENER,get verden(){return verdenIdx},get hinder(){return hinder},get farer(){return farer},iHinder,iFare,MOD,modellLast,settHoyeste:n=>{hoyesteVerden=n},velg,plasser,avbrytPlassering,kanPlassere,lagre,lesLagring,TYPER,BYGG,
+  basen,skjold,helt,bygg,monstre,kamp,camera,draTest:(ax,az,bx,bz)=>{dra={ax,az,pool:[]};visDra(bx,bz);avsluttDra(bx,bz,true)},startBolge,skytMagi,skytPistol,kastGranat,byttVerden,apneVerdenValg,VERDENER,get verden(){return verdenIdx},get hinder(){return hinder},get farer(){return farer},iHinder,iFare,MOD,modellLast,settHoyeste:n=>{hoyesteVerden=n},velg,plasser,avbrytPlassering,kanPlassere,lagre,lesLagring,TYPER,BYGG,
   hopp:(n)=>{bolge=n;oppdaterHud()},lagMonster,steg:(sek,dt=1/30)=>{for(let t=0;t<sek&&fase!=="slutt";t+=dt)oppdater(dt)},drepAlle:()=>monstre.slice().forEach(m=>skadMonster(m,1e6)),tilstand};
 </script>
 <!-- EVN Studio: Avslutt med spørsmål (vises bare under /spill/ på evnstudio.no) -->

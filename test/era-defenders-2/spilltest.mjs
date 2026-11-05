@@ -18,6 +18,8 @@ r.lava=await p.evaluate(()=>{const S=__spill;S.settHoyeste(3);S.byttVerden(3);S.
 r.verdenLagret=await p.evaluate(()=>{const s=__spill.lesLagring();return s.verden+' / høyeste '+s.hoyeste});
 r.vinnVerden=await p.evaluate(()=>{const S=__spill;S.byttVerden(0);S.hopp(10);S.startBolge();S.steg(0.1);while(S.monstre.length||S.fase==='kamp'){S.drepAlle();S.steg(2);if(S.fase!=='kamp')break}const s=S.lesLagring();return 'fase '+S.fase+', lagret verden '+s.verden+', kort: '+document.getElementById('sluttIgjen').textContent});
 await p.click('#sluttIgjen');r.nesteVerden=await p.evaluate(()=>__spill.VERDENER[__spill.verden].navn+' bølge '+__spill.bolge);
+r.draMur=await p.evaluate(()=>{const S=__spill;S.drepAlle();S.byttVerden(0);S.mynter=1000;S.velg('mur');const f=S.bygg.length;S.draTest(-20,14,-8,2);const m=S.bygg.filter(b=>b.t==='mur');S.avbrytPlassering();return (m.length-f)+' murer på skrå, rotasjon '+(m[0]&&m[0].rot.toFixed(2))+', mynter igjen '+S.mynter});
+r.draIkkeNokPenger=await p.evaluate(()=>{const S=__spill;S.mynter=60;S.velg('mur');const f=S.bygg.length;S.draTest(-20,-14,10,-14);S.avbrytPlassering();return (S.bygg.length-f)+' murer for 60 mynter'});
 r.ingenNesteKnapp=await p.evaluate(()=>!document.getElementById('nesteKnapp'));
 r.knapperSkjultPaaPC=await p.evaluate(()=>getComputedStyle(document.getElementById('kamp')).display==='none');
 await p.context().close();

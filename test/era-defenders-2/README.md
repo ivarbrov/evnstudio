@@ -1,7 +1,7 @@
 # Era Defenders 2 – testverktøy
 
 - `balanse.mjs`: simulerer bølge 1–10 i hver av de fire verdenene med to strategier (ingenting, blandet) via `__spill.steg()`. Krever Playwright og Chrome; stiene er satt for Claude-arbeidsmappen.
-- `spilltest.mjs`: laserpistol (trykk og hold), kraftdytt, granat, at hindre stopper skudd, lava, verdensbytte og lagring, overgang fra gammel lagring (v1), og overlapp mellom knappene på mobil.
+- `spilltest.mjs`: dra for å bygge mange murer (også på skrå og med for lite penger), laserpistol (trykk og hold), kraftdytt, granat, at hindre stopper skudd, lava, verdensbytte og lagring, overgang fra gammel lagring (v1), og overlapp mellom knappene på mobil.
 
 
 
