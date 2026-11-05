@@ -6304,7 +6304,10 @@ let pinch0 = 0;
 const JOY_R = 55;
 const inJoyZone = (x, y) => x < VW * (VW > VH ? 0.4 : 0.5) && y > VH * (VW > VH ? 0.35 : 0.55);
 function joyShow(x, y, on) { const j = $('joy'); j.style.transform = `translate(${x}px,${y}px)`; j.classList.toggle('on', on); }
-function joyIdle() { joyShow(Math.max(84, VW * 0.13), VH - (VW > VH ? 110 : 130), false); $('joyKnob').style.transform = ''; }
+function joyIdle() {   // 2.0.4: hvileringen står alltid over hurtiglinja (på høykant kan den ha to rader nederst)
+  const hb = $('hotbar'), hbTop = VW <= VH && hb && !hb.hidden && hb.offsetHeight ? hb.getBoundingClientRect().top : VH;
+  joyShow(Math.max(84, VW * 0.13), Math.min(VH - (VW > VH ? 110 : 130), hbTop - 72), false); $('joyKnob').style.transform = ''; }
+window.addEventListener('resize', () => { if (JOY.id === null && !$('joy').hidden) joyIdle(); });   // snudd telefon: ringen følger med
 function joyRelease() { JOY.id = null; JOY.dx = JOY.dy = JOY.mag = 0; joyIdle(); }
 function camRotate(dx, dy) { if (!R3) return; R3.camYaw -= dx * 0.0085; R3.camPitch = clamp(R3.camPitch + dy * 0.004, -0.35, 0.45); }
 function camZoom(f) { if (R3) R3.camZoom = clamp(R3.camZoom * f, 0.55, 1.7); }
@@ -6408,7 +6411,7 @@ EVNNullstill({
   vis: () => state === 'start'
 });
 // Høyden på hurtiglinja (én eller to rader) brukes til å plassere «Hent ved …»-teksten over den
-try { new ResizeObserver(() => { const h = $('hotbar').offsetHeight; if (h) document.documentElement.style.setProperty('--hbH', h + 'px'); }).observe($('hotbar')); } catch (er) {}
+try { new ResizeObserver(() => { const h = $('hotbar').offsetHeight; if (h) document.documentElement.style.setProperty('--hbH', h + 'px'); if (JOY.id === null && !$('joy').hidden) joyIdle(); }).observe($('hotbar')); } catch (er) {}
 // Felles pause med spilletid (⏸ / P / Esc). Spilletid lagres i 'evn-spilletid-morkeskogen'.
 // Esc gir pause (nettleseren slipper musa på Esc uansett). B åpner byggemenyen. Fortsett fanger musa igjen hvis den var fanget.
 let laastFoer = false;
