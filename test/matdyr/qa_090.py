@@ -12,7 +12,7 @@ def ny(b,vp={"width":1280,"height":800},init="",**kw):
 def start(p):
     p.goto(URL,timeout=120000);p.wait_for_timeout(1200);p.click("#startBtn",force=True);p.wait_for_timeout(2500)
 def kjop(p,ci,x=5,z=3):
-    p.evaluate(f"()=>{{const a=__spill.spawn({ci},{x},{z});a.state='walk';a.g.position.y=0;a.sp=0;__spill.robot.position.set({x-1},0,{z})}}");p.wait_for_timeout(1500);p.keyboard.press("e");p.wait_for_timeout(700)
+    p.evaluate(f"()=>{{const a=__spill.spawn({ci},{x},{z});a.state='walk';a.g.position.y=0;a.sp=0;a.sl=60;__spill.robot.position.set({x-1},0,{z})}}");p.wait_for_timeout(1500);p.keyboard.press("e");p.wait_for_timeout(700)
 with sync_playwright() as pw:
     b=pw.chromium.launch(args=ARGS)
     # ---- A: bæring ved omlasting / lukking ----
@@ -68,9 +68,10 @@ with sync_playwright() as pw:
     p.evaluate("()=>{__spill.robot.position.set(10,0,0)}");p.wait_for_timeout(800);p.evaluate("()=>{__spill.robot.position.set(-40,0.6,0)}");p.wait_for_timeout(1500)
     p.click("#swapYes");p.wait_for_timeout(500)
     st=p.evaluate("()=>({b:__spill.base.slice(),m:__spill.money,c:__spill.carry})")
-    ok("B «Bytt med svakeste» bytter ut det svakeste og gir halv pris",999 in st["b"] and st["b"][svak]==999 and st["c"] is None and st["m"]>m1,(svak,st["b"][svak]))
+    forv=p.evaluate(f"()=>{m1}-__spill.PRICE(999)+Math.floor(__spill.PRICE({svak}*25)/2)")
+    ok("B «Bytt med svakeste» bytter ut det svakeste, betaler nytt og gir halv pris for gammelt",999 in st["b"] and st["b"][svak]==999 and st["c"] is None and 0<=st["m"]-forv<20000,(svak,st["m"],forv))
     # velg annen plass
-    kjop(p,998,5,3);p.evaluate("()=>{__spill.robot.position.set(-40,0.6,0)}");p.wait_for_timeout(1500)
+    myth=p.evaluate("()=>__spill.COMBOS.findIndex((c,i)=>c.r===4&&!__spill.base.includes(i))");kjop(p,myth,5,3);p.evaluate("()=>{__spill.robot.position.set(-40,0.6,0)}");p.wait_for_timeout(1500)
     p.click("#swapPick");p.wait_for_timeout(300);p.evaluate("()=>{const q=plotPos(2);__spill.robot.position.set(q.x,0.6,q.z)}");p.wait_for_timeout(600)
     fa=p.evaluate("()=>__spill.findAction()");ok("B «Velg en annen plass» lar deg velge plass selv",fa and fa["type"]=="swap",fa)
     c.close()
@@ -107,7 +108,7 @@ with sync_playwright() as pw:
     p.keyboard.press("ArrowLeft");p.evaluate("()=>{for(let i=0;i<3;i++)step(1.01)}");p.wait_for_timeout(800);print("DBG E",p.evaluate("()=>({m:__spill.money,a:aktivNaa(),s:document.getElementById('sove').hidden,inc:income(),p:__spill.paused,st:__spill.started})"),m0)
     ok("E inntekten fortsetter når du spiller igjen",p.evaluate("()=>__spill.money")>m0 and p.evaluate("()=>document.getElementById('sove').hidden"))
     p.evaluate("()=>{__spill.money=0;const a=__spill.spawn(990,8,8);a.state='walk';a.g.position.y=0;a.sp=0;__spill.robot.position.set(7,0,8)}");p.wait_for_timeout(1500)
-    at=p.text_content("#act");ok("E knappen viser hva som mangler","mangler" in at,at)
+    at=p.text_content("#act");ok("E knappen viser «Mangler»","Mangler" in at,at)
     msgs=p.evaluate("()=>{const out=[];for(let i=0;i<20;i++){__spill.spawn();out.push(document.getElementById('melding').textContent)}return new Set(out).size}")
     ok("E sjeldne varsler gjentas ikke (≤1 per 30 s)",msgs<=2,msgs)
     ok("K1 ingen konsollfeil (0.9.0-tester)",not e,e[:3])

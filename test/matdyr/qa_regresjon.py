@@ -13,7 +13,7 @@ with sync_playwright() as p:
     pg.goto("http://localhost:8765/index.html");pg.evaluate("()=>{localStorage.clear();localStorage.setItem('evn_matdyr_gfx','rask')}");pg.reload();pg.wait_for_timeout(800)
     # U1 startkort
     st=pg.evaluate("()=>({merke:!!document.querySelector('#start .evn-merke'),h1:document.querySelector('#start h1').textContent,ver:document.getElementById('versjon').textContent,start:!!document.getElementById('startBtn'),img:document.getElementById('startRobot').naturalWidth})")
-    ok("U1 startkort (merke, tittel, mål, styring, Start, versjon)",st["merke"] and st["start"] and st["ver"].startswith("Versjon 0.9"),st)
+    ok("U1 startkort (merke, tittel, mål, styring, Start, versjon)",st["merke"] and st["start"] and st["ver"].startswith("Versjon 0.10"),st)
     ok("T3 viewport ikke sperret", "user-scalable=no" not in pg.content() and "maximum-scale" not in pg.content())
     pg.click("#startBtn",force=True);pg.wait_for_timeout(2500)
     ok("F1 start", pg.evaluate("()=>__spill.started"))
@@ -27,7 +27,7 @@ with sync_playwright() as p:
     order=pg.evaluate("()=>[...document.getElementById('hoyre').children].filter(e=>getComputedStyle(e).display!=='none'&&!e.hidden).map(e=>e.id)")
     order=[x for x in order if x!='evnAvslutt'];ok("KS5 rekkefølge (⚙️, 🗺️, ⏸ fra venstre; Avslutt bare under /spill/)",order[-2:]==["evnKartKnapp","evnPauseKnapp"],order)
     # buy flow
-    r=pg.evaluate("()=>{__spill.money=1e6;const a=__spill.spawn(30,5,3);a.state='walk';a.g.position.y=0;a.sp=0;__spill.robot.position.set(4,0,3);return true}")
+    r=pg.evaluate("()=>{__spill.money=1e6;const a=__spill.spawn(30,5,3);a.state='walk';a.g.position.y=0;a.sp=0;a.sl=60;__spill.robot.position.set(4,0,3);return true}")
     pg.wait_for_timeout(1500);act=pg.text_content("#act");pg.keyboard.press("e");pg.wait_for_timeout(800)
     carry=pg.evaluate("()=>__spill.findAction()&&__spill.findAction().type");ok("Kjøp med E",carry=="drop",act)
     pg.evaluate("()=>{__spill.robot.position.set(-40,0.6,0)}");pg.wait_for_timeout(1500)

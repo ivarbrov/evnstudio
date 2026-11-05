@@ -16,11 +16,15 @@ main=rep(main,'document.body.appendChild(renderer.domElement);','renderer.domEle
 main=rep(main,'"use strict";','"use strict";\nconst VERSJON="0.8.0";\nfunction ingen3d(){window.__ingen3d=true;$("noGL").classList.remove("hidden");$("startBtn").hidden=true}')
 for a,b2 in [('w:55,','w:30,'),('w:25,','w:26,'),('w:12,','w:20,'),('w:5,  ','w:13, '),('w:2.5,','w:8,  '),('w:0.4,','w:1.2,'),('w:0.1,','w:0.3,')]:
     main=rep(main,a,b2)
-main=main.replace('const VERSJON="0.8.0"','const VERSJON="0.9.0"')
+main=main.replace('const VERSJON="0.8.0"','const VERSJON="0.10.0"')
 main=rep(main,'const SAVE_KEY="evn_matdyr_proto_v1";','const SAVE_KEY="evn-matdyr-v1",SAVE_KEY_OLD="evn_matdyr_proto_v1";')
-main=rep(main,'disc:[...disc],name:baseName}','disc:[...disc],name:baseName,carry:carry?carry.ci:-1,intro:window.introSteg?introSteg():undefined}')
+main=rep(main,'disc:[...disc],name:baseName}','disc:[...disc],name:baseName,carry:carry?carry.ci:-1,cb:carry&&carry.betalt?1:2,intro:window.introSteg?introSteg():undefined}')
+main=rep(main,'function save(){try{','function save(){if(!window.__klar)return;try{')
+main=rep(main,'c.name=fn+" "+FAR[fi]+(hun?"dóttir":"son")});','c.name=fn+" "+FAR[fi]+(hun?"dóttir":"son")});\nCOMBOS.forEach(c=>{c.name=c.a+" "+c.name}); // 0.10: emoji for dyret foran navnet')
+main=rep(main,'return[[r.n,r.c,46],[isHidden(ci)','return[[r.n+(c.r>=3?" · 🏃 fang":""),r.c,46],[isHidden(ci)')
 main=rep(main,'if(r>=3&&!drop)showMsg("😮 En "+R[r].n+" faller ned!");','if(r>=3&&!drop&&window.sjeldenVarsel)sjeldenVarsel(r,ci);')
 main=rep(main,'["💰 Pris "+fmt(p),money>=p?"#ffe27a":"#ff9a9a",46]]','money>=p?["💰 Pris "+fmt(p)+" ✅","#ffe27a",46]:["🔒 Pris "+fmt(p)+" · mangler "+fmt(p-money),"#ff9a9a",40]]')
+main=rep(main,'["💰 Pris "+fmt(p)+" ✅","#ffe27a",46]:["🔒 Pris "+fmt(p)+" · mangler "+fmt(p-money),"#ff9a9a",40]]','["💰 Pris "+kr(p)+" ✅","#ffe27a",46]:["🔒 Mangler "+kr(p-money),"#ff9a9a",46]]')
 main=rep(main,'BL[BL_AI[k]]={','BL[BL_AI[k]!==undefined?BL_AI[k]:+k]={')
 main=rep(main,'const BL_AI={gris:0,frosk:1,hund:11};','const BL_AI={};')
 main=main.replace('$("noGL").classList.remove("hidden");throw','ingen3d();throw')
@@ -30,10 +34,12 @@ main=rep(main,'function load(){try{const s=JSON.parse(localStorage.getItem(SAVE_
 main=rep(main,'base=s.base.map(v=>v<0?-1:v);disc=new Set(s.disc);if(typeof s.name==="string"&&s.name.trim())baseName=s.name.slice(0,20)}}catch(e){}',
  'if(!Number.isFinite(money)||money<0)money=60;if(!Number.isInteger(level)||level<0||level>MAX_LEVEL)level=0;base=(Array.isArray(s.base)?s.base:[]).map(v=>Number.isInteger(v)&&v>=0&&v<COMBOS.length?v:-1).slice(0,plotsFor(level));disc=new Set((Array.isArray(s.disc)?s.disc:[]).filter(v=>Number.isInteger(v)&&v>=0&&v<COMBOS.length));if(typeof s.name==="string"&&s.name.trim())baseName=s.name.slice(0,20)}}catch(e){money=60;level=0;base=[];disc=new Set();try{if(raw)localStorage.setItem(SAVE_KEY+"-kopi",raw)}catch(e2){}console.warn("Lagringen kunne ikke leses. En kopi ligger i "+SAVE_KEY+"-kopi.")}')
 pass
-main=rep(main,'if(!Number.isFinite(money)','window.__savedCarry=Number.isInteger(s.carry)&&s.carry>=0&&s.carry<COMBOS.length?s.carry:-1;window.__savedIntro=Number.isInteger(s.intro)&&s.intro>=0&&s.intro<=6?s.intro:undefined;if(!Number.isFinite(money)')
+main=rep(main,'if(!Number.isFinite(money)','window.__savedCarryBetalt=s.cb!==2;window.__savedCarry=Number.isInteger(s.carry)&&s.carry>=0&&s.carry<COMBOS.length?s.carry:-1;window.__savedIntro=Number.isInteger(s.intro)&&s.intro>=0&&s.intro<=6?s.intro:undefined;if(!Number.isFinite(money)')
 main=rep(main,'const HQ=GFX==="fin";','const HQ=GFX==="fin";const RM=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);')
 rest=src[c:d]
+rest=rep(rest,'''    else{\n      a.next-=dt;''','''    else if(window.fangSteg&&fangSteg(a,dt,gp)){animModel(a.spr,time,a.fl>0);gp.y=0;a.blob.visible=false}\n    else{\n      a.next-=dt;''')
 rest=rep(rest,'money+=income();','money+=(window.aktivNaa&&!aktivNaa())?0:income();')
+rest=rep(rest,'''    else{\n      a.next-=dt;''','''    else if(window.fangSteg&&fangSteg(a,dt,gp)){animModel(a.spr,time,a.fl>0);gp.y=0;a.blob.visible=false}\n    else{\n      a.next-=dt;''')
 rest=rep(rest,'windU.value=now/1000;','windU.value=RM?0:now/1000;')
 img=base64.b64encode(open('/home/claude/ivarbrov/evnstudio/bilder/robot-start-jubel-260.webp','rb').read()).decode()
 init=init.replace('__ROBOTIMG__',img)+'\n'+open('/home/claude/matdyr/ui_090.js').read()

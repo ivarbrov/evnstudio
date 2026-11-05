@@ -9,11 +9,8 @@
 <!-- EVN-SIKKERHET: CSP-taggen fra /sikkerhet/ legges inn her ved publisering på evnstudio.no (tas ut i Claude-artefakter). -->
 <link rel="icon" href="../../favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Matdyr-regn 0.9.0 – EVN Studio</title>
-<script>
-/* EVN-statistikk (ST1): felles statistikk.js lastes bare på evnstudio.no, så prøveversjoner ikke får 404 eller sender data. */
-(function () { try { if (/(^|\.)evnstudio\.no$/.test(location.hostname)) { var s = document.createElement('script'); s.src = '../../statistikk.js'; s.defer = true; s.setAttribute('data-spill', 'matdyr'); document.head.appendChild(s); } } catch (e) {} })();
-</script>
+<title>Matdyr-regn 0.10.0 – EVN Studio</title>
+<script src="../../statistikk.js" data-spill="matdyr" defer></script>
 <style>
   :root { --gull:#ffc93c; --mork:#1d2440; --gronn:#2fb35a; }
   * { box-sizing:border-box; }
@@ -177,7 +174,7 @@
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <p class="ingen3d hidden" id="noGL">😕 Denne nettleseren kan ikke vise 3D. Prøv en annen nettleser, eller be en voksen om hjelp.</p>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.9.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.10.0</div>
   </div>
 </div>
 
@@ -186,6 +183,7 @@
   <div class="kort">
     <h2 id="innstTittel">⚙️ Innstillinger</h2>
     <button class="valg" id="nameBtn" type="button">✏️ Gi basen et navn</button>
+    <button class="valg" id="fangBtn" type="button"></button>
     <button class="valg" id="gfxBtn" type="button"></button>
     <button class="valg" id="figBtn" type="button"></button>
     <button class="valg hoved" id="innstLukk" type="button">✕ Lukk</button>
@@ -497,7 +495,7 @@ window.EVNPause = function (cfg) {
 
 <script>
 "use strict";
-const VERSJON="0.9.0";
+const VERSJON="0.10.0";
 function ingen3d(){window.__ingen3d=true;$("noGL").classList.remove("hidden");$("startBtn").hidden=true}
 // ================= Matdyr-data: 40 dyr × 25 mat/drikke = 1000 =================
 const ANIMALS=[["🐷","gris"],["🐸","frosk"],["🦈","hai"],["🐙","blekksprut"],["🐒","ape"],["🐄","ku"],["🐭","mus"],["🐧","pingvin"],["🐘","elefant"],["🐋","hval"],["🐱","katt"],["🐶","hund"],["🐰","kanin"],["🦊","rev"],["🐻","bjørn"],["🐼","panda"],["🦁","løve"],["🐯","tiger"],["🐴","hest"],["🦄","enhjørning"],["🐑","sau"],["🐐","geit"],["🐔","høne"],["🦆","and"],["🦉","ugle"],["🦜","papegøye"],["🦩","flamingo"],["🐊","krokodille"],["🐢","skilpadde"],["🐍","slange"],["🦖","dinosaur"],["🦒","sjiraff"],["🦓","sebra"],["🐫","kamel"],["🦛","flodhest"],["🦏","neshorn"],["🐨","koala"],["🦥","dovendyr"],["🐌","snegle"],["🦀","krabbe"]];
@@ -540,6 +538,7 @@ ANIMALS.forEach((a,ai)=>FOODS.forEach((f,fi)=>COMBOS.push({a:a[0],f:f[0],name:f[
   COMBOS.forEach((c,i)=>{const fi=i%FOODS.length;if(c.special){c.name=c.special+" "+FAR[fi]+(c.hun?"dóttir":"son");return}
     let hun,fn,k=0;do{hun=nr()<.5;fn=hun?HUN[Math.floor(nr()*HUN.length)]:HAN[Math.floor(nr()*HAN.length)];k++}while(used.has(fn+"|"+fi)&&k<200);
     used.add(fn+"|"+fi);c.name=fn+" "+FAR[fi]+(hun?"dóttir":"son")});
+COMBOS.forEach(c=>{c.name=c.a+" "+c.name}); // 0.10: emoji for dyret foran navnet
 })();
 const POOLS=R.map((_,r)=>COMBOS.map((c,i)=>c.r===r?i:-1).filter(i=>i>=0));
 const PRICE=ci=>Math.round(R[COMBOS[ci].r].price*COMBOS[ci].m);
@@ -550,9 +549,9 @@ const SAVE_KEY="evn-matdyr-v1",SAVE_KEY_OLD="evn_matdyr_proto_v1";
 let money=60,level=0,base=[],disc=new Set(),baseName="Din base";
 const plotsFor=l=>4+2*l, MAX_LEVEL=10, MAX_PLOTS=plotsFor(MAX_LEVEL);
 const upCost=l=>Math.round(250*Math.pow(3,l)/50)*50;
-function load(){let raw=null;try{raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem(SAVE_KEY_OLD);try{JSON.parse(raw||"null")}catch(e1){const o=localStorage.getItem(SAVE_KEY_OLD);try{if(o&&JSON.parse(o)){localStorage.setItem(SAVE_KEY+"-kopi",raw);raw=o}}catch(e2){}}}catch(e){}try{const s=JSON.parse(raw||"null");if(s&&s.v===1){money=s.money;level=s.level;window.__savedCarry=Number.isInteger(s.carry)&&s.carry>=0&&s.carry<COMBOS.length?s.carry:-1;window.__savedIntro=Number.isInteger(s.intro)&&s.intro>=0&&s.intro<=6?s.intro:undefined;if(!Number.isFinite(money)||money<0)money=60;if(!Number.isInteger(level)||level<0||level>MAX_LEVEL)level=0;base=(Array.isArray(s.base)?s.base:[]).map(v=>Number.isInteger(v)&&v>=0&&v<COMBOS.length?v:-1).slice(0,plotsFor(level));disc=new Set((Array.isArray(s.disc)?s.disc:[]).filter(v=>Number.isInteger(v)&&v>=0&&v<COMBOS.length));if(typeof s.name==="string"&&s.name.trim())baseName=s.name.slice(0,20)}}catch(e){money=60;level=0;base=[];disc=new Set();try{if(raw)localStorage.setItem(SAVE_KEY+"-kopi",raw)}catch(e2){}console.warn("Lagringen kunne ikke leses. En kopi ligger i "+SAVE_KEY+"-kopi.")}
+function load(){let raw=null;try{raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem(SAVE_KEY_OLD);try{JSON.parse(raw||"null")}catch(e1){const o=localStorage.getItem(SAVE_KEY_OLD);try{if(o&&JSON.parse(o)){localStorage.setItem(SAVE_KEY+"-kopi",raw);raw=o}}catch(e2){}}}catch(e){}try{const s=JSON.parse(raw||"null");if(s&&s.v===1){money=s.money;level=s.level;window.__savedCarryBetalt=s.cb!==2;window.__savedCarry=Number.isInteger(s.carry)&&s.carry>=0&&s.carry<COMBOS.length?s.carry:-1;window.__savedIntro=Number.isInteger(s.intro)&&s.intro>=0&&s.intro<=6?s.intro:undefined;if(!Number.isFinite(money)||money<0)money=60;if(!Number.isInteger(level)||level<0||level>MAX_LEVEL)level=0;base=(Array.isArray(s.base)?s.base:[]).map(v=>Number.isInteger(v)&&v>=0&&v<COMBOS.length?v:-1).slice(0,plotsFor(level));disc=new Set((Array.isArray(s.disc)?s.disc:[]).filter(v=>Number.isInteger(v)&&v>=0&&v<COMBOS.length));if(typeof s.name==="string"&&s.name.trim())baseName=s.name.slice(0,20)}}catch(e){money=60;level=0;base=[];disc=new Set();try{if(raw)localStorage.setItem(SAVE_KEY+"-kopi",raw)}catch(e2){}console.warn("Lagringen kunne ikke leses. En kopi ligger i "+SAVE_KEY+"-kopi.")}
   while(base.length<plotsFor(level))base.push(-1)}
-function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,money,level,base:base.map(v=>v<0?-1:v),disc:[...disc],name:baseName,carry:carry?carry.ci:-1,intro:window.introSteg?introSteg():undefined}))}catch(e){}}
+function save(){if(!window.__klar)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,money,level,base:base.map(v=>v<0?-1:v),disc:[...disc],name:baseName,carry:carry?carry.ci:-1,cb:carry&&carry.betalt?1:2,intro:window.introSteg?introSteg():undefined}))}catch(e){}}
 load();
 
 // ================= Hjelpere =================
@@ -1041,7 +1040,7 @@ const FIELD={x0:-28,x1:52,z0:-26,z1:26};
 let animals=[],spawnT=0,tick=0,saveT=0,time=0,started=false,paused=false;
 function pickRarity(){const tot=R.reduce((s,r)=>s+r.w,0);let x=Math.random()*tot;for(let i=0;i<R.length;i++){x-=R[i].w;if(x<=0)return i}return 0}
 function animalLabelLines(ci){const c=COMBOS[ci],r=R[c.r],p=PRICE(ci);
-  return[[r.n,r.c,46],[isHidden(ci)?"???":c.name,"#ffffff",42],["💵 +"+fmt(INC(ci))+" per sek","#9dff8a",42],money>=p?["💰 Pris "+fmt(p)+" ✅","#ffe27a",46]:["🔒 Pris "+fmt(p)+" · mangler "+fmt(p-money),"#ff9a9a",40]]}
+  return[[r.n+(c.r>=3?" · 🏃 fang":""),r.c,46],[isHidden(ci)?"???":c.name,"#ffffff",42],["💵 +"+fmt(INC(ci))+" per sek","#9dff8a",42],money>=p?["💰 Pris "+kr(p)+" ✅","#ffe27a",46]:["🔒 Mangler "+kr(p-money),"#ff9a9a",46]]}
 function baseLabelLines(ci){const c=COMBOS[ci],r=R[c.r];return[[r.n,r.c,48],[c.name,"#ffffff",42],["💵 +"+fmt(INC(ci))+" per sek","#9dff8a",46]]}
 function spawn(dropCi,dx,dz){
   const drop=dropCi!==undefined,r=drop?COMBOS[dropCi].r:pickRarity(),pool=POOLS[r],ci=drop?dropCi:pool[Math.floor(Math.random()*pool.length)];
@@ -1123,12 +1122,19 @@ function findAction(){
 const tast=t=>'<span class="tast">('+t+')</span>';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const navn=ci=>isHidden(ci)?"???":COMBOS[ci].name;
+// 0.10: tall med mellomrom («4 500»), store tall som før (k/M)
+function kr(n){n=Math.max(0,Math.ceil(n));return n<1e6?n.toLocaleString("nb-NO"):fmt(n)}
+// 0.10: du kan ta med et matdyr når du har råd og plass (ledig plass, eller det er bedre enn det svakeste)
+function harPlass(ci){if(base.indexOf(-1)>=0)return true;const w=weakest();return w>=0&&INC(ci)>INC(base[w])}
+const maaFanges=ci=>COMBOS[ci].r>=3;
 function setActButton(){
   const b=$("act");let t="",cls="handling";
   const on=started&&!paused;
-  if(on&&action&&action.type==="buy"){const ci=action.a.ci,p=PRICE(ci);
-    if(money>=p)t="💰 Kjøp "+esc(navn(ci))+" ("+fmt(p)+")";
-    else{t="🔒 "+esc(navn(ci))+": mangler 💰 "+fmt(p-money);cls+=" lav"}}
+  if(on&&action&&action.type==="buy"){const a=action.a,ci=a.ci,p=PRICE(ci);
+    if(money<p){t="🔒 Mangler 💰 "+kr(p-money);cls+=" lav"}
+    else if(!harPlass(ci)){t="🔒 Ingen plass: selg et matdyr først";cls+=" lav"}
+    else if(maaFanges(ci))t=(a.sl>0?"🫳 Fang nå! ":"🏃 Fang ")+esc(navn(ci))+" (💰 "+kr(p)+")";
+    else t="🫳 Ta med "+esc(navn(ci))+" (💰 "+kr(p)+")";}
   else if(on&&action&&action.type==="sell"){t="Selg "+esc(COMBOS[base[action.i]].name);cls+=" selg"}
   else if(on&&action&&action.type==="drop"){t="⬇️ Slipp "+esc(navn(carry.ci));cls+=" slipp"}
   else if(on&&action&&action.type==="swap"){t="🔁 Bytt med "+esc(COMBOS[base[action.i]].name);cls+=" slipp"}
@@ -1145,15 +1151,18 @@ function pickUp(ci){carry={ci};carrySprite.clear();carrySprite.add(makeModel(ci)
 function doAction(){
   if(!started||paused||!action)return;
   if(action.type==="buy"){const a=action.a,p=PRICE(a.ci);
-    if(money<p)return showMsg("💰 Du trenger "+fmt(p-money)+" til for å kjøpe "+navn(a.ci)+".");
-    money-=p;pickUp(a.ci);removeAnimal(a);
-    showMsg(base.indexOf(-1)<0?"🏃 Bær matdyret hjem. Basen er full, så du kan bytte det med det svakeste.":"🏃 Bær matdyret hjem til basen!");
+    if(money<p)return showMsg("💰 Du mangler "+kr(p-money)+" for å ta med "+navn(a.ci)+".");
+    if(!harPlass(a.ci))return showMsg("🏠 Basen er full. Selg et matdyr først, eller finn et som er bedre enn det svakeste.");
+    // Fangst (Legendary og bedre): bare når matdyret er sliten 💦. Et bom koster ingenting.
+    if(maaFanges(a.ci)&&!(a.sl>0)){if(window.fangBom)fangBom(a);return}
+    pickUp(a.ci);removeAnimal(a);
+    showMsg((maaFanges(a.ci)?"🎉 Du fanget den! ":"")+(base.indexOf(-1)<0?"Bær den hjem og bytt med det svakeste. Du betaler i basen.":"Bær den hjem. Du betaler 💰 "+kr(p)+" i basen."));
     if(window.introNeste)introNeste("kjopt");updateHud();save()}
   else if(action.type==="sell")openSell(action.i);
   else if(action.type==="swap")doSwap(action.i);
-  else if(action.type==="drop"){const ci=carry.ci,p=robot.position;money+=PRICE(ci);dropCarry();
+  else if(action.type==="drop"){const ci=carry.ci,p=robot.position,betalt=carry.betalt;if(betalt)money+=PRICE(ci);dropCarry();
     const f=Math.max(FIELD.x0+1,Math.min(FIELD.x1-1,p.x+Math.sin(robot.rotation.y)*2)),z=Math.max(FIELD.z0+1,Math.min(FIELD.z1-1,p.z+Math.cos(robot.rotation.y)*2));
-    spawn(ci,f,z);showMsg("⬇️ Du slapp "+(isHidden(ci)?"matdyret":COMBOS[ci].name)+" og fikk 💰 "+fmt(PRICE(ci))+" tilbake.");updateHud();save()}
+    spawn(ci,f,z);showMsg("⬇️ Du slapp "+(isHidden(ci)?"matdyret":COMBOS[ci].name)+(betalt?" og fikk 💰 "+kr(PRICE(ci))+" tilbake.":". Du har ikke betalt noe."));updateHud();save()}
 }
 function dropCarry(){carry=null;swapPick=false;carrySprite.visible=false;carrySprite.clear()}
 function doUpgrade(){
@@ -1164,9 +1173,11 @@ function doUpgrade(){
 }
 // Levering: ledig plass → flytt inn. Full base → spør om bytte (aldri automatisk bytte).
 let swapPick=false,swapAsked=false;
-function place(ci,slot){base[slot]=ci;const first=!disc.has(ci);disc.add(ci);dropCarry();
+function place(ci,slot){const pris=carry&&carry.betalt?0:PRICE(ci);
+  if(money<pris){const c=ci;dropCarry();spawn(c,FIELD.x0+3,0);showMsg("💰 Du har ikke råd lenger, så matdyret løp tilbake til enga.");updateHud();save();return}
+  money-=pris;base[slot]=ci;const first=!disc.has(ci);disc.add(ci);dropCarry();
   playOnce(first?"Wave":"ThumbsUp");
-  if(first&&window.nyOppdagelse)nyOppdagelse(ci);else showMsg("🏠 "+COMBOS[ci].name+" flyttet inn!");
+  if(first&&window.nyOppdagelse)nyOppdagelse(ci);else showMsg("🏠 "+COMBOS[ci].name+" flyttet inn!"+(pris?" Du betalte 💰 "+kr(pris)+".":""));
   refreshBase();updateHud();save();if(window.introNeste)introNeste("levert")}
 function deliver(){
   if(!carry)return;const slot=base.indexOf(-1);
@@ -1180,14 +1191,14 @@ function openSwap(){
   const lin=(ikon,ci,ord)=>{const d=document.createElement("div");d.className="byttlinje";const b=document.createElement("b");b.textContent=navn(ci);d.append(ikon+" "+ord+": ",b," ("+R[COMBOS[ci].r].n+") · 💵 +"+fmt(INC(ci))+"/s");return d};
   p.append(lin("🆕",nc,"Nytt"),lin("⬇️",oc,"Svakest i basen"));
   const diff=INC(nc)-INC(oc),q=document.createElement("p");q.className="byttinfo";
-  q.textContent=diff>0?"Bytter du, tjener basen 💵 +"+fmt(diff)+" mer per sekund. Du får 💰 "+fmt(Math.floor(PRICE(oc)/2))+" for det gamle.":diff===0?"De tjener like mye. Du får 💰 "+fmt(Math.floor(PRICE(oc)/2))+" for det gamle hvis du bytter.":"⚠️ Det nye tjener mindre enn det svakeste i basen. Du får 💰 "+fmt(Math.floor(PRICE(oc)/2))+" for det gamle hvis du bytter.";
+  q.textContent=(carry.betalt?"":"Du betaler 💰 "+kr(PRICE(nc))+" for det nye. ")+(diff>0?"Bytter du, tjener basen 💵 +"+fmt(diff)+" mer per sekund. Du får 💰 "+fmt(Math.floor(PRICE(oc)/2))+" for det gamle.":diff===0?"De tjener like mye. Du får 💰 "+fmt(Math.floor(PRICE(oc)/2))+" for det gamle hvis du bytter.":"⚠️ Det nye tjener mindre enn det svakeste i basen. Du får 💰 "+fmt(Math.floor(PRICE(oc)/2))+" for det gamle hvis du bytter.");
   p.append(q);swapIdx=wi;openModal("swapDlg","swapYes")}
 let swapIdx=-1;
 function doSwap(i){if(!carry||i<0||base[i]<0)return;const oc=base[i];money+=Math.floor(PRICE(oc)/2);base[i]=-1;
   showMsg("🔁 Du solgte "+COMBOS[oc].name+" for 💰 "+fmt(Math.floor(PRICE(oc)/2))+".");place(carry.ci,i)}
 $("swapYes").onclick=()=>{closeModal("swapDlg");doSwap(swapIdx)};
 $("swapPick").onclick=()=>{closeModal("swapDlg");swapPick=true;showMsg("👉 Gå til matdyret du vil bytte ut, og trykk på «Bytt».")};
-$("swapNo").onclick=()=>{closeModal("swapDlg");showMsg("Greit! Du kan slippe matdyret utenfor basen og få pengene tilbake.")};
+$("swapNo").onclick=()=>{closeModal("swapDlg");showMsg("Greit! Du kan slippe matdyret utenfor basen. Du har ikke betalt noe.")};
 // Når roboten går ut av basen, kan spørsmålet om bytte komme igjen neste gang
 setInterval(()=>{if(!carry||!inBase(robot.position)){swapAsked=false;if(!carry)swapPick=false}},250);
 let sellIdx=-1;
@@ -1205,6 +1216,9 @@ $("nameBtn").onclick=()=>openName();
 $("gfxBtn").textContent=HQ?"🎨 Grafikk: Fin (trykk for Rask)":"⚡ Grafikk: Rask (trykk for Fin)";
 $("figBtn").textContent=FIG==="blender"?"🐷 Figurer: Blender (trykk for Klosser)":"🧱 Figurer: Klosser (trykk for Blender)";
 $("figBtn").onclick=()=>{save();try{localStorage.setItem("evn_matdyr_fig",FIG==="blender"?"klosser":"blender")}catch(e){}location.reload()};
+const FANG_NIVA=["lett","middels","vanskelig"];let fangNiva="middels";try{const v=localStorage.getItem("evn_matdyr_fangst");if(FANG_NIVA.includes(v))fangNiva=v}catch(e){}
+function visFangBtn(){$("fangBtn").textContent="🏃 Fangst: "+fangNiva[0].toUpperCase()+fangNiva.slice(1)+" (trykk for å bytte)"}visFangBtn();
+$("fangBtn").onclick=()=>{fangNiva=FANG_NIVA[(FANG_NIVA.indexOf(fangNiva)+1)%3];try{localStorage.setItem("evn_matdyr_fangst",fangNiva)}catch(e){}visFangBtn()};
 $("gfxBtn").onclick=()=>{save();try{localStorage.setItem("evn_matdyr_gfx",HQ?"rask":"fin")}catch(e){}location.reload()};
 function openName(){$("nameIn").value=baseName;$("nameErr").textContent="";openModal("nameDlg","nameIn");setTimeout(()=>{try{$("nameIn").select()}catch(e){}},60)}
 function closeName(){closeModal("nameDlg")}
@@ -1278,6 +1292,8 @@ function step(dt){
   for(let i=animals.length-1;i>=0;i--){const a=animals[i],gp=a.g.position;
     if(a.state==="fall"){a.vy-=40*dt;gp.y+=a.vy*dt;if(gp.y<=0){gp.y=0;if(a.bounce<1&&a.vy<-12){a.vy=-a.vy*0.3;a.bounce++}else{a.state="walk";a.vy=0}}
       const k=Math.max(0.15,1-gp.y/32);a.blob.scale.set(k,k,1)}
+    else if(window.fangSteg&&fangSteg(a,dt,gp)){animModel(a.spr,time,a.fl>0);gp.y=0;a.blob.visible=false}
+    else if(window.fangSteg&&fangSteg(a,dt,gp)){animModel(a.spr,time,a.fl>0);gp.y=0;a.blob.visible=false}
     else{
       a.next-=dt;if(a.next<=0){if(a.stop>0){a.stop=0;a.next=2+Math.random()*4}else if(Math.random()<.35){a.stop=1;a.next=0.8+Math.random()*1.5}else a.next=1+Math.random()*2;a.turn=(Math.random()-.5)*1.6}
       const moving=!a.stop;
@@ -1371,7 +1387,7 @@ window.__spill={get money(){return money},set money(v){money=v;updateHud()},base
 
 // ================= 0.9.0: lagret bæring, miniatyrer, intro, inaktivitet og varsler =================
 // A: matdyret som ble båret da siden ble lukket, ligger fortsatt på roboten (ingen ny refusjon, ingen kopi)
-if(Number.isInteger(window.__savedCarry)&&window.__savedCarry>=0&&window.__savedCarry<COMBOS.length){pickUp(window.__savedCarry);window.__savedCarry=-1}
+if(Number.isInteger(window.__savedCarry)&&window.__savedCarry>=0&&window.__savedCarry<COMBOS.length){pickUp(window.__savedCarry);if(window.__savedCarryBetalt)carry.betalt=true;window.__savedCarry=-1}
 
 // Miniatyrbilder av de 40 dyrene til Matdyrboka (tegnes én gang, med samme renderer)
 window.MINI=[];let miniFerdig=false;
@@ -1410,8 +1426,10 @@ setInterval(()=>{const s=$("sove"),vis=started&&!paused&&!aktivNaa()&&income()>0
 
 // E: færre varsler om sjeldne matdyr: bare når du har råd (eller Food God/Secret), og høyst hvert 30. sekund
 let sistSjelden=-1e9;
-window.sjeldenVarsel=function(r,ci){const n=performance.now();if(n-sistSjelden<30000)return;if(money<PRICE(ci)&&r<5)return;sistSjelden=n;
-  showMsg((r>=5?"🌟 ":"😮 ")+"En "+R[r].n+" har landet på enga!")};
+// 0.10: bare når du har råd og plass, og matdyret er bedre enn det svakeste i basen. Høyst hvert 30. sekund.
+window.sjeldenVarsel=function(r,ci){const n=performance.now();if(n-sistSjelden<30000)return;if(money<PRICE(ci)||!harPlass(ci))return;
+  const w=weakest();if(w>=0&&INC(ci)<=INC(base[w]))return;sistSjelden=n;
+  showMsg((r>=5?"🌟 ":"😮 ")+"En "+R[r].n+" har landet på enga! Fang den!")};
 // E: «mangler»-beløpet på etikettene oppdateres mens pengene øker
 setInterval(()=>{if(!started)return;const rp=robot.position;animals.forEach(a=>{if(money<PRICE(a.ci)&&Math.abs(a.g.position.x-rp.x)+Math.abs(a.g.position.z-rp.z)<40){const t=new THREE.CanvasTexture(labelCanvas(animalLabelLines(a.ci)));t.encoding=THREE.sRGBEncoding;a.lab.material.map.dispose();a.lab.material.map=t;a.lab.material.needsUpdate=true}})},2000);
 
@@ -1429,7 +1447,7 @@ function nesteMal(){let best=null,bd=1e9;const p=robot.position;animals.forEach(
 setInterval(()=>{
   if(!started||paused){pil.visible=false;return}
   introT+=.25;let mal=null,t="";
-  if(intro===0){t="👉 Gå til matdyrene på enga, og kjøp et du har råd til!";const a=nesteMal();if(a)mal=a.g.position}
+  if(intro===0){t="👉 Gå til matdyrene på enga, og ta med et du har råd til! Du betaler når du kommer hjem.";const a=nesteMal();if(a)mal=a.g.position}
   else if(intro===1){t=carry?"🏠 Bær matdyret hjem til basen!":"";if(carry)mal=new THREE.Vector3(-40,0,0)}
   else if(intro===2){t="💵 Matdyret tjener penger hvert sekund. Kjøp flere!";if(introT>7)settIntro(3)}
   else if(intro===3){if(base.length-base.filter(c=>c>=0).length<=1){t="🏠 Basen er nesten full. Selg et matdyr, eller bytt når du kommer hjem med et nytt.";if(introT>9)settIntro(4)}else introT=0}
@@ -1447,6 +1465,29 @@ renderer.domElement.addEventListener("webglcontextlost",e=>{e.preventDefault();t
 if(window.__spill){Object.defineProperty(__spill,"carry",{get:()=>carry});__spill.weakest=weakest;__spill.intro=()=>intro;__spill.ledig=ms=>{sistAktiv=performance.now()-ms};__spill.miniatyrer=()=>{lagMiniatyrer();return MINI.filter(Boolean).length};__spill.save=()=>save()}
 
 window.__klar=true; // A: lagring tillates først når bæringen er lagt tilbake
+
+// ================= 0.10: fangst av sjeldne matdyr (prototype til Evens test) =================
+// Legendary og bedre løper unna når roboten kommer nær, i sikksakk. Etter en stund blir de slitne 💦
+// og står stille litt. Da kan de fanges. Et bom koster ingenting: matdyret hopper bare unna.
+const FLUKT={3:{v:7.6,ut:2.6,hvil:1.8},4:{v:8.4,ut:2.3,hvil:1.5},5:{v:9.0,ut:2.1,hvil:1.3},6:{v:9.4,ut:1.9,hvil:1.15}}; // roboten går 10
+const NIVA={lett:{v:.8,hvil:1.5,r:6},middels:{v:1,hvil:1,r:7},vanskelig:{v:1.1,hvil:.75,r:8}};
+const svettMat=new THREE.SpriteMaterial({map:(()=>{const c=document.createElement("canvas");c.width=c.height=64;const g=c.getContext("2d");g.font="48px sans-serif";g.textAlign="center";g.textBaseline="middle";g.fillText("💦",32,34);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return t})(),depthTest:false,transparent:true});
+function svett(a,vis){if(!a.svett){if(!vis)return;a.svett=new THREE.Sprite(svettMat);a.svett.scale.set(1.3,1.3,1);a.svett.position.set(1.1,2.6,0);a.g.add(a.svett)}a.svett.visible=vis}
+window.fangSteg=function(a,dt,gp){
+  if(COMBOS[a.ci].r<3)return false;const f=FLUKT[COMBOS[a.ci].r],k=NIVA[fangNiva]||NIVA.middels;
+  if(a.st===undefined)a.st=f.ut;
+  if(a.sl>0){a.sl-=dt;svett(a,true);if(a.sl<=0){a.sl=0;a.st=f.ut;svett(a,false)}a.fl=0;return true}
+  const p=robot.position,dx=gp.x-p.x,dz=gp.z-p.z,d=Math.hypot(dx,dz);
+  if(started&&!paused&&!carry&&d<k.r){
+    if(a.st<=0){a.sl=f.hvil*k.hvil;a.fl=0;return true}
+    a.st-=dt;a.zz=(a.zz||0)-dt;if(a.zz<=0){a.zz=.5+Math.random()*.5;a.zs=Math.random()<.5?-1:1}
+    const ux=dx/(d||1),uz=dz/(d||1),vx=ux-uz*a.zs*.7,vz=uz+ux*a.zs*.7,n=Math.hypot(vx,vz),v=f.v*k.v;
+    gp.x=Math.max(FIELD.x0+1,Math.min(FIELD.x1-1,gp.x+vx/n*v*dt));gp.z=Math.max(FIELD.z0+1,Math.min(FIELD.z1-1,gp.z+vz/n*v*dt));
+    let r=Math.atan2(vx,vz)-a.spr.rotation.y;r=Math.atan2(Math.sin(r),Math.cos(r));a.spr.rotation.y+=r*Math.min(1,dt*10);a.fl=1;return true}
+  a.fl=0;if(a.st<f.ut)a.st=Math.min(f.ut,a.st+dt*.6);return false};
+window.fangBom=function(a){const p=robot.position,gp=a.g.position,dx=gp.x-p.x,dz=gp.z-p.z,d=Math.hypot(dx,dz)||1,s=Math.random()<.5?-1:1;
+  gp.x=Math.max(FIELD.x0+1,Math.min(FIELD.x1-1,gp.x+(dx/d-dz/d*s)*2.2));gp.z=Math.max(FIELD.z0+1,Math.min(FIELD.z1-1,gp.z+(dz/d+dx/d*s)*2.2));
+  a.st=Math.max(a.st||0,.5);showMsg("💨 Den hoppet unna! Jag den til den blir sliten 💦, og fang den da.")};
 </script>
 <!-- EVN Studio: Avslutt med spørsmål (vises bare under /spill/ på evnstudio.no) -->
 <style>
