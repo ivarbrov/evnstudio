@@ -35,6 +35,7 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
         if (v) v.click();
       } },
     { id: 'magiske-egg', start: 'startBtn' },
+    { id: 'fiskespillet', start: 'startBtn' },
     { id: 'fossilspillet', start: 'startBtn', etterStart: function (d) {
         var b = [].find.call(d.querySelectorAll('.lvcard button'), function (x) { return !x.disabled; });
         if (b) b.click();
