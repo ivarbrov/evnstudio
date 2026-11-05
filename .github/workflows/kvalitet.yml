@@ -26,6 +26,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Selvtest av publiseringssjekken (endringsbasert QA)
+        run: node test/publiseringssjekk-test.mjs
       - name: Kjør testene
         run: node test/kjor.mjs --base origin/main --json "$RUNNER_TEMP/testresultat.json"
       - name: Lagre testresultatet
