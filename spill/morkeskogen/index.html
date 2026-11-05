@@ -264,7 +264,7 @@ addEventListener('keydown',function(){t(false);},true);})();
     </ul>
     <div class="qrow" id="qrow">Grafikk: <button data-q="lav">Lav</button><button data-q="middels">Middels</button><button data-q="hoy">Høy</button></div>
     </details>
-    <div class="ver evn-ver">Versjon 2.0.4 · 3D</div>
+    <div class="ver evn-ver">Versjon 2.0.5 · 3D</div>
   </div>
 </div>
 
@@ -570,6 +570,13 @@ try {
 </script>
 
 <script src="../../statistikk.js" data-spill="morkeskogen" defer></script>
+<div id="evnFeil" role="alertdialog" aria-modal="true" aria-labelledby="evnFeilTittel" hidden style="position:fixed;inset:0;z-index:2000;display:grid;place-items:center;background:rgba(6,10,8,.82);padding:20px">
+  <div style="max-width:420px;background:#0e1712;color:#f3ead6;border:1px solid rgba(243,234,214,.3);border-radius:18px;padding:22px 24px;text-align:center;font-family:'Nunito',system-ui,sans-serif">
+    <h2 id="evnFeilTittel" style="margin:0 0 8px;font-family:'Lilita One',system-ui,sans-serif;font-weight:400;font-size:26px">Oi! Spillet stoppet</h2>
+    <p id="evnFeilTekst" style="margin:0 0 16px;font-size:17px;line-height:1.4">Noe gikk galt i spillet. Last siden på nytt for å spille videre. Det du har lagret, er trygt.</p>
+    <button id="evnFeilLast" type="button" onclick="location.reload()" style="min-height:48px;padding:0 22px;border:0;border-radius:24px;background:#ff9a3c;color:#2a1606;font:800 18px 'Nunito',system-ui,sans-serif;cursor:pointer">🔄 Last på nytt</button>
+  </div>
+</div>
 <!-- Mørkeskogen 2.0: ny HUD (sist, så den overstyrer stilene over) -->
 <link rel="stylesheet" href="hud2.css">
 <script src="hud2.js"></script>

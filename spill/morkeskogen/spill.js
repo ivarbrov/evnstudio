@@ -75,6 +75,18 @@ const WUP_MAX = 3, wupCost = L => ({ iron: 2 + L * 2, stone: 2 * L });          
 // Heltprofil: våpen, valgt våpen, oppgraderinger, XP og oppdrag. Lagres i nettleseren og følger helten fra spill til spill.
 const SAVE_KEY = 'mork3d.helt', HERO_NEW = () => ({ v: 1, owned: ['oks'], sel: 'oks', wlvl: {}, xp: 0, qdone: [], qprog: {} });
 let hero = (() => { try { const h = JSON.parse(localStorage.getItem(SAVE_KEY)); if (h && h.v === 1 && Array.isArray(h.owned)) return Object.assign(HERO_NEW(), h); } catch (e) {} return HERO_NEW(); })();
+// 2.0.5 (F3): rens hvert felt etter type, så en lagring med feil innhold ikke stopper spillet. Er lagringen uleselig, beholdes en kopi.
+(() => { const obj = v => v && typeof v === 'object' && !Array.isArray(v);
+  try { const raw = localStorage.getItem(SAVE_KEY); const ok = (() => { try { const h = JSON.parse(raw); return h && h.v === 1 && Array.isArray(h.owned); } catch (e) { return false; } })();
+    if (raw && !ok && !localStorage.getItem(SAVE_KEY + '.kopi')) localStorage.setItem(SAVE_KEY + '.kopi', raw); } catch (e) {}
+  hero.owned = Array.isArray(hero.owned) ? hero.owned.filter(id => typeof id === 'string') : ['oks'];
+  if (!Array.isArray(hero.qdone)) hero.qdone = []; hero.qdone = hero.qdone.filter(q => typeof q === 'string');
+  if (!obj(hero.qprog)) hero.qprog = {}; if (!obj(hero.wlvl)) hero.wlvl = {};
+  for (const k of Object.keys(hero.wlvl)) { const n = hero.wlvl[k]; if (typeof n !== 'number' || !(n >= 1)) delete hero.wlvl[k]; else hero.wlvl[k] = Math.min(WUP_MAX + 1, Math.floor(n)); }
+  for (const k of Object.keys(hero.qprog)) if (typeof hero.qprog[k] !== 'number' || !isFinite(hero.qprog[k])) delete hero.qprog[k];
+  if (typeof hero.xp !== 'number' || !isFinite(hero.xp) || hero.xp < 0) hero.xp = 0;
+  if (typeof hero.sel !== 'string') hero.sel = 'oks';
+  if ('fishBook' in hero && !obj(hero.fishBook)) delete hero.fishBook; })();
 hero.owned = hero.owned.filter(id => WEAPONS[id]); if (!hero.owned.includes('oks')) hero.owned.unshift('oks');
 function saveHero() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(hero)); } catch (e) {} }
 // Nivå: 100 XP til nivå 2, deretter 50 mer for hvert nivå. Maks nivå 10.
@@ -1011,6 +1023,9 @@ function renderLasso(dt, time) {
 // Verden lages fra et fast «frø», så den blir lik hver gang. Det du bygger (hytter, lykter, verksted, senger) lagres og står der neste gang.
 const WORLD_KEY = 'mork3d.verden';
 let world = (() => { try { const w = JSON.parse(localStorage.getItem(WORLD_KEY)); if (w && w.v === 1) return w; } catch (e) {} return null; })();
+// 2.0.5 (F3): et frø som ikke er et tall gir ny verden; bygninger uten gyldig type eller posisjon hoppes over (som før for ukjent type).
+if (world && (typeof world.seed !== 'number' || !isFinite(world.seed))) world = null;
+if (world) world.buildings = Array.isArray(world.buildings) ? world.buildings.filter(b => b && typeof b.type === 'string' && isFinite(b.x) && isFinite(b.y)) : [];
 if (!world) world = { v: 1, seed: (Math.random() * 1e9) | 0, buildings: [] };
 function saveWorld() { try { world.buildings = g.buildings.map(b => ({ type: b.type, x: Math.round(b.x), y: Math.round(b.y) })); localStorage.setItem(WORLD_KEY, JSON.stringify(world)); } catch (e) {} }
 function newGame() {
@@ -5413,8 +5428,8 @@ function bar(x, h, z, frac, color) {
 // «#kamera=original» i adressen gir 5.6.2-oppførselen (kameraet trekkes inn mot helten, ned til 16 % av avstanden).
 const EVN2_KAM_TRAER = !(typeof location !== 'undefined' && /kamera[=-]original/.test(location.hash)) && !(() => { try { return sessionStorage.getItem('evnKamera') === 'original'; } catch (e) { return false; } })();   // sessionStorage: bryteren i testkopien
 function draw(time) {
-  if (!window.THREE) return;
-  if (!R3) initR3();
+  if (!window.THREE || harWebGL === false) return;   // 2.0.5: uten WebGL vises meldingen på startskjermen i stedet
+  if (!R3) { try { initR3(); } catch (e) { R3 = null; visFeil(e, true); return; } }
   if (R3.world !== g) buildWorld();
   const dt = Math.min(0.05, Math.max(0, time - R3.lastT)); R3.lastT = time;
   const FWX = -Math.sin(R3.camYaw || 0), FWZ = -Math.cos(R3.camYaw || 0);                  // kameraets retning fremover langs bakken
@@ -6239,11 +6254,28 @@ function fpsWatch(rawDt) {
   if (fps < 24) { qKey = qKey === 'hoy' ? 'middels' : 'lav'; Q = QUAL[qKey]; applyQuality(); toast(`🐢 Spillet gikk tregt, så grafikken er satt til «${Q.n}». Du kan endre den på startskjermen.`); }
 }
 function loop(ts) {
-  const raw = (ts - last) / 1000 || 0, dt = Math.min(0.05, raw); last = ts;
-  if (state === 'play') { update(dt); updateHud(); if (raw > 0 && raw < 2.5) fpsWatch(raw); }
-  if (g) draw(ts / 1000);
+  if (spillFeil) return;
   requestAnimationFrame(loop);
+  try {
+    const raw = (ts - last) / 1000 || 0, dt = Math.min(0.05, raw); last = ts;
+    if (state === 'play') { update(dt); updateHud(); if (raw > 0 && raw < 2.5) fpsWatch(raw); }
+    if (g) draw(ts / 1000);
+  } catch (e) { visFeil(e); }
 }
+// 2.0.5 (K2/B3): vennlig melding når noe går galt, med knapp for å laste siden på nytt. Det som er lagret, er trygt.
+let spillFeil = false;
+function visFeil(e, uten3D) {
+  if (spillFeil) return; spillFeil = true;
+  try { console.error('[Mørkeskogen]', e); } catch (x) {}
+  try { if (state === 'play' && g) { saveWorld(); saveHero(); } } catch (x) {}
+  const f = $('evnFeil'); if (!f) return;
+  $('evnFeilTekst').textContent = uten3D
+    ? 'Denne nettleseren kan ikke vise 3D-grafikken. Prøv en annen nettleser, eller slå på maskinvareakselerasjon. Det du har lagret, er trygt.'
+    : 'Noe gikk galt i spillet. Last siden på nytt for å spille videre. Det du har lagret, er trygt.';
+  f.hidden = false; const b = $('evnFeilLast'); if (b) b.focus();
+}
+window.addEventListener('error', e => { if (state === 'play' && e && /\/spill\/morkeskogen\//.test(e.filename || '')) visFeil(e.error || e.message); });
+window.addEventListener('unhandledrejection', e => { if (state === 'play') visFeil(e && e.reason); });
 
 let bakgrunnFersk = false;
 function start() {
@@ -6401,10 +6433,16 @@ function devClock() {
 }
 $('againBtn').addEventListener('click', start);
 
-if (!window.THREE) $('no3d').hidden = false;
+// 2.0.5 (B3): meldingen vises også når nettleseren mangler WebGL, og Start skjules da (spillet kan ikke vises).
+var harWebGL = (() => { try { const c = document.createElement('canvas'); const x = window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')); if (x) { const l = x.getExtension('WEBGL_lose_context'); if (l) l.loseContext(); } return !!x; } catch (e) { return false; } })();   // prøvekonteksten frigis med en gang
+if (!window.THREE || !harWebGL) {
+  $('no3d').hidden = false; $('startBtn').hidden = true;
+  if (window.THREE) $('no3d').textContent = 'Denne nettleseren kan ikke vise 3D-grafikken. Prøv en annen nettleser, eller slå på maskinvareakselerasjon.';
+}
+cv.addEventListener('webglcontextlost', e => { e.preventDefault(); if (state === 'play') visFeil('WebGL-konteksten ble borte', false); });
 // «Start helt på nytt» på startskjermen (felles for alle EVN-spill). Grafikkvalget (mork3d.q) beholdes.
 EVNNullstill({
-  nokler: [SAVE_KEY, WORLD_KEY, FOG_KEY],
+  nokler: [SAVE_KEY, WORLD_KEY, FOG_KEY, SAVE_KEY + '.kopi'],
   tema: { panel: 'rgba(10,18,14,.97)', ink: '#f3ead6', hi: '#ff9a3c', btn: '#ff9a3c', btnInk: '#2a1606', font: "'Nunito',system-ui,sans-serif", head: "'Lilita One',system-ui,sans-serif", headW: 400 },
   tekst: 'Våpen, XP, oppdrag, slottet, kartet og alt du har bygget blir borte.',
   plasser: el => document.getElementById('evnTilbake').after(el),
