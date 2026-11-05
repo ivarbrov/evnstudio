@@ -28,6 +28,17 @@
   .pille .lav { color:#ff8a8a; }
   .pille[hidden] { display:none; }
   html.bygger #joy { display:none !important; }
+  /* Våpenknapper (bare berøring), som i Era Defenders 1 */
+  #kamp { display:none; }
+  html.touch.spiller #kamp { display:block; }
+  .vk { position:fixed; border-radius:50%; border:3px solid rgba(255,255,255,.7); color:#fff; display:flex; align-items:center; justify-content:center; padding:0; z-index:5; touch-action:none; box-shadow:0 4px 0 rgba(0,0,0,.3); }
+  #kSverd { width:88px; height:88px; font-size:40px; right:calc(18px + env(safe-area-inset-right)); bottom:calc(22px + env(safe-area-inset-bottom)); background:rgba(125,252,255,.35); }
+  #kMagi { width:68px; height:68px; font-size:30px; right:calc(122px + env(safe-area-inset-right)); bottom:calc(18px + env(safe-area-inset-bottom)); background:rgba(176,64,255,.45); }
+  #kPistol { width:60px; height:60px; font-size:26px; right:calc(110px + env(safe-area-inset-right)); bottom:calc(98px + env(safe-area-inset-bottom)); background:rgba(62,230,255,.35); }
+  #kMagi.tom { opacity:.45; }
+  html.touch #bunn { bottom:calc(172px + env(safe-area-inset-bottom)); }
+  html.touch.bygger #kamp { display:none; }
+  html.touch.bygger #bunn { bottom:calc(14px + env(safe-area-inset-bottom)); }
   #hoyre { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; }
   .rund { width:48px; height:48px; border-radius:50%; background:rgba(20,26,51,.82); border:2px solid rgba(255,255,255,.3); color:#fff; font-size:22px; display:flex; align-items:center; justify-content:center; padding:0; }
   #evnAvslutt { width:auto; padding:0 14px; border-radius:24px; font-size:18px; font-weight:800; gap:6px; }
@@ -114,19 +125,25 @@
   <div class="pille" title="Mynter">🪙 <span id="mynter">0</span></div>
   <div class="pille" title="Robotens liv">❤️ <span id="heltLiv">0</span></div>
   <div class="pille" title="Bølge">🌊 <span id="bolge">1</span>/10</div>
+  <div class="pille" title="Mana til magien">🔮 <span id="mana">100</span></div>
   <div class="pille" id="pSkjold" title="Kraftskjold" hidden>🛡️ <span id="skjold">0</span></div>
+  <div class="pille" id="pNed" title="Neste bølge kommer" hidden>⏱️ <span id="ned">5</span></div>
 </div>
 <div id="hoyre" hidden>
   <a class="rund" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none;text-decoration:none">✕<span class="evn-avs-tekst"> Avslutt</span></a>
 </div>
 <div id="melding" role="status" aria-live="polite"></div>
 <div id="bunn" hidden>
-  <button class="handling" id="nesteKnapp" type="button">▶ Neste bølge<span class="tast">Mellomrom</span></button>
   <button class="handling bygg" id="byggKnapp" type="button" aria-pressed="false">🏗️ Bygg<span class="tast">B</span></button>
 </div>
 <div id="byggLinje" role="toolbar" aria-label="Bygg" hidden></div>
 <div id="byggHjelp" role="status" hidden></div>
 <div id="joy"><div id="knob"></div></div>
+<div id="kamp" aria-label="Våpen">
+  <button class="vk" id="kSverd" type="button" aria-label="Lasersverd">⚔️</button>
+  <button class="vk" id="kMagi" type="button" aria-label="Plasmamagi">🔮</button>
+  <button class="vk" id="kPistol" type="button" aria-label="Laserpistol">🔫</button>
+</div>
 
 <!-- Startkort -->
 <div class="lag vis" id="start">
@@ -134,16 +151,16 @@
     <div class="evn-merke">EVN STUDIO</div>
     <h1>Era Defenders 2</h1>
     <div class="maal">
-      <p>🌆 Verden 1: Framtiden<br>Robotmonstre jakter på roboten din! Slåss, samle mynter og bygg tårn.</p>
+      <p>🌆 Verden 1: Framtiden<br>Robotmonstre jakter på roboten din! Slåss med lasersverd, samle mynter og bygg tårn.</p>
     </div>
     <div class="styring">
-      <div class="bare-pc">Piltaster eller WASD for å gå. Roboten skyter selv.<br>B for å bygge, 1–9 for å velge. Mellomrom for neste bølge.</div>
-      <div class="bare-touch">Bruk styrespaken for å gå. Roboten skyter selv.<br>Trykk 🏗️ Bygg, velg noe og trykk på kartet.</div>
+      <div class="bare-pc">Piltaster eller WASD: gå. Mellomrom: ⚔️ lasersverd.<br>E eller klikk: 🔮 plasmamagi. F eller høyreklikk: 🔫 laserpistol.<br>B: bygg, 1–9: velg.</div>
+      <div class="bare-touch">Styrespaken: gå. ⚔️ 🔮 🔫: slåss.<br>Trykk 🏗️ Bygg, velg noe og trykk på kartet.</div>
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <p class="ingen3d hidden" id="noGL">😕 Denne nettleseren kan ikke vise 3D. Prøv en annen nettleser, eller be en voksen om hjelp.</p>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.2.0 · prøveversjon</div>
+    <div class="evn-ver" id="versjon">Versjon 0.3.0 · prøveversjon</div>
   </div>
 </div>
 
@@ -430,8 +447,10 @@ window.EVNPause = function (cfg) {
 /* ================= Era Defenders 2 – v0.1.0 (prøveversjon) =================
    Evens idé (5.11.2026): 3D, forsvar basen, nye tidsepoker, 8 verdener. Verden 1 = Framtiden.
    Kamera som i Bloons TD 6: fast, ovenfra og litt på skrå, hele kartet synes.
-   Monstrene går fritt (ingen vei) rett mot basen. Ni ting å bygge: fem fra Era Defenders 1, fire nye. */
-const VERSJON="0.2.0";
+   Monstrene går fritt (ingen vei) og jakter på roboten. Ni ting å bygge: fem fra Era Defenders 1, fire nye.
+   v0.3.0 (Evens ønske): som i Era Defenders 1 – ingen base i midten, du slåss selv med lasersverd, plasmamagi og
+   laserpistol, bølgene kommer av seg selv, og roboten har romdrakt i Framtiden. */
+const VERSJON="0.3.0";
 const SAVE_KEY="evn-era-defenders-2-v1";
 const $=id=>document.getElementById(id);
 const html=document.documentElement;
@@ -456,7 +475,6 @@ const sol=new THREE.DirectionalLight(0xffffff,0.85);sol.position.set(18,40,22);s
 sol.shadow.mapSize.set(2048,2048);Object.assign(sol.shadow.camera,{left:-38,right:38,top:30,bottom:-30,near:5,far:100});scene.add(sol);
 
 const KX=25,KZ=16;                 // kartet går fra -KX til KX og -KZ til KZ
-const BASE_R=3.2;
 const kam={fx:0,fz:-1,rx:1,rz:0};  // «opp» og «høyre» på skjermen, målt på bakken
 function tilpassKamera(){
   const w=innerWidth,h=innerHeight;renderer.setSize(w,h);camera.aspect=w/h;
@@ -500,26 +518,13 @@ const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughnes
   }
 })();
 
-// ================= Basen i midten =================
-const basen={g:new THREE.Group(),niv:1,hp:100,cd:0};
-const BASE_NIV=[null,{maks:150},{maks:210,pris:200,rek:9,skade:3,tid:0.8},{maks:280,pris:400,rek:11,skade:5,tid:0.55}];
-let baseKanon=null;
-function byggBasen(){
-  const g=basen.g;while(g.children.length)g.remove(g.children[0]);
-  const plattform=new THREE.Mesh(new THREE.CylinderGeometry(BASE_R,BASE_R+0.4,0.8,6),M(0x8fa3c8,{metalness:0.6,roughness:0.35}));plattform.position.y=0.4;plattform.castShadow=plattform.receiveShadow=true;g.add(plattform);
-  const ring=new THREE.Mesh(new THREE.TorusGeometry(BASE_R-0.2,0.12,8,6),M(0x3ee6ff,{emissive:0x3ee6ff,emissiveIntensity:1.2}));ring.rotation.x=Math.PI/2;ring.rotation.z=Math.PI/6;ring.position.y=0.82;g.add(ring);
-  const h=1.8+basen.niv*0.7;
-  const torn=new THREE.Mesh(new THREE.CylinderGeometry(0.9,1.3,h,8),M(0xdfe8ff,{metalness:0.5,roughness:0.3}));torn.position.y=0.8+h/2;torn.castShadow=true;g.add(torn);
-  const topp=new THREE.Mesh(new THREE.SphereGeometry(0.7,16,12),M(0xffc93c,{emissive:0xffa000,emissiveIntensity:0.8}));topp.position.y=0.8+h+0.3;g.add(topp);
-  for(let i=0;i<basen.niv;i++){const b=new THREE.Mesh(new THREE.TorusGeometry(1.15,0.08,6,16),M(0xff4fd8,{emissive:0xff4fd8,emissiveIntensity:1}));b.rotation.x=Math.PI/2;b.position.y=1.4+i*0.7;g.add(b)}
-  baseKanon=null;
-  if(basen.niv>=2){baseKanon=new THREE.Group();const r=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,1.4,8),M(0x333a55));r.rotation.x=Math.PI/2;r.position.z=0.6;baseKanon.add(r);baseKanon.position.y=0.8+h+0.3;g.add(baseKanon)}
-}
-scene.add(basen.g);byggBasen();
-// Kraftskjold: blå boble rundt basen
-const skjold={niv:0,hp:0,R:6,mesh:null};
+// ================= Robotnivå (var «basen» før v0.3.0) =================
+const basen={niv:1};
+const BASE_NIV=[null,{maks:150,sverd:4,magi:5,pistol:3},{maks:210,pris:200,sverd:6,magi:7,pistol:4},{maks:280,pris:400,sverd:8,magi:10,pistol:6}];
+// Kraftskjold: blå boble rundt roboten. Den tar imot slagene til den sprekker.
+const skjold={niv:0,hp:0,R:1.9,mesh:null};
 const SKJOLD_NIV=[null,{maks:80,pris:150},{maks:160,pris:120},{maks:280,pris:220}];
-skjold.mesh=new THREE.Mesh(new THREE.SphereGeometry(skjold.R,32,16,0,Math.PI*2,0,Math.PI/2),new THREE.MeshStandardMaterial({color:0x56b8ff,emissive:0x2266ff,emissiveIntensity:0.5,transparent:true,opacity:0.22,depthWrite:false,side:THREE.DoubleSide}));
+skjold.mesh=new THREE.Mesh(new THREE.SphereGeometry(skjold.R,24,16),new THREE.MeshStandardMaterial({color:0x56b8ff,emissive:0x2266ff,emissiveIntensity:0.5,transparent:true,opacity:0.22,depthWrite:false,side:THREE.DoubleSide}));
 skjold.mesh.visible=false;scene.add(skjold.mesh);
 const skjoldAktiv=()=>skjold.niv>0&&skjold.hp>0;
 
@@ -536,8 +541,27 @@ if(THREE.GLTFLoader)Promise.resolve().then(()=>{if(!window.EVN_ROBOT_GLB)throw n
   helt.g.children.forEach(c=>c.visible=false);helt.g.add(m);
   rMixer=new THREE.AnimationMixer(m);gl.animations.forEach(a=>rAct[a.name]=rMixer.clipAction(a));
   rMixer.addEventListener("finished",()=>{rEn=false});spillR("Idle",0);
+  try{kleRobot(m)}catch(e){console.warn("drakt",e)}
 },e=>console.warn("robot",e))).catch(e=>console.warn("robot",e));
 
+// Framtidsdrakt (Evens ønske C): romhjelm, jetpakke og lasersverd. Festes til robotens bein, så de følger animasjonene.
+function fest(bein,obj,x,y,z){bein.updateWorldMatrix(true,false);const ws=new THREE.Vector3();bein.getWorldScale(ws);obj.scale.set(1/ws.x,1/ws.y,1/ws.z);obj.position.set(x/ws.x,y/ws.y,z/ws.z);bein.add(obj)}
+function kleRobot(m){
+  const bein={};m.traverse(o=>{if(o.isBone){const n=o.name.replace(/_\d+$/,"").replace(/[^A-Za-z]/g,"");if(!bein[n])bein[n]=o}});helt.g.updateMatrixWorld(true);
+  if(bein.Head){const h=new THREE.Group();
+    const glass=new THREE.Mesh(new THREE.SphereGeometry(1.0,28,18),new THREE.MeshStandardMaterial({color:0xbff6ff,transparent:true,opacity:0.22,roughness:0.05,metalness:0.1,depthWrite:false}));h.add(glass);
+    const krage=new THREE.Mesh(new THREE.TorusGeometry(0.72,0.08,8,28),M(0xdfe8ff,{metalness:0.7}));krage.rotation.x=Math.PI/2;krage.position.y=-0.62;h.add(krage);
+    const ant=new THREE.Mesh(new THREE.SphereGeometry(0.07,8,6),M(0x3ee6ff,{emissive:0x3ee6ff,emissiveIntensity:2}));ant.position.set(0.55,0.75,0);h.add(ant);
+    fest(bein.Head,h,0,0.5,0)}
+  const rygg=bein.Torso||bein.Abdomen||bein.Body;
+  if(rygg){const p=new THREE.Group();const boks=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.7,0.3),M(0xdfe8ff,{metalness:0.6}));p.add(boks);
+    for(const sx of [-0.18,0.18]){const d=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.12,0.25,8),M(0x30364f));d.position.set(sx,-0.45,0);p.add(d);const f=new THREE.Mesh(new THREE.ConeGeometry(0.09,0.25,8),M(0x3ee6ff,{emissive:0x3ee6ff,emissiveIntensity:2}));f.rotation.x=Math.PI;f.position.set(sx,-0.68,0);p.add(f)}
+    fest(rygg,p,0,0.1,-0.42)}
+  const haand=bein.HandR||bein.PalmR||bein.LowerArmR;
+  if(haand){const s=new THREE.Group();const skaft=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.3,8),M(0x30364f,{metalness:0.8}));s.add(skaft);
+    const blad=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,1.6,8),M(0x9ff8ff,{emissive:0x3ee6ff,emissiveIntensity:2.4}));blad.position.y=0.95;s.add(blad);
+    s.rotation.x=Math.PI/2;fest(haand,s,0,0.05,0);helt.sverd=s}
+}
 // ================= Felles hjelpere =================
 const sjekkGeo={liv:new THREE.PlaneGeometry(1,0.16)};
 function lagLivsbar(bredde,hoyde){
@@ -597,9 +621,9 @@ const BYGG=[
   {id:"hjelper",ik:"🤖",navn:"Robothjelper",pris:120,ny:true,maks:3,r:0.8,tekst:"En liten robot som slåss mot monstre i nærheten.",niv:[{hp:40,skade:3,tid:0.7,rek:8},{hp:70,skade:5,tid:0.6,rek:9,pris:100},{hp:110,skade:8,tid:0.5,rek:10,pris:180}]},
   {id:"felle",ik:"⚡",navn:"Strømfelle",pris:70,ny:true,r:2.4,tekst:"Strøm i bakken. Monstrene blir trege og får skade.",niv:[{rek:2.4,skade:1,saktere:0.5},{rek:3,skade:2,saktere:0.45,pris:60},{rek:3.6,skade:3,saktere:0.35,pris:110}]},
   {id:"pynt",ik:"🌸",navn:"Pynt",pris:10,r:0.7,flere:true,tekst:"Gjør basen fin. Trykk på pynten for å bytte.",niv:[{}]},
-  {id:"skjold",ik:"🛡️",navn:"Kraftskjold",ny:true,handling:true,tekst:"En blå boble rundt basen. Står du inni, kommer ikke monstrene inn før boblen sprekker. Den blir hel igjen etter hver bølge."},
+  {id:"skjold",ik:"🛡️",navn:"Kraftskjold",ny:true,handling:true,tekst:"En blå boble rundt roboten. Den tar imot slagene til den sprekker, og blir hel igjen etter hver bølge."},
   {id:"reparer",ik:"🔧",navn:"Reparer",handling:true,tekst:"Roboten får 50 liv, og alle murene blir hele."},
-  {id:"basen",ik:"⬆️",navn:"Oppgrader basen",handling:true,tekst:"Basen får en kanon på toppen, og roboten tåler mer."}
+  {id:"basen",ik:"⬆️",navn:"Oppgrader roboten",handling:true,tekst:"Roboten tåler mer, og sverdet, magien og pistolen blir sterkere."}
 ];
 const BY=Object.fromEntries(BYGG.map(b=>[b.id,b]));
 const bygg=[];
@@ -676,7 +700,7 @@ function velgMål(x,z,rek){let best=null,bd=1e9;for(const mo of monstre){if(avst
 function nærmeste(x,z,rek){let best=null,bd=rek;for(const mo of monstre){const d=avst(x,z,mo.x,mo.z)-mo.T.r;if(d<bd){bd=d;best=mo}}return best}
 
 // ================= Bølger =================
-let bolge=1,fase="bygg",koe=[],spawnT=0,started=false,paused=false,seier=false;
+let bolge=1,fase="bygg",koe=[],spawnT=0,nedtelling=8,started=false,paused=false,seier=false;
 const MAKS_BOLGE=10;
 function lagBolge(n){
   const k=[];const antall=3+n*2;
@@ -687,7 +711,7 @@ function lagBolge(n){
 function kantPunkt(){const s=Math.floor(Math.random()*4),u=Math.random()*2-1;return s===0?[u*KX,-KZ-1]:s===1?[u*KX,KZ+1]:s===2?[-KX-1,u*KZ]:[KX+1,u*KZ]}
 function startBolge(){
   if(fase!=="bygg"||!started||paused)return;
-  lagre();fase="kamp";koe=lagBolge(bolge);spawnT=0.5;avbrytPlassering();lukkByggLinje();
+  lagre();fase="kamp";koe=lagBolge(bolge);spawnT=0.5;
   melding(bolge===MAKS_BOLGE?"⚠️ Siste bølge! Framtidskongen kommer!":bolge===5?"⚠️ Bølge 5: Superboten kommer!":"🌊 Bølge "+bolge+" kommer!");
   oppdaterHud();
 }
@@ -698,7 +722,7 @@ function bolgeFerdig(){
   helt.hp=helt.maks;
   if(bolge>=MAKS_BOLGE){seier=true;fase="slutt";bolge=MAKS_BOLGE+1;lagre();visSlutt(true);return}
   melding("🎉 Bølge "+bolge+" klart! +"+bonus+" 🪙");
-  bolge++;fase="bygg";lagre();oppdaterHud();
+  bolge++;fase="bygg";nedtelling=6;lagre();oppdaterHud();
 }
 function heltFalt(){fase="slutt";visSlutt(false)}
 
@@ -729,7 +753,7 @@ function brukLagring(s){
   }
   if(bolge>MAKS_BOLGE){bolge=MAKS_BOLGE;}
   skjold.hp=skjold.niv?SKJOLD_NIV[skjold.niv].maks:0;
-  byggBasen();helt.maks=BASE_NIV[basen.niv].maks;helt.x=0;helt.z=6;helt.hp=helt.maks;helt.nede=0;spillR("Idle");fase="bygg";oppdaterHud();oppdaterByggLinje();
+  helt.maks=BASE_NIV[basen.niv].maks;helt.x=0;helt.z=0;helt.hp=helt.maks;helt.nede=0;spillR("Idle");fase="bygg";nedtelling=6;oppdaterHud();oppdaterByggLinje();
 }
 addEventListener("pagehide",()=>lagre());
 
@@ -740,8 +764,7 @@ function oppdaterHud(){
   const bl=$("heltLiv");bl.textContent=Math.ceil(Math.max(0,helt.hp))+"/"+helt.maks;bl.className=helt.hp<helt.maks*0.3?"lav":"";
   $("bolge").textContent=Math.min(bolge,MAKS_BOLGE);
   $("pSkjold").hidden=!skjold.niv;$("skjold").textContent=Math.ceil(skjold.hp);
-  $("nesteKnapp").hidden=fase!=="bygg";
-  $("nesteKnapp").firstChild.textContent=bolge===1&&!bygg.length?"▶ Start bølge 1":"▶ Neste bølge";
+  $("mana").textContent=Math.floor(kamp.mana);
   oppdaterByggLinje();
 }
 const gameModalOpen=()=>$("infoLag").classList.contains("vis")||$("sluttLag").classList.contains("vis");
@@ -769,16 +792,18 @@ function oppdaterByggLinje(){document.querySelectorAll("#byggLinje .bk").forEach
 function apneByggLinje(){if(!started||fase==="slutt")return;byggApen=true;$("byggLinje").hidden=false;$("byggKnapp").setAttribute("aria-pressed","true");html.classList.add("bygger");$("joy").classList.remove("klar");oppdaterByggLinje()}
 function lukkByggLinje(){byggApen=false;$("byggLinje").hidden=true;$("byggKnapp").setAttribute("aria-pressed","false");html.classList.remove("bygger");if(started)$("joy").classList.add("klar");avbrytPlassering()}
 $("byggKnapp").addEventListener("click",()=>byggApen?lukkByggLinje():apneByggLinje());
-$("nesteKnapp").addEventListener("click",()=>startBolge());
+[["kSverd","sverd"],["kMagi","magi"],["kPistol","pistol"]].forEach(([id,v])=>{const b=$(id);
+  b.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();kamp.holdt[v]=true;try{b.setPointerCapture(e.pointerId)}catch(_){}});
+  const slipp=()=>{kamp.holdt[v]=false};b.addEventListener("pointerup",slipp);b.addEventListener("pointercancel",slipp);b.addEventListener("lostpointercapture",slipp)});
 function velg(id){
   const D=BY[id],p=prisFor(D);
   if(D.handling){
-    if(p==null){melding(D.id==="basen"?"Basen er allerede på høyeste nivå.":"Kraftskjoldet er allerede på høyeste nivå.");return}
+    if(p==null){melding(D.id==="basen"?"Roboten er allerede på høyeste nivå.":"Kraftskjoldet er allerede på høyeste nivå.");return}
     if(id==="reparer"&&altHelt()){melding("Roboten og murene er helt hele 💪");return}
     if(mynter<p){melding("Du trenger "+(p-mynter)+" 🪙 til");return}
     mynter-=p;
     if(id==="reparer"){helt.hp=Math.min(helt.maks,helt.hp+50);for(const b of bygg)if(b.t==="mur"){b.hp=b.maks;settLiv(b.bar,1)}gnist(helt.x,2,helt.z,0x7dff6a,12);melding("🔧 Roboten fikk 50 liv, og murene er hele!")}
-    else if(id==="basen"){const før=helt.maks;basen.niv++;helt.maks=BASE_NIV[basen.niv].maks;helt.hp+=helt.maks-før;byggBasen();gnist(0,4,0,0xffc93c,20);melding("⬆️ Basen er nivå "+basen.niv+": den har en kanon, og roboten tåler mer!")}
+    else if(id==="basen"){const før=helt.maks;basen.niv++;helt.maks=BASE_NIV[basen.niv].maks;helt.hp+=helt.maks-før;gnist(helt.x,2,helt.z,0xffc93c,20);melding("⬆️ Roboten er nivå "+basen.niv+": sterkere våpen og mer liv!")}
     else if(id==="skjold"){skjold.niv++;skjold.hp=SKJOLD_NIV[skjold.niv].maks;melding(skjold.niv===1?"🛡️ Kraftskjoldet er på!":"🛡️ Kraftskjoldet er nivå "+skjold.niv+"!")}
     oppdaterHud();lagre();return;
   }
@@ -795,7 +820,6 @@ function avbrytPlassering(){valgt=null;if(spøkelse){scene.remove(spøkelse);sp�
 function snapp(v){return Math.round(v*2)/2}
 function kanPlassere(id,x,z){
   const D=BY[id];if(Math.abs(x)>KX-1||Math.abs(z)>KZ-1)return false;
-  if(Math.hypot(x,z)<BASE_R+D.r+0.4)return false;
   for(const b of bygg){if(b.t==="felle"&&id!=="felle")continue;if(id==="felle"&&b.t!=="felle")continue;
     const rB=BY[b.t].r;if(avst(x,z,b.hx,b.hz)<(b.t==="mur"&&id==="mur"?2.6:rB+D.r))return false}
   return true;
@@ -810,7 +834,7 @@ function plasser(x,z){
   if(mynter<D.pris){melding("Du trenger "+(D.pris-mynter)+" 🪙 til");avbrytPlassering();return}
   mynter-=D.pris;const b=nyttBygg(valgt,x,z,1,spøkelse?spøkelse.userData.v||0:0);gnist(x,0.8,z,0x3ee6ff,8);
   if(valgt==="hjelper"){b.x=x;b.z=z}
-  if(bolge===1&&fase==="bygg"&&bygg.length===1)melding("Bra! Trykk ▶ Neste bølge når du er klar.",3600);
+  if(bolge===1&&bygg.length===1)melding("Bra! Nå kan lasertårnet hjelpe deg.",3000);
   const fortsett=D.flere&&mynter>=D.pris;oppdaterHud();lagre();if(!fortsett)avbrytPlassering();else oppdaterByggLinje();
 }
 
@@ -840,15 +864,14 @@ const taster=new Set();
 addEventListener("keydown",e=>{
   if(!started||gameModalOpen())return;
   const k=e.code;
-  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD"].includes(k)){taster.add(k);e.preventDefault()}
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","KeyW","KeyA","KeyS","KeyD","Space","KeyE","KeyF"].includes(k)){taster.add(k);e.preventDefault()}
   if(e.repeat)return;
   if(k==="KeyB"){byggApen?lukkByggLinje():apneByggLinje()}
   else if(/^Digit[1-9]$/.test(k)){if(!byggApen)apneByggLinje();velg(BYGG[+k.slice(5)-1].id)}
   else if(k==="Escape"&&valgt){e.preventDefault();avbrytPlassering()}
-  else if((k==="Space"||k==="Enter")&&fase==="bygg"&&!(document.activeElement&&document.activeElement.tagName==="BUTTON"&&document.activeElement.offsetParent!==null)){e.preventDefault();startBolge()}
 });
 addEventListener("keyup",e=>taster.delete(e.code));
-function clearInput(){taster.clear();joy.x=joy.y=0;joy.id=null;$("knob").style.transform=""}
+function clearInput(){taster.clear();kamp.holdt.sverd=kamp.holdt.magi=kamp.holdt.pistol=false;joy.x=joy.y=0;joy.id=null;$("knob").style.transform=""}
 // Styrespak (berøring)
 const joy={x:0,y:0,id:null};
 (function(){const j=$("joy"),kn=$("knob");
@@ -862,15 +885,68 @@ const joy={x:0,y:0,id:null};
 const ray=new THREE.Raycaster(),ndc=new THREE.Vector2(),plan=new THREE.Plane(new THREE.Vector3(0,1,0),0),treff=new THREE.Vector3();
 function bakkePunkt(cx,cy){ndc.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.setFromCamera(ndc,camera);return ray.ray.intersectPlane(plan,treff)?{x:treff.x,z:treff.z}:null}
 let ned=null;
-renderer.domElement.addEventListener("pointerdown",e=>{if(!started||paused)return;ned={x:e.clientX,y:e.clientY,id:e.pointerId};const p=bakkePunkt(e.clientX,e.clientY);if(p){peker.x=p.x;peker.z=p.z;peker.på=true;flyttSpøkelse(p.x,p.z)}});
+renderer.domElement.addEventListener("contextmenu",e=>e.preventDefault());
+renderer.domElement.addEventListener("pointerdown",e=>{if(!started||paused)return;
+  if(!byggApen&&e.pointerType==="mouse"){const p=bakkePunkt(e.clientX,e.clientY);if(p){const dx=p.x-helt.x,dz=p.z-helt.z,l=Math.hypot(dx,dz)||1;if(e.button===2)skytPistol([dx/l,dz/l]);else if(e.button===0)skytMagi([dx/l,dz/l])}return}ned={x:e.clientX,y:e.clientY,id:e.pointerId};const p=bakkePunkt(e.clientX,e.clientY);if(p){peker.x=p.x;peker.z=p.z;peker.på=true;flyttSpøkelse(p.x,p.z)}});
 renderer.domElement.addEventListener("pointermove",e=>{const p=bakkePunkt(e.clientX,e.clientY);if(!p)return;peker.x=p.x;peker.z=p.z;peker.på=true;if(!paused)flyttSpøkelse(p.x,p.z)});
 renderer.domElement.addEventListener("pointerup",e=>{if(!ned||e.pointerId!==ned.id)return;const kort=Math.hypot(e.clientX-ned.x,e.clientY-ned.y)<(TOUCH?40:12);ned=null;if(!kort||!started||paused)return;
   const p=bakkePunkt(e.clientX,e.clientY);if(!p)return;
   if(valgt){plasser(p.x,p.z);return}
+  if(!byggApen)return;
   let best=null,bd=1e9;for(const b of bygg){const d=b.t==="mur"?punktMurAvstand(p.x,p.z,b):avst(p.x,p.z,b.t==="hjelper"?b.x:b.hx,b.t==="hjelper"?b.z:b.hz);const grense=b.t==="felle"?BY.felle.niv[b.niv-1].rek:BY[b.t].r+0.9;if(d<grense&&d<bd){bd=d;best=b}}
   if(best)apneInfo(best);
 });
 renderer.domElement.addEventListener("pointerleave",()=>{peker.på=false;if(spøkelse&&!TOUCH){spøkelse.visible=false;if(ring)ring.visible=false}});
+
+// ================= Kamp som i Era Defenders 1: lasersverd, plasmamagi og laserpistol =================
+// Framtidens våpen. Mellomrom/⚔️ = sverd, E/klikk/🔮 = magi (koster mana), F/høyreklikk/🔫 = pistol.
+const VAAPEN={sverd:{tid:0.33,rek:2.6},magi:{tid:0.6,kost:20,fart:18,liv:1.1,sprut:1.8},pistol:{tid:0.45,fart:34,liv:0.7}};
+const kamp={mana:100,maksMana:100,manaFart:16,sverdCd:0,magiCd:0,pistolCd:0,snuT:0,holdt:{sverd:false,magi:false,pistol:false}};
+helt.rx=0;helt.rz=1;
+function snu(dx,dz){const l=Math.hypot(dx,dz)||1;helt.rx=dx/l;helt.rz=dz/l;helt.g.rotation.y=Math.atan2(dx,dz)}
+function siktRetning(){const mo=nærmeste(helt.x,helt.z,14);if(mo){const dx=mo.x-helt.x,dz=mo.z-helt.z,l=Math.hypot(dx,dz)||1;return[dx/l,dz/l]}return[helt.rx,helt.rz]}
+const kanSlass=()=>started&&!paused&&helt.nede<=0&&fase!=="slutt";
+const effekter=[];
+function sverdBue(dx,dz){
+  const L=Math.PI*1.1,geo=new THREE.RingGeometry(0.7,VAAPEN.sverd.rek+0.3,24,1,-Math.PI/2-L/2,L);
+  const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0x7dfcff,transparent:true,opacity:0.75,side:THREE.DoubleSide,depthWrite:false}));
+  m.rotation.x=-Math.PI/2;const g=new THREE.Group();g.add(m);g.position.set(helt.x,1.1,helt.z);g.rotation.y=Math.atan2(dx,dz);scene.add(g);effekter.push({m:g,mat:m.material,geo,t:0.15,maks:0.15});
+}
+function sverdHugg(){
+  if(kamp.sverdCd>0||!kanSlass())return;kamp.sverdCd=VAAPEN.sverd.tid;
+  const [dx,dz]=nærmeste(helt.x,helt.z,VAAPEN.sverd.rek+2)?siktRetning():[helt.rx,helt.rz];snu(dx,dz);kamp.snuT=0.25;spillEn("Punch");
+  const sk=BASE_NIV[basen.niv].sverd;
+  for(const mo of monstre.slice()){const ex=mo.x-helt.x,ez=mo.z-helt.z,d=Math.hypot(ex,ez);
+    if(d<VAAPEN.sverd.rek+mo.T.r*1.25&&(ex*dx+ez*dz)/(d||1)>-0.2){if(!mo.T.boss){mo.x+=ex/(d||1)*0.8;mo.z+=ez/(d||1)*0.8}gnist(mo.x,1.2,mo.z,0x7dfcff,5);skadMonster(mo,sk)}}
+  sverdBue(dx,dz);
+}
+const rette=[],magiGeo=new THREE.SphereGeometry(0.38,12,10),magiMat=M(0xd27dff,{emissive:0xb040ff,emissiveIntensity:2}),pistolGeo=new THREE.BoxGeometry(0.14,0.14,0.9),pistolMat=M(0x9ff8ff,{emissive:0x3ee6ff,emissiveIntensity:2.5});
+function nyttSkudd(type,dx,dz,fart,liv,skade,sprut){const m=new THREE.Mesh(type==="magi"?magiGeo:pistolGeo,type==="magi"?magiMat:pistolMat);m.position.set(helt.x+dx*0.9,1.5,helt.z+dz*0.9);m.rotation.y=Math.atan2(dx,dz);scene.add(m);rette.push({m,vx:dx*fart,vz:dz*fart,t:liv,skade,sprut:sprut||0,type})}
+function skytMagi(dir){
+  if(kamp.magiCd>0||!kanSlass())return;if(kamp.mana<VAAPEN.magi.kost){if(!kamp.manaVarslet){kamp.manaVarslet=true;melding("🔮 Magien må lade seg opp litt!",1600)}return}
+  kamp.magiCd=VAAPEN.magi.tid;kamp.mana-=VAAPEN.magi.kost;const [dx,dz]=dir||siktRetning();snu(dx,dz);kamp.snuT=0.3;if(!rEn)spillEn("Punch");
+  nyttSkudd("magi",dx,dz,VAAPEN.magi.fart,VAAPEN.magi.liv,BASE_NIV[basen.niv].magi,VAAPEN.magi.sprut);
+}
+function skytPistol(dir){
+  if(kamp.pistolCd>0||!kanSlass())return;kamp.pistolCd=VAAPEN.pistol.tid;const [dx,dz]=dir||siktRetning();snu(dx,dz);kamp.snuT=0.3;
+  nyttSkudd("pistol",dx,dz,VAAPEN.pistol.fart,VAAPEN.pistol.liv,BASE_NIV[basen.niv].pistol);gnist(helt.x+dx,1.5,helt.z+dz,0x9ff8ff,2);
+}
+function kampOppdater(dt){
+  kamp.sverdCd-=dt;kamp.magiCd-=dt;kamp.pistolCd-=dt;kamp.snuT-=dt;
+  kamp.mana=Math.min(kamp.maksMana,kamp.mana+kamp.manaFart*dt);const mi=Math.floor(kamp.mana);if(mi!==kamp.vist){kamp.vist=mi;$("mana").textContent=mi;$("kMagi").classList.toggle("tom",kamp.mana<VAAPEN.magi.kost)}if(kamp.mana>=VAAPEN.magi.kost)kamp.manaVarslet=false;
+  if(kamp.holdt.sverd||taster.has("Space"))sverdHugg();
+  if(kamp.holdt.magi||taster.has("KeyE"))skytMagi();
+  if(kamp.holdt.pistol||taster.has("KeyF"))skytPistol();
+  if(window.__autoKamp){const mo=nærmeste(helt.x,helt.z,14);if(mo){if(avst(mo.x,mo.z,helt.x,helt.z)<VAAPEN.sverd.rek+mo.T.r)sverdHugg();else{skytMagi();skytPistol()}}}
+  for(let i=rette.length-1;i>=0;i--){const r=rette[i];r.t-=dt;r.m.position.x+=r.vx*dt;r.m.position.z+=r.vz*dt;if(r.type==="magi"&&!RM)r.m.rotation.x+=dt*8;
+    const px=r.m.position.x,pz=r.m.position.z;let truffet=null;
+    for(const mo of monstre)if(avst(px,pz,mo.x,mo.z)<0.45+mo.T.r*1.1){truffet=mo;break}
+    if(truffet){gnist(px,1.4,pz,r.type==="magi"?0xd27dff:0x9ff8ff,r.type==="magi"?8:3);
+      if(r.sprut)for(const mo of monstre.slice())if(mo!==truffet&&avst(px,pz,mo.x,mo.z)<r.sprut+mo.T.r)skadMonster(mo,Math.ceil(r.skade/2));
+      skadMonster(truffet,r.skade)}
+    if(truffet||r.t<=0||Math.abs(px)>KX+4||Math.abs(pz)>KZ+4){scene.remove(r.m);rette.splice(i,1)}}
+  for(let i=effekter.length-1;i>=0;i--){const e=effekter[i];e.t-=dt;e.mat.opacity=0.75*Math.max(0,e.t/e.maks);e.m.position.set(helt.x,1.1,helt.z);if(e.t<=0){scene.remove(e.m);e.geo.dispose();e.mat.dispose();effekter.splice(i,1)}}
+}
 
 // ================= Oppdatering =================
 let last=performance.now(),tid=0;
@@ -884,16 +960,16 @@ function oppdater(dt){
     ix+=joy.x;iz+=joy.y;const l=Math.hypot(ix,iz);
     let beveger=false;
     if(l>0.15){const s=Math.min(1,l);ix/=l;iz/=l;const vx=kam.rx*ix-kam.fx*iz,vz=kam.rz*ix-kam.fz*iz;
-      helt.x+=vx*helt.fart*s*dt;helt.z+=vz*helt.fart*s*dt;helt.g.rotation.y=Math.atan2(vx,vz);beveger=true}
+      helt.x+=vx*helt.fart*s*dt;helt.z+=vz*helt.fart*s*dt;if(kamp.snuT<=0)snu(vx,vz);beveger=true}
     helt.x=Math.max(-KX+0.8,Math.min(KX-0.8,helt.x));helt.z=Math.max(-KZ+0.8,Math.min(KZ-0.8,helt.z));
-    const db=Math.hypot(helt.x,helt.z);if(db<BASE_R+0.6){const k=(BASE_R+0.6)/(db||1);helt.x*=k;helt.z*=k}
-    helt.cd-=dt;const mål=nærmeste(helt.x,helt.z,helt.rek);
-    if(mål&&helt.cd<=0){helt.cd=0.3;skyt("helt",helt.x,1.6,helt.z,mål,helt.skade,30);if(!beveger){helt.g.rotation.y=Math.atan2(mål.x-helt.x,mål.z-helt.z);if(!rEn)spillEn("Punch")}}
+    kampOppdater(dt);
     if(!rEn)spillR(beveger?"Running":"Idle");
   }
   helt.g.position.set(helt.x,0,helt.z);settLiv(heltBar,helt.nede>0?0:helt.hp/helt.maks);heltBar.visible=helt.nede<=0&&helt.hp<helt.maks;heltBar.quaternion.copy(camera.quaternion).premultiply(helt.g.quaternion.clone().invert());
   if(rMixer)rMixer.update(dt);
 
+  // Bølgene kommer av seg selv (som i Era Defenders 1), med en kort pause imellom
+  if(fase==="bygg"){const før=Math.ceil(nedtelling);nedtelling-=dt;const n=Math.ceil(nedtelling);$("pNed").hidden=false;$("ned").textContent=Math.max(1,n);if(nedtelling<=0){$("pNed").hidden=true;startBolge()}}else $("pNed").hidden=true;
   // Nye monstre
   if(fase==="kamp"&&koe.length){spawnT-=dt;if(spawnT<=0){const [x,z]=kantPunkt();const t=koe.shift();lagMonster(t,x,z,1+(bolge-1)*0.12);if(TYPER[t].boss)melding("👑 "+TYPER[t].navn+" kommer!");spawnT=Math.max(0.45,1.25-bolge*0.07)}}
 
@@ -901,26 +977,22 @@ function oppdater(dt){
   for(const mo of monstre.slice()){
     const T=mo.T;mo.cd-=dt;mo.saktere=1;
     for(const b of bygg)if(b.t==="felle"&&avst(mo.x,mo.z,b.hx,b.hz)<BY.felle.niv[b.niv-1].rek+T.r*0.5)mo.saktere=Math.min(mo.saktere,BY.felle.niv[b.niv-1].saktere);
-    // Som i Era Defenders 1: monstrene jakter på roboten. Murer står i veien, og basen (eller skjoldet) må de gå rundt.
+    // Som i Era Defenders 1: monstrene jakter på roboten. Murer står i veien.
     const hx=helt.x-mo.x,hz=helt.z-mo.z,dh=Math.hypot(hx,hz);let angrip=null,mx=hx,mz=hz;
-    const iSkjold=skjoldAktiv()&&Math.hypot(helt.x,helt.z)<skjold.R-0.3,hinderR=(skjoldAktiv()?skjold.R:BASE_R)+T.r,dBase=Math.hypot(mo.x,mo.z);
     const hj=bygg.find(b=>b.t==="hjelper"&&!b.nede&&avst(mo.x,mo.z,b.x,b.z)<T.r+1.0);
-    if(helt.nede<=0&&dh<T.r+0.9)angrip={helt:true};
+    if(helt.nede<=0&&dh<T.r+(skjoldAktiv()?skjold.R:0.9))angrip={helt:true};
     else if(hj)angrip={b:hj};
-    else if(iSkjold&&dBase<skjold.R+T.r+0.1)angrip={skjold:true};
     if(!angrip&&helt.nede<=0){
       const l=dh||1,steg=T.fart*mo.saktere*dt;let nx=mo.x+mx/l*steg,nz=mo.z+mz/l*steg;
-      const dn=Math.hypot(nx,nz);
-      if(dn<hinderR){const ux=nx/(dn||1),uz=nz/(dn||1),sgn=(ux*hz-uz*hx)>0?-1:1;nx=mo.x+(-uz*sgn)*steg;nz=mo.z+(ux*sgn)*steg;const d2=Math.hypot(nx,nz)||1;if(d2<hinderR){nx*=hinderR/d2;nz*=hinderR/d2}}
       const mur=bygg.find(b=>b.t==="mur"&&punktMurAvstand(nx,nz,b)<T.r+0.4);
       if(mur)angrip={b:mur};
       else{mo.x=nx;mo.z=nz;mo.g.rotation.y=Math.atan2(mx,mz);mo.fase+=dt*T.fart*2.2;mo.ben[0].rotation.x=Math.sin(mo.fase)*0.6;mo.ben[1].rotation.x=-Math.sin(mo.fase)*0.6}
     }
     if(angrip&&mo.cd<=0){mo.cd=1;
-      if(angrip.helt){helt.hp-=T.skade;gnist(helt.x,1.5,helt.z,0xffcc00,5);oppdaterHud();if(helt.hp<=0){helt.hp=0;helt.nede=1.6;gnist(helt.x,1,helt.z,0xffcc00,20);spillEn("Death")}}
+      if(angrip.helt&&skjoldAktiv()){skjold.hp-=T.skade;gnist(helt.x,1.5,helt.z,0x56b8ff,5);if(skjold.hp<=0){skjold.hp=0;melding("🛡️ Kraftskjoldet sprakk! Det blir helt igjen etter bølgen.")}oppdaterHud()}
+      else if(angrip.helt){helt.hp-=T.skade;gnist(helt.x,1.5,helt.z,0xffcc00,5);oppdaterHud();if(helt.hp<=0){helt.hp=0;helt.nede=1.6;gnist(helt.x,1,helt.z,0xffcc00,20);spillEn("Death")}}
       else if(angrip.b){const b=angrip.b;b.hp-=T.skade;settLiv(b.bar,b.hp/b.maks);gnist(b.t==="mur"?mo.x:b.x,1,b.t==="mur"?mo.z:b.z,0xaab4d0,4);
         if(b.hp<=0){if(b.t==="mur"){gnist(b.hx,1,b.hz,0x9aa8c8,16);fjernBygg(b);melding("🧱 En mur ble ødelagt!")}else{b.nede=true;b.g.rotation.z=Math.PI/2;melding("🤖 En robothjelper er slått ut til neste bølge.")}}}
-      else if(angrip.skjold){skjold.hp-=T.skade;gnist(mo.x*0.9,1.5,mo.z*0.9,0x56b8ff,5);if(skjold.hp<=0){skjold.hp=0;melding("🛡️ Kraftskjoldet sprakk! Det blir helt igjen etter bølgen.")}oppdaterHud()}
       if(angrip.helt||angrip.b){mo.g.rotation.y=Math.atan2(mx,mz)}
     }
     mo.mat.emissive.setHex(mo.blink>0?0x884444:0x000000);mo.blink-=dt;
@@ -949,10 +1021,8 @@ function oppdater(dt){
     if(b.bar)b.bar.quaternion.copy(camera.quaternion).premultiply(b.g.quaternion.clone().invert());
     if(!RM)b.g.traverse(o=>{if(o.userData.snurr)o.rotation.y+=dt*2});
   }
-  // Basen sin kanon (nivå 2 og 3)
-  if(basen.niv>=2){const n=BASE_NIV[basen.niv];basen.cd-=dt;const mo=velgMål(0,0,n.rek);if(mo){if(baseKanon)baseKanon.rotation.y=Math.atan2(mo.x,mo.z);if(basen.cd<=0){basen.cd=n.tid;skyt("base",0,baseKanon?baseKanon.position.y:4,0,mo,n.skade,24)}}}
   // Skjoldet
-  skjold.mesh.visible=skjoldAktiv();if(skjold.mesh.visible)skjold.mesh.material.opacity=0.12+0.14*(skjold.hp/SKJOLD_NIV[skjold.niv].maks)+(RM?0:Math.sin(tid*3)*0.03);
+  skjold.mesh.visible=skjoldAktiv()&&helt.nede<=0;skjold.mesh.position.set(helt.x,1.3,helt.z);if(skjold.mesh.visible)skjold.mesh.material.opacity=0.12+0.14*(skjold.hp/SKJOLD_NIV[skjold.niv].maks)+(RM?0:Math.sin(tid*3)*0.03);
 
   // Kuler
   for(let i=kuler.length-1;i>=0;i--){const k=kuler[i];k.t-=dt;const mo=k.mål;
@@ -986,11 +1056,11 @@ const lagret=lesLagring();
 brukLagring(lagret);
 if(lagret&&(lagret.bolge>1||(lagret.bygg&&lagret.bygg.length))&&!lagret.seier)$("startBtn").textContent="▶ Fortsett (bølge "+bolge+")";
 $("startBtn").addEventListener("click",()=>{
-  $("start").classList.remove("vis");$("hud").hidden=false;$("hoyre").hidden=false;$("bunn").hidden=false;$("joy").classList.add("klar");
+  $("start").classList.remove("vis");html.classList.add("spiller");$("hud").hidden=false;$("hoyre").hidden=false;$("bunn").hidden=false;$("joy").classList.add("klar");
   started=true;paused=false;last=performance.now();oppdaterHud();try{$("startBtn").blur()}catch(e){}
   try{document.dispatchEvent(new Event("evn-start"))}catch(e){}
   if(seier){bolge=MAKS_BOLGE;melding("🏆 Du har klart Framtiden! Spill bølge 10 igjen, eller start på nytt fra pausen.",4000)}
-  else melding(bolge===1&&!bygg.length?"🌆 Framtiden! Trykk 🏗️ Bygg og sett ut et lasertårn.":"🌊 Klar for bølge "+bolge+"!",3600);
+  else nedtelling=bolge===1&&!bygg.length?10:6;melding(bolge===1&&!bygg.length?"🌆 Framtiden! Monstrene kommer snart. Bygg et lasertårn!":"🌊 Bølge "+bolge+" kommer snart!",3600);
 });
 requestAnimationFrame(lokke);
 
@@ -1015,11 +1085,11 @@ window.__evnP=EVNPause({
   fortsett:()=>{paused=false;clearInput();last=performance.now()},
   lagre:()=>lagre(),
   styring:()=>html.classList.contains("touch")
-    ?"🕹️ Styrespaken: gå. Roboten skyter selv.<br>🏗️ Bygg: velg noe og trykk på kartet<br>👆 Trykk på noe du har bygget: oppgrader eller selg<br>▶ Neste bølge: når du er klar"
-    :"⬆️ Piltaster eller WASD: gå. Roboten skyter selv.<br>B: bygg · 1–9: velg · Esc: avbryt<br>🖱️ Klikk på noe du har bygget: oppgrader eller selg<br>Mellomrom: neste bølge · P eller Esc: pause"
+    ?"🕹️ Styrespaken: gå<br>⚔️ Lasersverd · 🔮 Plasmamagi (bruker mana) · 🔫 Laserpistol<br>🏗️ Bygg: velg noe og trykk på kartet<br>👆 Med Bygg åpen: trykk på noe du har bygget for å oppgradere eller selge"
+    :"⬆️ Piltaster eller WASD: gå<br>Mellomrom: ⚔️ lasersverd · E eller klikk: 🔮 plasmamagi · F eller høyreklikk: 🔫 laserpistol<br>B: bygg · 1–9: velg · Esc: avbryt<br>🖱️ Med Bygg åpen: klikk på noe du har bygget for å oppgradere eller selge<br>P eller Esc: pause"
 });
 window.__spill={get mynter(){return mynter},set mynter(v){mynter=v;oppdaterHud()},get bolge(){return bolge},get fase(){return fase},get started(){return started},get paused(){return paused},
-  basen,skjold,helt,bygg,monstre,startBolge,velg,plasser,avbrytPlassering,kanPlassere,lagre,lesLagring,TYPER,BYGG,
+  basen,skjold,helt,bygg,monstre,kamp,camera,startBolge,sverdHugg,skytMagi,skytPistol,velg,plasser,avbrytPlassering,kanPlassere,lagre,lesLagring,TYPER,BYGG,
   hopp:(n)=>{bolge=n;oppdaterHud()},steg:(sek,dt=1/30)=>{for(let t=0;t<sek&&fase!=="slutt";t+=dt)oppdater(dt)},drepAlle:()=>monstre.slice().forEach(m=>skadMonster(m,1e6)),tilstand};
 </script>
 <!-- EVN Studio: Avslutt med spørsmål (vises bare under /spill/ på evnstudio.no) -->

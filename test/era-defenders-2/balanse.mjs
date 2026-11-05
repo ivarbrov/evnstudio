@@ -5,7 +5,7 @@ const p=await b.newPage();p.on('pageerror',e=>console.log('ERR',e.message));
 await p.goto('file:///home/claude/evnstudio/spill/era-defenders-2/index.html');await p.waitForTimeout(1500);
 await p.evaluate(()=>{localStorage.clear()});await p.reload();await p.waitForTimeout(1500);
 await p.click('#startBtn',{force:true});
-const res=await p.evaluate(async(strategi)=>{const S=__spill,log=[];let tid=0;
+const res=await p.evaluate(async(strategi)=>{const S=__spill,log=[];let tid=0;window.__autoKamp=true;
   const plasser=[[6,0],[-6,0],[0,6],[0,-6],[5,5],[-5,-5],[5,-5],[-5,5],[9,0],[-9,0],[0,9],[0,-9]];
   for(let w=0;w<10;w++){
     if(strategi!=='ingenting'){let i=0;
