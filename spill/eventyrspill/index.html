@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Era Defenders – v0.21.1</title>
+<title>Era Defenders – v0.21.2</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="ikoner/ikon-192.png">
 <link rel="apple-touch-icon" href="ikoner/apple-touch-icon.png">
@@ -157,6 +157,14 @@
   #tilbake { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(420px, calc(100% - 32px));
     padding: 16px 22px; font-size: 20px; font-weight: bold; border-radius: 14px; border: 3px solid #1f3f80;
     background: #3a6fd8; color: #fff; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.6); z-index: 10; }
+  /* 0.21.2: hvor mange bygg og oppgraderinger du har råd til. Bare en kort animasjon når tallet øker. */
+  .base-rad { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: #ffd54a; color: #3d2a17; font-size: 0.9em; }
+  .base-rad[hidden] { display: none; }
+  .base-rad.ny { animation: baseRadNy 0.6s ease-out 1; }
+  @keyframes baseRadNy { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .base-rad.ny { animation: none; } }
+  #baseRadHint { position: fixed; z-index: 24; max-width: min(300px, calc(100vw - 32px)); box-sizing: border-box; padding: 8px 12px; border-radius: 10px; background: #ffd54a; color: #3d2a17; font-size: 15px; font-weight: bold; box-shadow: 0 4px 14px rgba(0,0,0,0.4); pointer-events: none; }
+  #baseRadHint[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -169,7 +177,8 @@ addEventListener('touchstart',function(){t(true);},{passive:true,capture:true});
 addEventListener('keydown',function(){t(false);},true);})();
 </script>
 <canvas id="spill"></canvas>
-<button id="baseKnapp">🏰 Basen<span class="bare-pc"> (B)</span></button>
+<button id="baseKnapp">🏰 Basen<span class="bare-pc"> (B)</span><span id="baseRad" class="base-rad" hidden></span></button>
+<div id="baseRadHint" role="status" hidden></div>
 <div id="meny"><div class="boks">
   <span class="evn-merke">EVN STUDIO</span>
   <h1 id="menyTittel">Era Defenders</h1>
@@ -200,7 +209,7 @@ addEventListener('keydown',function(){t(false);},true);})();
   <button class="andre" id="menyNyRunde" hidden>⭐ Ny runde – sterkere fiender</button>
   <button class="andre" id="menyEpoker" hidden>🌍 Velg tidsepoke</button>
   <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-  <div class="evn-ver">Versjon 0.21.1 · 7 tidsepoker</div>
+  <div class="evn-ver">Versjon 0.21.2 · 7 tidsepoker</div>
 </div></div>
 <div id="epokeKart" role="dialog" aria-modal="true" aria-labelledby="epokeTittel"><div class="boks">
   <span class="evn-merke">EVN STUDIO</span>
@@ -984,6 +993,7 @@ basenavnFelt.addEventListener('change', () => { basenavnFelt.value = helt.basena
 
 function apneBase() {
   if (tilstand !== 'spill') return;
+  baseApnetIOkta = true; document.getElementById('baseRadHint').hidden = true;
   tilstand = 'base';
   basenavnFelt.value = helt.basenavn || '';
   visBase();
@@ -1383,8 +1393,49 @@ function kolliderMedTraer(o, ignorerTraer) {
   o.y = Math.max(o.r, Math.min(VERDEN_HOYDE - o.r, o.y));
 }
 
+// 0.21.2: Basen-knappen viser hvor mange bygg og oppgraderinger du har råd til nå.
+// Samme regler som knappene i basen. Reparasjon, drikker og pynt telles ikke.
+// Økonomi og priser er uendret.
+let baseRadVist = 0, baseApnetIOkta = false, baseRadHintVist = false;
+function kjopbareBygg() {
+  return BYGNINGER.filter(b => {
+    if (b.id === 'reparer' || b.pynt || b.kanKjopesMange) return false;
+    const antall = antallBygget(b.id);
+    const mangler = b.kreverBygg && !antallBygget(b.kreverBygg);
+    const last = helt.niva < b.laasesOpp || (b.kreverVerden && helt.verden < b.kreverVerden) || mangler;
+    const ferdig = antall >= b.priser.length;
+    return !last && !ferdig && helt.penger >= byggePris(b, antall);
+  });
+}
+// Meldingen vises som tekst rett under Basen-knappen i 4 s, så den kan leses også på små skjermer
+function visBaseRadHint(tekst) {
+  const h = document.getElementById('baseRadHint'), k = document.getElementById('baseKnapp').getBoundingClientRect();
+  h.textContent = tekst; h.hidden = false;
+  const b = h.offsetWidth, venstre = Math.max(16, Math.min(k.left + k.width / 2 - b / 2, innerWidth - b - 16));
+  h.style.left = venstre + 'px'; h.style.top = (k.bottom + 8) + 'px';
+  // skjules etter 4 s, eller med en gang spillet ikke lenger er i gang (død, seier, basen)
+  const slutt = performance.now() + 4000; clearInterval(visBaseRadHint.t);
+  visBaseRadHint.t = setInterval(() => { if (tilstand === 'pause') return; if (tilstand !== 'spill' || performance.now() > slutt) { h.hidden = true; clearInterval(visBaseRadHint.t); } }, 100);
+}
+['animationend', 'animationcancel'].forEach(t => document.getElementById('baseRad').addEventListener(t, e => e.target.classList.remove('ny')));
+function oppdaterBaseRad() {
+  const rad = document.getElementById('baseRad'); if (!rad || tilstand !== 'spill') return;
+  const kan = kjopbareBygg(), n = kan.length;
+  if (n === baseRadVist) return;
+  rad.hidden = n === 0; rad.textContent = '⬆ ' + n;
+  const knapp = document.getElementById('baseKnapp'), pc = getComputedStyle(knapp.querySelector('.bare-pc')).display !== 'none';
+  knapp.setAttribute('aria-label', 'Basen' + (pc ? ' (B)' : '') + (n ? '. Du har råd til ' + n + ' ting.' : ''));
+  if (n > baseRadVist) { rad.classList.remove('ny'); void rad.offsetWidth; rad.classList.add('ny'); }
+  // Én gang per økt, og bare før spilleren har åpnet basen selv
+  if (n > 0 && baseRadVist === 0 && !baseApnetIOkta && !baseRadHintVist) {
+    baseRadHintVist = true;
+    visBaseRadHint('💰 Du har råd til ' + kan[0].ikon + ' ' + kan[0].navn + '! Trykk på Basen 🏰');
+  }
+  baseRadVist = n;
+}
 function oppdater() {
   tid++;
+  if (tid % 15 === 0) oppdaterBaseRad();
   let mx = 0, my = 0;
   if (taster['arrowleft'] || taster['a']) mx -= 1;
   if (taster['arrowright'] || taster['d']) mx += 1;
