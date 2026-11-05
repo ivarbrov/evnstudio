@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Fossil Zoo v0.8.1 – EVN Studio</title>
+<title>Fossil Zoo v0.8.2 – EVN Studio</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;touch-action:manipulation}
 #cv,#pad button,#mini{touch-action:none}
@@ -136,13 +136,17 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
   #help{font-size:12px;max-width:calc(100vw - 270px)}
   #hud .lvlpill{display:none}
 }
+/* 0.8.2: dybdevisningen 📏 er en knapp */
+#hud #pDepth{pointer-events:auto;cursor:pointer;min-height:44px;display:inline-flex;align-items:center}
+/* 0.8.2: i lave, liggende vinduer står faktaboksen til venstre for pilknappene, så den ikke dekker dem */
+@media (max-height:500px){body:has(#pad.show) #fakta{left:calc(6px + env(safe-area-inset-left,0px));right:auto;width:min(600px,calc(100vw - 262px - env(safe-area-inset-right,0px)));transform:translate(0,-14px)} body:has(#pad.show) #fakta.show{transform:translate(0,0)}}
 </style>
 </head>
 <body>
 <canvas id="cv"></canvas>
 
 <div id="hud">
-  <span class="pill" id="pDepth">📏 0 m</span>
+  <span class="pill" id="pDepth" role="button" tabindex="0" title="Les om tiden du graver i">📏 0 m</span>
   <span id="pAnimals" style="display:contents"></span>
   <span class="pill" id="pHelper">Hjelper: ingen</span>
   <button class="btn" id="ropeBtn" style="display:none;pointer-events:auto">🪢 Tau opp</button>
@@ -176,7 +180,7 @@ html,body{height:100%;overflow:hidden;background:#120a06;font-family:system-ui,"
   </ul>
   <button class="btn bigbtn evn-start" id="startBtn">Start!</button>
   <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-  <div class="ver evn-ver">Versjon 0.8.1 • 3 tidsepoker • 13 dyr å vekke</div>
+  <div class="ver evn-ver">Versjon 0.8.2 • 3 tidsepoker • 13 dyr å vekke</div>
   </div>
 </div>
 
@@ -633,7 +637,7 @@ function profilHTML(ai){ const L=LAER[ANIMALS[ai].id];
 // faktaboks nederst på skjermen
 let factTimer=null, factShownAt=0;
 // faktaboksen forsvinner når man graver videre etter litt
-function autoHideFact(){ const b=document.getElementById('fakta'); if(b.classList.contains('show') && performance.now()-factShownAt>3500) b.classList.remove('show'); }
+function autoHideFact(){ const b=document.getElementById('fakta'); if(b.classList.contains('show') && performance.now()-factShownAt>10000) b.classList.remove('show'); }
 function showFact(title,text,ms=10000){
   const b=document.getElementById('fakta');
   document.getElementById('fTitle').textContent=title; document.getElementById('fText').textContent=text;
@@ -1874,7 +1878,7 @@ function loop(now){
   saveTimer+=dt; if(dirty&&saveTimer>2){ save(); dirty=false; saveTimer=0; }
   const dm=Math.max(0,py-SKY), zi=zoneAt(dm);
   const Z=zones();
-  if(zi!==curZone){ if(curZone>=0 && zi>curZone && !seenZones[lvl+'-'+zi]){ seenZones[lvl+'-'+zi]=true; dirty=true; showFact(`${Z[zi].ikon} Du har gravd deg ned til ${Z[zi].navn}!`, Z[zi].tekst, 8000); } curZone=zi; }
+  if(zi!==curZone){ if(curZone>=0 && zi>curZone && !seenZones[lvl+'-'+zi]){ seenZones[lvl+'-'+zi]=true; dirty=true; showFact(`${Z[zi].ikon} Du har gravd deg ned til ${Z[zi].navn}!`, Z[zi].tekst+' (Trykk på 📏 for å lese igjen.)', 10000); } curZone=zi; }
   const dTxt=`📏 ${dm} m · ${Z[zi].ikon} ${Z[zi].navn}`; const pd=document.getElementById('pDepth'); if(pd.textContent!==dTxt) pd.textContent=dTxt;
   const rb=document.getElementById('ropeBtn'), showR=dm>=3; if((rb.style.display!=='none')!==showR) rb.style.display=showR?'inline-block':'none';
   draw(now);
@@ -1942,6 +1946,11 @@ document.querySelectorAll('#pad button').forEach(b=>{
 if('ontouchstart' in window || navigator.maxTouchPoints>0){ document.getElementById('pad').classList.add('show'); document.getElementById('help').textContent='Dra fingeren for å gå og grave • Trykk på en stein for å hakke'; }
 
 document.getElementById('fakta').onclick=()=>document.getElementById('fakta').classList.remove('show');
+// 0.8.2: trykk på dybdevisningen (📏) viser teksten om tiden du graver i igjen
+function visSoneFakta(){ if(curZone<0 || paused || document.getElementById('start').classList.contains('show')) return; const Z=zones()[curZone]; showFact(`${Z.ikon} ${Z.navn}`, Z.tekst, 10000); }
+const pDepthEl=document.getElementById('pDepth');
+pDepthEl.addEventListener('click',e=>{ e.stopPropagation(); visSoneFakta(); });
+pDepthEl.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); visSoneFakta(); } });
 setTimeout(()=>{ const h=document.getElementById('help'); if('ontouchstart' in window || navigator.maxTouchPoints>0) h.style.display='none'; },15000);
 // ingen zoom ved dobbeltklikk, knip eller Ctrl+hjul
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
