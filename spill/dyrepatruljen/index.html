@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Dyrepatruljen 0.12.0 – EVN Studio</title>
+<title>Dyrepatruljen 0.12.1 – EVN Studio</title>
 <link rel="icon" href="../../favicon.png">
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <style>
@@ -160,7 +160,7 @@ body.touch #revBoble .tast{display:none}
     </div>
     <button class="evn-start" id="startBtn">Start ▶</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver">Versjon 0.12.0</div>
+    <div class="evn-ver">Versjon 0.12.1</div>
   </div>
 </div>
 
@@ -4055,7 +4055,7 @@ window.EVN_REV_B64="Z2xURgIAAAAUxwUAOFsAAEpTT057ImFzc2V0Ijp7ImdlbmVyYXRvciI6Ikto
    Strukturen er laget for 15 verdener. Hver verden er en
    oppføring i VERDENER; bygde verdener har en bygg()-funksjon.
    ============================================================ */
-const VERSJON = 'v0.12.0';
+const VERSJON = 'v0.12.1';
 const LAGRE_NOKKEL = 'evn-dyrespillet-v1';
 const $ = id => document.getElementById(id);
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
@@ -6308,6 +6308,7 @@ const tmpV2 = new THREE.Vector3();
 /* ---------- Beskjeder ---------- */
 function beskjed(tekst, sek=2.2){ skjulRevBoble(); const b = $('beskjed'); b.textContent = tekst; b.style.opacity = 1; beskjedTid = sek; }
 // Reven sier fra når du prøver å fange et dyr uten riktig utstyr, med en knapp som tar deg rett til boden (v0.12.0)
+const TIPS_VERDEN = $("tips").textContent;
 let revBobleTid = 0, sistTrengte = null, sistVerden = -1;
 function visRevBoble(tekst, sek = 8){
   $('beskjed').style.opacity = 0; beskjedTid = 0;
@@ -6359,6 +6360,7 @@ function startVerden(i){
   tilstand = 'spill';
   visLag(null);
   $('hud').classList.remove('skjult');
+  $('tips').textContent = TIPS_VERDEN;
   $('btnHav').innerHTML = '🥅<br>Håv'; $('btnHavPC').innerHTML = '🥅 Håv <span class="tast">Mellomrom</span>'; $('btnSnikPC').style.display = '';
   oppdaterHud();
   beskjed(ferdig ? 'Du har reddet alle her – men du kan fange dem igjen for moro skyld!' : verden.tips, 4);
@@ -6389,6 +6391,7 @@ function startPark(){
   tilstand = 'park';
   visLag(null);
   $('hud').classList.remove('skjult');
+  $('tips').textContent = 'WASD/piler: gå · Mellomrom: kos med dyrene, eller handle hos reven · Dra med musa: snu deg';
   $('btnHav').innerHTML = '❤️<br>Kos'; $('btnHavPC').innerHTML = '❤️ Kos <span class="tast">Mellomrom</span>'; $('btnSnikPC').style.display = 'none';
   oppdaterHud();
   beskjed(dyrListe.length ? `Velkommen til dyreparken! Kos med dyrene ❤️ Reven Nysgjerrig står ved stien og selger utstyr 🦊` : 'Ingen dyr her ennå. Redd dyr i gata, så flytter de hit! Reven Nysgjerrig står ved stien 🦊', 4.5);
@@ -6535,12 +6538,15 @@ function fang(d){
   }
 }
 function kos(){
-  for (const d of dyrListe){
-    const avst = Math.hypot(d.mesh.position.x - spiller.position.x, d.mesh.position.z - spiller.position.z);
-    if (avst < 3){ d.hjerte = 1.5; d.sover = false; d.tid = 1.5; tone(880,.15,'sine',.08); tone(1175,.2,'sine',.06);
-      if (!d.mynt){ d.mynt = true; lagret.mynter += MYNT_KOS; lagre(); oppdaterHud(); beskjed(`❤️ ${d.def.navn} ble glad! +${MYNT_KOS} ${mynterOrd(MYNT_KOS)}`, 1.8); }
-      return; }
+  // v0.12.0: kos det nærmeste dyret (før: det første i lista innenfor 3 m)
+  let d = null, best = 3;
+  for (const x of dyrListe){
+    const avst = Math.hypot(x.mesh.position.x - spiller.position.x, x.mesh.position.z - spiller.position.z);
+    if (avst < best){ d = x; best = avst; }
   }
+  if (!d) return;
+  d.hjerte = 1.5; d.sover = false; d.tid = 1.5; tone(880,.15,'sine',.08); tone(1175,.2,'sine',.06);
+  if (!d.mynt){ d.mynt = true; lagret.mynter += MYNT_KOS; lagre(); oppdaterHud(); beskjed(`❤️ ${d.def.navn} ble glad! +${MYNT_KOS} ${mynterOrd(MYNT_KOS)}`, 1.8); }
 }
 
 /* ---------- Oppdatering ---------- */
@@ -6818,7 +6824,9 @@ joyEl.addEventListener('pointermove', e => { if (joy.aktiv && e.pointerId === jo
 const joySlipp = e => { if (e.pointerId === joy.id){ joy.aktiv = false; joy.x = joy.y = 0; knott.style.transform = ''; } };
 joyEl.addEventListener('pointerup', joySlipp); joyEl.addEventListener('pointercancel', joySlipp);
 
-$('btnHav').addEventListener('pointerdown', e => { e.preventDefault(); svingHaav(); });
+// v0.12.0: ved reven åpnes boden først når trykket er ferdig (click). Ellers traff klikket fra samme trykk boden og lukket den.
+$('btnHav').addEventListener('pointerdown', e => { e.preventDefault(); if (tilstand === 'park' && revNaer) return; svingHaav(); });
+$('btnHav').addEventListener('click', e => { e.preventDefault(); if (tilstand === 'park' && revNaer) apneButikk(); });
 $('btnHavPC').addEventListener('click', e => { e.preventDefault(); svingHaav(); });
 $('btnSnikPC').addEventListener('click', e => { e.preventDefault(); snikPaa = !snikPaa; $('btnSnik').classList.toggle('paa', snikPaa); e.currentTarget.blur(); });
 $('btnSnik').addEventListener('pointerdown', e => { e.preventDefault(); snikPaa = !snikPaa; $('btnSnik').classList.toggle('paa', snikPaa); });
@@ -6867,7 +6875,7 @@ function oppdaterRev(dt){
   lydPos.set(r.x, 3.1, r.z);
   plasserEtikett(revEtikett, lydPos, naer ? (document.body.classList.contains('touch') ? '🦊 Trykk på Handle' : '🦊 Trykk mellomrom for å handle') : '🦊 Nysgjerrig', 'lyd');
 }
-let butikkMelding = null;
+let butikkMelding = null, butikkApnet = 0;
 function tegnButikk(){
   const m = lagret.mynter;
   $('butikkMynter').innerHTML = `Du har <span class="mynt" aria-hidden="true"></span> ${m} ${mynterOrd(m)}`;
@@ -6893,7 +6901,7 @@ function tegnButikk(){
 }
 function apneButikk(){
   if (tilstand !== 'park') return;
-  tilstand = 'pause'; for (const k in tast) tast[k] = false;
+  tilstand = 'pause'; butikkApnet = performance.now(); for (const k in tast) tast[k] = false;
   joy.aktiv = false; joy.x = joy.y = 0; knott.style.transform = '';
   skjulRevBoble(); $('beskjed').style.opacity = 0; beskjedTid = 0;
   butikkMelding = null; tegnButikk();
@@ -6909,7 +6917,7 @@ function lukkButikk(){
 }
 function kjop(id){
   const u = UTSTYR.find(x => x.id === id);
-  if (!u || harUtstyr(id) || lagret.mynter < u.pris) return;
+  if (!u || harUtstyr(id) || lagret.mynter < u.pris || performance.now() - butikkApnet < 450) return;   // samme trykk som åpnet boden, kjøper ikke
   lagret.mynter -= u.pris; lagret.utstyr.push(id); lagre();
   tone(784,.1,'sine',.1); tone(1047,.18,'sine',.08);
   butikkMelding = `Takk! Nå har du ${u.navn.toLowerCase()} ${u.ikon}, og du beholder det for alltid. Nå kan du fange ${u.til}!`;
@@ -6920,7 +6928,7 @@ function kjop(id){
 $('butikkVarer').addEventListener('click', e => { const b = e.target.closest('[data-kjop]'); if (b) kjop(b.dataset.kjop); });
 $('btnLukkButikk').addEventListener('click', lukkButikk);
 $('btnLukkButikkTopp').addEventListener('click', lukkButikk);
-$('butikk').addEventListener('click', e => { if (e.target.id === 'butikk') lukkButikk(); });
+$('butikk').addEventListener('click', e => { if (e.target.id === 'butikk' && performance.now() - butikkApnet > 450) lukkButikk(); });
 $('btnButikkTilbake').addEventListener('click', () => { const i = sistVerden; lukkButikk(); if (VERDENER[i] && verdenAapen(i)) startVerden(i); });
 addEventListener('keydown', e => { if (e.key === 'Escape' && !$('butikk').classList.contains('skjult')){ e.preventDefault(); lukkButikk(); } });
 $('btnTilRev').addEventListener('click', e => { e.preventDefault(); e.currentTarget.blur(); tilReven(); });
