@@ -42,7 +42,7 @@
     ring = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.02, 8, 60), new THREE.MeshBasicMaterial({ color: 0x19c3ff }));
     ring.rotation.x = Math.PI / 2; ring.position.y = 0.002; scene.add(ring);
 
-    fetch('../ecoins/helt-robot.glb').then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(function (buf) {
+    fetch('../ecoins/helt-robot-v2.glb').then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(function (buf) {
       new THREE.GLTFLoader().parse(buf, '', function (gltf) {
         var robot = gltf.scene;
         robot.traverse(function (o) { if (o.isMesh) { o.frustumCulled = false; if (o.material && o.material.name === 'Main') o.material.color.setHex(0xffcc00).convertSRGBToLinear(); } });
