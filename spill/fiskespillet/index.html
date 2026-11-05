@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.5.0 – EVN Studio</title>
+<title>Fiskespillet 0.5.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -195,7 +195,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.5.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.5.1</div>
   </div>
 </div>
 
@@ -521,7 +521,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.5.0';
+const VERSJON = '0.5.1';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -1151,6 +1151,39 @@ function oppdaterSkum(dt) {
 // Pil som viser veien hjem når båten er full
 const hjemPil = new THREE.Group(); scene.add(hjemPil); hjemPil.visible = false;
 { const m = new THREE.MeshBasicMaterial({ color: C(0xffc93c) }); const s = del(CONE, m, 1.1, 2.4, 0.4, 0, 0, 0, hjemPil); s.rotation.x = Math.PI / 2; del(BOX, m, 0.7, 0.35, 2, 0, 0, -1.8, hjemPil); }
+// Hjelpeprikker som viser veien hjem når båten er full (Evens idé 5.11.2026).
+// Prikkene ligger på vannet og går rundt øya hvis den er i veien. En lysbølge går fra båten mot havna.
+const PRIKK_AVSTAND = 9, PRIKK_MAKS = 60;
+const prikker = [];
+{ const geo = new THREE.SphereGeometry(0.85, 10, 8);
+  for (let i = 0; i < PRIKK_MAKS; i++) { const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: C(0xffa600), transparent: true, opacity: 0.9, depthWrite: false })); m.visible = false; scene.add(m); prikker.push(m); } }
+function veiHjem() {
+  // Rett linje til havna, eller via et punkt på siden av øya hvis linja krysser øya
+  const p = spiller.pos, rundt = OY_R + 22, pkt = [new THREE.Vector3(p.x, 0, p.z)];
+  const dx = HAVN.x - p.x, dz = HAVN.z - p.z, L2 = dx * dx + dz * dz, k = Math.max(0, Math.min(1, -(p.x * dx + p.z * dz) / (L2 || 1)));
+  if (Math.hypot(p.x + dx * k, p.z + dz * k) < OY_R + 8) {
+    const side = p.x >= 0 ? 1 : -1;
+    if (p.z < 0) pkt.push(new THREE.Vector3(side * rundt, 0, p.z < -rundt ? -rundt * 0.7 : p.z));
+    pkt.push(new THREE.Vector3(side * rundt, 0, rundt * 0.8));
+  }
+  pkt.push(HAVN.clone());
+  return pkt;
+}
+function oppdaterPrikker(t) {
+  const vis = baatFull() && !iHavna() && !fiske;
+  if (!vis) { for (const m of prikker) m.visible = false; return; }
+  const pkt = veiHjem(); let n = 0, rest = 6;   // første prikk litt foran båten
+  for (let i = 0; i < pkt.length - 1 && n < PRIKK_MAKS; i++) {
+    const a = pkt[i], b = pkt[i + 1], L = a.distanceTo(b);
+    for (let d = rest; d < L && n < PRIKK_MAKS; d += PRIKK_AVSTAND) {
+      const m = prikker[n], f = d / L; m.position.set(a.x + (b.x - a.x) * f, 0.6, a.z + (b.z - a.z) * f);
+      const bolge = 0.5 + 0.5 * Math.sin(n * 0.6 - t * 5);   // lys som beveger seg mot havna
+      m.scale.setScalar(MINDRE_BEVEGELSE.matches ? 1 : 0.8 + bolge * 0.5); m.material.opacity = 0.55 + bolge * 0.45; m.visible = true; n++;
+    }
+    rest = PRIKK_AVSTAND - ((L - rest) % PRIKK_AVSTAND);
+  }
+  for (let i = n; i < PRIKK_MAKS; i++) prikker[i].visible = false;
+}
 
 // ======================================================
 //  Fiskeplasser
@@ -1774,8 +1807,9 @@ function oppdaterBaat(dt, t) {
   const sone = soneFor(spiller.pos.x, spiller.pos.z);
   if (sone !== forrigeSone) { if (sone > forrigeSone) melding(`${SONER[sone].ikon} ${SONER[sone].navn}<small>${SONER[sone].tekst}</small>`, 3.5); forrigeSone = sone; }
   // Pil hjem når båten er full
+  oppdaterPrikker(t);
   hjemPil.visible = baatFull() && !iHavna();
-  if (hjemPil.visible) { hjemPil.position.set(spiller.pos.x, 6 + Math.sin(t * 3) * 0.4, spiller.pos.z); hjemPil.rotation.y = Math.atan2(HAVN.x - spiller.pos.x, HAVN.z - spiller.pos.z); }
+  if (hjemPil.visible) { hjemPil.position.set(spiller.pos.x, 6 + Math.sin(t * 3) * 0.4, spiller.pos.z); const neste = veiHjem()[1]; hjemPil.rotation.y = Math.atan2(neste.x - spiller.pos.x, neste.z - spiller.pos.z); }   // pila følger prikkene
 }
 // Kameraet følger bak båten og snur seg sakte med den (som i Roblox og Fortnite)
 let kamYaw = 0;
