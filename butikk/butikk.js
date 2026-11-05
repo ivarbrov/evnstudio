@@ -175,7 +175,7 @@
     rot.querySelectorAll('details[open]').forEach(function (x) { apne[x.dataset.s] = 1; });
     rot.innerHTML = '';
     E.spill.forEach(function (s) {
-      if (s.kommer) return;
+      if (s.kommer || s.fjernet) return;   // fjernet: spillet er tatt av nettsiden; opptjente E-coins beholdes
       var gjort = s.m.filter(function (m) { return d.tjent[m[0]]; });
       var igjen = s.m.reduce(function (sum, m) { return sum + (d.tjent[m[0]] ? 0 : m[1]); }, 0);
       var el = document.createElement('details'); el.className = 'spill'; el.dataset.s = s.id; if (apne[s.id]) el.open = true;
@@ -223,7 +223,7 @@
     }
   }
   $('nullstill').onclick = function () {
-    dialog({ tittel: 'Slette alle E-coins?', tekst: '<p>Alle E-coins og klær på denne enheten blir borte. Spillene beholder fremgangen sin, og neste gang du åpner et spill, får du E-coins igjen for det du har klart der.</p><p>Klærne må kjøpes på nytt.</p>',
+    dialog({ tittel: 'Slette alle E-coins?', tekst: '<p>Alle E-coins og klær på denne enheten blir borte. Spillene beholder fremgangen sin, og neste gang du åpner et spill, får du E-coins igjen for det du har klart der. E-coins fra spill som ikke er på nettsiden lenger, kommer ikke tilbake.</p><p>Klærne må kjøpes på nytt.</p>',
       knapper: [{ tekst: 'Nei' }, { tekst: 'Ja, slett', klasse: 'hoved', gjor: function () { E.nullstill(); prov(null); } }] });
   };
 
