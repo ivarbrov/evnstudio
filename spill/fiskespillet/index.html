@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.5.8 – EVN Studio</title>
+<title>Fiskespillet 0.6.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -173,6 +173,7 @@
   <div class="pille" id="pPenger" title="Pengene dine">💰 <span id="penger">0</span></div>
   <div class="pille" id="pLast" title="Fisk i båten">🐟 <span id="last">0/5</span></div>
   <div class="pille" id="pAkv" title="Fisk i akvariet">🐠 <span id="akv">0/5</span></div>
+  <div class="pille" id="pEvent" hidden title="Torsdags-event: flere sjeldne fisker og Sjømonsteret er på besøk">🎉 Torsdag!</div>
   <button class="pille" id="bokKnapp" type="button" title="Fiskeboka (I)"><span aria-hidden="true">📖</span><span class="vh">Fiskeboka</span> <span id="funnet">0</span></button>
 </div>
 <div id="hoyre" hidden>
@@ -200,7 +201,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.5.8</div>
+    <div class="evn-ver" id="versjon">Versjon 0.6.0</div>
   </div>
 </div>
 
@@ -526,7 +527,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.5.8';
+const VERSJON = '0.6.0';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -676,8 +677,18 @@ function trekk(vekter) {
   for (let i = 0; i < vekter.length; i++) { r -= vekter[i]; if (r <= 0) return i; }
   return vekter.length - 1;
 }
+// Torsdags-event (Evens idé, godkjent av Ivar 5.11.2026 som «snill versjon»):
+// torsdager 17.00–18.30 er sjeldne farger og mønstre lettere å få, og Sjømonsteret er alltid på besøk.
+// Alt kan også fås andre dager, bare sjeldnere. Ingen eksklusive premier, ingen nedtelling, ingen endring i priser eller salgsverdier.
+const EVENT = { dag: 4, fra: 17 * 60, til: 18 * 60 + 30, kraft: 1.5 };
+let eventTvang = null;   // bare for test (window.__spill.eventTvang)
+function torsdagsEvent() {
+  if (eventTvang !== null) return eventTvang;
+  const d = new Date(), m = d.getHours() * 60 + d.getMinutes();
+  return d.getDay() === EVENT.dag && m >= EVENT.fra && m < EVENT.til;
+}
 function nyFisk(sone) {
-  const agn = AGN[tilstand.agn].kraft, sk = SONER[sone].kraft, kraft = agn * sk;
+  const agn = AGN[tilstand.agn].kraft, sk = SONER[sone].kraft, kraft = agn * sk * (torsdagsEvent() ? EVENT.kraft : 1);
   const formVekter = FORMER.map(f => f.soner.includes(sone) ? [10, 5, 2, 0.7][f.nivaa] * Math.pow(agn, f.nivaa * 0.4) * (f.id === 'blekksprut' ? 1.6 : 1) : 0);
   const f = trekk(formVekter);
   const c = trekk(FARGER.map(x => x.vekt * Math.pow(kraft, x.nivaa)));
@@ -1238,7 +1249,7 @@ ANTALL_PLASSER.forEach((n, sone) => { for (let i = 0; i < n; i++) lagPlass(sone)
 // ======================================================
 //  Tilstand og lagring
 // ======================================================
-let tilstand = { penger: INNST.startPenger, stang: 0, agn: 0, baat: 0, plass: INNST.startPlass, akvPlass: INNST.startAkvarium, last: [], akv: [], funnet: new Uint8Array(Math.ceil(ANTALL_FISKER / 8)), fanget: 0, rest: 0, kraken: false, best: -1 };
+let tilstand = { penger: INNST.startPenger, stang: 0, agn: 0, baat: 0, plass: INNST.startPlass, akvPlass: INNST.startAkvarium, last: [], akv: [], funnet: new Uint8Array(Math.ceil(ANTALL_FISKER / 8)), fanget: 0, rest: 0, kraken: false, best: -1, venner: 0 };
 const harFunnet = id => !!(tilstand.funnet[id >> 3] & (1 << (id & 7)));
 const settFunnet = id => { tilstand.funnet[id >> 3] |= 1 << (id & 7); };
 function antallFunnet() { let n = 0; for (const b of tilstand.funnet) { let x = b; while (x) { n += x & 1; x >>= 1; } } return n; }
@@ -1246,7 +1257,7 @@ function antallFunnetForm(f) { let n = 0; for (let i = f * 200; i < f * 200 + 20
 const tilB64 = u => { let s = ''; for (const b of u) s += String.fromCharCode(b); return btoa(s); };
 function lagre() {
   try {
-    localStorage.setItem(LAGRING, JSON.stringify({ v: 1, penger: Number.isFinite(tilstand.penger) ? Math.floor(tilstand.penger) : 0, stang: tilstand.stang, agn: tilstand.agn, baat: tilstand.baat, plass: tilstand.plass, akvPlass: tilstand.akvPlass, last: tilstand.last, akv: tilstand.akv, funnet: tilB64(tilstand.funnet), fanget: tilstand.fanget, rest: tilstand.rest, kraken: tilstand.kraken, best: tilstand.best }));
+    localStorage.setItem(LAGRING, JSON.stringify({ v: 1, penger: Number.isFinite(tilstand.penger) ? Math.floor(tilstand.penger) : 0, stang: tilstand.stang, agn: tilstand.agn, baat: tilstand.baat, plass: tilstand.plass, akvPlass: tilstand.akvPlass, last: tilstand.last, akv: tilstand.akv, funnet: tilB64(tilstand.funnet), fanget: tilstand.fanget, rest: tilstand.rest, kraken: tilstand.kraken, best: tilstand.best, venner: tilstand.venner }));
   } catch (e) {}
 }
 function lastInn() {
@@ -1270,6 +1281,7 @@ function lastInn() {
   tilstand.fanget = heltall(s.fanget, 0, 1e9, 0);
   tilstand.rest = isFinite(+s.rest) ? Math.max(0, Math.min(1, +s.rest)) : 0;
   tilstand.kraken = !!s.kraken;
+  tilstand.venner = heltall(s.venner, 0, 1e6, 0);
   tilstand.best = heltall(s.best, -1, ANTALL_FISKER - 1, -1);
   try { const bin = atob(String(s.funnet || '')); for (let i = 0; i < Math.min(bin.length, tilstand.funnet.length); i++) tilstand.funnet[i] = bin.charCodeAt(i); } catch (e) {}
   for (const id of tilstand.last.concat(tilstand.akv)) settFunnet(id);
@@ -1366,15 +1378,15 @@ function naermestePlass() {
 const vedKraken = () => Math.hypot(KRAKEN_POS.x - spiller.pos.x, KRAKEN_POS.z - spiller.pos.z) < KRAKEN_R;
 const iHavna = () => Math.hypot(HAVN.x - spiller.pos.x, HAVN.z - spiller.pos.z) < HAVN_R;
 const baatFull = () => tilstand.last.length >= tilstand.plass;
-function startFiske(plass, kraken) {
+function startFiske(plass, kraken, monster) {
   if (fiske) return;
-  const vent = kraken ? INNST.krakenVent : rnd(INNST.ventMin, INNST.ventMaks) * STENGER[tilstand.stang].fart * (plass ? 1 : INNST.aapentVann);
+  const vent = monster ? 2.5 : kraken ? INNST.krakenVent : rnd(INNST.ventMin, INNST.ventMaks) * STENGER[tilstand.stang].fart * (plass ? 1 : INNST.aapentVann);
   // Uten fiskested kastes dupp-en rett frem
-  const mal = kraken ? KRAKEN_POS : plass ? plass.pos : new THREE.Vector3(spiller.pos.x + Math.sin(spiller.retning) * 9, 0, spiller.pos.z + Math.cos(spiller.retning) * 9);
+  const mal = monster ? sjomonster.gruppe.position : kraken ? KRAKEN_POS : plass ? plass.pos : new THREE.Vector3(spiller.pos.x + Math.sin(spiller.retning) * 9, 0, spiller.pos.z + Math.cos(spiller.retning) * 9);
   const dx = mal.x - spiller.pos.x, dz = mal.z - spiller.pos.z, l = Math.hypot(dx, dz) || 1, r = Math.min(l, 9);
-  fiske = { fase: 'kast', t: 0, plass, kraken, vent, mal: new THREE.Vector3(spiller.pos.x + dx / l * r, 0.3, spiller.pos.z + dz / l * r) };
+  fiske = { fase: 'kast', t: 0, plass, kraken, monster: !!monster, vent, mal: new THREE.Vector3(spiller.pos.x + dx / l * r, 0.3, spiller.pos.z + dz / l * r) };
   dupp.visible = true; snore.visible = true; lydKast();
-  melding(kraken ? '🐙 Du kaster ut Superstangen … Vent!' : '🎣 Vent på napp …', 2);
+  melding(kraken ? '🐙 Du kaster ut Superstangen … Vent!' : monster ? '🐉 Du kaster ut til Sjømonsteret … Vent!' : '🎣 Vent på napp …', 2);
 }
 function avbrytFiske(tekst) { if (!fiske) return; fiske = null; dupp.visible = false; snore.visible = false; if (tekst) melding(tekst, 2.5); }
 function oppdaterFiske(dt, t) {
@@ -1391,7 +1403,7 @@ function oppdaterFiske(dt, t) {
       if (fiske.t > fiske.vent) { fiske.fase = 'napp'; fiske.t = 0; lydNapp(); }
     } else if (fiske.fase === 'napp') {
       dupp.position.copy(fiske.mal); dupp.position.y = -0.4 + Math.sin(t * 30) * 0.2;
-      if (fiske.t > 0.5) { if (fiske.kraken) startKamp(); else fangFisk(); }
+      if (fiske.t > 0.5) { if (fiske.kraken) startKamp(); else if (fiske.monster) fangMonster(); else fangFisk(); }
     } else if (fiske.fase === 'kamp') oppdaterKamp(dt, t);
     snoreGeo.setFromPoints([tupp, dupp.position]);
   }
@@ -1599,6 +1611,73 @@ function fangKraken() {
   melding('🐙 Du fikk Kraken! Se, den kommer opp i båten!', 3, true);
   krakenShow = { t: 0, forste }; krakenSted = 'show';
 }
+
+// ======================================================
+//  Sjømonsteret (vennlig). Kommer på besøk av og til, og alltid under Torsdags-eventet.
+//  Fisker du det, blir dere venner. Det gir ingen penger (bare en venn i fiskeboka).
+// ======================================================
+const sjomonster = { gruppe: new THREE.Group(), aktiv: false, igjen: 0, neste: rnd(480, 900), pause: 0, varslet: false };
+scene.add(sjomonster.gruppe); sjomonster.gruppe.visible = false;
+{
+  const g = sjomonster.gruppe, gronn = M(0x3fbf7a, { roughness: 0.5 }), mork = M(0x2a8a58), gul = M(0xffd34d);
+  const kropp = new THREE.Group(); g.add(kropp); sjomonster.kropp = kropp;
+  for (let i = 0; i < 3; i++) { const h = del(SPH, i % 2 ? mork : gronn, 1.6 - i * 0.25, 1.6 - i * 0.25, 1.6 - i * 0.25, 0, 0.2, -2.6 - i * 2.4, kropp); h.userData.pukkel = i; }
+  del(SPH, gronn, 1.7, 1.9, 1.9, 0, 1.4, 0.4, kropp);                                   // hodet
+  for (const sx of [-1, 1]) {
+    del(SPH_L, M(0xffffff), 0.45, 0.5, 0.35, sx * 0.7, 1.9, 1.95, kropp);
+    del(SPH_L, M(0x14202a), 0.22, 0.26, 0.18, sx * 0.72, 1.88, 2.25, kropp);
+    const horn = del(CONE, gul, 0.22, 0.7, 0.22, sx * 0.7, 3.25, 0.2, kropp); horn.rotation.z = -sx * 0.3;
+  }
+  del(SPH_L, M(0xff8fa8), 0.5, 0.18, 0.2, 0, 1.0, 2.15, kropp);                         // smil
+  const s = skilt('🐉 Sjømonster', 2.2); s.position.set(0, 7, 0); g.add(s);
+}
+const vedMonster = () => sjomonster.aktiv && Math.hypot(sjomonster.gruppe.position.x - spiller.pos.x, sjomonster.gruppe.position.z - spiller.pos.z) < 16;
+function plasserMonster() {
+  for (let forsok = 0; forsok < 40; forsok++) {
+    const v = rnd(0, Math.PI * 2), d = rnd(210, 320), x = Math.sin(v) * d, z = Math.cos(v) * d;
+    if (Math.hypot(x - KRAKEN_POS.x, z - KRAKEN_POS.z) < KRAKEN_R * 3) continue;
+    if (hindre.some(h => Math.hypot(h.x - x, h.z - z) < h.r + 12)) continue;
+    sjomonster.gruppe.position.set(x, 0, z); return;
+  }
+  sjomonster.gruppe.position.set(0, 0, -260);
+}
+function visMonster(sek) {
+  if (sjomonster.aktiv) return;
+  plasserMonster(); sjomonster.aktiv = true; sjomonster.igjen = sek; sjomonster.gruppe.visible = true;
+  melding('🐉 Et vennlig sjømonster er på besøk! Se på kartet 🗺️ og kjør dit for å fiske det.', 4.5, true);
+}
+function skjulMonster(neste) { sjomonster.aktiv = false; sjomonster.gruppe.visible = false; sjomonster.neste = neste; }
+function oppdaterMonster(dt, t) {
+  const ev = torsdagsEvent();
+  $('pEvent').hidden = !ev;
+  if (ev && !sjomonster.varslet) { sjomonster.varslet = true; sjomonster.neste = Math.min(sjomonster.neste, 6); melding('🎉 Torsdags-event! Flere sjeldne fisker, og Sjømonsteret kommer på besøk.', 4.5, true); }
+  if (!ev) sjomonster.varslet = false;
+  if (!sjomonster.aktiv) {
+    if (ev) sjomonster.neste = Math.min(sjomonster.neste, 45);   // under eventet kommer det raskt tilbake
+    sjomonster.neste -= dt;
+    if (sjomonster.neste <= 0) visMonster(180);
+    return;
+  }
+  if (ev) sjomonster.igjen = Math.max(sjomonster.igjen, 180);   // blir værende så lenge eventet varer
+  else if (!(fiske && fiske.monster)) { sjomonster.igjen -= dt; if (sjomonster.igjen <= 0) { skjulMonster(rnd(480, 900)); melding('🐉 Sjømonsteret svømte videre. Det kommer tilbake en annen gang!', 3); return; } }
+  const k = sjomonster.kropp;
+  k.position.y = Math.sin(t * 1.6) * 0.35;
+  sjomonster.gruppe.rotation.y += dt * 0.25;
+  for (const c of k.children) if (c.userData.pukkel !== undefined) c.position.y = 0.2 + Math.sin(t * 2.2 - c.userData.pukkel * 0.9) * 0.45;
+}
+function fangMonster() {
+  fiske = null; dupp.visible = false; snore.visible = false;
+  tilstand.venner++; lagre();
+  const g = sjomonster.gruppe.position; plask(g.x, g.z, 1.2);
+  skjulMonster(torsdagsEvent() ? 45 : rnd(480, 900));
+  lydSjelden(); robotGjor('Wave', 2);
+  $('fangstTopp').textContent = tilstand.venner === 1 ? '🎉 NY VENN! 🎉' : 'Sjømonsteret kom igjen!';
+  $('fangstIkon').textContent = '🐉';
+  $('fangstNavn').textContent = 'Sjømonsteret';
+  $('fangstMerker').innerHTML = '<span class="merkelapp" style="background:#3fbf7a">Vennlig ⭐⭐⭐⭐</span>';
+  $('fangstTekst').textContent = `Sjømonsteret vinket med halen og ble venn med deg! Det svømte videre, men kommer tilbake. Sjømonster-venner: ${tall(tilstand.venner)}.`;
+  apneLag('fangst');
+}
 function visKrakenKort(forste) {
   $('fangstTopp').textContent = forste ? '🏆 OPPDRAGET ER KLART! 🏆' : 'Du fanget Kraken igjen!';
   $('fangstIkon').textContent = '🐙👑';
@@ -1729,7 +1808,8 @@ function byggBok() {
   if (!maal) maal = 'Du har funnet alle 25 artene! 🎉 Neste mål: alle 10 farger av hver art.';
   $('bokTekst').innerHTML = maal + ` Du har fanget ${tall(tilstand.fanget)} fisker i alt.` +
     (tilstand.best >= 0 ? `<br>Beste fangst: <b style="color:${sjFarge(tilstand.best)}">${fiskNavn(tilstand.best)}</b> (💰 ${tall(fiskVerdi(tilstand.best))})` : '') +
-    `<br>${tilstand.kraken ? '🏆 Du har fanget Kraken!' : '🐙 Oppdrag: Fang Kraken med Superstangen.'}`;
+    `<br>${tilstand.kraken ? '🏆 Du har fanget Kraken!' : '🐙 Oppdrag: Fang Kraken med Superstangen.'}` +
+    `<br>🐉 Sjømonster-venner: ${tall(tilstand.venner)}`;
   $('rutenett').innerHTML = FORMER.map((f, i) => {
     const a = per[i], sone = SONER[Math.min(...f.soner)];
     if (!a) return `<div class="art ukjent"><div class="ik">❓</div><div class="nv">???</div><div class="tall">${sone.ikon} ${sone.navn}</div></div>`;
@@ -1754,8 +1834,9 @@ let handling = null, handlingTekst = '';
 function finnHandling() {
   if (krakenShow) return { tekst: '🐙 Wow!', av: true };
   if (fiske && fiske.fase === 'kamp') return { tekst: '💪 Dra!', gjor: dra };
-  if (fiske) return { tekst: fiske.kraken ? '🐙 Vent …' : '⏳ Vent på napp …', av: true };
+  if (fiske) return { tekst: fiske.kraken ? '🐙 Vent …' : fiske.monster ? '🐉 Vent …' : '⏳ Vent på napp …', av: true };
   if (iHavna()) return { tekst: '⚓ Havna', gjor: () => { fane = tilstand.last.length ? 'lever' : 'butikk'; byggHavna(); apneLag('havna'); } };
+  if (vedMonster()) return { tekst: '🐉 Fisk Sjømonsteret', gjor: () => startFiske(null, false, true) };
   if (vedKraken()) {
     if (tilstand.stang < STENGER.length - 1) return { tekst: '🐙 Trenger Superstang', av: true, gjor: () => melding('Kraken er for sterk! Du trenger ⚡ Superstangen fra butikken.', 3.5) };
     return { tekst: '🐙 Fang Kraken', gjor: () => startFiske(null, true) };
@@ -1859,7 +1940,7 @@ function tegnKart() {
   x.fillText('Kystvannet', W / 2, py(-SONE_GRENSE[0] + 22)); x.fillText('Åpent hav', W / 2, py(-SONE_GRENSE[1] + 24)); x.fillText('Dyphavet', W / 2, py(-VERDEN_R + 40));
   x.font = '24px sans-serif';
   for (const p of plasser) x.fillText('🐟', px(p.pos.x), py(p.pos.z));
-  x.font = '30px sans-serif'; x.fillText('🐙', px(KRAKEN_POS.x), py(KRAKEN_POS.z)); x.fillText('⚓', px(HAVN.x), py(HAVN.z + 8));
+  x.font = '30px sans-serif'; x.fillText('🐙', px(KRAKEN_POS.x), py(KRAKEN_POS.z)); if (sjomonster.aktiv) x.fillText('🐉', px(sjomonster.gruppe.position.x), py(sjomonster.gruppe.position.z)); x.fillText('⚓', px(HAVN.x), py(HAVN.z + 8));
   x.save(); x.translate(px(spiller.pos.x), py(spiller.pos.z)); x.rotate(-spiller.retning + Math.PI);
   x.fillStyle = '#ffc93c'; x.strokeStyle = '#1d2440'; x.lineWidth = 3;
   x.beginPath(); x.moveTo(0, -20); x.lineTo(13, 13); x.lineTo(0, 6); x.lineTo(-13, 13); x.closePath(); x.fill(); x.stroke();
@@ -1984,7 +2065,7 @@ function loop(na) {
   tid += dt;
   const spill = spillTilstand === 'spill' && !modalApen();
   if (spill) {
-    oppdaterBaat(dt, tid); oppdaterFiske(dt, tid); oppdaterKrakenShow(ekteDt, tid); oppdaterInntekt(dt);
+    oppdaterBaat(dt, tid); oppdaterFiske(dt, tid); oppdaterKrakenShow(ekteDt, tid); oppdaterMonster(dt, tid); oppdaterInntekt(dt);
     lagreTid += dt; if (lagreTid > 5) { lagreTid = 0; lagre(); }
   } else { baat.position.y = 0.25 + Math.sin(tid * 1.6) * 0.15; }
   if (spillTilstand !== 'pause') { oppdaterVerden(dt, tid); oppdaterAkvarium(dt, tid); oppdaterSkum(dt); oppdaterPlask(dt); robotAnimasjon(dt); for (const m of lastGruppe.children) animerFisk(m, tid * 0.3, 0.5); }
@@ -2026,7 +2107,7 @@ window.__evnP = EVNPause({
   knapp: (b, k) => { for (const x of [k, b]) { x.className = 'rund'; x.style.cssText = 'padding:0;font-size:22px'; } $('hoyre').insertBefore(k, $('evnAvslutt')); $('hoyre').insertBefore(b, $('evnAvslutt')); },
   kart: {
     forhold: 1,
-    info: () => '🔺 Du · ⚓ Havna · 🐟 Fiskested · 🐙 Kraken',
+    info: () => '🔺 Du · ⚓ Havna · 🐟 Fiskested · 🐙 Kraken' + (sjomonster.aktiv ? ' · 🐉 Sjømonsteret' : ''),
     tegn: (c, w, h) => { tegnKart(); c.drawImage(kartLerret, 0, 0, w, h); }
   },
   kanPause: () => spillTilstand === 'spill' && !LAG.some(id => $(id).classList.contains('vis')) && !$('feil').classList.contains('vis'),   // K2: pausen legger seg ikke over feilkortet
@@ -2049,7 +2130,7 @@ EVNNullstill({
 });
 requestAnimationFrame(loop);
 // Til testing
-window.__spill = { get krakenShow() { return krakenShow; }, get krakenSted() { return krakenSted; }, visFangst, besteOppsett, tilstand, spiller, plasser, INNST, FORMER, nyFisk, fiskNavn, fiskVerdi, sjeldenhet, fiskDel, gjorHandling, startFiske, dra, get fiske() { return fiske; }, lagre, HAVN, KRAKEN_POS, scene, camera, oppdaterHud, byggAkvarium, byggLast, byggBaat, lagFiskModell, renderer };
+window.__spill = { get krakenShow() { return krakenShow; }, set eventTvang(v) { eventTvang = v; }, sjomonster, visMonster, torsdagsEvent, get krakenSted() { return krakenSted; }, visFangst, besteOppsett, tilstand, spiller, plasser, INNST, FORMER, nyFisk, fiskNavn, fiskVerdi, sjeldenhet, fiskDel, gjorHandling, startFiske, dra, get fiske() { return fiske; }, lagre, HAVN, KRAKEN_POS, scene, camera, oppdaterHud, byggAkvarium, byggLast, byggBaat, lagFiskModell, renderer };
 </script>
 <!-- EVN Studio: knapp tilbake til forsiden (vises bare under /spill/) -->
 <style>
