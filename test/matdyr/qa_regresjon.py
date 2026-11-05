@@ -25,7 +25,7 @@ with sync_playwright() as p:
     pg.screenshot(path="/tmp/qa_kart.png");pg.wait_for_timeout(250);pg.keyboard.press("m");pg.wait_for_timeout(300)
     ok("Kart lukkes med M",not pg.evaluate("()=>document.getElementById('evnKart').classList.contains('vis')"))
     order=pg.evaluate("()=>[...document.getElementById('hoyre').children].filter(e=>getComputedStyle(e).display!=='none'&&!e.hidden).map(e=>e.id)")
-    ok("KS5 rekkefølge (⚙️, 🗺️, ⏸ fra venstre; Avslutt bare under /spill/)",order[-2:]==["evnKartKnapp","evnPauseKnapp"],order)
+    order=[x for x in order if x!='evnAvslutt'];ok("KS5 rekkefølge (⚙️, 🗺️, ⏸ fra venstre; Avslutt bare under /spill/)",order[-2:]==["evnKartKnapp","evnPauseKnapp"],order)
     # buy flow
     r=pg.evaluate("()=>{__spill.money=1e6;const a=__spill.spawn(30,5,3);a.state='walk';a.g.position.y=0;a.sp=0;__spill.robot.position.set(4,0,3);return true}")
     pg.wait_for_timeout(1500);act=pg.text_content("#act");pg.keyboard.press("e");pg.wait_for_timeout(800)

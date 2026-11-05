@@ -125,6 +125,14 @@
     .kort { padding:14px 18px; }
     h1 { font-size:30px; margin:2px 0 6px; }
     .styring { margin:4px 0 10px; }
+    /* Liggende mobil: dialogene skal få plass uten rulling */
+    #swapDlg .kort { padding:10px 16px; } #swapDlg h2 { margin:0 0 4px; font-size:22px; }
+    .byttlinje, .byttinfo { font-size:15px !important; margin:2px 0 !important; }
+    .kort.bok { max-height:calc(100vh - 12px); padding:8px 12px; } .kort.bok h2 { margin:0; font-size:20px; }
+    .rutenett { min-height:0; }
+    .lag { padding:6px; }
+    #swapDlg .kort { max-width:720px; }
+    #swapDlg .valg { display:inline-block; width:auto; min-height:48px; margin:6px 3px 0; padding:4px 12px; font-size:16px; }
   }
 </style>
 <script src="../../vendor/three-r128.min.js"></script>
@@ -542,7 +550,7 @@ const SAVE_KEY="evn-matdyr-v1",SAVE_KEY_OLD="evn_matdyr_proto_v1";
 let money=60,level=0,base=[],disc=new Set(),baseName="Din base";
 const plotsFor=l=>4+2*l, MAX_LEVEL=10, MAX_PLOTS=plotsFor(MAX_LEVEL);
 const upCost=l=>Math.round(250*Math.pow(3,l)/50)*50;
-function load(){let raw=null;try{raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem(SAVE_KEY_OLD)}catch(e){}try{const s=JSON.parse(raw||"null");if(s&&s.v===1){money=s.money;level=s.level;window.__savedCarry=Number.isInteger(s.carry)&&s.carry>=0&&s.carry<COMBOS.length?s.carry:-1;window.__savedIntro=Number.isInteger(s.intro)&&s.intro>=0&&s.intro<=6?s.intro:undefined;if(!Number.isFinite(money)||money<0)money=60;if(!Number.isInteger(level)||level<0||level>MAX_LEVEL)level=0;base=(Array.isArray(s.base)?s.base:[]).map(v=>Number.isInteger(v)&&v>=0&&v<COMBOS.length?v:-1).slice(0,plotsFor(level));disc=new Set((Array.isArray(s.disc)?s.disc:[]).filter(v=>Number.isInteger(v)&&v>=0&&v<COMBOS.length));if(typeof s.name==="string"&&s.name.trim())baseName=s.name.slice(0,20)}}catch(e){money=60;level=0;base=[];disc=new Set();try{if(raw)localStorage.setItem(SAVE_KEY+"-kopi",raw)}catch(e2){}console.warn("Lagringen kunne ikke leses. En kopi ligger i "+SAVE_KEY+"-kopi.")}
+function load(){let raw=null;try{raw=localStorage.getItem(SAVE_KEY)||localStorage.getItem(SAVE_KEY_OLD);try{JSON.parse(raw||"null")}catch(e1){const o=localStorage.getItem(SAVE_KEY_OLD);try{if(o&&JSON.parse(o)){localStorage.setItem(SAVE_KEY+"-kopi",raw);raw=o}}catch(e2){}}}catch(e){}try{const s=JSON.parse(raw||"null");if(s&&s.v===1){money=s.money;level=s.level;window.__savedCarry=Number.isInteger(s.carry)&&s.carry>=0&&s.carry<COMBOS.length?s.carry:-1;window.__savedIntro=Number.isInteger(s.intro)&&s.intro>=0&&s.intro<=6?s.intro:undefined;if(!Number.isFinite(money)||money<0)money=60;if(!Number.isInteger(level)||level<0||level>MAX_LEVEL)level=0;base=(Array.isArray(s.base)?s.base:[]).map(v=>Number.isInteger(v)&&v>=0&&v<COMBOS.length?v:-1).slice(0,plotsFor(level));disc=new Set((Array.isArray(s.disc)?s.disc:[]).filter(v=>Number.isInteger(v)&&v>=0&&v<COMBOS.length));if(typeof s.name==="string"&&s.name.trim())baseName=s.name.slice(0,20)}}catch(e){money=60;level=0;base=[];disc=new Set();try{if(raw)localStorage.setItem(SAVE_KEY+"-kopi",raw)}catch(e2){}console.warn("Lagringen kunne ikke leses. En kopi ligger i "+SAVE_KEY+"-kopi.")}
   while(base.length<plotsFor(level))base.push(-1)}
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,money,level,base:base.map(v=>v<0?-1:v),disc:[...disc],name:baseName,carry:carry?carry.ci:-1,intro:window.introSteg?introSteg():undefined}))}catch(e){}}
 load();
@@ -1169,7 +1177,7 @@ function deliver(){
 function weakest(){let wi=-1;base.forEach((ci,i)=>{if(ci>=0&&(wi<0||INC(ci)<INC(base[wi])))wi=i});return wi}
 function openSwap(){
   const wi=weakest(),nc=carry.ci,oc=base[wi],p=$("swapText");p.textContent="";
-  const lin=(ikon,ci,ord)=>{const d=document.createElement("div");d.className="byttlinje";const b=document.createElement("b");b.textContent=COMBOS[ci].name;d.append(ikon+" "+ord+": ",b," ("+R[COMBOS[ci].r].n+") · 💵 +"+fmt(INC(ci))+"/s");return d};
+  const lin=(ikon,ci,ord)=>{const d=document.createElement("div");d.className="byttlinje";const b=document.createElement("b");b.textContent=navn(ci);d.append(ikon+" "+ord+": ",b," ("+R[COMBOS[ci].r].n+") · 💵 +"+fmt(INC(ci))+"/s");return d};
   p.append(lin("🆕",nc,"Nytt"),lin("⬇️",oc,"Svakest i basen"));
   const diff=INC(nc)-INC(oc),q=document.createElement("p");q.className="byttinfo";
   q.textContent=diff>0?"Bytter du, tjener basen 💵 +"+fmt(diff)+" mer per sekund. Du får 💰 "+fmt(Math.floor(PRICE(oc)/2))+" for det gamle.":diff===0?"De tjener like mye. Du får 💰 "+fmt(Math.floor(PRICE(oc)/2))+" for det gamle hvis du bytter.":"⚠️ Det nye tjener mindre enn det svakeste i basen. Du får 💰 "+fmt(Math.floor(PRICE(oc)/2))+" for det gamle hvis du bytter.";
@@ -1437,6 +1445,8 @@ renderer.domElement.addEventListener("webglcontextlost",e=>{e.preventDefault();t
 
 // testkroker (bare lesing/oppsett for automatiske tester)
 if(window.__spill){Object.defineProperty(__spill,"carry",{get:()=>carry});__spill.weakest=weakest;__spill.intro=()=>intro;__spill.ledig=ms=>{sistAktiv=performance.now()-ms};__spill.miniatyrer=()=>{lagMiniatyrer();return MINI.filter(Boolean).length};__spill.save=()=>save()}
+
+window.__klar=true; // A: lagring tillates først når bæringen er lagt tilbake
 </script>
 <!-- EVN Studio: Avslutt med spørsmål (vises bare under /spill/ på evnstudio.no) -->
 <style>
