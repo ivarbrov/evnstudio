@@ -128,7 +128,11 @@ async function main() {
     if (d.method === 'Network.responseReceived' && p.response.status >= 400 && rammer.has(p.frameId)) notér(p.response.status + ' ' + kort(p.response.url));
   });
   await Promise.all(['Page.enable', 'Runtime.enable', 'Log.enable', 'Network.enable'].map(m => s(m)));
-  await s('Page.navigate', { url: `http://127.0.0.1:${port}/test/?auto${SUITER ? '&suiter=' + SUITER : ''}` });
+  // Alle spillmapper sendes til testsiden. Spill som ikke står i SPILL, røyktestes med standardstarten #startBtn,
+  // så et nytt spill får røyktest uten endring i test/. Bare trygge mappenavn sendes.
+  const MAPPER = fs.readdirSync(path.join(ROT, 'spill'), { withFileTypes: true })
+    .filter(d => d.isDirectory() && /^[a-z0-9-]+$/.test(d.name) && fs.existsSync(path.join(ROT, 'spill', d.name, 'index.html'))).map(d => d.name);
+  await s('Page.navigate', { url: `http://127.0.0.1:${port}/test/?auto${SUITER ? '&suiter=' + SUITER : ''}&spill=${MAPPER.join(',')}` });
 
   let res = null; const t0 = Date.now();
   while (!res && Date.now() - t0 < MAKS_MS) {

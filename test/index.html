@@ -40,6 +40,11 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
         if (b) b.click();
       } }
   ];
+  // Spillmapper fra test/kjor.mjs (?spill=a,b) som ikke står over, røyktestes med standardstarten #startBtn.
+  // Et spill med annen start eller ekstra steg etter start må stå i SPILL.
+  (new URLSearchParams(location.search).get('spill') || '').split(',').forEach(function (id) {
+    if (/^[a-z0-9-]+$/.test(id) && !SPILL.some(function (s) { return s.id === id; })) SPILL.push({ id: id, start: 'startBtn' });
+  });
   // Funn som står under «Kjente funn» i standarden. De gir «kjent» i stedet for «feil», og «rettet» når de er borte.
   var KJENTE = {
     'fossilspillet/T3-zoom': 'Kjent funn i standarden: user-scalable=no sperrer zoom'
