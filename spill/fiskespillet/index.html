@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.5.1 – EVN Studio</title>
+<title>Fiskespillet 0.5.2 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -127,11 +127,11 @@
   .rutenett { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
   .art { background:rgba(255,255,255,.08); border:3px solid rgba(255,255,255,.15); border-radius:14px; padding:8px 4px; }
   .art .ik { font-size:30px; line-height:1.2; }
-  .art .nv { font-weight:800; font-size:13px; overflow-wrap:anywhere; }
+  .art .nv { font-weight:800; font-size:13px; overflow-wrap:break-word; -webkit-hyphens:auto; hyphens:auto; }
   .art .tall { font-size:12px; font-weight:800; opacity:.9; }
   .art.ukjent .ik { filter:grayscale(1) brightness(.4); }
   .sjanser { font-size:14px; opacity:.9; text-align:left; line-height:1.5; margin-top:10px; }
-  @media (max-width:560px) { .rutenett { grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; } .art { padding:6px 2px; } .art .ik { font-size:24px; } .art .nv { font-size:11px; } }
+  @media (max-width:560px) { .rutenett { grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; } .art { padding:6px 2px; } .art .ik { font-size:24px; } .art .nv { font-size:11px; } .art .tall { font-size:10.5px; } }
 
   /* Stor fangst */
   #fangstIkon { font-size:72px; line-height:1.1; margin:6px 0; }
@@ -195,7 +195,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.5.1</div>
+    <div class="evn-ver" id="versjon">Versjon 0.5.2</div>
   </div>
 </div>
 
@@ -521,7 +521,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.5.1';
+const VERSJON = '0.5.2';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -711,7 +711,6 @@ const HIMMEL = 0xbfe4ff;
 scene.background = C(HIMMEL);
 scene.fog = new THREE.Fog(C(HIMMEL), 160, 520);
 const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 900);
-const KAM = new THREE.Vector3(0, 26, 30);
 let zoom = 1;
 
 scene.add(new THREE.HemisphereLight(C(0xffffff), C(0x2a6a9a), 0.9));
@@ -1519,18 +1518,18 @@ function byggHavna() {
     else {
       const sum = tilstand.last.reduce((s, id) => s + fiskVerdi(id), 0), b = besteOppsett();
       h = `<p class="info">🐠 i akvariet gir penger hvert minutt. 💰 Selg gir penger med en gang.<br>Akvariet: <b>${tilstand.akv.length} av ${tilstand.akvPlass}</b>${fullt && svId >= 0 ? ` · svakeste: ${FORMER[fiskDel(svId).f].ikon} 💰 ${tall(fiskVerdi(svId))}` : ''}</p>`;
-      if (b.nyeInn > 0) h += `<div class="samlet"><button class="kn stjerne" type="button" id="besteAkv">⭐ Beste i akvariet, selg resten<small>${b.nyeInn} inn${b.utAkv ? `, ${b.utAkv} ut av akvariet` : ''} · +💰 ${minTekst(b.okning)}/min · selger for 💰 ${tall(b.salg)}</small></button></div>`;
+      if (b.nyeInn > 0) h += `<div class="samlet"><button class="kn stjerne" type="button" id="besteAkv">⭐ ${b.ut.length ? 'Beste i akvariet, selg resten' : 'Alle i akvariet'}<small>${b.nyeInn} inn${b.utAkv ? `, ${b.utAkv} ut av akvariet` : ''} · +💰 ${minTekst(b.okning)}/min${b.salg ? ` · selger for 💰 ${tall(b.salg)}` : ''}</small></button></div>`;
       h += '<div class="liste">' + sortertIndekser(tilstand.last).map(i => {
         const id = tilstand.last[i], bedre = fullt && svId >= 0 && fiskVerdi(id) > fiskVerdi(svId);
         const akvKnapp = !fullt ? `<button class="kn bla" type="button" data-akv="${i}">🐠 Akvariet<small>+${minTekst(perMin(id))}/min</small></button>`
           : bedre ? `<button class="kn bla" type="button" data-bytt="${i}" aria-label="Bytt med den svakeste i akvariet og selg den">🔄 Bytt<small>+${minTekst(perMin(id) - perMin(svId))}/min</small></button>`
-          : `<span class="svakere">Svakere enn alle i akvariet</span>`;
+          : `<span class="svakere">Ikke bedre enn noen i akvariet</span>`;
         return fiskRad(id, akvKnapp + `<button class="kn" type="button" data-selg="${i}">💰 Selg</button>`);
       }).join('') + '</div>';
       h += `<div class="samlet"><button class="kn" type="button" id="selgAlle">💰 Selg alle i båten (${tall(sum)})</button></div>`;
     }
   } else if (fane === 'akvarium') {
-    h = `<p class="info">Akvariet har ${tilstand.akv.length} av ${tilstand.akvPlass} plasser i bruk. Fiskene gir 💰 ${tall(akvPerMinutt())} hvert minutt mens du spiller (ikke når ingen har rørt spillet på 3 minutter).</p>`;
+    h = `<p class="info">Akvariet har ${tilstand.akv.length} av ${tilstand.akvPlass} plasser i bruk. Fiskene gir 💰 ${minTekst(akvPerMinutt())} hvert minutt mens du spiller (ikke når ingen har rørt spillet på 3 minutter).</p>`;
     if (!tilstand.akv.length) h += '<div class="tom">Akvariet er tomt. Lever fisk fra båten! 🐠</div>';
     else h += '<div class="liste">' + sortertIndekser(tilstand.akv).map(i => fiskRad(tilstand.akv[i], `<span class="permin">💰 ${minTekst(perMin(tilstand.akv[i]))}/min</span><button class="kn" type="button" data-selgakv="${i}">💰 Selg</button>`)).join('') + '</div>';
   } else {
