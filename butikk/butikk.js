@@ -223,7 +223,7 @@
     }
   }
   $('nullstill').onclick = function () {
-    dialog({ tittel: 'Slette alle E-coins?', tekst: '<p>Alle E-coins og klær på denne enheten blir borte. Spillene beholder fremgangen sin, og neste gang du åpner et spill, får du E-coins igjen for det du har klart der.</p><p>Klærne må kjøpes på nytt.</p>',
+    dialog({ tittel: 'Slette alle E-coins?', tekst: '<p>Alle E-coins og klær på denne enheten blir borte. Spillene beholder fremgangen sin, og neste gang du åpner et spill, får du E-coins igjen for det du har klart der. E-coins fra spill som ikke er på nettsiden lenger, kommer ikke tilbake.</p><p>Klærne må kjøpes på nytt.</p>',
       knapper: [{ tekst: 'Nei' }, { tekst: 'Ja, slett', klasse: 'hoved', gjor: function () { E.nullstill(); prov(null); } }] });
   };
 
