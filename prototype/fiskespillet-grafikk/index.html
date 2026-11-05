@@ -315,6 +315,13 @@ function skrog(o) {
     const pk = []; for (let i = 0; i <= 30; i++) { const u = i / 30, p = pkt(u, side * Math.PI / 2); pk.push(new THREE.Vector3(p[0], p[1] + 0.04, p[2])); }
     const t = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pk), 60, 0.09, 8), o.ripeMat); t.castShadow = true; g.add(t);
   }
+  // Vannsperre: en usynlig flate over åpningen som bare skriver dybde. Den tegnes etter båten og før vannet,
+  // så vannet ikke synes inne i båten.
+  const kant = new THREE.Shape();
+  for (let i = 0; i <= 30; i++) { const p = pkt(i / 30, Math.PI / 2); i ? kant.lineTo(p[2], p[0]) : kant.moveTo(p[2], p[0]); }
+  for (let i = 30; i >= 0; i--) { const p = pkt(i / 30, -Math.PI / 2); kant.lineTo(p[2], p[0]); }
+  const sperre = new THREE.Mesh(new THREE.ShapeGeometry(kant), new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide }));
+  sperre.rotation.set(Math.PI / 2, 0, Math.PI / 2); sperre.position.y = o.ripe; sperre.renderOrder = 1; g.add(sperre);
   g.userData = { w, ripe, dyp, pkt };
   return g;
 }
@@ -339,7 +346,7 @@ function lagMotorbaat() {
   const g = skrog({ L: 9, B: 3.4, D: 1.15, ripe: 0.75, spring: 0.5, bred: 0.5, v: true, mat: new THREE.MeshPhysicalMaterial({ map: malTekstur('#f6f7f9', '#e5483f'), roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12 }), innMat: new THREE.MeshStandardMaterial({ color: C(0xe9edf2), roughness: 0.6 }), ripeMat: new THREE.MeshStandardMaterial({ color: C(0xc7ced6), roughness: 0.25, metalness: 0.8 }) });
   // Dekk av teak
   const teak = treTekstur('#b07a45', 'rgba(40,20,5,.8)'); teak.repeat.set(1, 2);
-  const dekk = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 6.2), new THREE.MeshStandardMaterial({ map: teak, roughness: 0.7 })); dekk.rotation.x = -Math.PI / 2; dekk.position.set(0, 0.05, -0.8); dekk.receiveShadow = true; g.add(dekk);
+  const dekk = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 6.0), new THREE.MeshStandardMaterial({ map: teak, roughness: 0.7 })); dekk.rotation.x = -Math.PI / 2; dekk.position.set(0, 0.3, -0.9); dekk.receiveShadow = true; g.add(dekk);
   // Styrehus med avrundede kanter og vinduer
   const form = new THREE.Shape(), b = 2.2, h = 1.3, r = 0.35;
   form.moveTo(-b / 2 + r, 0); form.lineTo(b / 2 - r, 0); form.quadraticCurveTo(b / 2, 0, b / 2, r); form.lineTo(b / 2, h - r); form.quadraticCurveTo(b / 2, h, b / 2 - r, h); form.lineTo(-b / 2 + r, h); form.quadraticCurveTo(-b / 2, h, -b / 2, h - r); form.lineTo(-b / 2, r); form.quadraticCurveTo(-b / 2, 0, -b / 2 + r, 0);
@@ -369,7 +376,7 @@ function lagMotorbaat() {
 function lagBaatScene() {
   const scene = new THREE.Scene(); scene.fog = new THREE.Fog(C(0xcfeeff), 60, 380);
   lagHimmel(scene, 0x3f9be8, 0xcfeeff); const sol = lagLys(scene, true, 14);
-  const vann = lagVann(400, mobil ? 140 : 220, 0); scene.add(vann);
+  const vann = lagVann(400, mobil ? 140 : 220, 0); vann.renderOrder = 2; scene.add(vann);
   const rob = lagRobaat(), mot = lagMotorbaat();
   rob.position.set(-3.6, 0, 0); rob.rotation.y = 0.55; mot.position.set(4.2, 0, -1.5); mot.rotation.y = -0.45;
   scene.add(rob, mot);
