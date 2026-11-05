@@ -110,6 +110,7 @@
   body.touchui #touch{padding-bottom:calc(16px + var(--hbH,54px) + env(safe-area-inset-bottom,0px))}
   body.touchui .acts .small{flex-direction:column}
   body.touchui #h2Vapen{left:12px;transform:none}
+  body.touchui #h2Hint{white-space:normal;text-align:center;border-radius:16px;line-height:1.25}
 }
 
 /* Ryggsekk-faner */

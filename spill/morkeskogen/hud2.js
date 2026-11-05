@@ -73,7 +73,13 @@
     if (!touch) { h.style.maxWidth = ''; return; }
     const acts = document.querySelector('#touch .acts'), hb = $('hotbar'); if (!acts) return;
     if (høykant) {   // høykant: hintet rett over roboten, i hele bredden. Hurtiglinja og knappene ligger nederst (hud2.css).
-      h.style.maxWidth = (innerWidth - 32) + 'px'; h.style.bottom = Math.round(innerHeight * 0.48) + 'px'; return; }
+      // Bredden holder seg unna verktøykolonnen til høyre (symmetrisk rundt midten). Lange hint brytes over flere linjer (hud2.css).
+      const kol = acts.querySelector('.small'), midt = innerWidth / 2, kant = kol ? kol.getBoundingClientRect().left - 8 : innerWidth - 16;
+      h.style.maxWidth = (2 * Math.max(70, Math.min(midt - 16, kant - midt))) + 'px';
+      // Hintet står på 48 % av høyden, men flyttes ned når en melding (#toast) ellers ville blitt dekket
+      let bunn = Math.round(innerHeight * 0.48);
+      if (t && t.classList.contains('show')) bunn = Math.min(bunn, Math.round(innerHeight - t.getBoundingClientRect().bottom - 6 - h.offsetHeight));
+      h.style.bottom = bunn + 'px'; return; }
     const midt = innerWidth / 2, høyre = acts.getBoundingClientRect().left - 8, venstre = Math.max(16, innerWidth - høyre);   // symmetrisk rundt midten
     h.style.maxWidth = Math.max(140, 2 * Math.min(midt - venstre, høyre - midt)) + 'px';
     if (hb && !hb.hidden) { const top = hb.getBoundingClientRect().top; if (v) v.style.bottom = (innerHeight - top + 4) + 'px';
