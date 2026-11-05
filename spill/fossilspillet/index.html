@@ -641,7 +641,7 @@ function autoHideFact(){ const b=document.getElementById('fakta'); if(b.classLis
 function showFact(title,text,ms=10000){
   const b=document.getElementById('fakta');
   document.getElementById('fTitle').textContent=title; document.getElementById('fText').textContent=text;
-  b.style.top=(document.getElementById('hud').offsetHeight+14)+'px';
+  b.style.top=(document.getElementById('hud').getBoundingClientRect().bottom+14)+'px';   // under HUD-en, også når den er flyttet ned av hakket
   b.classList.add('show'); factShownAt=performance.now(); clearTimeout(factTimer); factTimer=setTimeout(()=>b.classList.remove('show'),ms);
 }
 
