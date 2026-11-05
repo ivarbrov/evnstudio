@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.6.0 – EVN Studio</title>
+<title>Fiskespillet 0.6.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -201,7 +201,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.6.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.6.1</div>
   </div>
 </div>
 
@@ -527,7 +527,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.6.0';
+const VERSJON = '0.6.1';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -1598,7 +1598,7 @@ function oppdaterKrakenSted(dt, t) {
   krakenFigur.position.set(mal.x, mal.y + Math.sin(t * 0.8) * 0.4, mal.z);
   krakenFigur.scale.setScalar(0.85);
   krakenFigur.rotation.y = Math.sin(t * 0.3) * 0.5;   // ser mot brygga (+z)
-  armer(t, 0.5, false);
+  armer(t, 0.5, true);   // armene krølles opp, så tuppene ikke går ned i sanden
 }
 function fangKraken() {
   for (const te of krakenTentakler) te.userData.opp = 0;
