@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.5.6 – EVN Studio</title>
+<title>Fiskespillet 0.5.7 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -200,7 +200,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.5.6</div>
+    <div class="evn-ver" id="versjon">Versjon 0.5.7</div>
   </div>
 </div>
 
@@ -526,7 +526,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.5.6';
+const VERSJON = '0.5.7';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -863,6 +863,19 @@ const akvGruppe = new THREE.Group(); akvGruppe.position.set(AKV.x, AKV.y, AKV.z)
   del(BOX, ramme, AKV.b + 0.4, 0.4, AKV.d + 0.4, 0, 1 + AKV.h, 0, akvGruppe);
   for (let i = 0; i < 7; i++) { const t = del(CONE, M(0x3fae4a), 0.3, rnd(1.5, 3.5), 0.3, rnd(-6, 6), 2.2, rnd(-3, 3), akvGruppe); t.userData.tang = rnd(0, 6); }
   const s = skilt('🐠 Akvariet', 2.6); s.position.set(0, AKV.h + 4, 0); akvGruppe.add(s);
+}
+// Kraken-akvariet (Evens ønske 5.11.2026): Kraken bor her etter at den er fanget og kjørt hjem. Pynt, gir ikke penger.
+const KTANK = { x: -3, y: 3.2, z: 12, b: 9, h: 8, d: 9 };
+const ktankGruppe = new THREE.Group(); ktankGruppe.position.set(KTANK.x, KTANK.y, KTANK.z); oy.add(ktankGruppe);
+{
+  del(BOX, M(0x3a1f4a), KTANK.b + 1, 0.8, KTANK.d + 1, 0, 0.4, 0, ktankGruppe);
+  del(BOX, M(0xf3dca0), KTANK.b, 0.5, KTANK.d, 0, 1.05, 0, ktankGruppe);
+  const vann = new THREE.MeshStandardMaterial({ color: C(0x3f8fe0), transparent: true, opacity: 0.3, roughness: 0.1, depthWrite: false });
+  del(BOX, vann, KTANK.b, KTANK.h, KTANK.d, 0, 0.8 + KTANK.h / 2, 0, ktankGruppe);
+  const ramme = M(0xffc93c, { metalness: 0.4, roughness: 0.35 });
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) del(BOX, ramme, 0.45, KTANK.h + 0.4, 0.45, sx * KTANK.b / 2, 0.8 + KTANK.h / 2, sz * KTANK.d / 2, ktankGruppe);
+  del(BOX, ramme, KTANK.b + 0.45, 0.45, KTANK.d + 0.45, 0, 1 + KTANK.h, 0, ktankGruppe);
+  const s = skilt('🐙 Kraken-akvariet', 2.6); s.position.set(0, KTANK.h + 4, 0); ktankGruppe.add(s);
 }
 // Brygga
 {
@@ -1473,7 +1486,7 @@ function oppdaterKampBar() {
   $('kampFyll').style.width = Math.max(0, fiske.kamp).toFixed(1) + '%'; $('kamp').classList.toggle('sint', fiske.sint > 0);
   const t = Math.max(0, Math.ceil(fiske.igjen)); if ($('kampTid').textContent !== '⏱ ' + t) $('kampTid').textContent = '⏱ ' + t;
 }
-// Når Kraken er fanget, kommer den opp i båten og dykker så ned i dypet igjen (Evens ønske 5.11.2026).
+// Når Kraken er fanget, kommer den opp i båten, blir med hjem og flytter inn i Kraken-akvariet i havna (Evens ønsker 5.11.2026).
 // Fremgangen lagres med en gang. Feiringskortet kommer når Kraken er borte.
 const krakenFigur = new THREE.Group(); krakenFigur.visible = false; scene.add(krakenFigur);
 const krakenArmer = [];
@@ -1512,27 +1525,68 @@ function oppdaterPlask(dt) {
     if (p.t > 1) { scene.remove(p.m); p.m.geometry.dispose(); p.m.material.dispose(); plaskRinger.splice(i, 1); }
   }
 }
-const KRAKEN_TIDER = { opp: 1.4, hopp: 0.9, sitt: 2.6, ut: 0.9, ned: 1.2 };
+const KRAKEN_TIDER = { opp: 1.4, hopp: 0.9, sitt: 2.6, flytt: 1.8 };
+let krakenSted = 'skjult';   // 'skjult' | 'show' | 'baat' (blir med hjem) | 'flytter' (til Kraken-akvariet) | 'tank'
+let krakenFlytt = null;      // { t, fra }
 function landKraken(k) { k.landet = true; lydMynt(); robotGjor('Dance', 3.2); }
+const myk = x => x * x * (3 - 2 * x);
+// Plassen i baugen. Armene krølles opp så de holder seg inne i båten.
+function krakenIBaatPos() { return baat.localToWorld(new THREE.Vector3(0, baat.userData.dekkY + 0.1, baat.userData.L * 0.3)); }
+const krakenIBaatSkala = () => 0.35 + baat.userData.L * 0.03;
+function krakenTankPos() { return oy.localToWorld(new THREE.Vector3(KTANK.x, KTANK.y + 1.3, KTANK.z)); }
+function armer(t, viftet, krull) {
+  for (const a of krakenArmer) a.deler.forEach((d, i) => { d.rotation.x = (krull ? -0.62 : 0.35) + Math.sin(t * 4 * viftet + a.fase + i * 0.7) * (krull ? 0.1 : 0.28 * viftet); });
+}
 function oppdaterKrakenShow(dt, t) {
-  const k = krakenShow; if (!k) return;
+  const k = krakenShow;
+  if (!k) { oppdaterKrakenSted(dt, t); return; }
   k.t += dt;
-  const T = KRAKEN_TIDER, fx = Math.sin(spiller.retning), fz = Math.cos(spiller.retning);
+  const fx = Math.sin(spiller.retning), fz = Math.cos(spiller.retning), T = KRAKEN_TIDER;
   const ute = new THREE.Vector3(spiller.pos.x + fx * 10, 0, spiller.pos.z + fz * 10);
-  const iBaat = new THREE.Vector3(spiller.pos.x + fx * 2.4, baat.position.y + baat.userData.dekkY, spiller.pos.z + fz * 1.4);
-  const myk = x => x * x * (3 - 2 * x);
-  let tt = k.t, y = 0, pos = ute, skala = 1, viftet = 1;
-  if (tt < T.opp) { const a = myk(tt / T.opp); pos = ute; y = -7 + a * 7; viftet = 0.6; }
-  else if ((tt -= T.opp) < T.hopp) { const a = tt / T.hopp; pos = ute.clone().lerp(iBaat, myk(a)); y = Math.sin(a * Math.PI) * 6 + (iBaat.y - 0) * a; skala = 1 - 0.15 * a; if (!k.landet && a > 0.95) landKraken(k); }
-  else if ((tt -= T.hopp) < T.sitt) { if (!k.landet) landKraken(k); pos = iBaat; y = iBaat.y + Math.abs(Math.sin(tt * 4)) * 0.3; skala = 0.85; viftet = 1.6; krakenFigur.rotation.z = Math.sin(tt * 3) * 0.12; }
-  else if ((tt -= T.sitt) < T.ut) { const a = tt / T.ut; pos = iBaat.clone().lerp(ute, myk(a)); y = iBaat.y * (1 - a) + Math.sin(a * Math.PI) * 7; skala = 0.85 + 0.15 * a; if (!k.plasket && a > 0.9) { k.plasket = true; plask(ute.x, ute.z, 1.4); } }   // landing og plask: se også neste fase (store tidssteg kan hoppe over vinduet)
-  else if ((tt -= T.ut) < T.ned) { if (!k.plasket) { k.plasket = true; plask(ute.x, ute.z, 1.4); } const a = myk(tt / T.ned); pos = ute; y = -a * 9; viftet = 0.5; }
-  else { krakenFigur.visible = false; krakenShow = null; visKrakenKort(k.forste); return; }
+  const iBaat = krakenIBaatPos(), sk = krakenIBaatSkala();
+  let tt = k.t, pos = ute, y = 0, skala = 1, viftet = 1, krull = false;
+  krakenFigur.rotation.z = 0;
+  if (tt < T.opp) { const a = myk(tt / T.opp); y = -7 + a * 7; viftet = 0.6; }
+  else if ((tt -= T.opp) < T.hopp) { const a = tt / T.hopp; pos = ute.clone().lerp(iBaat, myk(a)); y = Math.sin(a * Math.PI) * 6 + iBaat.y * a; skala = 1 - (1 - sk) * a; krull = a > 0.6; if (!k.landet && a > 0.95) landKraken(k); }
+  else if ((tt -= T.hopp) < T.sitt) { if (!k.landet) landKraken(k); pos = iBaat; y = iBaat.y + Math.abs(Math.sin(tt * 4)) * 0.3; skala = sk; viftet = 1.6; krull = true; krakenFigur.rotation.z = Math.sin(tt * 3) * 0.12; }
+  else { krakenShow = null; krakenSted = 'baat'; krakenFigur.rotation.z = 0; visKrakenKort(k.forste); return; }
   krakenFigur.visible = true;
   krakenFigur.position.set(pos.x, y, pos.z);
   krakenFigur.scale.setScalar(skala);
   krakenFigur.rotation.y = spiller.retning + Math.PI;   // ser mot roboten og kameraet
-  for (const a of krakenArmer) a.deler.forEach((d, i) => { d.rotation.x = 0.35 + Math.sin(t * 4 * viftet + a.fase + i * 0.7) * 0.28 * viftet; });
+  armer(t, viftet, krull);
+}
+function oppdaterKrakenSted(dt, t) {
+  if (krakenSted === 'skjult' || krakenSted === 'show') { krakenFigur.visible = false; return; }
+  krakenFigur.visible = true;
+  if (krakenSted === 'baat') {
+    const p = krakenIBaatPos();
+    krakenFigur.position.copy(p); krakenFigur.position.y += Math.abs(Math.sin(t * 2)) * 0.12;
+    krakenFigur.scale.setScalar(krakenIBaatSkala());
+    krakenFigur.rotation.y = spiller.retning + Math.PI;
+    armer(t, 0.6, true);
+    if (iHavna() && !modalApen()) {
+      krakenSted = 'flytter'; krakenFlytt = { t: 0, fra: p.clone(), skala: krakenIBaatSkala() };
+      melding('🐙 Kraken flytter inn i Kraken-akvariet!', 3, true);
+    }
+    return;
+  }
+  const mal = krakenTankPos();
+  if (krakenSted === 'flytter') {
+    const f = krakenFlytt; f.t += dt;
+    const a = Math.min(1, f.t / KRAKEN_TIDER.flytt);
+    krakenFigur.position.copy(f.fra).lerp(mal, myk(a)); krakenFigur.position.y += Math.sin(a * Math.PI) * 14;
+    krakenFigur.scale.setScalar(f.skala + (0.85 - f.skala) * a);
+    krakenFigur.rotation.y += dt * 6;
+    armer(t, 1.4, false);
+    if (a >= 1) { krakenSted = 'tank'; krakenFlytt = null; lydMynt(); }
+    return;
+  }
+  // I Kraken-akvariet: flyter rolig og vifter med armene
+  krakenFigur.position.set(mal.x, mal.y + Math.sin(t * 0.8) * 0.4, mal.z);
+  krakenFigur.scale.setScalar(0.85);
+  krakenFigur.rotation.y = Math.PI + Math.sin(t * 0.3) * 0.5;   // ser mot brygga
+  armer(t, 0.5, false);
 }
 function fangKraken() {
   for (const te of krakenTentakler) te.userData.opp = 0;
@@ -1543,7 +1597,7 @@ function fangKraken() {
   lydSjelden(); setTimeout(lydSjelden, 500);
   plask(spiller.pos.x + Math.sin(spiller.retning) * 10, spiller.pos.z + Math.cos(spiller.retning) * 10, 1.4);
   melding('🐙 Du fikk Kraken! Se, den kommer opp i båten!', 3, true);
-  krakenShow = { t: 0, forste };
+  krakenShow = { t: 0, forste }; krakenSted = 'show';
 }
 function visKrakenKort(forste) {
   $('fangstTopp').textContent = forste ? '🏆 OPPDRAGET ER KLART! 🏆' : 'Du fanget Kraken igjen!';
@@ -1551,8 +1605,8 @@ function visKrakenKort(forste) {
   $('fangstNavn').textContent = 'Kraken';
   $('fangstMerker').innerHTML = '<span class="merkelapp" style="background:#ffc93c">Havets konge ⭐⭐⭐⭐⭐</span>';
   $('fangstTekst').textContent = forste
-    ? `Du fanget Kraken med Superstangen! Den svømte tilbake i dypet, men du fikk 💰 ${tall(INNST.krakenPremie)}. Nå kan du jakte på resten av de 5000 fiskene!`
-    : 'Kraken er sterk, men du er sterkere! Den svømte tilbake i dypet.';
+    ? `Du fanget Kraken med Superstangen, og du fikk 💰 ${tall(INNST.krakenPremie)}! Kjør hjem til havna, så flytter Kraken inn i sitt eget akvarium. Nå kan du jakte på resten av de 5000 fiskene!`
+    : 'Kraken er sterk, men du er sterkere! Kjør hjem til havna, så flytter den inn i Kraken-akvariet igjen.';
   lydSjelden();
   apneLag('fangst');
 }
@@ -1963,6 +2017,8 @@ catch (e) {
 }
 byggBaat(); byggLast(); byggAkvarium(); oppdaterHud();
 baat.position.copy(spiller.pos);
+krakenSted = tilstand.kraken ? 'tank' : 'skjult';   // fanget Kraken bor i Kraken-akvariet
+baat.updateMatrixWorld(); oy.updateMatrixWorld(); oppdaterKrakenSted(0, 0);
 
 window.__evnP = EVNPause({
   mappe: TEST ? 'fiskespillet-test' : 'fiskespillet', avsluttId: 'evnAvslutt',   // testmodus teller spilletid for seg
@@ -1993,7 +2049,7 @@ EVNNullstill({
 });
 requestAnimationFrame(loop);
 // Til testing
-window.__spill = { get krakenShow() { return krakenShow; }, visFangst, besteOppsett, tilstand, spiller, plasser, INNST, FORMER, nyFisk, fiskNavn, fiskVerdi, sjeldenhet, fiskDel, gjorHandling, startFiske, dra, get fiske() { return fiske; }, lagre, HAVN, KRAKEN_POS, scene, camera, oppdaterHud, byggAkvarium, byggLast, byggBaat, lagFiskModell, renderer };
+window.__spill = { get krakenShow() { return krakenShow; }, get krakenSted() { return krakenSted; }, visFangst, besteOppsett, tilstand, spiller, plasser, INNST, FORMER, nyFisk, fiskNavn, fiskVerdi, sjeldenhet, fiskDel, gjorHandling, startFiske, dra, get fiske() { return fiske; }, lagre, HAVN, KRAKEN_POS, scene, camera, oppdaterHud, byggAkvarium, byggLast, byggBaat, lagFiskModell, renderer };
 </script>
 <!-- EVN Studio: knapp tilbake til forsiden (vises bare under /spill/) -->
 <style>
