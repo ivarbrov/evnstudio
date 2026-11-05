@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.5.5 – EVN Studio</title>
+<title>Fiskespillet 0.5.6 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -200,7 +200,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.5.5</div>
+    <div class="evn-ver" id="versjon">Versjon 0.5.6</div>
   </div>
 </div>
 
@@ -526,7 +526,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.5.5';
+const VERSJON = '0.5.6';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -1513,6 +1513,7 @@ function oppdaterPlask(dt) {
   }
 }
 const KRAKEN_TIDER = { opp: 1.4, hopp: 0.9, sitt: 2.6, ut: 0.9, ned: 1.2 };
+function landKraken(k) { k.landet = true; lydMynt(); robotGjor('Dance', 3.2); }
 function oppdaterKrakenShow(dt, t) {
   const k = krakenShow; if (!k) return;
   k.t += dt;
@@ -1522,10 +1523,10 @@ function oppdaterKrakenShow(dt, t) {
   const myk = x => x * x * (3 - 2 * x);
   let tt = k.t, y = 0, pos = ute, skala = 1, viftet = 1;
   if (tt < T.opp) { const a = myk(tt / T.opp); pos = ute; y = -7 + a * 7; viftet = 0.6; }
-  else if ((tt -= T.opp) < T.hopp) { const a = tt / T.hopp; pos = ute.clone().lerp(iBaat, myk(a)); y = Math.sin(a * Math.PI) * 6 + (iBaat.y - 0) * a; skala = 1 - 0.15 * a; if (!k.landet && a > 0.95) { k.landet = true; lydMynt(); robotGjor('Dance', 3.2); } }
-  else if ((tt -= T.hopp) < T.sitt) { pos = iBaat; y = iBaat.y + Math.abs(Math.sin(tt * 4)) * 0.3; skala = 0.85; viftet = 1.6; krakenFigur.rotation.z = Math.sin(tt * 3) * 0.12; }
-  else if ((tt -= T.sitt) < T.ut) { const a = tt / T.ut; pos = iBaat.clone().lerp(ute, myk(a)); y = iBaat.y * (1 - a) + Math.sin(a * Math.PI) * 7; skala = 0.85 + 0.15 * a; if (!k.plasket && a > 0.9) { k.plasket = true; plask(ute.x, ute.z, 1.4); } }
-  else if ((tt -= T.ut) < T.ned) { const a = myk(tt / T.ned); pos = ute; y = -a * 9; viftet = 0.5; }
+  else if ((tt -= T.opp) < T.hopp) { const a = tt / T.hopp; pos = ute.clone().lerp(iBaat, myk(a)); y = Math.sin(a * Math.PI) * 6 + (iBaat.y - 0) * a; skala = 1 - 0.15 * a; if (!k.landet && a > 0.95) landKraken(k); }
+  else if ((tt -= T.hopp) < T.sitt) { if (!k.landet) landKraken(k); pos = iBaat; y = iBaat.y + Math.abs(Math.sin(tt * 4)) * 0.3; skala = 0.85; viftet = 1.6; krakenFigur.rotation.z = Math.sin(tt * 3) * 0.12; }
+  else if ((tt -= T.sitt) < T.ut) { const a = tt / T.ut; pos = iBaat.clone().lerp(ute, myk(a)); y = iBaat.y * (1 - a) + Math.sin(a * Math.PI) * 7; skala = 0.85 + 0.15 * a; if (!k.plasket && a > 0.9) { k.plasket = true; plask(ute.x, ute.z, 1.4); } }   // landing og plask: se også neste fase (store tidssteg kan hoppe over vinduet)
+  else if ((tt -= T.ut) < T.ned) { if (!k.plasket) { k.plasket = true; plask(ute.x, ute.z, 1.4); } const a = myk(tt / T.ned); pos = ute; y = -a * 9; viftet = 0.5; }
   else { krakenFigur.visible = false; krakenShow = null; visKrakenKort(k.forste); return; }
   krakenFigur.visible = true;
   krakenFigur.position.set(pos.x, y, pos.z);
@@ -1934,7 +1935,7 @@ function loop(na) {
   } else { baat.position.y = 0.25 + Math.sin(tid * 1.6) * 0.15; }
   if (spillTilstand !== 'pause') { oppdaterVerden(dt, tid); oppdaterAkvarium(dt, tid); oppdaterSkum(dt); oppdaterPlask(dt); robotAnimasjon(dt); for (const m of lastGruppe.children) animerFisk(m, tid * 0.3, 0.5); }
   oppdaterMelding(dt); oppdaterHandling(); oppdaterKamera(dt);
-  renderer.render(scene, camera);
+  if (!webglTapt) renderer.render(scene, camera);
 }
 addEventListener('pagehide', lagre);
 
@@ -1948,7 +1949,8 @@ function feilApent() { return $('feil').classList.contains('vis'); }
 document.addEventListener('focusin', e => { if (feilApent() && !$('feil').contains(e.target)) $('feilLast').focus(); }, true);
 addEventListener('keydown', e => { if (feilApent() && e.key === 'Tab') { e.preventDefault(); $('feilLast').focus(); } }, true);
 // Hvis nettleseren mister 3D-grafikken (WebGL), vises feilkortet med «Last på nytt» i stedet for en svart skjerm
-canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); if (feilApent()) return; feilVist = true; if (spillTilstand !== 'start') { try { lagre(); } catch (er) {} } $('feil').classList.add('vis'); $('feilLast').focus(); });
+let webglTapt = false;
+canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); webglTapt = true; if (feilApent()) return; feilVist = true; if (spillTilstand !== 'start') { try { lagre(); } catch (er) {} } else { const t = $('feil').querySelector('p'); if (t) t.textContent = 'Trykk på knappen for å starte spillet på nytt.'; } $('feil').classList.add('vis'); $('feilLast').focus(); });
 
 // ======================================================
 //  Start
