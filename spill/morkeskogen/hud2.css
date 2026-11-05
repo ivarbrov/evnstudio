@@ -104,6 +104,12 @@
   body.touchui #hud > .panel:first-child{min-width:0}
   body.touchui #hud .bar{width:min(110px,30vw)}
   body.touchui #toast{max-width:88vw}
+  /* 2.0.4: midten av skjermen er fri for roboten. Hurtiglinja ligger nederst, og knappene står over den.
+     Verktøyene (kamera, bygg, spis) står i en kolonne til høyre. Våpenlinja ligger under statusfeltet, og hintet over roboten (hud2.js). */
+  body.touchui #hotbar{bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+  body.touchui #touch{padding-bottom:calc(16px + var(--hbH,54px) + env(safe-area-inset-bottom,0px))}
+  body.touchui .acts .small{flex-direction:column}
+  body.touchui #h2Vapen{left:12px;transform:none}
 }
 
 /* Ryggsekk-faner */
