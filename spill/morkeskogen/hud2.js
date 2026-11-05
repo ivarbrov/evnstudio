@@ -82,14 +82,24 @@
     if (performance.now() - sistBredde < 500) return; sistBredde = performance.now();   // layoutmåling to ganger i sekundet holder
     const h = $('h2Hint'); if (!h) return;
     // Meldinger (#toast) under statusfeltet og topp-raden, så de aldri dekker dem (statusfeltet blir høyere når ressurser vises)
-    const t = $('toast'), st = document.querySelector('#hud > .panel'), dg = $('h2Dag');
-    if (t && st) t.style.top = (Math.max(st.getBoundingClientRect().bottom, dg ? dg.getBoundingClientRect().bottom : 0) + 10) + 'px';
-    if (!document.body.classList.contains('touchui')) { h.style.maxWidth = ''; return; }
+    const t = $('toast'), st = document.querySelector('#hud > .panel'), dg = $('h2Dag'), v = $('h2Vapen');
+    const touch = document.body.classList.contains('touchui'), høykant = touch && innerHeight > innerWidth;
+    // Mobil på høykant: våpenlinja under statusfeltet (ellers over hurtiglinja, se under)
+    if (v) { if (høykant && st) { v.style.bottom = 'auto'; v.style.top = (st.getBoundingClientRect().bottom + 6) + 'px'; } else v.style.top = ''; }
+    const vUnder = høykant && v && !v.hidden ? v.getBoundingClientRect().bottom : 0;
+    if (t && st) t.style.top = (Math.max(st.getBoundingClientRect().bottom, dg ? dg.getBoundingClientRect().bottom : 0, vUnder) + 10) + 'px';
+    if (!touch) { h.style.maxWidth = ''; return; }
     const acts = document.querySelector('#touch .acts'), hb = $('hotbar'); if (!acts) return;
-    if (innerHeight > innerWidth) { h.style.maxWidth = (innerWidth - 32) + 'px'; } else {   // høykant: knappene ligger under hintet, så hele bredden kan brukes
+    if (høykant) {   // høykant: hintet rett over roboten, i hele bredden. Hurtiglinja og knappene ligger nederst (hud2.css).
+      // Bredden holder seg unna verktøykolonnen til høyre (symmetrisk rundt midten). Lange hint brytes over flere linjer (hud2.css).
+      const kol = acts.querySelector('.small'), midt = innerWidth / 2, kant = kol ? kol.getBoundingClientRect().left - 8 : innerWidth - 16;
+      h.style.maxWidth = (2 * Math.max(70, Math.min(midt - 16, kant - midt))) + 'px';
+      // Hintet står på 48 % av høyden, men flyttes ned når en melding (#toast) ellers ville blitt dekket
+      let bunn = Math.round(innerHeight * 0.48);
+      if (t && t.classList.contains('show')) bunn = Math.min(bunn, Math.round(innerHeight - t.getBoundingClientRect().bottom - 6 - h.offsetHeight));
+      h.style.bottom = bunn + 'px'; return; }
     const midt = innerWidth / 2, høyre = acts.getBoundingClientRect().left - 8, venstre = Math.max(16, innerWidth - høyre);   // symmetrisk rundt midten
-    h.style.maxWidth = Math.max(140, 2 * Math.min(midt - venstre, høyre - midt)) + 'px'; }
-    const v = $('h2Vapen');
+    h.style.maxWidth = Math.max(140, 2 * Math.min(midt - venstre, høyre - midt)) + 'px';
     if (hb && !hb.hidden) { const top = hb.getBoundingClientRect().top; if (v) v.style.bottom = (innerHeight - top + 4) + 'px';
       h.style.bottom = (innerHeight - (v && !v.hidden ? v.getBoundingClientRect().top : top) + 6) + 'px'; }
   }
