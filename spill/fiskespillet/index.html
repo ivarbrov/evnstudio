@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.7.0 – EVN Studio</title>
+<title>Fiskespillet 0.7.2 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -205,7 +205,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.7.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.7.2</div>
   </div>
 </div>
 
@@ -531,7 +531,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.7.0';
+const VERSJON = '0.7.2';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -793,38 +793,59 @@ const havUniforms = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
   oyR: { value: OY_R }, g1: { value: SONE_GRENSE[0] }, g2: { value: SONE_GRENSE[1] },
   kraken: { value: new THREE.Vector2(KRAKEN_POS.x, KRAKEN_POS.z) },
 }]);
+// Ny vanngrafikk (Evens ønske 5.11.2026, trinn 1 av grafikken): fire bølger med ekte lysberegning,
+// glans fra sola, himmel som speiler seg i vannet og skum på bølgetoppene. Sonefargene, Kraken-virvelen og
+// skummet rundt øya er som før.
+havUniforms.sol = { value: new THREE.Vector3(60, 100, 40).normalize() };
+havUniforms.himmel = { value: C(0xcdeeff) };
 const havMat = new THREE.ShaderMaterial({
   uniforms: havUniforms, fog: true,
   vertexShader: `
-    uniform float tid; varying vec2 vPos; varying float vH;
+    uniform float tid; varying vec2 vPos; varying float vH; varying vec3 vW; varying vec3 vN;
     #include <fog_pars_vertex>
+    void bolge(vec2 d, float k, float a, float f, vec2 p, inout float h, inout vec2 dh) {
+      float ph = dot(d, p) * k + tid * f; h += a * sin(ph); dh += d * a * k * cos(ph); }
     void main() {
-      vec4 w = modelMatrix * vec4(position, 1.0);
-      float h = 0.28 * sin(w.x * 0.08 + tid * 1.2) + 0.22 * sin(w.z * 0.11 - tid * 0.9) + 0.1 * sin((w.x + w.z) * 0.23 + tid * 2.1);
-      w.y += h; vH = h; vPos = w.xz;
+      vec4 w = modelMatrix * vec4(position, 1.0); float h = 0.0; vec2 dh = vec2(0.0);
+      bolge(normalize(vec2(1.0, 0.3)), 0.08, 0.3, 1.2, w.xz, h, dh);
+      bolge(normalize(vec2(-0.4, 1.0)), 0.11, 0.22, 0.9, w.xz, h, dh);
+      bolge(normalize(vec2(0.7, -0.8)), 0.23, 0.1, 2.1, w.xz, h, dh);
+      bolge(normalize(vec2(-1.0, -0.2)), 0.41, 0.05, 2.9, w.xz, h, dh);
+      w.y += h; vH = h; vPos = w.xz; vW = w.xyz; vN = normalize(vec3(-dh.x, 1.0, -dh.y));
       vec4 mvPosition = viewMatrix * w;
       gl_Position = projectionMatrix * mvPosition;
       #include <fog_vertex>
     }`,
   fragmentShader: `
-    uniform float tid, oyR, g1, g2; uniform vec3 grunn, kyst, hav, dyp; uniform vec2 kraken;
-    varying vec2 vPos; varying float vH;
+    uniform float tid, oyR, g1, g2; uniform vec3 grunn, kyst, hav, dyp, sol, himmel; uniform vec2 kraken;
+    varying vec2 vPos; varying float vH; varying vec3 vW; varying vec3 vN;
     #include <fog_pars_fragment>
+    float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float st(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+      return mix(mix(h21(i), h21(i+vec2(1,0)), f.x), mix(h21(i+vec2(0,1)), h21(i+vec2(1,1)), f.x), f.y); }
     void main() {
       float d = length(vPos);
       vec3 c = mix(grunn, kyst, smoothstep(oyR + 2.0, oyR + 30.0, d));
       c = mix(c, hav, smoothstep(g1 - 25.0, g1 + 25.0, d));
       c = mix(c, dyp, smoothstep(g2 - 30.0, g2 + 30.0, d));
+      // Lys: små krusninger på toppen av bølgene, speiling av himmelen og glans fra sola
+      vec3 n = normalize(vN + vec3(st(vPos * 0.9 + tid * 0.6) - 0.5, 0.0, st(vPos.yx * 0.8 - tid * 0.5) - 0.5) * 0.2);
+      vec3 v = normalize(cameraPosition - vW);
+      float fres = pow(1.0 - max(dot(n, v), 0.0), 4.0);
+      c = mix(c, himmel, fres * 0.55);
+      float spec = pow(max(dot(reflect(-sol, n), v), 0.0), 200.0);
+      c += vec3(1.0, 0.95, 0.85) * spec * 1.8;
+      // Kraken-virvelen
       float kd = length(vPos - kraken);
       float virvel = smoothstep(60.0, 0.0, kd);
       float spiral = sin(atan(vPos.y - kraken.y, vPos.x - kraken.x) * 3.0 + kd * 0.25 - tid * 2.0);
       c = mix(c, vec3(0.01, 0.02, 0.06), virvel * 0.75);
       c += vec3(0.08, 0.12, 0.2) * virvel * smoothstep(0.6, 1.0, spiral);
-      c += vec3(0.12, 0.16, 0.18) * smoothstep(0.25, 0.5, vH);
-      float skum = smoothstep(oyR + 3.5, oyR + 0.5, d);
-      c = mix(c, vec3(0.95), skum * (0.6 + 0.4 * sin(tid * 2.0 + d)));
-      float glimt = pow(max(0.0, sin(vPos.x * 0.37 + tid * 1.1) * sin(vPos.y * 0.29 - tid * 0.8)), 60.0);
-      c += vec3(0.35) * glimt;
+      // Skum på bølgetoppene og rundt øya
+      float skum = smoothstep(0.55, 0.72, vH + st(vPos * 2.3 + tid) * 0.18) * 0.3;
+      float s2 = smoothstep(oyR + 4.5, oyR + 0.6, d + sin(tid * 1.6 + atan(vPos.y, vPos.x) * 9.0) * 0.8);
+      skum = max(skum, s2 * (0.55 + 0.45 * st(vPos * 2.5 + tid * 1.5)));
+      c = mix(c, vec3(0.96), skum);
       gl_FragColor = vec4(c, 1.0);
       #include <fog_fragment>
       #include <encodings_fragment>
@@ -839,8 +860,31 @@ const hav = new THREE.Mesh(havGeo, havMat); scene.add(hav);
 const hindre = [];   // runde ting båten ikke kan kjøre gjennom
 const oy = new THREE.Group(); scene.add(oy);
 // Øya: sand og gress
-del(new THREE.CylinderGeometry(OY_R, OY_R + 6, 6, 40), M(0xf3dca0), 1, 1, 1, 0, -1.5, 0, oy);
-del(new THREE.CylinderGeometry(OY_R - 7, OY_R - 2, 3, 40), M(0x7fcf5a), 1, 1, 1, 0, 1.8, 0, oy);
+// Ny grafikk (trinn 2): myk øy med gress, sand og våt sand i vannkanten. Toppen er flat (y 3,3) der husene står.
+function stoyOy(x, z) { const h = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
+  const ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz);
+  return (h(ix, iz) * (1 - u) + h(ix + 1, iz) * u) * (1 - v) + (h(ix, iz + 1) * (1 - u) + h(ix + 1, iz + 1) * u) * v; }
+{
+  const S = 2 * (OY_R + 12), geo = new THREE.PlaneGeometry(S, S, 120, 120); geo.rotateX(-Math.PI / 2);
+  const p = geo.attributes.position, farger = [], ss = THREE.MathUtils.smoothstep;
+  const gress = C(0x76c94f), gress2 = C(0x58b03f), sand = C(0xf3dca0), vaat = C(0xcfb27a);
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), z = p.getZ(i), kant = (stoyOy(x * 0.09, z * 0.09) - 0.5) * 3, d = Math.hypot(x, z) + kant;
+    const y = d < OY_R - 5 ? 3.3 : d < OY_R + 3 ? 3.3 - 2.9 * ss(d, OY_R - 5, OY_R + 3) : 0.4 - (d - OY_R - 3) * 0.45;
+    p.setY(i, y);
+    const c = new THREE.Color();
+    if (d < OY_R - 8) c.copy(gress).lerp(gress2, stoyOy(x * 0.25, z * 0.25)); else c.copy(sand).lerp(vaat, ss(d, OY_R + 0.5, OY_R + 3));
+    if (d >= OY_R - 8 && d < OY_R - 6.5) c.lerp(gress, 1 - ss(d, OY_R - 8, OY_R - 6.5));
+    farger.push(c.r, c.g, c.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(farger, 3)); geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 })); oy.add(m);
+  // Steiner i strandkanten
+  const stein = M(0x8e98a2, { flatShading: true, roughness: 0.9 });
+  for (let i = 0; i < 12; i++) { const v = i / 12 * Math.PI * 2 + 0.3, d = OY_R + 1 + (i % 3); if (Math.abs(Math.sin(v) - 1) < 0.08) continue;
+    const g2 = new THREE.IcosahedronGeometry(1, 1), q = g2.attributes.position; for (let j = 0; j < q.count; j++) q.setXYZ(j, q.getX(j) * (0.8 + stoyOy(i, j) * 0.4), q.getY(j) * 0.6, q.getZ(j) * (0.8 + stoyOy(j, i) * 0.4)); g2.computeVertexNormals();
+    del(g2, stein, 1.2 + (i % 4) * 0.3, 1.2, 1.2, Math.cos(v) * d, 0.6, Math.sin(v) * d, oy); }
+}
 hindre.push({ x: 0, z: 0, r: OY_R + 3 });
 // Fyrtårnet
 {
@@ -852,11 +896,31 @@ hindre.push({ x: 0, z: 0, r: OY_R + 3 });
   oy.userData.lys = lys;
 }
 // Trær
+// Ny grafikk (trinn 2): palmer med buet stamme med ringer, og blader med bladnerve
+const PALMEBLAD = (() => { const cv = document.createElement('canvas'); cv.width = 128; cv.height = 512; const x = cv.getContext('2d'), w = 128, h = 512;
+  for (let i = 0; i < 34; i++) { const y = 20 + i / 34 * (h - 40), l = (w / 2 - 6) * Math.sin(Math.PI * (0.15 + 0.85 * (1 - i / 34)));
+    x.fillStyle = i % 2 ? '#3aa64a' : '#2f9442';
+    for (const s of [-1, 1]) { x.beginPath(); x.moveTo(w / 2, y); x.quadraticCurveTo(w / 2 + s * l * 0.6, y - 6, w / 2 + s * l, y + 14); x.lineTo(w / 2, y + 10); x.fill(); } }
+  x.strokeStyle = '#6c8a2a'; x.lineWidth = 5; x.beginPath(); x.moveTo(w / 2, 0); x.lineTo(w / 2, h); x.stroke();
+  const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; return new THREE.MeshStandardMaterial({ map: t, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 0.7 }); })();
+const PALMESTAMME = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
 function palme(x, z, s) {
-  const g = new THREE.Group(); g.position.set(x, 3.2, z); g.scale.setScalar(s); oy.add(g);
-  const st = del(CYL, M(0x9b6a3a), 0.35, 6, 0.35, 0, 3, 0, g); st.rotation.z = 0.12;
-  for (let i = 0; i < 6; i++) { const b = del(SPH_L, M(0x3fae4a), 2.6, 0.25, 0.8, 0, 6, 0, g); b.rotation.y = i * Math.PI / 3; b.position.x = Math.cos(i * Math.PI / 3) * 1.6; b.position.z = -Math.sin(i * Math.PI / 3) * 1.6; b.rotation.z = -0.35 * Math.sign(Math.cos(i)) ; }
-  del(SPH_L, M(0x8b5a2b), 0.4, 0.4, 0.4, 0.4, 5.6, 0.3, g);
+  const g = new THREE.Group(); g.position.set(x, 3.2, z); g.scale.setScalar(s); g.rotation.y = x * 0.37 + z; oy.add(g);
+  const h = 7.5, boy = (Math.round(x + z) % 2 ? 1 : -1), pk = [];
+  for (let i = 0; i <= 10; i++) { const t = i / 10; pk.push(new THREE.Vector3(Math.sin(t * 1.4) * boy * h * 0.22, t * h, 0)); }
+  const kurve = new THREE.CatmullRomCurve3(pk), geo = new THREE.TubeGeometry(kurve, 30, 0.34, 8), p = geo.attributes.position, farger = [];
+  for (let i = 0; i < p.count; i++) { const ring = Math.floor(i / 9), m = ring % 3 === 0 ? 0.7 : 1, c = kurve.getPoint(ring / 30), k = 1 - ring / 30 * 0.4;
+    p.setXYZ(i, c.x + (p.getX(i) - c.x) * k, p.getY(i), c.z + (p.getZ(i) - c.z) * k); const f = C(0x9b6a3a); farger.push(f.r * m, f.g * m, f.b * m); }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(farger, 3)); geo.computeVertexNormals();
+  g.add(new THREE.Mesh(geo, PALMESTAMME));
+  const topp = kurve.getPoint(1);
+  for (let i = 0; i < 8; i++) {
+    const bg = new THREE.PlaneGeometry(1.4, 4.6, 1, 8); bg.translate(0, 2.3, 0); const bp = bg.attributes.position;
+    for (let j = 0; j < bp.count; j++) bp.setZ(j, -Math.pow(bp.getY(j) / 4.6, 2) * 2);
+    bg.computeVertexNormals();
+    const b = new THREE.Mesh(bg, PALMEBLAD); b.position.copy(topp); b.rotation.order = 'YXZ'; b.rotation.y = i / 8 * Math.PI * 2; b.rotation.x = -1.0 - (i % 3) * 0.12; g.add(b);
+  }
+  for (let i = 0; i < 3; i++) del(SPH_L, M(0x6b4a2a), 0.28, 0.28, 0.28, topp.x + Math.cos(i * 2.1) * 0.35, topp.y - 0.3, Math.sin(i * 2.1) * 0.35, g);
 }
 palme(-22, -10, 1.1); palme(-6, -24, 1); palme(24, 4, 0.9); palme(-26, 8, 0.85); palme(2, -8, 0.8);
 // Butikken (huset til høyre for brygga)
