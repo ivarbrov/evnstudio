@@ -1,12 +1,11 @@
 import { chromium } from '/opt/npm-tools/node_modules/playwright/index.mjs';
 const b=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--allow-file-access-from-files']});
-for(const strategi of ['ingenting','bare-laser','blandet']){
+for(const verden of [0,1,2,3])for(const strategi of ['ingenting','blandet']){
 const p=await b.newPage();p.on('pageerror',e=>console.log('ERR',e.message));
-await p.goto('file:///home/claude/evnstudio/spill/era-defenders-2/index.html');await p.waitForTimeout(1500);
-await p.evaluate(()=>{localStorage.clear()});await p.reload();await p.waitForTimeout(1500);
-await p.click('#startBtn',{force:true});
+await p.goto('file:///home/claude/evnstudio/spill/era-defenders-2/index.html');await p.evaluate(()=>{localStorage.clear()});await p.reload();
+await p.waitForFunction(()=>window.__spill&&!document.getElementById('startBtn').disabled,null,{timeout:40000});await p.click('#startBtn',{force:true});await p.evaluate(v=>{__spill.settHoyeste(3);__spill.byttVerden(v)},verden);
 const res=await p.evaluate(async(strategi)=>{const S=__spill,log=[];let tid=0;window.__autoKamp=true;
-  const plasser=[[6,0],[-6,0],[0,6],[0,-6],[5,5],[-5,-5],[5,-5],[-5,5],[9,0],[-9,0],[0,9],[0,-9]];
+  const plasser=[[6,0],[-6,0],[0,6],[0,-6],[5,5],[-5,-5],[5,-5],[-5,5],[9,0],[-9,0],[0,9],[0,-9],[4,2],[-4,2],[3,-3],[-3,-3],[7,3],[-7,-3]];
   for(let w=0;w<10;w++){
     if(strategi!=='ingenting'){let i=0;
       // kjøp: laser til det er 6, så oppgrader, (blandet: murer, skjold, base)
@@ -23,6 +22,6 @@ const res=await p.evaluate(async(strategi)=>{const S=__spill,log=[];let tid=0;wi
     log.push({b:før,fase:S.fase,sek:t,base:Math.round(S.helt.hp),mynter:S.mynter,bygg:S.bygg.length});
     if(S.fase!=='bygg')break}
   return {log,tid};},strategi);
-console.log(strategi, JSON.stringify(res.log.map(l=>`${l.b}:${l.fase} ${l.sek}s robot${l.base} 🪙${l.mynter} b${l.bygg}`)), 'tid', Math.round(res.tid/60),'min');
+console.log(verden,strategi, JSON.stringify(res.log.map(l=>`${l.b}:${l.fase} ${l.sek}s robot${l.base} 🪙${l.mynter} b${l.bygg}`)), 'tid', Math.round(res.tid/60),'min');
 await p.close()}
 await b.close();

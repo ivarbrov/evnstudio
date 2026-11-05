@@ -33,6 +33,7 @@
   html.touch.spiller #kamp { display:block; }
   .vk { position:fixed; border-radius:50%; border:3px solid rgba(255,255,255,.7); color:#fff; display:flex; align-items:center; justify-content:center; padding:0; z-index:5; touch-action:none; box-shadow:0 4px 0 rgba(0,0,0,.3); }
   #kSverd { width:88px; height:88px; font-size:40px; right:calc(18px + env(safe-area-inset-right)); bottom:calc(22px + env(safe-area-inset-bottom)); background:rgba(125,252,255,.35); }
+  #kPistol { background:rgba(255,79,216,.4) !important; }
   #kMagi { width:68px; height:68px; font-size:30px; right:calc(122px + env(safe-area-inset-right)); bottom:calc(18px + env(safe-area-inset-bottom)); background:rgba(80,150,255,.45); }
   #kPistol { width:60px; height:60px; font-size:26px; right:calc(110px + env(safe-area-inset-right)); bottom:calc(98px + env(safe-area-inset-bottom)); background:rgba(62,230,255,.35); }
   #kMagi.tom, #kPistol.tom { opacity:.45; }
@@ -119,12 +120,13 @@
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script src="helt-robot.js"></script>
+<script src="era2-modeller.js"></script>
 </head>
 <body>
 <div id="hud" hidden>
   <div class="pille" title="Mynter">🪙 <span id="mynter">0</span></div>
   <div class="pille" title="Robotens liv">❤️ <span id="heltLiv">0</span></div>
-  <div class="pille" title="Bølge">🌊 <span id="bolge">1</span>/10</div>
+  <div class="pille" title="Verden og bølge"><span id="verdenIk">❄️</span> 🌊 <span id="bolge">1</span>/10</div>
   <div class="pille" title="Kraft til kraftdyttet">🌀 <span id="mana">100</span></div>
   <div class="pille" id="pSkjold" title="Kraftskjold" hidden>🛡️ <span id="skjold">0</span></div>
   <div class="pille" id="pNed" title="Neste bølge kommer" hidden>⏱️ <span id="ned">5</span></div>
@@ -140,9 +142,9 @@
 <div id="byggHjelp" role="status" hidden></div>
 <div id="joy"><div id="knob"></div></div>
 <div id="kamp" aria-label="Våpen">
-  <button class="vk" id="kSverd" type="button" aria-label="Lasersverd">⚔️</button>
+  <button class="vk" id="kSverd" type="button" aria-label="Laserpistol">🔫</button>
   <button class="vk" id="kMagi" type="button" aria-label="Kraftdytt">🌀</button>
-  <button class="vk" id="kPistol" type="button" aria-label="Sverdkast">🪃</button>
+  <button class="vk" id="kPistol" type="button" aria-label="Plasmagranat">💣</button>
 </div>
 
 <!-- Startkort -->
@@ -151,16 +153,17 @@
     <div class="evn-merke">EVN STUDIO</div>
     <h1>Era Defenders 2</h1>
     <div class="maal">
-      <p>🌆 Verden 1: Framtiden<br>Du er en romridder med lasersverd! Stopp robotmonstrene, samle mynter og bygg tårn.</p>
+      <p><span id="startVerden">❄️ Verden 1: Isplaneten</span><br>Du er en romhelt med laserpistol! Stopp robotmonstrene, samle mynter og bygg tårn.</p>
     </div>
     <div class="styring">
-      <div class="bare-pc">Piltaster eller WASD: gå. Mellomrom: ⚔️ lasersverd.<br>E eller klikk: 🌀 kraftdytt. F eller høyreklikk: 🪃 sverdkast.<br>B: bygg, 1–9: velg.</div>
-      <div class="bare-touch">Styrespaken: gå. ⚔️ 🌀 🪃: slåss.<br>Trykk 🏗️ Bygg, velg noe og trykk på kartet.</div>
+      <div class="bare-pc">Piltaster eller WASD: gå. Mellomrom eller klikk: 🔫 laserpistol.<br>E eller høyreklikk: 🌀 kraftdytt. F: 💣 plasmagranat.<br>B: bygg, 1–9: velg.</div>
+      <div class="bare-touch">Styrespaken: gå. 🔫 🌀 💣: slåss.<br>Trykk 🏗️ Bygg, velg noe og trykk på kartet.</div>
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
+    <button class="valg" id="startVelg" type="button" hidden>🌍 Velg verden</button>
     <p class="ingen3d hidden" id="noGL">😕 Denne nettleseren kan ikke vise 3D. Prøv en annen nettleser, eller be en voksen om hjelp.</p>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.4.0 · prøveversjon</div>
+    <div class="evn-ver" id="versjon">Versjon 0.5.0 · prøveversjon</div>
   </div>
 </div>
 
@@ -183,6 +186,15 @@
     <p id="sluttTekst"></p>
     <button class="valg hoved" id="sluttIgjen" type="button"></button>
     <button class="valg" id="sluttNy" type="button">🔄 Start verden 1 på nytt</button>
+  </div>
+</div>
+
+<!-- Velg verden -->
+<div class="lag" id="verdenLag" role="dialog" aria-modal="true" aria-labelledby="verdenTittel">
+  <div class="kort">
+    <h2 id="verdenTittel">🌍 Velg verden</h2>
+    <div id="verdenListe"></div>
+    <button class="valg" id="verdenTilbake" type="button">← Tilbake</button>
   </div>
 </div>
 
@@ -451,8 +463,10 @@ window.EVNPause = function (cfg) {
    v0.3.0 (Evens ønske): som i Era Defenders 1 – ingen base i midten, du slåss selv med lasersverd, plasmamagi og
    laserpistol, bølgene kommer av seg selv, og roboten har romdrakt i Framtiden.
    v0.4.0 (Evens ønske): romridder-tema med lasersverd. Egne navn og figurer (ikke kopi av beskyttet innhold):
-   lasersverd som blokkerer laserskudd, kraftdytt og sverdkast, kappe, og skuddboter som skyter laser. */
-const VERSJON="0.4.0";
+   lasersverd som blokkerer laserskudd, kraftdytt og sverdkast, kappe, og skuddboter som skyter laser.
+   v0.5.0 (Evens ønske): laserpistol i stedet for sverd, fire nye verdener (Isplaneten, Skogmånen, Kampstasjonen,
+   Lavaplaneten) med modeller laget i Blender, og bedre grafikk (tonemapping, lys, partikler, hindre og farer). */
+const VERSJON="0.5.0";
 const SAVE_KEY="evn-era-defenders-2-v1";
 const $=id=>document.getElementById(id);
 const html=document.documentElement;
@@ -469,12 +483,9 @@ let renderer;try{renderer=new THREE.WebGLRenderer({antialias:true})}catch(e){ing
 renderer.domElement.id="c";document.body.insertBefore(renderer.domElement,document.body.firstChild);
 renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1;
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x0b1026);scene.fog=new THREE.Fog(0x0b1026,80,160);
 const camera=new THREE.PerspectiveCamera(40,1,1,400);
-scene.add(new THREE.HemisphereLight(0xa8dcff,0x22183a,0.75));
-const sol=new THREE.DirectionalLight(0xffffff,0.85);sol.position.set(18,40,22);sol.castShadow=true;
-sol.shadow.mapSize.set(2048,2048);Object.assign(sol.shadow.camera,{left:-38,right:38,top:30,bottom:-30,near:5,far:100});scene.add(sol);
 
 const KX=25,KZ=16;                 // kartet går fra -KX til KX og -KZ til KZ
 const kam={fx:0,fz:-1,rx:1,rz:0};  // «opp» og «høyre» på skjermen, målt på bakken
@@ -494,35 +505,138 @@ function tilpassKamera(){
 }
 addEventListener("resize",tilpassKamera);tilpassKamera();
 
-// ================= Framtiden: bakke, rutenett, by =================
+// ================= Modeller fra Blender (lag_modeller.py → era2-modeller.js) =================
 const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:0.6,metalness:0.2},o));
-(function lagVerden(){
-  const bakke=new THREE.Mesh(new THREE.PlaneGeometry(2*KX+2,2*KZ+2),M(0x1c2650,{roughness:0.85}));
-  bakke.rotation.x=-Math.PI/2;bakke.receiveShadow=true;scene.add(bakke);
-  const ute=new THREE.Mesh(new THREE.PlaneGeometry(260,200),M(0x0e1430,{roughness:1}));
-  ute.rotation.x=-Math.PI/2;ute.position.y=-0.05;ute.receiveShadow=true;scene.add(ute);
-  const p=[];for(let x=-KX;x<=KX;x+=2)p.push(x,0.02,-KZ,x,0.02,KZ);for(let z=-KZ;z<=KZ;z+=2)p.push(-KX,0.02,z,KX,0.02,z);
-  const lg=new THREE.BufferGeometry();lg.setAttribute("position",new THREE.Float32BufferAttribute(p,3));
-  scene.add(new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0x2e5aa8,transparent:true,opacity:0.55})));
-  const kant=M(0x3ee6ff,{emissive:0x3ee6ff,emissiveIntensity:0.9});
-  [[0,-KZ-0.5,2*KX+2,0.4],[0,KZ+0.5,2*KX+2,0.4],[-KX-0.5,0,0.4,2*KZ+2],[KX+0.5,0,0.4,2*KZ+2]].forEach(([x,z,w,d])=>{const k=new THREE.Mesh(new THREE.BoxGeometry(w,0.3,d),kant);k.position.set(x,0.15,z);scene.add(k)});
-  // Byen rundt kartet: høye hus med lysende vinduer
-  const husFarger=[0x2a3570,0x3a2a6a,0x24406a,0x1f2d58],vindu=[0x3ee6ff,0xff4fd8,0xffc93c];
-  let frø=7;const rnd=()=>(frø=(frø*9301+49297)%233280)/233280;
-  for(let i=0;i<70;i++){
-    let x,z;const side=i%4;
-    if(side===0){x=-KX-6+rnd()*(2*KX+12);z=-KZ-4-rnd()*14}else if(side===1){x=-KX-6+rnd()*(2*KX+12);z=KZ+4+rnd()*10}
-    else if(side===2){x=-KX-4-rnd()*14;z=-KZ+rnd()*2*KZ}else{x=KX+4+rnd()*14;z=-KZ+rnd()*2*KZ}
-    const hh=4+rnd()*(side===1?6:16),b=2+rnd()*3;
-    const hus=new THREE.Mesh(new THREE.BoxGeometry(b,hh,b),M(husFarger[i%4],{roughness:0.5,metalness:0.4}));hus.position.set(x,hh/2,z);hus.castShadow=true;scene.add(hus);
-    const vm=M(vindu[i%3],{emissive:vindu[i%3],emissiveIntensity:1});
-    for(let y=1.2;y<hh-0.5;y+=1.6){const s=new THREE.Mesh(new THREE.BoxGeometry(b+0.04,0.25,b+0.04),vm);s.position.set(x,y,z);scene.add(s)}
+const MOD={};
+const modellLast=new Promise(res=>{
+  try{
+    if(!window.EVN_ERA2_GLB||!THREE.GLTFLoader)return res();
+    const bin=atob(window.EVN_ERA2_GLB),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+    new THREE.GLTFLoader().parse(u.buffer,"",gl=>{
+      gl.scene.children.slice().forEach(o=>{o.position.set(0,0,0);o.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true}});MOD[o.name]=o});res();
+    },e=>{console.warn("modeller",e);res()});
+  }catch(e){console.warn("modeller",e);res()}
+});
+function kopi(navn,skala=1){const o=MOD[navn];if(!o)return null;const k=o.clone();k.scale.setScalar(skala);return k}
+
+// ================= Fire verdener (Evens valg 5.11.2026) =================
+// Inspirert av kjente romeventyr-scener, men med egne navn, figurer og modeller.
+const VERDENER=[
+  {id:"is",navn:"Isplaneten",ik:"❄️",himmel:0xbcd6ee,bakke:[0xf2f7fd,0xc7d9ec],ute:0xd9e6f4,hemi:[0xffffff,0x8094b8,0.75],sol:[0xfff1dc,1.25],eksp:0.95,partikler:"sno",boss2:"gaa",ekstra:"isbille",fiender:{smaa:"isbille",tank:"snotroll"},
+   tekst:"Snø og is. Gjem deg bak isfjellene og i skyttergravene!"},
+  {id:"skog",navn:"Skogmånen",ik:"🌲",himmel:0x6e9e8c,bakke:[0x4f7f45,0x35603a],ute:0x2d4a30,hemi:[0xd8ffe8,0x2a3b22,0.8],sol:[0xffe2b0,1.0],eksp:1.05,partikler:"lys",boss2:"skogv",ekstra:"sykkel",fiender:{smaa:"skogbille",kamp:"sopp",tank:"mosegolem"},
+   tekst:"Kjempetrær og hytter i trærne. Pass deg for svevesyklene!"},
+  {id:"stasjon",navn:"Kampstasjonen",ik:"🌑",himmel:0x070a16,bakke:[0x4a5266,0x353c4d],ute:0x1a1f2c,hemi:[0xb8ccff,0x141824,0.65],sol:[0xdfe8ff,0.9],eksp:1.1,partikler:"stjerner",boss2:"sjef",ekstra:"romvesen",fiender:{smaa:"romvesen"},
+   tekst:"Lange ganger og dype sjakter. Gå over broene!"},
+  {id:"lava",navn:"Lavaplaneten",ik:"🌋",himmel:0x4a140a,bakke:[0x4a3a36,0x2c2222],ute:0x1a0d0a,hemi:[0xffc8a0,0x2a0a05,0.7],sol:[0xffb070,1.1],eksp:1.0,partikler:"gnister",boss2:"lavak",ekstra:"salamander",fiender:{smaa:"salamander",tank:"lavagolem"},
+   tekst:"Glødende lava! Bruk broene, ellers brenner du deg."}
+];
+let verdenIdx=0,hoyesteVerden=0,ferdigVerden=[false,false,false,false];
+const V=()=>VERDENER[verdenIdx];
+
+// Hindre stopper roboten, monstrene og skudd. Farer (lava) skader roboten.
+let hinder=[],farer=[];
+function iHinder(x,z,r){for(const h of hinder){if(h.s==="sirkel"){if(Math.hypot(x-h.x,z-h.z)<h.r+r)return h}else if(Math.abs(x-h.x)<h.hx+r&&Math.abs(z-h.z)<h.hz+r)return h}return null}
+function skyvUt(o,r){for(const h of hinder){if(h.s==="sirkel"){const dx=o.x-h.x,dz=o.z-h.z,d=Math.hypot(dx,dz),m=h.r+r;if(d<m){const k=d||0.001;o.x=h.x+dx/k*m;o.z=h.z+dz/k*m}}
+  else{const px=h.hx+r-Math.abs(o.x-h.x),pz=h.hz+r-Math.abs(o.z-h.z);if(px>0&&pz>0){if(px<pz)o.x+=(o.x>=h.x?1:-1)*px;else o.z+=(o.z>=h.z?1:-1)*pz}}}}
+function fritSikt(ax,az,bx,bz){const d=Math.hypot(bx-ax,bz-az),n=Math.ceil(d/0.7);for(let i=1;i<n;i++){const t=i/n;if(iHinder(ax+(bx-ax)*t,az+(bz-az)*t,0.05))return false}return true}
+function iFare(x,z){for(const f of farer)if(Math.abs(x-f.x)<f.hx&&Math.abs(z-f.z)<f.hz)return f;return null}
+
+let verdenGruppe=null,partikler=null;
+const sol=new THREE.DirectionalLight(0xffffff,1);sol.position.set(18,40,22);sol.castShadow=true;
+sol.shadow.mapSize.set(2048,2048);Object.assign(sol.shadow.camera,{left:-34,right:34,top:26,bottom:-26,near:5,far:100});sol.shadow.bias=-0.0006;scene.add(sol);
+const hemi=new THREE.HemisphereLight(0xffffff,0x444444,0.7);scene.add(hemi);
+
+function rundPrikk(){const c=document.createElement("canvas");c.width=c.height=32;const x=c.getContext("2d");const g=x.createRadialGradient(16,16,0,16,16,16);g.addColorStop(0,"rgba(255,255,255,1)");g.addColorStop(0.4,"rgba(255,255,255,.7)");g.addColorStop(1,"rgba(255,255,255,0)");x.fillStyle=g;x.fillRect(0,0,32,32);return new THREE.CanvasTexture(c)}
+const prikkTekstur=rundPrikk();
+
+function lagPartikler(type){
+  const N=RM?120:(type==="stjerner"?500:420),pos=new Float32Array(N*3),fart=new Float32Array(N);
+  for(let i=0;i<N;i++){pos[i*3]=(Math.random()*2-1)*(KX+8);pos[i*3+1]=Math.random()*(type==="stjerner"?1:14)+(type==="stjerner"?-6:0.2);pos[i*3+2]=(Math.random()*2-1)*(KZ+8);fart[i]=0.5+Math.random()}
+  const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.BufferAttribute(pos,3));
+  const farge={sno:0xffffff,lys:0xdfff8a,stjerner:0xcfe0ff,gnister:0xffa040}[type];
+  const m=new THREE.PointsMaterial({color:farge,size:type==="sno"?0.35:type==="stjerner"?0.25:0.3,map:prikkTekstur,transparent:true,depthWrite:false,blending:type==="sno"?THREE.NormalBlending:THREE.AdditiveBlending,opacity:type==="sno"?0.9:1});
+  const p=new THREE.Points(g,m);p.userData={type,fart};p.frustumCulled=false;return p;
+}
+function oppdaterPartikler(dt){
+  if(!partikler||RM)return;const {type,fart}=partikler.userData,a=partikler.geometry.attributes.position,p=a.array,n=fart.length;
+  for(let i=0;i<n;i++){const j=i*3;
+    if(type==="sno"){p[j+1]-=dt*1.6*fart[i];p[j]+=Math.sin(tid*0.7+i)*dt*0.5;if(p[j+1]<0){p[j+1]=14}}
+    else if(type==="gnister"){p[j+1]+=dt*2.2*fart[i];p[j]+=Math.sin(tid*2+i)*dt*0.4;if(p[j+1]>12){p[j+1]=0.2}}
+    else if(type==="lys"){p[j]+=Math.sin(tid*0.9+i*1.7)*dt*0.8;p[j+1]+=Math.cos(tid*1.1+i)*dt*0.4;p[j+2]+=Math.cos(tid*0.8+i*1.3)*dt*0.8;if(p[j+1]<0.3)p[j+1]=0.3;if(p[j+1]>8)p[j+1]=8}}
+  if(type==="stjerner")partikler.material.opacity=0.8+Math.sin(tid*2)*0.2;
+  a.needsUpdate=true;
+}
+
+function frøTilfeldig(frø){return()=>(frø=(frø*9301+49297)%233280)/233280}
+function sett(o,x,y,z,ry=0){if(!o)return null;o.position.set(x,y,z);o.rotation.y=ry;verdenGruppe.add(o);return o}
+
+function byggVerden(i){
+  verdenIdx=i;const W=V();
+  if(verdenGruppe){scene.remove(verdenGruppe);verdenGruppe.traverse(o=>{if(o.geometry&&!o.geometry.userData.delt)o.geometry.dispose()})}
+  if(partikler){scene.remove(partikler);partikler.geometry.dispose()}
+  verdenGruppe=new THREE.Group();scene.add(verdenGruppe);hinder=[];farer=[];
+  scene.background=new THREE.Color(W.himmel);scene.fog.color.set(W.himmel);
+  hemi.color.set(W.hemi[0]);hemi.groundColor.set(W.hemi[1]);hemi.intensity=W.hemi[2];sol.color.set(W.sol[0]);sol.intensity=W.sol[1];renderer.toneMappingExposure=W.eksp;
+  const rnd=frøTilfeldig(11+i*7);
+  // Bakke med myke fargeflekker
+  const bg=new THREE.PlaneGeometry(2*KX+2,2*KZ+2,60,40);bg.rotateX(-Math.PI/2);
+  const c1=new THREE.Color(W.bakke[0]),c2=new THREE.Color(W.bakke[1]),cc=new THREE.Color(),farger=[];const pa=bg.attributes.position;
+  for(let k=0;k<pa.count;k++){const x=pa.getX(k),z=pa.getZ(k);let t=0.5+0.25*Math.sin(x*0.31+z*0.17)+0.2*Math.sin(x*0.07-z*0.23)+0.08*(rnd()-0.5);
+    if(W.id==="stasjon")t=((Math.floor((x+KX)/3)+Math.floor((z+KZ)/3))%2)?0.25:0.75;
+    cc.copy(c1).lerp(c2,Math.max(0,Math.min(1,t)));farger.push(cc.r,cc.g,cc.b)}
+  bg.setAttribute("color",new THREE.Float32BufferAttribute(farger,3));
+  const bakke=new THREE.Mesh(bg,new THREE.MeshStandardMaterial({vertexColors:true,roughness:W.id==="is"?0.55:W.id==="stasjon"?0.4:0.95,metalness:W.id==="stasjon"?0.5:0}));bakke.receiveShadow=true;verdenGruppe.add(bakke);
+  const ute=new THREE.Mesh(new THREE.PlaneGeometry(320,240),W.id==="lava"?M(0xd84a10,{emissive:0xff2a00,emissiveIntensity:0.55,roughness:0.6}):M(W.ute,{roughness:1,metalness:0}));ute.rotation.x=-Math.PI/2;ute.position.y=-0.06;ute.receiveShadow=true;verdenGruppe.add(ute);
+  const fri=(x,z,r)=>Math.hypot(x,z)>6&&!iHinder(x,z,r+1.2)&&!iFare(x,z);
+  const spredt=(n,r,lag)=>{let f=0;for(let t=0;t<200&&f<n;t++){const x=(rnd()*2-1)*(KX-3),z=(rnd()*2-1)*(KZ-3);if(fri(x,z,r)){lag(x,z);f++}}};
+  const ring=(n,lag)=>{for(let k=0;k<n;k++){const a=k/n*Math.PI*2+rnd()*0.2;let rx=KX+5+rnd()*12,rz=KZ+5+rnd()*10;const x0=Math.cos(a),z0=Math.sin(a),foran=(x0*kam.fx+z0*kam.fz)<-0.35;if(foran){rx+=8;rz+=8}const o=lag(x0*rx,z0*rz,a);if(foran&&o&&o.scale)o.scale.multiplyScalar(0.45)}};
+
+  if(W.id==="is"){
+    // Skyttergraver: lave snøvoller du kan gjemme deg bak
+    for(const [x,z,hx,hz] of [[-13,-7,4.5,0.6],[13,7,4.5,0.6],[0,-11.5,0.6,3],[-6,10,3.5,0.6],[8,-4,0.6,2.8]]){
+      const v=new THREE.Mesh(new THREE.BoxGeometry(hx*2,1.0,hz*2),M(0xe8f0fa,{roughness:0.8,metalness:0}));v.position.set(x,0.5,z);v.castShadow=v.receiveShadow=true;verdenGruppe.add(v);
+      const kant=new THREE.Mesh(new THREE.BoxGeometry(hx*2+0.3,0.25,hz*2+0.3),M(0x9fb4cc,{roughness:0.9,metalness:0}));kant.position.set(x,0.12,z);verdenGruppe.add(kant);
+      hinder.push({s:"boks",x,z,hx,hz})}
+    spredt(9,1.4,(x,z)=>{const s=0.9+rnd()*0.7;sett(kopi(rnd()<0.5?"Isfjell1":"Isfjell2",s),x,0,z,rnd()*6);hinder.push({s:"sirkel",x,z,r:1.25*s})});
+    ring(26,(x,z,a)=>sett(kopi(rnd()<0.5?"Isfjell1":"Isfjell2",3+rnd()*4),x,-0.5,z,a));
+  }else if(W.id==="skog"){
+    spredt(9,1.2,(x,z)=>{const s=0.55+rnd()*0.15,t=sett(kopi("Kjempetre",s),x,0,z,rnd()*6);hinder.push({s:"sirkel",x,z,r:1.6*s});if(rnd()<0.45)sett(kopi("Trehytte",s),x,0,z,rnd()*6)});
+    spredt(14,0.6,(x,z)=>{const b=new THREE.Mesh(new THREE.IcosahedronGeometry(0.7+rnd()*0.5,0),M(rnd()<0.5?0x4f8f45:0x3d7a3a,{roughness:0.9,metalness:0}));b.position.set(x,0.4,z);b.scale.y=0.7;b.castShadow=true;verdenGruppe.add(b)});
+    ring(34,(x,z,a)=>sett(kopi("Kjempetre",1.2+rnd()*0.8),x,0,z,a));
+  }else if(W.id==="stasjon"){
+    // To dype sjakter med en bro i midten
+    for(const zz of [-8,8])for(const sx of [-1,1]){const x=sx*11,hx=7.5,hz=2.2;
+      const hull=new THREE.Mesh(new THREE.BoxGeometry(hx*2,0.05,hz*2),new THREE.MeshBasicMaterial({color:0x020208}));hull.position.set(x,0.03,zz);verdenGruppe.add(hull);
+      for(const [ex,ez,w,d] of [[x,zz-hz,hx*2,0.12],[x,zz+hz,hx*2,0.12],[x-hx,zz,0.12,hz*2],[x+hx,zz,0.12,hz*2]]){const k=new THREE.Mesh(new THREE.BoxGeometry(w,0.12,d),M(0x3ee6ff,{emissive:0x3ee6ff,emissiveIntensity:1.6}));k.position.set(ex,0.08,ez);verdenGruppe.add(k)}
+      for(let y=1;y<=3;y++){const l=new THREE.Mesh(new THREE.PlaneGeometry(hx*2-0.4,hz*2-0.4),new THREE.MeshBasicMaterial({color:0x3ee6ff,transparent:true,opacity:0.12/y}));l.rotation.x=-Math.PI/2;l.position.set(x,0.04+0.001*y,zz);l.scale.setScalar(1-y*0.18);verdenGruppe.add(l)}
+      hinder.push({s:"boks",x,z:zz,hx,hz})}
+    for(const zz of [-8,8]){const bro=new THREE.Mesh(new THREE.BoxGeometry(7,0.1,4.4),M(0x8a93a8,{metalness:0.7,roughness:0.35}));bro.position.set(0,0.05,zz);verdenGruppe.add(bro);
+      for(const sx of [-1,1]){const g=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.9,4.4),M(0xffc93c,{emissive:0x664400}));g.position.set(sx*3.5,0.45,zz);verdenGruppe.add(g)}}
+    for(const [x,z] of [[-14,0],[14,0],[-7,-3.5],[7,3.5],[-20,12],[20,-12]]){sett(kopi("Soyle",1),x,0,z);hinder.push({s:"sirkel",x,z,r:1.05})}
+    sett(kopi("Kontrollpult",1.2),0,0,-14,0);sett(kopi("Kontrollpult",1.2),-4,0,-14,0.3);sett(kopi("Kontrollpult",1.2),4,0,-14,-0.3);
+    hinder.push({s:"boks",x:0,z:-14,hx:5.5,hz:0.8});
+    // Høye vegger rundt
+    ring(30,(x,z,a)=>{const h=8+rnd()*10,v=new THREE.Mesh(new THREE.BoxGeometry(5,h,3),M(0x2b3140,{metalness:0.6,roughness:0.4}));v.position.set(x,h/2,z);v.rotation.y=-a;v.castShadow=true;verdenGruppe.add(v);
+      const b=new THREE.Mesh(new THREE.BoxGeometry(5.05,0.25,3.05),M(0x3ee6ff,{emissive:0x3ee6ff,emissiveIntensity:1.4}));b.position.set(x,h*0.6,z);b.rotation.y=-a;verdenGruppe.add(b)});
+  }else if(W.id==="lava"){
+    // To lavaelver med broer
+    const lavaMat=M(0xff5a10,{emissive:0xff3000,emissiveIntensity:0.75,roughness:0.5,metalness:0});
+    for(const x of [-10,10]){const gap=x<0?[-7,7]:[-11,0,11];let start=-KZ-1;
+      const seg=[];const broer=gap.slice().sort((a,b)=>a-b);for(const g of broer){seg.push([start,g-2.2]);start=g+2.2}seg.push([start,KZ+1]);
+      for(const [a,b] of seg){const hz=(b-a)/2,z=(a+b)/2;const l=new THREE.Mesh(new THREE.BoxGeometry(4,0.1,hz*2),lavaMat);l.position.set(x,0.04,z);verdenGruppe.add(l);farer.push({x,z,hx:2,hz})}
+      for(const g of broer){const bro=new THREE.Mesh(new THREE.BoxGeometry(5.2,0.35,4.4),M(0x8a7766,{roughness:0.9,metalness:0}));bro.position.set(x,0.17,g);bro.castShadow=bro.receiveShadow=true;verdenGruppe.add(bro);
+        for(const sz of [-1,1]){const r=new THREE.Mesh(new THREE.BoxGeometry(5.2,0.6,0.35),M(0x5a4a40,{roughness:0.9,metalness:0}));r.position.set(x,0.5,g+sz*2.05);r.castShadow=true;verdenGruppe.add(r)}}}
+    spredt(8,1.3,(x,z)=>{const s=0.9+rnd()*0.6;sett(kopi("Lavastein",s),x,0,z,rnd()*6);hinder.push({s:"sirkel",x,z,r:1.2*s})});
+    ring(26,(x,z,a)=>sett(kopi("Lavastein",3+rnd()*4),x,-0.8,z,a));
+    for(let k=0;k<5;k++){const l=new THREE.PointLight(0xff6020,1.2,14);l.position.set(k%2?-10:10,1.5,-12+k*6);verdenGruppe.add(l)}
   }
-})();
+  partikler=lagPartikler(W.partikler);scene.add(partikler);
+}
 
 // ================= Robotnivå (var «basen» før v0.3.0) =================
 const basen={niv:1};
-const BASE_NIV=[null,{maks:150,sverd:4,magi:5,pistol:3},{maks:210,pris:200,sverd:6,magi:7,pistol:4},{maks:280,pris:400,sverd:8,magi:10,pistol:6}];
+const BASE_NIV=[null,{maks:150,magi:5,pistol:3,granat:12},{maks:210,pris:200,magi:7,pistol:5,granat:16},{maks:280,pris:400,magi:10,pistol:7,granat:22}];
 // Kraftskjold: blå boble rundt roboten. Den tar imot slagene til den sprekker.
 const skjold={niv:0,hp:0,R:1.9,mesh:null};
 const SKJOLD_NIV=[null,{maks:80,pris:150},{maks:160,pris:120},{maks:280,pris:220}];
@@ -548,22 +662,18 @@ if(THREE.GLTFLoader)Promise.resolve().then(()=>{if(!window.EVN_ROBOT_GLB)throw n
 
 // Framtidsdrakt (Evens ønske C): romhjelm, jetpakke og lasersverd. Festes til robotens bein, så de følger animasjonene.
 function fest(bein,obj,x,y,z){bein.updateWorldMatrix(true,false);const ws=new THREE.Vector3();bein.getWorldScale(ws);obj.scale.set(1/ws.x,1/ws.y,1/ws.z);obj.position.set(x/ws.x,y/ws.y,z/ws.z);bein.add(obj)}
-const SVERD_FARGE=0x4fb8ff;
 function kleRobot(m){
   const bein={};m.traverse(o=>{if(o.isBone){const n=o.name.replace(/_\d+$/,"").replace(/[^A-Za-z]/g,"");if(!bein[n])bein[n]=o}});helt.g.updateMatrixWorld(true);
-  // Romridderkappe: brun kappe på ryggen
+  // Romheltkappe
   const rygg=bein.Torso||bein.Abdomen||bein.Body;
   if(rygg){const k=new THREE.Group();const stoff=M(0x7a5232,{roughness:0.95,metalness:0,side:THREE.DoubleSide});
     const kappe=new THREE.Mesh(new THREE.CylinderGeometry(0.62,0.95,1.55,16,1,true,Math.PI*0.5,Math.PI),stoff);kappe.position.y=-0.55;k.add(kappe);
     const krage=new THREE.Mesh(new THREE.TorusGeometry(0.5,0.12,8,20,Math.PI),stoff);krage.rotation.x=Math.PI/2;krage.rotation.z=Math.PI;krage.position.y=0.2;k.add(krage);
     k.traverse(o=>{if(o.isMesh)o.castShadow=true});fest(rygg,k,0,0.15,-0.05)}
-  // Lasersverd med lysende kjerne og glød
+  // Laserpistol (Blender-modell) i høyre hånd
   const haand=bein.HandR||bein.PalmR||bein.LowerArmR;
-  if(haand){const s=new THREE.Group();const skaft=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.4,10),M(0xb8c0d0,{metalness:0.9,roughness:0.25}));s.add(skaft);
-    const ring=new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.085,0.06,10),M(0x222631));ring.position.y=0.12;s.add(ring);
-    const kjerne=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,2.0,8),new THREE.MeshBasicMaterial({color:0xffffff}));kjerne.position.y=1.2;s.add(kjerne);
-    const glod=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,2.1,12),new THREE.MeshBasicMaterial({color:SVERD_FARGE,transparent:true,opacity:0.55,depthWrite:false,blending:THREE.AdditiveBlending}));glod.position.y=1.2;s.add(glod);
-    s.rotation.x=Math.PI/2;fest(haand,s,0,0.05,0);helt.sverd=s}
+  const lag=()=>{const p=kopi("Laserpistol",1.5);if(!p||!haand)return;const g=new THREE.Group();p.rotation.set(0,Math.PI,0);p.position.set(0,0.1,0.1);g.add(p);fest(haand,g,0,0.05,0);helt.pistol=g};
+  if(MOD.Laserpistol)lag();else modellLast.then(lag);
 }
 // ================= Felles hjelpere =================
 const sjekkGeo={liv:new THREE.PlaneGeometry(1,0.16)};
@@ -578,34 +688,64 @@ const gnister=[],gnistGeo=new THREE.BoxGeometry(0.25,0.25,0.25);
 function gnist(x,y,z,farge,n=8){if(RM)n=Math.min(n,3);for(let i=0;i<n&&gnister.length<160;i++){const m=new THREE.Mesh(gnistGeo,new THREE.MeshBasicMaterial({color:farge,transparent:true}));m.position.set(x,y,z);scene.add(m);gnister.push({m,vx:(Math.random()-0.5)*8,vy:3+Math.random()*5,vz:(Math.random()-0.5)*8,t:0.6})}}
 
 const heltBar=lagLivsbar(1.6,3.1);helt.g.add(heltBar);
-// ================= Monstre: robotmonstre =================
+// ================= Monstre: robotmonstre (modeller fra Blender) =================
 const TYPER={
   skudd:{navn:"Skuddbot",hp:10,fart:2.4,skade:3,r:0.7,bel:7,farge:0x2fbf6a,str:0.9,skyter:true},
   smaa:{navn:"Småbot",hp:6,fart:3.4,skade:2,r:0.6,bel:5,farge:0xff5a5a,str:0.75},
   kamp:{navn:"Kampbot",hp:15,fart:2.6,skade:4,r:0.85,bel:8,farge:0xa04dff,str:1.05},
   tank:{navn:"Tankbot",hp:48,fart:1.6,skade:8,r:1.2,bel:16,farge:0x8892a6,str:1.55},
+  sykkel:{navn:"Svevesykkel",hp:9,fart:6.2,skade:3,r:0.9,bel:8,farge:0x6b7a5a,str:1,modell:"sykkel"},
+  // Skapninger (Evens ønske: «alt kan ikke være roboter»)
+  isbille:{navn:"Isbille",hp:6,fart:3.6,skade:2,r:0.6,bel:5,farge:0x2f8fe0,str:1.0,modell:"Bille"},
+  snotroll:{navn:"Snøtroll",hp:48,fart:1.7,skade:8,r:1.2,bel:16,farge:0xb9cde6,str:1.0,modell:"Snotroll"},
+  skogbille:{navn:"Skogbille",hp:6,fart:3.6,skade:2,r:0.6,bel:5,farge:0x5fcf6a,str:1.0,modell:"Bille"},
+  sopp:{navn:"Trollsopp",hp:15,fart:2.4,skade:4,r:0.85,bel:8,farge:0xe04a3a,str:1.1,modell:"Trollsopp"},
+  mosegolem:{navn:"Mosegolem",hp:48,fart:1.5,skade:8,r:1.3,bel:16,farge:0x6f8f5a,glod:0x9fff6a,str:0.8,modell:"Golem"},
+  romvesen:{navn:"Romvesen",hp:7,fart:3.4,skade:2,r:0.6,bel:5,farge:0x78d26e,str:1.0,modell:"Romvesen"},
+  salamander:{navn:"Ildsalamander",hp:6,fart:3.8,skade:2,r:0.7,bel:5,farge:0xe85a28,str:1.0,modell:"Salamander"},
+  lavagolem:{navn:"Lavagolem",hp:48,fart:1.5,skade:8,r:1.3,bel:16,farge:0x5a4a48,glod:0xff6a1a,str:0.8,modell:"Golem"},
   boss1:{navn:"Superboten",hp:240,fart:1.5,skade:15,r:1.9,bel:80,farge:0xff2e9a,str:2.5,boss:true},
-  boss2:{navn:"Framtidskongen",hp:480,fart:1.3,skade:22,r:2.3,bel:150,farge:0xffc93c,str:3.1,boss:true}
+  gaa:{navn:"Gåmaskinen",hp:520,fart:1.1,skade:22,r:2.6,bel:160,farge:0xdfe6f0,str:3.1,boss:true,modell:"gaa",skyter:true},
+  skogv:{navn:"Skogvokteren",hp:480,fart:1.4,skade:22,r:2.3,bel:150,farge:0x5f8f4a,glod:0x9fff6a,str:1.7,boss:true,modell:"Golem"},
+  sjef:{navn:"Stasjonssjefen",hp:480,fart:1.3,skade:22,r:2.3,bel:150,farge:0x9aa0c0,str:3.1,boss:true,skyter:true},
+  lavak:{navn:"Lavakongen",hp:500,fart:1.3,skade:24,r:2.3,bel:160,farge:0x4a3634,glod:0xff5a10,str:1.8,boss:true,modell:"Golem"}
 };
 const monstre=[];
 function lagMonster(type,x,z,hpFaktor){
-  const T=TYPER[type],s=T.str,g=new THREE.Group(),mat=M(T.farge,{metalness:0.5,roughness:0.4});
-  const kropp=new THREE.Mesh(new THREE.BoxGeometry(1.1*s,1.0*s,0.8*s),mat);kropp.position.y=1.15*s;kropp.castShadow=true;g.add(kropp);
-  const hode=new THREE.Mesh(new THREE.BoxGeometry(0.8*s,0.6*s,0.7*s),M(0x2a2f45,{metalness:0.6}));hode.position.y=1.95*s;hode.castShadow=true;g.add(hode);
-  const oye=new THREE.Mesh(new THREE.BoxGeometry(0.55*s,0.14*s,0.05),M(T.boss?0xff2020:0x3ee6ff,{emissive:T.boss?0xff2020:0x3ee6ff,emissiveIntensity:1.6}));oye.position.set(0,1.98*s,0.36*s);g.add(oye);
-  const ant=new THREE.Mesh(new THREE.CylinderGeometry(0.03*s,0.03*s,0.5*s,4),M(0x999999));ant.position.y=2.45*s;g.add(ant);
-  const lys=new THREE.Mesh(new THREE.SphereGeometry(0.09*s,8,6),M(0xff4040,{emissive:0xff4040,emissiveIntensity:1.5}));lys.position.y=2.72*s;g.add(lys);
-  const ben=[-1,1].map(sd=>{const b=new THREE.Mesh(new THREE.BoxGeometry(0.3*s,0.65*s,0.35*s),M(0x3a3f55));b.position.set(sd*0.3*s,0.33*s,0);b.castShadow=true;g.add(b);return b});
-  if(T.boss){const krone=new THREE.Mesh(new THREE.ConeGeometry(0.45*s,0.5*s,5),M(0xffd700,{metalness:0.8,emissive:0x664400}));krone.position.y=2.5*s;g.add(krone)}
-  const bar=lagLivsbar(Math.max(1.2,1.3*s),3.0*s);g.add(bar);
-  g.scale.setScalar(1.25);g.position.set(x,0,z);scene.add(g);
+  const T=TYPER[type],s=T.str,g=new THREE.Group();let mat,ben=[],hoyde=3.0*s;
+  if(T.modell==="gaa"&&MOD.GaaKropp){
+    const indre=new THREE.Group();indre.rotation.y=Math.PI;g.add(indre);
+    const k=kopi("GaaKropp");k.traverse(o=>{if(o.isMesh&&o.material.name==="Hvit"){o.material=o.material.clone();mat=o.material}});indre.add(k);
+    for(const [bx,bz] of [[1.1,1.3],[-1.1,1.3],[1.1,-1.3],[-1.1,-1.3]]){const b=kopi("GaaBein");b.position.set(bx,3.05,bz);indre.add(b);ben.push(b)}
+    hoyde=5.6;
+  }else if(T.modell==="sykkel"&&MOD.Svevesykkel){
+    const k=kopi("Svevesykkel");k.rotation.y=Math.PI;k.traverse(o=>{if(o.isMesh&&o.material.name==="Oliven"){o.material=o.material.clone();mat=o.material}});g.add(k);g.userData.svev=k;hoyde=2.2;
+  }else if(T.modell&&MOD[T.modell]){
+    const k=kopi(T.modell,s);k.traverse(o=>{if(o.isMesh&&/Tint$/.test(o.material.name)){o.material=o.material.clone();if(o.material.name==="GlodTint"){const f=T.glod||0xff6a1a;o.material.color.setHex(f).convertSRGBToLinear();o.material.emissive.setHex(f).convertSRGBToLinear()}else{o.material.color.setHex(T.farge).convertSRGBToLinear();if(!mat)mat=o.material}}});
+    g.add(k);g.userData.vugg=k;hoyde=new THREE.Box3().setFromObject(k).max.y+0.5;
+    if(T.boss){const krone=new THREE.Mesh(new THREE.ConeGeometry(0.5,0.6,5),M(0xffd700,{metalness:0.8,emissive:0x664400}));krone.position.y=hoyde-0.2;g.add(krone);hoyde+=0.5}
+  }else if(MOD.MonsterKropp){
+    const k=kopi("MonsterKropp",s);k.traverse(o=>{if(o.isMesh&&o.material.name==="MonsterKropp"){o.material=o.material.clone();o.material.color.setHex(T.farge);mat=o.material}});g.add(k);
+    for(const sd of [-1,1]){const b=kopi("MonsterBein",s);b.position.set(sd*0.3*s,0.7*s,0);g.add(b);ben.push(b)}
+    if(T.boss){const krone=new THREE.Mesh(new THREE.ConeGeometry(0.45*s,0.5*s,5),M(0xffd700,{metalness:0.8,emissive:0x664400}));krone.position.y=2.55*s;g.add(krone)}
+  }else{
+    // Reserve hvis modellene ikke lastet
+    mat=M(T.farge,{metalness:0.5,roughness:0.4});
+    const kropp=new THREE.Mesh(new THREE.BoxGeometry(1.1*s,1.0*s,0.8*s),mat);kropp.position.y=1.15*s;kropp.castShadow=true;g.add(kropp);
+    const hode=new THREE.Mesh(new THREE.BoxGeometry(0.8*s,0.6*s,0.7*s),M(0x2a2f45,{metalness:0.6}));hode.position.y=1.95*s;g.add(hode);
+    for(const sd of [-1,1]){const b=new THREE.Mesh(new THREE.BoxGeometry(0.3*s,0.65*s,0.35*s),M(0x3a3f55));b.geometry.translate(0,-0.33*s,0);b.position.set(sd*0.3*s,0.66*s,0);g.add(b);ben.push(b)}
+  }
+  if(!mat)mat=M(T.farge);
+  const bar=lagLivsbar(Math.max(1.2,1.3*Math.min(s,2.6)),hoyde);g.add(bar);
+  if(type!=="gaa")g.scale.setScalar(1.15);
+  g.position.set(x,0,z);scene.add(g);
   const hp=Math.round(T.hp*hpFaktor);
   const mo={type,T,g,mat,ben,bar,x,z,hp,maks:hp,cd:0,fase:Math.random()*6,blink:0,saktere:1};
   settLiv(bar,1);monstre.push(mo);return mo;
 }
 function skadMonster(mo,d,farge=0xffffff){
   if(mo.hp<=0)return;mo.hp-=d;mo.blink=0.12;settLiv(mo.bar,mo.hp/mo.maks);
-  if(mo.hp<=0){gnist(mo.x,1.2*mo.T.str,mo.z,mo.T.farge,mo.T.boss?30:10);slippMynter(mo.x,mo.z,mo.T.bel);scene.remove(mo.g);monstre.splice(monstre.indexOf(mo),1);if(mo.T.boss)melding("💥 Du slo "+mo.T.navn+"!")}
+  if(mo.hp<=0){gnist(mo.x,1.2*Math.min(mo.T.str,2.5),mo.z,mo.T.farge,mo.T.boss?30:10);slippMynter(mo.x,mo.z,mo.T.bel);scene.remove(mo.g);monstre.splice(monstre.indexOf(mo),1);if(mo.T.boss)melding("💥 Du slo "+mo.T.navn+"!")}
 }
 
 // ================= Mynter =================
@@ -707,24 +847,29 @@ function nærmeste(x,z,rek){let best=null,bd=rek;for(const mo of monstre){const 
 let bolge=1,fase="bygg",koe=[],spawnT=0,nedtelling=8,started=false,paused=false,seier=false;
 const MAKS_BOLGE=10;
 function lagBolge(n){
-  const k=[];const antall=3+n*2;
-  for(let i=0;i<antall;i++){let t="smaa";if(n>=2&&i%3===1)t="kamp";if(n>=4&&i%5===4)t="tank";if(n>=7&&i%4===2)t="kamp";if(n>=8&&i%6===0)t="tank";if(n>=2&&i%4===3)t="skudd";k.push(t)}
-  if(n===5)k.push("boss1");if(n===10){k.push("boss1");k.push("boss2")}
+  const k=[];const antall=3+n*2,ekstra=V().ekstra;
+  for(let i=0;i<antall;i++){let t="smaa";if(n>=2&&i%3===1)t="kamp";if(n>=4&&i%5===4)t="tank";if(n>=7&&i%4===2)t="kamp";if(n>=8&&i%6===0)t="tank";if(n>=2&&i%4===3)t="skudd";if(n>=2&&i%3===2)t=ekstra;k.push((V().fiender||{})[t]||t)}
+  if(n===5)k.push("boss1");if(n===10){k.push("boss1");k.push(V().boss2)}
   return k;
 }
-function kantPunkt(){const s=Math.floor(Math.random()*4),u=Math.random()*2-1;return s===0?[u*KX,-KZ-1]:s===1?[u*KX,KZ+1]:s===2?[-KX-1,u*KZ]:[KX+1,u*KZ]}
+function kantPunkt(){for(let t=0;t<20;t++){const s=Math.floor(Math.random()*4),u=Math.random()*2-1;const p=s===0?[u*KX,-KZ-1]:s===1?[u*KX,KZ+1]:s===2?[-KX-1,u*KZ]:[KX+1,u*KZ];if(!iHinder(p[0],p[1],1.5))return p}return[0,-KZ-1]}
 function startBolge(){
   if(fase!=="bygg"||!started||paused)return;
   lagre();fase="kamp";koe=lagBolge(bolge);spawnT=0.5;
-  melding(bolge===MAKS_BOLGE?"⚠️ Siste bølge! Framtidskongen kommer!":bolge===5?"⚠️ Bølge 5: Superboten kommer!":"🌊 Bølge "+bolge+" kommer!");
+  melding(bolge===MAKS_BOLGE?"⚠️ Siste bølge! "+TYPER[V().boss2].navn+" kommer!":bolge===5?"⚠️ Bølge 5: Superboten kommer!":"🌊 Bølge "+bolge+" kommer!");
   oppdaterHud();
 }
+function refunderBygg(){let sum=0;for(const b of bygg)sum+=b.brukt||0;while(bygg.length)fjernBygg(bygg[0]);mynter+=sum;return sum}
 function bolgeFerdig(){
-  const bonus=40+bolge*8;mynter+=bonus;samleAlleMynter();
+  const bonus=40+bolge*8+verdenIdx*10;mynter+=bonus;samleAlleMynter();
   if(skjold.niv>0)skjold.hp=SKJOLD_NIV[skjold.niv].maks;
   for(const b of bygg)if(b.t==="hjelper"){b.nede=false;b.hp=b.maks;settLiv(b.bar,1);b.g.rotation.z=0}
   helt.hp=helt.maks;
-  if(bolge>=MAKS_BOLGE){seier=true;fase="slutt";bolge=MAKS_BOLGE+1;lagre();visSlutt(true);return}
+  if(bolge>=MAKS_BOLGE){
+    ferdigVerden[verdenIdx]=true;const forrige=verdenIdx;fase="slutt";
+    if(verdenIdx<VERDENER.length-1){hoyesteVerden=Math.max(hoyesteVerden,verdenIdx+1);visSlutt(true,forrige);refunderBygg();verdenIdx=forrige+1;bolge=1;lagreNå();}
+    else{seier=true;bolge=MAKS_BOLGE;lagreNå();visSlutt(true,forrige)}
+    return}
   melding("🎉 Bølge "+bolge+" klart! +"+bonus+" 🪙");
   bolge++;fase="bygg";nedtelling=6;lagre();oppdaterHud();
 }
@@ -732,32 +877,48 @@ function heltFalt(){fase="slutt";visSlutt(false)}
 
 // ================= Lagring =================
 // Lagres når en bølge starter og når den er klart. Taper du, starter du bølgen på nytt fra lagringen.
-function tilstand(){return{v:1,verden:1,bolge,mynter,baseNiv:basen.niv,skjoldNiv:skjold.niv,seier,
+// v2 (0.5.0): fire verdener. Bygg hører til verdenen; bytter du verden, får du alle myntene tilbake.
+function tilstand(){return{v:2,verden:verdenIdx,hoyeste:hoyesteVerden,ferdig:ferdigVerden.slice(),bolge,mynter,baseNiv:basen.niv,skjoldNiv:skjold.niv,seier,
   bygg:bygg.map(b=>({t:b.t,x:+b.hx.toFixed(2),z:+b.hz.toFixed(2),niv:b.niv,v:b.v,hp:b.t==="mur"?Math.round(b.hp):undefined,brukt:b.brukt}))}}
-function lagre(){if(fase==="kamp")return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(tilstand()))}catch(e){}}
+let lastet=false; // ikke lagre før lagringen er lest inn (ellers kan en tidlig pagehide overskrive fremgangen)
+function lagreNå(){if(!lastet)return;try{localStorage.setItem(SAVE_KEY,JSON.stringify(tilstand()))}catch(e){}}
+function lagre(){if(fase==="kamp")return;lagreNå()}
 window.save=()=>lagre();
 function lesLagring(){let raw=null;try{raw=localStorage.getItem(SAVE_KEY)}catch(e){}if(!raw)return null;
-  try{const s=JSON.parse(raw);if(!s||s.v!==1)throw 0;return s}catch(e){try{localStorage.setItem(SAVE_KEY+"-kopi",raw)}catch(e2){}console.warn("Lagringen kunne ikke leses. En kopi ligger i "+SAVE_KEY+"-kopi.");return null}}
+  try{const s=JSON.parse(raw);if(!s||(s.v!==1&&s.v!==2))throw 0;
+    if(s.v===1){let sum=0;(Array.isArray(s.bygg)?s.bygg:[]).forEach(b=>{if(b&&Number.isFinite(b.brukt))sum+=b.brukt});return{v:2,verden:0,hoyeste:0,ferdig:[false,false,false,false],bolge:1,mynter:(Number.isFinite(s.mynter)?s.mynter:250)+sum,baseNiv:s.baseNiv,skjoldNiv:s.skjoldNiv,seier:false,bygg:[]}}
+    return s}
+  catch(e){try{localStorage.setItem(SAVE_KEY+"-kopi",raw)}catch(e2){}console.warn("Lagringen kunne ikke leses. En kopi ligger i "+SAVE_KEY+"-kopi.");return null}}
 function nullstillVerden(){
   while(monstre.length){scene.remove(monstre[0].g);monstre.shift()}
   while(bygg.length)fjernBygg(bygg[0]);
   while(myntListe.length){scene.remove(myntListe[0].m);myntListe.shift()}
-  while(kuler.length){scene.remove(kuler[0].m);kuler.shift()}
-  koe=[];while(fSkudd.length){scene.remove(fSkudd[0].m);fSkudd.shift()}if(kast){scene.remove(kast.g);kast=null;if(helt.sverd)helt.sverd.visible=true}
+  for(const l of [kuler,rette,fSkudd,granater])while(l.length){scene.remove(l[0].m);l.shift()}
+  koe=[];
 }
 function brukLagring(s){
   nullstillVerden();
   const ok=(n,a,b)=>Number.isFinite(n)&&n>=a&&n<=b;
-  if(!s){bolge=1;mynter=250;basen.niv=1;skjold.niv=0;seier=false}
+  if(!s){bolge=1;mynter=250;basen.niv=1;skjold.niv=0;seier=false;verdenIdx=0;hoyesteVerden=0;ferdigVerden=[false,false,false,false]}
   else{
+    verdenIdx=ok(s.verden,0,VERDENER.length-1)?Math.floor(s.verden):0;hoyesteVerden=Math.max(verdenIdx,ok(s.hoyeste,0,VERDENER.length-1)?Math.floor(s.hoyeste):0);
+    ferdigVerden=VERDENER.map((_,i)=>!!(Array.isArray(s.ferdig)&&s.ferdig[i]));
     bolge=ok(s.bolge,1,MAKS_BOLGE+1)?Math.floor(s.bolge):1;mynter=ok(s.mynter,0,1e7)?Math.floor(s.mynter):250;
     basen.niv=ok(s.baseNiv,1,3)?Math.floor(s.baseNiv):1;
     skjold.niv=ok(s.skjoldNiv,0,3)?Math.floor(s.skjoldNiv):0;seier=!!s.seier;
-    (Array.isArray(s.bygg)?s.bygg:[]).slice(0,200).forEach(o=>{if(!o||!BY[o.t]||BY[o.t].handling||!ok(o.x,-KX,KX)||!ok(o.z,-KZ,KZ))return;const n=ok(o.niv,1,BY[o.t].niv.length)?Math.floor(o.niv):1;const b=nyttBygg(o.t,o.x,o.z,n,ok(o.v,0,3)?Math.floor(o.v):0);b.brukt=ok(o.brukt,0,1e6)?o.brukt:BY[o.t].pris;if(o.t==="mur"&&ok(o.hp,1,b.maks)){b.hp=o.hp;settLiv(b.bar,b.hp/b.maks)}});
   }
+  byggVerden(verdenIdx);
+  if(s)(Array.isArray(s.bygg)?s.bygg:[]).slice(0,200).forEach(o=>{if(!o||!BY[o.t]||BY[o.t].handling||!ok(o.x,-KX,KX)||!ok(o.z,-KZ,KZ))return;const n=ok(o.niv,1,BY[o.t].niv.length)?Math.floor(o.niv):1;const b=nyttBygg(o.t,o.x,o.z,n,ok(o.v,0,3)?Math.floor(o.v):0);b.brukt=ok(o.brukt,0,1e6)?o.brukt:BY[o.t].pris;if(o.t==="mur"&&ok(o.hp,1,b.maks)){b.hp=o.hp;settLiv(b.bar,b.hp/b.maks)}});
   if(bolge>MAKS_BOLGE){bolge=MAKS_BOLGE;}
   skjold.hp=skjold.niv?SKJOLD_NIV[skjold.niv].maks:0;
-  helt.maks=BASE_NIV[basen.niv].maks;helt.x=0;helt.z=0;helt.hp=helt.maks;helt.nede=0;spillR("Idle");fase="bygg";nedtelling=6;oppdaterHud();oppdaterByggLinje();
+  helt.maks=BASE_NIV[basen.niv].maks;helt.x=0;helt.z=0;skyvUt(helt,1);helt.hp=helt.maks;helt.nede=0;spillR("Idle");fase="bygg";nedtelling=6;oppdaterHud();oppdaterByggLinje();
+}
+function byttVerden(i){
+  if(i<0||i>hoyesteVerden)return;
+  const tilbake=refunderBygg();nullstillVerden();verdenIdx=i;bolge=1;seier=false;byggVerden(i);
+  helt.x=0;helt.z=0;skyvUt(helt,1);helt.hp=helt.maks;helt.nede=0;spillR("Idle");if(skjold.niv)skjold.hp=SKJOLD_NIV[skjold.niv].maks;
+  fase="bygg";nedtelling=10;lagreNå();oppdaterHud();
+  melding(V().ik+" "+V().navn+"! "+V().tekst+(tilbake?" Du fikk "+tilbake+" 🪙 tilbake for byggene.":""),5000);
 }
 addEventListener("pagehide",()=>lagre());
 
@@ -766,21 +927,38 @@ let meldT=0;function melding(t,ms=2600){const m=$("melding");m.textContent=t;m.c
 function oppdaterHud(){
   $("mynter").textContent=mynter;
   const bl=$("heltLiv");bl.textContent=Math.ceil(Math.max(0,helt.hp))+"/"+helt.maks;bl.className=helt.hp<helt.maks*0.3?"lav":"";
-  $("bolge").textContent=Math.min(bolge,MAKS_BOLGE);
+  $("bolge").textContent=Math.min(bolge,MAKS_BOLGE);$("verdenIk").textContent=V().ik;
   $("pSkjold").hidden=!skjold.niv;$("skjold").textContent=Math.ceil(skjold.hp);
   $("mana").textContent=Math.floor(kamp.mana);
   oppdaterByggLinje();
 }
-const gameModalOpen=()=>$("infoLag").classList.contains("vis")||$("sluttLag").classList.contains("vis");
-function visSlutt(vant){
+const gameModalOpen=()=>["infoLag","sluttLag","verdenLag"].some(id=>$(id).classList.contains("vis"));
+let sluttNeste=null;
+function visSlutt(vant,klartIdx){
   paused=true;avbrytPlassering();lukkByggLinje();
-  $("sluttTittel").textContent=vant?"🏆 Du klarte Framtiden!":"😵 Roboten ble slått ut!";
-  $("sluttTekst").textContent=vant?"Alle ti bølgene er slått, og Framtidskongen er borte! Verden 2 kommer snart.":"Robotmonstrene tok roboten din på bølge "+bolge+". Tips: løp unna når mange kommer, bygg lasertårn, og stå inni kraftskjoldet.";
-  $("sluttIgjen").textContent=vant?"🔁 Spill bølge 10 en gang til":"▶ Prøv bølge "+bolge+" igjen";
+  const W=VERDENER[vant?klartIdx:verdenIdx],neste=vant?VERDENER[klartIdx+1]:null;sluttNeste=neste?klartIdx+1:null;
+  $("sluttTittel").textContent=vant?"🏆 Du klarte "+W.navn+"!":"😵 Roboten ble slått ut!";
+  $("sluttTekst").textContent=vant?(neste?"Alle ti bølgene er slått, og "+TYPER[W.boss2].navn+" er borte! Neste verden er åpen: "+neste.ik+" "+neste.navn+".":"Du har klart alle de fire verdenene! Du er en ekte romhelt! 🌟")
+    :"Robotmonstrene tok roboten din på bølge "+bolge+". Tips: gjem deg bak hindre, bygg lasertårn, og bruk kraftdytt når mange kommer nær.";
+  $("sluttIgjen").textContent=vant?(neste?"▶ Til "+neste.ik+" "+neste.navn:"🔁 Spill bølge 10 en gang til"):"▶ Prøv bølge "+bolge+" igjen";
+  $("sluttNy").textContent="🌍 Velg verden";
   $("sluttLag").classList.add("vis");$("sluttIgjen").focus();
 }
-$("sluttIgjen").addEventListener("click",()=>{const s=lesLagring();if(s&&seier){s.bolge=MAKS_BOLGE}brukLagring(s);if(seier){bolge=MAKS_BOLGE}$("sluttLag").classList.remove("vis");paused=false;oppdaterHud()});
-$("sluttNy").addEventListener("click",()=>{brukLagring(null);lagre();$("sluttLag").classList.remove("vis");paused=false;melding("🌆 Verden 1: Framtiden. Bygg et lasertårn!")});
+$("sluttIgjen").addEventListener("click",()=>{
+  $("sluttLag").classList.remove("vis");
+  if(sluttNeste!=null){const n=sluttNeste;sluttNeste=null;hoyesteVerden=Math.max(hoyesteVerden,n);byttVerden(n)}
+  else{const s=lesLagring();brukLagring(s);if(seier)bolge=MAKS_BOLGE}
+  paused=false;last=performance.now();oppdaterHud()});
+$("sluttNy").addEventListener("click",()=>{$("sluttLag").classList.remove("vis");if(sluttNeste!=null){hoyesteVerden=Math.max(hoyesteVerden,sluttNeste);sluttNeste=null}apneVerdenValg()});
+// Velg verden (samme prinsipp som «Velg tidsepoke» i Era Defenders 1)
+function apneVerdenValg(fraStart){
+  paused=true;const l=$("verdenListe");l.innerHTML="";
+  VERDENER.forEach((W,i)=>{const b=document.createElement("button");b.type="button";b.className="valg"+(i===verdenIdx?" hoved":"");const last=i>hoyesteVerden;
+    b.disabled=last;b.textContent=(i+1)+". "+W.ik+" "+W.navn+" – "+(last?"🔒 Låst":i===verdenIdx?"📍 Her er du":ferdigVerden[i]?"✅ Klart":"▶ Åpen");
+    b.addEventListener("click",()=>{$("verdenLag").classList.remove("vis");if(i!==verdenIdx)byttVerden(i);else if(fase==="slutt")brukLagring(lesLagring());if(fraStart)startSpill();else{paused=false;last=performance.now()}});l.appendChild(b)});
+  $("verdenLag").dataset.fraStart=fraStart?"1":"";$("verdenLag").classList.add("vis");(l.querySelector(".hoved")||l.firstChild).focus();
+}
+$("verdenTilbake").addEventListener("click",()=>{$("verdenLag").classList.remove("vis");if($("verdenLag").dataset.fraStart){$("start").classList.add("vis");return}if(fase==="slutt")brukLagring(lesLagring());paused=false;last=performance.now()});
 
 // ================= Byggelinja og plassering =================
 let byggApen=false,valgt=null,spøkelse=null,ring=null,peker={x:0,z:0,på:false};
@@ -824,6 +1002,7 @@ function avbrytPlassering(){valgt=null;if(spøkelse){scene.remove(spøkelse);sp�
 function snapp(v){return Math.round(v*2)/2}
 function kanPlassere(id,x,z){
   const D=BY[id];if(Math.abs(x)>KX-1||Math.abs(z)>KZ-1)return false;
+  if(iHinder(x,z,Math.max(0.5,D.r*0.8))||iFare(x,z))return false;
   for(const b of bygg){if(b.t==="felle"&&id!=="felle")continue;if(id==="felle"&&b.t!=="felle")continue;
     const rB=BY[b.t].r;if(avst(x,z,b.hx,b.hz)<(b.t==="mur"&&id==="mur"?2.6:rB+D.r))return false}
   return true;
@@ -875,7 +1054,7 @@ addEventListener("keydown",e=>{
   else if(k==="Escape"&&valgt){e.preventDefault();avbrytPlassering()}
 });
 addEventListener("keyup",e=>taster.delete(e.code));
-function clearInput(){taster.clear();kamp.holdt.sverd=kamp.holdt.magi=kamp.holdt.pistol=false;joy.x=joy.y=0;joy.id=null;$("knob").style.transform=""}
+function clearInput(){taster.clear();kamp.holdt.sverd=kamp.holdt.magi=kamp.holdt.pistol=false;if(kamp.mus)kamp.mus.ned=false;joy.x=joy.y=0;joy.id=null;$("knob").style.transform=""}
 // Styrespak (berøring)
 const joy={x:0,y:0,id:null};
 (function(){const j=$("joy"),kn=$("knob");
@@ -891,8 +1070,9 @@ function bakkePunkt(cx,cy){ndc.set(cx/innerWidth*2-1,-(cy/innerHeight)*2+1);ray.
 let ned=null;
 renderer.domElement.addEventListener("contextmenu",e=>e.preventDefault());
 renderer.domElement.addEventListener("pointerdown",e=>{if(!started||paused)return;
-  if(!byggApen&&e.pointerType==="mouse"){const p=bakkePunkt(e.clientX,e.clientY);if(p){const dx=p.x-helt.x,dz=p.z-helt.z,l=Math.hypot(dx,dz)||1;if(e.button===2)skytPistol([dx/l,dz/l]);else if(e.button===0)skytMagi([dx/l,dz/l])}return}ned={x:e.clientX,y:e.clientY,id:e.pointerId};const p=bakkePunkt(e.clientX,e.clientY);if(p){peker.x=p.x;peker.z=p.z;peker.på=true;flyttSpøkelse(p.x,p.z)}});
-renderer.domElement.addEventListener("pointermove",e=>{const p=bakkePunkt(e.clientX,e.clientY);if(!p)return;peker.x=p.x;peker.z=p.z;peker.på=true;if(!paused)flyttSpøkelse(p.x,p.z)});
+  if(!byggApen&&e.pointerType==="mouse"){const p=bakkePunkt(e.clientX,e.clientY);if(p){kamp.mus={x:p.x,z:p.z,ned:e.button===0};if(e.button===2)skytMagi(musRetning());else if(e.button===0)skytPistol(musRetning())}return}ned={x:e.clientX,y:e.clientY,id:e.pointerId};const p=bakkePunkt(e.clientX,e.clientY);if(p){peker.x=p.x;peker.z=p.z;peker.på=true;flyttSpøkelse(p.x,p.z)}});
+renderer.domElement.addEventListener("pointermove",e=>{const p=bakkePunkt(e.clientX,e.clientY);if(!p)return;if(kamp.mus&&e.pointerType==="mouse"){kamp.mus.x=p.x;kamp.mus.z=p.z}peker.x=p.x;peker.z=p.z;peker.på=true;if(!paused)flyttSpøkelse(p.x,p.z)});
+addEventListener("pointerup",e=>{if(kamp.mus&&e.button===0)kamp.mus.ned=false});
 renderer.domElement.addEventListener("pointerup",e=>{if(!ned||e.pointerId!==ned.id)return;const kort=Math.hypot(e.clientX-ned.x,e.clientY-ned.y)<(TOUCH?40:12);ned=null;if(!kort||!started||paused)return;
   const p=bakkePunkt(e.clientX,e.clientY);if(!p)return;
   if(valgt){plasser(p.x,p.z);return}
@@ -902,88 +1082,82 @@ renderer.domElement.addEventListener("pointerup",e=>{if(!ned||e.pointerId!==ned.
 });
 renderer.domElement.addEventListener("pointerleave",()=>{peker.på=false;if(spøkelse&&!TOUCH){spøkelse.visible=false;if(ring)ring.visible=false}});
 
-// ================= Kamp som i Era Defenders 1: lasersverd, plasmamagi og laserpistol =================
-// Romridderens våpen. Mellomrom/⚔️ = lasersverd (slår også laserskudd tilbake), E/klikk/🌀 = kraftdytt (koster kraft), F/høyreklikk/🪃 = sverdkast.
-const VAAPEN={sverd:{tid:0.33,rek:2.8},magi:{tid:0.8,kost:25,rek:6,dytt:4.5},pistol:{tid:1.3,fart:22,rek:10}};
-const kamp={mana:100,maksMana:100,manaFart:16,sverdCd:0,magiCd:0,pistolCd:0,snuT:0,holdt:{sverd:false,magi:false,pistol:false}};
+// ================= Kamp: laserpistol, kraftdytt og plasmagranat =================
+// Evens ønske (v0.5.0): roboten har laserpistol. Mellomrom/klikk (hold inne)/🔫 = laserpistol,
+// E/høyreklikk/🌀 = kraftdytt (koster kraft), F/💣 = plasmagranat. Skudd stoppes av hindre, så du kan gjemme deg.
+const VAAPEN={pistol:{tid:0.2,fart:36,liv:0.6},magi:{tid:0.8,kost:25,rek:6,dytt:4.5},granat:{tid:2.5,flyTid:0.7,rek:3.2,avst:9}};
+const kamp={mana:100,maksMana:100,manaFart:16,pistolCd:0,magiCd:0,granatCd:0,snuT:0,mus:null,holdt:{sverd:false,magi:false,pistol:false}};
 helt.rx=0;helt.rz=1;
 function snu(dx,dz){const l=Math.hypot(dx,dz)||1;helt.rx=dx/l;helt.rz=dz/l;helt.g.rotation.y=Math.atan2(dx,dz)}
-function siktRetning(){const mo=nærmeste(helt.x,helt.z,14);if(mo){const dx=mo.x-helt.x,dz=mo.z-helt.z,l=Math.hypot(dx,dz)||1;return[dx/l,dz/l]}return[helt.rx,helt.rz]}
+function siktRetning(){const mo=nærmeste(helt.x,helt.z,16);if(mo){const dx=mo.x-helt.x,dz=mo.z-helt.z,l=Math.hypot(dx,dz)||1;return[dx/l,dz/l]}return[helt.rx,helt.rz]}
+function musRetning(){if(!kamp.mus)return null;const dx=kamp.mus.x-helt.x,dz=kamp.mus.z-helt.z,l=Math.hypot(dx,dz)||1;return[dx/l,dz/l]}
 const kanSlass=()=>started&&!paused&&helt.nede<=0&&fase!=="slutt";
 const effekter=[];
-function sverdBue(dx,dz){
-  const L=Math.PI*1.1,geo=new THREE.RingGeometry(0.7,VAAPEN.sverd.rek+0.3,24,1,-Math.PI/2-L/2,L);
-  const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:SVERD_FARGE,transparent:true,opacity:0.75,side:THREE.DoubleSide,depthWrite:false}));
-  m.rotation.x=-Math.PI/2;const g=new THREE.Group();g.add(m);g.position.set(helt.x,1.1,helt.z);g.rotation.y=Math.atan2(dx,dz);scene.add(g);effekter.push({m:g,mat:m.material,geo,t:0.15,maks:0.15});
+const rette=[],pistolGeo=new THREE.BoxGeometry(0.16,0.16,1.0),pistolMat=new THREE.MeshBasicMaterial({color:0x8ff4ff}),pistolGlod=new THREE.MeshBasicMaterial({color:0x3ee6ff,transparent:true,opacity:0.5,blending:THREE.AdditiveBlending,depthWrite:false}),glodGeo=new THREE.BoxGeometry(0.4,0.4,1.3);
+function skytPistol(dir){
+  if(kamp.pistolCd>0||!kanSlass())return;kamp.pistolCd=VAAPEN.pistol.tid;const [dx,dz]=dir||siktRetning();snu(dx,dz);kamp.snuT=0.3;
+  const m=new THREE.Mesh(pistolGeo,pistolMat);m.add(new THREE.Mesh(glodGeo,pistolGlod));m.position.set(helt.x+dx*1.1,1.45,helt.z+dz*1.1);m.rotation.y=Math.atan2(dx,dz);scene.add(m);
+  rette.push({m,vx:dx*VAAPEN.pistol.fart,vz:dz*VAAPEN.pistol.fart,t:VAAPEN.pistol.liv,skade:BASE_NIV[basen.niv].pistol});
+  gnist(helt.x+dx*1.2,1.45,helt.z+dz*1.2,0x9ff8ff,1);
 }
-function sverdHugg(){
-  if(kamp.sverdCd>0||kast||!kanSlass())return;kamp.sverdCd=VAAPEN.sverd.tid;
-  const [dx,dz]=nærmeste(helt.x,helt.z,VAAPEN.sverd.rek+2)?siktRetning():[helt.rx,helt.rz];snu(dx,dz);kamp.snuT=0.25;spillEn("Punch");
-  const sk=BASE_NIV[basen.niv].sverd;
-  for(const mo of monstre.slice()){const ex=mo.x-helt.x,ez=mo.z-helt.z,d=Math.hypot(ex,ez);
-    if(d<VAAPEN.sverd.rek+mo.T.r*1.25&&(ex*dx+ez*dz)/(d||1)>-0.2){if(!mo.T.boss){mo.x+=ex/(d||1)*0.8;mo.z+=ez/(d||1)*0.8}gnist(mo.x,1.2,mo.z,0x7dfcff,5);skadMonster(mo,sk)}}
-  sverdBue(dx,dz);
-}
-const rette=[],magiGeo=new THREE.SphereGeometry(0.38,12,10),magiMat=M(0xd27dff,{emissive:0xb040ff,emissiveIntensity:2}),pistolGeo=new THREE.BoxGeometry(0.14,0.14,0.9),pistolMat=M(0x9ff8ff,{emissive:0x3ee6ff,emissiveIntensity:2.5});
-function nyttSkudd(type,dx,dz,fart,liv,skade,sprut){const m=new THREE.Mesh(type==="magi"?magiGeo:pistolGeo,type==="magi"?magiMat:pistolMat);m.position.set(helt.x+dx*0.9,1.5,helt.z+dz*0.9);m.rotation.y=Math.atan2(dx,dz);scene.add(m);rette.push({m,vx:dx*fart,vz:dz*fart,t:liv,skade,sprut:sprut||0,type})}
-// 🌀 Kraftdytt: en bølge som dytter monstrene foran roboten langt bakover
+// 🌀 Kraftdytt: en bølge som dytter monstrene foran roboten langt bakover og sender laserskudd tilbake
 function skytMagi(dir){
   if(kamp.magiCd>0||!kanSlass())return;if(kamp.mana<VAAPEN.magi.kost){if(!kamp.manaVarslet){kamp.manaVarslet=true;melding("🌀 Kraften må lade seg opp litt!",1600)}return}
   kamp.magiCd=VAAPEN.magi.tid;kamp.mana-=VAAPEN.magi.kost;const [dx,dz]=dir||siktRetning();snu(dx,dz);kamp.snuT=0.35;spillEn("Punch");
   const sk=BASE_NIV[basen.niv].magi;
   for(const mo of monstre.slice()){const ex=mo.x-helt.x,ez=mo.z-helt.z,d=Math.hypot(ex,ez)||1;
-    if(d<VAAPEN.magi.rek+mo.T.r&&(ex*dx+ez*dz)/d>0.25){const k=mo.T.boss?0.3:1;mo.x+=ex/d*VAAPEN.magi.dytt*k;mo.z+=ez/d*VAAPEN.magi.dytt*k;mo.x=Math.max(-KX-1,Math.min(KX+1,mo.x));mo.z=Math.max(-KZ-1,Math.min(KZ+1,mo.z));mo.cd=Math.max(mo.cd,0.8);gnist(mo.x,1.2,mo.z,0x9fd8ff,4);skadMonster(mo,sk)}}
+    if(d<VAAPEN.magi.rek+mo.T.r&&(ex*dx+ez*dz)/d>0.25){const k=mo.T.boss?0.3:1;mo.x+=ex/d*VAAPEN.magi.dytt*k;mo.z+=ez/d*VAAPEN.magi.dytt*k;mo.x=Math.max(-KX-1,Math.min(KX+1,mo.x));mo.z=Math.max(-KZ-1,Math.min(KZ+1,mo.z));skyvUt(mo,mo.T.r*0.8);mo.cd=Math.max(mo.cd,0.8);gnist(mo.x,1.2,mo.z,0x9fd8ff,4);skadMonster(mo,sk)}}
   for(const f of fSkudd)if(avst(f.m.position.x,f.m.position.z,helt.x,helt.z)<VAAPEN.magi.rek)slaaTilbake(f);
   const L=Math.PI*0.75,geo=new THREE.RingGeometry(0.8,VAAPEN.magi.rek,32,1,-Math.PI/2-L/2,L);
   const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0x9fd8ff,transparent:true,opacity:0.6,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-Math.PI/2;
   const g=new THREE.Group();g.add(m);g.position.set(helt.x,0.6,helt.z);g.rotation.y=Math.atan2(dx,dz);scene.add(g);effekter.push({m:g,mat:m.material,geo,t:0.3,maks:0.3,y:0.6});
 }
-// 🪃 Sverdkast: lasersverdet snurrer ut og kommer tilbake, og treffer monstrene begge veier
-let kast=null;
-function skytPistol(dir){
-  if(kamp.pistolCd>0||kast||!kanSlass())return;kamp.pistolCd=VAAPEN.pistol.tid;const [dx,dz]=dir||siktRetning();snu(dx,dz);kamp.snuT=0.3;spillEn("Punch");
-  const g=new THREE.Group();const kj=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,2.0,8),new THREE.MeshBasicMaterial({color:0xffffff}));kj.rotation.z=Math.PI/2;g.add(kj);
-  const gl=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.14,2.1,10),new THREE.MeshBasicMaterial({color:SVERD_FARGE,transparent:true,opacity:0.55,depthWrite:false,blending:THREE.AdditiveBlending}));gl.rotation.z=Math.PI/2;g.add(gl);
-  g.position.set(helt.x,1.3,helt.z);scene.add(g);if(helt.sverd)helt.sverd.visible=false;
-  kast={g,dx,dz,ut:true,s:0,truffet:new Set()};
+// 💣 Plasmagranat: kastes i en bue og smeller der den lander
+const granater=[],granatGeo=new THREE.SphereGeometry(0.3,12,8),granatMat=M(0xff4fd8,{emissive:0xff2fc0,emissiveIntensity:1.8});
+function kastGranat(dir){
+  if(kamp.granatCd>0||!kanSlass())return;kamp.granatCd=VAAPEN.granat.tid;
+  let tx,tz;if(dir&&kamp.mus){tx=kamp.mus.x;tz=kamp.mus.z}else{const mo=nærmeste(helt.x,helt.z,14);if(mo){tx=mo.x;tz=mo.z}else{tx=helt.x+helt.rx*VAAPEN.granat.avst;tz=helt.z+helt.rz*VAAPEN.granat.avst}}
+  const dx=tx-helt.x,dz=tz-helt.z,l=Math.hypot(dx,dz)||1;if(l>12){tx=helt.x+dx/l*12;tz=helt.z+dz/l*12}snu(dx,dz);kamp.snuT=0.35;spillEn("Punch");
+  const m=new THREE.Mesh(granatGeo,granatMat);m.position.set(helt.x,1.6,helt.z);scene.add(m);granater.push({m,fx:helt.x,fz:helt.z,tx,tz,t:0});
 }
-function kastOppdater(dt){
-  if(!kast)return;const k=kast;k.g.rotation.y+=dt*(RM?6:18);
-  if(k.ut){k.s+=VAAPEN.pistol.fart*dt;k.g.position.set(helt.x+k.dx*k.s,1.3,helt.z+k.dz*k.s);if(k.s>=VAAPEN.pistol.rek){k.ut=false;k.truffet.clear()}}
-  else{const dx=helt.x-k.g.position.x,dz=helt.z-k.g.position.z,d=Math.hypot(dx,dz);const st=Math.min(d,VAAPEN.pistol.fart*1.2*dt);k.g.position.x+=dx/(d||1)*st;k.g.position.z+=dz/(d||1)*st;
-    if(d<0.8){scene.remove(k.g);kast=null;if(helt.sverd)helt.sverd.visible=true;return}}
-  const px=k.g.position.x,pz=k.g.position.z;
-  for(const mo of monstre.slice())if(!k.truffet.has(mo)&&avst(px,pz,mo.x,mo.z)<1.1+mo.T.r){k.truffet.add(mo);gnist(mo.x,1.2,mo.z,SVERD_FARGE,5);skadMonster(mo,BASE_NIV[basen.niv].pistol*2)}
-  for(const f of fSkudd)if(avst(px,pz,f.m.position.x,f.m.position.z)<1.2)slaaTilbake(f);
-}
-// Laserskudd fra skuddbotene. Sving lasersverdet (eller bruk kraftdytt) når de kommer, så går de tilbake.
-const fSkudd=[],fGeo=new THREE.BoxGeometry(0.12,0.12,0.9),fMat=new THREE.MeshBasicMaterial({color:0xff3b3b});
-function fiendeSkudd(mo){const dx=helt.x-mo.x,dz=helt.z-mo.z,l=Math.hypot(dx,dz)||1;const m=new THREE.Mesh(fGeo,fMat);m.position.set(mo.x+dx/l,1.5*mo.T.str,mo.z+dz/l);m.rotation.y=Math.atan2(dx,dz);scene.add(m);fSkudd.push({m,vx:dx/l*13,vz:dz/l*13,t:2,fra:mo,tilbake:false,skade:mo.T.skade+2})}
-function slaaTilbake(f){if(f.tilbake)return;f.tilbake=true;const mo=f.fra,tx=(mo&&monstre.includes(mo)?mo.x:f.m.position.x-f.vx),tz=(mo&&monstre.includes(mo)?mo.z:f.m.position.z-f.vz),dx=tx-f.m.position.x,dz=tz-f.m.position.z,l=Math.hypot(dx,dz)||1;f.vx=dx/l*18;f.vz=dz/l*18;f.t=1.5;f.m.material=pistolMat;f.m.rotation.y=Math.atan2(dx,dz);gnist(f.m.position.x,1.5,f.m.position.z,SVERD_FARGE,6);kamp.blokkert=(kamp.blokkert||0)+1;if(kamp.blokkert===1)melding("⚔️ Du slo laserskuddet tilbake!",1800)}
-function fSkuddOppdater(dt){
-  for(let i=fSkudd.length-1;i>=0;i--){const f=fSkudd[i];f.t-=dt;f.m.position.x+=f.vx*dt;f.m.position.z+=f.vz*dt;const px=f.m.position.x,pz=f.m.position.z;let borte=f.t<=0;
-    if(!f.tilbake&&helt.nede<=0&&avst(px,pz,helt.x,helt.z)<0.9){
-      if(kamp.sverdCd>0&&!kast)slaaTilbake(f);
-      else{borte=true;if(skjoldAktiv()){skjold.hp=Math.max(0,skjold.hp-f.skade);gnist(px,1.5,pz,0x56b8ff,4)}else{helt.hp-=f.skade;gnist(px,1.5,pz,0xff3b3b,4);if(helt.hp<=0){helt.hp=0;helt.nede=1.6;gnist(helt.x,1,helt.z,0xffcc00,20);spillEn("Death")}}oppdaterHud()}}
-    else if(f.tilbake){for(const mo of monstre)if(avst(px,pz,mo.x,mo.z)<0.5+mo.T.r){skadMonster(mo,f.skade*2);borte=true;break}}
-    if(borte){scene.remove(f.m);fSkudd.splice(i,1)}}
+function smell(x,z){const rek=VAAPEN.granat.rek,sk=BASE_NIV[basen.niv].granat;gnist(x,0.6,z,0xff4fd8,RM?6:22);gnist(x,0.6,z,0xffc93c,RM?3:10);
+  for(const mo of monstre.slice())if(avst(x,z,mo.x,mo.z)<rek+mo.T.r)skadMonster(mo,sk);
+  const geo=new THREE.RingGeometry(0.3,rek,32),m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0xff7ae6,transparent:true,opacity:0.7,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-Math.PI/2;const g=new THREE.Group();g.add(m);g.position.set(x,0.2,z);scene.add(g);effekter.push({m:g,mat:m.material,geo,t:0.35,maks:0.35,y:0.2,fast:true})}
+// Laserskudd fra skuddboter og bosser. Gjem deg bak hindre, bruk kraftskjoldet, eller send dem tilbake med kraftdytt.
+const fSkudd=[],fGeo=new THREE.BoxGeometry(0.14,0.14,0.9),fMat=new THREE.MeshBasicMaterial({color:0xff3b3b});
+function fiendeSkudd(mo,vinkel=0){const dx0=helt.x-mo.x,dz0=helt.z-mo.z,l=Math.hypot(dx0,dz0)||1,c=Math.cos(vinkel),s=Math.sin(vinkel),dx=(dx0*c-dz0*s)/l,dz=(dx0*s+dz0*c)/l;const m=new THREE.Mesh(fGeo,fMat);m.position.set(mo.x+dx*mo.T.r,mo.T.modell==="gaa"?3.7:1.5*Math.min(mo.T.str,2),mo.z+dz*mo.T.r);m.rotation.y=Math.atan2(dx,dz);scene.add(m);fSkudd.push({m,vx:dx*13,vz:dz*13,t:2.2,fra:mo,tilbake:false,skade:mo.T.boss?8:mo.T.skade+2})}
+function slaaTilbake(f){if(f.tilbake)return;f.tilbake=true;const mo=f.fra,lever=mo&&monstre.includes(mo),tx=lever?mo.x:f.m.position.x-f.vx,tz=lever?mo.z:f.m.position.z-f.vz,dx=tx-f.m.position.x,dz=tz-f.m.position.z,l=Math.hypot(dx,dz)||1;f.vx=dx/l*18;f.vz=dz/l*18;f.t=1.5;f.m.material=pistolMat;f.m.rotation.y=Math.atan2(dx,dz);gnist(f.m.position.x,1.5,f.m.position.z,0x9fd8ff,6)}
+function skadHelt(sk,x,z,farge=0xff3b3b){
+  if(skjoldAktiv()){skjold.hp=Math.max(0,skjold.hp-sk);gnist(x,1.5,z,0x56b8ff,4);if(skjold.hp<=0)melding("🛡️ Kraftskjoldet sprakk! Det blir helt igjen etter bølgen.")}
+  else{helt.hp-=sk;gnist(x,1.5,z,farge,4);if(helt.hp<=0){helt.hp=0;helt.nede=1.6;gnist(helt.x,1,helt.z,0xffcc00,20);spillEn("Death")}}
+  oppdaterHud();
 }
 function kampOppdater(dt){
-  kastOppdater(dt);fSkuddOppdater(dt);
-  kamp.sverdCd-=dt;kamp.magiCd-=dt;kamp.pistolCd-=dt;kamp.snuT-=dt;
-  kamp.mana=Math.min(kamp.maksMana,kamp.mana+kamp.manaFart*dt);const mi=Math.floor(kamp.mana);if(mi!==kamp.vist){kamp.vist=mi;$("mana").textContent=mi;$("kMagi").classList.toggle("tom",kamp.mana<VAAPEN.magi.kost);$("kPistol").classList.toggle("tom",!!kast)}if(kamp.mana>=VAAPEN.magi.kost)kamp.manaVarslet=false;
-  if(kamp.holdt.sverd||taster.has("Space"))sverdHugg();
+  kamp.pistolCd-=dt;kamp.magiCd-=dt;kamp.granatCd-=dt;kamp.snuT-=dt;
+  kamp.mana=Math.min(kamp.maksMana,kamp.mana+kamp.manaFart*dt);if(kamp.mana>=VAAPEN.magi.kost)kamp.manaVarslet=false;
+  const mi=Math.floor(kamp.mana);if(mi!==kamp.vist){kamp.vist=mi;$("mana").textContent=mi;$("kMagi").classList.toggle("tom",kamp.mana<VAAPEN.magi.kost)}
+  $("kPistol").classList.toggle("tom",kamp.granatCd>0);
+  if(kamp.holdt.sverd||taster.has("Space"))skytPistol();
+  if(kamp.mus&&kamp.mus.ned)skytPistol(musRetning());
   if(kamp.holdt.magi||taster.has("KeyE"))skytMagi();
-  if(kamp.holdt.pistol||taster.has("KeyF"))skytPistol();
-  if(window.__autoKamp){const mo=nærmeste(helt.x,helt.z,14);if(mo){if(avst(mo.x,mo.z,helt.x,helt.z)<VAAPEN.sverd.rek+mo.T.r)sverdHugg();else{skytMagi();skytPistol()}}}
+  if(kamp.holdt.pistol||taster.has("KeyF"))kastGranat();
+  if(window.__autoKamp){const mo=nærmeste(helt.x,helt.z,14);if(mo){skytPistol();if(avst(mo.x,mo.z,helt.x,helt.z)<5)skytMagi();if(monstre.length>4)kastGranat()}}
+  // Robotens laserskudd
   for(let i=rette.length-1;i>=0;i--){const r=rette[i];r.t-=dt;r.m.position.x+=r.vx*dt;r.m.position.z+=r.vz*dt;
     const px=r.m.position.x,pz=r.m.position.z;let truffet=null;
     for(const mo of monstre)if(avst(px,pz,mo.x,mo.z)<0.45+mo.T.r*1.1){truffet=mo;break}
-    if(truffet){gnist(px,1.4,pz,r.type==="magi"?0xd27dff:0x9ff8ff,r.type==="magi"?8:3);
-      if(r.sprut)for(const mo of monstre.slice())if(mo!==truffet&&avst(px,pz,mo.x,mo.z)<r.sprut+mo.T.r)skadMonster(mo,Math.ceil(r.skade/2));
-      skadMonster(truffet,r.skade)}
-    if(truffet||r.t<=0||Math.abs(px)>KX+4||Math.abs(pz)>KZ+4){scene.remove(r.m);rette.splice(i,1)}}
-  for(let i=effekter.length-1;i>=0;i--){const e=effekter[i];e.t-=dt;e.mat.opacity=0.75*Math.max(0,e.t/e.maks);e.m.position.set(helt.x,e.y||1.1,helt.z);if(e.y)e.m.scale.setScalar(1+(1-e.t/e.maks)*0.4);if(e.t<=0){scene.remove(e.m);e.geo.dispose();e.mat.dispose();effekter.splice(i,1)}}
+    if(truffet){gnist(px,1.4,pz,0x9ff8ff,3);skadMonster(truffet,r.skade)}
+    const vegg=!truffet&&iHinder(px,pz,0.05);if(vegg)gnist(px,1.4,pz,0x9ff8ff,2);
+    if(truffet||vegg||r.t<=0||Math.abs(px)>KX+4||Math.abs(pz)>KZ+4){scene.remove(r.m);rette.splice(i,1)}}
+  // Granater
+  for(let i=granater.length-1;i>=0;i--){const g=granater[i];g.t+=dt;const u=Math.min(1,g.t/VAAPEN.granat.flyTid);g.m.position.set(g.fx+(g.tx-g.fx)*u,1.6+Math.sin(u*Math.PI)*4-u*1.3,g.fz+(g.tz-g.fz)*u);
+    if(u>=1){scene.remove(g.m);granater.splice(i,1);smell(g.tx,g.tz)}}
+  // Fiendens laserskudd
+  for(let i=fSkudd.length-1;i>=0;i--){const f=fSkudd[i];f.t-=dt;f.m.position.x+=f.vx*dt;f.m.position.z+=f.vz*dt;const px=f.m.position.x,pz=f.m.position.z;let borte=f.t<=0||!!iHinder(px,pz,0.05);
+    if(!borte&&!f.tilbake&&helt.nede<=0&&avst(px,pz,helt.x,helt.z)<(skjoldAktiv()?skjold.R:0.9)){borte=true;skadHelt(f.skade,px,pz)}
+    else if(!borte&&f.tilbake){for(const mo of monstre)if(avst(px,pz,mo.x,mo.z)<0.5+mo.T.r){skadMonster(mo,f.skade*2);borte=true;break}}
+    if(borte){scene.remove(f.m);fSkudd.splice(i,1)}}
+  for(let i=effekter.length-1;i>=0;i--){const e=effekter[i];e.t-=dt;e.mat.opacity=0.75*Math.max(0,e.t/e.maks);if(!e.fast)e.m.position.set(helt.x,e.y||1.1,helt.z);if(e.y)e.m.scale.setScalar(1+(1-e.t/e.maks)*0.4);if(e.t<=0){scene.remove(e.m);e.geo.dispose();e.mat.dispose();effekter.splice(i,1)}}
 }
 
 // ================= Oppdatering =================
@@ -999,7 +1173,8 @@ function oppdater(dt){
     let beveger=false;
     if(l>0.15){const s=Math.min(1,l);ix/=l;iz/=l;const vx=kam.rx*ix-kam.fx*iz,vz=kam.rz*ix-kam.fz*iz;
       helt.x+=vx*helt.fart*s*dt;helt.z+=vz*helt.fart*s*dt;if(kamp.snuT<=0)snu(vx,vz);beveger=true}
-    helt.x=Math.max(-KX+0.8,Math.min(KX-0.8,helt.x));helt.z=Math.max(-KZ+0.8,Math.min(KZ-0.8,helt.z));
+    skyvUt(helt,0.7);helt.x=Math.max(-KX+0.8,Math.min(KX-0.8,helt.x));helt.z=Math.max(-KZ+0.8,Math.min(KZ-0.8,helt.z));
+    if(iFare(helt.x,helt.z)){helt.lava=(helt.lava||0)+dt;if(helt.lava>0.25){helt.lava=0;skadHelt(4,helt.x,helt.z,0xff8a20)}if(!helt.lavaVarslet){helt.lavaVarslet=true;melding("🔥 Au! Lava! Gå over broene.",2200)}}else helt.lavaVarslet=false;
     kampOppdater(dt);
     if(!rEn)spillR(beveger?"Running":"Idle");
   }
@@ -1009,7 +1184,7 @@ function oppdater(dt){
   // Bølgene kommer av seg selv (som i Era Defenders 1), med en kort pause imellom
   if(fase==="bygg"){const før=Math.ceil(nedtelling);nedtelling-=dt;const n=Math.ceil(nedtelling);$("pNed").hidden=false;$("ned").textContent=Math.max(1,n);if(nedtelling<=0){$("pNed").hidden=true;startBolge()}}else $("pNed").hidden=true;
   // Nye monstre
-  if(fase==="kamp"&&koe.length){spawnT-=dt;if(spawnT<=0){const [x,z]=kantPunkt();const t=koe.shift();lagMonster(t,x,z,1+(bolge-1)*0.12);if(TYPER[t].boss)melding("👑 "+TYPER[t].navn+" kommer!");spawnT=Math.max(0.45,1.25-bolge*0.07)}}
+  if(fase==="kamp"&&koe.length){spawnT-=dt;if(spawnT<=0){const [x,z]=kantPunkt();const t=koe.shift();lagMonster(t,x,z,1+(bolge-1)*0.12+verdenIdx*0.2);if(TYPER[t].boss)melding("👑 "+TYPER[t].navn+" kommer!");spawnT=Math.max(0.45,1.25-bolge*0.07)}}
 
   // Monstrene
   for(const mo of monstre.slice()){
@@ -1020,22 +1195,25 @@ function oppdater(dt){
     const hj=bygg.find(b=>b.t==="hjelper"&&!b.nede&&avst(mo.x,mo.z,b.x,b.z)<T.r+1.0);
     if(helt.nede<=0&&dh<T.r+(skjoldAktiv()?skjold.R:0.9))angrip={helt:true};
     else if(hj)angrip={b:hj};
-    // Skuddboter stopper et stykke unna og skyter laser. Lasersverdet kan slå skuddene tilbake.
-    if(!angrip&&T.skyter&&helt.nede<=0&&dh<9&&dh>3.5){mo.g.rotation.y=Math.atan2(mx,mz);mo.skuddCd=(mo.skuddCd||1+Math.random())-dt;if(mo.skuddCd<=0){mo.skuddCd=2.2;fiendeSkudd(mo)}angrip={vent:true}}
+    // Skuddboter stopper et stykke unna og skyter laser. Bossene som skyter, går videre mens de skyter.
+    if(!angrip&&T.skyter&&helt.nede<=0&&dh<(T.boss?13:9)&&dh>(T.boss?5:3.5)&&fritSikt(mo.x,mo.z,helt.x,helt.z)){mo.g.rotation.y=Math.atan2(mx,mz);mo.skuddCd=(mo.skuddCd||1+Math.random())-dt;if(mo.skuddCd<=0){mo.skuddCd=T.boss?1.8:2.2;if(T.boss){fiendeSkudd(mo,-0.25);fiendeSkudd(mo,0);fiendeSkudd(mo,0.25)}else fiendeSkudd(mo)}if(!T.boss)angrip={vent:true}}
     if(!angrip&&helt.nede<=0){
+      if(iFare(mo.x,mo.z))mo.saktere=Math.min(mo.saktere,0.6);
       const l=dh||1,steg=T.fart*mo.saktere*dt;let nx=mo.x+mx/l*steg,nz=mo.z+mz/l*steg;
-      const mur=bygg.find(b=>b.t==="mur"&&punktMurAvstand(nx,nz,b)<T.r+0.4);
+      // Sikring: står et monster fast i 2,5 s, går det gjennom hindre en liten stund, så bølgen alltid kan bli ferdig
+      mo.fastT=(mo.fastT||0)+dt;if(mo.fastT>2.5){if(avst(mo.x,mo.z,mo.fx??mo.x+9,mo.fz??mo.z)<1.2)mo.spokelse=4;mo.fx=mo.x;mo.fz=mo.z;mo.fastT=0}if(mo.spokelse>0)mo.spokelse-=dt;
+      if(!(mo.spokelse>0)&&iHinder(nx,nz,T.r*0.7)){const ux=mx/l,uz=mz/l;let fant=false;for(const v of [0.6,-0.6,1.1,-1.1,1.6,-1.6,2.2,-2.2]){const vv=mo.sving&&Math.sign(v)!==mo.sving?-v:v,c=Math.cos(vv),sn=Math.sin(vv),rx=ux*c-uz*sn,rz=ux*sn+uz*c;if(!iHinder(mo.x+rx*steg,mo.z+rz*steg,T.r*0.7)){nx=mo.x+rx*steg;nz=mo.z+rz*steg;mo.sving=Math.sign(vv);mx=rx;mz=rz;fant=true;break}}if(!fant){const o={x:nx,z:nz};skyvUt(o,T.r*0.7);nx=o.x;nz=o.z}}else mo.sving=0;
+      const mur=bygg.find(b=>b.t==="mur"&&punktMurAvstand(nx,nz,b)<T.r+0.4);if(mur)mo.fastT=0;
       if(mur)angrip={b:mur};
-      else{mo.x=nx;mo.z=nz;mo.g.rotation.y=Math.atan2(mx,mz);mo.fase+=dt*T.fart*2.2;mo.ben[0].rotation.x=Math.sin(mo.fase)*0.6;mo.ben[1].rotation.x=-Math.sin(mo.fase)*0.6}
+      else{mo.x=nx;mo.z=nz;mo.g.rotation.y=Math.atan2(mx,mz);mo.fase+=dt*Math.min(T.fart,3)*2.2;mo.ben.forEach((b,i)=>b.rotation.x=Math.sin(mo.fase+((i===0||i===3)?0:Math.PI))*(T.modell==="gaa"?0.35:0.6));const vg=mo.g.userData.vugg;if(vg&&!RM){vg.position.y=Math.abs(Math.sin(mo.fase))*0.15*T.str;vg.rotation.z=Math.sin(mo.fase)*0.08}}
     }
     if(angrip&&!angrip.vent&&mo.cd<=0){mo.cd=1;
-      if(angrip.helt&&skjoldAktiv()){skjold.hp-=T.skade;gnist(helt.x,1.5,helt.z,0x56b8ff,5);if(skjold.hp<=0){skjold.hp=0;melding("🛡️ Kraftskjoldet sprakk! Det blir helt igjen etter bølgen.")}oppdaterHud()}
-      else if(angrip.helt){helt.hp-=T.skade;gnist(helt.x,1.5,helt.z,0xffcc00,5);oppdaterHud();if(helt.hp<=0){helt.hp=0;helt.nede=1.6;gnist(helt.x,1,helt.z,0xffcc00,20);spillEn("Death")}}
+      if(angrip.helt)skadHelt(T.skade,helt.x,helt.z,0xffcc00);
       else if(angrip.b){const b=angrip.b;b.hp-=T.skade;settLiv(b.bar,b.hp/b.maks);gnist(b.t==="mur"?mo.x:b.x,1,b.t==="mur"?mo.z:b.z,0xaab4d0,4);
         if(b.hp<=0){if(b.t==="mur"){gnist(b.hx,1,b.hz,0x9aa8c8,16);fjernBygg(b);melding("🧱 En mur ble ødelagt!")}else{b.nede=true;b.g.rotation.z=Math.PI/2;melding("🤖 En robothjelper er slått ut til neste bølge.")}}}
       if(angrip.helt||angrip.b){mo.g.rotation.y=Math.atan2(mx,mz)}
     }
-    mo.mat.emissive.setHex(mo.blink>0?0x884444:0x000000);mo.blink-=dt;
+    if(mo.mat.emissive)mo.mat.emissive.setHex(mo.blink>0?0x884444:0x000000);mo.blink-=dt;if(mo.g.userData.svev&&!RM)mo.g.userData.svev.position.y=0.25+Math.sin(tid*6+mo.fase)*0.12;
     mo.g.position.set(mo.x,0,mo.z);mo.bar.quaternion.copy(camera.quaternion).premultiply(mo.g.quaternion.clone().invert());
   }
   // Monstrene dytter litt på hverandre så de ikke står oppå hverandre
@@ -1055,7 +1233,7 @@ function oppdater(dt){
       if(mo&&avst(b.x,b.z,mo.x,mo.z)<n.rek+2){tx=mo.x;tz=mo.z}
       const dx=tx-b.x,dz=tz-b.z,d=Math.hypot(dx,dz);
       if(mo&&d<mo.T.r+1.1){if(b.cd<=0){b.cd=n.tid;skadMonster(mo,n.skade);gnist(mo.x,1,mo.z,0x7dff6a,3)}b.g.rotation.y=Math.atan2(dx,dz)}
-      else if(d>0.3){const s=Math.min(d,6*dt);b.x+=dx/d*s;b.z+=dz/d*s;b.g.rotation.y=Math.atan2(dx,dz);b.g.position.y=Math.abs(Math.sin(tid*12))*0.15}
+      else if(d>0.3){const s=Math.min(d,6*dt);b.x+=dx/d*s;b.z+=dz/d*s;skyvUt(b,0.5);b.g.rotation.y=Math.atan2(dx,dz);b.g.position.y=Math.abs(Math.sin(tid*12))*0.15}
       else b.g.position.y=0;
       b.g.position.x=b.x;b.g.position.z=b.z;}
     if(b.bar)b.bar.quaternion.copy(camera.quaternion).premultiply(b.g.quaternion.clone().invert());
@@ -1081,27 +1259,38 @@ function oppdater(dt){
   // Gnister
   for(let i=gnister.length-1;i>=0;i--){const g=gnister[i];g.t-=dt;g.vy-=18*dt;g.m.position.x+=g.vx*dt;g.m.position.y=Math.max(0.1,g.m.position.y+g.vy*dt);g.m.position.z+=g.vz*dt;g.m.material.opacity=Math.max(0,g.t/0.6);if(g.t<=0){scene.remove(g.m);g.m.material.dispose();gnister.splice(i,1)}}
 
+  oppdaterPartikler(dt);
   if(fase==="kamp"&&!koe.length&&!monstre.length)bolgeFerdig();
 }
 function lokke(naa){
   requestAnimationFrame(lokke);
   let dt=(naa-last)/1000;last=naa;if(!(dt>0))dt=0;dt=Math.min(dt,0.05);
   if(started&&!paused&&fase!=="slutt")oppdater(dt);
-  else{if(rMixer)rMixer.update(dt);helt.g.position.set(helt.x,0,helt.z)}
+  else{if(rMixer)rMixer.update(dt);helt.g.position.set(helt.x,0,helt.z);tid+=dt;oppdaterPartikler(dt)}
   renderer.render(scene,camera);
 }
 
 // ================= Start =================
-const lagret=lesLagring();
-brukLagring(lagret);
-if(lagret&&(lagret.bolge>1||(lagret.bygg&&lagret.bygg.length))&&!lagret.seier)$("startBtn").textContent="▶ Fortsett (bølge "+bolge+")";
-$("startBtn").addEventListener("click",()=>{
+let lagret=null;
+$("startBtn").disabled=true;
+function startSpill(){
   $("start").classList.remove("vis");html.classList.add("spiller");$("hud").hidden=false;$("hoyre").hidden=false;$("bunn").hidden=false;$("joy").classList.add("klar");
   started=true;paused=false;last=performance.now();oppdaterHud();try{$("startBtn").blur()}catch(e){}
-  try{document.dispatchEvent(new Event("evn-start"))}catch(e){}
-  if(seier){bolge=MAKS_BOLGE;melding("🏆 Du har klart Framtiden! Spill bølge 10 igjen, eller start på nytt fra pausen.",4000)}
-  else nedtelling=bolge===1&&!bygg.length?10:6;melding(bolge===1&&!bygg.length?"🌆 Framtiden! Monstrene kommer snart. Bygg et lasertårn!":"🌊 Bølge "+bolge+" kommer snart!",3600);
+  if(!startSpill.telt){startSpill.telt=true;try{document.dispatchEvent(new Event("evn-start"))}catch(e){}}
+  if(seier){bolge=MAKS_BOLGE;melding("🏆 Du har klart alle verdenene! Spill igjen, eller velg en annen verden.",4000)}
+  else{nedtelling=bolge===1&&!bygg.length?10:6;melding(bolge===1&&!bygg.length?V().ik+" "+V().navn+"! "+V().tekst:"🌊 Bølge "+bolge+" kommer snart!",4200)}
+}
+function visStartkort(){
+  $("startVerden").textContent=V().ik+" Verden "+(verdenIdx+1)+": "+V().navn;
+  $("startVelg").hidden=hoyesteVerden<1;
+  if(lagret&&(lagret.bolge>1||(lagret.bygg&&lagret.bygg.length)||lagret.verden>0)&&!lagret.seier)$("startBtn").textContent="▶ Fortsett ("+V().navn+", bølge "+bolge+")";
+}
+modellLast.then(()=>{
+  lagret=lesLagring();brukLagring(lagret);lastet=true;visStartkort();$("startBtn").disabled=false;
+  if(helt.g.userData.kleVent){kleRobot(helt.g.userData.kleVent)}
 });
+$("startBtn").addEventListener("click",startSpill);
+$("startVelg").addEventListener("click",()=>{$("start").classList.remove("vis");apneVerdenValg(true)});
 requestAnimationFrame(lokke);
 
 // «Start helt på nytt» på startkortet (EVN-NULLSTILL v1)
@@ -1125,12 +1314,12 @@ window.__evnP=EVNPause({
   fortsett:()=>{paused=false;clearInput();last=performance.now()},
   lagre:()=>lagre(),
   styring:()=>html.classList.contains("touch")
-    ?"🕹️ Styrespaken: gå<br>⚔️ Lasersverd (slår laserskudd tilbake) · 🌀 Kraftdytt (bruker kraft) · 🪃 Sverdkast<br>🏗️ Bygg: velg noe og trykk på kartet<br>👆 Med Bygg åpen: trykk på noe du har bygget for å oppgradere eller selge"
-    :"⬆️ Piltaster eller WASD: gå<br>Mellomrom: ⚔️ lasersverd (slår laserskudd tilbake) · E eller klikk: 🌀 kraftdytt · F eller høyreklikk: 🪃 sverdkast<br>B: bygg · 1–9: velg · Esc: avbryt<br>🖱️ Med Bygg åpen: klikk på noe du har bygget for å oppgradere eller selge<br>P eller Esc: pause"
+    ?"🕹️ Styrespaken: gå<br>🔫 Laserpistol (hold inne) · 🌀 Kraftdytt (bruker kraft) · 💣 Plasmagranat<br>🧱 Gjem deg bak hindre – de stopper laserskudd<br>🏗️ Bygg: velg noe og trykk på kartet<br>👆 Med Bygg åpen: trykk på noe du har bygget for å oppgradere eller selge"
+    :"⬆️ Piltaster eller WASD: gå<br>Mellomrom eller klikk (hold inne): 🔫 laserpistol · E eller høyreklikk: 🌀 kraftdytt · F: 💣 plasmagranat<br>Gjem deg bak hindre – de stopper laserskudd<br>B: bygg · 1–9: velg · Esc: avbryt<br>🖱️ Med Bygg åpen: klikk på noe du har bygget for å oppgradere eller selge<br>P eller Esc: pause"
 });
 window.__spill={get mynter(){return mynter},set mynter(v){mynter=v;oppdaterHud()},get bolge(){return bolge},get fase(){return fase},get started(){return started},get paused(){return paused},
-  basen,skjold,helt,bygg,monstre,kamp,camera,startBolge,sverdHugg,skytMagi,skytPistol,velg,plasser,avbrytPlassering,kanPlassere,lagre,lesLagring,TYPER,BYGG,
-  hopp:(n)=>{bolge=n;oppdaterHud()},lagMonster,kastAktiv:()=>!!kast,steg:(sek,dt=1/30)=>{for(let t=0;t<sek&&fase!=="slutt";t+=dt)oppdater(dt)},drepAlle:()=>monstre.slice().forEach(m=>skadMonster(m,1e6)),tilstand};
+  basen,skjold,helt,bygg,monstre,kamp,camera,startBolge,skytMagi,skytPistol,kastGranat,byttVerden,apneVerdenValg,VERDENER,get verden(){return verdenIdx},get hinder(){return hinder},get farer(){return farer},iHinder,iFare,MOD,modellLast,settHoyeste:n=>{hoyesteVerden=n},velg,plasser,avbrytPlassering,kanPlassere,lagre,lesLagring,TYPER,BYGG,
+  hopp:(n)=>{bolge=n;oppdaterHud()},lagMonster,steg:(sek,dt=1/30)=>{for(let t=0;t<sek&&fase!=="slutt";t+=dt)oppdater(dt)},drepAlle:()=>monstre.slice().forEach(m=>skadMonster(m,1e6)),tilstand};
 </script>
 <!-- EVN Studio: Avslutt med spørsmål (vises bare under /spill/ på evnstudio.no) -->
 <style>
