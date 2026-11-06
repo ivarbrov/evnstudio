@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.9.1 – EVN Studio</title>
+<title>Fiskespillet 0.9.2 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -161,8 +161,11 @@
     /* Smale telefoner: statuslinja blir fire rader høy, så meldingen legges under den i stedet for oppå 📖 */
     #melding { top:calc(176px + env(safe-area-inset-top)); }
   }
+  @media (max-height:640px) { .havnelinje { display:none; } }   /* Start skal synes uten rulling på små skjermer (QA 0b78d98); havnehjelpen forklarer havna når du kommer dit */
   @media (max-height:460px) {
     .maal img { display:none; }
+    .styring { font-size:13px; margin:6px 0; }
+    .maal p { margin:4px 0; }
     .kort { padding:14px 18px; }
     h1 { font-size:30px; margin:2px 0 6px; }
     .liste { max-height:48vh; }
@@ -199,7 +202,7 @@
     <h1>Fiskespillet</h1>
     <div class="maal">
       <img src="../../bilder/robot-start-vink-130.webp" srcset="../../bilder/robot-start-vink-130.webp 1x, ../../bilder/robot-start-vink-260.webp 2x" width="244" height="260" alt="" decoding="async" onerror="this.remove()">
-      <p>Kjør ut på havet, fang fisk og bring dem hjem til akvariet ditt! 🎣🐟<br>⚓ I havna selger du fisk eller legger dem i akvariet. 🚶 Der kan du også gå i land.<br><span style="color:#ffc93c">Oppdrag: Fang Kraken! 🐙</span></p>
+      <p>Kjør ut på havet, fang fisk og bring dem hjem til akvariet ditt! 🎣🐟<span class="havnelinje"><br>⚓ I havna selger du fisk eller legger dem i akvariet. 🚶 Der kan du også gå i land.</span><br><span style="color:#ffc93c">Oppdrag: Fang Kraken! 🐙</span></p>
     </div>
     <div class="styring">
       <div class="bare-pc">⬆️/W fremover, ⬇️/S bakover, ⬅️➡️ eller A/D for å svinge.<br>E eller mellomrom for å fiske og bruke havna. Shift eller T for turbo. M for kart.</div>
@@ -207,7 +210,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.9.1</div>
+    <div class="evn-ver" id="versjon">Versjon 0.9.2</div>
   </div>
 </div>
 
@@ -533,7 +536,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.9.1';
+const VERSJON = '0.9.2';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -2211,7 +2214,7 @@ function tegnKart() {
 
 $('startBtn').addEventListener('click', () => {
   try { lyd = lyd || new (window.AudioContext || window.webkitAudioContext)(); lyd.resume && lyd.resume(); } catch (e) {}
-  lukkLag('start'); $('hud').hidden = false; $('hoyre').hidden = false; $('turboKnapp').hidden = false; spillTilstand = 'spill'; sisteTid = performance.now();
+  lukkLag('start'); $('hud').hidden = false; $('hoyre').hidden = false; $('turboKnapp').hidden = false; spillTilstand = 'spill'; sisteTid = performance.now(); varIHavna = iHavna();   // startbeskjeden skal ikke byttes ut med havnehjelpen (QA 0b78d98)
   try { document.dispatchEvent(new Event('evn-start')); } catch (e) {}
   $('hjelp').innerHTML = document.documentElement.classList.contains('touch') ? 'Dra fingeren for å kjøre båten 👆' : '⬆️ fremover · ⬅️➡️ svinge · ⬇️ bakover';
   setTimeout(() => $('hjelp').style.opacity = 0, 15000);
@@ -2315,7 +2318,7 @@ function gaaOmBord() {
   if (!land.aktiv) return;
   land.aktiv = false; skiltStorrelse(1); baat.add(helt); helt.rotation.set(0, 0, 0); stang.visible = true;
   helt.position.set(0, baat.userData.dekkY, -baat.userData.L * 0.18);
-  robotGaa(false); melding('⛵ Du er om bord igjen.', 2);
+  robotGaa(false); varIHavna = true; melding('⛵ Du er om bord igjen.', 2);
 }
 function robotGaa(gaar) {
   if (!robot || land.gaar === gaar || robot.igjen > 0) { land.gaar = gaar; return; }
