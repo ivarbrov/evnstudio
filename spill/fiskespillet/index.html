@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.8.1 – EVN Studio</title>
+<title>Fiskespillet 0.8.2 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -21,7 +21,7 @@
 
   /* Statuslinje øverst til venstre */
   #hud { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); right:calc(320px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; flex-wrap:wrap; align-items:flex-start; }
-  #hud[hidden], #hoyre[hidden] { display:none !important; }
+  #hud[hidden], #hoyre[hidden], .pille[hidden] { display:none !important; }   /* .pille[hidden]: «🎉 Torsdag!» viste seg alle dager (QA av 3fbb9bb) */
   .pille { background:rgba(13,36,64,.74); border:2px solid rgba(255,255,255,.25); border-radius:999px; padding:6px 14px; font-weight:800; font-size:18px; min-height:44px; display:flex; align-items:center; gap:6px; color:#fff; }
   .pille.full { border-color:#ff6b6b; background:rgba(120,20,30,.8); }
   .pille.bump { animation:bump .3s; }
@@ -201,11 +201,11 @@
     </div>
     <div class="styring">
       <div class="bare-pc">⬆️/W fremover, ⬇️/S bakover, ⬅️➡️ eller A/D for å svinge.<br>E eller mellomrom for å fiske og bruke havna. Shift eller T for turbo. M for kart.</div>
-      <div class="bare-touch">Dra fingeren dit du vil kjøre.<br>Trykk på den gule knappen for å fiske og bruke havna.</div>
+      <div class="bare-touch">Dra fingeren dit du vil kjøre.<br>Trykk på den gule knappen for å fiske og bruke havna. 🚀 gir turbo.</div>
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.8.1</div>
+    <div class="evn-ver" id="versjon">Versjon 0.8.2</div>
   </div>
 </div>
 
@@ -531,7 +531,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.8.1';
+const VERSJON = '0.8.2';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -1592,7 +1592,7 @@ function startKamp() {
   fiske.fase = 'kamp'; fiske.t = 0; fiske.kamp = INNST.krakenStart; fiske.sint = 0; fiske.nesteSint = rnd(4, 6);
   fiske.igjen = INNST.krakenTid; fiske.sist = performance.now();
   for (const te of krakenTentakler) te.userData.opp = 1;
-  $('kamp').hidden = false; oppdaterKampBar();
+  $('kamp').hidden = false; $('turboKnapp').hidden = true; oppdaterKampBar();
   melding('🐙 KRAKEN BITER! Trykk <b>Dra!</b> fort, fort, fort!', 3);
   robotGjor('Punch', 0.8);
 }
@@ -1625,7 +1625,7 @@ function oppdaterKamp(_dt, t) {
   else if (f.igjen <= 0) krakenSlipper('🐙💤 Kraken ble lei og svømte ned i dypet. Prøv igjen!<small>Du har ' + INNST.krakenTid + ' sekunder på deg.</small>');
 }
 function krakenSlipper(tekst) { sluttKamp(); for (const te of krakenTentakler) te.userData.opp = 0; lydPlask(); melding(tekst, 4); }
-function sluttKamp() { fiske = null; dupp.visible = false; snore.visible = false; $('kamp').hidden = true; }
+function sluttKamp() { fiske = null; dupp.visible = false; snore.visible = false; $('kamp').hidden = true; $('turboKnapp').hidden = spillTilstand === 'start'; }
 function oppdaterKampBar() {
   if (!fiske) return;
   $('kampFyll').style.width = Math.max(0, fiske.kamp).toFixed(1) + '%'; $('kamp').classList.toggle('sint', fiske.sint > 0);
@@ -1833,7 +1833,7 @@ const storeDyr = [];
       if (id === 'hammerhai') del(BOX, gra, 0.4, 0.2, 2.4, 2.4, -0.2, 0, kropp);
     }
     const s = skilt(`${FORMER[FORMER.findIndex(x => x.id === id)].ikon} ${navn[0].toUpperCase() + navn.slice(1)}`, 1.8); s.position.set(0, id === 'hval' ? 7.5 : 5, 0); g.add(s);
-    return { id, navn, form: FORMER.findIndex(x => x.id === id), gruppe: g, kropp, aktiv: false, neste: rnd(2, 20), senter: new THREE.Vector3(), v: rnd(0, 6) };
+    return { id, navn, form: FORMER.findIndex(x => x.id === id), gruppe: g, kropp, aktiv: false, neste: rnd(30, 150), senter: new THREE.Vector3(), v: rnd(0, 6) };
   };
   for (const [id, navn] of [['hai', 'hai'], ['hai', 'hai'], ['hammerhai', 'hammerhai'], ['hval', 'hval'], ['hval', 'hval']]) storeDyr.push(lag(id, navn));
 }
