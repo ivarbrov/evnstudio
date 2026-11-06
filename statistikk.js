@@ -10,8 +10,6 @@
  * Hva som IKKE samles inn: navn, e-post, brukernavn, ID-er, informasjonskapsler
  * eller noe som lagres på enheten. Skriptet endrer ikke spillene.
  *
- * Nye spill: send document.dispatchEvent(new Event('evn-start')) når spillingen begynner.
- *
  * Bruk på en spillside:
  *   <script src="../../statistikk.js" data-spill="eventyrspill" defer></script>
  */
@@ -95,11 +93,6 @@
     }
   };
   if (oppdagere[spill]) oppdagere[spill]();
-
-  // Nye spill sender selv hendelsen «evn-start» når spillingen begynner (ST1):
-  //   document.dispatchEvent(new Event('evn-start'))
-  // «startet» hindrer dobbel telling hvis et spill også har en oppdager over.
-  document.addEventListener('evn-start', spillStartet);
 
   // ---- Omtrentlig spilletid: teller aktive minutter mens fanen er synlig ----
   function startTidtaking() {
