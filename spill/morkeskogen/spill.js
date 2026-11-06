@@ -6275,7 +6275,7 @@ function visFeil(e, uten3D) {
   f.hidden = false; const b = $('evnFeilLast'); if (b) b.focus();
 }
 window.addEventListener('error', e => { if (state === 'play' && e && /\/spill\/morkeskogen\//.test(e.filename || '')) visFeil(e.error || e.message); });
-window.addEventListener('unhandledrejection', e => { if (state === 'play') visFeil(e && e.reason); });
+window.addEventListener('unhandledrejection', e => { const r = e && e.reason; if (state === 'play' && r && /\/spill\/morkeskogen\//.test(String(r.stack || ''))) visFeil(r); });   // bare feil fra spillets egne filer (som 'error' over)
 
 let bakgrunnFersk = false;
 function start() {
