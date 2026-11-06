@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.9.0 – EVN Studio</title>
+<title>Fiskespillet 0.9.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -30,7 +30,7 @@
   #hoyre { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; }
   #turboKnapp { position:fixed; right:calc(22px + env(safe-area-inset-right)); bottom:calc(110px + env(safe-area-inset-bottom)); width:56px; height:56px; font-size:26px; z-index:5; }
   #turboKnapp[hidden], #landKnapp[hidden] { display:none; }
-  #landKnapp { position:fixed; right:calc(22px + env(safe-area-inset-right)); bottom:calc(110px + env(safe-area-inset-bottom)); width:56px; height:56px; font-size:26px; z-index:5; background:#3fae4a; }
+  #landKnapp { position:fixed; right:calc(16px + env(safe-area-inset-right)); bottom:calc(110px + env(safe-area-inset-bottom)); width:auto; height:56px; padding:0 18px; border-radius:28px; font:800 19px Nunito, system-ui, sans-serif; z-index:5; background:#3fae4a; border:3px solid #fff; }
   .rund.pa { background:#ffd34d; color:#1d2440; border-color:#fff; }
   .rund { width:48px; height:48px; border-radius:50%; background:rgba(13,36,64,.74); border:2px solid rgba(255,255,255,.25); color:#fff; font-size:22px; display:flex; align-items:center; justify-content:center; padding:0; }
   .rund:focus-visible, .pille:focus-visible, #handling:focus-visible { outline:3px solid #fff; outline-offset:2px; }
@@ -187,7 +187,7 @@
 <div id="melding" role="status" aria-live="polite"></div>
 <div id="kamp" hidden><span>🐙 Kraken</span><div class="kampbar" role="progressbar" aria-label="Hvor langt opp Kraken er"><i id="kampFyll"></i></div><span>🏆</span><span id="kampTid" class="kamptid" aria-label="Sekunder igjen">⏱ 60</span></div>
 <button id="handling" type="button"></button>
-<button class="rund" id="landKnapp" type="button" title="Gå i land (G)" aria-label="Gå i land" hidden>🚶</button>
+<button class="rund" id="landKnapp" type="button" title="Gå i land (G)" aria-label="Gå i land" hidden>🚶 Gå i land</button>
 <button class="rund" id="turboKnapp" type="button" title="Turbo (hold Shift eller trykk T)" aria-label="Turbo" aria-pressed="false" hidden>🚀</button>
 <div id="hjelp"></div>
 <div id="joy"><i></i></div>
@@ -199,7 +199,7 @@
     <h1>Fiskespillet</h1>
     <div class="maal">
       <img src="../../bilder/robot-start-vink-130.webp" srcset="../../bilder/robot-start-vink-130.webp 1x, ../../bilder/robot-start-vink-260.webp 2x" width="244" height="260" alt="" decoding="async" onerror="this.remove()">
-      <p>Kjør ut på havet, fang fisk og bring dem hjem til akvariet ditt! 🎣🐟<br><span style="color:#ffc93c">Oppdrag: Fang Kraken! 🐙</span></p>
+      <p>Kjør ut på havet, fang fisk og bring dem hjem til akvariet ditt! 🎣🐟<br>⚓ I havna selger du fisk eller legger dem i akvariet. 🚶 Der kan du også gå i land.<br><span style="color:#ffc93c">Oppdrag: Fang Kraken! 🐙</span></p>
     </div>
     <div class="styring">
       <div class="bare-pc">⬆️/W fremover, ⬇️/S bakover, ⬅️➡️ eller A/D for å svinge.<br>E eller mellomrom for å fiske og bruke havna. Shift eller T for turbo. M for kart.</div>
@@ -207,7 +207,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.9.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.9.1</div>
   </div>
 </div>
 
@@ -533,7 +533,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.9.0';
+const VERSJON = '0.9.1';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -933,16 +933,8 @@ function palme(x, z, s) {
 }
 const PALMER = [[-30, 30, 1.1], [32, 28, 1], [-48, 6, 1.05], [46, -6, 0.95], [-20, -48, 1], [8, -55, 0.9], [-55, -28, 0.85], [50, -40, 1.1], [-38, 52, 0.8], [40, 56, 0.85], [-6, 62, 0.75], [60, 20, 0.8]];
 for (const [x, z, sk] of PALMER) palme(x, z, sk);
-// Byggetomter: her skal Even kunne bygge hus senere (landsbyen). Merket med pinner og snor.
-const TOMTER = [[-30, -10], [0, -10], [-30, 12], [0, 12], [30, 8], [-15, -32], [15, -32], [-45, 30]];
-for (const [x, z] of TOMTER) {
-  const t = new THREE.Group(); t.position.set(x, 3.25, z); oy.add(t);
-  del(BOX, M(0x9bd06a), 12, 0.06, 12, 0, 0.03, 0, t);
-  for (const [px, pz] of [[-6, -6], [6, -6], [6, 6], [-6, 6]]) del(CYL, M(0xc9955c), 0.12, 1.2, 0.12, px, 0.6, pz, t);
-  for (const [a, b2, c2, d2] of [[0, -6, 12, 0.04], [0, 6, 12, 0.04]]) del(BOX, M(0xffffff), c2, d2, d2, a, 1.05, b2, t);
-  for (const sx of [-6, 6]) del(BOX, M(0xffffff), 0.04, 0.04, 12, sx, 1.05, 0, t);
-  const sk = skilt('🏗️ Byggetomt', 1.6); sk.position.set(0, 3, 0); t.add(sk);
-}
+// Byggetomter er fjernet i 0.9.1: Even vil bygge hus der han selv vil (byggingen kommer i neste trinn).
+const TOMTER = [];
 // Butikken (huset til høyre for brygga)
 // Ny grafikk i landsbyen (0.8.1): panelvegger, takstein, vinduer med karmer, markise, tønner og kasser
 function lerretTekstur(w, h, tegn, gjenta) { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; tegn(cv.getContext('2d'), w, h); const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; if (gjenta) t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; }
@@ -1968,7 +1960,7 @@ function byggHavna() {
     if (!tilstand.last.length) h = '<div class="tom">Båten er tom. Kjør ut og fisk! 🎣</div>';
     else {
       const sum = tilstand.last.reduce((s, id) => s + fiskVerdi(id), 0), b = besteOppsett();
-      h = `<p class="info">🐠 i akvariet gir penger hvert minutt. 💰 Selg gir penger med en gang.<br>Akvariet: <b>${tilstand.akv.length} av ${tilstand.akvPlass}</b>${fullt && svId >= 0 ? ` · svakeste: ${FORMER[fiskDel(svId).f].ikon} 💰 ${tall(fiskVerdi(svId))}` : ''}</p>`;
+      h = `<p class="info"><b>Slik gjør du:</b> ⭐ legger de beste fiskene i akvariet og selger resten. 🐠 Fisk i akvariet gir penger <b>hvert minutt</b>. 💰 Selg gir penger <b>med en gang</b>.<br>Akvariet: <b>${tilstand.akv.length} av ${tilstand.akvPlass}</b>${fullt && svId >= 0 ? ` · svakeste: ${FORMER[fiskDel(svId).f].ikon} 💰 ${tall(fiskVerdi(svId))}` : ''}</p>`;
       if (b.nyeInn > 0) h += `<div class="samlet"><button class="kn stjerne" type="button" id="besteAkv">⭐ ${b.ut.length ? 'Beste i akvariet, selg resten' : 'Alle i akvariet'}<small>${b.nyeInn} inn${b.utAkv ? `, ${b.utAkv} ut av akvariet` : ''} · +💰 ${minTekst(b.okning)}/min${b.salg ? ` · selger for 💰 ${tall(b.salg)}` : ''}</small></button></div>`;
       h += '<div class="liste">' + sortertIndekser(tilstand.last).map(i => {
         const id = tilstand.last[i], bedre = fullt && svId >= 0 && fiskVerdi(id) > fiskVerdi(svId);
@@ -2095,7 +2087,19 @@ function finnHandling() {
   const p = naermestePlass();
   return { tekst: '🎣 Fisk', gjor: () => startFiske(p, false) };
 }
+let varIHavna = false, havnaGanger = 0;
+function havnaHjelp() {
+  const inne = !land.aktiv && iHavna();
+  if (inne && !varIHavna && !modalApen()) {
+    havnaGanger++;
+    melding(havnaGanger <= 3
+      ? '⚓ Du er i havna!<small>Trykk ⚓ Havna for å selge fisken eller legge den i akvariet. Trykk 🚶 Gå i land for å gå rundt på øya.</small>'
+      : '⚓ Havna', havnaGanger <= 3 ? 6 : 1.5, havnaGanger <= 3);
+  }
+  varIHavna = inne;
+}
 function oppdaterHandling() {
+  if (spillTilstand === 'spill') havnaHjelp();
   handling = spillTilstand === 'spill' ? finnHandling() : null;
   if (spillTilstand === 'spill' && $('kamp').hidden) { const kanLand = !land.aktiv && iHavna() && !fiske && !krakenShow; $('landKnapp').hidden = !kanLand; $('turboKnapp').hidden = kanLand || land.aktiv; }
   const el = $('handling');
@@ -2305,7 +2309,7 @@ function gaaILand() {
   spiller.fart = 0; settTurbo(false);
   skiltStorrelse(0.45); scene.add(helt); helt.position.copy(land.pos); helt.rotation.set(0, land.retning, 0);
   stang.visible = false;
-  melding('🚶 Du er på land! Gå til butikken, akvariet og byggetomtene.', 3.5);
+  melding('🚶 Du er på land!<small>Gå til butikken eller akvariet og trykk på den gule knappen. Gå tilbake til kaia og trykk ⛵ for å gå om bord.</small>', 5, true);
 }
 function gaaOmBord() {
   if (!land.aktiv) return;
@@ -2324,8 +2328,6 @@ function landHandling() {
   if (naerLand(KAI().x, KAI().z, 5)) return { tekst: '⛵ Gå om bord', gjor: gaaOmBord };
   if (naerLand(16, 52 + 5.5, 4.5)) return { tekst: '🛒 Butikken', gjor: () => { fane = 'butikk'; byggHavna(); apneLag('havna'); } };
   if (Math.abs(land.pos.x - AKV.x) < AKV.b / 2 + 3 && Math.abs(land.pos.z - AKV.z) < AKV.d / 2 + 3) return { tekst: '🐠 Akvariet', gjor: () => { fane = 'akvarium'; byggHavna(); apneLag('havna'); } };
-  for (const [x, z] of TOMTER) if (Math.abs(land.pos.x - x) < 6.5 && Math.abs(land.pos.z - z) < 6.5)
-    return { tekst: '🏗️ Byggetomt', gjor: () => melding('🏗️ Her kan du snart bygge et hus!', 3) };
   return null;
 }
 function oppdaterLand(dt, t) {
