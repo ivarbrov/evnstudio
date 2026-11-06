@@ -42,7 +42,7 @@
     ring = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.02, 8, 60), new THREE.MeshBasicMaterial({ color: 0x19c3ff }));
     ring.rotation.x = Math.PI / 2; ring.position.y = 0.002; scene.add(ring);
 
-    fetch('../ecoins/helt-robot.glb').then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(function (buf) {
+    fetch('../ecoins/helt-robot-v2.glb').then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(function (buf) {
       new THREE.GLTFLoader().parse(buf, '', function (gltf) {
         var robot = gltf.scene;
         robot.traverse(function (o) { if (o.isMesh) { o.frustumCulled = false; if (o.material && o.material.name === 'Main') o.material.color.setHex(0xffcc00).convertSRGBToLinear(); } });
@@ -175,7 +175,7 @@
     rot.querySelectorAll('details[open]').forEach(function (x) { apne[x.dataset.s] = 1; });
     rot.innerHTML = '';
     E.spill.forEach(function (s) {
-      if (s.kommer) return;
+      if (s.kommer || s.fjernet) return;   // fjernet: spillet er tatt av nettsiden; opptjente E-coins beholdes
       var gjort = s.m.filter(function (m) { return d.tjent[m[0]]; });
       var igjen = s.m.reduce(function (sum, m) { return sum + (d.tjent[m[0]] ? 0 : m[1]); }, 0);
       var el = document.createElement('details'); el.className = 'spill'; el.dataset.s = s.id; if (apne[s.id]) el.open = true;
@@ -223,7 +223,7 @@
     }
   }
   $('nullstill').onclick = function () {
-    dialog({ tittel: 'Slette alle E-coins?', tekst: '<p>Alle E-coins og klær på denne enheten blir borte. Spillene beholder fremgangen sin, og neste gang du åpner et spill, får du E-coins igjen for det du har klart der.</p><p>Klærne må kjøpes på nytt.</p>',
+    dialog({ tittel: 'Slette alle E-coins?', tekst: '<p>Alle E-coins og klær på denne enheten blir borte. Spillene beholder fremgangen sin, og neste gang du åpner et spill, får du E-coins igjen for det du har klart der. E-coins fra spill som ikke er på nettsiden lenger, kommer ikke tilbake.</p><p>Klærne må kjøpes på nytt.</p>',
       knapper: [{ tekst: 'Nei' }, { tekst: 'Ja, slett', klasse: 'hoved', gjor: function () { E.nullstill(); prov(null); } }] });
   };
 

@@ -31,6 +31,10 @@
     ['pointerdown', 'mousedown', 'touchstart'].forEach(ev => h.addEventListener(ev, e => e.stopPropagation(), { passive: true }));
     h.addEventListener('click', e => { e.stopPropagation(); hjelp(); });
     const kart = $('evnKartKnapp'); rad.insertBefore(h, kart ? kart.nextSibling : null);
+    // Avslutt ytterst til høyre (EVN UI-standard KS5)
+    const avs = $('evnAvslutt'); if (avs && avs.parentNode === rad) rad.appendChild(avs);
+    // Riktig hjelpetekst: kjøres etter EVN-PAUSE sin egen lytter på samme knapp
+    const sk = $('evnPauseStyrKnapp'); if (sk && !sk.dataset.h2Styr) { sk.dataset.h2Styr = '1'; sk.addEventListener('click', skrivStyring); }
     // Netter overlevd: i pausemenyen
     const kort = document.querySelector('#evnPause .kort'), n = $('nights');
     // Lukkeknapp i pausekortet (samme som «Fortsett»; Esc og P virker som før)
@@ -49,6 +53,20 @@
     }
     if (kort && n && !$('h2Netter')) { const p = document.createElement('p'); p.id = 'h2Netter'; p.append('🌙 Netter overlevd: ', n); kort.insertBefore(p, $('evnPauseFortsett')); }
   }
+  // Tab flytter bare fokus (EVN UI-standard KS8, T2). Spillet får ikke Tab, så Tab åpner ikke lenger ryggsekken (I og 🎒 gjør det).
+  // Står fokus på body eller en skjult knapp (for eksempel Start etter oppstart), flyttes det til første synlige knapp i toppraden.
+  // Ellers går Tab ut av siden, og spillet settes på pause (Chrome husker den skjulte Start-knappen som startpunkt).
+  window.addEventListener('keydown', e => { if (e.key !== 'Tab' && e.code !== 'Tab') return; e.stopImmediatePropagation();
+    const a = document.activeElement;
+    if (!a || a === document.body || !a.getClientRects().length) {
+      const f = [...document.querySelectorAll('#evnRad button, #evnRad a, #hotbar button')].find(el => el.getClientRects().length && !el.disabled);
+      if (f) { e.preventDefault(); f.focus(); }
+    } }, true);
+  // «Slik styrer du» i pausen: riktig tekst for musa (første klikk låser), kartknappen, spis og hjelp. Teksten i spill.js er uendret.
+  const STYR_PC = '⌨️ Gå: <b>W A S D</b> eller pilene · Hopp: <b>mellomrom</b><br>🖱️ Første klikk: musa styrer kameraet · Hugg: <b>venstre musknapp</b><br>Se rundt uten å låse musa: <b>høyre musknapp</b> og dra · Zoom: musehjulet<br>Gjør ting: <b>E</b> · Spis: <b>F</b> eller <b>Q</b> · Våpen: <b>1–0</b><br>🔨 Bygg: <b>B</b> · 🎒 Sekk: <b>I</b> · 🗺️ Kart: <b>M</b> · 🎥 Kamera: <b>C</b><br>⏸ Pause: <b>P</b> eller <b>Esc</b> · ❓ Hjelp: <b>H</b>';
+  const STYR_TOUCH = '👆 Gå: dra med fingeren · Se rundt: dra med en annen finger · Zoom: knip<br>🪓 Hugg: trykk øksa · ⤴️ Hopp · ✋ Bruk: trykk hånda<br>🔨 Bygg · 🍖 Spis · 🎥 Kamera · 🗺️ Kart: trykk 🗺️ øverst<br>⏸ Pause · ❓ Hjelp';
+  // Lytteren legges på selve knappen (i knapper()), fordi EVN-PAUSE stopper klikk fra å boble opp fra pausekortet.
+  const skrivStyring = () => { const s = $('evnPauseStyr'); if (s && !s.hidden) s.innerHTML = document.body.classList.contains('touchui') ? STYR_TOUCH : STYR_PC; };
   // Hjelp = pausemenyen med «Slik styrer du» åpen (spillet står stille mens den vises)
   function hjelp() {
     const åpneStyr = () => { const s = $('evnPauseStyrKnapp'); if (s && s.getAttribute('aria-expanded') !== 'true') s.click(); };
@@ -64,14 +82,24 @@
     if (performance.now() - sistBredde < 500) return; sistBredde = performance.now();   // layoutmåling to ganger i sekundet holder
     const h = $('h2Hint'); if (!h) return;
     // Meldinger (#toast) under statusfeltet og topp-raden, så de aldri dekker dem (statusfeltet blir høyere når ressurser vises)
-    const t = $('toast'), st = document.querySelector('#hud > .panel'), dg = $('h2Dag');
-    if (t && st) t.style.top = (Math.max(st.getBoundingClientRect().bottom, dg ? dg.getBoundingClientRect().bottom : 0) + 10) + 'px';
-    if (!document.body.classList.contains('touchui')) { h.style.maxWidth = ''; return; }
+    const t = $('toast'), st = document.querySelector('#hud > .panel'), dg = $('h2Dag'), v = $('h2Vapen');
+    const touch = document.body.classList.contains('touchui'), høykant = touch && innerHeight > innerWidth;
+    // Mobil på høykant: våpenlinja under statusfeltet (ellers over hurtiglinja, se under)
+    if (v) { if (høykant && st) { v.style.bottom = 'auto'; v.style.top = (st.getBoundingClientRect().bottom + 6) + 'px'; } else v.style.top = ''; }
+    const vUnder = høykant && v && !v.hidden ? v.getBoundingClientRect().bottom : 0;
+    if (t && st) t.style.top = (Math.max(st.getBoundingClientRect().bottom, dg ? dg.getBoundingClientRect().bottom : 0, vUnder) + 10) + 'px';
+    if (!touch) { h.style.maxWidth = ''; return; }
     const acts = document.querySelector('#touch .acts'), hb = $('hotbar'); if (!acts) return;
-    if (innerHeight > innerWidth) { h.style.maxWidth = (innerWidth - 32) + 'px'; } else {   // høykant: knappene ligger under hintet, så hele bredden kan brukes
+    if (høykant) {   // høykant: hintet rett over roboten, i hele bredden. Hurtiglinja og knappene ligger nederst (hud2.css).
+      // Bredden holder seg unna verktøykolonnen til høyre (symmetrisk rundt midten). Lange hint brytes over flere linjer (hud2.css).
+      const kol = acts.querySelector('.small'), midt = innerWidth / 2, kant = kol ? kol.getBoundingClientRect().left - 8 : innerWidth - 16;
+      h.style.maxWidth = (2 * Math.max(70, Math.min(midt - 16, kant - midt))) + 'px';
+      // Hintet står på 48 % av høyden, men flyttes ned når en melding (#toast) ellers ville blitt dekket
+      let bunn = Math.round(innerHeight * 0.48);
+      if (t && t.classList.contains('show')) bunn = Math.min(bunn, Math.round(innerHeight - t.getBoundingClientRect().bottom - 6 - h.offsetHeight));
+      h.style.bottom = bunn + 'px'; return; }
     const midt = innerWidth / 2, høyre = acts.getBoundingClientRect().left - 8, venstre = Math.max(16, innerWidth - høyre);   // symmetrisk rundt midten
-    h.style.maxWidth = Math.max(140, 2 * Math.min(midt - venstre, høyre - midt)) + 'px'; }
-    const v = $('h2Vapen');
+    h.style.maxWidth = Math.max(140, 2 * Math.min(midt - venstre, høyre - midt)) + 'px';
     if (hb && !hb.hidden) { const top = hb.getBoundingClientRect().top; if (v) v.style.bottom = (innerHeight - top + 4) + 'px';
       h.style.bottom = (innerHeight - (v && !v.hidden ? v.getBoundingClientRect().top : top) + 6) + 'px'; }
   }
