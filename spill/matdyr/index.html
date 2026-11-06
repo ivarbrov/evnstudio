@@ -9,7 +9,7 @@
 <!-- EVN-SIKKERHET: CSP-taggen fra /sikkerhet/ legges inn her ved publisering på evnstudio.no (tas ut i Claude-artefakter). -->
 <link rel="icon" href="../../favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Matdyr-regn 0.10.0 – EVN Studio</title>
+<title>Matdyr-regn 0.10.1 – EVN Studio</title>
 <script src="../../statistikk.js" data-spill="matdyr" defer></script>
 <style>
   :root { --gull:#ffc93c; --mork:#1d2440; --gronn:#2fb35a; }
@@ -165,16 +165,16 @@
     <h1>Matdyr-regn</h1>
     <div class="maal">
       <img id="startRobot" width="116" height="130" alt="">
-      <p>Kjøp matdyrene som regner ned, bær dem hjem og bygg den beste basen! 🍔🐷</p>
+      <p>Ta med matdyrene som regner ned, bær dem hjem og betal i basen. De sjeldne må du fange! 🍔🐷</p>
     </div>
     <div class="styring">
-      <div class="bare-pc">Piltaster eller WASD for å gå.<br>E eller mellomrom for å kjøpe, slippe og selge.<br>I for Matdyrboka. M for kart.</div>
-      <div class="bare-touch">Bruk styrespaken nede til venstre for å gå.<br>Trykk på den grønne knappen for å kjøpe og selge.<br>Trykk på 📖 for å se Matdyrboka.</div>
+      <div class="bare-pc">Piltaster eller WASD for å gå.<br>E eller mellomrom for å ta med, fange, slippe og selge.<br>I for Matdyrboka. M for kart.</div>
+      <div class="bare-touch">Bruk styrespaken nede til venstre for å gå.<br>Trykk på den grønne knappen for å ta med, fange og selge.<br>Trykk på 📖 for å se Matdyrboka.</div>
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <p class="ingen3d hidden" id="noGL">😕 Denne nettleseren kan ikke vise 3D. Prøv en annen nettleser, eller be en voksen om hjelp.</p>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.10.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.10.1</div>
   </div>
 </div>
 
@@ -495,7 +495,7 @@ window.EVNPause = function (cfg) {
 
 <script>
 "use strict";
-const VERSJON="0.10.0";
+const VERSJON="0.10.1";
 function ingen3d(){window.__ingen3d=true;$("noGL").classList.remove("hidden");$("startBtn").hidden=true}
 // ================= Matdyr-data: 40 dyr × 25 mat/drikke = 1000 =================
 const ANIMALS=[["🐷","gris"],["🐸","frosk"],["🦈","hai"],["🐙","blekksprut"],["🐒","ape"],["🐄","ku"],["🐭","mus"],["🐧","pingvin"],["🐘","elefant"],["🐋","hval"],["🐱","katt"],["🐶","hund"],["🐰","kanin"],["🦊","rev"],["🐻","bjørn"],["🐼","panda"],["🦁","løve"],["🐯","tiger"],["🐴","hest"],["🦄","enhjørning"],["🐑","sau"],["🐐","geit"],["🐔","høne"],["🦆","and"],["🦉","ugle"],["🦜","papegøye"],["🦩","flamingo"],["🐊","krokodille"],["🐢","skilpadde"],["🐍","slange"],["🦖","dinosaur"],["🦒","sjiraff"],["🦓","sebra"],["🐫","kamel"],["🦛","flodhest"],["🦏","neshorn"],["🐨","koala"],["🦥","dovendyr"],["🐌","snegle"],["🦀","krabbe"]];
@@ -1232,7 +1232,7 @@ $("nameIn").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault(
 $("startBtn").addEventListener("click",()=>{
   started=true;paused=false;$("start").classList.remove("vis");$("hud").hidden=false;$("hoyre").hidden=false;$("zoom").hidden=false;J.classList.add("klar");last=performance.now();
   try{document.dispatchEvent(new Event("evn-start"))}catch(e){}
-  showMsg(base.some(c=>c>=0)?"Velkommen tilbake! 🍔 Matdyrene dine har ventet på deg.":"Gå bort til et matdyr og kjøp det! 💰");
+  if(base.some(c=>c>=0))showMsg("Velkommen tilbake! 🍔 Matdyrene dine har ventet på deg."); // nye spillere får intro-hintet i stedet
 });
 
 // ================= Matdyrboka =================
