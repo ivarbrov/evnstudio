@@ -6,6 +6,7 @@ er små – se på retning over flere uker, ikke på enkeltdager.
 
 | Dato | Hva | Spill | Kan påvirke |
 |---|---|---|---|
+| 2026-11-06 (ikke publisert) | **Fiskespillet 0.11.4: løpingen som i de andre spillene** (Evens tilbakemelding 6.11.2026: «ser veldig rar ut»). Løpeanimasjonen spilles i rolig takt, 0,85–1,35 ganger normal fart, som i Dyrepatruljen (0,85) og Mørkeskogen. Tidligere ble den spilt opptil 4 ganger fortere. Toppfarten på land er 9, og 11,7 med Shift. | Fiskespillet | Ikke publisert |
 | 2026-11-06 (ikke publisert) | **Fiskespillet 0.11.3: EVN-roboten v2** (main er flettet inn: PR #52, Fiskespillet 0.6.2). Spillet laster `helt-robot-v2.glb`. Animasjonene og fotfarten er de samme som før (målt: gå 1,8 og løpe 3,0), så løpingen på land er uendret. | Fiskespillet | Ikke publisert |
 | 2026-11-06 (ikke publisert) | **Fiskespillet 0.11.2: samme rettinger som 0.9.2** (funn fra QA av 0b78d98). Startbeskjeden og «Du er om bord igjen» byttes ikke lenger ut med havnehjelpen. Start-knappen synes uten rulling på små skjermer. | Fiskespillet | Ikke publisert |
 | 2026-11-06 (ikke publisert) | **Fiskespillet 0.11.1: roboten løper på land uten å skli** (Evens tilbakemelding 6.11.2026: «som på et rullebånd»). Gå- og løpeanimasjonen spilles nå så fort som roboten beveger seg. Føttene ble målt til 1,8 (gå) og 3,0 (løpe) enheter i sekundet. Over farten 4,5 brukes løpeanimasjonen. Toppfarten er 11, og 15,4 med Shift. Støv kommer fra føttene når roboten løper fort. | Fiskespillet | Ikke publisert |
