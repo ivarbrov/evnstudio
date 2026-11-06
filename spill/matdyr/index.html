@@ -9,7 +9,7 @@
 <!-- EVN-SIKKERHET: CSP-taggen fra /sikkerhet/ legges inn her ved publisering på evnstudio.no (tas ut i Claude-artefakter). -->
 <link rel="icon" href="../../favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Matdyr-regn 0.10.2 – EVN Studio</title>
+<title>Matdyr-regn 0.10.3 – EVN Studio</title>
 <script src="../../statistikk.js" data-spill="matdyr" defer></script>
 <style>
   :root { --gull:#ffc93c; --mork:#1d2440; --gronn:#2fb35a; }
@@ -176,7 +176,7 @@
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <p class="ingen3d hidden" id="noGL">😕 Denne nettleseren kan ikke vise 3D. Prøv en annen nettleser, eller be en voksen om hjelp.</p>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.10.2</div>
+    <div class="evn-ver" id="versjon">Versjon 0.10.3</div>
   </div>
 </div>
 
@@ -517,7 +517,7 @@ window.EVNPause = function (cfg) {
 
 <script>
 "use strict";
-const VERSJON="0.10.2";
+const VERSJON="0.10.3";
 function ingen3d(){window.__ingen3d=true;$("noGL").classList.remove("hidden");$("startBtn").hidden=true}
 // ================= Matdyr-data: 40 dyr × 25 mat/drikke = 1000 =================
 const ANIMALS=[["🐷","gris"],["🐸","frosk"],["🦈","hai"],["🐙","blekksprut"],["🐒","ape"],["🐄","ku"],["🐭","mus"],["🐧","pingvin"],["🐘","elefant"],["🐋","hval"],["🐱","katt"],["🐶","hund"],["🐰","kanin"],["🦊","rev"],["🐻","bjørn"],["🐼","panda"],["🦁","løve"],["🐯","tiger"],["🐴","hest"],["🦄","enhjørning"],["🐑","sau"],["🐐","geit"],["🐔","høne"],["🦆","and"],["🦉","ugle"],["🦜","papegøye"],["🦩","flamingo"],["🐊","krokodille"],["🐢","skilpadde"],["🐍","slange"],["🦖","dinosaur"],["🦒","sjiraff"],["🦓","sebra"],["🐫","kamel"],["🦛","flodhest"],["🦏","neshorn"],["🐨","koala"],["🦥","dovendyr"],["🐌","snegle"],["🦀","krabbe"]];
@@ -1394,7 +1394,7 @@ window.__evnP=EVNPause({
   tema:{panel:"rgba(29,36,64,.97)",ink:"#fff",hi:"#ffc93c",btn:"#ffc93c",btnInk:"#4a2a00",font:"'Nunito', system-ui, sans-serif"},
   knapp:(b,k)=>{for(const x of[k,b]){x.className="rund";x.style.cssText="padding:0;font-size:22px"}$("hoyre").insertBefore(k,$("evnAvslutt"));$("hoyre").insertBefore(b,$("evnAvslutt"))},
   kart:{forhold:(KART.x1-KART.x0)/(KART.z1-KART.z0),info:()=>"🔺 Du · 🏠 Basen · fargede prikker er matdyr",tegn:(c,w,h)=>tegnKart(c,w,h)},
-  kanPause:()=>started&&!gameModalOpen(),
+  kanPause:()=>started&&!gameModalOpen()&&!document.getElementById("feilLag").classList.contains("vis"), // K2: aldri pause over feilkortet
   aktiv:()=>started&&!paused,
   pause:()=>{paused=true;clearInput();save()},
   fortsett:()=>{paused=false;clearInput();last=performance.now()},
