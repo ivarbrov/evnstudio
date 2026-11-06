@@ -5100,7 +5100,8 @@ function makeBuilding(type) {
   return G;
 }
 
-// 2.0.6: veiskilt. Ved starten av hver sti (ca. 160 fra start) og så omtrent hver 1400. enhet, men ikke rett ved målet.
+// 2.0.6: veiskilt. Første skilt ca. 700 ut på stien (utenfor leiren rundt bålet), så omtrent hver 1400. enhet, men ikke rett ved målet
+// og aldri nærmere enn 220 fra et annet skilt.
 // Skiltet står ved siden av stien, og pila peker mot målet. Bare grafikk: ingen kollisjon og ingen endring i verdenen.
 const SKILT_TEX = {};
 function skiltTex(m) {
@@ -5118,13 +5119,14 @@ function lagSkilt(G) {
   for (const P of g.paths) {
     if (!P.mål || P.length < 3) continue;
     let tot = 0; const acc = [0]; for (let i = 1; i < P.length; i++) { tot += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); acc.push(tot); }
-    const mål = []; for (let s = 160; s < tot - 400; s += 1400) mål.push(s);
+    const mål = []; for (let s = 700; s < tot - 400; s += 1400) mål.push(s);   // første skilt et stykke ut på stien, ikke ved bålet
     for (const sd of mål) {
       let i = 1; while (i < P.length - 1 && acc[i] < sd) i++;
       const a = P[i - 1], b = P[i], f = (sd - acc[i - 1]) / Math.max(1e-6, acc[i] - acc[i - 1]);
       const qx = a[0] + (b[0] - a[0]) * f, qz = a[1] + (b[1] - a[1]) * f;
       let dx = b[0] - a[0], dz = b[1] - a[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
       const zx = -dz, zz = dx, sx = qx - zx * 34, sz = qz - zz * 34;   // skiltet står 34 til siden, med forsiden mot stien
+      if (dist(sx, sz, FX, FY) < 650 || ut.some(o => dist(o.x, o.y, sx, sz) < 220)) continue;   // ikke i leiren, og ikke flere skilt i klump
       const grp = new THREE.Group(), y0 = groundH(sx, sz);
       const brett = new THREE.Group(); brett.position.y = 40;
       const post = new THREE.Mesh(postGeo, postMat); post.position.set(0, -17, -4); brett.add(post);   // stolpen står bak brettet
@@ -5132,7 +5134,7 @@ function lagSkilt(G) {
       const plan = new THREE.Mesh(planGeo, new THREE.MeshBasicMaterial({ map: skiltTex(P.mål) })); plan.position.z = 1.3; brett.add(plan);
       brett.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(dx, 0, dz), up, new THREE.Vector3(zx, 0, zz)));
       grp.add(brett); grp.position.set(sx, y0, sz); G.add(grp);
-      ut.push({ x: sx, y: sz, _m: grp });
+      ut.push({ x: sx, y: sz, _m: grp, mål: P.mål.n });
     }
   }
   return ut;
