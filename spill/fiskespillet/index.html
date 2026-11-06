@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.10.1 – EVN Studio</title>
+<title>Fiskespillet 0.11.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -215,7 +215,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.10.1</div>
+    <div class="evn-ver" id="versjon">Versjon 0.11.0</div>
   </div>
 </div>
 
@@ -549,7 +549,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.10.1';
+const VERSJON = '0.11.0';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -876,7 +876,7 @@ const havMat = new THREE.ShaderMaterial({
 });
 const HAV_STR = 1300, HAV_DEL = 150;
 const havGeo = new THREE.PlaneGeometry(HAV_STR, HAV_STR, HAV_DEL, HAV_DEL); havGeo.rotateX(-Math.PI / 2);
-const hav = new THREE.Mesh(havGeo, havMat); scene.add(hav);
+const hav = new THREE.Mesh(havGeo, havMat); scene.add(hav); hav.renderOrder = 2;   // etter vannsperra i båtene
 // Havbunn langt nede (så kanten av havet aldri synes)
 { const b = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshBasicMaterial({ color: C(0x0e3a70) })); b.rotation.x = -Math.PI / 2; b.position.y = -3; scene.add(b); }
 
@@ -1044,11 +1044,26 @@ const ktankGruppe = new THREE.Group(); ktankGruppe.position.set(KTANK.x, KTANK.y
   for (let z = OY_R + 6; z <= OY_R + 20; z += 3.5) hindre.push({ x: 0, z, r: 4.2 });
 }
 // Små skjær og øyer rundt på havet
+const SKJAER_MAT = new THREE.MeshStandardMaterial({ roughness: 0.92, map: lerretTekstur(256, 256, (x, w, h) => {
+  x.fillStyle = '#66717c'; x.fillRect(0, 0, w, h);
+  for (let i = 0; i < 900; i++) { const l = rnd(-35, 35) | 0; x.fillStyle = `rgba(${95 + l},${105 + l},${115 + l},${rnd(0.2, 0.6)})`; x.fillRect(rnd(0, w), rnd(0, h), rnd(2, 7), rnd(2, 7)); }
+  for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(${rnd(80, 130) | 0},${rnd(140, 180) | 0},${rnd(60, 90) | 0},${rnd(0.25, 0.5)})`; x.beginPath(); x.arc(rnd(0, w), rnd(0, h * 0.5), rnd(4, 14), 0, 7); x.fill(); }   // lav
+  const g = x.createLinearGradient(0, h * 0.75, 0, h); g.addColorStop(0, 'rgba(40,50,45,0)'); g.addColorStop(1, 'rgba(40,50,45,.55)'); x.fillStyle = g; x.fillRect(0, 0, w, h);   // våt kant
+}) });
+const SKJAER_SKUM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22, depthWrite: false });
+// Ujevn stein: en kule med tilfeldige dulper, UV fra toppen og ned
+function steinGeo() { const geo = new THREE.SphereGeometry(1, 28, 18), p = geo.attributes.position, uv = [], fro = rnd(0, 9);
+  for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), k = 1 + 0.18 * Math.sin(x * 3.1 + fro) * Math.sin(z * 2.7 + fro) + 0.08 * Math.sin(y * 7 + x * 5) + 0.07 * Math.sin(x * 9 + fro) * Math.sin(y * 8 + z * 6) + 0.04 * Math.sin(z * 15 + y * 11);
+    p.setXYZ(i, x * k, y * k, z * k); uv.push(Math.atan2(z, x) / Math.PI + 1, (y + 1) / 2); }
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.computeVertexNormals(); return geo; }
 const SKJAER = [[120, -60, 9], [-140, 40, 12], [60, 150, 7], [-60, -170, 10], [250, 120, 14], [-280, -60, 16], [200, -250, 12], [-210, 250, 13], [330, -40, 10], [40, -320, 11], [-380, 150, 15], [420, 230, 14], [-60, 420, 12], [300, 380, 15], [-420, -300, 13], [450, -260, 12]];
 for (const [x, z, r] of SKJAER) {
   const g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
-  del(new THREE.DodecahedronGeometry(1, 0), M(0x7d8a96), r, r * 0.45, r * 0.9, 0, -0.5, 0, g).rotation.y = rnd(0, 6);
-  if (r > 11) { del(new THREE.CylinderGeometry(r * 0.55, r * 0.75, 1.5, 12), M(0x7fcf5a), 1, 1, 1, 0, r * 0.38, 0, g); }
+  // Ny grafikk 6.11.2026: ujevn stein med tekstur, småstein rundt og skum i vannkanten
+  const hoved = del(steinGeo(), SKJAER_MAT, r, r * 0.45, r * 0.9, 0, -0.5, 0, g); hoved.rotation.y = rnd(0, 6); hoved.castShadow = hoved.receiveShadow = true;
+  for (let i = 0; i < 4; i++) { const v = rnd(0, 6.3), d = r * rnd(0.85, 1.1), k = r * rnd(0.12, 0.22); const sm = del(steinGeo(), SKJAER_MAT, k, k * 0.6, k, Math.cos(v) * d, -0.2, Math.sin(v) * d, g); sm.rotation.y = rnd(0, 6); }
+  const skumRing = new THREE.Mesh(new THREE.RingGeometry(r * 0.85, r * 1.08, 40), SKJAER_SKUM); skumRing.rotation.x = -Math.PI / 2; skumRing.position.y = 0.3; skumRing.renderOrder = 3; g.add(skumRing);
+  if (r > 11) { const topp = del(new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), M(0x6fc24e, { roughness: 0.95 }), r * 0.6, r * 0.12, r * 0.55, 0, r * 0.3, 0, g); topp.receiveShadow = true; }
   hindre.push({ x, z, r: r + 2 });
 }
 // Bøyer som viser hvor en ny sone begynner
@@ -1122,12 +1137,24 @@ function fiskMat(c, m, krystall) {
   if (c === 8) { p.emissive = C(0x3fffc0); p.emissiveIntensity = 0.55; p.emissiveMap = p.map; }
   if (c === 9) { p.emissive = C(0xffffff); p.emissiveIntensity = 0.25; p.emissiveMap = p.map; }
   if (krystall) { p.transparent = true; p.opacity = 0.72; p.roughness = 0.1; }
-  return (fiskMatCache[k] = new THREE.MeshStandardMaterial(p));
+  // Glans og skjell (ny grafikk 6.11.2026)
+  p.clearcoat = 0.7; p.clearcoatRoughness = 0.2; if (!krystall) { p.bumpMap = SKJELL; p.bumpScale = 0.012; }
+  return (fiskMatCache[k] = new THREE.MeshPhysicalMaterial(p));
 }
-const KROPP = new THREE.SphereGeometry(1, 16, 12); KROPP.rotateZ(-Math.PI / 2);   // polene langs fisken: hodet er +x
-const OYE_H = M(0xffffff), OYE_S = M(0x111111);
+// Fiskekroppen: en myk kule som smalner av mot halen og er litt flat i buken (ny grafikk 6.11.2026). Hodet er +x.
+const KROPP = (() => { const geo = new THREE.SphereGeometry(1, 28, 18); geo.rotateZ(-Math.PI / 2);
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) { const x = p.getX(i), t = (x + 1) / 2, smal = t < 0.5 ? 0.35 + 0.65 * Math.pow(Math.sin(t / 0.5 * Math.PI / 2), 0.8) : 1;
+    let y = p.getY(i) * smal; const z = p.getZ(i) * smal; if (y < 0) y *= 0.88; p.setXYZ(i, x, y, z); }
+  geo.computeVertexNormals(); return geo; })();
+// Skjell som små buer i overflaten
+const SKJELL = lerretTekstur(256, 256, (x, w, h) => { x.fillStyle = '#808080'; x.fillRect(0, 0, w, h); const r = 16;
+  for (let j = -1; j < h / (r * 0.8) + 1; j++) for (let i = -1; i < w / r + 1; i++) { const cx = i * r + (j % 2 ? r / 2 : 0), cy = j * r * 0.8;
+    const g = x.createRadialGradient(cx, cy - r * 0.2, 1, cx, cy, r * 0.7); g.addColorStop(0, '#d0d0d0'); g.addColorStop(0.8, '#8a8a8a'); g.addColorStop(1, '#505050'); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r * 0.62, 0, Math.PI); x.fill(); } }, true);
+SKJELL.encoding = THREE.LinearEncoding; SKJELL.repeat.set(6, 3);
+const OYE_H = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.15, clearcoat: 1 }), OYE_S = new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 0.1 }), OYE_GLANS = new THREE.MeshBasicMaterial({ color: 0xffffff });
 function oyne(g, x, y, z, r) {
-  for (const s of [-1, 1]) { del(SPH_L, OYE_H, r, r, r, x, y, s * z, g); del(SPH_L, OYE_S, r * 0.55, r * 0.55, r * 0.55, x + r * 0.35, y, s * (z + r * 0.55), g); }
+  for (const s of [-1, 1]) { del(SPH, OYE_H, r, r, r, x, y, s * z, g); del(SPH, OYE_S, r * 0.55, r * 0.55, r * 0.55, x + r * 0.35, y, s * (z + r * 0.55), g); del(SPH_L, OYE_GLANS, r * 0.16, r * 0.16, r * 0.16, x + r * 0.5, y + r * 0.25, s * (z + r * 0.95), g); }
 }
 // Lager en fisk. Modellen er L lang (enheter) før størrelse, med hodet mot +x.
 function lagFiskModell(id) {
@@ -1236,22 +1263,126 @@ function skrog(L, B, hoyde, farge, stripe) {
   g.userData.dekkY = hoyde - 0.4;
   return g;
 }
+// ---- Nye båter (fra testscenene 5.11.2026, Evens valg «123»): buet skrog med planker, ripe, tofter, årer, motor og styrehus ----
+const baatTeks = {};
+function treTekstur(farge, mork) { const k = 'tre' + farge + mork; return baatTeks[k] || (baatTeks[k] = lerretTekstur(512, 512, (x, w, h) => {
+  x.fillStyle = farge; x.fillRect(0, 0, w, h); const n = 8;
+  for (let j = 0; j < n; j++) { x.fillStyle = `rgba(0,0,0,${rnd(0, 0.12)})`; x.fillRect(0, j * h / n, w, h / n);
+    for (let q = 0; q < 40; q++) { x.strokeStyle = `rgba(60,30,10,${rnd(0.05, 0.18)})`; x.lineWidth = rnd(0.5, 2); x.beginPath(); const y = j * h / n + rnd(2, h / n - 2); x.moveTo(0, y); x.bezierCurveTo(w * 0.3, y + rnd(-4, 4), w * 0.6, y + rnd(-4, 4), w, y + rnd(-3, 3)); x.stroke(); }
+    x.fillStyle = mork; x.fillRect(0, j * h / n, w, 3); } }, true)); }
+function malTekstur(farge, stripe) { const k = 'mal' + farge + stripe; return baatTeks[k] || (baatTeks[k] = lerretTekstur(256, 256, (x, w, h) => {
+  x.fillStyle = '#c94a3a'; x.fillRect(0, 0, w, h * 0.32); x.fillStyle = farge; x.fillRect(0, h * 0.32, w, h); x.fillStyle = stripe; x.fillRect(0, h * 0.8, w, h * 0.06);
+  for (let i = 0; i < 300; i++) { x.fillStyle = `rgba(255,255,255,${rnd(0, 0.04)})`; x.fillRect(rnd(0, w), rnd(0, h), 3, 1); } })); }
+// u går fra akterspeilet (0) til baugen (1); th går rundt fra babord via kjølen til styrbord. Baugen peker mot +z.
+function skrog2(o) {
+  const nu = 40, nv = 20, pos = [], uv = [], idx = [];
+  const w = u => o.B / 2 * (u < o.bred ? 0.82 + 0.18 * Math.sin(u / o.bred * Math.PI / 2) : Math.pow(Math.cos((u - o.bred) / (1 - o.bred) * Math.PI / 2), 0.75));
+  const ripe = u => o.ripe + o.spring * Math.pow(u, 3);
+  const dyp = u => o.D * (0.75 + 0.25 * Math.sin(Math.min(1, u * 1.3) * Math.PI / 2)) * (u > 0.85 ? 1 - (u - 0.85) * 2.2 : 1);
+  const pkt = (u, th) => { const x = w(u) * Math.sin(th), topp = ripe(u), d = dyp(u);
+    const k = o.v ? Math.pow(Math.abs(Math.sin(th)), 0.6) : Math.abs(Math.sin(th));
+    const y = o.v ? topp - (topp + d) * (1 - k) : topp - (topp + d) * Math.cos(th);
+    return [x, y, (u - 0.5) * o.L]; };
+  for (let i = 0; i <= nu; i++) for (let j = 0; j <= nv; j++) { const u = i / nu, th = -Math.PI / 2 + j / nv * Math.PI; pos.push(...pkt(u, th)); uv.push(u * 3, Math.abs(j / nv - 0.5) * 2); }
+  for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) { const a = i * (nv + 1) + j, b = a + nv + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
+  const g = new THREE.Group();
+  const ut = new THREE.Mesh(geo, o.mat); ut.castShadow = true; g.add(ut);
+  const innBak = o.innMat.clone(); innBak.side = THREE.BackSide; g.add(new THREE.Mesh(geo, innBak));
+  // Akterspeil
+  const s = new THREE.Shape(); for (let j = 0; j <= nv; j++) { const p = pkt(0, -Math.PI / 2 + j / nv * Math.PI); j ? s.lineTo(p[0], p[1]) : s.moveTo(p[0], p[1]); }
+  const innTo = o.innMat.clone(); innTo.side = THREE.DoubleSide;
+  const sp = new THREE.Mesh(new THREE.ShapeGeometry(s), innTo); sp.position.z = -o.L / 2 + 0.02; g.add(sp);
+  const spUt = new THREE.Mesh(new THREE.ShapeGeometry(s), o.mat); spUt.position.z = -o.L / 2; spUt.rotation.y = Math.PI; spUt.scale.x = -1; g.add(spUt);
+  // Ripa
+  for (const side of [-1, 1]) { const pk = []; for (let i = 0; i <= 30; i++) { const p = pkt(i / 30, side * Math.PI / 2); pk.push(new THREE.Vector3(p[0], p[1] + 0.04, p[2])); }
+    const t = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pk), 50, 0.1, 8), o.ripeMat); t.castShadow = true; g.add(t); }
+  // Omriss av åpningen, brukt til bunnplanker og vannsperre
+  const omriss = k => { const sh = new THREE.Shape();
+    for (let i = 0; i <= 30; i++) { const u = 0.01 + i / 30 * 0.97, p = pkt(u, Math.PI / 2); i ? sh.lineTo(p[2], p[0] * k) : sh.moveTo(p[2], p[0] * k); }
+    for (let i = 30; i >= 0; i--) { const u = 0.01 + i / 30 * 0.97, p = pkt(u, -Math.PI / 2); sh.lineTo(p[2], p[0] * k); } return sh; };
+  const gulv = new THREE.Mesh(new THREE.ShapeGeometry(omriss(0.86)), o.gulvMat); gulv.rotation.set(Math.PI / 2, 0, Math.PI / 2); gulv.position.y = o.gulv; gulv.receiveShadow = true; g.add(gulv);
+  // Vannsperre: en usynlig flate over åpningen som bare skriver dybde. Den tegnes etter båten og før havet, så havet ikke synes inne i båten.
+  const sperre = new THREE.Mesh(new THREE.ShapeGeometry(omriss(1)), new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide }));
+  sperre.rotation.set(Math.PI / 2, 0, Math.PI / 2); sperre.position.y = o.ripe; sperre.renderOrder = 1; g.add(sperre);
+  g.userData = { w, ripe, pkt, dekkY: o.gulv + 0.05 };
+  return g;
+}
+function lagRobaat(L, B) {
+  const g = skrog2({ L, B, D: 0.9, ripe: 1.1, spring: 0.55, bred: 0.55, gulv: 0.3,
+    mat: new THREE.MeshStandardMaterial({ map: treTekstur('#b5773d', 'rgba(70,35,10,.6)'), roughness: 0.75 }),
+    innMat: new THREE.MeshStandardMaterial({ map: treTekstur('#c98f52', 'rgba(90,45,15,.5)'), roughness: 0.8 }),
+    gulvMat: new THREE.MeshStandardMaterial({ map: treTekstur('#a8723f', 'rgba(60,30,10,.7)'), roughness: 0.8, side: THREE.DoubleSide }),
+    ripeMat: M(0x6b3f1d, { roughness: 0.6 }) });
+  const sete = new THREE.MeshStandardMaterial({ map: treTekstur('#d6a066', 'rgba(90,45,15,.5)'), roughness: 0.7 });
+  for (const u of [0.12, 0.5, 0.8]) { const b = g.userData.w(u) * 1.9; const m = new THREE.Mesh(new THREE.BoxGeometry(b, 0.12, 0.55), sete); m.position.set(0, g.userData.ripe(u) - 0.3, (u - 0.5) * L); m.castShadow = m.receiveShadow = true; g.add(m); }
+  const aare = M(0xd9b07a, { roughness: 0.6 });
+  for (const sd of [-1, 1]) { const a = new THREE.Group(); a.position.set(sd * (B / 2 - 0.05), 1.2, 0.3); a.rotation.set(0, sd * 0.25, sd * 1.25); g.add(a);
+    const skaft = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 4.2, 8), aare); skaft.position.y = -0.6; a.add(skaft);
+    const blad = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.1, 0.06), aare); blad.position.y = -2.6; a.add(blad); skaft.castShadow = blad.castShadow = true; }
+  const tau = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.07, 8, 24), M(0xe8d7a8, { roughness: 0.9 })); tau.rotation.x = Math.PI / 2; tau.position.set(0, 0.42, L * 0.36); g.add(tau);
+  return g;
+}
+function lagMotorbaat(L, B, o) {
+  const g = skrog2({ L, B, D: 1.1, ripe: 1.1, spring: 0.5, bred: 0.5, v: true, gulv: 0.4,
+    mat: new THREE.MeshPhysicalMaterial({ map: malTekstur(o.farge, o.stripe), roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12 }),
+    innMat: new THREE.MeshStandardMaterial({ color: C(0xe9edf2), roughness: 0.6 }),
+    gulvMat: new THREE.MeshStandardMaterial({ map: treTekstur('#b07a45', 'rgba(40,20,5,.8)'), roughness: 0.7, side: THREE.DoubleSide }),
+    ripeMat: new THREE.MeshStandardMaterial({ color: C(0xc7ced6), roughness: 0.25, metalness: 0.8 }) });
+  // Styrehus med avrundede kanter og vinduer
+  const form = new THREE.Shape(), b = o.husB, h = o.husH, r = 0.35;
+  form.moveTo(-b / 2 + r, 0); form.lineTo(b / 2 - r, 0); form.quadraticCurveTo(b / 2, 0, b / 2, r); form.lineTo(b / 2, h - r); form.quadraticCurveTo(b / 2, h, b / 2 - r, h); form.lineTo(-b / 2 + r, h); form.quadraticCurveTo(-b / 2, h, -b / 2, h - r); form.lineTo(-b / 2, r); form.quadraticCurveTo(-b / 2, 0, -b / 2 + r, 0);
+  const hus = new THREE.Mesh(new THREE.ExtrudeGeometry(form, { depth: o.husL, bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.1, bevelSegments: 3 }), new THREE.MeshPhysicalMaterial({ color: C(o.husFarge), roughness: 0.3, clearcoat: 1 }));
+  hus.position.set(0, 0.4, o.husZ); hus.castShadow = true; g.add(hus);
+  if (o.tak) { const t = new THREE.Mesh(new THREE.BoxGeometry(b + 0.4, 0.15, o.husL + 0.5), new THREE.MeshPhysicalMaterial({ color: C(o.tak), roughness: 0.3, clearcoat: 1 })); t.position.set(0, 0.4 + h + 0.12, o.husZ + o.husL / 2); t.castShadow = true; g.add(t); }
+  const glass = new THREE.MeshPhysicalMaterial({ color: C(0x2b4a66), roughness: 0.05, metalness: 0.2, clearcoat: 1 });
+  const vy = 0.4 + h * 0.66;
+  const front = new THREE.Mesh(new THREE.PlaneGeometry(b * 0.85, h * 0.45), glass); front.position.set(0, vy, o.husZ + o.husL + 0.13); g.add(front);
+  for (const sd of [-1, 1]) { const sv = new THREE.Mesh(new THREE.PlaneGeometry(o.husL * 0.75, h * 0.42), glass); sv.position.set(sd * (b / 2 + 0.11), vy, o.husZ + o.husL / 2); sv.rotation.y = sd * Math.PI / 2; g.add(sv); }
+  // Rekkverk i rustfritt stål foran
+  const staal = new THREE.MeshStandardMaterial({ color: C(0xdfe5ea), roughness: 0.2, metalness: 0.9 });
+  for (const sd of [-1, 1]) { const pk = []; for (let i = 0; i <= 12; i++) { const u = 0.62 + i / 12 * 0.3, p = g.userData.pkt(u, sd * Math.PI / 2); pk.push(new THREE.Vector3(p[0] * 0.92, p[1] + 0.55, p[2])); }
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pk), 24, 0.035, 6), staal));
+    for (let i = 0; i <= 3; i++) { const q = pk[i * 4]; const st = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.55, 6), staal); st.position.set(q.x, q.y - 0.27, q.z); g.add(st); } }
+  // Påhengsmotor
+  if (o.motor) { const motor = new THREE.Group(); motor.position.set(0, 0.85, -L / 2 - 0.3); g.add(motor);
+    const svartM = new THREE.MeshPhysicalMaterial({ color: C(0x1d2440), roughness: 0.35, clearcoat: 0.8 });
+    const topp = new THREE.Mesh(new THREE.SphereGeometry(0.55, 20, 14), svartM); topp.scale.set(1, 0.85, 1.25); topp.castShadow = true; motor.add(topp);
+    const skaft = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.6, 0.4), M(0x3a4357, { roughness: 0.5 })); skaft.position.y = -1.0; motor.add(skaft);
+    const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.18), new THREE.MeshBasicMaterial({ color: 0xffd34d })); logo.position.set(0.56, 0.05, 0); logo.rotation.y = Math.PI / 2; motor.add(logo); }
+  // Mast med lanterner (fiskebåten)
+  if (o.mast) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 4.2, 10), M(0xf2f2f2, { roughness: 0.4 })); m.position.set(0, 0.4 + h + 2.1, o.husZ + o.husL * 0.4); m.castShadow = true; g.add(m);
+    const bom = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.6, 8), M(0xf2f2f2, { roughness: 0.4 })); bom.rotation.x = Math.PI / 2 - 0.35; bom.position.set(0, 0.4 + h + 1.2, o.husZ - 1.5); g.add(bom);
+    for (const [x, c] of [[-0.25, 0xff4040], [0.25, 0x40ff70]]) { const l = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), new THREE.MeshBasicMaterial({ color: c })); l.position.set(x, 0.4 + h + 3.6, o.husZ + o.husL * 0.4); g.add(l); }
+    // Livbøye på styrehuset
+    const boye = new THREE.Group(); boye.position.set(b / 2 + 0.16, 0.4 + h * 0.4, o.husZ + o.husL * 0.25); boye.rotation.y = Math.PI / 2; g.add(boye);
+    for (let i = 0; i < 4; i++) boye.add(new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.11, 8, 12, Math.PI / 2), M(i % 2 ? 0xffffff : 0xff6a1a)).rotateZ(i * Math.PI / 2)); }
+  // Flagg
+  const stang = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.6, 6), staal); stang.position.set(0, 1.7, -L / 2 + 0.5); g.add(stang);
+  const flagg = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.55), new THREE.MeshStandardMaterial({ color: C(0xffcc00), side: THREE.DoubleSide, roughness: 0.8 })); flagg.position.set(0, 2.2, -L / 2 + 0.05); flagg.rotation.y = Math.PI / 2; g.add(flagg);
+  return g;
+}
+function lagFlaate() {
+  const g = new THREE.Group();
+  const bark = new THREE.MeshStandardMaterial({ map: treTekstur('#8b5e34', 'rgba(40,20,5,.8)'), roughness: 0.9 }), ende = M(0xd9b07a, { roughness: 0.8 });
+  for (let i = 0; i < 6; i++) { const geo = new THREE.CylinderGeometry(0.55, 0.55, 6.5 + (i % 2) * 0.4, 14, 1, false); const s = new THREE.Mesh(geo, [bark, ende, ende]); s.rotation.x = Math.PI / 2; s.position.set(-2.75 + i * 1.1, 0.1, (i % 3 - 1) * 0.15); s.castShadow = true; g.add(s); }
+  const tau = M(0xe8d7a8, { roughness: 0.95 });
+  for (const z of [-2.2, 2.2]) { del(BOX, M(0x6b4a2a), 6.8, 0.25, 0.4, 0, 0.6, z, g); for (let i = 0; i < 6; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.05, 6, 16), tau); t.position.set(-2.75 + i * 1.1, 0.1, z + 0.35); g.add(t); } }
+  del(CYL, M(0x6b4a2a), 0.12, 4, 0.12, -1.8, 2.6, 1.6, g);
+  const seil = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 2.4, 6, 1), new THREE.MeshStandardMaterial({ color: C(0xf3ead2), side: THREE.DoubleSide, roughness: 0.9 })); seil.position.set(-1.8, 2.9, 2.45); seil.rotation.y = Math.PI / 2;
+  const sp = seil.geometry.attributes.position; for (let i = 0; i < sp.count; i++) sp.setZ(i, Math.sin((sp.getX(i) + 0.8) / 1.6 * Math.PI) * 0.3); seil.geometry.computeVertexNormals(); g.add(seil);
+  del(BOX, M(0xffcc00), 0.05, 0.5, 0.8, -1.8, 4.4, 2.0, g);
+  g.userData.dekkY = 0.65;
+  return g;
+}
 function byggBaat() {
   baatModell.clear();
   const b = tilstand.baat;
   let g;
-  if (b === 0) {
-    // Flåten: tømmerstokker bundet sammen
-    g = new THREE.Group();
-    for (let i = 0; i < 6; i++) { const s = del(CYL, M(i % 2 ? 0xa0703f : 0x8b5e34), 0.55, 6.5, 0.55, -2.75 + i * 1.1, 0.1, 0, g); s.rotation.x = Math.PI / 2; }
-    for (const z of [-2.2, 2.2]) del(BOX, M(0x6b4a2a), 6.8, 0.25, 0.4, 0, 0.6, z, g);
-    const mast = del(CYL, M(0x6b4a2a), 0.12, 4, 0.12, -1.8, 2.6, 1.6, g);
-    const flagg = del(BOX, M(0xffcc00), 0.05, 1, 1.4, -1.8, 4, 2.3, g);
-    g.userData.dekkY = 0.65;
-  }
-  else if (b === 1) { g = skrog(7.5, 3.4, 1.6, 0xa86e3c, 0xffffff); for (const s of [-1, 1]) { const a = del(CYL, M(0x7a5530), 0.08, 3.2, 0.08, s * 1.9, 1.1, 0.4, g); a.rotation.z = s * 1.1; } }
-  else if (b === 2) { g = skrog(9, 3.8, 1.8, 0xf4f4f4, 0xe5483f); del(BOX, M(0x2a3a55), 1.1, 1.2, 1.1, 0, 1.4, -4.6, g); const r = del(BOX, M(0x9fd6ff, { transparent: true, opacity: 0.6 }), 2.8, 1.1, 0.12, 0, 2.1, 2.2, g); r.rotation.x = -0.4; }
-  else { g = skrog(10.5, 3.8, 1.7, 0xffc93c, 0x1d2440); del(BOX, M(0x1d2440), 1.4, 1.4, 1.2, 0, 1.4, -5.3, g); for (const s of [-1, 1]) del(BOX, M(0x1d2440), 0.15, 0.9, 2.2, s * 1.5, 1.9, -4.2, g); const r = del(BOX, M(0x9fd6ff, { transparent: true, opacity: 0.6 }), 3, 0.9, 0.12, 0, 2.0, 2.8, g); r.rotation.x = -0.6; }
+  if (b === 0) g = lagFlaate();
+  else if (b === 1) g = lagRobaat(7.5, 3.2);
+  else if (b === 2) g = lagMotorbaat(9, 3.6, { farge: '#f6f7f9', stripe: '#e5483f', husB: 2.3, husH: 1.3, husL: 2.0, husZ: 0.4, husFarge: 0xffffff, motor: true });
+  else g = lagMotorbaat(10.5, 3.8, { farge: '#ffc93c', stripe: '#1d2440', husB: 2.6, husH: 1.6, husL: 2.6, husZ: 0.6, husFarge: 0x1d2440, tak: 0xffffff, mast: true });
   baatModell.add(g);
   baat.userData.dekkY = g.userData.dekkY;
   baat.userData.L = [6.5, 7.5, 9, 10.5][b];
