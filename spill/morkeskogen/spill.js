@@ -631,7 +631,7 @@ function updateTrainTown(dt) {
     if (left < 0.5) {                                                                        // fram!
       tr.s = target; tr.v = 0; tr.st = 'wait'; tr.at = tr.at === 'A' ? 'B' : 'A'; tr.t = 0; sfx('whistle');
       if (g.ride) {                                                                           // gå av på perrongen
-        const st = trackPos(tr.at === 'A' ? ST_A : tr.s); g.ride = null;   // gå av ved perrongen
+        const st = trackPos(tr.at === 'A' ? tr.s - CAR_COACH : tr.s); g.ride = null;   // gå av ved vogna (A) så «Gå om bord» vises med en gang
         p.x = st.x + st.ty * 40 * TRAIN_K; p.y = st.y - st.tx * 40 * TRAIN_K; p.h = undefined; p.z = 0;
         if (tr.at === 'B') { questAdd('cowboy'); toast('🤠 Velkommen til Kaktusbyen! Sheriffen trenger hjelp – snakk med ham.'); T.visited = true; }
         else toast('🌲 Tilbake i Mørkeskogen!');
