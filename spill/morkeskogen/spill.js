@@ -954,7 +954,7 @@ function updateLasso(dt) {
   if (!F.done && F.t >= F.dur) {
     F.done = true; const a = F.a;
     if (a && g.animals.includes(a) && dist(g.p.x, g.p.y, a.x, a.y) < WEAPONS.lasso.range + 80) {
-      const A = ANIMALS[a.type]; a.tame = true; a.flee = 0; a.hp = A.hp; a.heartT = 0;
+      const A = ANIMALS[a.type]; a.tame = true; a.flee = 0; a.hp = A.hp; a.max = A.hp; a.heartT = 0;
       g.pets = (g.pets || []).filter(q => g.animals.includes(q) && q.tame); g.pets.push(a);
       if (g.pets.length > PET_MAX) { const old = g.pets.shift(); old.tame = false; old.flee = 2; floatText(old.x, old.y - 40, 'Ha det! 👋'); }
       burst(a.x, a.y - 20, '#ff7aa8', 16); floatText(a.x, a.y - 50, `❤️ Du fanget ${ANIMAL_NAVN[a.type] || a.type}!`); sfx('sparkle');
