@@ -54,6 +54,26 @@ with sync_playwright() as pw:
     p.evaluate("()=>document.getElementById('fangBtn').click()");ok("Innstilling: fangstnivå kan endres og lagres",p.evaluate("()=>localStorage.getItem('evn_matdyr_fangst')")=="vanskelig",p.text_content("#fangBtn"))
     ok("K1 ingen konsollfeil (fangst)",not e,e[:3])
     c.close()
+    # T2: Tab blir i pausekortet (felles EVN-PAUSE med inert-felle, som i Fiskespillet)
+    c,p,e=ny(b);p.goto(URL);p.evaluate("()=>localStorage.clear()");start(p)
+    p.keyboard.press("p");p.wait_for_timeout(600)
+    inne=[]
+    for i in range(8):
+        p.keyboard.press("Tab");p.wait_for_timeout(120);inne.append(p.evaluate("()=>!!document.getElementById('evnPause').contains(document.activeElement)"))
+    ok("T2 Tab blir i pausekortet",all(inne),inne)
+    p.keyboard.press("Escape");p.wait_for_timeout(400)
+    ok("T2 etter pause er ingenting igjen inert",p.evaluate("()=>[...document.body.children].every(el=>!el.inert)"))
+    k=p.evaluate("""()=>{const b=document.getElementById('act');const cs=getComputedStyle(b);return cs.backgroundImage}""")
+    ok("T4 handlingsknappen har mørkere grønn (kontrast ≥ 4:1 for hvit tekst)","31, 143, 69" in k or "#1f8f45" in k,k[:80])
+    c.close()
+    c,p,e=ny(b,vp={"width":375,"height":812});
+    c.close()
+    c=b.new_context(viewport={"width":375,"height":812},has_touch=True,is_mobile=True);c.add_init_script("try{localStorage.setItem('evn_matdyr_gfx','rask')}catch(e){}");p=c.new_page()
+    p.goto(URL,timeout=120000);p.wait_for_timeout(1200);p.tap("#startBtn",force=True);p.wait_for_timeout(2500)
+    p.evaluate("()=>{__spill.money=1e9;const i=__spill.COMBOS.findIndex(c=>c.r===2);const a=__spill.spawn(i,-20,0);a.state='walk';a.g.position.y=0;a.sp=0;__spill.robot.position.set(-21,0,0)}");p.wait_for_timeout(1500)
+    o=p.evaluate("()=>{const j=document.getElementById('joy').getBoundingClientRect();return [...document.querySelectorAll('#handlinger button')].filter(x=>x.offsetParent).map(x=>{const r=x.getBoundingClientRect();return Math.max(0,Math.min(r.right,j.right)-Math.max(r.left,j.left))*Math.max(0,Math.min(r.bottom,j.bottom)-Math.max(r.top,j.top))})}")
+    ok("Mobil 375×812: handlingsknappene overlapper ikke styrespaken",o and max(o)==0,o)
+    c.close()
     # 0.9.0-lagring med betalt bæring: skal ikke betales på nytt
     old=json.dumps({"v":1,"money":1000,"level":0,"base":[-1,-1,-1,-1],"disc":[],"name":"x","carry":3,"intro":3})
     c,p,e=ny(b,init=f"if(!sessionStorage.getItem('x')){{sessionStorage.setItem('x','1');localStorage.setItem('evn-matdyr-v1',{json.dumps(old)})}}")

@@ -9,7 +9,7 @@
 <!-- EVN-SIKKERHET: CSP-taggen fra /sikkerhet/ legges inn her ved publisering på evnstudio.no (tas ut i Claude-artefakter). -->
 <link rel="icon" href="../../favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Matdyr-regn 0.10.1 – EVN Studio</title>
+<title>Matdyr-regn 0.10.2 – EVN Studio</title>
 <script src="../../statistikk.js" data-spill="matdyr" defer></script>
 <style>
   :root { --gull:#ffc93c; --mork:#1d2440; --gronn:#2fb35a; }
@@ -35,13 +35,15 @@
 
   /* Handlinger nede til høyre, vises bare når de kan brukes (UI4, KA4) */
   #handlinger { position:fixed; right:calc(16px + env(safe-area-inset-right)); bottom:calc(18px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; align-items:flex-end; gap:10px; z-index:5; }
-  .handling { min-height:64px; min-width:150px; max-width:min(62vw,360px); padding:12px 20px; border-radius:22px; border:3px solid #fff; background:linear-gradient(#45d06f,#26a04e); color:#fff; font-weight:800; font-size:19px; box-shadow:0 5px 0 rgba(0,0,0,.25); text-align:center; }
-  .handling.selg { background:linear-gradient(#ff8a7a,#e0524a); }
-  .handling.slipp { background:linear-gradient(#ffb547,#f08a1c); }
-  .handling.lav { background:linear-gradient(#8a8ea3,#5f6377); }
+  .handling { min-height:64px; min-width:150px; max-width:min(62vw,360px); padding:12px 20px; border-radius:22px; border:3px solid #fff; background:linear-gradient(#1f8f45,#156b32); color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.35); font-weight:800; font-size:19px; box-shadow:0 5px 0 rgba(0,0,0,.25); text-align:center; }
+  .handling.selg { background:linear-gradient(#c43d33,#962a23); }
+  .handling.slipp { background:linear-gradient(#b8620c,#8c4806); }
+  .handling.lav { background:linear-gradient(#5f6377,#474a5a); }
   .handling.opp { background:linear-gradient(#ffd75e,#f0a91c); color:#4a2a00; min-height:52px; font-size:17px; }
   .handling .tast { font-size:13px; opacity:.75; margin-left:6px; }
   html.touch .handling .tast { display:none; }
+  /* T1/UI: handlingsknappene skal ikke gå inn over styrespaken (20 + 130 px) på smale telefoner */
+  html.touch .handling { max-width:calc(100vw - 182px - env(safe-area-inset-left) - env(safe-area-inset-right)); min-width:0; }
 
   /* Zoom langs høyre kant */
   #zoom { position:fixed; right:calc(12px + env(safe-area-inset-right)); top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:10px; z-index:5; }
@@ -174,7 +176,7 @@
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <p class="ingen3d hidden" id="noGL">😕 Denne nettleseren kan ikke vise 3D. Prøv en annen nettleser, eller be en voksen om hjelp.</p>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.10.1</div>
+    <div class="evn-ver" id="versjon">Versjon 0.10.2</div>
   </div>
 </div>
 
@@ -249,7 +251,7 @@
 /* K2: uventede feil gir en vennlig melding med mulighet til å laste på nytt */
 (function () {
   var vist = false;
-  function vis() { if (vist) return; vist = true; try { if (window.save) window.save(); } catch (e) {} var l = document.getElementById('feilLag'); if (l) { l.classList.add('vis'); var b = document.getElementById('feilLast'); if (b) b.focus(); } }
+  function vis() { if (vist) return; vist = true; try { if (window.save) window.save(); } catch (e) {} var l = document.getElementById('feilLag'); if (l) { try { if (window.EVNPauseInert) window.EVNPauseInert(l); } catch (e) {} l.classList.add('vis'); var b = document.getElementById('feilLast'); if (b) b.focus(); } }
   window.addEventListener('error', function (e) { if (window.__ingen3d) return; if (e && e.target && e.target !== window && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'IMG')) return; vis(); });
   window.addEventListener('unhandledrejection', vis);
   document.getElementById('feilLast').addEventListener('click', function () { location.reload(); });
@@ -294,8 +296,8 @@ window.EVNNullstill = function (cfg) {
   var $ = function (id) { return document.getElementById(id); };
   var apen = false, forrige = null;
   function oppdater() { lenke.hidden = !harLagring() || (cfg.vis ? !cfg.vis() : false); }
-  function apne() { apen = true; forrige = document.activeElement; boks.classList.add('vis'); $('evnNullstillNei').focus(); }
-  function lukk() { apen = false; boks.classList.remove('vis'); try { (forrige || lenke).focus(); } catch (e) {} }
+  function apne() { apen = true; forrige = document.activeElement; boks.classList.add('vis'); if (window.EVNPauseInert) window.EVNPauseInert(boks); $('evnNullstillNei').focus(); }
+  function lukk() { apen = false; boks.classList.remove('vis'); if (window.EVNPauseInert) window.EVNPauseInert(null); try { (forrige || lenke).focus(); } catch (e) {} }
   lenke.addEventListener('click', apne);
   $('evnNullstillNei').addEventListener('click', lukk);
   $('evnNullstillJa').addEventListener('click', function () {
@@ -389,6 +391,26 @@ window.EVNPause = function (cfg) {
   });
 
   var apen = false, apnetTid = 0, venterAvslutt = false, kartApen = false;
+  // T2: mens en dialog er åpen, kan ingenting bak den få fokus eller trykk (inert), og Tab blir i dialogen.
+  var inertListe = [], aktivDialog = null;
+  function settInert(dlg) {
+    inertListe.forEach(function (el) { el.inert = false; }); inertListe = [];
+    aktivDialog = dlg || null;
+    if (!dlg) return;
+    Array.prototype.forEach.call(document.body.children, function (el) {
+      if (el !== dlg && !el.contains(dlg) && !el.inert && el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') { el.inert = true; inertListe.push(el); }
+    });
+  }
+  window.EVNPauseInert = settInert;
+  // Tab og Shift+Tab går rundt i den åpne dialogen i stedet for ut av siden (på window, før pausens egen tastaturhåndtering)
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab' || !aktivDialog) return;
+    var f = Array.prototype.filter.call(aktivDialog.querySelectorAll('button, a[href], input, [tabindex]:not([tabindex="-1"])'), function (el) { return !el.disabled && !el.hidden && el.getClientRects().length > 0; });
+    if (!f.length) return;
+    var i = f.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+  }, true);
   var avsluttLenke = function () { var a = $(cfg.avsluttId); return a && getComputedStyle(a).display !== 'none' ? a : null; };
   var sporsmal = function () { return $('evnSporsmal'); };
   var sporsmalApent = function () { var s = sporsmal(); return !!s && s.style.display === 'grid'; };
@@ -411,13 +433,13 @@ window.EVNPause = function (cfg) {
   function apneKart() {
     if (!cfg.kart || !kan()) return;
     cfg.pause(); kartApen = true; apnetTid = performance.now();
-    kartBak.classList.add('vis'); knapp.hidden = true; kartKnapp.hidden = true;
+    kartBak.classList.add('vis'); knapp.hidden = true; kartKnapp.hidden = true; settInert(kartBak);
     tegnKart();
     try { $('evnKartLukk').focus({ preventScroll: true }); } catch (e) {}
   }
   function lukkKart(fraKlikk) {
     if (!kartApen) return;
-    kartApen = false; kartBak.classList.remove('vis');
+    kartApen = false; kartBak.classList.remove('vis'); settInert(null);
     cfg.fortsett(!!fraKlikk);
   }
   if (cfg.kart) {
@@ -435,12 +457,12 @@ window.EVNPause = function (cfg) {
     $('evnPauseTips').textContent = grunn || 'Spillet står stille. Ingenting er borte.';
     $('evnPauseStyr').hidden = true; $('evnPauseStyrKnapp').setAttribute('aria-expanded', 'false');
     $('evnPauseAvslutt').hidden = !avsluttLenke() || !sporsmal();
-    bak.classList.add('vis'); knapp.hidden = true; lagreTid();
+    bak.classList.add('vis'); knapp.hidden = true; lagreTid(); settInert(bak);
     try { $('evnPauseFortsett').focus({ preventScroll: true }); } catch (e) {}
   }
   function lukk(fraKlikk) {
     if (!apen) return;
-    apen = false; bak.classList.remove('vis');
+    apen = false; bak.classList.remove('vis'); settInert(null);
     cfg.fortsett(!!fraKlikk);
   }
   knapp.addEventListener('click', function () { apne(); });
@@ -449,14 +471,14 @@ window.EVNPause = function (cfg) {
     var s = $('evnPauseStyr'); if (s.hidden) s.innerHTML = cfg.styring(); s.hidden = !s.hidden; this.setAttribute('aria-expanded', String(!s.hidden));
   });
   // Avslutt fra pausen: spillet står stille mens «Vil du avslutte?» vises. «Nei, spill videre» = fortsett.
-  function visSporsmal() { venterAvslutt = true; var s = sporsmal(); s.style.display = 'grid'; var b = $('evnBli'); if (b) b.focus(); }
+  function visSporsmal() { venterAvslutt = true; var s = sporsmal(); s.style.display = 'grid'; settInert(s); var b = $('evnBli'); if (b) b.focus(); }
   $('evnPauseAvslutt').addEventListener('click', function () { apen = false; bak.classList.remove('vis'); if (cfg.lagre) cfg.lagre(); visSporsmal(); });
   // Avslutt-knappen i spillet: spillet stopper også mens spørsmålet vises
   document.addEventListener('click', function (e) {
     var a = avsluttLenke(); if (!a || !a.contains(e.target) || venterAvslutt || apen || !cfg.kanPause()) return;
     cfg.pause(); venterAvslutt = true;
   }, true);
-  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; cfg.fortsett(false); }
+  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; settInert(null); cfg.fortsett(false); }
   document.addEventListener('click', function (e) { var b = $('evnBli'); if (b && b.contains(e.target)) setTimeout(nei, 0); }, true);
 
   window.addEventListener('keydown', function (e) {
@@ -495,7 +517,7 @@ window.EVNPause = function (cfg) {
 
 <script>
 "use strict";
-const VERSJON="0.10.1";
+const VERSJON="0.10.2";
 function ingen3d(){window.__ingen3d=true;$("noGL").classList.remove("hidden");$("startBtn").hidden=true}
 // ================= Matdyr-data: 40 dyr × 25 mat/drikke = 1000 =================
 const ANIMALS=[["🐷","gris"],["🐸","frosk"],["🦈","hai"],["🐙","blekksprut"],["🐒","ape"],["🐄","ku"],["🐭","mus"],["🐧","pingvin"],["🐘","elefant"],["🐋","hval"],["🐱","katt"],["🐶","hund"],["🐰","kanin"],["🦊","rev"],["🐻","bjørn"],["🐼","panda"],["🦁","løve"],["🐯","tiger"],["🐴","hest"],["🦄","enhjørning"],["🐑","sau"],["🐐","geit"],["🐔","høne"],["🦆","and"],["🦉","ugle"],["🦜","papegøye"],["🦩","flamingo"],["🐊","krokodille"],["🐢","skilpadde"],["🐍","slange"],["🦖","dinosaur"],["🦒","sjiraff"],["🦓","sebra"],["🐫","kamel"],["🦛","flodhest"],["🦏","neshorn"],["🐨","koala"],["🦥","dovendyr"],["🐌","snegle"],["🦀","krabbe"]];
@@ -1264,7 +1286,7 @@ function byggBok(){
   $("bokGrid").innerHTML=liste.length?liste.map(ci=>{const c=COMBOS[ci],r=R[c.r],ai=Math.floor(ci/FOODS.length);
     if(!disc.has(ci))return'<div class="dk ukjent" style="border-color:'+r.c+'"><div class="ukjentbilde">❓</div><div class="nv">???</div><div class="sj" style="color:'+r.c+'">'+r.n+'</div></div>';
     return'<div class="dk" style="border-color:'+r.c+'">'+bilde(ai)+'<div class="nv">'+c.f+' '+esc(c.name)+'</div><div class="sj" style="color:'+r.c+'">'+r.n+'</div><div>💵 +'+fmt(INC(ci))+'/s</div>'+(iBase.has(ci)?'<div>🏠 I basen</div>':'')+'</div>'}).join("")
-    :'<p style="grid-column:1/-1">'+(bokVis==="har"?"Du har ikke funnet noen her ennå. Kjøp matdyr og bær dem hjem! 💰":"Du har funnet alle her! 🎉")+'</p>';
+    :'<p style="grid-column:1/-1">'+(bokVis==="har"?"Du har ikke funnet noen her ennå. Hent matdyr og bær dem hjem! 💰":"Du har funnet alle her! 🎉")+'</p>';
 }
 $("bokVis").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;bokVis=b.dataset.v;byggBok();$("bokVis").querySelector('[data-v="'+bokVis+'"]').focus()});
 $("bokFilter").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;bokR=+b.dataset.r;byggBok();$("bokFilter").querySelector('[data-r="'+bokR+'"]').focus()});
@@ -1292,7 +1314,6 @@ function step(dt){
   for(let i=animals.length-1;i>=0;i--){const a=animals[i],gp=a.g.position;
     if(a.state==="fall"){a.vy-=40*dt;gp.y+=a.vy*dt;if(gp.y<=0){gp.y=0;if(a.bounce<1&&a.vy<-12){a.vy=-a.vy*0.3;a.bounce++}else{a.state="walk";a.vy=0}}
       const k=Math.max(0.15,1-gp.y/32);a.blob.scale.set(k,k,1)}
-    else if(window.fangSteg&&fangSteg(a,dt,gp)){animModel(a.spr,time,a.fl>0);gp.y=0;a.blob.visible=false}
     else if(window.fangSteg&&fangSteg(a,dt,gp)){animModel(a.spr,time,a.fl>0);gp.y=0;a.blob.visible=false}
     else{
       a.next-=dt;if(a.next<=0){if(a.stop>0){a.stop=0;a.next=2+Math.random()*4}else if(Math.random()<.35){a.stop=1;a.next=0.8+Math.random()*1.5}else a.next=1+Math.random()*2;a.turn=(Math.random()-.5)*1.6}
@@ -1362,7 +1383,7 @@ function tegnKart(c,w,h){const sx=w/(KART.x1-KART.x0),sz=h/(KART.z1-KART.z0),px=
 EVNNullstill({
   nokler:[SAVE_KEY,SAVE_KEY_OLD,SAVE_KEY+"-kopi"],
   tema:{panel:"#1d2440",ink:"#fff",hi:"#ffc93c",btn:"#ffc93c",btnInk:"#4a2a00",font:"'Nunito', system-ui, sans-serif"},
-  tekst:"Alle matdyrene, pengene, basen og samleboka blir borte.",
+  tekst:"Alle matdyrene, pengene, basen og Matdyrboka blir borte.",
   harLagring:()=>base.some(c=>c>=0)||level>0||disc.size>0||money!==60,
   plasser:el=>$("evnTilbake").after(el),
   vis:()=>$("start").classList.contains("vis")
@@ -1379,8 +1400,8 @@ window.__evnP=EVNPause({
   fortsett:()=>{paused=false;clearInput();last=performance.now()},
   lagre:()=>save(),
   styring:()=>html.classList.contains("touch")
-    ?"🕹️ Styrespaken nede til venstre: gå<br>🟢 Den grønne knappen: kjøp, slipp og selg<br>⬆️ Den gule knappen i basen: flere plasser<br>📖 Samleboka: alle matdyr du har og mangler<br>🤏 To fingre eller ＋/－: zoom<br>⚙️ Innstillinger: navn på basen, grafikk og figurer"
-    :"⬆️ Piltaster eller WASD: gå<br>E eller mellomrom: kjøp, slipp og selg<br>U i basen: flere plasser<br>I: samleboka<br>Musehjul eller +/−: zoom<br>M: kart · P eller Esc: pause<br>⚙️ Innstillinger: navn på basen, grafikk og figurer"
+    ?"🕹️ Styrespaken nede til venstre: gå<br>🟢 Den grønne knappen: ta med, fang, slipp og selg<br>🏃 Sjeldne matdyr løper unna: jag dem til de blir slitne 💦<br>⬆️ Den gule knappen i basen: flere plasser<br>📖 Matdyrboka: alle matdyr du har og mangler<br>🤏 To fingre eller ＋/－: zoom<br>⚙️ Innstillinger: navn på basen, grafikk og figurer"
+    :"⬆️ Piltaster eller WASD: gå<br>E eller mellomrom: ta med, fang, slipp og selg<br>🏃 Sjeldne matdyr løper unna: jag dem til de blir slitne 💦<br>U i basen: flere plasser<br>I: Matdyrboka<br>Musehjul eller +/−: zoom<br>M: kart · P eller Esc: pause<br>⚙️ Innstillinger: navn på basen, grafikk og figurer"
 });
 window.__spill={get money(){return money},set money(v){money=v;updateHud()},base,get level(){return level},get started(){return started},get paused(){return paused},animals,robot,COMBOS,PRICE,INC,doAction,doUpgrade,findAction,get disc(){return disc},refreshBase:()=>refreshBase(),spawn};
 
@@ -1449,7 +1470,7 @@ setInterval(()=>{
   introT+=.25;let mal=null,t="";
   if(intro===0){t="👉 Gå til matdyrene på enga, og ta med et du har råd til! Du betaler når du kommer hjem.";const a=nesteMal();if(a)mal=a.g.position}
   else if(intro===1){t=carry?"🏠 Bær matdyret hjem til basen!":"";if(carry)mal=new THREE.Vector3(-40,0,0)}
-  else if(intro===2){t="💵 Matdyret tjener penger hvert sekund. Kjøp flere!";if(introT>7)settIntro(3)}
+  else if(intro===2){t="💵 Matdyret tjener penger hvert sekund. Hent flere!";if(introT>7)settIntro(3)}
   else if(intro===3){if(base.length-base.filter(c=>c>=0).length<=1){t="🏠 Basen er nesten full. Selg et matdyr, eller bytt når du kommer hjem med et nytt.";if(introT>9)settIntro(4)}else introT=0}
   else if(intro===5){t="✏️ Tips: Du kan gi basen et navn under ⚙️.";if(introT>7)settIntro(6)}
   visHint(t);
@@ -1459,7 +1480,7 @@ setInterval(()=>{
 },250);
 
 // F/B3: hvis 3D-grafikken stopper (tapt WebGL-kontekst), vis en vennlig melding med «Last inn på nytt»
-renderer.domElement.addEventListener("webglcontextlost",e=>{e.preventDefault();try{save()}catch(x){}const l=$("feilLag");l.querySelector("h2").textContent="3D-grafikken stoppet 😕";l.querySelector("p").textContent="Matdyrene dine er lagret. Last inn spillet på nytt for å fortsette.";l.classList.add("vis");$("feilLast").focus()},false);
+renderer.domElement.addEventListener("webglcontextlost",e=>{e.preventDefault();try{save()}catch(x){}const l=$("feilLag");try{if(window.EVNPauseInert)EVNPauseInert(l)}catch(x){}l.querySelector("h2").textContent="3D-grafikken stoppet 😕";l.querySelector("p").textContent="Matdyrene dine er lagret. Last inn spillet på nytt for å fortsette.";l.classList.add("vis");$("feilLast").focus()},false);
 
 // testkroker (bare lesing/oppsett for automatiske tester)
 if(window.__spill){Object.defineProperty(__spill,"carry",{get:()=>carry});__spill.weakest=weakest;__spill.intro=()=>intro;__spill.ledig=ms=>{sistAktiv=performance.now()-ms};__spill.miniatyrer=()=>{lagMiniatyrer();return MINI.filter(Boolean).length};__spill.save=()=>save()}
@@ -1507,10 +1528,10 @@ try {
     var av = document.getElementById('evnAvslutt'), sp = document.getElementById('evnSporsmal');
     av.style.display = 'flex';
     var tb = document.getElementById('evnTilbake'); if (tb) tb.hidden = false;
-    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new Event('blur')); sp.style.display = 'grid'; document.getElementById('evnBli').focus(); });
-    addEventListener('keydown', function (e) { if (e.key === 'Escape' && sp.style.display === 'grid') { e.preventDefault(); sp.style.display = 'none'; } });
+    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new Event('blur')); sp.style.display = 'grid'; if (window.EVNPauseInert) window.EVNPauseInert(sp); document.getElementById('evnBli').focus(); });
+    addEventListener('keydown', function (e) { if (e.key === 'Escape' && sp.style.display === 'grid') { e.preventDefault(); sp.style.display = 'none'; if (window.EVNPauseInert) window.EVNPauseInert(null); } });
     ['pointerdown', 'mousedown', 'touchstart'].forEach(function (ev) { sp.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); av.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
-    document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; });
+    document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; if (window.EVNPauseInert) window.EVNPauseInert(null); });
     document.getElementById('evnGaa').addEventListener('click', function () { location.href = '../../'; });
   }
 } catch (e) {}

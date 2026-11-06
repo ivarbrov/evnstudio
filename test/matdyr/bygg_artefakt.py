@@ -16,7 +16,7 @@ main=rep(main,'document.body.appendChild(renderer.domElement);','renderer.domEle
 main=rep(main,'"use strict";','"use strict";\nconst VERSJON="0.8.0";\nfunction ingen3d(){window.__ingen3d=true;$("noGL").classList.remove("hidden");$("startBtn").hidden=true}')
 for a,b2 in [('w:55,','w:30,'),('w:25,','w:26,'),('w:12,','w:20,'),('w:5,  ','w:13, '),('w:2.5,','w:8,  '),('w:0.4,','w:1.2,'),('w:0.1,','w:0.3,')]:
     main=rep(main,a,b2)
-main=main.replace('const VERSJON="0.8.0"','const VERSJON="0.10.1"')
+main=main.replace('const VERSJON="0.8.0"','const VERSJON="0.10.2"')
 main=rep(main,'const SAVE_KEY="evn_matdyr_proto_v1";','const SAVE_KEY="evn-matdyr-v1",SAVE_KEY_OLD="evn_matdyr_proto_v1";')
 main=rep(main,'disc:[...disc],name:baseName}','disc:[...disc],name:baseName,carry:carry?carry.ci:-1,cb:carry&&carry.betalt?1:2,intro:window.introSteg?introSteg():undefined}')
 main=rep(main,'function save(){try{','function save(){if(!window.__klar)return;try{')
@@ -39,7 +39,6 @@ main=rep(main,'const HQ=GFX==="fin";','const HQ=GFX==="fin";const RM=!!(window.m
 rest=src[c:d]
 rest=rep(rest,'''    else{\n      a.next-=dt;''','''    else if(window.fangSteg&&fangSteg(a,dt,gp)){animModel(a.spr,time,a.fl>0);gp.y=0;a.blob.visible=false}\n    else{\n      a.next-=dt;''')
 rest=rep(rest,'money+=income();','money+=(window.aktivNaa&&!aktivNaa())?0:income();')
-rest=rep(rest,'''    else{\n      a.next-=dt;''','''    else if(window.fangSteg&&fangSteg(a,dt,gp)){animModel(a.spr,time,a.fl>0);gp.y=0;a.blob.visible=false}\n    else{\n      a.next-=dt;''')
 rest=rep(rest,'windU.value=now/1000;','windU.value=RM?0:now/1000;')
 img=base64.b64encode(open('/home/claude/ivarbrov/evnstudio/bilder/robot-start-jubel-260.webp','rb').read()).decode()
 init=init.replace('__ROBOTIMG__',img)+'\n'+open('/home/claude/matdyr/ui_090.js').read()
