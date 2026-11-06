@@ -1098,12 +1098,13 @@ function newGameGen() {
   for (const B of bridges) if (!B.lava) {
     const sgn = Math.sign((FX - B.x) * B.nx + (FY - B.y) * B.ny) || 1;
     const near1 = [B.x + B.nx * 75 * sgn, B.y + B.ny * 75 * sgn], far1 = [B.x - B.nx * 75 * sgn, B.y - B.ny * 75 * sgn];
-    paths.push(makePath(FX, FY + 60, near1[0], near1[1]));
-    paths.push(makePath(FX - 40, FY - 20, GHX + 10, GHY + GH_HY + 120));                   // sti til spøkelseshuset
+    { const bAnn = biomeAt(B.x - B.nx * 500 * sgn, B.y - B.ny * 500 * sgn), Bi = BIOMES[bAnn] || BIOMES.skog;   // 2.0.6: skiltet viser hva som er på andre siden av brua
+      const P0 = makePath(FX, FY + 60, near1[0], near1[1]); P0.mål = bAnn === 'skog' ? { icon: '🌉', n: 'Brua' } : { icon: Bi.icon, n: Bi.n }; paths.push(P0); }
+    { const P1 = makePath(FX - 40, FY - 20, GHX + 10, GHY + GH_HY + 120); P1.mål = { icon: '👻', n: 'Spøkelseshuset' }; paths.push(P1); }   // sti til spøkelseshuset
     const across = cabins.filter(c => fireSide(c.y) !== fireSide(FY)).sort((a, b) => dist(a.x, a.y, far1[0], far1[1]) - dist(b.x, b.y, far1[0], far1[1]))[0];
-    if (across && dist(across.x, across.y, far1[0], far1[1]) < 2600) paths.push(makePath(far1[0], far1[1], across.x - 8, across.y + 45));
+    if (across && dist(across.x, across.y, far1[0], far1[1]) < 2600) { const P2 = makePath(far1[0], far1[1], across.x - 8, across.y + 45); P2.mål = { icon: '🛖', n: 'Hytta' }; paths.push(P2); }
   }
-  for (const c of cabins) if (fireSide(c.y) === fireSide(FY) && dist(c.x, c.y, FX, FY) < 3200 * WS) paths.push(makePath(FX, FY + 60, c.x - 8, c.y + 45));
+  for (const c of cabins) if (fireSide(c.y) === fireSide(FY) && dist(c.x, c.y, FX, FY) < 3200 * WS) { const P3 = makePath(FX, FY + 60, c.x - 8, c.y + 45); P3.mål = { icon: '🛖', n: 'Hytta' }; paths.push(P3); }
   for (const P of paths) P.box = [Math.min(...P.map(q => q[0])), Math.max(...P.map(q => q[0])), Math.min(...P.map(q => q[1])), Math.max(...P.map(q => q[1]))];
   const pathNear = (x, y, d) => paths.some(P => { if (x < P.box[0] - d || x > P.box[1] + d || y < P.box[2] - d || y > P.box[3] + d) return false; for (let i = 0; i < P.length - 1; i++) { const [ax, ay] = P[i], [bx, by] = P[i + 1], dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy))); if (Math.hypot(x - ax - dx * t, y - ay - dy * t) < d) return true; } return false; });
   const nearBridge = (x, y, d = 110) => bridges.some(B => dist(x, y, B.x, B.y) < d) || cabins.some(c => dist(x, y, c.x, c.y) < 120) || dist(x, y, VX, VY) < VR + 90 || pathNear(x, y, 26);
@@ -1187,6 +1188,7 @@ function spawnAnimal(minPlayer) {
     const x = rand(80, W - 80), y = rand(80, H - 80), b = biomeAt(x, y);
     if (b !== 'lava' && dist(x, y, FX, FY) > 340 && waterDist(x, y) > 50 && !g.bases.some(B => dist(x, y, B.x, B.y) < 400) && !dcNear(x, y, 800) && pondDist(x, y) > 80 && dist(x, y, g.p.x, g.p.y) > minPlayer) {
       const mix = MIXES[b], type = mix[Math.floor(Math.random() * mix.length)];
+      if (ANIMALS[type].hostile && dist(x, y, FX, FY) < LEIR_SPAWN) continue;   // 2.0.6: ingen rovdyr nær leiren
       g.animals.push({ type, x, y, hp: ANIMALS[type].hp, dir: rand(0, 6.28), turn: rand(1, 3), idle: false, flee: 0, face: 1, hit: 0, walk: 0 });
       return;
     }
@@ -1436,6 +1438,10 @@ const DEV_TIMES = { morgen: SUNRISE_P + 14, middag: (SUNRISE_P + SUNSET_P) / 2, 
 const FIRE_MAX = 10;
 const fireScale = () => 1 + (g.fireLvl - 1) * 0.07;
 const fireCost = L => ({ wood: 3 * L + 2, stone: 2 * L });
+// 2.0.6 (Ivars ønske): trygg leir. Så lenge bålet brenner, angriper ikke ville dyr innenfor LEIR_R fra bålet, og de går ut av leiren.
+// Rovdyr dukker heller ikke opp nærmere bålet enn LEIR_SPAWN. Nattmonstrene følger fortsatt lyset som før.
+const LEIR_R = 500, LEIR_SPAWN = 760;
+const iLeir = (x, y) => g.fuel > 0 && dist(x, y, FX, FY) < LEIR_R;
 const lightR = () => g.fuel > 0 ? (70 + g.fuel * 2.5) * (1 + (g.fireLvl - 1) * 0.09) : 0;
 
 let toastTimer = 0;
@@ -2007,7 +2013,7 @@ function update(dt) {
 
   const L = lights();
   // Dyr
-  const playerSafe = !!inAnyLight(p.x, p.y, L);
+  const playerSafe = !!inAnyLight(p.x, p.y, L) || iLeir(p.x, p.y);   // 2.0.6: også trygt i leiren rundt bålet
   for (const a of g.animals) {
     const A = ANIMALS[a.type];
     a.hit = Math.max(0, a.hit - dt); a.flee = Math.max(0, a.flee - dt);
@@ -2015,6 +2021,7 @@ function update(dt) {
     const dp = dist(a.x, a.y, p.x, p.y), lit = inAnyLight(a.x, a.y, L, 10);
     let vx = 0, vy = 0, sp = 0;
     if (lit) { vx = a.x - lit.x; vy = a.y - lit.y; sp = A.run * 0.8; }          // dyr er redde for lys
+    else if (A.hostile && iLeir(a.x, a.y)) { vx = a.x - FX; vy = a.y - FY; sp = A.sp; }   // 2.0.6: rovdyr går rolig ut av leiren
     else if (A.hostile && dp < A.aggro && !playerSafe) { vx = p.x - a.x; vy = p.y - a.y; sp = A.run; } // angriper
     else if (a.flee > 0 || (!A.hostile && dp < 140)) { vx = a.x - p.x; vy = a.y - p.y; sp = A.run; } // flykter
     else {
@@ -4067,6 +4074,7 @@ function dcSetup() {
   const far = (o, r) => Math.max(Math.abs(o.x - DCX), Math.abs(o.y - DCY)) > r;
   const P = dcPath(FX + 150, FY + 30, DCX, DCY + DC_HX + 80);
   P.box = [Math.min(...P.map(q => q[0])), Math.max(...P.map(q => q[0])), Math.min(...P.map(q => q[1])), Math.max(...P.map(q => q[1]))];
+  P.mål = { icon: '🦖', n: 'Dinoverdenen' };   // 2.0.6: skilt langs stien
   g.paths.push(P); g.dcPath = P;
   const nearP = (x, y, d) => { if (x < P.box[0] - d || x > P.box[1] + d || y < P.box[2] - d || y > P.box[3] + d) return false;
     for (let i = 0; i < P.length - 1; i++) { const [ax, ay] = P[i], [bx, by] = P[i + 1], dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1, t = clamp(((x - ax) * dx + (y - ay) * dy) / l2, 0, 1); if (Math.hypot(x - ax - dx * t, y - ay - dy * t) < d) return true; } return false; };
@@ -5092,6 +5100,43 @@ function makeBuilding(type) {
   return G;
 }
 
+// 2.0.6: veiskilt. Ved starten av hver sti (ca. 160 fra start) og så omtrent hver 1400. enhet, men ikke rett ved målet.
+// Skiltet står ved siden av stien, og pila peker mot målet. Bare grafikk: ingen kollisjon og ingen endring i verdenen.
+const SKILT_TEX = {};
+function skiltTex(m) {
+  const k = m.icon + m.n; if (SKILT_TEX[k]) return SKILT_TEX[k];
+  return SKILT_TEX[k] = cTex(512, 112, (x, w, h) => {
+    x.fillStyle = '#6b4426'; x.fillRect(0, 0, w, h); x.strokeStyle = '#3e2614'; x.lineWidth = 8; x.strokeRect(4, 4, w - 8, h - 8);
+    x.fillStyle = '#f6e7c1'; x.textAlign = 'center'; x.textBaseline = 'middle'; let f = 56; x.font = `bold ${f}px 'Lilita One', system-ui, sans-serif`;
+    const t = `${m.icon} ${m.n} ➜`; while (x.measureText(t).width > w - 36 && f > 30) { f -= 2; x.font = `bold ${f}px 'Lilita One', system-ui, sans-serif`; }
+    x.fillText(t, w / 2, h / 2 + 3);
+  });
+}
+function lagSkilt(G) {
+  const ut = [], postGeo = new THREE.CylinderGeometry(2.2, 2.6, 46, 6), postMat = new THREE.MeshLambertMaterial({ color: 0x5a3a20 });
+  const brettGeo = new THREE.BoxGeometry(84, 19, 2.4), planGeo = new THREE.PlaneGeometry(82, 18), up = new THREE.Vector3(0, 1, 0);
+  for (const P of g.paths) {
+    if (!P.mål || P.length < 3) continue;
+    let tot = 0; const acc = [0]; for (let i = 1; i < P.length; i++) { tot += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); acc.push(tot); }
+    const mål = []; for (let s = 160; s < tot - 400; s += 1400) mål.push(s);
+    for (const sd of mål) {
+      let i = 1; while (i < P.length - 1 && acc[i] < sd) i++;
+      const a = P[i - 1], b = P[i], f = (sd - acc[i - 1]) / Math.max(1e-6, acc[i] - acc[i - 1]);
+      const qx = a[0] + (b[0] - a[0]) * f, qz = a[1] + (b[1] - a[1]) * f;
+      let dx = b[0] - a[0], dz = b[1] - a[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+      const zx = -dz, zz = dx, sx = qx - zx * 34, sz = qz - zz * 34;   // skiltet står 34 til siden, med forsiden mot stien
+      const grp = new THREE.Group(), y0 = groundH(sx, sz);
+      const brett = new THREE.Group(); brett.position.y = 40;
+      const post = new THREE.Mesh(postGeo, postMat); post.position.set(0, -17, -4); brett.add(post);   // stolpen står bak brettet
+      brett.add(new THREE.Mesh(brettGeo, postMat));
+      const plan = new THREE.Mesh(planGeo, new THREE.MeshBasicMaterial({ map: skiltTex(P.mål) })); plan.position.z = 1.3; brett.add(plan);
+      brett.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(dx, 0, dz), up, new THREE.Vector3(zx, 0, zz)));
+      grp.add(brett); grp.position.set(sx, y0, sz); G.add(grp);
+      ut.push({ x: sx, y: sz, _m: grp });
+    }
+  }
+  return ut;
+}
 function buildWorld() {
   const { scene } = R3;
   if (R3.group) scene.remove(R3.group);
@@ -5316,6 +5361,7 @@ function buildWorld() {
   for (const B of g.bases) { B._m = makeBase(B); G.add(B._m.grp); }
   for (const Bd of g.bridges) G.add(makeBridge(Bd));
   for (const cb of g.cabins) { cb._m = makeCabin(cb); G.add(cb._m); }
+  R3.skilt = lagSkilt(G);   // 2.0.6: veiskilt langs stiene
   R3.gh = makeGhostHouse(); G.add(R3.gh.grp);
   buildRailTown(G);
   R3.pond = makePond(); G.add(R3.pond.grp);
@@ -5756,6 +5802,7 @@ function draw(time) {
   // Dyr
   syncList(g.animals, 'animals', makeAnimal);
   for (const c of g.cabins) c._m.visible = near(c);
+  for (const s2 of R3.skilt || []) s2._m.visible = near(s2);
   renderGhostHouse(R3, dt, time);
   renderTrainTown(dt, time);
   renderDino(dt, time);
