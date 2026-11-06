@@ -64,7 +64,7 @@
     ["era.epoke.6", 40, "Romstasjonen fullført – portalen åpnes (bølge 10)"],
     ["era.boss.7", 15, "Første boss slått i Tidsvirvelen (bølge 5)"],
     ["era.seier", 150, "Tidsherren (sluttbossen) er slått"]]}, 
-   {"id": "magiske-egg", "navn": "Magiske egg", "kommer": false, "fjernet": true, "m": [["egg.art.boblefrosk", 8, "Første Boblefrosk klekket"],
+   {"id": "magiske-egg", "navn": "Magiske egg", "kommer": false, "m": [["egg.art.boblefrosk", 8, "Første Boblefrosk klekket"],
     ["egg.art.glitterkanin", 8, "Første Glitterkanin klekket"],
     ["egg.art.bladrev", 8, "Første Bladrev klekket"],
     ["egg.park.2", 20, "Parknivå 2 nådd"],
