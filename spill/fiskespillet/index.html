@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.9.1 – EVN Studio</title>
+<title>Fiskespillet 0.10.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -29,7 +29,10 @@
   #bokKnapp { border-color:rgba(255,201,60,.6); }
   #hoyre { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; }
   #turboKnapp { position:fixed; right:calc(22px + env(safe-area-inset-right)); bottom:calc(110px + env(safe-area-inset-bottom)); width:56px; height:56px; font-size:26px; z-index:5; }
-  #turboKnapp[hidden], #landKnapp[hidden] { display:none; }
+  #turboKnapp[hidden], #landKnapp[hidden], #byggKnapp[hidden] { display:none; }
+  #byggKnapp { position:fixed; right:calc(16px + env(safe-area-inset-right)); bottom:calc(110px + env(safe-area-inset-bottom)); width:auto; height:56px; padding:0 18px; border-radius:28px; font:800 19px Nunito, system-ui, sans-serif; z-index:5; background:#e5883f; border:3px solid #fff; }
+  #byggListe .kn { display:flex; justify-content:space-between; align-items:center; width:100%; margin:6px 0; text-align:left; }
+  #byggListe small { display:block; font-weight:600; opacity:.85; }
   #landKnapp { position:fixed; right:calc(16px + env(safe-area-inset-right)); bottom:calc(110px + env(safe-area-inset-bottom)); width:auto; height:56px; padding:0 18px; border-radius:28px; font:800 19px Nunito, system-ui, sans-serif; z-index:5; background:#3fae4a; border:3px solid #fff; }
   .rund.pa { background:#ffd34d; color:#1d2440; border-color:#fff; }
   .rund { width:48px; height:48px; border-radius:50%; background:rgba(13,36,64,.74); border:2px solid rgba(255,255,255,.25); color:#fff; font-size:22px; display:flex; align-items:center; justify-content:center; padding:0; }
@@ -188,6 +191,7 @@
 <div id="kamp" hidden><span>🐙 Kraken</span><div class="kampbar" role="progressbar" aria-label="Hvor langt opp Kraken er"><i id="kampFyll"></i></div><span>🏆</span><span id="kampTid" class="kamptid" aria-label="Sekunder igjen">⏱ 60</span></div>
 <button id="handling" type="button"></button>
 <button class="rund" id="landKnapp" type="button" title="Gå i land (G)" aria-label="Gå i land" hidden>🚶 Gå i land</button>
+<button class="rund" id="byggKnapp" type="button" title="Bygg (B)" aria-label="Bygg" hidden>🔨 Bygg</button>
 <button class="rund" id="turboKnapp" type="button" title="Turbo (hold Shift eller trykk T)" aria-label="Turbo" aria-pressed="false" hidden>🚀</button>
 <div id="hjelp"></div>
 <div id="joy"><i></i></div>
@@ -207,7 +211,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.9.1</div>
+    <div class="evn-ver" id="versjon">Versjon 0.10.0</div>
   </div>
 </div>
 
@@ -227,6 +231,14 @@
 </div>
 
 <!-- Fiskeboka -->
+<div class="lag" id="bygg" role="dialog" aria-modal="true" aria-labelledby="byggTittel">
+  <div class="kort">
+    <button class="kryss" type="button" data-lukk="bygg" aria-label="Lukk">✕</button>
+    <h2 id="byggTittel">🔨 Bygg i landsbyen</h2>
+    <p class="info">Velg et hus. Så går du dit du vil ha det, og trykker <b>✅ Bygg her</b>.</p>
+    <div id="byggListe"></div>
+  </div>
+</div>
 <div class="lag" id="bok" role="dialog" aria-modal="true" aria-labelledby="bokTittel">
   <div class="kort bred">
     <button class="kryss" type="button" data-lukk="bok" aria-label="Lukk fiskeboka">✕</button>
@@ -533,7 +545,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.9.1';
+const VERSJON = '0.10.0';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -1379,7 +1391,7 @@ ANTALL_PLASSER.forEach((n, sone) => { for (let i = 0; i < n; i++) lagPlass(sone)
 // ======================================================
 //  Tilstand og lagring
 // ======================================================
-let tilstand = { penger: INNST.startPenger, stang: 0, agn: 0, baat: 0, plass: INNST.startPlass, akvPlass: INNST.startAkvarium, last: [], akv: [], funnet: new Uint8Array(Math.ceil(ANTALL_FISKER / 8)), fanget: 0, rest: 0, kraken: false, best: -1, venner: 0 };
+let tilstand = { penger: INNST.startPenger, stang: 0, agn: 0, baat: 0, plass: INNST.startPlass, akvPlass: INNST.startAkvarium, last: [], akv: [], funnet: new Uint8Array(Math.ceil(ANTALL_FISKER / 8)), fanget: 0, rest: 0, kraken: false, best: -1, venner: 0, hus: [] };
 const harFunnet = id => !!(tilstand.funnet[id >> 3] & (1 << (id & 7)));
 const settFunnet = id => { tilstand.funnet[id >> 3] |= 1 << (id & 7); };
 function antallFunnet() { let n = 0; for (const b of tilstand.funnet) { let x = b; while (x) { n += x & 1; x >>= 1; } } return n; }
@@ -1387,7 +1399,7 @@ function antallFunnetForm(f) { let n = 0; for (let i = f * 200; i < f * 200 + 20
 const tilB64 = u => { let s = ''; for (const b of u) s += String.fromCharCode(b); return btoa(s); };
 function lagre() {
   try {
-    localStorage.setItem(LAGRING, JSON.stringify({ v: 1, penger: Number.isFinite(tilstand.penger) ? Math.floor(tilstand.penger) : 0, stang: tilstand.stang, agn: tilstand.agn, baat: tilstand.baat, plass: tilstand.plass, akvPlass: tilstand.akvPlass, last: tilstand.last, akv: tilstand.akv, funnet: tilB64(tilstand.funnet), fanget: tilstand.fanget, rest: tilstand.rest, kraken: tilstand.kraken, best: tilstand.best, venner: tilstand.venner }));
+    localStorage.setItem(LAGRING, JSON.stringify({ v: 1, penger: Number.isFinite(tilstand.penger) ? Math.floor(tilstand.penger) : 0, stang: tilstand.stang, agn: tilstand.agn, baat: tilstand.baat, plass: tilstand.plass, akvPlass: tilstand.akvPlass, last: tilstand.last, akv: tilstand.akv, funnet: tilB64(tilstand.funnet), fanget: tilstand.fanget, rest: tilstand.rest, kraken: tilstand.kraken, best: tilstand.best, venner: tilstand.venner, hus: tilstand.hus }));
   } catch (e) {}
 }
 function lastInn() {
@@ -1412,6 +1424,7 @@ function lastInn() {
   tilstand.rest = isFinite(+s.rest) ? Math.max(0, Math.min(1, +s.rest)) : 0;
   tilstand.kraken = !!s.kraken;
   tilstand.venner = heltall(s.venner, 0, 1e6, 0);
+  tilstand.hus = Array.isArray(s.hus) ? s.hus.filter(h => h && HUSTYPER[h.t] && Number.isFinite(+h.x) && Number.isFinite(+h.z)).slice(0, 40).map(h => ({ t: h.t, x: +h.x, z: +h.z, r: Number.isFinite(+h.r) ? +h.r : 0 })) : [];
   tilstand.best = heltall(s.best, -1, ANTALL_FISKER - 1, -1);
   try { const bin = atob(String(s.funnet || '')); for (let i = 0; i < Math.min(bin.length, tilstand.funnet.length); i++) tilstand.funnet[i] = bin.charCodeAt(i); } catch (e) {}
   for (const id of tilstand.last.concat(tilstand.akv)) settFunnet(id);
@@ -1940,8 +1953,11 @@ function fiskRad(id, knapper) {
     <span class="knapper">${knapper}</span></div>`;
 }
 function sortertIndekser(liste) { return liste.map((id, i) => i).sort((a, b) => fiskVerdi(liste[b]) - fiskVerdi(liste[a])); }
-function akvPerMinutt() { return tilstand.akv.reduce((s, id) => s + fiskVerdi(id) * INNST.akvInntekt, 0); }
-const perMin = id => fiskVerdi(id) * INNST.akvInntekt;
+// Hus i landsbyen (0.10.0, Ivar 6.11.2026: «hus med fordeler»): hytta gir +10 % fra akvariet, markedet +10 % ved salg
+const akvFaktor = () => 1 + (harHus('hytte') ? HUSTYPER.hytte.bonus : 0);
+const salgsVerdi = id => Math.round(fiskVerdi(id) * (1 + (harHus('marked') ? HUSTYPER.marked.bonus : 0)));
+function akvPerMinutt() { return tilstand.akv.reduce((s, id) => s + fiskVerdi(id) * INNST.akvInntekt, 0) * akvFaktor(); }
+const perMin = id => fiskVerdi(id) * INNST.akvInntekt * akvFaktor();
 const minTekst = v => v < 10 ? v.toFixed(1).replace('.', ',') : tall(v);   // små beløp per minutt med én desimal
 function svakesteIAkv() { let i = -1; tilstand.akv.forEach((id, k) => { if (i < 0 || fiskVerdi(id) < fiskVerdi(tilstand.akv[i])) i = k; }); return i; }
 // «Beste i akvariet»: de mest verdifulle av fiskene i båten og akvariet havner i akvariet. Resten selges. Én handling.
@@ -2000,11 +2016,11 @@ $('havna').addEventListener('click', e => {
     const [id] = tilstand.last.splice(+b.dataset.akv, 1); tilstand.akv.push(id); pip(880, 0.15, 'sine', 0.06, 1.5);
     byggAkvarium(); byggLast();
   } else if (b.dataset.selg !== undefined) {
-    const [id] = tilstand.last.splice(+b.dataset.selg, 1); tilstand.penger += fiskVerdi(id); solgtFisk++; lydMynt(); byggLast(); bump('pPenger');
+    const [id] = tilstand.last.splice(+b.dataset.selg, 1); tilstand.penger += salgsVerdi(id); solgtFisk++; lydMynt(); byggLast(); bump('pPenger');
   } else if (b.dataset.bytt !== undefined) {
     const sv = svakesteIAkv(); if (sv < 0) return;
     const [ut] = tilstand.akv.splice(sv, 1), [inn] = tilstand.last.splice(+b.dataset.bytt, 1);
-    tilstand.akv.push(inn); tilstand.penger += fiskVerdi(ut); solgtFisk++; lydMynt(); pip(880, 0.15, 'sine', 0.06, 1.5); byggAkvarium(); byggLast(); bump('pPenger');
+    tilstand.akv.push(inn); tilstand.penger += salgsVerdi(ut); solgtFisk++; lydMynt(); pip(880, 0.15, 'sine', 0.06, 1.5); byggAkvarium(); byggLast(); bump('pPenger');
     melding(`🔄 ${FORMER[fiskDel(inn).f].ikon} inn i akvariet, ${FORMER[fiskDel(ut).f].ikon} solgt for 💰 ${tall(fiskVerdi(ut))}`, 2.5);
   } else if (b.id === 'besteAkv') {
     const o = besteOppsett();
@@ -2012,9 +2028,9 @@ $('havna').addEventListener('click', e => {
     lydMynt(); pip(880, 0.15, 'sine', 0.06, 1.5); byggAkvarium(); byggLast(); bump('pPenger');
     melding(`⭐ Akvariet gir nå 💰 ${tall(akvPerMinutt())}/min. Solgt for 💰 ${tall(o.salg)}.`, 3);
   } else if (b.id === 'selgAlle') {
-    if (tilstand.last.length) solgtFisk++; tilstand.penger += tilstand.last.reduce((s, id) => s + fiskVerdi(id), 0); tilstand.last = []; lydMynt(); byggLast(); bump('pPenger');
+    if (tilstand.last.length) solgtFisk++; tilstand.penger += tilstand.last.reduce((s, id) => s + salgsVerdi(id), 0); tilstand.last = []; lydMynt(); byggLast(); bump('pPenger');
   } else if (b.dataset.selgakv !== undefined) {
-    const [id] = tilstand.akv.splice(+b.dataset.selgakv, 1); tilstand.penger += fiskVerdi(id); solgtFisk++; lydMynt(); byggAkvarium(); bump('pPenger');
+    const [id] = tilstand.akv.splice(+b.dataset.selgakv, 1); tilstand.penger += salgsVerdi(id); solgtFisk++; lydMynt(); byggAkvarium(); bump('pPenger');
   } else if (b.dataset.kjop) kjop(b.dataset.kjop);
   else return;
   oppdaterHud(); lagre(); byggHavna();
@@ -2101,7 +2117,7 @@ function havnaHjelp() {
 function oppdaterHandling() {
   if (spillTilstand === 'spill') havnaHjelp();
   handling = spillTilstand === 'spill' ? finnHandling() : null;
-  if (spillTilstand === 'spill' && $('kamp').hidden) { const kanLand = !land.aktiv && iHavna() && !fiske && !krakenShow; $('landKnapp').hidden = !kanLand; $('turboKnapp').hidden = kanLand || land.aktiv; }
+  if (spillTilstand === 'spill' && $('kamp').hidden) { const kanLand = !land.aktiv && iHavna() && !fiske && !krakenShow; $('landKnapp').hidden = !kanLand; $('turboKnapp').hidden = kanLand || land.aktiv; $('byggKnapp').hidden = !land.aktiv; }
   const el = $('handling');
   const tekst = handling ? handling.tekst + (handling.av ? '' : '<span class="tast">(E)</span>') : '';
   if (tekst !== handlingTekst) { handlingTekst = tekst; el.innerHTML = tekst; el.style.display = handling ? 'block' : 'none'; el.classList.toggle('av', !!(handling && handling.av)); el.setAttribute('aria-disabled', String(!!(handling && handling.av))); }
@@ -2126,6 +2142,7 @@ addEventListener('keydown', e => {
   if (k === 'i' && !e.repeat) { byggBok(); apneLag('bok'); }
   if (k === 'l' && !e.repeat) settLyd(!lydPa);
   if (k === 't' && !e.repeat && !land.aktiv) settTurbo(!turbo);
+  if (k === 'b' && !e.repeat && land.aktiv) $('byggKnapp').click();
   if (k === 'g' && !e.repeat) { if (land.aktiv) { if (naerLand(KAI().x, KAI().z, 5)) gaaOmBord(); } else if (iHavna() && !fiske) gaaILand(); }
   if (k.startsWith('arrow')) e.preventDefault();
 }, true);
@@ -2159,7 +2176,7 @@ document.addEventListener('touchmove', e => { if (spillTilstand === 'spill' && e
 //  Lag (kort som legger seg over spillet)
 // ======================================================
 let spillTilstand = 'start';
-const LAG = ['start', 'havna', 'bok', 'fangst'];
+const LAG = ['start', 'havna', 'bok', 'fangst', 'bygg'];
 const evnApen = () => ['evnPause', 'evnKart', 'evnNullstillBoks'].some(id => { const e = $(id); return e && e.classList.contains('vis'); }) || (() => { const e = $('evnSporsmal'); return !!e && e.style.display === 'grid'; })();
 const modalApen = () => LAG.some(id => $(id).classList.contains('vis')) || evnApen() || $('feil').classList.contains('vis');
 let forrigeFokus = null;
@@ -2309,22 +2326,23 @@ function gaaILand() {
   spiller.fart = 0; settTurbo(false);
   skiltStorrelse(0.45); scene.add(helt); helt.position.copy(land.pos); helt.rotation.set(0, land.retning, 0);
   stang.visible = false;
-  melding('🚶 Du er på land!<small>Gå til butikken eller akvariet og trykk på den gule knappen. Gå tilbake til kaia og trykk ⛵ for å gå om bord.</small>', 5, true);
+  melding('🚶 Du er på land!<small>Trykk 🔨 Bygg for å bygge hus der du vil. Gå til butikken eller akvariet og trykk på den gule knappen. Gå tilbake til kaia og trykk ⛵ for å gå om bord.</small>', 6, true);
 }
 function gaaOmBord() {
   if (!land.aktiv) return;
-  land.aktiv = false; skiltStorrelse(1); baat.add(helt); helt.rotation.set(0, 0, 0); stang.visible = true;
+  avbrytPlassering(); land.aktiv = false; skiltStorrelse(1); baat.add(helt); helt.rotation.set(0, 0, 0); stang.visible = true;
   helt.position.set(0, baat.userData.dekkY, -baat.userData.L * 0.18);
   robotGaa(false); melding('⛵ Du er om bord igjen.', 2);
 }
 function robotGaa(gaar) {
   if (!robot || land.gaar === gaar || robot.igjen > 0) { land.gaar = gaar; return; }
   land.gaar = gaar;
-  const ny = robot.klipp[gaar ? (land.fart > 9 ? 'Running' : 'Walking') : 'Idle'] || robot.klipp.Idle;
+  const ny = robot.klipp[gaar ? (land.fart > 15 ? 'Running' : 'Walking') : 'Idle'] || robot.klipp.Idle;
   if (ny === robot.aktiv) return; ny.reset(); ny.play(); robot.aktiv.crossFadeTo(ny, 0.25, false); robot.aktiv = ny;
 }
 function naerLand(x, z, r) { return Math.hypot(land.pos.x - x, land.pos.z - z) < r; }
 function landHandling() {
+  if (plassering.type) return plassering.ok ? { tekst: '✅ Bygg her', gjor: byggHer } : { tekst: '🚫 Ikke plass her', av: true };
   if (naerLand(KAI().x, KAI().z, 5)) return { tekst: '⛵ Gå om bord', gjor: gaaOmBord };
   if (naerLand(16, 52 + 5.5, 4.5)) return { tekst: '🛒 Butikken', gjor: () => { fane = 'butikk'; byggHavna(); apneLag('havna'); } };
   if (Math.abs(land.pos.x - AKV.x) < AKV.b / 2 + 3 && Math.abs(land.pos.z - AKV.z) < AKV.d / 2 + 3) return { tekst: '🐠 Akvariet', gjor: () => { fane = 'akvarium'; byggHavna(); apneLag('havna'); } };
@@ -2337,7 +2355,7 @@ function oppdaterLand(dt, t) {
     if (taster['arrowleft'] || taster['a']) ror += 1; if (taster['arrowright'] || taster['d']) ror -= 1;
     if (joy.aktiv) { const fx = Math.sin(joy.yaw), fz = Math.cos(joy.yaw); jx = fx * -joy.dy + -fz * joy.dx; jz = fz * -joy.dy + fx * joy.dx; }
   }
-  const maks = 7 * (taster['shift'] ? 1.6 : 1), lj = Math.hypot(jx, jz);
+  const maks = 13 * (taster['shift'] ? 1.5 : 1), lj = Math.hypot(jx, jz);   // raskere fra 0.10.0 (Evens ønske: «går veldig sakte»)
   let mal = 0;
   if (lj > 0.05) { let diff = Math.atan2(jx, jz) - land.retning; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); land.retning += Math.sign(diff) * Math.min(Math.abs(diff), 8 * dt); mal = Math.min(1, lj) * maks * Math.max(0, Math.cos(diff)); }
   else { mal = gass > 0 ? maks : gass < 0 ? -maks * 0.5 : 0; land.retning += ror * 2.6 * dt; }
@@ -2356,6 +2374,99 @@ function oppdaterLand(dt, t) {
   // Båten ligger rolig ved kaia
   baat.position.set(spiller.pos.x, 0.25 + Math.sin(t * 1.6) * 0.15, spiller.pos.z);
 }
+
+// ======================================================
+//  Bygge i landsbyen (Evens ønske 6.11.2026). Husene står der du velger.
+//  Ivar 6.11.2026: hus med fordeler. Hytta og markedet kan bygges én gang hver; hage og tårn er pynt.
+// ======================================================
+const HUSTYPER = {
+  hage:   { navn: 'Hage med blomster', ikon: '🌸', pris: 300,  maks: 10, b: 7, d: 7, tekst: 'Pynt. Blomster, busker og et lite tre.' },
+  hytte:  { navn: 'Fiskerhytte',       ikon: '🏠', pris: 2000, maks: 1, b: 8, d: 7, bonus: 0.10, tekst: 'Akvariet gir 10 % mer penger hvert minutt.' },
+  marked: { navn: 'Fiskemarked',       ikon: '🏪', pris: 2000, maks: 1, b: 10, d: 8, bonus: 0.10, tekst: 'Du får 10 % mer når du selger fisk.' },
+  taarn:  { navn: 'Utkikkstårn',       ikon: '🗼', pris: 1500, maks: 3, b: 4, d: 4, tekst: 'Pynt. Et høyt tårn av tre med flagg.' },
+};
+const harHus = t => (tilstand.hus || []).some(h => h.t === t);
+const husGrupper = [];
+function lagHusModell(t, x, z, rot) {
+  if (t === 'hytte') return hus({ x, z, rot, b: 8, d: 6, h: 4.4, farge: 0xd9e9ff, tak: 0x9fb4ff, dor: 0x8b5a2b });
+  if (t === 'marked') {
+    const h = hus({ x, z, rot, b: 10, d: 7, h: 4.6, farge: 0xfff0d0, tak: 0xffffff, dor: 0x1d4f8f });
+    const mk = lerretTekstur(128, 32, (c, w, hh) => { for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#ffffff' : '#2f7de1'; c.fillRect(i * 16, 0, 16, hh); } });
+    const m = del(new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial({ map: mk, side: THREE.DoubleSide }), 9, 2, 1, 0, 4.2, 4.6, h); m.rotation.x = -0.9;
+    for (let i = 0; i < 3; i++) { del(BOX, M(0xc9955c), 2.2, 1, 1.2, -3 + i * 3, 1.3, 5.4, h); for (let j = 0; j < 3; j++) del(SPH_L, M([0x9aa7b4, 0xff8a2a, 0x3d8fe0][j]), 0.35, 0.2, 0.18, -3.6 + i * 3 + j * 0.6, 1.9, 5.4, h); }
+    return h;
+  }
+  const g = new THREE.Group(); g.position.set(x, 3.2, z); g.rotation.y = rot || 0; oy.add(g);
+  if (t === 'hage') {
+    del(BOX, M(0x6ab84a), 7, 0.1, 7, 0, 0.1, 0, g);
+    for (let i = 0; i < 14; i++) { const v = i / 14 * Math.PI * 2; del(BOX, M(0xffffff), 0.15, 0.9, 0.15, Math.cos(v) * 3.4, 0.5, Math.sin(v) * 3.4, g); }
+    for (let i = 0; i < 18; i++) { const a = i * 2.4, rr = 0.8 + (i % 4) * 0.6; del(SPH_L, M([0xff5f8f, 0xffd34d, 0xb36bff, 0xff8a2a][i % 4]), 0.32, 0.32, 0.32, Math.cos(a) * rr, 0.45, Math.sin(a) * rr, g); }
+    del(CYL, M(0x8b5a2b), 0.18, 1.6, 0.18, 0, 0.9, 0, g); del(SPH, M(0x3fae4a), 1.1, 1, 1.1, 0, 2.2, 0, g);
+  } else {
+    for (const [px, pz] of [[-1.5, -1.5], [1.5, -1.5], [1.5, 1.5], [-1.5, 1.5]]) del(CYL, M(0x8b5a2b), 0.22, 9, 0.22, px, 4.5, pz, g);
+    del(BOX, M(0xc9955c), 4.2, 0.3, 4.2, 0, 8.8, 0, g);
+    for (const [px, pz, b2, d2] of [[0, -2, 4.2, 0.12], [0, 2, 4.2, 0.12], [-2, 0, 0.12, 4.2], [2, 0, 0.12, 4.2]]) del(BOX, M(0x8b5a2b), b2, 1, d2, px, 9.4, pz, g);
+    const tak = del(new THREE.ConeGeometry(3.2, 2.2, 4), M(0xc4473a), 1, 1, 1, 0, 11.2, 0, g); tak.rotation.y = Math.PI / 4;
+    del(CYL, M(0x555b66), 0.06, 2, 0.06, 0, 13, 0, g); del(BOX, M(0xffcc00), 0.05, 0.7, 1.1, 0, 13.6, 0.55, g);
+  }
+  return g;
+}
+function byggHusIVerden(h) {
+  const T = HUSTYPER[h.t], g = lagHusModell(h.t, h.x, h.z, h.r); husGrupper.push(g);
+  LAND_HINDRE.push({ x: h.x, z: h.z, bx: T.b / 2 + 0.4, bz: T.d / 2 + 0.4, hus: true });
+  return g;
+}
+// Plassering: et gjennomsiktig «spøkelseshus» foran roboten viser hvor huset havner
+const plassering = { type: null, boks: null };
+function startPlassering(t) {
+  avbrytPlassering(); lukkLag('bygg');
+  const T = HUSTYPER[t];
+  plassering.type = t;
+  plassering.boks = new THREE.Mesh(new THREE.BoxGeometry(T.b, 3, T.d), new THREE.MeshBasicMaterial({ color: 0x3fd16a, transparent: true, opacity: 0.35, depthWrite: false }));
+  scene.add(plassering.boks);
+  $('byggKnapp').textContent = '❌ Avbryt';
+  melding(`${T.ikon} Gå dit du vil ha huset, og trykk ✅ Bygg her.`, 4);
+}
+function avbrytPlassering() { if (plassering.boks) scene.remove(plassering.boks); plassering.type = null; plassering.boks = null; $('byggKnapp').textContent = '🔨 Bygg'; }
+function plasseringsPunkt() { const T = HUSTYPER[plassering.type], a = Math.max(T.b, T.d) / 2 + 3; return { x: land.pos.x + Math.sin(land.retning) * a, z: land.pos.z + Math.cos(land.retning) * a }; }
+function kanByggeHer(t, x, z) {
+  const T = HUSTYPER[t], hb = T.b / 2, hd = T.d / 2;
+  for (const [cx, cz] of [[x - hb, z - hd], [x + hb, z - hd], [x + hb, z + hd], [x - hb, z + hd], [x, z]]) if (oyAvstand(cx, cz) > OY_R - 7 || paaBrygga(cx, cz)) return false;
+  for (const h of LAND_HINDRE) {
+    if (h.r) { if (Math.abs(x - h.x) < hb + h.r && Math.abs(z - h.z) < hd + h.r) return false; }
+    else if (Math.abs(x - h.x) < hb + h.bx && Math.abs(z - h.z) < hd + h.bz) return false;
+  }
+  if (Math.abs(x - land.pos.x) < hb + 0.8 && Math.abs(z - land.pos.z) < hd + 0.8) return false;
+  return true;
+}
+function oppdaterPlassering() {
+  if (!plassering.boks) return;
+  const p = plasseringsPunkt(), ok = kanByggeHer(plassering.type, p.x, p.z);
+  plassering.boks.position.set(p.x, oyHoyde(p.x, p.z) + 1.5, p.z);
+  plassering.boks.material.color.setHex(ok ? 0x3fd16a : 0xe5483f);
+  plassering.ok = ok;
+}
+function byggHer() {
+  const t = plassering.type, T = HUSTYPER[t], p = plasseringsPunkt();
+  if (!plassering.ok) { melding('🚫 Det er ikke plass her. Gå et annet sted på gresset.', 2.5); return; }
+  if (tilstand.penger < T.pris) { melding(`💰 Du trenger ${tall(T.pris)} for ${T.navn.toLowerCase()}.`, 2.5); return; }
+  tilstand.penger -= T.pris;
+  const h = { t, x: Math.round(p.x * 10) / 10, z: Math.round(p.z * 10) / 10, r: Math.round((land.retning + Math.PI) * 100) / 100 };   // døra vender mot roboten
+  tilstand.hus.push(h); const g = byggHusIVerden(h);
+  g.scale.setScalar(0.05); g.userData.vokser = 0;
+  avbrytPlassering(); oppdaterHud(); bump('pPenger'); lagre();
+  lydSjelden(); robotGjor('ThumbsUp', 1.5);
+  melding(`${T.ikon} ${T.navn} er bygget! ${T.bonus ? T.tekst : ''}`, 4, true);
+}
+function oppdaterHusVekst(dt) { for (const g of husGrupper) if (g.userData.vokser !== undefined) { g.userData.vokser = Math.min(1, g.userData.vokser + dt * 1.5); const a = g.userData.vokser; g.scale.setScalar(0.05 + 0.95 * (1 - Math.pow(1 - a, 3))); if (a >= 1) delete g.userData.vokser; } }
+function byggByggListe() {
+  $('byggListe').innerHTML = Object.entries(HUSTYPER).map(([k, T]) => {
+    const antall = tilstand.hus.filter(h => h.t === k).length, fullt = antall >= T.maks, rad = tilstand.penger >= T.pris;
+    return `<button class="kn" type="button" data-byggtype="${k}" ${fullt || !rad ? 'disabled' : ''}><span>${T.ikon} <b>${T.navn}</b><small>${T.tekst}${T.maks > 1 ? ` (${antall} av ${T.maks})` : fullt ? ' (bygget)' : ''}</small></span><span>💰 ${tall(T.pris)}</span></button>`;
+  }).join('');
+}
+$('byggListe').addEventListener('click', e => { const b = e.target.closest('[data-byggtype]'); if (b && !b.disabled) startPlassering(b.dataset.byggtype); });
+$('byggKnapp').addEventListener('click', e => { e.stopPropagation(); if (spillTilstand !== 'spill' || modalApen() || !land.aktiv) return; if (plassering.type) avbrytPlassering(); else { byggByggListe(); apneLag('bygg'); } });
 // Kameraet følger bak båten og snur seg sakte med den (som i Roblox og Fortnite)
 let kamYaw = 0;
 function oppdaterKamera(dt) {
@@ -2404,7 +2515,7 @@ function loop(na) {
   const spill = spillTilstand === 'spill' && !modalApen();
   if (spill) {
     if (land.aktiv) oppdaterLand(dt, tid); else oppdaterBaat(dt, tid);
-    oppdaterFiske(dt, tid); oppdaterKrakenShow(ekteDt, tid); oppdaterMonster(dt, tid); oppdaterStoreDyr(dt, tid); oppdaterFiskebaat(ekteDt, tid); oppdaterInntekt(dt);
+    oppdaterFiske(dt, tid); oppdaterKrakenShow(ekteDt, tid); oppdaterMonster(dt, tid); oppdaterStoreDyr(dt, tid); oppdaterFiskebaat(ekteDt, tid); if (land.aktiv) oppdaterPlassering(); oppdaterHusVekst(dt); oppdaterInntekt(dt);
     lagreTid += dt; if (lagreTid > 5) { lagreTid = 0; lagre(); }
   } else { baat.position.y = 0.25 + Math.sin(tid * 1.6) * 0.15; }
   if (spillTilstand !== 'pause') { oppdaterVerden(dt, tid); oppdaterAkvarium(dt, tid); oppdaterSkum(dt); oppdaterPlask(dt); robotAnimasjon(dt); for (const m of lastGruppe.children) animerFisk(m, tid * 0.3, 0.5); }
@@ -2437,7 +2548,8 @@ catch (e) {
 }
 byggBaat(); byggLast(); byggAkvarium(); oppdaterHud();
 baat.position.copy(spiller.pos);
-krakenSted = tilstand.kraken ? 'tank' : 'skjult';   // fanget Kraken bor i Kraken-akvariet
+krakenSted = tilstand.kraken ? 'tank' : 'skjult';
+for (const h of tilstand.hus) byggHusIVerden(h);   // husene i landsbyen fra lagringen   // fanget Kraken bor i Kraken-akvariet
 baat.updateMatrixWorld(); oy.updateMatrixWorld(); oppdaterKrakenSted(0, 0);
 
 window.__evnP = EVNPause({
@@ -2455,21 +2567,21 @@ window.__evnP = EVNPause({
   fortsett: () => { spillTilstand = 'spill'; for (const k in taster) taster[k] = false; sisteTid = performance.now(); },
   lagre: lagre,
   styring: () => document.documentElement.classList.contains('touch')
-    ? '👆 Dra fingeren dit du vil kjøre<br>🟡 Den gule knappen: fiske og havna<br>📖 Fiskeboka viser fiskene dine<br>🚀 Turbo: kjør fortere<br>🚶 Gå i land ved kaia<br>🗺️ Kartet viser fiskesteder, haier, hval og Kraken'
-    : '⬆️/W fremover · ⬇️/S bakover<br>⬅️➡️ eller A/D: svinge<br>E eller mellomrom: fiske og havna<br>Shift eller T: turbo 🚀<br>G: gå i land / om bord ved kaia<br>I: fiskeboka · M: kart · L: lyd<br>P eller Esc: pause'
+    ? '👆 Dra fingeren dit du vil kjøre<br>🟡 Den gule knappen: fiske og havna<br>📖 Fiskeboka viser fiskene dine<br>🚀 Turbo: kjør fortere<br>🚶 Gå i land ved kaia, 🔨 bygg hus<br>🗺️ Kartet viser fiskesteder, haier, hval og Kraken'
+    : '⬆️/W fremover · ⬇️/S bakover<br>⬅️➡️ eller A/D: svinge<br>E eller mellomrom: fiske og havna<br>Shift eller T: turbo 🚀<br>G: gå i land / om bord ved kaia · B: bygg<br>I: fiskeboka · M: kart · L: lyd<br>P eller Esc: pause'
 });
 // Etter EVNPause, så pausens Tab-regel (T2) gjelder også i «Starte helt på nytt?» (nullstillboksen stopper alle andre taster)
 EVNNullstill({
   nokler: [LAGRING, LAGRING + '-kopi'],
   tema: { panel: '#155a8a', ink: '#fff', hi: '#ffc93c', btn: '#ffc93c', btnInk: '#4a2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400 },
   tekst: 'Alle fiskene, pengene, båtene og fiskeboka blir borte.',
-  harLagring: () => tilstand.fanget > 0 || tilstand.penger > INNST.startPenger || tilstand.stang > 0 || tilstand.baat > 0 || tilstand.venner > 0 || tilstand.kraken,
+  harLagring: () => tilstand.hus.length > 0 || tilstand.fanget > 0 || tilstand.penger > INNST.startPenger || tilstand.stang > 0 || tilstand.baat > 0 || tilstand.venner > 0 || tilstand.kraken,
   plasser: el => $('evnTilbake').after(el),
   vis: () => $('start').classList.contains('vis')
 });
 requestAnimationFrame(loop);
 // Til testing
-window.__spill = { get krakenShow() { return krakenShow; }, land, gaaILand, gaaOmBord, oyHoyde, fiskebaat, startFiskebaat, storeDyr, settTurbo, get turbo() { return turbo; }, set eventTvang(v) { eventTvang = v; }, sjomonster, visMonster, torsdagsEvent, get krakenSted() { return krakenSted; }, visFangst, besteOppsett, tilstand, spiller, plasser, INNST, FORMER, nyFisk, fiskNavn, fiskVerdi, sjeldenhet, fiskDel, gjorHandling, startFiske, dra, get fiske() { return fiske; }, lagre, HAVN, KRAKEN_POS, scene, camera, oppdaterHud, byggAkvarium, byggLast, byggBaat, lagFiskModell, renderer };
+window.__spill = { get krakenShow() { return krakenShow; }, HUSTYPER, startPlassering, byggHer, plassering, salgsVerdi, akvPerMinutt, land, gaaILand, gaaOmBord, oyHoyde, fiskebaat, startFiskebaat, storeDyr, settTurbo, get turbo() { return turbo; }, set eventTvang(v) { eventTvang = v; }, sjomonster, visMonster, torsdagsEvent, get krakenSted() { return krakenSted; }, visFangst, besteOppsett, tilstand, spiller, plasser, INNST, FORMER, nyFisk, fiskNavn, fiskVerdi, sjeldenhet, fiskDel, gjorHandling, startFiske, dra, get fiske() { return fiske; }, lagre, HAVN, KRAKEN_POS, scene, camera, oppdaterHud, byggAkvarium, byggLast, byggBaat, lagFiskModell, renderer };
 </script>
 <!-- EVN Studio: knapp tilbake til forsiden (vises bare under /spill/) -->
 <style>
