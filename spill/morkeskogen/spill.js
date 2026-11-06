@@ -523,6 +523,9 @@ const TRACK = [];                                                               
   for (let i = 1; i < TRACK.length; i++) TRACK[i][2] = TRACK[i - 1][2] + Math.hypot(TRACK[i][0] - TRACK[i - 1][0], TRACK[i][1] - TRACK[i - 1][1]);
 })();
 const TRACK_LEN = TRACK[TRACK.length - 1][2], ST_A = 150, ST_B = TRACK_LEN - 150;
+// 2.0.6: ved stasjon A stopper lokomotivet lenger fram, så hele toget står på sporet ved perrongen. Før sto vogna (350 bak lokomotivet)
+// «før starten» av sporet og ble klemt sammen med kullvogna, så du satt utenfor vogna og vogna dukket først opp når toget kjørte.
+const ST_A_TOG = Math.max(ST_A, 175 * 2 + 40);
 // Toget og stasjonene er laget i dobbel størrelse (v4.8), så Even-figuren får plass i vogna
 const TRAIN_K = 2, CAR_TENDER = 78 * TRAIN_K, CAR_COACH = 175 * TRAIN_K;
 // Perrongen er et gulv du kan gå på
@@ -602,7 +605,7 @@ const TOWN_NPCS = [
 function newTown() {
   return { found: false, visited: false, sheriffTalked: false, sheriffDone: hero.qdone.includes('sheriff'), talkI: {},
     bandits: [[-250, -40], [260, 120], [-60, 360]].map(([x, y], i) => ({ x: tX(x), y: tY(y), hx: tX(x), hy: tY(y), hp: 6, max: 6, hit: 0, gone: false, active: false, walk: 0, ang: 0, i, said: 0 })),
-    train: { s: ST_A, v: 0, st: 'wait', at: 'A', t: 0, dir: 1, called: false, chug: 0 } };
+    train: { s: ST_A_TOG, v: 0, st: 'wait', at: 'A', t: 0, dir: 1, called: false, chug: 0 } };
 }
 // ---------- Logikk ----------
 function updateTrainTown(dt) {
@@ -612,7 +615,7 @@ function updateTrainTown(dt) {
   if (!hero.qdone.includes('stasjon') && dist(p.x, p.y, stA.x, stA.y) < 260) { questAdd('stasjon'); toast('🚉 Du fant Mørkeskogen stasjon! Gå om bord når toget står ved perrongen.'); }
   if (!T.found && townNear(p.x, p.y, 700)) { T.found = true; if (!g.ride) toast('🤠 Du fant Kaktusbyen! Snakk med sheriffen.'); }
   // toget: vent ved stasjonen, kjør mykt fram til den andre, brems og stopp ved perrongen
-  const target = tr.at === 'A' ? ST_B : ST_A;
+  const target = tr.at === 'A' ? ST_B : ST_A_TOG;
   if (tr.st === 'wait') {
     tr.t += dt;
     const other = tr.at === 'A' ? stB : stA;
@@ -628,7 +631,7 @@ function updateTrainTown(dt) {
     if (left < 0.5) {                                                                        // fram!
       tr.s = target; tr.v = 0; tr.st = 'wait'; tr.at = tr.at === 'A' ? 'B' : 'A'; tr.t = 0; sfx('whistle');
       if (g.ride) {                                                                           // gå av på perrongen
-        const st = trackPos(tr.s); g.ride = null;
+        const st = trackPos(tr.at === 'A' ? ST_A : tr.s); g.ride = null;   // gå av ved perrongen
         p.x = st.x + st.ty * 40 * TRAIN_K; p.y = st.y - st.tx * 40 * TRAIN_K; p.h = undefined; p.z = 0;
         if (tr.at === 'B') { questAdd('cowboy'); toast('🤠 Velkommen til Kaktusbyen! Sheriffen trenger hjelp – snakk med ham.'); T.visited = true; }
         else toast('🌲 Tilbake i Mørkeskogen!');
@@ -747,8 +750,9 @@ function makeCoach() {
   G.add(mk(GEO.box, m.plankB, 32, 3, 96, 0, 13, 0), mk(GEO.box, m.black, 26, 6, 92, 0, 9, 0));
   for (const sx of [-1, 1]) G.add(mk(GEO.box, m.red, 2, 10, 96, sx * 15.5, 19, 0));                 // lav vegg
   for (const z of [-46, 46]) G.add(mk(GEO.box, m.red, 32, 10, 2, 0, 19, z));
-  for (const [x, z] of [[-14, -45], [14, -45], [-14, 45], [14, 45], [-14, 0], [14, 0]]) G.add(mk(GEO.cyl, m.brass, 1, 34, 1, x, 31, z, false));
-  G.add(mk(GEO.box, m.green, 36, 2.5, 100, 0, 49, 0), mk(GEO.box, m.brass, 36.6, 1, 100.6, 0, 47.6, 0, false));
+  // 2.0.6: taket er hevet 14 (før 49), så roboten sitter med hodet under taket
+  for (const [x, z] of [[-14, -45], [14, -45], [-14, 45], [14, 45], [-14, 0], [14, 0]]) G.add(mk(GEO.cyl, m.brass, 1, 48, 1, x, 38, z, false));
+  G.add(mk(GEO.box, m.green, 36, 2.5, 100, 0, 63, 0), mk(GEO.box, m.brass, 36.6, 1, 100.6, 0, 61.6, 0, false));
   for (let z = -36; z <= 36; z += 18) for (const sx of [-1, 1]) G.add(mk(GEO.box, m.seat, 11, 4, 9, sx * 7.5, 17, z), mk(GEO.box, m.seat, 11, 9, 2, sx * 7.5, 21, z - 4.5));
   for (const z of [-32, 32]) for (const sx of [-1, 1]) { const w = new THREE.Group(); w.position.set(sx * 14, 6, z); G.add(w); const tire = mk(GEO.cyl, m.black, 6, 3, 6, 0, 0, 0); tire.rotation.z = Math.PI / 2; w.add(tire); wheels.push(w); }
   G.userData = { wheels }; return G;
@@ -5652,7 +5656,7 @@ function draw(time) {
   P.ang = turn(P.ang, want, Math.min(1, dt * (p.swing > 0 || p.draw > 0 ? 22 : 11 + 5 * amt)));   // myk vending i bevegelsesretningen
   P.grp.position.set(p.x, p.h !== undefined ? p.h : surfaceH(p.x, p.y), p.y); P.grp.rotation.y = P.ang;
   if (g.sleep) { const b = g.sleep.b; P.grp.position.set(b.x, groundH(b.x, b.y) + 22, b.y + 40); P.grp.rotation.set(-Math.PI / 2, 0, 0); } else if (P.grp.rotation.x) { P.grp.rotation.x = 0; P.grp.rotation.z = 0; }   // ligger i senga
-  if (g.ride) { P.ang = p.rideAng; P.grp.rotation.y = P.ang; P.grp.rotation.z = 0; }
+  if (g.ride) { P.ang = p.rideAng; P.grp.rotation.y = P.ang; P.grp.rotation.z = 0; if (P.robot) P.grp.position.y = p.h + 17; }   // 2.0.6: roboten sitter på benken (setet er 38 over vognbunnen)
   // Gange: hofter og skuldre svinger, knær og albuer bøyes, kroppen lener seg fremover når du løper
   P.body.position.y = Math.abs(Math.sin(p.walk)) * 2.2 * amt;
   P.torso.rotation.x = 0.14 * amt;
@@ -5873,6 +5877,9 @@ function draw(time) {
   for (; si < R3.smoke.length; si++) R3.smoke[si].visible = false;
 
   if (window.EVN2) EVN2.robotRamme(R3.player, p, dt);   // 2.0: robot-helten følger figuren og velger klipp
+  // 2.0.6: i toget sitter roboten (klippet «Sitting»). Når du går av, glir den tilbake til vanlig klipp av seg selv.
+  { const n = R3.player.robot, S = n && n.klipp.Sitting;
+    if (S && g.ride) { if (!S.isScheduled()) S.reset().play(); for (const a of Object.values(n.klipp)) if (a !== S && a.isScheduled()) a.setEffectiveWeight(0); S.setEffectiveWeight(1); n.mix.update(0); } }
   // Fisking: snøret går fra stangtuppen til duppen; duppen guppar, dykker ved napp og trekkes inn; fisken synes når den kjemper og når den landes
   { const F = p.fish, P2 = R3.player;
     if (!R3.fishLine) {
