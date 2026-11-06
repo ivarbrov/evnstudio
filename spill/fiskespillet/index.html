@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.8.2 – EVN Studio</title>
+<title>Fiskespillet 0.9.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -29,7 +29,8 @@
   #bokKnapp { border-color:rgba(255,201,60,.6); }
   #hoyre { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; }
   #turboKnapp { position:fixed; right:calc(22px + env(safe-area-inset-right)); bottom:calc(110px + env(safe-area-inset-bottom)); width:56px; height:56px; font-size:26px; z-index:5; }
-  #turboKnapp[hidden] { display:none; }
+  #turboKnapp[hidden], #landKnapp[hidden] { display:none; }
+  #landKnapp { position:fixed; right:calc(22px + env(safe-area-inset-right)); bottom:calc(110px + env(safe-area-inset-bottom)); width:56px; height:56px; font-size:26px; z-index:5; background:#3fae4a; }
   .rund.pa { background:#ffd34d; color:#1d2440; border-color:#fff; }
   .rund { width:48px; height:48px; border-radius:50%; background:rgba(13,36,64,.74); border:2px solid rgba(255,255,255,.25); color:#fff; font-size:22px; display:flex; align-items:center; justify-content:center; padding:0; }
   .rund:focus-visible, .pille:focus-visible, #handling:focus-visible { outline:3px solid #fff; outline-offset:2px; }
@@ -186,6 +187,7 @@
 <div id="melding" role="status" aria-live="polite"></div>
 <div id="kamp" hidden><span>🐙 Kraken</span><div class="kampbar" role="progressbar" aria-label="Hvor langt opp Kraken er"><i id="kampFyll"></i></div><span>🏆</span><span id="kampTid" class="kamptid" aria-label="Sekunder igjen">⏱ 60</span></div>
 <button id="handling" type="button"></button>
+<button class="rund" id="landKnapp" type="button" title="Gå i land (G)" aria-label="Gå i land" hidden>🚶</button>
 <button class="rund" id="turboKnapp" type="button" title="Turbo (hold Shift eller trykk T)" aria-label="Turbo" aria-pressed="false" hidden>🚀</button>
 <div id="hjelp"></div>
 <div id="joy"><i></i></div>
@@ -205,7 +207,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.8.2</div>
+    <div class="evn-ver" id="versjon">Versjon 0.9.0</div>
   </div>
 </div>
 
@@ -531,7 +533,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.8.2';
+const VERSJON = '0.9.0';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -773,8 +775,11 @@ function skilt(tekst, h, bak) {
   x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(tekst, b / 2, cv.height / 2 + 3);
   const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding;
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthWrite: false, fog: false }));
-  s.scale.set(h * b / cv.height, h, 1); return s;
+  s.scale.set(h * b / cv.height, h, 1); s.userData.grunn = s.scale.clone(); ALLE_SKILT.push(s); return s;
 }
+const ALLE_SKILT = [];
+// På land står du nær skiltene, så de gjøres mindre der
+function skiltStorrelse(k) { for (const s of ALLE_SKILT) s.scale.copy(s.userData.grunn).multiplyScalar(k); }
 
 // ======================================================
 //  Verden: hav, øya, havna
@@ -865,13 +870,16 @@ const oy = new THREE.Group(); scene.add(oy);
 function stoyOy(x, z) { const h = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
   const ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz);
   return (h(ix, iz) * (1 - u) + h(ix + 1, iz) * u) * (1 - v) + (h(ix, iz + 1) * (1 - u) + h(ix + 1, iz + 1) * u) * v; }
+// Høyden på øya i et punkt (brukes både av terrenget og når roboten går på land)
+const oyAvstand = (x, z) => Math.hypot(x, z) + (stoyOy(x * 0.09, z * 0.09) - 0.5) * 3;
+function oyHoyde(x, z) { const d = oyAvstand(x, z), ss = THREE.MathUtils.smoothstep;
+  return d < OY_R - 5 ? 3.3 : d < OY_R + 3 ? 3.3 - 2.9 * ss(d, OY_R - 5, OY_R + 3) : 0.4 - (d - OY_R - 3) * 0.45; }
 {
   const S = 2 * (OY_R + 12), geo = new THREE.PlaneGeometry(S, S, 170, 170); geo.rotateX(-Math.PI / 2);
   const p = geo.attributes.position, farger = [], ss = THREE.MathUtils.smoothstep;
   const gress = C(0x76c94f), gress2 = C(0x58b03f), sand = C(0xf3dca0), vaat = C(0xcfb27a);
   for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i), z = p.getZ(i), kant = (stoyOy(x * 0.09, z * 0.09) - 0.5) * 3, d = Math.hypot(x, z) + kant;
-    const y = d < OY_R - 5 ? 3.3 : d < OY_R + 3 ? 3.3 - 2.9 * ss(d, OY_R - 5, OY_R + 3) : 0.4 - (d - OY_R - 3) * 0.45;
+    const x = p.getX(i), z = p.getZ(i), d = oyAvstand(x, z), y = oyHoyde(x, z);
     p.setY(i, y);
     const c = new THREE.Color();
     if (d < OY_R - 8) c.copy(gress).lerp(gress2, stoyOy(x * 0.25, z * 0.25)); else c.copy(sand).lerp(vaat, ss(d, OY_R + 0.5, OY_R + 3));
@@ -923,7 +931,8 @@ function palme(x, z, s) {
   }
   for (let i = 0; i < 3; i++) del(SPH_L, M(0x6b4a2a), 0.28, 0.28, 0.28, topp.x + Math.cos(i * 2.1) * 0.35, topp.y - 0.3, Math.sin(i * 2.1) * 0.35, g);
 }
-for (const [x, z, sk] of [[-30, 30, 1.1], [32, 28, 1], [-48, 6, 1.05], [46, -6, 0.95], [-20, -48, 1], [8, -55, 0.9], [-55, -28, 0.85], [50, -40, 1.1], [-38, 52, 0.8], [40, 56, 0.85], [-6, 62, 0.75], [60, 20, 0.8]]) palme(x, z, sk);
+const PALMER = [[-30, 30, 1.1], [32, 28, 1], [-48, 6, 1.05], [46, -6, 0.95], [-20, -48, 1], [8, -55, 0.9], [-55, -28, 0.85], [50, -40, 1.1], [-38, 52, 0.8], [40, 56, 0.85], [-6, 62, 0.75], [60, 20, 0.8]];
+for (const [x, z, sk] of PALMER) palme(x, z, sk);
 // Byggetomter: her skal Even kunne bygge hus senere (landsbyen). Merket med pinner og snor.
 const TOMTER = [[-30, -10], [0, -10], [-30, 12], [0, 12], [30, 8], [-15, -32], [15, -32], [-45, 30]];
 for (const [x, z] of TOMTER) {
@@ -1443,6 +1452,7 @@ $('lydKnapp').addEventListener('click', e => { e.stopPropagation(); settLyd(!lyd
 let turbo = false;
 function settTurbo(v) { turbo = v; $('turboKnapp').setAttribute('aria-pressed', String(v)); $('turboKnapp').classList.toggle('pa', v); if (v) melding('🚀 Turbo på! Trykk igjen for vanlig fart.', 2); }
 $('turboKnapp').addEventListener('click', e => { e.stopPropagation(); settTurbo(!turbo); });
+$('landKnapp').addEventListener('click', e => { e.stopPropagation(); if (spillTilstand === 'spill' && !modalApen()) gaaILand(); });
 settLyd(lydPa);
 
 // ======================================================
@@ -2068,6 +2078,7 @@ $('fangstOk').addEventListener('click', () => lukkLag('fangst'));
 // ======================================================
 let handling = null, handlingTekst = '';
 function finnHandling() {
+  if (land.aktiv) return landHandling();
   if (krakenShow) return { tekst: '🐙 Wow!', av: true };
   if (fiske && fiske.fase === 'kamp') return { tekst: '💪 Dra!', gjor: dra };
   if (fiske) return { tekst: fiske.kraken ? '🐙 Vent …' : fiske.monster ? '🐉 Vent …' : fiske.stor ? `${FORMER[fiske.stor.form].ikon} Vent …` : '⏳ Vent på napp …', av: true };
@@ -2086,6 +2097,7 @@ function finnHandling() {
 }
 function oppdaterHandling() {
   handling = spillTilstand === 'spill' ? finnHandling() : null;
+  if (spillTilstand === 'spill' && $('kamp').hidden) { const kanLand = !land.aktiv && iHavna() && !fiske && !krakenShow; $('landKnapp').hidden = !kanLand; $('turboKnapp').hidden = kanLand || land.aktiv; }
   const el = $('handling');
   const tekst = handling ? handling.tekst + (handling.av ? '' : '<span class="tast">(E)</span>') : '';
   if (tekst !== handlingTekst) { handlingTekst = tekst; el.innerHTML = tekst; el.style.display = handling ? 'block' : 'none'; el.classList.toggle('av', !!(handling && handling.av)); el.setAttribute('aria-disabled', String(!!(handling && handling.av))); }
@@ -2109,7 +2121,8 @@ addEventListener('keydown', e => {
   if (k === 'e' || k === ' ') { e.preventDefault(); if (!e.repeat) gjorHandling(); }
   if (k === 'i' && !e.repeat) { byggBok(); apneLag('bok'); }
   if (k === 'l' && !e.repeat) settLyd(!lydPa);
-  if (k === 't' && !e.repeat) settTurbo(!turbo);
+  if (k === 't' && !e.repeat && !land.aktiv) settTurbo(!turbo);
+  if (k === 'g' && !e.repeat) { if (land.aktiv) { if (naerLand(KAI().x, KAI().z, 5)) gaaOmBord(); } else if (iHavna() && !fiske) gaaILand(); }
   if (k.startsWith('arrow')) e.preventDefault();
 }, true);
 addEventListener('keyup', e => { taster[e.key.toLowerCase()] = false; });
@@ -2260,15 +2273,97 @@ function oppdaterBaat(dt, t) {
   hjemPil.visible = baatFull() && !iHavna();
   if (hjemPil.visible) { hjemPil.position.set(spiller.pos.x, 6 + Math.sin(t * 3) * 0.4, spiller.pos.z); const neste = veiHjem()[1]; hjemPil.rotation.y = Math.atan2(neste.x - spiller.pos.x, neste.z - spiller.pos.z); }   // pila følger prikkene
 }
+
+// ======================================================
+//  Gå på land (Evens ønske 6.11.2026): roboten kan gå i land ved kaia, gå rundt på øya,
+//  gå inn i butikken og til akvariet, og se på byggetomtene. Første trinn i landsbyen.
+// ======================================================
+const land = { aktiv: false, pos: new THREE.Vector3(), retning: Math.PI, fart: 0, gaar: false };
+const KAI = () => new THREE.Vector3(0, 0, OY_R + 21);          // ytterst på brygga, der båten ligger
+const paaBrygga = (x, z) => Math.abs(x) < 3.2 && z > OY_R - 4 && z < OY_R + 23;
+function landHoyde(x, z) { return paaBrygga(x, z) ? Math.max(1.9, oyHoyde(x, z)) : oyHoyde(x, z); }
+// Ting roboten ikke kan gå gjennom: [x, z, halv bredde, halv dybde] eller [x, z, radius]
+const LAND_HINDRE = [
+  { x: 16, z: 52, bx: 5.6, bz: 4.6 },                                 // butikken
+  { x: AKV.x, z: AKV.z, bx: AKV.b / 2 + 0.6, bz: AKV.d / 2 + 0.6 },   // akvariet
+  { x: KTANK.x, z: KTANK.z, bx: KTANK.b / 2 + 0.8, bz: KTANK.d / 2 + 0.8 },
+  { x: 18, z: -20, r: 3.2 },                                          // fyrtårnet
+  ...PALMER.map(([x, z, sk]) => ({ x, z, r: 0.9 * sk })),
+];
+function landFritt(x, z) {
+  if (!paaBrygga(x, z) && oyAvstand(x, z) > OY_R + 1.5) return false;   // ikke ut i vannet
+  for (const h of LAND_HINDRE) {
+    if (h.r) { if (Math.hypot(x - h.x, z - h.z) < h.r + 0.6) return false; }
+    else if (Math.abs(x - h.x) < h.bx && Math.abs(z - h.z) < h.bz) return false;
+  }
+  return true;
+}
+function gaaILand() {
+  if (land.aktiv || fiske) return;
+  land.aktiv = true; land.retning = Math.PI; land.fart = 0;
+  land.pos.copy(KAI()); land.pos.y = landHoyde(land.pos.x, land.pos.z);
+  spiller.fart = 0; settTurbo(false);
+  skiltStorrelse(0.45); scene.add(helt); helt.position.copy(land.pos); helt.rotation.set(0, land.retning, 0);
+  stang.visible = false;
+  melding('🚶 Du er på land! Gå til butikken, akvariet og byggetomtene.', 3.5);
+}
+function gaaOmBord() {
+  if (!land.aktiv) return;
+  land.aktiv = false; skiltStorrelse(1); baat.add(helt); helt.rotation.set(0, 0, 0); stang.visible = true;
+  helt.position.set(0, baat.userData.dekkY, -baat.userData.L * 0.18);
+  robotGaa(false); melding('⛵ Du er om bord igjen.', 2);
+}
+function robotGaa(gaar) {
+  if (!robot || land.gaar === gaar || robot.igjen > 0) { land.gaar = gaar; return; }
+  land.gaar = gaar;
+  const ny = robot.klipp[gaar ? (land.fart > 9 ? 'Running' : 'Walking') : 'Idle'] || robot.klipp.Idle;
+  if (ny === robot.aktiv) return; ny.reset(); ny.play(); robot.aktiv.crossFadeTo(ny, 0.25, false); robot.aktiv = ny;
+}
+function naerLand(x, z, r) { return Math.hypot(land.pos.x - x, land.pos.z - z) < r; }
+function landHandling() {
+  if (naerLand(KAI().x, KAI().z, 5)) return { tekst: '⛵ Gå om bord', gjor: gaaOmBord };
+  if (naerLand(16, 52 + 5.5, 4.5)) return { tekst: '🛒 Butikken', gjor: () => { fane = 'butikk'; byggHavna(); apneLag('havna'); } };
+  if (Math.abs(land.pos.x - AKV.x) < AKV.b / 2 + 3 && Math.abs(land.pos.z - AKV.z) < AKV.d / 2 + 3) return { tekst: '🐠 Akvariet', gjor: () => { fane = 'akvarium'; byggHavna(); apneLag('havna'); } };
+  for (const [x, z] of TOMTER) if (Math.abs(land.pos.x - x) < 6.5 && Math.abs(land.pos.z - z) < 6.5)
+    return { tekst: '🏗️ Byggetomt', gjor: () => melding('🏗️ Her kan du snart bygge et hus!', 3) };
+  return null;
+}
+function oppdaterLand(dt, t) {
+  let gass = 0, ror = 0, jx = 0, jz = 0;
+  if (!modalApen()) {
+    if (taster['arrowup'] || taster['w']) gass += 1; if (taster['arrowdown'] || taster['s']) gass -= 1;
+    if (taster['arrowleft'] || taster['a']) ror += 1; if (taster['arrowright'] || taster['d']) ror -= 1;
+    if (joy.aktiv) { const fx = Math.sin(joy.yaw), fz = Math.cos(joy.yaw); jx = fx * -joy.dy + -fz * joy.dx; jz = fz * -joy.dy + fx * joy.dx; }
+  }
+  const maks = 7 * (taster['shift'] ? 1.6 : 1), lj = Math.hypot(jx, jz);
+  let mal = 0;
+  if (lj > 0.05) { let diff = Math.atan2(jx, jz) - land.retning; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); land.retning += Math.sign(diff) * Math.min(Math.abs(diff), 8 * dt); mal = Math.min(1, lj) * maks * Math.max(0, Math.cos(diff)); }
+  else { mal = gass > 0 ? maks : gass < 0 ? -maks * 0.5 : 0; land.retning += ror * 2.6 * dt; }
+  land.fart += (mal - land.fart) * Math.min(1, dt * 8);
+  if (Math.abs(land.fart) > 0.05) {
+    const nx = land.pos.x + Math.sin(land.retning) * land.fart * dt, nz = land.pos.z + Math.cos(land.retning) * land.fart * dt;
+    if (landFritt(nx, nz)) { land.pos.x = nx; land.pos.z = nz; }
+    else if (landFritt(nx, land.pos.z)) land.pos.x = nx;      // gli langs veggen
+    else if (landFritt(land.pos.x, nz)) land.pos.z = nz;
+    else land.fart = 0;
+  }
+  land.pos.y = landHoyde(land.pos.x, land.pos.z);
+  helt.position.lerp(land.pos, Math.min(1, dt * 12)); helt.position.x = land.pos.x; helt.position.z = land.pos.z;
+  helt.rotation.y = land.retning;
+  robotGaa(Math.abs(land.fart) > 0.4);
+  // Båten ligger rolig ved kaia
+  baat.position.set(spiller.pos.x, 0.25 + Math.sin(t * 1.6) * 0.15, spiller.pos.z);
+}
 // Kameraet følger bak båten og snur seg sakte med den (som i Roblox og Fortnite)
 let kamYaw = 0;
 function oppdaterKamera(dt) {
-  let d = spiller.retning - kamYaw; d = Math.atan2(Math.sin(d), Math.cos(d));
-  kamYaw += d * Math.min(1, dt * 2.2);
-  const fx = Math.sin(kamYaw), fz = Math.cos(kamYaw);
-  const mal = new THREE.Vector3(spiller.pos.x - fx * 30 * zoom, 18 * zoom, spiller.pos.z - fz * 30 * zoom);
+  const mål = land.aktiv ? land.pos : spiller.pos, ret = land.aktiv ? land.retning : spiller.retning;
+  let d = ret - kamYaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+  kamYaw += d * Math.min(1, dt * (land.aktiv ? 3 : 2.2));
+  const fx = Math.sin(kamYaw), fz = Math.cos(kamYaw), avst = (land.aktiv ? 13 : 30) * zoom, hoy = (land.aktiv ? 8 : 18) * zoom;
+  const mal = new THREE.Vector3(mål.x - fx * avst, (land.aktiv ? mål.y : 0) + hoy, mål.z - fz * avst);
   camera.position.lerp(mal, Math.min(1, dt * 4));
-  camera.lookAt(spiller.pos.x + fx * 14, 1.5, spiller.pos.z + fz * 14);
+  camera.lookAt(mål.x + fx * (land.aktiv ? 4 : 14), land.aktiv ? mål.y + 2 : 1.5, mål.z + fz * (land.aktiv ? 4 : 14));
   const sn = HAV_STR / HAV_DEL; hav.position.set(Math.round(spiller.pos.x / sn) * sn, 0, Math.round(spiller.pos.z / sn) * sn);
 }
 kamYaw = spiller.retning;
@@ -2306,7 +2401,8 @@ function loop(na) {
   tid += dt;
   const spill = spillTilstand === 'spill' && !modalApen();
   if (spill) {
-    oppdaterBaat(dt, tid); oppdaterFiske(dt, tid); oppdaterKrakenShow(ekteDt, tid); oppdaterMonster(dt, tid); oppdaterStoreDyr(dt, tid); oppdaterFiskebaat(ekteDt, tid); oppdaterInntekt(dt);
+    if (land.aktiv) oppdaterLand(dt, tid); else oppdaterBaat(dt, tid);
+    oppdaterFiske(dt, tid); oppdaterKrakenShow(ekteDt, tid); oppdaterMonster(dt, tid); oppdaterStoreDyr(dt, tid); oppdaterFiskebaat(ekteDt, tid); oppdaterInntekt(dt);
     lagreTid += dt; if (lagreTid > 5) { lagreTid = 0; lagre(); }
   } else { baat.position.y = 0.25 + Math.sin(tid * 1.6) * 0.15; }
   if (spillTilstand !== 'pause') { oppdaterVerden(dt, tid); oppdaterAkvarium(dt, tid); oppdaterSkum(dt); oppdaterPlask(dt); robotAnimasjon(dt); for (const m of lastGruppe.children) animerFisk(m, tid * 0.3, 0.5); }
@@ -2357,8 +2453,8 @@ window.__evnP = EVNPause({
   fortsett: () => { spillTilstand = 'spill'; for (const k in taster) taster[k] = false; sisteTid = performance.now(); },
   lagre: lagre,
   styring: () => document.documentElement.classList.contains('touch')
-    ? '👆 Dra fingeren dit du vil kjøre<br>🟡 Den gule knappen: fiske og havna<br>📖 Fiskeboka viser fiskene dine<br>🚀 Turbo: kjør fortere<br>🗺️ Kartet viser fiskesteder, haier, hval og Kraken'
-    : '⬆️/W fremover · ⬇️/S bakover<br>⬅️➡️ eller A/D: svinge<br>E eller mellomrom: fiske og havna<br>Shift eller T: turbo 🚀<br>I: fiskeboka · M: kart · L: lyd<br>P eller Esc: pause'
+    ? '👆 Dra fingeren dit du vil kjøre<br>🟡 Den gule knappen: fiske og havna<br>📖 Fiskeboka viser fiskene dine<br>🚀 Turbo: kjør fortere<br>🚶 Gå i land ved kaia<br>🗺️ Kartet viser fiskesteder, haier, hval og Kraken'
+    : '⬆️/W fremover · ⬇️/S bakover<br>⬅️➡️ eller A/D: svinge<br>E eller mellomrom: fiske og havna<br>Shift eller T: turbo 🚀<br>G: gå i land / om bord ved kaia<br>I: fiskeboka · M: kart · L: lyd<br>P eller Esc: pause'
 });
 // Etter EVNPause, så pausens Tab-regel (T2) gjelder også i «Starte helt på nytt?» (nullstillboksen stopper alle andre taster)
 EVNNullstill({
@@ -2371,7 +2467,7 @@ EVNNullstill({
 });
 requestAnimationFrame(loop);
 // Til testing
-window.__spill = { get krakenShow() { return krakenShow; }, fiskebaat, startFiskebaat, storeDyr, settTurbo, get turbo() { return turbo; }, set eventTvang(v) { eventTvang = v; }, sjomonster, visMonster, torsdagsEvent, get krakenSted() { return krakenSted; }, visFangst, besteOppsett, tilstand, spiller, plasser, INNST, FORMER, nyFisk, fiskNavn, fiskVerdi, sjeldenhet, fiskDel, gjorHandling, startFiske, dra, get fiske() { return fiske; }, lagre, HAVN, KRAKEN_POS, scene, camera, oppdaterHud, byggAkvarium, byggLast, byggBaat, lagFiskModell, renderer };
+window.__spill = { get krakenShow() { return krakenShow; }, land, gaaILand, gaaOmBord, oyHoyde, fiskebaat, startFiskebaat, storeDyr, settTurbo, get turbo() { return turbo; }, set eventTvang(v) { eventTvang = v; }, sjomonster, visMonster, torsdagsEvent, get krakenSted() { return krakenSted; }, visFangst, besteOppsett, tilstand, spiller, plasser, INNST, FORMER, nyFisk, fiskNavn, fiskVerdi, sjeldenhet, fiskDel, gjorHandling, startFiske, dra, get fiske() { return fiske; }, lagre, HAVN, KRAKEN_POS, scene, camera, oppdaterHud, byggAkvarium, byggLast, byggBaat, lagFiskModell, renderer };
 </script>
 <!-- EVN Studio: knapp tilbake til forsiden (vises bare under /spill/) -->
 <style>
