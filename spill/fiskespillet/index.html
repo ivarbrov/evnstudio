@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.10.0 – EVN Studio</title>
+<title>Fiskespillet 0.10.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -31,6 +31,9 @@
   #turboKnapp { position:fixed; right:calc(22px + env(safe-area-inset-right)); bottom:calc(110px + env(safe-area-inset-bottom)); width:56px; height:56px; font-size:26px; z-index:5; }
   #turboKnapp[hidden], #landKnapp[hidden], #byggKnapp[hidden] { display:none; }
   #byggKnapp { position:fixed; right:calc(16px + env(safe-area-inset-right)); bottom:calc(110px + env(safe-area-inset-bottom)); width:auto; height:56px; padding:0 18px; border-radius:28px; font:800 19px Nunito, system-ui, sans-serif; z-index:5; background:#e5883f; border:3px solid #fff; }
+  #zoomKnapper { position:fixed; right:calc(16px + env(safe-area-inset-right)); bottom:calc(178px + env(safe-area-inset-bottom)); display:flex; gap:8px; z-index:5; }
+  #zoomKnapper[hidden] { display:none; }
+  #zoomKnapper .rund { width:52px; height:52px; font-size:32px; font-weight:800; color:#fff; line-height:1; }
   #byggListe .kn { display:flex; justify-content:space-between; align-items:center; width:100%; margin:6px 0; text-align:left; }
   #byggListe small { display:block; font-weight:600; opacity:.85; }
   #landKnapp { position:fixed; right:calc(16px + env(safe-area-inset-right)); bottom:calc(110px + env(safe-area-inset-bottom)); width:auto; height:56px; padding:0 18px; border-radius:28px; font:800 19px Nunito, system-ui, sans-serif; z-index:5; background:#3fae4a; border:3px solid #fff; }
@@ -191,6 +194,7 @@
 <div id="kamp" hidden><span>🐙 Kraken</span><div class="kampbar" role="progressbar" aria-label="Hvor langt opp Kraken er"><i id="kampFyll"></i></div><span>🏆</span><span id="kampTid" class="kamptid" aria-label="Sekunder igjen">⏱ 60</span></div>
 <button id="handling" type="button"></button>
 <button class="rund" id="landKnapp" type="button" title="Gå i land (G)" aria-label="Gå i land" hidden>🚶 Gå i land</button>
+<div id="zoomKnapper" hidden><button class="rund" id="zoomUt" type="button" title="Zoom ut (−)" aria-label="Zoom ut">−</button><button class="rund" id="zoomInn" type="button" title="Zoom inn (+)" aria-label="Zoom inn">+</button></div>
 <button class="rund" id="byggKnapp" type="button" title="Bygg (B)" aria-label="Bygg" hidden>🔨 Bygg</button>
 <button class="rund" id="turboKnapp" type="button" title="Turbo (hold Shift eller trykk T)" aria-label="Turbo" aria-pressed="false" hidden>🚀</button>
 <div id="hjelp"></div>
@@ -211,7 +215,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.10.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.10.1</div>
   </div>
 </div>
 
@@ -545,7 +549,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.10.0';
+const VERSJON = '0.10.1';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -748,7 +752,8 @@ const HIMMEL = 0xbfe4ff;
 scene.background = C(HIMMEL);
 scene.fog = new THREE.Fog(C(HIMMEL), 160, 520);
 const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 900);
-let zoom = 1;
+let zoom = 1, landZoom = 1;   // landZoom: zoom ut på land for å se landsbyen når du bygger (Evens ønske 6.11.2026)
+const settLandZoom = v => { landZoom = Math.min(4, Math.max(0.7, v)); };
 
 scene.add(new THREE.HemisphereLight(C(0xffffff), C(0x2a6a9a), 0.9));
 const sol = new THREE.DirectionalLight(C(0xfff2dc), 1.5);
@@ -2117,7 +2122,7 @@ function havnaHjelp() {
 function oppdaterHandling() {
   if (spillTilstand === 'spill') havnaHjelp();
   handling = spillTilstand === 'spill' ? finnHandling() : null;
-  if (spillTilstand === 'spill' && $('kamp').hidden) { const kanLand = !land.aktiv && iHavna() && !fiske && !krakenShow; $('landKnapp').hidden = !kanLand; $('turboKnapp').hidden = kanLand || land.aktiv; $('byggKnapp').hidden = !land.aktiv; }
+  if (spillTilstand === 'spill' && $('kamp').hidden) { const kanLand = !land.aktiv && iHavna() && !fiske && !krakenShow; $('landKnapp').hidden = !kanLand; $('turboKnapp').hidden = kanLand || land.aktiv; $('byggKnapp').hidden = !land.aktiv; $('zoomKnapper').hidden = !land.aktiv; }
   const el = $('handling');
   const tekst = handling ? handling.tekst + (handling.av ? '' : '<span class="tast">(E)</span>') : '';
   if (tekst !== handlingTekst) { handlingTekst = tekst; el.innerHTML = tekst; el.style.display = handling ? 'block' : 'none'; el.classList.toggle('av', !!(handling && handling.av)); el.setAttribute('aria-disabled', String(!!(handling && handling.av))); }
@@ -2143,12 +2148,19 @@ addEventListener('keydown', e => {
   if (k === 'l' && !e.repeat) settLyd(!lydPa);
   if (k === 't' && !e.repeat && !land.aktiv) settTurbo(!turbo);
   if (k === 'b' && !e.repeat && land.aktiv) $('byggKnapp').click();
+  if (land.aktiv && (k === '-' || k === '_')) settLandZoom(landZoom * 1.2);
+  if (land.aktiv && (k === '+' || k === '=')) settLandZoom(landZoom / 1.2);
   if (k === 'g' && !e.repeat) { if (land.aktiv) { if (naerLand(KAI().x, KAI().z, 5)) gaaOmBord(); } else if (iHavna() && !fiske) gaaILand(); }
   if (k.startsWith('arrow')) e.preventDefault();
 }, true);
 addEventListener('keyup', e => { taster[e.key.toLowerCase()] = false; });
 addEventListener('blur', () => { for (const k in taster) taster[k] = false; slippAlt(); });
-addEventListener('wheel', e => { if (spillTilstand === 'spill') zoom = Math.min(1.6, Math.max(0.6, zoom * (e.deltaY > 0 ? 1.08 : 0.92))); }, { passive: true });
+addEventListener('wheel', e => { if (spillTilstand !== 'spill') return; if (land.aktiv) settLandZoom(landZoom * (e.deltaY > 0 ? 1.1 : 0.91)); else zoom = Math.min(1.6, Math.max(0.6, zoom * (e.deltaY > 0 ? 1.08 : 0.92))); }, { passive: true });
+// Klyp med to fingre for å zoome på land
+let klyp = null;
+addEventListener('touchstart', e => { if (land.aktiv && e.touches.length === 2) klyp = { d: Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY), z: landZoom }; }, { passive: true });
+addEventListener('touchmove', e => { if (klyp && e.touches.length === 2) { const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); settLandZoom(klyp.z * klyp.d / Math.max(20, d)); } }, { passive: true });
+addEventListener('touchend', e => { if (e.touches.length < 2) klyp = null; }, { passive: true });
 
 const joy = { aktiv: false, id: null, yaw: 0, sx: 0, sy: 0, dx: 0, dy: 0 };
 const joyEl = $('joy'), knott = joyEl.querySelector('i');
@@ -2421,7 +2433,7 @@ const plassering = { type: null, boks: null };
 function startPlassering(t) {
   avbrytPlassering(); lukkLag('bygg');
   const T = HUSTYPER[t];
-  plassering.type = t;
+  plassering.type = t; if (landZoom < 2.2) settLandZoom(2.2);   // se mer av landsbyen når du velger plass
   plassering.boks = new THREE.Mesh(new THREE.BoxGeometry(T.b, 3, T.d), new THREE.MeshBasicMaterial({ color: 0x3fd16a, transparent: true, opacity: 0.35, depthWrite: false }));
   scene.add(plassering.boks);
   $('byggKnapp').textContent = '❌ Avbryt';
@@ -2465,6 +2477,8 @@ function byggByggListe() {
     return `<button class="kn" type="button" data-byggtype="${k}" ${fullt || !rad ? 'disabled' : ''}><span>${T.ikon} <b>${T.navn}</b><small>${T.tekst}${T.maks > 1 ? ` (${antall} av ${T.maks})` : fullt ? ' (bygget)' : ''}</small></span><span>💰 ${tall(T.pris)}</span></button>`;
   }).join('');
 }
+$('zoomUt').addEventListener('click', e => { e.stopPropagation(); settLandZoom(landZoom * 1.35); });
+$('zoomInn').addEventListener('click', e => { e.stopPropagation(); settLandZoom(landZoom / 1.35); });
 $('byggListe').addEventListener('click', e => { const b = e.target.closest('[data-byggtype]'); if (b && !b.disabled) startPlassering(b.dataset.byggtype); });
 $('byggKnapp').addEventListener('click', e => { e.stopPropagation(); if (spillTilstand !== 'spill' || modalApen() || !land.aktiv) return; if (plassering.type) avbrytPlassering(); else { byggByggListe(); apneLag('bygg'); } });
 // Kameraet følger bak båten og snur seg sakte med den (som i Roblox og Fortnite)
@@ -2473,7 +2487,7 @@ function oppdaterKamera(dt) {
   const mål = land.aktiv ? land.pos : spiller.pos, ret = land.aktiv ? land.retning : spiller.retning;
   let d = ret - kamYaw; d = Math.atan2(Math.sin(d), Math.cos(d));
   kamYaw += d * Math.min(1, dt * (land.aktiv ? 3 : 2.2));
-  const fx = Math.sin(kamYaw), fz = Math.cos(kamYaw), avst = (land.aktiv ? 13 : 30) * zoom, hoy = (land.aktiv ? 8 : 18) * zoom;
+  const fx = Math.sin(kamYaw), fz = Math.cos(kamYaw), avst = land.aktiv ? 13 * landZoom : 30 * zoom, hoy = land.aktiv ? 8 * Math.pow(landZoom, 1.25) : 18 * zoom;
   const mal = new THREE.Vector3(mål.x - fx * avst, (land.aktiv ? mål.y : 0) + hoy, mål.z - fz * avst);
   camera.position.lerp(mal, Math.min(1, dt * 4));
   camera.lookAt(mål.x + fx * (land.aktiv ? 4 : 14), land.aktiv ? mål.y + 2 : 1.5, mål.z + fz * (land.aktiv ? 4 : 14));
@@ -2568,7 +2582,7 @@ window.__evnP = EVNPause({
   lagre: lagre,
   styring: () => document.documentElement.classList.contains('touch')
     ? '👆 Dra fingeren dit du vil kjøre<br>🟡 Den gule knappen: fiske og havna<br>📖 Fiskeboka viser fiskene dine<br>🚀 Turbo: kjør fortere<br>🚶 Gå i land ved kaia, 🔨 bygg hus<br>🗺️ Kartet viser fiskesteder, haier, hval og Kraken'
-    : '⬆️/W fremover · ⬇️/S bakover<br>⬅️➡️ eller A/D: svinge<br>E eller mellomrom: fiske og havna<br>Shift eller T: turbo 🚀<br>G: gå i land / om bord ved kaia · B: bygg<br>I: fiskeboka · M: kart · L: lyd<br>P eller Esc: pause'
+    : '⬆️/W fremover · ⬇️/S bakover<br>⬅️➡️ eller A/D: svinge<br>E eller mellomrom: fiske og havna<br>Shift eller T: turbo 🚀<br>G: gå i land / om bord ved kaia · B: bygg · +/−: zoom på land<br>I: fiskeboka · M: kart · L: lyd<br>P eller Esc: pause'
 });
 // Etter EVNPause, så pausens Tab-regel (T2) gjelder også i «Starte helt på nytt?» (nullstillboksen stopper alle andre taster)
 EVNNullstill({
