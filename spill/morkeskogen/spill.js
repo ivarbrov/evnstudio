@@ -2037,7 +2037,7 @@ function update(dt) {
     }
     ghPush(a, 10); townPush(a, 14); dcSolid(a, 16); pondPush(a, 12);
     if (a.x < 30 || a.x > W - 30 || a.y < 30 || a.y > H - 30) { a.dir += Math.PI; a.x = clamp(a.x, 30, W - 30); a.y = clamp(a.y, 30, H - 30); }
-    if (A.hostile && dp < 22 * A.size + 10 && p.z < 25) { g.hp -= A.dmg * dt; p.hurt = 1; g.cause = 'animal'; g.flash = 0.25; }
+    if (A.hostile && dp < 22 * A.size + 10 && p.z < 25 && !iLeir(p.x, p.y)) { g.hp -= A.dmg * dt;   /* 2.0.6: ingen skade i leiren */ p.hurt = 1; g.cause = 'animal'; g.flash = 0.25; }
   }
   if (g.animals.length < ANIMAL_COUNT && (g.aspawn -= dt) <= 0) { spawnAnimal(600); g.aspawn = 12; }
 
@@ -5126,7 +5126,7 @@ function lagSkilt(G) {
       const qx = a[0] + (b[0] - a[0]) * f, qz = a[1] + (b[1] - a[1]) * f;
       let dx = b[0] - a[0], dz = b[1] - a[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
       const zx = -dz, zz = dx, sx = qx - zx * 34, sz = qz - zz * 34;   // skiltet står 34 til siden, med forsiden mot stien
-      if (dist(sx, sz, FX, FY) < 650 || ut.some(o => dist(o.x, o.y, sx, sz) < 220)) continue;   // ikke i leiren, og ikke flere skilt i klump
+      if (dist(sx, sz, FX, FY) < 650 || ut.some(o => dist(o.x, o.y, sx, sz) < 220) || trackDist(sx, sz) < 90) continue;   // ikke i leiren, ikke i klump, ikke ved togsporet   // ikke i leiren, og ikke flere skilt i klump
       const grp = new THREE.Group(), y0 = groundH(sx, sz);
       const brett = new THREE.Group(); brett.position.y = 40;
       const post = new THREE.Mesh(postGeo, postMat); post.position.set(0, -17, -4); brett.add(post);   // stolpen står bak brettet
