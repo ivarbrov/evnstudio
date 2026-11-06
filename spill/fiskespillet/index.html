@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.6.2 – EVN Studio</title>
+<title>Fiskespillet 0.9.2 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -21,13 +21,17 @@
 
   /* Statuslinje øverst til venstre */
   #hud { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); right:calc(320px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; flex-wrap:wrap; align-items:flex-start; }
-  #hud[hidden], #hoyre[hidden] { display:none !important; }
+  #hud[hidden], #hoyre[hidden], .pille[hidden] { display:none !important; }   /* .pille[hidden]: «🎉 Torsdag!» viste seg alle dager (QA av 3fbb9bb) */
   .pille { background:rgba(13,36,64,.74); border:2px solid rgba(255,255,255,.25); border-radius:999px; padding:6px 14px; font-weight:800; font-size:18px; min-height:44px; display:flex; align-items:center; gap:6px; color:#fff; }
   .pille.full { border-color:#ff6b6b; background:rgba(120,20,30,.8); }
   .pille.bump { animation:bump .3s; }
   @keyframes bump { 50% { transform:scale(1.15); } }
   #bokKnapp { border-color:rgba(255,201,60,.6); }
   #hoyre { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; }
+  #turboKnapp { position:fixed; right:calc(22px + env(safe-area-inset-right)); bottom:calc(110px + env(safe-area-inset-bottom)); width:56px; height:56px; font-size:26px; z-index:5; }
+  #turboKnapp[hidden], #landKnapp[hidden] { display:none; }
+  #landKnapp { position:fixed; right:calc(16px + env(safe-area-inset-right)); bottom:calc(110px + env(safe-area-inset-bottom)); width:auto; height:56px; padding:0 18px; border-radius:28px; font:800 19px Nunito, system-ui, sans-serif; z-index:5; background:#3fae4a; border:3px solid #fff; }
+  .rund.pa { background:#ffd34d; color:#1d2440; border-color:#fff; }
   .rund { width:48px; height:48px; border-radius:50%; background:rgba(13,36,64,.74); border:2px solid rgba(255,255,255,.25); color:#fff; font-size:22px; display:flex; align-items:center; justify-content:center; padding:0; }
   .rund:focus-visible, .pille:focus-visible, #handling:focus-visible { outline:3px solid #fff; outline-offset:2px; }
   #evnAvslutt { width:auto; padding:0 14px; border-radius:24px; font-size:18px; font-weight:800; gap:6px; }
@@ -157,8 +161,11 @@
     /* Smale telefoner: statuslinja blir fire rader høy, så meldingen legges under den i stedet for oppå 📖 */
     #melding { top:calc(176px + env(safe-area-inset-top)); }
   }
+  @media (max-height:640px) { .havnelinje { display:none; } }   /* Start skal synes uten rulling på små skjermer (QA 0b78d98); havnehjelpen forklarer havna når du kommer dit */
   @media (max-height:460px) {
     .maal img { display:none; }
+    .styring { font-size:13px; margin:6px 0; }
+    .maal p { margin:4px 0; }
     .kort { padding:14px 18px; }
     h1 { font-size:30px; margin:2px 0 6px; }
     .liste { max-height:48vh; }
@@ -183,6 +190,8 @@
 <div id="melding" role="status" aria-live="polite"></div>
 <div id="kamp" hidden><span>🐙 Kraken</span><div class="kampbar" role="progressbar" aria-label="Hvor langt opp Kraken er"><i id="kampFyll"></i></div><span>🏆</span><span id="kampTid" class="kamptid" aria-label="Sekunder igjen">⏱ 60</span></div>
 <button id="handling" type="button"></button>
+<button class="rund" id="landKnapp" type="button" title="Gå i land (G)" aria-label="Gå i land" hidden>🚶 Gå i land</button>
+<button class="rund" id="turboKnapp" type="button" title="Turbo (hold Shift eller trykk T)" aria-label="Turbo" aria-pressed="false" hidden>🚀</button>
 <div id="hjelp"></div>
 <div id="joy"><i></i></div>
 
@@ -193,15 +202,15 @@
     <h1>Fiskespillet</h1>
     <div class="maal">
       <img src="../../bilder/robot-start-vink-130.webp" srcset="../../bilder/robot-start-vink-130.webp 1x, ../../bilder/robot-start-vink-260.webp 2x" width="244" height="260" alt="" decoding="async" onerror="this.remove()">
-      <p>Kjør ut på havet, fang fisk og bring dem hjem til akvariet ditt! 🎣🐟<br><span style="color:#ffc93c">Oppdrag: Fang Kraken! 🐙</span></p>
+      <p>Kjør ut på havet, fang fisk og bring dem hjem til akvariet ditt! 🎣🐟<span class="havnelinje"><br>⚓ I havna selger du fisk eller legger dem i akvariet. 🚶 Der kan du også gå i land.</span><br><span style="color:#ffc93c">Oppdrag: Fang Kraken! 🐙</span></p>
     </div>
     <div class="styring">
-      <div class="bare-pc">⬆️/W fremover, ⬇️/S bakover, ⬅️➡️ eller A/D for å svinge.<br>E eller mellomrom for å fiske og bruke havna. M for kart.</div>
-      <div class="bare-touch">Dra fingeren dit du vil kjøre.<br>Trykk på den gule knappen for å fiske og bruke havna.</div>
+      <div class="bare-pc">⬆️/W fremover, ⬇️/S bakover, ⬅️➡️ eller A/D for å svinge.<br>E eller mellomrom for å fiske og bruke havna. Shift eller T for turbo. M for kart.</div>
+      <div class="bare-touch">Dra fingeren dit du vil kjøre.<br>Trykk på den gule knappen for å fiske og bruke havna. 🚀 gir turbo.</div>
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.6.2</div>
+    <div class="evn-ver" id="versjon">Versjon 0.9.2</div>
   </div>
 </div>
 
@@ -527,7 +536,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.6.2';
+const VERSJON = '0.9.2';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -538,6 +547,7 @@ const LYD_NOKKEL = TEST ? 'evn-fiskespillet-test-lyd' : 'evn-fiskespillet-lyd';
 // ======================================================
 const INNST = {
   startPenger: 0,          // penger når du starter
+  turbo: 1.8,              // fartsgange med turbo (Evens ønske, godkjent av Ivar 5.11.2026)
   startPlass: 5,           // hvor mange fisker båten har plass til i starten
   maksPlass: 25,           // mest plass en båt kan få (Evens valg)
   startAkvarium: 5,        // plasser i akvariet i starten
@@ -680,17 +690,19 @@ function trekk(vekter) {
 // Torsdags-event (Evens idé, godkjent av Ivar 5.11.2026 som «snill versjon»):
 // torsdager 17.00–18.30 er sjeldne farger og mønstre lettere å få, og Sjømonsteret er alltid på besøk.
 // Alt kan også fås andre dager, bare sjeldnere. Ingen eksklusive premier, ingen nedtelling, ingen endring i priser eller salgsverdier.
-const EVENT = { dag: 4, fra: 17 * 60, til: 18 * 60 + 30, kraft: 1.5 };
+const EVENT = { dag: 4, fra: 17 * 60, til: 18 * 60 + 30, kraft: 1.15 };   // 1,15 etter Ivars beslutning 5.11.2026 (1,5 ga 1,3–2,0 × snittverdi)
 let eventTvang = null;   // bare for test (window.__spill.eventTvang)
 function torsdagsEvent() {
   if (eventTvang !== null) return eventTvang;
   const d = new Date(), m = d.getHours() * 60 + d.getMinutes();
   return d.getDay() === EVENT.dag && m >= EVENT.fra && m < EVENT.til;
 }
-function nyFisk(sone) {
+// Haier og hval biter ikke tilfeldig. De svømmer synlig i Dyphavet og fiskes der de er (Evens ønske 5.11.2026).
+const STORE_DYR = ['hai', 'hammerhai', 'hval'];
+function nyFisk(sone, form) {
   const agn = AGN[tilstand.agn].kraft, sk = SONER[sone].kraft, kraft = agn * sk * (torsdagsEvent() ? EVENT.kraft : 1);
-  const formVekter = FORMER.map(f => f.soner.includes(sone) ? [10, 5, 2, 0.7][f.nivaa] * Math.pow(agn, f.nivaa * 0.4) * (f.id === 'blekksprut' ? 1.6 : 1) : 0);
-  const f = trekk(formVekter);
+  const formVekter = FORMER.map(f => f.soner.includes(sone) && !STORE_DYR.includes(f.id) ? [10, 5, 2, 0.7][f.nivaa] * Math.pow(agn, f.nivaa * 0.4) * (f.id === 'blekksprut' ? 1.6 : 1) : 0);
+  const f = form !== undefined ? form : trekk(formVekter);
   const c = trekk(FARGER.map(x => x.vekt * Math.pow(kraft, x.nivaa)));
   const m = trekk(MONSTRE.map(x => x.vekt * Math.pow(kraft, x.nivaa)));
   const s = trekk(STENGER[tilstand.stang].str);
@@ -766,14 +778,18 @@ function skilt(tekst, h, bak) {
   x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(tekst, b / 2, cv.height / 2 + 3);
   const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding;
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthWrite: false, fog: false }));
-  s.scale.set(h * b / cv.height, h, 1); return s;
+  s.scale.set(h * b / cv.height, h, 1); s.userData.grunn = s.scale.clone(); ALLE_SKILT.push(s); return s;
 }
+const ALLE_SKILT = [];
+// På land står du nær skiltene, så de gjøres mindre der
+function skiltStorrelse(k) { for (const s of ALLE_SKILT) s.scale.copy(s.userData.grunn).multiplyScalar(k); }
 
 // ======================================================
 //  Verden: hav, øya, havna
 // ======================================================
-const VERDEN_R = 560, OY_R = 38, SONE_GRENSE = [170, 360];
-const HAVN = new THREE.Vector3(0, 0, 70);   // her legger båten til
+// Øya er mye større fra 0.8.0 (Evens ønske 6.11.2026: plass til å bygge hus). Før: OY_R 38, havna z 70, soner 170/360.
+const VERDEN_R = 560, OY_R = 75, SONE_GRENSE = [205, 375];
+const HAVN = new THREE.Vector3(0, 0, OY_R + 32);   // her legger båten til
 const HAVN_R = 18;
 const KRAKEN_POS = new THREE.Vector3(-150, 0, -440);
 const KRAKEN_R = 24;
@@ -786,38 +802,59 @@ const havUniforms = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
   oyR: { value: OY_R }, g1: { value: SONE_GRENSE[0] }, g2: { value: SONE_GRENSE[1] },
   kraken: { value: new THREE.Vector2(KRAKEN_POS.x, KRAKEN_POS.z) },
 }]);
+// Ny vanngrafikk (Evens ønske 5.11.2026, trinn 1 av grafikken): fire bølger med ekte lysberegning,
+// glans fra sola, himmel som speiler seg i vannet og skum på bølgetoppene. Sonefargene, Kraken-virvelen og
+// skummet rundt øya er som før.
+havUniforms.sol = { value: new THREE.Vector3(60, 100, 40).normalize() };
+havUniforms.himmel = { value: C(0xcdeeff) };
 const havMat = new THREE.ShaderMaterial({
   uniforms: havUniforms, fog: true,
   vertexShader: `
-    uniform float tid; varying vec2 vPos; varying float vH;
+    uniform float tid; varying vec2 vPos; varying float vH; varying vec3 vW; varying vec3 vN;
     #include <fog_pars_vertex>
+    void bolge(vec2 d, float k, float a, float f, vec2 p, inout float h, inout vec2 dh) {
+      float ph = dot(d, p) * k + tid * f; h += a * sin(ph); dh += d * a * k * cos(ph); }
     void main() {
-      vec4 w = modelMatrix * vec4(position, 1.0);
-      float h = 0.28 * sin(w.x * 0.08 + tid * 1.2) + 0.22 * sin(w.z * 0.11 - tid * 0.9) + 0.1 * sin((w.x + w.z) * 0.23 + tid * 2.1);
-      w.y += h; vH = h; vPos = w.xz;
+      vec4 w = modelMatrix * vec4(position, 1.0); float h = 0.0; vec2 dh = vec2(0.0);
+      bolge(normalize(vec2(1.0, 0.3)), 0.08, 0.3, 1.2, w.xz, h, dh);
+      bolge(normalize(vec2(-0.4, 1.0)), 0.11, 0.22, 0.9, w.xz, h, dh);
+      bolge(normalize(vec2(0.7, -0.8)), 0.23, 0.1, 2.1, w.xz, h, dh);
+      bolge(normalize(vec2(-1.0, -0.2)), 0.41, 0.05, 2.9, w.xz, h, dh);
+      w.y += h; vH = h; vPos = w.xz; vW = w.xyz; vN = normalize(vec3(-dh.x, 1.0, -dh.y));
       vec4 mvPosition = viewMatrix * w;
       gl_Position = projectionMatrix * mvPosition;
       #include <fog_vertex>
     }`,
   fragmentShader: `
-    uniform float tid, oyR, g1, g2; uniform vec3 grunn, kyst, hav, dyp; uniform vec2 kraken;
-    varying vec2 vPos; varying float vH;
+    uniform float tid, oyR, g1, g2; uniform vec3 grunn, kyst, hav, dyp, sol, himmel; uniform vec2 kraken;
+    varying vec2 vPos; varying float vH; varying vec3 vW; varying vec3 vN;
     #include <fog_pars_fragment>
+    float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float st(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+      return mix(mix(h21(i), h21(i+vec2(1,0)), f.x), mix(h21(i+vec2(0,1)), h21(i+vec2(1,1)), f.x), f.y); }
     void main() {
       float d = length(vPos);
       vec3 c = mix(grunn, kyst, smoothstep(oyR + 2.0, oyR + 30.0, d));
       c = mix(c, hav, smoothstep(g1 - 25.0, g1 + 25.0, d));
       c = mix(c, dyp, smoothstep(g2 - 30.0, g2 + 30.0, d));
+      // Lys: små krusninger på toppen av bølgene, speiling av himmelen og glans fra sola
+      vec3 n = normalize(vN + vec3(st(vPos * 0.9 + tid * 0.6) - 0.5, 0.0, st(vPos.yx * 0.8 - tid * 0.5) - 0.5) * 0.2);
+      vec3 v = normalize(cameraPosition - vW);
+      float fres = pow(1.0 - max(dot(n, v), 0.0), 4.0);
+      c = mix(c, himmel, fres * 0.55);
+      float spec = pow(max(dot(reflect(-sol, n), v), 0.0), 200.0);
+      c += vec3(1.0, 0.95, 0.85) * spec * 1.8;
+      // Kraken-virvelen
       float kd = length(vPos - kraken);
       float virvel = smoothstep(60.0, 0.0, kd);
       float spiral = sin(atan(vPos.y - kraken.y, vPos.x - kraken.x) * 3.0 + kd * 0.25 - tid * 2.0);
       c = mix(c, vec3(0.01, 0.02, 0.06), virvel * 0.75);
       c += vec3(0.08, 0.12, 0.2) * virvel * smoothstep(0.6, 1.0, spiral);
-      c += vec3(0.12, 0.16, 0.18) * smoothstep(0.25, 0.5, vH);
-      float skum = smoothstep(oyR + 3.5, oyR + 0.5, d);
-      c = mix(c, vec3(0.95), skum * (0.6 + 0.4 * sin(tid * 2.0 + d)));
-      float glimt = pow(max(0.0, sin(vPos.x * 0.37 + tid * 1.1) * sin(vPos.y * 0.29 - tid * 0.8)), 60.0);
-      c += vec3(0.35) * glimt;
+      // Skum på bølgetoppene og rundt øya
+      float skum = smoothstep(0.55, 0.72, vH + st(vPos * 2.3 + tid) * 0.18) * 0.3;
+      float s2 = smoothstep(oyR + 4.5, oyR + 0.6, d + sin(tid * 1.6 + atan(vPos.y, vPos.x) * 9.0) * 0.8);
+      skum = max(skum, s2 * (0.55 + 0.45 * st(vPos * 2.5 + tid * 1.5)));
+      c = mix(c, vec3(0.96), skum);
       gl_FragColor = vec4(c, 1.0);
       #include <fog_fragment>
       #include <encodings_fragment>
@@ -832,12 +869,38 @@ const hav = new THREE.Mesh(havGeo, havMat); scene.add(hav);
 const hindre = [];   // runde ting båten ikke kan kjøre gjennom
 const oy = new THREE.Group(); scene.add(oy);
 // Øya: sand og gress
-del(new THREE.CylinderGeometry(OY_R, OY_R + 6, 6, 40), M(0xf3dca0), 1, 1, 1, 0, -1.5, 0, oy);
-del(new THREE.CylinderGeometry(OY_R - 7, OY_R - 2, 3, 40), M(0x7fcf5a), 1, 1, 1, 0, 1.8, 0, oy);
+// Ny grafikk (trinn 2): myk øy med gress, sand og våt sand i vannkanten. Toppen er flat (y 3,3) der husene står.
+function stoyOy(x, z) { const h = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
+  const ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz);
+  return (h(ix, iz) * (1 - u) + h(ix + 1, iz) * u) * (1 - v) + (h(ix, iz + 1) * (1 - u) + h(ix + 1, iz + 1) * u) * v; }
+// Høyden på øya i et punkt (brukes både av terrenget og når roboten går på land)
+const oyAvstand = (x, z) => Math.hypot(x, z) + (stoyOy(x * 0.09, z * 0.09) - 0.5) * 3;
+function oyHoyde(x, z) { const d = oyAvstand(x, z), ss = THREE.MathUtils.smoothstep;
+  return d < OY_R - 5 ? 3.3 : d < OY_R + 3 ? 3.3 - 2.9 * ss(d, OY_R - 5, OY_R + 3) : 0.4 - (d - OY_R - 3) * 0.45; }
+{
+  const S = 2 * (OY_R + 12), geo = new THREE.PlaneGeometry(S, S, 170, 170); geo.rotateX(-Math.PI / 2);
+  const p = geo.attributes.position, farger = [], ss = THREE.MathUtils.smoothstep;
+  const gress = C(0x76c94f), gress2 = C(0x58b03f), sand = C(0xf3dca0), vaat = C(0xcfb27a);
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), z = p.getZ(i), d = oyAvstand(x, z), y = oyHoyde(x, z);
+    p.setY(i, y);
+    const c = new THREE.Color();
+    if (d < OY_R - 8) c.copy(gress).lerp(gress2, stoyOy(x * 0.25, z * 0.25)); else c.copy(sand).lerp(vaat, ss(d, OY_R + 0.5, OY_R + 3));
+    if (d >= OY_R - 8 && d < OY_R - 6.5) c.lerp(gress, 1 - ss(d, OY_R - 8, OY_R - 6.5));
+    farger.push(c.r, c.g, c.b);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(farger, 3)); geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 })); oy.add(m);
+  // Steiner i strandkanten
+  const stein = M(0x8e98a2, { flatShading: true, roughness: 0.9 });
+  for (let i = 0; i < 22; i++) { const v = i / 22 * Math.PI * 2 + 0.3, d = OY_R + 1 + (i % 3); if (Math.abs(Math.sin(v) - 1) < 0.08) continue;
+    const g2 = new THREE.IcosahedronGeometry(1, 1), q = g2.attributes.position; for (let j = 0; j < q.count; j++) q.setXYZ(j, q.getX(j) * (0.8 + stoyOy(i, j) * 0.4), q.getY(j) * 0.6, q.getZ(j) * (0.8 + stoyOy(j, i) * 0.4)); g2.computeVertexNormals();
+    del(g2, stein, 1.2 + (i % 4) * 0.3, 1.2, 1.2, Math.cos(v) * d, 0.6, Math.sin(v) * d, oy); }
+}
 hindre.push({ x: 0, z: 0, r: OY_R + 3 });
 // Fyrtårnet
 {
-  const f = new THREE.Group(); f.position.set(12, 3, -16); oy.add(f);
+  const f = new THREE.Group(); f.position.set(18, 3, -20); oy.add(f);
   for (let i = 0; i < 5; i++) del(new THREE.CylinderGeometry(2.6 - i * 0.25, 2.8 - i * 0.25, 3.2, 16), M(i % 2 ? 0xffffff : 0xe5483f), 1, 1, 1, 0, 1.6 + i * 3.2, 0, f);
   del(CYL, M(0x1d2440), 2.2, 2.4, 2.2, 0, 17.2, 0, f);
   const lys = del(SPH, new THREE.MeshBasicMaterial({ color: C(0xfff2a0) }), 1.3, 1.3, 1.3, 0, 17.4, 0, f);
@@ -845,24 +908,94 @@ hindre.push({ x: 0, z: 0, r: OY_R + 3 });
   oy.userData.lys = lys;
 }
 // Trær
+// Ny grafikk (trinn 2): palmer med buet stamme med ringer, og blader med bladnerve
+const PALMEBLAD = (() => { const cv = document.createElement('canvas'); cv.width = 128; cv.height = 512; const x = cv.getContext('2d'), w = 128, h = 512;
+  for (let i = 0; i < 34; i++) { const y = 20 + i / 34 * (h - 40), l = (w / 2 - 6) * Math.sin(Math.PI * (0.15 + 0.85 * (1 - i / 34)));
+    x.fillStyle = i % 2 ? '#3aa64a' : '#2f9442';
+    for (const s of [-1, 1]) { x.beginPath(); x.moveTo(w / 2, y); x.quadraticCurveTo(w / 2 + s * l * 0.6, y - 6, w / 2 + s * l, y + 14); x.lineTo(w / 2, y + 10); x.fill(); } }
+  x.strokeStyle = '#6c8a2a'; x.lineWidth = 5; x.beginPath(); x.moveTo(w / 2, 0); x.lineTo(w / 2, h); x.stroke();
+  const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; return new THREE.MeshStandardMaterial({ map: t, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 0.7 }); })();
+const PALMESTAMME = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
 function palme(x, z, s) {
-  const g = new THREE.Group(); g.position.set(x, 3.2, z); g.scale.setScalar(s); oy.add(g);
-  const st = del(CYL, M(0x9b6a3a), 0.35, 6, 0.35, 0, 3, 0, g); st.rotation.z = 0.12;
-  for (let i = 0; i < 6; i++) { const b = del(SPH_L, M(0x3fae4a), 2.6, 0.25, 0.8, 0, 6, 0, g); b.rotation.y = i * Math.PI / 3; b.position.x = Math.cos(i * Math.PI / 3) * 1.6; b.position.z = -Math.sin(i * Math.PI / 3) * 1.6; b.rotation.z = -0.35 * Math.sign(Math.cos(i)) ; }
-  del(SPH_L, M(0x8b5a2b), 0.4, 0.4, 0.4, 0.4, 5.6, 0.3, g);
+  const g = new THREE.Group(); g.position.set(x, 3.2, z); g.scale.setScalar(s); g.rotation.y = x * 0.37 + z; oy.add(g);
+  const h = 7.5, boy = (Math.round(x + z) % 2 ? 1 : -1), pk = [];
+  for (let i = 0; i <= 10; i++) { const t = i / 10; pk.push(new THREE.Vector3(Math.sin(t * 1.4) * boy * h * 0.22, t * h, 0)); }
+  const kurve = new THREE.CatmullRomCurve3(pk), geo = new THREE.TubeGeometry(kurve, 30, 0.34, 8), p = geo.attributes.position, farger = [];
+  for (let i = 0; i < p.count; i++) { const ring = Math.floor(i / 9), m = ring % 3 === 0 ? 0.7 : 1, c = kurve.getPoint(ring / 30), k = 1 - ring / 30 * 0.4;
+    p.setXYZ(i, c.x + (p.getX(i) - c.x) * k, p.getY(i), c.z + (p.getZ(i) - c.z) * k); const f = C(0x9b6a3a); farger.push(f.r * m, f.g * m, f.b * m); }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(farger, 3)); geo.computeVertexNormals();
+  g.add(new THREE.Mesh(geo, PALMESTAMME));
+  const topp = kurve.getPoint(1);
+  for (let i = 0; i < 8; i++) {
+    const bg = new THREE.PlaneGeometry(1.4, 4.6, 1, 8); bg.translate(0, 2.3, 0); const bp = bg.attributes.position;
+    for (let j = 0; j < bp.count; j++) bp.setZ(j, -Math.pow(bp.getY(j) / 4.6, 2) * 2);
+    bg.computeVertexNormals();
+    const b = new THREE.Mesh(bg, PALMEBLAD); b.position.copy(topp); b.rotation.order = 'YXZ'; b.rotation.y = i / 8 * Math.PI * 2; b.rotation.x = -1.0 - (i % 3) * 0.12; g.add(b);
+  }
+  for (let i = 0; i < 3; i++) del(SPH_L, M(0x6b4a2a), 0.28, 0.28, 0.28, topp.x + Math.cos(i * 2.1) * 0.35, topp.y - 0.3, Math.sin(i * 2.1) * 0.35, g);
 }
-palme(-22, -10, 1.1); palme(-6, -24, 1); palme(24, 4, 0.9); palme(-26, 8, 0.85); palme(2, -8, 0.8);
+const PALMER = [[-30, 30, 1.1], [32, 28, 1], [-48, 6, 1.05], [46, -6, 0.95], [-20, -48, 1], [8, -55, 0.9], [-55, -28, 0.85], [50, -40, 1.1], [-38, 52, 0.8], [40, 56, 0.85], [-6, 62, 0.75], [60, 20, 0.8]];
+for (const [x, z, sk] of PALMER) palme(x, z, sk);
+// Byggetomter er fjernet i 0.9.1: Even vil bygge hus der han selv vil (byggingen kommer i neste trinn).
+const TOMTER = [];
 // Butikken (huset til høyre for brygga)
+// Ny grafikk i landsbyen (0.8.1): panelvegger, takstein, vinduer med karmer, markise, tønner og kasser
+function lerretTekstur(w, h, tegn, gjenta) { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; tegn(cv.getContext('2d'), w, h); const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; if (gjenta) t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; }
+const PANEL = lerretTekstur(256, 256, (x, w, h) => { x.fillStyle = '#f4e6c8'; x.fillRect(0, 0, w, h); for (let i = 0; i < 8; i++) { x.fillStyle = `rgba(120,80,40,${0.04 + (i % 3) * 0.02})`; x.fillRect(i * 32, 0, 32, h); x.fillStyle = 'rgba(90,60,30,.35)'; x.fillRect(i * 32, 0, 2, h); } }, true);
+const TAKSTEIN = lerretTekstur(256, 256, (x, w, h) => { x.fillStyle = '#c4473a'; x.fillRect(0, 0, w, h); for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) { const ox = j % 2 ? 16 : 0; x.fillStyle = `rgba(0,0,0,${0.08 + ((i * 7 + j * 3) % 5) * 0.025})`; x.beginPath(); x.arc(i * 32 + ox + 16, j * 32 + 32, 16, Math.PI, 0); x.fill(); x.strokeStyle = 'rgba(80,20,15,.5)'; x.lineWidth = 2; x.stroke(); } }, true);
+const STEIN = lerretTekstur(128, 128, (x, w, h) => { x.fillStyle = '#9aa3ab'; x.fillRect(0, 0, w, h); for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(${Math.random() < 0.5 ? '255,255,255' : '0,0,0'},${Math.random() * 0.12})`; x.fillRect(Math.random() * w, Math.random() * h, 10, 6); } }, true);
+function hus(o) {
+  const h = new THREE.Group(); h.position.set(o.x, 3.2, o.z); h.rotation.y = o.rot || 0; oy.add(h);
+  const B = o.b, D = o.d, H = o.h;
+  del(BOX, new THREE.MeshStandardMaterial({ map: STEIN, roughness: 0.95 }), B + 0.6, 0.8, D + 0.6, 0, 0.4, 0, h);
+  const vegg = new THREE.MeshStandardMaterial({ map: PANEL, color: C(o.farge || 0xffffff), roughness: 0.85 }); PANEL.repeat.set(2, 1);
+  del(BOX, vegg, B, H, D, 0, 0.8 + H / 2, 0, h);
+  // Saltak av takstein
+  const tak = new THREE.Shape(); tak.moveTo(-B / 2 - 0.8, 0); tak.lineTo(0, H * 0.55); tak.lineTo(B / 2 + 0.8, 0); tak.lineTo(-B / 2 - 0.8, 0);
+  const tg = new THREE.ExtrudeGeometry(tak, { depth: D + 1.2, bevelEnabled: false }); tg.translate(0, 0, -(D + 1.2) / 2);
+  const tm = new THREE.Mesh(tg, new THREE.MeshStandardMaterial({ map: TAKSTEIN, color: C(o.tak || 0xffffff), roughness: 0.7 })); tm.position.y = 0.8 + H; h.add(tm);
+  // Pipe
+  del(BOX, new THREE.MeshStandardMaterial({ map: STEIN }), 0.9, 2.2, 0.9, B * 0.25, 0.8 + H + H * 0.35, -D * 0.2, h);
+  // Dør med karm og vinduer med karmer og skodder
+  const karm = M(0xffffff), dor = M(o.dor || 0x2f6f4f);
+  del(BOX, karm, 2.2, 3.4, 0.2, 0, 2.5, D / 2 + 0.05, h); del(BOX, dor, 1.8, 3.1, 0.25, 0, 2.4, D / 2 + 0.06, h);
+  del(SPH_L, M(0xffd34d, { metalness: 0.6 }), 0.12, 0.12, 0.12, 0.6, 2.4, D / 2 + 0.25, h);
+  for (const sx of [-1, 1]) {
+    const vx = sx * B * 0.3;
+    del(BOX, karm, 2.2, 1.9, 0.18, vx, 3.4, D / 2 + 0.05, h);
+    del(BOX, M(0x9fd6ff, { roughness: 0.1, metalness: 0.2 }), 1.8, 1.5, 0.2, vx, 3.4, D / 2 + 0.07, h);
+    del(BOX, karm, 0.12, 1.5, 0.22, vx, 3.4, D / 2 + 0.08, h); del(BOX, karm, 1.8, 0.12, 0.22, vx, 3.4, D / 2 + 0.08, h);
+    for (const s2 of [-1, 1]) del(BOX, dor, 0.6, 1.9, 0.12, vx + s2 * 1.45, 3.4, D / 2 + 0.06, h);
+    del(BOX, M(0x8b5a2b), 2.2, 0.4, 0.5, vx, 2.25, D / 2 + 0.3, h);                                   // blomsterkasse
+    for (let i = 0; i < 4; i++) del(SPH_L, M([0xff5f8f, 0xffd34d, 0xff8a2a, 0xb36bff][i]), 0.28, 0.28, 0.28, vx - 0.75 + i * 0.5, 2.6, D / 2 + 0.35, h);
+  }
+  return h;
+}
+// Butikken
 {
-  const h = new THREE.Group(); h.position.set(16, 3.2, 22); oy.add(h);
-  del(BOX, M(0xfff1d6), 10, 6, 8, 0, 3, 0, h);
-  const tak = del(new THREE.ConeGeometry(8, 4, 4), M(0x3a7bd5), 1, 1, 1, 0, 8, 0, h); tak.rotation.y = Math.PI / 4;
-  del(BOX, M(0x8b5a2b), 2.4, 4, 0.3, 0, 2, 4.05, h);
-  del(BOX, M(0x9fd6ff), 2.4, 2, 0.3, -3, 3.5, 4.05, h); del(BOX, M(0x9fd6ff), 2.4, 2, 0.3, 3, 3.5, 4.05, h);
+  const h = hus({ x: 16, z: 52, b: 10, d: 8, h: 5.4, farge: 0xfff6e2, tak: 0xffffff, dor: 0x2f6f4f });
+  // Markise med striper over døra
+  const mk = lerretTekstur(128, 32, (x, w, hh) => { for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? '#ffffff' : '#e5483f'; x.fillRect(i * 16, 0, 16, hh); } });
+  const mark = del(new THREE.PlaneGeometry(1, 1), new THREE.MeshStandardMaterial({ map: mk, side: THREE.DoubleSide, roughness: 0.8 }), 4, 1.6, 1, 0, 4.6, 4.7, h); mark.rotation.x = -0.9;
+  // Tønner og fiskekasser utenfor
+  for (const [x, z] of [[-4.2, 5.6], [-3.1, 6.1]]) { del(CYL, M(0x9b6a3a), 0.6, 1.3, 0.6, x, 1.45, z, h); del(CYL, M(0x555b66, { metalness: 0.6 }), 0.62, 0.1, 0.62, x, 1.9, z, h); }
+  for (const [x, z, y] of [[3.8, 5.8, 1.2], [4.6, 5.8, 1.2], [4.2, 5.8, 1.9]]) del(BOX, M(0xc9955c), 0.8, 0.7, 0.8, x, y, z, h);
   const s = skilt('🛒 Butikk', 2.6); s.position.set(0, 12, 0); h.add(s);
 }
+// Steinsti fra brygga opp til husene, og lyktestolper
+{
+  const helle = new THREE.MeshStandardMaterial({ map: STEIN, roughness: 0.95 });
+  const punkter = []; for (let z = OY_R - 2; z > 40; z -= 1.6) punkter.push([Math.sin(z * 0.15) * 1.2, z]);
+  for (let x = -14; x <= 14; x += 1.6) punkter.push([x, 46 + Math.sin(x) * 0.4]);
+  for (const [x, z] of punkter) { const m = del(new THREE.CylinderGeometry(1, 1.05, 0.15, 7), helle, 0.75, 1, 0.75, x, 3.32, z, oy); m.rotation.y = x * 3 + z; }
+  for (const [x, z] of [[3.2, 60], [-3.2, 52], [9, 44], [-9, 44]]) {
+    del(CYL, M(0x2a3040, { metalness: 0.5 }), 0.12, 4, 0.12, x, 5.3, z, oy);
+    del(SPH_L, new THREE.MeshBasicMaterial({ color: C(0xfff3b0) }), 0.38, 0.38, 0.38, x, 7.5, z, oy);
+    del(CONE, M(0x2a3040), 0.5, 0.4, 0.5, x, 7.95, z, oy);
+  }
+}
 // Akvariet (glassbassenget til venstre for brygga) – fiskene dine svømmer her!
-const AKV = { x: -17, y: 3.2, z: 22, b: 14, h: 6, d: 7 };
+const AKV = { x: -17, y: 3.2, z: 52, b: 14, h: 6, d: 7 };
 const akvGruppe = new THREE.Group(); akvGruppe.position.set(AKV.x, AKV.y, AKV.z); oy.add(akvGruppe);
 {
   del(BOX, M(0x2a3a55), AKV.b + 1, 0.8, AKV.d + 1, 0, 0.4, 0, akvGruppe);
@@ -876,7 +1009,7 @@ const akvGruppe = new THREE.Group(); akvGruppe.position.set(AKV.x, AKV.y, AKV.z)
   const s = skilt('🐠 Akvariet', 2.6); s.position.set(0, AKV.h + 4, 0); akvGruppe.add(s);
 }
 // Kraken-akvariet (Evens ønske 5.11.2026): Kraken bor her etter at den er fanget og kjørt hjem. Pynt, gir ikke penger.
-const KTANK = { x: -3, y: 3.2, z: 12, b: 9, h: 8, d: 9 };
+const KTANK = { x: -3, y: 3.2, z: 40, b: 9, h: 8, d: 9 };
 const ktankGruppe = new THREE.Group(); ktankGruppe.position.set(KTANK.x, KTANK.y, KTANK.z); oy.add(ktankGruppe);
 {
   del(BOX, M(0x3a1f4a), KTANK.b + 1, 0.8, KTANK.d + 1, 0, 0.4, 0, ktankGruppe);
@@ -1311,6 +1444,10 @@ function settLyd(pa) {
   try { localStorage.setItem(LYD_NOKKEL, pa ? 'pa' : 'av'); } catch (e) {}
 }
 $('lydKnapp').addEventListener('click', e => { e.stopPropagation(); settLyd(!lydPa); });
+let turbo = false;
+function settTurbo(v) { turbo = v; $('turboKnapp').setAttribute('aria-pressed', String(v)); $('turboKnapp').classList.toggle('pa', v); if (v) melding('🚀 Turbo på! Trykk igjen for vanlig fart.', 2); }
+$('turboKnapp').addEventListener('click', e => { e.stopPropagation(); settTurbo(!turbo); });
+$('landKnapp').addEventListener('click', e => { e.stopPropagation(); if (spillTilstand === 'spill' && !modalApen()) gaaILand(); });
 settLyd(lydPa);
 
 // ======================================================
@@ -1378,15 +1515,15 @@ function naermestePlass() {
 const vedKraken = () => Math.hypot(KRAKEN_POS.x - spiller.pos.x, KRAKEN_POS.z - spiller.pos.z) < KRAKEN_R;
 const iHavna = () => Math.hypot(HAVN.x - spiller.pos.x, HAVN.z - spiller.pos.z) < HAVN_R;
 const baatFull = () => tilstand.last.length >= tilstand.plass;
-function startFiske(plass, kraken, monster) {
+function startFiske(plass, kraken, monster, stor) {
   if (fiske) return;
-  const vent = monster ? 2.5 : kraken ? INNST.krakenVent : rnd(INNST.ventMin, INNST.ventMaks) * STENGER[tilstand.stang].fart * (plass ? 1 : INNST.aapentVann);
+  const vent = stor ? 3 : monster ? 2.5 : kraken ? INNST.krakenVent : rnd(INNST.ventMin, INNST.ventMaks) * STENGER[tilstand.stang].fart * (plass ? 1 : INNST.aapentVann);
   // Uten fiskested kastes dupp-en rett frem
-  const mal = monster ? sjomonster.gruppe.position : kraken ? KRAKEN_POS : plass ? plass.pos : new THREE.Vector3(spiller.pos.x + Math.sin(spiller.retning) * 9, 0, spiller.pos.z + Math.cos(spiller.retning) * 9);
+  const mal = stor ? stor.gruppe.position.clone() : monster ? sjomonster.gruppe.position : kraken ? KRAKEN_POS : plass ? plass.pos : new THREE.Vector3(spiller.pos.x + Math.sin(spiller.retning) * 9, 0, spiller.pos.z + Math.cos(spiller.retning) * 9);
   const dx = mal.x - spiller.pos.x, dz = mal.z - spiller.pos.z, l = Math.hypot(dx, dz) || 1, r = Math.min(l, 9);
-  fiske = { fase: 'kast', t: 0, plass, kraken, monster: !!monster, vent, mal: new THREE.Vector3(spiller.pos.x + dx / l * r, 0.3, spiller.pos.z + dz / l * r) };
+  fiske = { fase: 'kast', t: 0, plass, kraken, monster: !!monster, stor: stor || null, vent, mal: new THREE.Vector3(spiller.pos.x + dx / l * r, 0.3, spiller.pos.z + dz / l * r) };
   dupp.visible = true; snore.visible = true; lydKast();
-  melding(kraken ? '🐙 Du kaster ut Superstangen … Vent!' : monster ? '🐉 Du kaster ut til Sjømonsteret … Vent!' : '🎣 Vent på napp …', 2);
+  melding(kraken ? '🐙 Du kaster ut Superstangen … Vent!' : stor ? `${FORMER[stor.form].ikon} Du kaster ut til ${stor.navn}en … Vent!` : monster ? '🐉 Du kaster ut til Sjømonsteret … Vent!' : '🎣 Vent på napp …', 2);
 }
 function avbrytFiske(tekst) { if (!fiske) return; fiske = null; dupp.visible = false; snore.visible = false; if (tekst) melding(tekst, 2.5); }
 function oppdaterFiske(dt, t) {
@@ -1418,10 +1555,11 @@ function oppdaterFiske(dt, t) {
 }
 function fangFisk() {
   const f = fiske; fiske = null; dupp.visible = false; snore.visible = false;
-  const id = nyFisk(f.plass ? f.plass.sone : soneFor(f.mal.x, f.mal.z)), ny = !harFunnet(id), sj = sjeldenhet(id), verdi = fiskVerdi(id), S = SJELDENHET[sj];
+  const id = nyFisk(f.plass ? f.plass.sone : soneFor(f.mal.x, f.mal.z), f.stor ? f.stor.form : undefined), ny = !harFunnet(id), sj = sjeldenhet(id), verdi = fiskVerdi(id), S = SJELDENHET[sj];
   const nyArt = antallFunnetForm(fiskDel(id).f) === 0, nyRekord = tilstand.best >= 0 && verdi > fiskVerdi(tilstand.best);
   settFunnet(id); tilstand.last.push(id); tilstand.fanget++;
   if (tilstand.best < 0 || verdi > fiskVerdi(tilstand.best)) tilstand.best = id;
+  if (f.stor) storFanget(f.stor);
   if (f.plass) f.plass.igjen--; if (f.plass && f.plass.igjen <= 0) { fjernPlass(f.plass); melding('Fiskestedet er tomt. Finn et nytt! 🫧', 2.5); }
   // Fisken hopper opp av vannet og inn i båten
   const m = lagFiskModell(id); const sk = fiskDel(id).str.skala * Math.min(1, 3 / m.userData.L) * 1.2; m.scale.setScalar(sk);
@@ -1459,7 +1597,7 @@ function startKamp() {
   fiske.fase = 'kamp'; fiske.t = 0; fiske.kamp = INNST.krakenStart; fiske.sint = 0; fiske.nesteSint = rnd(4, 6);
   fiske.igjen = INNST.krakenTid; fiske.sist = performance.now();
   for (const te of krakenTentakler) te.userData.opp = 1;
-  $('kamp').hidden = false; oppdaterKampBar();
+  $('kamp').hidden = false; $('turboKnapp').hidden = true; oppdaterKampBar();
   melding('🐙 KRAKEN BITER! Trykk <b>Dra!</b> fort, fort, fort!', 3);
   robotGjor('Punch', 0.8);
 }
@@ -1492,7 +1630,7 @@ function oppdaterKamp(_dt, t) {
   else if (f.igjen <= 0) krakenSlipper('🐙💤 Kraken ble lei og svømte ned i dypet. Prøv igjen!<small>Du har ' + INNST.krakenTid + ' sekunder på deg.</small>');
 }
 function krakenSlipper(tekst) { sluttKamp(); for (const te of krakenTentakler) te.userData.opp = 0; lydPlask(); melding(tekst, 4); }
-function sluttKamp() { fiske = null; dupp.visible = false; snore.visible = false; $('kamp').hidden = true; }
+function sluttKamp() { fiske = null; dupp.visible = false; snore.visible = false; $('kamp').hidden = true; $('turboKnapp').hidden = spillTilstand === 'start'; }
 function oppdaterKampBar() {
   if (!fiske) return;
   $('kampFyll').style.width = Math.max(0, fiske.kamp).toFixed(1) + '%'; $('kamp').classList.toggle('sint', fiske.sint > 0);
@@ -1651,10 +1789,10 @@ function oppdaterMonster(dt, t) {
   const ev = torsdagsEvent();
   $('pEvent').hidden = !ev;
   if (ev && !sjomonster.varslet) { sjomonster.varslet = true; sjomonster.neste = Math.min(sjomonster.neste, 6); melding('🎉 Torsdags-event! Flere sjeldne fisker, og Sjømonsteret kommer på besøk.', 4.5, true); }
-  if (!ev) sjomonster.varslet = false;
+  if (!ev && sjomonster.varslet) { sjomonster.varslet = false; if (!sjomonster.aktiv) sjomonster.neste = rnd(480, 900); }
   if (!sjomonster.aktiv) {
     if (ev) sjomonster.neste = Math.min(sjomonster.neste, 45);   // under eventet kommer det raskt tilbake
-    sjomonster.neste -= dt;
+    if (performance.now() - sistAktiv < 180000) sjomonster.neste -= dt;
     if (sjomonster.neste <= 0) visMonster(180);
     return;
   }
@@ -1677,6 +1815,109 @@ function fangMonster() {
   $('fangstMerker').innerHTML = '<span class="merkelapp" style="background:#3fbf7a">Vennlig ⭐⭐⭐⭐</span>';
   $('fangstTekst').textContent = `Sjømonsteret vinket med halen og ble venn med deg! Det svømte videre, men kommer tilbake. Sjømonster-venner: ${tall(tilstand.venner)}.`;
   apneLag('fangst');
+}
+
+// ======================================================
+//  Store dyr (Evens ønske 5.11.2026): haier og hval svømmer synlig i Dyphavet.
+//  Kjør dit og fisk dem. Da er de borte en stund før det kommer et nytt.
+// ======================================================
+const storeDyr = [];
+{
+  const gra = M(0x6f7f8f, { roughness: 0.5 }), mork = M(0x2c3e5a, { roughness: 0.45 }), hvit = M(0xf2f2f2);
+  const lag = (id, navn) => {
+    const g = new THREE.Group(); g.visible = false; scene.add(g);
+    const kropp = new THREE.Group(); g.add(kropp);
+    if (id === 'hval') {
+      del(SPH, mork, 6, 1.6, 2.4, 0, -0.6, 0, kropp);                                      // ryggen i vannflata
+      const hale = del(SPH_L, mork, 0.7, 0.25, 2.4, -6.3, 0.4, 0, kropp); hale.userData.hale = true;
+      const spr = del(CONE, new THREE.MeshBasicMaterial({ color: C(0xe8f6ff), transparent: true, opacity: 0.8 }), 0.9, 4, 0.9, 3.5, 2.6, 0, kropp); spr.rotation.z = Math.PI; spr.userData.sprut = true;
+    } else {
+      const f = del(CONE, gra, 1.2, 2.6, 0.25, 0, 1.0, 0, kropp); f.rotation.z = -0.25;      // ryggfinnen
+      const h = del(CONE, gra, 0.6, 1.4, 0.15, -3.2, 0.5, 0, kropp); h.rotation.z = 0.4; h.userData.hale = true;
+      del(SPH_L, gra, 3.2, 0.5, 0.9, -0.6, -0.35, 0, kropp);
+      if (id === 'hammerhai') del(BOX, gra, 0.4, 0.2, 2.4, 2.4, -0.2, 0, kropp);
+    }
+    const s = skilt(`${FORMER[FORMER.findIndex(x => x.id === id)].ikon} ${navn[0].toUpperCase() + navn.slice(1)}`, 1.8); s.position.set(0, id === 'hval' ? 7.5 : 5, 0); g.add(s);
+    return { id, navn, form: FORMER.findIndex(x => x.id === id), gruppe: g, kropp, aktiv: false, neste: rnd(30, 150), senter: new THREE.Vector3(), v: rnd(0, 6) };
+  };
+  for (const [id, navn] of [['hai', 'hai'], ['hai', 'hai'], ['hammerhai', 'hammerhai'], ['hval', 'hval'], ['hval', 'hval']]) storeDyr.push(lag(id, navn));
+}
+function plasserStor(d) {
+  for (let forsok = 0; forsok < 40; forsok++) {
+    const v = rnd(0, Math.PI * 2), r = rnd(SONE_GRENSE[1] + 30, VERDEN_R - 40), x = Math.sin(v) * r, z = Math.cos(v) * r;
+    if (Math.hypot(x - KRAKEN_POS.x, z - KRAKEN_POS.z) < KRAKEN_R * 3) continue;
+    if (hindre.some(h => Math.hypot(h.x - x, h.z - z) < h.r + 14)) continue;
+    if (storeDyr.some(o => o !== d && o.aktiv && o.senter.distanceTo(new THREE.Vector3(x, 0, z)) < 60)) continue;
+    d.senter.set(x, 0, z); return;
+  }
+  d.senter.set(0, 0, -(SONE_GRENSE[1] + 60));
+}
+function naermesteStore() {
+  let best = null, bd = 16;
+  for (const d of storeDyr) if (d.aktiv) { const a = Math.hypot(d.gruppe.position.x - spiller.pos.x, d.gruppe.position.z - spiller.pos.z); if (a < bd) { bd = a; best = d; } }
+  return best;
+}
+function storFanget(d) { d.aktiv = false; d.gruppe.visible = false; d.neste = rnd(150, 240); }   // kommer tilbake etter 2,5–4 min aktiv spilling
+function oppdaterStoreDyr(dt, t) {
+  const aktivSpill = performance.now() - sistAktiv < 180000;   // som akvarieinntekten: teller ikke når ingen rører spillet
+  for (const d of storeDyr) {
+    if (!d.aktiv) { if (aktivSpill) d.neste -= dt; if (d.neste <= 0) { plasserStor(d); d.aktiv = true; d.gruppe.visible = true; } continue; }
+    const fisket = fiske && fiske.stor === d;
+    if (!fisket) d.v += dt * (d.id === 'hval' ? 0.08 : 0.16);
+    const r = d.id === 'hval' ? 14 : 9;
+    d.gruppe.position.set(d.senter.x + Math.cos(d.v) * r, 0, d.senter.z + Math.sin(d.v) * r);
+    d.gruppe.rotation.y = -d.v;   // svømmer langs sirkelen
+    d.kropp.position.y = Math.sin(t * 1.3 + d.v * 5) * (d.id === 'hval' ? 0.35 : 0.15);
+    for (const c of d.kropp.children) { if (c.userData.hale) c.rotation.y = Math.sin(t * (d.id === 'hval' ? 1.5 : 4)) * 0.4;
+      if (c.userData.sprut) { const p = (t * 0.25 + d.v) % 1; c.visible = p < 0.15; c.scale.y = 4 * Math.sin(p / 0.15 * Math.PI); } }
+  }
+}
+
+// ======================================================
+//  Den store fiskebåten (Evens ønske 6.11.2026): når du har solgt all fisken i havna,
+//  kommer en stor fiskebåt inn til brygga, henter fiskekassene og kjører ut igjen. Bare pynt.
+// ======================================================
+let solgtFisk = 0;
+const fiskebaat = { g: new THREE.Group(), fase: null, t: 0, kasser: [] };
+scene.add(fiskebaat.g); fiskebaat.g.visible = false;
+{
+  const g = fiskebaat.g, s = skrog(24, 7.5, 3.4, 0x1d4f8f, 0xffffff); s.scale.set(1, 1, 1); g.add(s);
+  const hus = new THREE.Group(); hus.position.set(0, 3, -4); g.add(hus);
+  del(BOX, M(0xffffff), 5.5, 4, 5, 0, 2, 0, hus);
+  del(BOX, M(0xe5483f), 6, 0.5, 5.6, 0, 4.25, 0, hus);
+  for (const z of [2.52]) del(BOX, M(0x2b4a66, { roughness: 0.1, metalness: 0.3 }), 4.6, 1.2, 0.08, 0, 3, z, hus);
+  for (const x of [-2.77, 2.77]) del(BOX, M(0x2b4a66, { roughness: 0.1, metalness: 0.3 }), 0.08, 1.2, 3.6, x, 3, 0, hus);
+  del(CYL, M(0x333a44), 0.5, 2.2, 0.5, 1.5, 5.4, -1.5, hus);                         // pipe
+  const mast = del(CYL, M(0xffc93c), 0.25, 9, 0.25, 0, 7.5, 4, g);
+  const arm = del(CYL, M(0xffc93c), 0.18, 8, 0.18, 0, 9, 6.5, g); arm.rotation.x = 1.05;
+  del(CYL, M(0xe8d7a8), 1.1, 3.6, 1.1, 0, 3.6, -9.5, g).rotation.z = Math.PI / 2;  // nettrull
+  for (let i = 0; i < 6; i++) del(BOX, M(i % 2 ? 0xff8a2a : 0x3a9be0), 1.5, 1, 1.5, -2 + (i % 3) * 2, 3.5, 5 + Math.floor(i / 3) * 2, g);
+  del(BOX, M(0xffcc00), 0.05, 1, 1.6, 0, 12.3, 4.8, g);                             // flagg
+  const sk = skilt('🚢 Fiskebåten', 2.4); sk.position.set(0, 15, 0); g.add(sk);
+}
+const FB_BRYGGE = () => new THREE.Vector3(14, 0, OY_R + 16), FB_UTE = () => new THREE.Vector3(140, 0, OY_R + 240);
+function startFiskebaat() {
+  if (fiskebaat.fase) return;
+  fiskebaat.fase = 'inn'; fiskebaat.t = 0; fiskebaat.g.visible = true;
+  melding('🚢 Den store fiskebåten kommer for å hente fisken din!', 3.5, true);
+  pip(110, 0.9, 'square', 0.04, 0, 0.2); pip(110, 0.9, 'square', 0.04, 0, 1.3);
+}
+function oppdaterFiskebaat(dt, t) {
+  const f = fiskebaat; if (!f.fase) return;
+  f.t += dt;
+  const brygge = FB_BRYGGE(), ute = FB_UTE(), myk = x => x * x * (3 - 2 * x);
+  let pos, retning;
+  if (f.fase === 'inn') { const a = Math.min(1, f.t / 14); pos = ute.clone().lerp(brygge, myk(a)); retning = Math.atan2(brygge.x - ute.x, brygge.z - ute.z); if (a >= 1) { f.fase = 'laster'; f.t = 0; } }
+  if (f.fase === 'laster') {
+    pos = brygge; retning = Math.atan2(brygge.x - ute.x, brygge.z - ute.z);
+    // Fiskekasser svinger fra brygga og opp i båten
+    if (f.kasser.length < 4 && f.t > f.kasser.length * 1.2) { const k = del(BOX, M(0xff8a2a), 1.2, 0.8, 1.2, 3, 2.2, OY_R + 14, scene); f.kasser.push({ k, t: 0 }); pip(660, 0.08, 'sine', 0.05); }
+    for (const k of f.kasser) { k.t += dt; const a = Math.min(1, k.t / 1.2); k.k.position.set(3 + (brygge.x - 3) * a, 2.2 + Math.sin(a * Math.PI) * 5 + a * 1.5, OY_R + 14 + (brygge.z - OY_R - 14) * a); k.k.visible = a < 1; }
+    if (f.t > 6.5) { for (const k of f.kasser) scene.remove(k.k); f.kasser = []; f.fase = 'ut'; f.t = 0; pip(110, 0.9, 'square', 0.04); melding('🚢 Fiskebåten kjører ut med fisken. Ha det!', 3); }
+  }
+  if (f.fase === 'ut') { const a = Math.min(1, f.t / 14); pos = brygge.clone().lerp(ute, myk(a)); retning = Math.atan2(ute.x - brygge.x, ute.z - brygge.z); if (a >= 1) { f.fase = null; f.g.visible = false; return; } }
+  f.g.position.set(pos.x, Math.sin(t * 0.9) * 0.15, pos.z);
+  f.g.rotation.set(Math.sin(t * 0.7) * 0.02, retning, Math.sin(t * 0.8) * 0.025);
 }
 function visKrakenKort(forste) {
   $('fangstTopp').textContent = forste ? '🏆 OPPDRAGET ER KLART! 🏆' : 'Du fanget Kraken igjen!';
@@ -1722,7 +1963,7 @@ function byggHavna() {
     if (!tilstand.last.length) h = '<div class="tom">Båten er tom. Kjør ut og fisk! 🎣</div>';
     else {
       const sum = tilstand.last.reduce((s, id) => s + fiskVerdi(id), 0), b = besteOppsett();
-      h = `<p class="info">🐠 i akvariet gir penger hvert minutt. 💰 Selg gir penger med en gang.<br>Akvariet: <b>${tilstand.akv.length} av ${tilstand.akvPlass}</b>${fullt && svId >= 0 ? ` · svakeste: ${FORMER[fiskDel(svId).f].ikon} 💰 ${tall(fiskVerdi(svId))}` : ''}</p>`;
+      h = `<p class="info"><b>Slik gjør du:</b> ⭐ legger de beste fiskene i akvariet og selger resten. 🐠 Fisk i akvariet gir penger <b>hvert minutt</b>. 💰 Selg gir penger <b>med en gang</b>.<br>Akvariet: <b>${tilstand.akv.length} av ${tilstand.akvPlass}</b>${fullt && svId >= 0 ? ` · svakeste: ${FORMER[fiskDel(svId).f].ikon} 💰 ${tall(fiskVerdi(svId))}` : ''}</p>`;
       if (b.nyeInn > 0) h += `<div class="samlet"><button class="kn stjerne" type="button" id="besteAkv">⭐ ${b.ut.length ? 'Beste i akvariet, selg resten' : 'Alle i akvariet'}<small>${b.nyeInn} inn${b.utAkv ? `, ${b.utAkv} ut av akvariet` : ''} · +💰 ${minTekst(b.okning)}/min${b.salg ? ` · selger for 💰 ${tall(b.salg)}` : ''}</small></button></div>`;
       h += '<div class="liste">' + sortertIndekser(tilstand.last).map(i => {
         const id = tilstand.last[i], bedre = fullt && svId >= 0 && fiskVerdi(id) > fiskVerdi(svId);
@@ -1762,21 +2003,21 @@ $('havna').addEventListener('click', e => {
     const [id] = tilstand.last.splice(+b.dataset.akv, 1); tilstand.akv.push(id); pip(880, 0.15, 'sine', 0.06, 1.5);
     byggAkvarium(); byggLast();
   } else if (b.dataset.selg !== undefined) {
-    const [id] = tilstand.last.splice(+b.dataset.selg, 1); tilstand.penger += fiskVerdi(id); lydMynt(); byggLast(); bump('pPenger');
+    const [id] = tilstand.last.splice(+b.dataset.selg, 1); tilstand.penger += fiskVerdi(id); solgtFisk++; lydMynt(); byggLast(); bump('pPenger');
   } else if (b.dataset.bytt !== undefined) {
     const sv = svakesteIAkv(); if (sv < 0) return;
     const [ut] = tilstand.akv.splice(sv, 1), [inn] = tilstand.last.splice(+b.dataset.bytt, 1);
-    tilstand.akv.push(inn); tilstand.penger += fiskVerdi(ut); lydMynt(); pip(880, 0.15, 'sine', 0.06, 1.5); byggAkvarium(); byggLast(); bump('pPenger');
+    tilstand.akv.push(inn); tilstand.penger += fiskVerdi(ut); solgtFisk++; lydMynt(); pip(880, 0.15, 'sine', 0.06, 1.5); byggAkvarium(); byggLast(); bump('pPenger');
     melding(`🔄 ${FORMER[fiskDel(inn).f].ikon} inn i akvariet, ${FORMER[fiskDel(ut).f].ikon} solgt for 💰 ${tall(fiskVerdi(ut))}`, 2.5);
   } else if (b.id === 'besteAkv') {
     const o = besteOppsett();
-    tilstand.akv = o.inn.map(x => x.id); tilstand.last = []; tilstand.penger += o.salg;
+    tilstand.akv = o.inn.map(x => x.id); tilstand.last = []; tilstand.penger += o.salg; if (o.salg > 0) solgtFisk++;
     lydMynt(); pip(880, 0.15, 'sine', 0.06, 1.5); byggAkvarium(); byggLast(); bump('pPenger');
     melding(`⭐ Akvariet gir nå 💰 ${tall(akvPerMinutt())}/min. Solgt for 💰 ${tall(o.salg)}.`, 3);
   } else if (b.id === 'selgAlle') {
-    tilstand.penger += tilstand.last.reduce((s, id) => s + fiskVerdi(id), 0); tilstand.last = []; lydMynt(); byggLast(); bump('pPenger');
+    if (tilstand.last.length) solgtFisk++; tilstand.penger += tilstand.last.reduce((s, id) => s + fiskVerdi(id), 0); tilstand.last = []; lydMynt(); byggLast(); bump('pPenger');
   } else if (b.dataset.selgakv !== undefined) {
-    const [id] = tilstand.akv.splice(+b.dataset.selgakv, 1); tilstand.penger += fiskVerdi(id); lydMynt(); byggAkvarium(); bump('pPenger');
+    const [id] = tilstand.akv.splice(+b.dataset.selgakv, 1); tilstand.penger += fiskVerdi(id); solgtFisk++; lydMynt(); byggAkvarium(); bump('pPenger');
   } else if (b.dataset.kjop) kjop(b.dataset.kjop);
   else return;
   oppdaterHud(); lagre(); byggHavna();
@@ -1832,11 +2073,13 @@ $('fangstOk').addEventListener('click', () => lukkLag('fangst'));
 // ======================================================
 let handling = null, handlingTekst = '';
 function finnHandling() {
+  if (land.aktiv) return landHandling();
   if (krakenShow) return { tekst: '🐙 Wow!', av: true };
   if (fiske && fiske.fase === 'kamp') return { tekst: '💪 Dra!', gjor: dra };
-  if (fiske) return { tekst: fiske.kraken ? '🐙 Vent …' : fiske.monster ? '🐉 Vent …' : '⏳ Vent på napp …', av: true };
+  if (fiske) return { tekst: fiske.kraken ? '🐙 Vent …' : fiske.monster ? '🐉 Vent …' : fiske.stor ? `${FORMER[fiske.stor.form].ikon} Vent …` : '⏳ Vent på napp …', av: true };
   if (iHavna()) return { tekst: '⚓ Havna', gjor: () => { fane = tilstand.last.length ? 'lever' : 'butikk'; byggHavna(); apneLag('havna'); } };
   if (vedMonster()) return { tekst: '🐉 Fisk Sjømonsteret', gjor: () => startFiske(null, false, true) };
+  { const d = naermesteStore(); if (d) { if (baatFull()) return { tekst: '📦 Båten er full', av: true, gjor: () => melding('Båten er full! Kjør hjem til havna ⚓', 3) }; return { tekst: `${FORMER[d.form].ikon} Fisk ${d.navn}en`, gjor: () => startFiske(null, false, false, d) }; } }
   if (vedKraken()) {
     if (tilstand.stang < STENGER.length - 1) return { tekst: '🐙 Trenger Superstang', av: true, gjor: () => melding('Kraken er for sterk! Du trenger ⚡ Superstangen fra butikken.', 3.5) };
     return { tekst: '🐙 Fang Kraken', gjor: () => startFiske(null, true) };
@@ -1847,8 +2090,21 @@ function finnHandling() {
   const p = naermestePlass();
   return { tekst: '🎣 Fisk', gjor: () => startFiske(p, false) };
 }
+let varIHavna = false, havnaGanger = 0;
+function havnaHjelp() {
+  const inne = !land.aktiv && iHavna();
+  if (inne && !varIHavna && !modalApen()) {
+    havnaGanger++;
+    melding(havnaGanger <= 3
+      ? '⚓ Du er i havna!<small>Trykk ⚓ Havna for å selge fisken eller legge den i akvariet. Trykk 🚶 Gå i land for å gå rundt på øya.</small>'
+      : '⚓ Havna', havnaGanger <= 3 ? 6 : 1.5, havnaGanger <= 3);
+  }
+  varIHavna = inne;
+}
 function oppdaterHandling() {
+  if (spillTilstand === 'spill') havnaHjelp();
   handling = spillTilstand === 'spill' ? finnHandling() : null;
+  if (spillTilstand === 'spill' && $('kamp').hidden) { const kanLand = !land.aktiv && iHavna() && !fiske && !krakenShow; $('landKnapp').hidden = !kanLand; $('turboKnapp').hidden = kanLand || land.aktiv; }
   const el = $('handling');
   const tekst = handling ? handling.tekst + (handling.av ? '' : '<span class="tast">(E)</span>') : '';
   if (tekst !== handlingTekst) { handlingTekst = tekst; el.innerHTML = tekst; el.style.display = handling ? 'block' : 'none'; el.classList.toggle('av', !!(handling && handling.av)); el.setAttribute('aria-disabled', String(!!(handling && handling.av))); }
@@ -1872,6 +2128,8 @@ addEventListener('keydown', e => {
   if (k === 'e' || k === ' ') { e.preventDefault(); if (!e.repeat) gjorHandling(); }
   if (k === 'i' && !e.repeat) { byggBok(); apneLag('bok'); }
   if (k === 'l' && !e.repeat) settLyd(!lydPa);
+  if (k === 't' && !e.repeat && !land.aktiv) settTurbo(!turbo);
+  if (k === 'g' && !e.repeat) { if (land.aktiv) { if (naerLand(KAI().x, KAI().z, 5)) gaaOmBord(); } else if (iHavna() && !fiske) gaaILand(); }
   if (k.startsWith('arrow')) e.preventDefault();
 }, true);
 addEventListener('keyup', e => { taster[e.key.toLowerCase()] = false; });
@@ -1913,7 +2171,8 @@ function apneLag(id) {
   $(id).classList.add('vis');
   const b = $(id).querySelector('.fane[aria-selected="true"]') || $(id).querySelector('button.stor'); if (b) setTimeout(() => b.focus({ preventScroll: true }), 50);
 }
-function lukkLag(id) { $(id).classList.remove('vis'); sisteTid = performance.now(); try { if (forrigeFokus && forrigeFokus.focus) forrigeFokus.focus({ preventScroll: true }); } catch (e) {} }
+function lukkLag(id) { if (id === 'havna' && solgtFisk > 0 && !tilstand.last.length) { solgtFisk = 0; startFiskebaat(); }
+  $(id).classList.remove('vis'); sisteTid = performance.now(); try { if (forrigeFokus && forrigeFokus.focus) forrigeFokus.focus({ preventScroll: true }); } catch (e) {} }
 // Fokus blir i det åpne kortet (T2)
 addEventListener('keydown', e => {
   if (e.key !== 'Tab' || e.defaultPrevented || evnApen()) return;   // felles dialoger (pause, kart, avslutt, nullstill) styrer fokus selv
@@ -1940,7 +2199,8 @@ function tegnKart() {
   x.fillText('Kystvannet', W / 2, py(-SONE_GRENSE[0] + 22)); x.fillText('Åpent hav', W / 2, py(-SONE_GRENSE[1] + 24)); x.fillText('Dyphavet', W / 2, py(-VERDEN_R + 40));
   x.font = '24px sans-serif';
   for (const p of plasser) x.fillText('🐟', px(p.pos.x), py(p.pos.z));
-  x.font = '30px sans-serif'; x.fillText('🐙', px(KRAKEN_POS.x), py(KRAKEN_POS.z)); if (sjomonster.aktiv) x.fillText('🐉', px(sjomonster.gruppe.position.x), py(sjomonster.gruppe.position.z)); x.fillText('⚓', px(HAVN.x), py(HAVN.z + 8));
+  x.font = '30px sans-serif'; x.fillText('🐙', px(KRAKEN_POS.x), py(KRAKEN_POS.z)); if (sjomonster.aktiv) x.fillText('🐉', px(sjomonster.gruppe.position.x), py(sjomonster.gruppe.position.z));
+  x.font = '24px sans-serif'; for (const d of storeDyr) if (d.aktiv) x.fillText(FORMER[d.form].ikon, px(d.gruppe.position.x), py(d.gruppe.position.z)); x.fillText('⚓', px(HAVN.x), py(HAVN.z + 8));
   x.save(); x.translate(px(spiller.pos.x), py(spiller.pos.z)); x.rotate(-spiller.retning + Math.PI);
   x.fillStyle = '#ffc93c'; x.strokeStyle = '#1d2440'; x.lineWidth = 3;
   x.beginPath(); x.moveTo(0, -20); x.lineTo(13, 13); x.lineTo(0, 6); x.lineTo(-13, 13); x.closePath(); x.fill(); x.stroke();
@@ -1954,7 +2214,7 @@ function tegnKart() {
 
 $('startBtn').addEventListener('click', () => {
   try { lyd = lyd || new (window.AudioContext || window.webkitAudioContext)(); lyd.resume && lyd.resume(); } catch (e) {}
-  lukkLag('start'); $('hud').hidden = false; $('hoyre').hidden = false; spillTilstand = 'spill'; sisteTid = performance.now();
+  lukkLag('start'); $('hud').hidden = false; $('hoyre').hidden = false; $('turboKnapp').hidden = false; spillTilstand = 'spill'; sisteTid = performance.now(); varIHavna = iHavna();   // startbeskjeden skal ikke byttes ut med havnehjelpen (QA 0b78d98)
   try { document.dispatchEvent(new Event('evn-start')); } catch (e) {}
   $('hjelp').innerHTML = document.documentElement.classList.contains('touch') ? 'Dra fingeren for å kjøre båten 👆' : '⬆️ fremover · ⬅️➡️ svinge · ⬇️ bakover';
   setTimeout(() => $('hjelp').style.opacity = 0, 15000);
@@ -1991,7 +2251,8 @@ function oppdaterBaat(dt, t) {
   }
   const lj = Math.hypot(jx, jz), bruker = Math.abs(gass) + Math.abs(ror) + lj;
   if (fiske && bruker > 0.3) { if (fiske.fase === 'kamp') { sluttKamp(); for (const te of krakenTentakler) te.userData.opp = 0; melding('Du kjørte fra Kraken! 🐙', 2.5); } else avbrytFiske('Du kjørte fra fisken! 🐟💨'); }
-  const maks = BATER[tilstand.baat].fart;
+  // Turbo (Evens ønske 5.11.2026): kjør raskere når du vil, f.eks. hjem fra Dyphavet. Hold Shift, trykk T eller 🚀.
+  const maks = BATER[tilstand.baat].fart * (turbo || taster['shift'] ? INNST.turbo : 1);
   let mal = 0, sving = 0;
   if (!fiske) {
     if (lj > 0.05) {
@@ -2019,15 +2280,95 @@ function oppdaterBaat(dt, t) {
   hjemPil.visible = baatFull() && !iHavna();
   if (hjemPil.visible) { hjemPil.position.set(spiller.pos.x, 6 + Math.sin(t * 3) * 0.4, spiller.pos.z); const neste = veiHjem()[1]; hjemPil.rotation.y = Math.atan2(neste.x - spiller.pos.x, neste.z - spiller.pos.z); }   // pila følger prikkene
 }
+
+// ======================================================
+//  Gå på land (Evens ønske 6.11.2026): roboten kan gå i land ved kaia, gå rundt på øya,
+//  gå inn i butikken og til akvariet, og se på byggetomtene. Første trinn i landsbyen.
+// ======================================================
+const land = { aktiv: false, pos: new THREE.Vector3(), retning: Math.PI, fart: 0, gaar: false };
+const KAI = () => new THREE.Vector3(0, 0, OY_R + 21);          // ytterst på brygga, der båten ligger
+const paaBrygga = (x, z) => Math.abs(x) < 3.2 && z > OY_R - 4 && z < OY_R + 23;
+function landHoyde(x, z) { return paaBrygga(x, z) ? Math.max(1.9, oyHoyde(x, z)) : oyHoyde(x, z); }
+// Ting roboten ikke kan gå gjennom: [x, z, halv bredde, halv dybde] eller [x, z, radius]
+const LAND_HINDRE = [
+  { x: 16, z: 52, bx: 5.6, bz: 4.6 },                                 // butikken
+  { x: AKV.x, z: AKV.z, bx: AKV.b / 2 + 0.6, bz: AKV.d / 2 + 0.6 },   // akvariet
+  { x: KTANK.x, z: KTANK.z, bx: KTANK.b / 2 + 0.8, bz: KTANK.d / 2 + 0.8 },
+  { x: 18, z: -20, r: 3.2 },                                          // fyrtårnet
+  ...PALMER.map(([x, z, sk]) => ({ x, z, r: 0.9 * sk })),
+];
+function landFritt(x, z) {
+  if (!paaBrygga(x, z) && oyAvstand(x, z) > OY_R + 1.5) return false;   // ikke ut i vannet
+  for (const h of LAND_HINDRE) {
+    if (h.r) { if (Math.hypot(x - h.x, z - h.z) < h.r + 0.6) return false; }
+    else if (Math.abs(x - h.x) < h.bx && Math.abs(z - h.z) < h.bz) return false;
+  }
+  return true;
+}
+function gaaILand() {
+  if (land.aktiv || fiske) return;
+  land.aktiv = true; land.retning = Math.PI; land.fart = 0;
+  land.pos.copy(KAI()); land.pos.y = landHoyde(land.pos.x, land.pos.z);
+  spiller.fart = 0; settTurbo(false);
+  skiltStorrelse(0.45); scene.add(helt); helt.position.copy(land.pos); helt.rotation.set(0, land.retning, 0);
+  stang.visible = false;
+  melding('🚶 Du er på land!<small>Gå til butikken eller akvariet og trykk på den gule knappen. Gå tilbake til kaia og trykk ⛵ for å gå om bord.</small>', 5, true);
+}
+function gaaOmBord() {
+  if (!land.aktiv) return;
+  land.aktiv = false; skiltStorrelse(1); baat.add(helt); helt.rotation.set(0, 0, 0); stang.visible = true;
+  helt.position.set(0, baat.userData.dekkY, -baat.userData.L * 0.18);
+  robotGaa(false); varIHavna = true; melding('⛵ Du er om bord igjen.', 2);
+}
+function robotGaa(gaar) {
+  if (!robot || land.gaar === gaar || robot.igjen > 0) { land.gaar = gaar; return; }
+  land.gaar = gaar;
+  const ny = robot.klipp[gaar ? (land.fart > 9 ? 'Running' : 'Walking') : 'Idle'] || robot.klipp.Idle;
+  if (ny === robot.aktiv) return; ny.reset(); ny.play(); robot.aktiv.crossFadeTo(ny, 0.25, false); robot.aktiv = ny;
+}
+function naerLand(x, z, r) { return Math.hypot(land.pos.x - x, land.pos.z - z) < r; }
+function landHandling() {
+  if (naerLand(KAI().x, KAI().z, 5)) return { tekst: '⛵ Gå om bord', gjor: gaaOmBord };
+  if (naerLand(16, 52 + 5.5, 4.5)) return { tekst: '🛒 Butikken', gjor: () => { fane = 'butikk'; byggHavna(); apneLag('havna'); } };
+  if (Math.abs(land.pos.x - AKV.x) < AKV.b / 2 + 3 && Math.abs(land.pos.z - AKV.z) < AKV.d / 2 + 3) return { tekst: '🐠 Akvariet', gjor: () => { fane = 'akvarium'; byggHavna(); apneLag('havna'); } };
+  return null;
+}
+function oppdaterLand(dt, t) {
+  let gass = 0, ror = 0, jx = 0, jz = 0;
+  if (!modalApen()) {
+    if (taster['arrowup'] || taster['w']) gass += 1; if (taster['arrowdown'] || taster['s']) gass -= 1;
+    if (taster['arrowleft'] || taster['a']) ror += 1; if (taster['arrowright'] || taster['d']) ror -= 1;
+    if (joy.aktiv) { const fx = Math.sin(joy.yaw), fz = Math.cos(joy.yaw); jx = fx * -joy.dy + -fz * joy.dx; jz = fz * -joy.dy + fx * joy.dx; }
+  }
+  const maks = 7 * (taster['shift'] ? 1.6 : 1), lj = Math.hypot(jx, jz);
+  let mal = 0;
+  if (lj > 0.05) { let diff = Math.atan2(jx, jz) - land.retning; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); land.retning += Math.sign(diff) * Math.min(Math.abs(diff), 8 * dt); mal = Math.min(1, lj) * maks * Math.max(0, Math.cos(diff)); }
+  else { mal = gass > 0 ? maks : gass < 0 ? -maks * 0.5 : 0; land.retning += ror * 2.6 * dt; }
+  land.fart += (mal - land.fart) * Math.min(1, dt * 8);
+  if (Math.abs(land.fart) > 0.05) {
+    const nx = land.pos.x + Math.sin(land.retning) * land.fart * dt, nz = land.pos.z + Math.cos(land.retning) * land.fart * dt;
+    if (landFritt(nx, nz)) { land.pos.x = nx; land.pos.z = nz; }
+    else if (landFritt(nx, land.pos.z)) land.pos.x = nx;      // gli langs veggen
+    else if (landFritt(land.pos.x, nz)) land.pos.z = nz;
+    else land.fart = 0;
+  }
+  land.pos.y = landHoyde(land.pos.x, land.pos.z);
+  helt.position.lerp(land.pos, Math.min(1, dt * 12)); helt.position.x = land.pos.x; helt.position.z = land.pos.z;
+  helt.rotation.y = land.retning;
+  robotGaa(Math.abs(land.fart) > 0.4);
+  // Båten ligger rolig ved kaia
+  baat.position.set(spiller.pos.x, 0.25 + Math.sin(t * 1.6) * 0.15, spiller.pos.z);
+}
 // Kameraet følger bak båten og snur seg sakte med den (som i Roblox og Fortnite)
 let kamYaw = 0;
 function oppdaterKamera(dt) {
-  let d = spiller.retning - kamYaw; d = Math.atan2(Math.sin(d), Math.cos(d));
-  kamYaw += d * Math.min(1, dt * 2.2);
-  const fx = Math.sin(kamYaw), fz = Math.cos(kamYaw);
-  const mal = new THREE.Vector3(spiller.pos.x - fx * 30 * zoom, 18 * zoom, spiller.pos.z - fz * 30 * zoom);
+  const mål = land.aktiv ? land.pos : spiller.pos, ret = land.aktiv ? land.retning : spiller.retning;
+  let d = ret - kamYaw; d = Math.atan2(Math.sin(d), Math.cos(d));
+  kamYaw += d * Math.min(1, dt * (land.aktiv ? 3 : 2.2));
+  const fx = Math.sin(kamYaw), fz = Math.cos(kamYaw), avst = (land.aktiv ? 13 : 30) * zoom, hoy = (land.aktiv ? 8 : 18) * zoom;
+  const mal = new THREE.Vector3(mål.x - fx * avst, (land.aktiv ? mål.y : 0) + hoy, mål.z - fz * avst);
   camera.position.lerp(mal, Math.min(1, dt * 4));
-  camera.lookAt(spiller.pos.x + fx * 14, 1.5, spiller.pos.z + fz * 14);
+  camera.lookAt(mål.x + fx * (land.aktiv ? 4 : 14), land.aktiv ? mål.y + 2 : 1.5, mål.z + fz * (land.aktiv ? 4 : 14));
   const sn = HAV_STR / HAV_DEL; hav.position.set(Math.round(spiller.pos.x / sn) * sn, 0, Math.round(spiller.pos.z / sn) * sn);
 }
 kamYaw = spiller.retning;
@@ -2065,7 +2406,8 @@ function loop(na) {
   tid += dt;
   const spill = spillTilstand === 'spill' && !modalApen();
   if (spill) {
-    oppdaterBaat(dt, tid); oppdaterFiske(dt, tid); oppdaterKrakenShow(ekteDt, tid); oppdaterMonster(dt, tid); oppdaterInntekt(dt);
+    if (land.aktiv) oppdaterLand(dt, tid); else oppdaterBaat(dt, tid);
+    oppdaterFiske(dt, tid); oppdaterKrakenShow(ekteDt, tid); oppdaterMonster(dt, tid); oppdaterStoreDyr(dt, tid); oppdaterFiskebaat(ekteDt, tid); oppdaterInntekt(dt);
     lagreTid += dt; if (lagreTid > 5) { lagreTid = 0; lagre(); }
   } else { baat.position.y = 0.25 + Math.sin(tid * 1.6) * 0.15; }
   if (spillTilstand !== 'pause') { oppdaterVerden(dt, tid); oppdaterAkvarium(dt, tid); oppdaterSkum(dt); oppdaterPlask(dt); robotAnimasjon(dt); for (const m of lastGruppe.children) animerFisk(m, tid * 0.3, 0.5); }
@@ -2107,7 +2449,7 @@ window.__evnP = EVNPause({
   knapp: (b, k) => { for (const x of [k, b]) { x.className = 'rund'; x.style.cssText = 'padding:0;font-size:22px'; } $('hoyre').insertBefore(k, $('evnAvslutt')); $('hoyre').insertBefore(b, $('evnAvslutt')); },
   kart: {
     forhold: 1,
-    info: () => '🔺 Du · ⚓ Havna · 🐟 Fiskested · 🐙 Kraken' + (sjomonster.aktiv ? ' · 🐉 Sjømonsteret' : ''),
+    info: () => '🔺 Du · ⚓ Havna · 🐟 Fiskested · 🦈 Hai · 🐋 Hval · 🐙 Kraken' + (sjomonster.aktiv ? ' · 🐉 Sjømonsteret' : ''),
     tegn: (c, w, h) => { tegnKart(); c.drawImage(kartLerret, 0, 0, w, h); }
   },
   kanPause: () => spillTilstand === 'spill' && !LAG.some(id => $(id).classList.contains('vis')) && !$('feil').classList.contains('vis'),   // K2: pausen legger seg ikke over feilkortet
@@ -2116,21 +2458,21 @@ window.__evnP = EVNPause({
   fortsett: () => { spillTilstand = 'spill'; for (const k in taster) taster[k] = false; sisteTid = performance.now(); },
   lagre: lagre,
   styring: () => document.documentElement.classList.contains('touch')
-    ? '👆 Dra fingeren dit du vil kjøre<br>🟡 Den gule knappen: fiske og havna<br>📖 Fiskeboka viser fiskene dine<br>🗺️ Kartet viser fiskesteder og Kraken'
-    : '⬆️/W fremover · ⬇️/S bakover<br>⬅️➡️ eller A/D: svinge<br>E eller mellomrom: fiske og havna<br>I: fiskeboka · M: kart · L: lyd<br>P eller Esc: pause'
+    ? '👆 Dra fingeren dit du vil kjøre<br>🟡 Den gule knappen: fiske og havna<br>📖 Fiskeboka viser fiskene dine<br>🚀 Turbo: kjør fortere<br>🚶 Gå i land ved kaia<br>🗺️ Kartet viser fiskesteder, haier, hval og Kraken'
+    : '⬆️/W fremover · ⬇️/S bakover<br>⬅️➡️ eller A/D: svinge<br>E eller mellomrom: fiske og havna<br>Shift eller T: turbo 🚀<br>G: gå i land / om bord ved kaia<br>I: fiskeboka · M: kart · L: lyd<br>P eller Esc: pause'
 });
 // Etter EVNPause, så pausens Tab-regel (T2) gjelder også i «Starte helt på nytt?» (nullstillboksen stopper alle andre taster)
 EVNNullstill({
   nokler: [LAGRING, LAGRING + '-kopi'],
   tema: { panel: '#155a8a', ink: '#fff', hi: '#ffc93c', btn: '#ffc93c', btnInk: '#4a2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400 },
   tekst: 'Alle fiskene, pengene, båtene og fiskeboka blir borte.',
-  harLagring: () => tilstand.fanget > 0 || tilstand.penger > INNST.startPenger || tilstand.stang > 0 || tilstand.baat > 0,
+  harLagring: () => tilstand.fanget > 0 || tilstand.penger > INNST.startPenger || tilstand.stang > 0 || tilstand.baat > 0 || tilstand.venner > 0 || tilstand.kraken,
   plasser: el => $('evnTilbake').after(el),
   vis: () => $('start').classList.contains('vis')
 });
 requestAnimationFrame(loop);
 // Til testing
-window.__spill = { get krakenShow() { return krakenShow; }, set eventTvang(v) { eventTvang = v; }, sjomonster, visMonster, torsdagsEvent, get krakenSted() { return krakenSted; }, visFangst, besteOppsett, tilstand, spiller, plasser, INNST, FORMER, nyFisk, fiskNavn, fiskVerdi, sjeldenhet, fiskDel, gjorHandling, startFiske, dra, get fiske() { return fiske; }, lagre, HAVN, KRAKEN_POS, scene, camera, oppdaterHud, byggAkvarium, byggLast, byggBaat, lagFiskModell, renderer };
+window.__spill = { get krakenShow() { return krakenShow; }, land, gaaILand, gaaOmBord, oyHoyde, fiskebaat, startFiskebaat, storeDyr, settTurbo, get turbo() { return turbo; }, set eventTvang(v) { eventTvang = v; }, sjomonster, visMonster, torsdagsEvent, get krakenSted() { return krakenSted; }, visFangst, besteOppsett, tilstand, spiller, plasser, INNST, FORMER, nyFisk, fiskNavn, fiskVerdi, sjeldenhet, fiskDel, gjorHandling, startFiske, dra, get fiske() { return fiske; }, lagre, HAVN, KRAKEN_POS, scene, camera, oppdaterHud, byggAkvarium, byggLast, byggBaat, lagFiskModell, renderer };
 </script>
 <!-- EVN Studio: knapp tilbake til forsiden (vises bare under /spill/) -->
 <style>
