@@ -1189,7 +1189,7 @@ function spawnAnimal(minPlayer) {
     if (b !== 'lava' && dist(x, y, FX, FY) > 340 && waterDist(x, y) > 50 && !g.bases.some(B => dist(x, y, B.x, B.y) < 400) && !dcNear(x, y, 800) && pondDist(x, y) > 80 && dist(x, y, g.p.x, g.p.y) > minPlayer) {
       const mix = MIXES[b], type = mix[Math.floor(Math.random() * mix.length)];
       if (ANIMALS[type].hostile && dist(x, y, FX, FY) < LEIR_SPAWN) continue;   // 2.0.6: ingen rovdyr nær leiren
-      g.animals.push({ type, x, y, hp: ANIMALS[type].hp, dir: rand(0, 6.28), turn: rand(1, 3), idle: false, flee: 0, face: 1, hit: 0, walk: 0 });
+      const liv = rovLiv(type); g.animals.push({ type, x, y, hp: liv, max: liv, dir: rand(0, 6.28), turn: rand(1, 3), idle: false, flee: 0, face: 1, hit: 0, walk: 0 });
       return;
     }
   }
@@ -1441,6 +1441,10 @@ const fireCost = L => ({ wood: 3 * L + 2, stone: 2 * L });
 // 2.0.6 (Ivars ønske): trygg leir. Så lenge bålet brenner, angriper ikke ville dyr innenfor LEIR_R fra bålet, og de går ut av leiren.
 // Rovdyr dukker heller ikke opp nærmere bålet enn LEIR_SPAWN. Nattmonstrene følger fortsatt lyset som før.
 const LEIR_R = 500, LEIR_SPAWN = 760;
+// 2.0.6 (Ivars ønske): rovdyrene er svakere de første nettene og blir sterkere for hver natt du overlever.
+// Skade: 40 % første dag, så +15 % per natt, full styrke fra natt 4. Liv ved fødsel: 50 % første dag, +12,5 % per natt, fullt fra natt 4.
+const rovSkade = () => Math.min(1, 0.4 + 0.15 * g.nights);
+const rovLiv = type => ANIMALS[type].hostile ? Math.max(2, Math.round(ANIMALS[type].hp * Math.min(1, 0.5 + 0.125 * g.nights))) : ANIMALS[type].hp;
 const iLeir = (x, y) => g.fuel > 0 && dist(x, y, FX, FY) < LEIR_R;
 const lightR = () => g.fuel > 0 ? (70 + g.fuel * 2.5) * (1 + (g.fireLvl - 1) * 0.09) : 0;
 
@@ -2037,7 +2041,7 @@ function update(dt) {
     }
     ghPush(a, 10); townPush(a, 14); dcSolid(a, 16); pondPush(a, 12);
     if (a.x < 30 || a.x > W - 30 || a.y < 30 || a.y > H - 30) { a.dir += Math.PI; a.x = clamp(a.x, 30, W - 30); a.y = clamp(a.y, 30, H - 30); }
-    if (A.hostile && dp < 22 * A.size + 10 && p.z < 25 && !iLeir(p.x, p.y)) { g.hp -= A.dmg * dt;   /* 2.0.6: ingen skade i leiren */ p.hurt = 1; g.cause = 'animal'; g.flash = 0.25; }
+    if (A.hostile && dp < 22 * A.size + 10 && p.z < 25 && !iLeir(p.x, p.y)) { g.hp -= A.dmg * rovSkade() * dt;   /* 2.0.6: ingen skade i leiren */ p.hurt = 1; g.cause = 'animal'; g.flash = 0.25; }
   }
   if (g.animals.length < ANIMAL_COUNT && (g.aspawn -= dt) <= 0) { spawnAnimal(600); g.aspawn = 12; }
 
@@ -6112,7 +6116,7 @@ function draw(time) {
   for (const t of g.trees) if (t.alive && t.hp < t.max) bar(t.x, t.giant ? 60 : 100 * t.s * TREE_H, t.y, t.hp / t.max, '#ffd166');
   if (g.goat && g.goat.alive && g.goat.hp < g.goat.max) bar(g.goat.x, 110, g.goat.y, g.goat.hp / g.goat.max, g.goat.state === 'tired' ? '#ffd166' : '#ff6b5b');
   for (const tr of g.trolls) if (tr.hp < tr.max) bar(tr.x, 95, tr.y, tr.hp / tr.max, '#ff6b5b');
-  for (const a of g.animals) { const A = ANIMALS[a.type]; if (a.hp < A.hp) bar(a.x, 58 * A.size, a.y, a.hp / A.hp, A.hostile ? '#ff6b5b' : '#8ee07a'); }
+  for (const a of g.animals) { const A = ANIMALS[a.type]; if (a.hp < (a.max || A.hp)) bar(a.x, 58 * A.size, a.y, a.hp / (a.max || A.hp), A.hostile ? '#ff6b5b' : '#8ee07a'); }
   for (const r of g.rocks) if (r.alive && r.hp < r.max) bar(r.x, 26 * r.s, r.y, r.hp / r.max, r.ore ? '#e08a4a' : '#c9cdd1');
   drawDinoHud();
   octx.font = '800 18px Nunito, sans-serif'; octx.textAlign = 'center';
