@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.6.1 – EVN Studio</title>
+<title>Fiskespillet 0.6.2 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -201,7 +201,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.6.1</div>
+    <div class="evn-ver" id="versjon">Versjon 0.6.2</div>
   </div>
 </div>
 
@@ -527,7 +527,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.6.1';
+const VERSJON = '0.6.2';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -1148,7 +1148,7 @@ function brukRobot(gltf) {
   const parse = buf => new THREE.GLTFLoader().parse(buf, '', brukRobot, e => console.warn('Fant ikke roboten', e));
   try {
     if (window.EVN_HELT_B64) { const bin = atob(window.EVN_HELT_B64), buf = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i); parse(buf.buffer); }
-    else fetch('../../ecoins/helt-robot.glb').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(parse).catch(e => console.warn('Roboten kunne ikke lastes', e));
+    else fetch('../../ecoins/helt-robot-v2.glb').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(parse).catch(e => console.warn('Roboten kunne ikke lastes', e));
   } catch (e) { console.warn('Roboten kunne ikke lastes', e); }
 })();
 function robotGjor(navn, tid) {
