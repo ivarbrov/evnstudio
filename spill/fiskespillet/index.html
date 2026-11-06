@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.11.0 – EVN Studio</title>
+<title>Fiskespillet 0.11.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -215,7 +215,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.11.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.11.1</div>
   </div>
 </div>
 
@@ -549,7 +549,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.11.0';
+const VERSJON = '0.11.1';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -2477,11 +2477,26 @@ function gaaOmBord() {
   helt.position.set(0, baat.userData.dekkY, -baat.userData.L * 0.18);
   robotGaa(false); melding('⛵ Du er om bord igjen.', 2);
 }
+// Føttene i animasjonene flytter seg 1,8 (gå) og 3,0 (løpe) enheter i sekundet med roboten 2,6 høy (målt 6.11.2026).
+// Animasjonen spilles så fort som figuren beveger seg, så føttene ikke sklir («rullebånd»).
+const FOT_GAA = 1.8, FOT_LOP = 3.0;
 function robotGaa(gaar) {
-  if (!robot || land.gaar === gaar || robot.igjen > 0) { land.gaar = gaar; return; }
-  land.gaar = gaar;
-  const ny = robot.klipp[gaar ? (land.fart > 15 ? 'Running' : 'Walking') : 'Idle'] || robot.klipp.Idle;
-  if (ny === robot.aktiv) return; ny.reset(); ny.play(); robot.aktiv.crossFadeTo(ny, 0.25, false); robot.aktiv = ny;
+  const f = Math.abs(land.fart), navn = !gaar ? 'Idle' : f > 4.5 ? 'Running' : 'Walking';
+  if (robot) { const k = robot.klipp[navn]; if (k && navn !== 'Idle') k.timeScale = Math.min(4, Math.max(0.6, f / (navn === 'Running' ? FOT_LOP : FOT_GAA))) * Math.sign(land.fart || 1); }
+  if (!robot || land.gang === navn || robot.igjen > 0) { land.gang = navn; land.gaar = gaar; return; }
+  land.gang = navn; land.gaar = gaar;
+  const ny = robot.klipp[navn] || robot.klipp.Idle;
+  if (ny === robot.aktiv) return; ny.reset(); ny.play(); robot.aktiv.crossFadeTo(ny, 0.2, false); robot.aktiv = ny;
+}
+// Støv fra føttene når roboten løper
+const stov = [];
+{ const geo = new THREE.SphereGeometry(1, 8, 6); for (let i = 0; i < 24; i++) { const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xe8dcc0, transparent: true, opacity: 0, depthWrite: false })); m.visible = false; scene.add(m); stov.push({ m, liv: 0 }); } }
+let stovNeste = 0, stovTid = 0;
+function oppdaterStov(dt) {
+  stovTid += dt;
+  if (land.aktiv && Math.abs(land.fart) > 6 && stovTid > 0.08) { stovTid = 0; const s = stov[stovNeste++ % stov.length];
+    s.m.position.set(land.pos.x - Math.sin(land.retning) * 0.6 + rnd(-0.3, 0.3), land.pos.y + 0.2, land.pos.z - Math.cos(land.retning) * 0.6 + rnd(-0.3, 0.3)); s.liv = 0.6; s.m.scale.setScalar(0.25); s.m.visible = true; }
+  for (const s of stov) { if (s.liv <= 0) continue; s.liv -= dt; s.m.material.opacity = Math.max(0, s.liv / 0.6) * 0.55; s.m.scale.multiplyScalar(1 + dt * 2.5); s.m.position.y += dt * 0.6; if (s.liv <= 0) s.m.visible = false; }
 }
 function naerLand(x, z, r) { return Math.hypot(land.pos.x - x, land.pos.z - z) < r; }
 function landHandling() {
@@ -2498,7 +2513,7 @@ function oppdaterLand(dt, t) {
     if (taster['arrowleft'] || taster['a']) ror += 1; if (taster['arrowright'] || taster['d']) ror -= 1;
     if (joy.aktiv) { const fx = Math.sin(joy.yaw), fz = Math.cos(joy.yaw); jx = fx * -joy.dy + -fz * joy.dx; jz = fz * -joy.dy + fx * joy.dx; }
   }
-  const maks = 13 * (taster['shift'] ? 1.5 : 1), lj = Math.hypot(jx, jz);   // raskere fra 0.10.0 (Evens ønske: «går veldig sakte»)
+  const maks = 11 * (taster['shift'] ? 1.4 : 1), lj = Math.hypot(jx, jz);   // 11 med løpeanimasjon som passer farten (0.11.1, Evens ønske: «rullebånd»)
   let mal = 0;
   if (lj > 0.05) { let diff = Math.atan2(jx, jz) - land.retning; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); land.retning += Math.sign(diff) * Math.min(Math.abs(diff), 8 * dt); mal = Math.min(1, lj) * maks * Math.max(0, Math.cos(diff)); }
   else { mal = gass > 0 ? maks : gass < 0 ? -maks * 0.5 : 0; land.retning += ror * 2.6 * dt; }
@@ -2514,6 +2529,7 @@ function oppdaterLand(dt, t) {
   helt.position.lerp(land.pos, Math.min(1, dt * 12)); helt.position.x = land.pos.x; helt.position.z = land.pos.z;
   helt.rotation.y = land.retning;
   robotGaa(Math.abs(land.fart) > 0.4);
+  oppdaterStov(dt);
   // Båten ligger rolig ved kaia
   baat.position.set(spiller.pos.x, 0.25 + Math.sin(t * 1.6) * 0.15, spiller.pos.z);
 }
