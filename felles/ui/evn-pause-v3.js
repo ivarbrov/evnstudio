@@ -49,7 +49,8 @@ window.EVNPause = function (cfg) {
     '#evnKart .info{flex:2;font-size:14px;font-weight:700;opacity:.85;line-height:1.3}' +
     '#evnKart .lukk,#evnPause .lukk{width:48px;height:48px;flex:none;border-radius:14px;border:0;background:rgba(127,127,127,.28);color:inherit;font:800 22px ' + font + ';cursor:pointer}' +
     '#evnKart canvas{display:block;border-radius:10px;image-rendering:pixelated}' +
-    '#evnPause .kort{padding:16px 18px;width:min(420px,100%);text-align:center}' +
+    '#evnPause .kort{padding:16px 18px;width:min(420px,100%);text-align:center;display:flex;flex-direction:column}' +
+    '#evnPause .topp{order:0}#evnPause .tider{order:1}#evnPause .fortsett{order:2}#evnPause .ruter{order:3}#evnPause .styr{order:4}#evnPause .kort>a{order:5}#evnPause .tips{order:6}' +
     '#evnPause .tider{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 8px}' +
     '#evnPause .tid{border-radius:12px;padding:6px;background:rgba(127,127,127,.18)}' +
     '#evnPause .tid b{display:block;font-size:20px;line-height:1.15}#evnPause .tid small{font-size:13px;font-weight:700;opacity:.85}' +
@@ -65,9 +66,10 @@ window.EVNPause = function (cfg) {
     '#evnPause .tips{font-size:14px;opacity:.85;margin:8px 0 0}' +
     '#evnPause button:focus-visible,#evnPause a:focus-visible,#evnKart button:focus-visible{outline:3px solid ' + hi + ';outline-offset:2px}' +
     // Smal skjerm: bare ☰ (48 px). Lav skjerm (liggende mobil): bredere kort, fire ruter i bredden og uten spilletid, så Fortsett og rutene får plass.
-    '@media (max-width:400px){#evnPauseKnapp .tekst{display:none}#evnPauseKnapp{width:48px;padding:0}}' +
-    '@media (max-height:500px){#evnPause .kort{width:min(640px,100%);padding:10px 14px}#evnPause .tider,#evnPause .tips{display:none}#evnPause h2{font-size:22px}' +
-    '#evnPause .topp{margin:0 0 4px}#evnPause .fortsett{min-height:48px;margin-top:4px}#evnPause .ruter{grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}#evnPause .rute{min-height:60px;padding:6px 4px}}';
+    '@media (max-width:400px){#evnPauseKnapp .tekst{display:none}#evnPauseKnapp{width:48px;padding:0}#evnPause .kort{padding:12px}#evnPause .ruter{grid-template-columns:repeat(3,1fr);gap:6px}#evnPause .rute{min-height:64px;font-size:13px;padding:6px 2px}}' +
+    '@media (max-height:500px){#evnPause .kort{width:min(640px,100%);padding:10px 14px;display:grid;grid-template-columns:1fr auto auto;column-gap:8px;align-items:center}#evnPause .tider,#evnPause .tips{display:none}' +
+    '#evnPause .topp{display:contents}#evnPause h2{font-size:22px;grid-column:1}#evnPause .kort>a{grid-column:2;grid-row:1;margin:0}#evnPause .lukk{grid-column:3;grid-row:1}' +
+    '#evnPause .fortsett,#evnPause .ruter,#evnPause .styr{grid-column:1/-1}#evnPause .fortsett{min-height:48px;margin-top:6px}#evnPause .ruter{grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}#evnPause .rute{min-height:56px;padding:4px}}';
   document.head.appendChild(css);
 
   // ---------- ☰ Meny-knappen og snarveiene ----------
@@ -252,7 +254,8 @@ window.EVNPause = function (cfg) {
   if (cfg.sekk) { $('evnPauseSekk').addEventListener('click', videre(apneSekk)); sekkKnapp.addEventListener('click', function (e) { e.currentTarget.blur(); apneSekk(); }); }
   (cfg.egne || []).forEach(function (e, i) { $('evnPauseEgen' + i).addEventListener('click', videre(e.gjor)); });
   if (cfg.innstillinger) $('evnPauseInnst').addEventListener('click', videre(cfg.innstillinger));
-  if (cfg.butikk) ['evnPauseShop', 'evnPauseGarderobe'].forEach(function (id) { $(id).addEventListener('click', function () { if (cfg.lagre) try { cfg.lagre(); } catch (e) {} lagreTid(); }); });
+  // Alle lenker i menyen (E-shop, Garderobe og saldoen fra ecoins.js) lagrer før spillet forlates
+  bak.addEventListener('click', function (e) { var a = e.target.closest && e.target.closest('a[href]'); if (a && bak.contains(a)) { if (cfg.lagre) try { cfg.lagre(); } catch (x) {} lagreTid(); } }, true);
 
   // KS10: Avslutt bekreftes i den felles dialogen. Spillet står stille mens spørsmålet vises. «Nei» = fortsett.
   function visSporsmal() { venterAvslutt = true; var s = sporsmal(); s.style.display = 'grid'; settInert(s); var b = $('evnBli'); if (b) b.focus(); synlighet(); }
@@ -261,7 +264,7 @@ window.EVNPause = function (cfg) {
     var a = avsluttLenke(); if (!a || !a.contains(e.target) || venterAvslutt || apen || !cfg.kanPause()) return;
     cfg.pause(); venterAvslutt = true;
   }, true);
-  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; settInert(null); cfg.fortsett(false); synlighet(); }
+  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; settInert(null); cfg.fortsett(false); synlighet(); if (!knapp.hidden) try { knapp.focus({ preventScroll: true }); } catch (e) {} }
   document.addEventListener('click', function (e) { var b = $('evnBli'); if (b && b.contains(e.target)) setTimeout(nei, 0); }, true);
 
   // ---------- Taster (KS1, KS2, KS7, KS8, KS9) ----------
@@ -285,7 +288,7 @@ window.EVNPause = function (cfg) {
       return;
     }
     if (e.repeat || skrivefelt(e)) return;
-    if (k === 'KeyL' && cfg.lyd && cfg.kanPause() && !sporsmalApent()) { e.preventDefault(); e.stopImmediatePropagation(); byttLyd(); return; }
+    if (k === 'KeyL' && cfg.lyd && !sporsmalApent()) { e.preventDefault(); e.stopImmediatePropagation(); byttLyd(); return; }
     if (!kan()) return;
     if (k === 'KeyM' && cfg.kart) { e.preventDefault(); e.stopImmediatePropagation(); apneKart(); return; }
     if (k === 'KeyI' && cfg.sekk && cfg.sekk.tast !== false) { e.preventDefault(); e.stopImmediatePropagation(); apneSekk(); return; }
