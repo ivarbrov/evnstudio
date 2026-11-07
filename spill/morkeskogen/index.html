@@ -235,7 +235,7 @@ addEventListener('keydown',function(){t(false);},true);})();
     <ul class="maal">
       <li>🪵 <b>Samle ved</b> og legg den på bålet.</li>
       <li>🔥 <b>Hold bålet i gang.</b> Om natten kommer monstrene, og de tåler ikke lys.</li>
-      <li class="bare-pc">⌨️ <b>Gå:</b> W A S D eller pilene · <b>Hugg og gjør ting:</b> klikk eller E</li>
+      <li class="bare-pc">⌨️ <b>Gå:</b> W A S D eller pilene · <b>Hugg:</b> klikk (første klikk lar musa styre kameraet) · <b>Gjør ting:</b> E</li>
       <li class="bare-touch">👆 <b>Gå:</b> dra med fingeren · <b>Hugg:</b> trykk 🪓 · <b>Bruk:</b> trykk ✋</li>
     </ul>
     <p id="no3d" hidden>3D-motoren lastet ikke. Sjekk internett og last siden på nytt.</p>
@@ -264,7 +264,7 @@ addEventListener('keydown',function(){t(false);},true);})();
     </ul>
     <div class="qrow" id="qrow">Grafikk: <button data-q="lav">Lav</button><button data-q="middels">Middels</button><button data-q="hoy">Høy</button></div>
     </details>
-    <div class="ver evn-ver">Versjon 2.0.0 · 3D</div>
+    <div class="ver evn-ver">Versjon 2.0.6 · 3D</div>
   </div>
 </div>
 
@@ -282,7 +282,9 @@ addEventListener('keydown',function(){t(false);},true);})();
     <h2>Åh nei!</h2>
     <p id="overReason"></p>
     <p id="overScore"></p>
+    <p id="overBehold" style="font-size:.92em;line-height:1.45;text-align:left;margin:10px auto 14px;max-width:34em">✅ Du beholder: nivå, våpen, oppdrag, fiskeboka og byggene dine.<br>❌ Du mister: ved, stein, jern, skinn, mat, fisk, den bedre øksa, sekken, bålnivået og tamme dyr.</p>
     <button id="againBtn">Prøv igjen</button>
+    <button id="overAvslutt" type="button" hidden>🚪 Avslutt</button>
   </div>
 </div>
 
@@ -553,6 +555,7 @@ try {
     av.style.display = 'block';
     var card = document.querySelector('#startScreen .card');
     var t = document.getElementById('evnTilbake'); if (t) t.hidden = false;
+    var oa = document.getElementById('overAvslutt'); if (oa) { oa.hidden = false; oa.addEventListener('click', function (e) { e.stopPropagation(); av.click(); }); }
     av.addEventListener('click', function (e) {
       e.preventDefault(); e.stopPropagation();
       if (document.exitPointerLock && document.pointerLockElement) document.exitPointerLock();
@@ -567,6 +570,13 @@ try {
 </script>
 
 <script src="../../statistikk.js" data-spill="morkeskogen" defer></script>
+<div id="evnFeil" role="alertdialog" aria-modal="true" aria-labelledby="evnFeilTittel" hidden style="position:fixed;inset:0;z-index:2000;display:grid;place-items:center;background:rgba(6,10,8,.82);padding:20px">
+  <div style="max-width:420px;background:#0e1712;color:#f3ead6;border:1px solid rgba(243,234,214,.3);border-radius:18px;padding:22px 24px;text-align:center;font-family:'Nunito',system-ui,sans-serif">
+    <h2 id="evnFeilTittel" style="margin:0 0 8px;font-family:'Lilita One',system-ui,sans-serif;font-weight:400;font-size:26px">Oi! Spillet stoppet</h2>
+    <p id="evnFeilTekst" style="margin:0 0 16px;font-size:17px;line-height:1.4">Noe gikk galt i spillet. Last siden på nytt for å spille videre. Det du har lagret, er trygt.</p>
+    <button id="evnFeilLast" type="button" onclick="location.reload()" style="min-height:48px;padding:0 22px;border:0;border-radius:24px;background:#ff9a3c;color:#2a1606;font:800 18px 'Nunito',system-ui,sans-serif;cursor:pointer">🔄 Last på nytt</button>
+  </div>
+</div>
 <!-- Mørkeskogen 2.0: ny HUD (sist, så den overstyrer stilene over) -->
 <link rel="stylesheet" href="hud2.css">
 <script src="hud2.js"></script>
