@@ -42,7 +42,7 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
     // Dyrepatruljen: funnene U1-versjon og F1-pause fra v0.10.3 er rettet i v0.10.12.
   };
   // Suiter for krav som ennå ikke er gjeldende. Brudd gir «varsel» og stopper ingenting.
-  var IKKE_GJELDENDE = { ui: 'UI1–UI10 er godkjent hovedløsning, ikke gjeldende krav' };
+  var IKKE_GJELDENDE = { ui: 'UI1–UI10 er godkjent hovedløsning, ikke gjeldende krav', meny: 'EVN UI-standard KS/KM er rådgivende til de er godkjent særskilt' };
   var DOMENER = ['https://gc.zgo.at', 'https://evnstudio.goatcounter.com'];
   var STORRELSER = [[1280, 800], [375, 812], [740, 360], [320, 568], [568, 320]];
   var SUITER = [
@@ -50,7 +50,8 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
     { navn: 'royk', fil: null, kjor: function () { return rekke(SPILL, royk); } },
     { navn: 'statistikk', fil: 'test/statistikk/index.html', kjor: statistikk },
     { navn: 'ui', fil: 'prototype/ui/index.html', kjor: ui },
-    { navn: 'ecoins', fil: 'test/ecoins/index.html', kjor: ecoins }
+    { navn: 'ecoins', fil: 'test/ecoins/index.html', kjor: ecoins },
+    { navn: 'meny', fil: 'felles/ui/evn-pause-v3.js', kjor: meny }
   ];
   var tester = [], suiter = {};
 
@@ -187,6 +188,114 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
         });
       });
     });
+  }
+
+  // ---- Felles meny og styring (EVN UI-standard 1.1, KM1–KM12) for spill med EVN-PAUSE v3, og kopikontroll ----
+  // Rådgivende: brudd gir «varsel». Spill med v2 hoppes over (info).
+  var MENY_STORRELSER = [[1280, 800], [375, 812], [740, 360], [568, 320]];
+  function meny() {
+    var kilde = '';
+    var merke = /\/\* EVN-PAUSE v3 start \*\/[\s\S]*?\/\* EVN-PAUSE v3 slutt \*\//;
+    return fetch('/felles/ui/evn-pause-v3.js', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
+      var m = merke.exec(t); kilde = m ? m[0] : '';
+      legg('meny', 'felles', 'KM-kilde', 'KS/KM', 'Kildefila har start- og sluttmerke', !!kilde);
+      return rekke(SPILL, function (s) {
+        return fetch('/spill/' + s.id + '/', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (html) {
+          var k = merke.exec(html);
+          if (!k) { info('meny', s.id, 'KM-v3', 'Bruker EVN-PAUSE v3', /EVN-PAUSE v2/.test(html) ? 'nei, v2 (ikke innført ennå)' : 'nei'); return; }
+          legg('meny', s.id, 'KM-kopi', 'Kopikontroll', 'Kopien av EVN-PAUSE v3 er lik kilden tegn for tegn', k[0] === kilde, k[0] === kilde ? '' : 'kopien avviker fra felles/ui/evn-pause-v3.js');
+          return rekke(MENY_STORRELSER, function (st) { return menySpill(s, st); });
+        });
+      });
+    });
+  }
+  function menySpill(s, st) {
+    var f, w, d, n = st[0] + '×' + st[1], k = ':' + st[0] + 'x' + st[1], touch = st[0] < 1000, feil = [];
+    function tast(code, key, opt) { var e = new w.KeyboardEvent('keydown', Object.assign({ code: code, key: key, bubbles: true, cancelable: true }, opt || {})); (d.activeElement || d.body).dispatchEvent(e); }
+    function rekt(e) { return e.getBoundingClientRect(); }
+    function overlapp(a, b) { var x = rekt(a), y = rekt(b); return x.left < y.right - 1 && y.left < x.right - 1 && x.top < y.bottom - 1 && y.top < x.bottom - 1; }
+    function navn(e) { return '#' + (e.id || e.className || e.tagName); }
+    var meny, kort;
+    return last('/spill/' + s.id + '/', st[0], st[1]).then(function (fr) {
+      f = fr; w = f.contentWindow; d = f.contentDocument;
+      w.addEventListener('error', function (e) { feil.push(e.message || 'feil'); });
+      return vent(900);
+    }).then(function () {
+      if (touch) w.dispatchEvent(new w.PointerEvent('pointerdown', { pointerType: 'touch', bubbles: true }));
+      var b = d.getElementById(s.start); if (b) b.click();
+      return vent(500).then(function () { if (s.etterStart) s.etterStart(d); return vent(1200); });
+    }).then(function () {
+      meny = d.getElementById('evnPause'); kort = meny && meny.querySelector('.kort');
+      if (meny.classList.contains('vis')) d.getElementById('evnPauseFortsett').click();
+      return vent(400);
+    }).then(function () {
+      var mk = d.getElementById('evnPauseKnapp'), r = rekt(mk);
+      legg('meny', s.id, 'KM1-plass' + k, 'KM1', '☰ Meny er synlig oppe til venstre (' + n + ')', synlig(mk) && r.left < st[0] / 3 && r.top < 90 && /☰/.test(mk.textContent), Math.round(r.left) + ',' + Math.round(r.top));
+      legg('meny', s.id, 'KM1-stor' + k, 'KM1, UI7', '☰ Meny er minst 44 × 44 px (' + n + ')', r.width >= 44 && r.height >= 44, Math.round(r.width) + '×' + Math.round(r.height));
+      var sv = [].filter.call(d.querySelectorAll('#evnKartKnapp, #evnSekkKnapp'), synlig);
+      legg('meny', s.id, 'KM2-snarveier' + k, 'KM2', 'Høyst to snarveier, oppe til høyre (' + n + ')', sv.length <= 2 && sv.every(function (e) { var q = rekt(e); return q.right > st[0] * 2 / 3 && q.top < 90; }), sv.map(navn).join(', '));
+      var av = d.getElementById('evnAvslutt');
+      legg('meny', s.id, 'KM4-hud' + k, 'KM4', 'Avslutt vises ikke i HUD under spilling (' + n + ')', !synlig(av), synlig(av) ? 'synlig' : '');
+      // KM10/UI7: knapper i HUD og hjørnene er minst 44 px, innenfor skjermen og overlapper ikke
+      var kn = [].filter.call(d.querySelectorAll('#hud button, #hud a, .evnHjorne button'), synlig);
+      var smaa = kn.filter(function (e) { var q = rekt(e); return q.width < 44 || q.height < 44; }).map(navn);
+      var ute = kn.filter(function (e) { var q = rekt(e); return q.left < 0 || q.top < 0 || q.right > st[0] || q.bottom > st[1]; }).map(navn);
+      var ov = []; kn.forEach(function (a, i) { kn.slice(i + 1).forEach(function (b) { if (overlapp(a, b)) ov.push(navn(a) + '/' + navn(b)); }); });
+      legg('meny', s.id, 'KM10-44' + k, 'UI7', 'Knappene under spilling er minst 44 × 44 px (' + n + ')', smaa.length === 0, smaa.join(', '));
+      legg('meny', s.id, 'KM10-inne' + k, 'UI7, KS13', 'Knappene under spilling er innenfor skjermen (' + n + ')', ute.length === 0, ute.join(', '));
+      legg('meny', s.id, 'KM10-overlapp' + k, 'UI7', 'Knappene under spilling overlapper ikke (' + n + ')', ov.length === 0, ov.join(', '));
+      mk.focus(); mk.click();
+      return vent(350);
+    }).then(function () {
+      legg('meny', s.id, 'KM3-apne' + k, 'KM3, KS1', '☰ åpner menyen, og fokus er i menyen (' + n + ')', meny.classList.contains('vis') && meny.contains(d.activeElement), d.activeElement && navn(d.activeElement));
+      var ruter = [].filter.call(meny.querySelectorAll('.fortsett, .rute, .lukk'), synlig);
+      var smaa = ruter.filter(function (e) { var q = rekt(e); return q.width < 44 || q.height < 44; }).map(navn);
+      var ov = []; ruter.forEach(function (a, i) { ruter.slice(i + 1).forEach(function (b) { if (overlapp(a, b)) ov.push(navn(a) + '/' + navn(b)); }); });
+      var q = rekt(kort);
+      legg('meny', s.id, 'KM3-ruter' + k, 'KM3, UI7', 'Menyknappene er minst 44 px og overlapper ikke (' + n + ')', smaa.length === 0 && ov.length === 0, smaa.concat(ov).join(', '));
+      legg('meny', s.id, 'KM3-inne' + k, 'KM3, KS13', 'Menykortet er innenfor skjermen (' + n + ')', q.left >= 0 && q.top >= 0 && q.right <= st[0] + 0.5 && q.bottom <= st[1] + 0.5, Math.round(q.left) + ',' + Math.round(q.top) + ' – ' + Math.round(q.right) + ',' + Math.round(q.bottom));
+      var rekkef = [].map.call(meny.querySelectorAll('.rute'), function (e) { return e.id.replace('evnPause', ''); });
+      var orden = ['StyrKnapp', 'Lyd', 'Kart', 'Sekk', 'Egen', 'Innst', 'Shop', 'Garderobe', 'Avslutt'];
+      var idx = rekkef.map(function (x) { return orden.indexOf(x.replace(/\d+$/, '')); });
+      legg('meny', s.id, 'KM3-rekkefolge' + k, 'KM3', 'Menyrutene står i fast rekkefølge (' + n + ')', idx.every(function (v, i) { return v >= 0 && (i === 0 || v >= idx[i - 1]); }), rekkef.join(' · '));
+      // KS12: Tab fra siste element går til første
+      var fok = [].filter.call(meny.querySelectorAll('button, a[href]'), function (e) { return !e.hidden && e.getClientRects().length; });
+      fok[fok.length - 1].focus(); tast('Tab', 'Tab');
+      legg('meny', s.id, 'KM6-tab' + k, 'KS12', 'Tab blir i menyen (' + n + ')', d.activeElement === fok[0], navn(d.activeElement));
+      var lyd = d.getElementById('evnPauseLyd');
+      if (lyd) {
+        var for1 = lyd.getAttribute('aria-pressed'); tast('KeyL', 'l');
+        var etter = lyd.getAttribute('aria-pressed'); tast('KeyL', 'l');
+        legg('meny', s.id, 'KM5-lyd' + k, 'KS9', 'L slår lyden av og på i menyen (' + n + ')', for1 !== etter && lyd.getAttribute('aria-pressed') === for1, for1 + ' → ' + etter);
+      }
+      return vent(350).then(function () { tast('Escape', 'Escape'); return vent(250); });
+    }).then(function () {
+      legg('meny', s.id, 'KM7-esc' + k, 'KS7, KS12', 'Esc lukker menyen, og fokus går tilbake til ☰ (' + n + ')', !meny.classList.contains('vis') && d.activeElement === d.getElementById('evnPauseKnapp'), navn(d.activeElement || d.body));
+      d.activeElement.blur(); tast('KeyP', 'p');
+      return vent(350);
+    }).then(function () {
+      var a = meny.classList.contains('vis'); tast('KeyP', 'p');
+      return vent(250).then(function () { legg('meny', s.id, 'KM8-p' + k, 'KS1', 'P åpner og lukker menyen (' + n + ')', a && !meny.classList.contains('vis')); });
+    }).then(function () {
+      var km = d.getElementById('evnKart'); if (!km) return;
+      tast('KeyM', 'm');
+      return vent(300).then(function () { var a = km.classList.contains('vis'); tast('Escape', 'Escape'); return vent(250).then(function () { legg('meny', s.id, 'KM9-kart' + k, 'KS2, KS7', 'M åpner kartet, og Esc lukker det (' + n + ')', a && !km.classList.contains('vis')); }); });
+    }).then(function () {
+      d.getElementById('evnPauseKnapp').click();
+      return vent(350);
+    }).then(function () {
+      var av = d.getElementById('evnPauseAvslutt'), sp = d.getElementById('evnSporsmal');
+      var vises = synlig(av);
+      legg('meny', s.id, 'KM4-meny' + k, 'KM4', '🚪 Avslutt står i menyen (' + n + ')', vises);
+      if (!vises) return;
+      av.click();
+      return vent(250).then(function () {
+        var a = sp && sp.style.display === 'grid'; tast('Escape', 'Escape');
+        return vent(250).then(function () { legg('meny', s.id, 'KM11-avslutt' + k, 'KS10', 'Avslutt spør først, og Esc gir «Nei, spill videre» (' + n + ')', a && sp.style.display !== 'grid' && !meny.classList.contains('vis')); });
+      });
+    }).then(function () {
+      legg('meny', s.id, 'KM-feil' + k, 'K1', 'Ingen ufangede feil under menytesten (' + n + ')', feil.length === 0, feil.slice(0, 3).join(' | '));
+    }).catch(function (e) { legg('meny', s.id, 'KM-kjoring' + k, '', 'Menytesten kunne fullføres (' + n + ')', false, String(e && e.message || e)); });
   }
 
   function vis(feil) {
