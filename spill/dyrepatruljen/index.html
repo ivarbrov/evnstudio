@@ -236,7 +236,6 @@ window.EVNPause = function (cfg) {
     '#evnKart .lukk,#evnPause .lukk{width:48px;height:48px;flex:none;border-radius:14px;border:0;background:rgba(127,127,127,.28);color:inherit;font:800 22px ' + font + ';cursor:pointer}' +
     '#evnKart canvas{display:block;border-radius:10px;image-rendering:pixelated}' +
     '#evnPause .kort{padding:16px 18px;width:min(420px,100%);text-align:center;display:flex;flex-direction:column}' +
-    '#evnPause .topp{order:0}#evnPause .tider{order:1}#evnPause .fortsett{order:2}#evnPause .ruter{order:3}#evnPause .styr{order:4}#evnPause .kort>a{order:5}#evnPause .tips{order:6}' +
     '#evnPause .tider{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 8px}' +
     '#evnPause .tid{border-radius:12px;padding:6px;background:rgba(127,127,127,.18)}' +
     '#evnPause .tid b{display:block;font-size:20px;line-height:1.15}#evnPause .tid small{font-size:13px;font-weight:700;opacity:.85}' +
@@ -255,7 +254,7 @@ window.EVNPause = function (cfg) {
     '@media (max-width:400px){#evnPauseKnapp .tekst{display:none}#evnPauseKnapp{width:48px;padding:0}#evnPause .kort{padding:12px}#evnPause .ruter{grid-template-columns:repeat(3,1fr);gap:6px}#evnPause .rute{min-height:64px;font-size:13px;padding:6px 2px}}' +
     '@media (max-height:500px){#evnPause .kort{width:min(640px,100%);padding:10px 14px;display:grid;grid-template-columns:1fr auto auto;column-gap:8px;align-items:center}#evnPause .tider,#evnPause .tips{display:none}' +
     '#evnPause .topp{display:contents}#evnPause h2{font-size:22px;grid-column:1}#evnPause .kort>a{grid-column:2;grid-row:1;margin:0}#evnPause .lukk{grid-column:3;grid-row:1}' +
-    '#evnPause .fortsett,#evnPause .ruter,#evnPause .styr{grid-column:1/-1}#evnPause .fortsett{min-height:48px;margin-top:6px}#evnPause .ruter{grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}#evnPause .rute{min-height:56px;padding:4px}}';
+    '#evnPause .fortsett,#evnPause .ruter,#evnPause .styr{grid-column:1/-1}#evnPause .fortsett{min-height:48px;margin-top:6px}#evnPause .ruter{grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}#evnPause .rute{min-height:60px;padding:4px}}';
   document.head.appendChild(css);
 
   // ---------- ☰ Meny-knappen og snarveiene ----------
@@ -415,6 +414,8 @@ window.EVNPause = function (cfg) {
     $('evnPauseStyr').hidden = true; $('evnPauseStyrKnapp').setAttribute('aria-expanded', 'false');
     $('evnPauseAvslutt').hidden = !avsluttLenke() || !sporsmal();
     visLyd();
+    var saldo = $('evnPauseEcoins'), r = bak.querySelector('.ruter');
+    if (saldo && r && saldo.previousElementSibling !== r) r.after(saldo);
     bak.classList.add('vis'); synlighet(); lagreTid(); settInert(bak);
     try { $('evnPauseFortsett').focus({ preventScroll: true }); } catch (e) {}
   }
@@ -459,7 +460,8 @@ window.EVNPause = function (cfg) {
     if (venterAvslutt && sporsmalApent()) { if (k === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); nei(); } return; }
     if (kartApen) {
       e.stopImmediatePropagation();
-      if ((k === 'Escape' || k === 'KeyM') && !e.repeat && performance.now() - apnetTid > 200) { e.preventDefault(); lukkKart(false); }
+      if (k === 'KeyL' && cfg.lyd && !e.repeat) { e.preventDefault(); byttLyd(); }
+      else if ((k === 'Escape' || k === 'KeyM') && !e.repeat && performance.now() - apnetTid > 200) { e.preventDefault(); lukkKart(false); }
       return;
     }
     if (apen) {
