@@ -86,12 +86,12 @@ Kontroller UI-kravene når oppdraget gjelder grensesnitt under spilling, UI-prot
 - Vurder tekst i grensesnittet etter klarspråk bare når standarden har gjort det avsnittet gjeldende.
 - Emulert mobil er ikke ekte berøring. UI1, UI2, UI7 og UI8b–c krever i tillegg test på faktisk enhet.
 
-## Felles meny og styring (EVN UI-standard 1.1, KM1–KM12)
+## Felles meny og styring (EVN UI-standard 1.1, KM1–KM13)
 
-Kontroller når oppdraget gjelder meny, pause, HUD, styring eller felles UI-kode, eller et spill som bruker EVN-PAUSE v3. Kravene er rådgivende: brudd er «Andre avvik» eller «Anbefalte forbedringer», ikke kritiske, med mindre de også bryter EVN Game Standard (for eksempel F1, U1 eller T2).
+Kontroller når oppdraget gjelder meny, pause, HUD, styring eller felles UI-kode, eller et spill som bruker EVN-MENY 1.0. Kravene er rådgivende: brudd er «Andre avvik» eller «Anbefalte forbedringer», ikke kritiske, med mindre de også bryter EVN Game Standard (for eksempel F1, U1 eller T2).
 
-- Kjør suiten `meny` i `test/kjor.mjs` når den finnes, og ta resultatet med. Den dekker KM1–KM4, KS1, KS2, KS7, KS9, KS10, KS12, UI7 for HUD og meny, fast rekkefølge i menyen og kopikontroll mot `felles/ui/evn-pause-v3.js`.
-- **Kopi:** teksten mellom `/* EVN-PAUSE v3 start */` og `/* EVN-PAUSE v3 slutt */` skal være lik kilden tegn for tegn. Avvik rapporteres alltid.
+- Kjør suiten `meny` i `test/kjor.mjs` når den finnes, og ta resultatet med. Den dekker KM1–KM4, KM13 (fokus tilbake og Tab-rekkefølge), KS1, KS2, KS7, KS9, KS10, KS12, UI7 for HUD og meny, fast rekkefølge i menyen og kopikontroll mot `felles/ui/evn-meny-1.0.js` og `felles/ui/evn-pause-v2.js`.
+- **Kopi:** teksten mellom `/* EVN-MENY 1.0 start */` og `/* EVN-MENY 1.0 slutt */`, og mellom `/* EVN-PAUSE v2 start */` og `/* EVN-PAUSE v2 slutt */`, skal være lik kilden tegn for tegn. Avvik rapporteres alltid. Menyen skal ikke ha egen pause- eller spilletidslogikk.
 - **Plassering (KM1, KM2, KM5):** ☰ Meny oppe til venstre, status øverst i midten, høyst to snarveier oppe til høyre, i 1280×800, 375×812, 740×360 og 568×320, i både mobil- og PC-oppsett. Ingen overlapp med status, meldinger eller viktige spillobjekter. Ta skjermbilde.
 - **Meny (KM3, KM4):** fast rekkefølge, bare funksjoner spillet har, Avslutt i menyen og ikke i HUD, E-coins-saldoen vises når `ecoins.js` er lastet. Menykortet får plass uten at Fortsett havner under bretten i 568×320.
 - **Pause og fortsett:** spillet står stille mens menyen, kartet eller Avslutt-spørsmålet er åpent, og spilletiden teller ikke. Fortsett gir samme tilstand som før.
@@ -181,4 +181,4 @@ Svar NEI hvis det finnes en kritisk feil, eller hvis F1 ikke er testet. Svar JA 
 | 2.0 | 2. november 2026 | Felles versjon. Nytt: trinn 0 og linja «Grunnlag» med versjon, hash og commit. Avsnittene «Kravenes status og kontrollmetode», «Grensesnitt (UI1–UI10)» og «Ny kontroll etter retting». Regel om å stoppe testserveren. I rapportmalen er commit flyttet fra «Testet» til «Grunnlag», og «Kontroller som ikke kunne utføres» nevner E og V. Verktøy og tillatelser er uendret. | Utkast |
 | 2.1 | 2. november 2026 | Punkt 4 i fremgangsmåten kjører `test/kjor.mjs`, og rapporten får linja «Testkvittering». Ved fullt nivå skal hver gjeldende krav-ID gjøres rede for, fordi publiseringssjekken kontrollerer det. | Utkast |
 | 2.2 | 2. november 2026 | Full commit-SHA i «Grunnlag». «Testkvittering» er hele linja fra `test/kjor.mjs` (commit, versjon av test/ og resultat per suite), som sammenlignes med Actions ved PR til `main`. | Utkast |
-| 2.3 | 7. november 2026 | Avsnittet «Felles meny og styring (EVN UI-standard 1.1, KM1–KM12)» med suiten `meny`, kopikontroll av EVN-PAUSE v3, plassering, fokus, pause og uendret spillmekanikk. Rådgivende. | Utkast |
+| 2.3 | 7. november 2026 | Avsnittet «Felles meny og styring (EVN UI-standard 1.1, KM1–KM12)» med suiten `meny`, kopikontroll av EVN-MENY 1.0 og EVN-PAUSE v2, plassering, fokus, pause og uendret spillmekanikk. Rådgivende. | Utkast |

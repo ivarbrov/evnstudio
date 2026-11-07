@@ -126,6 +126,22 @@ Eierens svar på tre motstridspunkter mellom prinsippskissen («Felles mobilopps
 - Snarveier oppe til høyre: «Høyst to snarveier (Anbefalt)». Sekk og kart når spillet har dem. E-coins og innstillinger bare i menyen. UI3 og KA8 gjelder ellers uendret.
 - Status: «Øverst i midten (Anbefalt)». Endrer plasseringen i UI5.
 
+## 7. november 2026 kl. 16:25: Navn, UI10, tilgjengelighet og testendringer
+
+Beslutninger fra den voksne eieren etter gjennomgang av EVN UI-standard 1.1 og piloten i Dyrepatruljen, gjengitt i kortform. Den overordnede løsningen er godkjent.
+
+1. **Navn:** EVN-PAUSE v3 beholdes som navn på den planlagte felles pause- og spilletidsløsningen. Den nye menyen heter EVN-MENY 1.0. Menyen bruker eksisterende godkjent pauselogikk, og det skal ikke lages to konkurrerende løsninger for pause, aktiv spilletid eller dialoghåndtering. Filstrukturen bestemmes etter at eksisterende kode er undersøkt.
+2. **UI10 er godkjent som felles prinsipp i EVN-spillene:** ☰ åpner hovedmenyen, ✕ lukker den, P og Esc kan åpne og lukke den på PC, Esc lukker først en åpen underdialog, spillet pauses når hovedmenyen er åpen, og Avslutt ligger tydelig i hovedmenyen.
+3. **Tilgjengelighet før sammenslåing:** fokus tilbake til riktig menyknapp etter kart, dyrebok og verdensvalg, og logisk Tab-rekkefølge som samsvarer med den visuelle. Automatiske regresjonstester der det er hensiktsmessig.
+4. **Testendringer i PR #60:** godkjent med vilkår. Testendringene skal ikke svekke eksisterende tester, testdekning eller sikkerhetskontroller. Et særskilt administratorunntak er godkjent for disse konkrete testendringene dersom normal sammenslåing blokkeres, forutsatt dokumentert kontroll og bestått QA. Dette er ikke en generell tillatelse til å omgå publiseringssjekken.
+5. **rev-hjelper:** samordnes med menyendringene. Funksjonene fra begge løpene bevares, og ingenting overskrives eller slås sammen uten kontroll.
+6. **Pilottest:** Even tester menyen i Dyrepatruljen i omtrent ti minutter (finne menyen, pause og fortsette, lyd, kart og dyrebok, avslutte og komme tilbake til EVN Studio). Ett spørsmål om gangen etterpå.
+7. **Utrulling:** når piloten er godkjent, inngår EVN-MENY 1.0 i EVN Game Template og er standard i nye spill. Eksisterende spill oppdateres gradvis med kontroll av spillmekanikk, statistikk, lagring og mobilstyring.
+
+PR #60 publiseres ikke før tilgjengelighetsfeilene er rettet, relevante tester er kjørt og Even har godkjent piloten.
+
+Gjennomført samme dag: Det finnes ingen kode for EVN-PAUSE v3 på GitHub (grenen `feature/statistikk` ble aldri lastet opp, se `ENDRINGSLOGG.md`). Den godkjente pauselogikken i repoet er EVN-PAUSE v2. EVN-MENY 1.0 er derfor laget som et lag oppå v2, og v2 har fått kildefila `felles/ui/evn-pause-v2.js`.
+
 ## Ikke vedtatt ennå
 
 - Standard 1.2 og agent 2.0 som gjeldende versjoner (i dag utkast), med statusnivåer, kontrollmetode, klarspråkavsnittet og nye arbeidsregler i `CLAUDE.md`.
@@ -134,5 +150,4 @@ Eierens svar på tre motstridspunkter mellom prinsippskissen («Felles mobilopps
 - Felles lagret lydinnstilling på tvers av spill.
 - Hvilke KS-krav som skal bli publiseringsblokkerende (flyttes i så fall inn i EVN Game Standard).
 - EVN UI-standard 1.1 (felles meny og styring, KM1–KM12) som gjeldende versjon. Den felles retningen er godkjent som designprinsipp 7.11.2026, men ordlyden er et forslag.
-- Tolkningen av UI10 med ☰ Meny: ☰ åpner, ✕, P eller Esc lukker (motstrid 6 i standarden).
 - Eget EVN-ikonsett i stedet for emoji (Even velger).

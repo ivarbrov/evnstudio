@@ -47,7 +47,7 @@ Ingen krav i denne standarden er publiseringsblokkerende. `test/publiseringssjek
 | KS14 | Oppsettet for mobil eller PC følger siste inndata og kan bytte tilbake. | Tar i bruk UI1 | A |
 | KS15 | Uventet feil gir den felles meldingen (EVN-FEIL) med «Last inn på nytt». | Presiserer K2 | A |
 
-## Felles meny og styring (KM1–KM12, ny i 1.1)
+## Felles meny og styring (KM1–KM13, ny i 1.1)
 
 Gjelder som KS-kravene: obligatorisk for nye spill, rådgivende i kontrollen, og for eksisterende spill når trinnet som innfører kravet er godkjent og publisert. KM6–KM8 er prinsipper: avvik som spillmekanikken krever, begrunnes i spillets plan. Endringer i styring og kamera prøves av Even før de tas i bruk.
 
@@ -76,7 +76,8 @@ Prinsippskisse for 3D-spill med fri bevegelse (plassering og hierarki, ikke ferd
 | KM9 | **Felles visuelt uttrykk:** hjørneknapper 48 px med avrundede hjørner (14 px), menyruter minst 60 px høye, Fortsett i spillets knappefarge, synlig fokusring (3 px), menyer åpnes med en kort inntoning (ca. 160 ms) som slås av ved `prefers-reduced-motion`, felles bekreftelse (KS10) og feilmelding (KS15). Spillet velger farger og skrift gjennom `tema`, men ikke former, rekkefølge eller plassering. | Nytt | A, Q |
 | KM10 | **Ikoner** har samme betydning i alle spill (ikonordboka, KS6). Grafikken skal ha EVN Studios egen identitet og skal ikke kopiere Roblox. Emojiene i ikonordboka gjelder til et eget EVN-ikonsett er tegnet og godkjent av Even. | Presiserer KS6 | Q, V |
 | KM11 | **Ikke innført:** chat, byttehandel, rebirth og andre Roblox-funksjoner tas ikke inn bare fordi de finnes i referansespillet. | Nytt (avgrensning) | Q |
-| KM12 | **Felleskomponent:** KM1–KM5 og KS1–KS3, KS7–KS10 og KS12 leveres av EVN-PAUSE v3 (`felles/ui/evn-pause-v3.js`). Nye spill bruker den fra første versjon gjennom EVN Game Template. Spillet lager ikke sin egen meny, pause eller lydbryter. | Presiserer kravene til EVN Game Template | A |
+| KM12 | **Felleskomponent:** KM1–KM5 og KM13 leveres av EVN-MENY 1.0 (`felles/ui/evn-meny-1.0.js`). Menyen bygger på den felles pausen og lager ingen egen pause, spilletid eller dialoghåndtering: pause, fortsett, kart, spilletid, «Vil du avslutte?», `inert` og Tab i dialoger (KS1–KS3, KS7–KS10, KS12) kommer fra EVN-PAUSE (v2 i dag, `felles/ui/evn-pause-v2.js`). Navnet EVN-PAUSE v3 er reservert for den planlagte pausen med aktiv spilletid (ST2). Nye spill bruker begge fra første versjon gjennom EVN Game Template. Spillet lager ikke sin egen meny, pause eller lydbryter. | Presiserer kravene til EVN Game Template | A |
+| KM13 | **Fokus og Tab:** når menyen, kartet, sekken eller en annen dialog som er åpnet fra menyen eller en snarvei lukkes, går fokus tilbake til knappen som åpnet (☰ eller snarveien). Tab-rekkefølgen i menyen er den samme som leserekkefølgen på skjermen. | Presiserer KS12 og T2 | A |
 
 ### Felles taster på PC (KM8)
 
@@ -105,7 +106,7 @@ Spillspesifikke taster (for eksempel B bygg, C snik, F granat) beholdes når de 
 | 3 | UI5: status oppe til venstre | ☰ Meny oppe til venstre | Eierens valg: status øverst i midten (KM5) |
 | 4 | UI3: én inngang til alt annet | Skissen har tre snarveier (sekk, E-coins, innstillinger) | Eierens valg: høyst to (kart, sekk). KM2 |
 | 5 | KA8: saldo ikke fast i HUD | Skissen har E-coins oppe til høyre | KA8 uendret. Saldoen står i menyen |
-| 6 | UI10: menyer åpnes og lukkes med samme knapp | ☰ åpner, ✕ lukker | Tolkning: ☰ skjules mens menyen er åpen, og ✕ i menyen står der ☰ var. P og Esc virker begge veier. **Må bekreftes av eieren** |
+| 6 | UI10: menyer åpnes og lukkes med samme knapp | ☰ åpner, ✕ lukker | **Godkjent av eieren 7.11.2026:** ☰ åpner hovedmenyen, ✕ lukker den, P og Esc åpner og lukker den på PC, Esc lukker først en åpen underdialog, spillet står stille mens menyen er åpen, og Avslutt står tydelig i menyen. Gjelder alle EVN-spill |
 | 7 | Mørkeskogen: hurtigfelt 1–0 (10 våpen) | 1–5 | 1–5 er felles, 6–0 tillatt i tillegg (KM8) |
 | 8 | Era Defenders: E skyter, Era Defenders 2: E er kraftdytt | E = bruk | Avvik 13 står fortsatt. Endres bare etter Evens prøving |
 | 9 | Mørkeskogen: Hugg størst, Hopp mindre | Hopp størst nede til høyre | Prinsipp i KM6. Even prøver før endring |
@@ -169,12 +170,12 @@ Felles grensesnittkode limes inn i hvert spill som versjonerte kopier. Den laste
 
 Slik hindres avvik mellom kopiene:
 
-1. **Én kilde:** hver komponent har én kildefil i `felles/ui/`, for eksempel `felles/ui/evn-pause-v3.js`. Kilden endres bare i standardiseringsøkta.
+1. **Én kilde:** hver komponent har én kildefil i `felles/ui/`, for eksempel `felles/ui/evn-meny-1.0.js`. Kilden endres bare i standardiseringsøkta.
 2. **Ny versjon ved endring:** en endring gir nytt versjonsnummer (v3 → v4). En kopi i et spill rettes aldri på stedet.
-3. **Merkede kopier:** kopien står mellom faste merker, for eksempel `<!-- EVN-PAUSE v3 start -->` og `<!-- EVN-PAUSE v3 slutt -->`. Alt som er spillspesifikt, ligger utenfor merkene, i spillets eget oppsett.
+3. **Merkede kopier:** kopien står mellom faste merker, for eksempel `/* EVN-MENY 1.0 start */` og `/* EVN-MENY 1.0 slutt */`. Alt som er spillspesifikt, ligger utenfor merkene, i spillets eget oppsett.
 4. **Register:** tabellen under viser hvilken versjon hvert spill har. Den oppdateres når et spill publiseres med en ny versjon.
 5. **Kontroll:** et skript sammenligner hver merket kopi tegn for tegn med kilden for samme versjon. Kontrollen er rådgivende til den er godkjent (se «Hvordan kravene gjelder»). EVN Game QA rapporterer resultatet når skriptet finnes.
-6. **Overgang:** punkt 1–5 gjelder fra den første kildefila i `felles/ui/` (planlagt med EVN-PAUSE v3). Dagens kopier av v2 og v1 har bare et startmerke i JS og sammenlignes ikke før de får kildefil.
+6. **Overgang:** punkt 1–5 gjelder fra de første kildefilene i `felles/ui/` (EVN-MENY 1.0 og EVN-PAUSE v2, på pilotgrenen). Dagens kopier av v2 og v1 har bare et startmerke i JS og sammenlignes ikke før de får kildefil.
 7. **Spillsamtaler:** de flytter ikke kode inn i eller ut av merkene. Trengs en endring, meldes den til standardiseringsøkta.
 
 | Komponent | Kilde | Era | Mørkeskogen | Fossil Zoo | Dyrepatruljen | Magiske egg |
@@ -182,14 +183,16 @@ Slik hindres avvik mellom kopiene:
 | EVN-PAUSE | v2 (ingen kildefil ennå) | v2 | v2 | v2 | v2 | v2 |
 | EVN-NULLSTILL | v1 (ingen kildefil ennå) | v1 | v1 | v1 | v1 | v1 |
 | `#evnAvslutt` + `#evnSporsmal` | ingen kildefil ennå | egen `#avsluttKnapp` | ja | ja | ja | ja |
-| EVN-PAUSE v3 (☰ Meny) | `felles/ui/evn-pause-v3.js` (på pilotgrenen `ui/meny-pilot-dyrepatruljen`, ikke på `main`) | | | | pilot 0.11.6 | |
+| EVN-MENY 1.0 (☰ Meny) | `felles/ui/evn-meny-1.0.js` (på pilotgrenen `ui/meny-pilot-dyrepatruljen`, ikke på `main`) | | | | pilot 0.11.6 | |
+| EVN-PAUSE v2 (kildefil) | `felles/ui/evn-pause-v2.js` (samme sted). Lik kopien i Dyrepatruljen og Fiskespillet. Era Defenders og Mørkeskogen har en eldre v2 uten Tab-regelen (T2) | eldre v2 | eldre v2 | | merket kopi i piloten | |
+| EVN-PAUSE v3 | Reservert navn for den planlagte pausen med aktiv spilletid (ST2, `window.EVNAktivTid`). Koden ligger ikke på GitHub | | | | | |
 | EVN-FEIL, EVN-INNDATA | planlagt | | | | | |
 
 ## Innføring
 
 Prioriteringen fra vedtaket 4. november 2026 gjelder fortsatt: konkrete problemer (vei ut, safe area, tastatur og dialogfokus) rettes først. Felles meny og styring (1.1) innføres slik:
 
-1. **Pilot:** EVN-PAUSE v3 i Dyrepatruljen 0.11.6 på egen gren. Even prøver den. Ivar godkjenner eventuell publisering særskilt.
+1. **Pilot:** EVN-MENY 1.0 i Dyrepatruljen 0.11.6 på egen gren (PR #60). Even prøver den. Ivar godkjenner eventuell publisering særskilt. Når piloten er godkjent, blir EVN-MENY 1.0 en del av EVN Game Template og standard i nye spill.
 2. **Nye spill og spill under utvikling** (Matdyr-regn, Vikinglandsby, Era Defenders 2) tar v3 i bruk neste gang økta deres endrer spillet, gjennom EVN Game Template.
 3. **Publiserte spill**, ett om gangen, i anbefalt rekkefølge: Fiskespillet, Mørkeskogen, Era Defenders. Magiske egg og Fossil Zoo tas når de kommer tilbake på nettsiden.
 4. Styring, kamera, hopp og hurtigfelt (KM6–KM8) endres per spill først etter at Even har prøvd dem.
@@ -204,3 +207,4 @@ Hvert trinn får egen gren og PR, `node test/kjor.mjs` (med suiten `meny`), EVN 
 | 1.0 utkast | 4. november 2026 kl. 07 | 🚪 for Avslutt og ✕ for Lukk (kalt 1.1 i PR #18) |
 | 1.0 revidert | 4. november 2026 kl. 10 | Eierens ti beslutninger: rollen til hvert krav er gjort tydelig mot eksisterende standarder, kravene er rådgivende og ikke blokkerende, 🚪 er et foreløpig valg, felles lydnøkkel (KA9) er tatt ut, KA3 og KA5 er prinsipper, og kopikontrollen er beskrevet |
 | 1.1 (forslag) | 7. november 2026 | Felles meny og styring etter eierens beslutning 7.11.2026: KM1–KM12, felles PC-taster, motstrid som er løst, og nye ikoner (☰, ⚙️, 🛒, 👕). KS1, KS2, KS4 og KS5 er skrevet om: ☰ Meny oppe til venstre, status i midten, høyst to snarveier, Avslutt i menyen. EVN-PAUSE v3 er første kildefil i `felles/ui/`. Nummeret 1.1 var trukket tilbake 4.11.2026 uten å ha vært i bruk, og brukes nå for denne versjonen |
+| 1.1 (forslag, endret) | 7. november 2026 kl. 16 | Eierens beslutninger: menyen heter EVN-MENY 1.0 og bygger på den godkjente pauselogikken (EVN-PAUSE v2). EVN-PAUSE v3 er reservert for pausen med aktiv spilletid. UI10 med ☰ er godkjent (motstrid 6). Nytt krav KM13 om fokus og Tab |
