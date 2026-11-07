@@ -106,6 +106,26 @@ Beslutninger fra den voksne eieren, gjengitt i kortform (fullt ordlyd i økta 4.
 
 Følger: Oppføringen «Symbol for Avslutt (1.1)» over er erstattet av punkt 2, og versjonsnummeret 1.1 er trukket tilbake. Tolkningen fra 3. november («gjelder når trinnet er godkjent og publisert») er beholdt, men kravene er rådgivende til de er godkjent særskilt.
 
+## 7. november 2026: Felles meny og styring (EVN UI-standard 1.1)
+
+Beslutning fra den voksne eieren, skriftlig instruks («EVN Studio – felles standard for meny og styring»), gjengitt i kortform:
+
+1. Alle EVN-spill, eksisterende og nye, skal bruke en felles Roblox-inspirert standard for menyer, styring og navigasjon. Målet er at barn kjenner igjen grensesnittet når de bytter spill.
+2. Eksisterende EVN UI-standard, UI1–UI10 og EVN Game Template utvides. Det lages ikke en ny, konkurrerende standard. Motstridende krav identifiseres.
+3. Felles meny: ☰ Meny øverst, med Pause/Fortsett, Hjelp og styring, Innstillinger med lyd, Avslutt tilbake til evnstudio.no, E-shop og garderobe når relevant, inventar og kart når spillet har det. Ikonene har samme betydning i alle spill. Chat, byttehandel, rebirth og andre Roblox-funksjoner innføres ikke bare fordi de finnes i referansespillet.
+4. Mobil i 3D-spill med fri bevegelse: styrespak nede til venstre, hopp nede til høyre, kontekstbasert handlingsknapp til høyre, dra for kamera, hurtigfelt nede i midten når utstyr brukes, sekundære funksjoner i menyen. 2D-, strategi- og byggespill følger samme prinsipper, tilpasset mekanikken.
+5. PC, så langt det passer: WASD/piler bevegelse, mus kamera eller markering, Mellomrom hopp, E bruk, 1–5 hurtigfelt, I inventar, M kart, P/Esc pause eller meny, L lyd. Godkjente hurtigtaster og tilgjengelighetskrav kontrolleres før endring.
+6. Felles visuelt uttrykk for knapper, ikoner, menyplassering, skrift og kontrast, bekreftelser, feilmeldinger og animasjoner. Inspirasjon fra Roblox, men EVN Studios egen grafikk og ikonbruk.
+7. Felleskomponenter i EVN Game Template, så nye spill får standardfunksjonene automatisk og ingen funksjon implementeres på flere måter. Eksisterende spillmekanikk og lagring bevares. Endringer i felleskomponenter testes automatisk.
+8. Alle spill kartlegges. Én spillbar pilot i ett egnet spill før full utrulling. Ikke alle spill samtidig. Even prøver piloten.
+9. Den felles retningen er godkjent som designprinsipp. Teknisk implementering, større endringer i eksisterende spill og publisering følger den risikobaserte arbeidsflyten. Klarsignal til å oppdatere standardforslaget, kartlegge spillene og utvikle en isolert pilot. Ingen sammenslåing med `main` eller publisering uten særskilt godkjenning.
+
+Eierens svar på tre motstridspunkter mellom prinsippskissen («Felles mobiloppsett – 3D-spill») og gjeldende krav, ordrett fra valgene i økta:
+
+- Avslutt: «Bare i ☰ Meny (Anbefalt)». Avslutt ligger i menyen og på tap-, seiers- og valgskjermer, ikke i HUD under spilling. Endrer KS4 og KS5.
+- Snarveier oppe til høyre: «Høyst to snarveier (Anbefalt)». Sekk og kart når spillet har dem. E-coins og innstillinger bare i menyen. UI3 og KA8 gjelder ellers uendret.
+- Status: «Øverst i midten (Anbefalt)». Endrer plasseringen i UI5.
+
 ## Ikke vedtatt ennå
 
 - Standard 1.2 og agent 2.0 som gjeldende versjoner (i dag utkast), med statusnivåer, kontrollmetode, klarspråkavsnittet og nye arbeidsregler i `CLAUDE.md`.
@@ -113,3 +133,6 @@ Følger: Oppføringen «Symbol for Avslutt (1.1)» over er erstattet av punkt 2,
 - Evens vurdering av 🚪 og ✕.
 - Felles lagret lydinnstilling på tvers av spill.
 - Hvilke KS-krav som skal bli publiseringsblokkerende (flyttes i så fall inn i EVN Game Standard).
+- EVN UI-standard 1.1 (felles meny og styring, KM1–KM12) som gjeldende versjon. Den felles retningen er godkjent som designprinsipp 7.11.2026, men ordlyden er et forslag.
+- Tolkningen av UI10 med ☰ Meny: ☰ åpner, ✕, P eller Esc lukker (motstrid 6 i standarden).
+- Eget EVN-ikonsett i stedet for emoji (Even velger).

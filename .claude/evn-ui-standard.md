@@ -1,6 +1,6 @@
 # EVN UI-standard
 
-Versjon 1.0, revidert 4. november 2026 etter eierens beslutninger (`.claude/vedtak.md`, 4. november 2026 kl. 10:02). Plassering og kravnivå ble godkjent 3. november 2026. Den reviderte ordlyden er skrevet av Claude Code og godkjennes av eieren når PR #18 slås sammen. Den er ikke slått sammen med `main` ennå.
+Versjon 1.1 (forslag), 7. november 2026. Bygger på 1.0 (revidert 4. november 2026, `.claude/vedtak.md` kl. 10:02) og eierens beslutning om felles meny og styring 7. november 2026 (`.claude/vedtak.md`). Den felles Roblox-inspirerte retningen er godkjent som designprinsipp. Ordlyden i 1.1 er skrevet av Claude Code og godkjennes av eieren når PR #18 slås sammen. Den er ikke slått sammen med `main` ennå.
 
 Standarden gir felles betjening, navigasjon og symboler på tvers av spillene på evnstudio.no. Målet er at et barn som kan ett EVN-spill, raskt forstår de andre.
 Grunnregel: Lik funksjon har lik betjening, likt symbol og samme plass. Ulik spillmekanikk kan ha ulik betjening.
@@ -16,7 +16,7 @@ Denne standarden lager ingen egne versjoner av krav som allerede finnes. Hvert K
 
 Har et krav både en presisering og en ny del, står begge i kolonnen «Rolle».
 
-Ved motstrid gjelder EVN Game Standard. I spill der UI1–UI10 er tatt i bruk, går UI3 (én inngang ☰ til alt annet) foran KS1, KS2 og KS5. Da regnes ☰ som pauseinngangen, og 🚪 og 🗺️ står ved siden av den.
+Ved motstrid gjelder EVN Game Standard. Fra 1.1 er ☰ Meny (UI3) pauseinngangen i alle spill, og KS1, KS2, KS4 og KS5 er skrevet om etter det. Motstrid som er funnet og løst, står i avsnittet «Motstrid som er løst i 1.1».
 
 ## Hvordan kravene gjelder
 
@@ -31,11 +31,11 @@ Ingen krav i denne standarden er publiseringsblokkerende. `test/publiseringssjek
 
 | ID | Krav | Rolle | Kontroll |
 |---|---|---|---|
-| KS1 | P og Esc åpner og lukker pausen. ⏸ står i topplinjen til høyre. | Presiserer F1, UI10 | A |
-| KS2 | Spill med kart: M og 🗺️ åpner kartet, og 🗺️ står rett til venstre for ⏸. | Presiserer B2 | A |
+| KS1 | P og Esc åpner og lukker menyen, og spillet står stille. ☰ Meny står oppe til venstre (KM1). Menyen er pausen. *(Endret i 1.1: før ⏸ oppe til høyre.)* | Presiserer F1, UI10. Tar i bruk UI3 | A |
+| KS2 | Spill med kart: M og 🗺️ åpner kartet. 🗺️ er snarvei oppe til høyre (KM2) og rute i menyen. *(Endret i 1.1.)* | Presiserer B2 | A |
 | KS3 | «🎮 Slik styrer du» står i pausen og viser bare det som faktisk virker, for inndataen som brukes nå. | Presiserer U2 | Q |
-| KS4 | Vei ut: Avslutt er synlig under spilling og på alle skjermer der spilleren kan bli stående (valgskjermer, tap, seier). Avslutt bruker felles `#evnAvslutt` og `#evnSporsmal`. Symbolet er foreløpig 🚪 (se ikonordboka). | Presiserer U1 og F1. Nytt: synlig under spilling og på tap- og seiersskjermer | A, Q |
-| KS5 | Toppknapper fra høyre hjørne: Avslutt, ⏸, 🗺️, deretter spillets egne. Rekkefølgen og hjørnet er de samme på alle skjermstørrelser. | Nytt | A |
+| KS4 | Vei ut: 🚪 Avslutt står i ☰ Meny og på alle skjermer der spilleren kan bli stående (valgskjermer, tap, seier). Under spilling står Avslutt ikke i HUD. Avslutt bruker felles `#evnAvslutt` og `#evnSporsmal`. *(Endret i 1.1 etter eierens valg «Bare i ☰ Meny».)* | Presiserer U1 og F1. Nytt: tap- og seiersskjermer | A, Q |
+| KS5 | Plassering under spilling: ☰ Meny oppe til venstre, status øverst i midten og høyst to snarveier oppe til høyre (KM1, KM2, KM5). Plasseringen er den samme på alle skjermstørrelser. *(Endret i 1.1: før Avslutt, ⏸ og 🗺️ fra høyre hjørne.)* | Nytt. Endrer plasseringen i UI5 | A |
 | KS6 | Ett symbol har én betydning i alle spill (ikonordboka). | Nytt (støtter U2, U3) | Q |
 | KS7 | Esc lukker det øverste som er åpent: dialog, kart, undermeny eller valgskjerm. Er ingenting åpent, åpner Esc pausen. Alt som lukkes med Esc, har også en synlig lukkeknapp. | Presiserer UI10 | A |
 | KS8 | Esc, P, M og Tab brukes aldri til noe annet. Tab flytter bare fokus. L slår lyden av og på. | Presiserer T2 | A |
@@ -46,6 +46,71 @@ Ingen krav i denne standarden er publiseringsblokkerende. `test/publiseringssjek
 | KS13 | Faste elementer bruker `env(safe-area-inset-*)`, og viewport har `viewport-fit=cover`. | Tar i bruk UI7 (safe area) | A, E |
 | KS14 | Oppsettet for mobil eller PC følger siste inndata og kan bytte tilbake. | Tar i bruk UI1 | A |
 | KS15 | Uventet feil gir den felles meldingen (EVN-FEIL) med «Last inn på nytt». | Presiserer K2 | A |
+
+## Felles meny og styring (KM1–KM12, ny i 1.1)
+
+Gjelder som KS-kravene: obligatorisk for nye spill, rådgivende i kontrollen, og for eksisterende spill når trinnet som innfører kravet er godkjent og publisert. KM6–KM8 er prinsipper: avvik som spillmekanikken krever, begrunnes i spillets plan. Endringer i styring og kamera prøves av Even før de tas i bruk.
+
+Prinsippskisse for 3D-spill med fri bevegelse (plassering og hierarki, ikke ferdig design):
+
+```
+┌────────────────────────────────────────────┐
+│ [☰ Meny]       [status]        [🗺️] [🎒]   │
+│                                            │
+│          spillverden – dra for kamera      │
+│                                     [Bruk] │
+│  (styrespak)     [1][2][3][4][5]    (HOPP) │
+└────────────────────────────────────────────┘
+```
+
+| ID | Krav | Rolle | Kontroll |
+|---|---|---|---|
+| KM1 | **☰ Meny** står oppe til venstre innenfor safe area, med ☰ og teksten «Meny» (bare ☰ når skjermen er smalere enn 400 px). Minst 48 × 48 px. Det er den eneste inngangen til alt som ikke trengs hele tiden. Knappen skjules når en meny eller dialog er åpen. | Tar i bruk UI3. Nytt: plassering | A |
+| KM2 | **Snarveier:** høyst to, oppe til høyre: 🗺️ kart og 🎒 sekk eller 📖 samling, bare når spillet har dem. E-coins, innstillinger, lyd, verdensvalg og Avslutt er aldri snarveier. | Presiserer UI3. Eierens valg 7.11.2026 | A |
+| KM3 | **Menyinnhold i fast rekkefølge**, bare det spillet har: ▶ Fortsett (størst, først), 🎮 Slik styrer du, 🔊/🔇 Lyd, 🗺️ Kart, 🎒/📖 Sekk eller samling, spillets egne (for eksempel 🌍 Velg verden), ⚙️ Innstillinger, 🛒 E-shop, 👕 Garderobe, 🚪 Avslutt. Rutenett med ikon og kort tekst. E-coins-saldoen vises i menyen (KA8). Lukkes med ✕, Esc, P eller Fortsett. | Presiserer UI3, UI10, KS3, KS9 | A, Q |
+| KM4 | **Avslutt** står i menyen, ikke i HUD under spilling (se KS4). Avslutt går tilbake til evnstudio.no etter felles bekreftelse (KS10). | Presiserer KS4 | A |
+| KM5 | **Status** står kompakt øverst i midten: bare det spilleren må følge med på hele tiden. Midlertidige meldinger står under den. | Endrer plasseringen i UI5. Eierens valg 7.11.2026 | Q, V |
+| KM6 | **Mobil, 3D med fri bevegelse:** styrespak nede til venstre (fast eller startet i nedre venstre sone, KA3). Hopp nede til høyre og størst (minst 80 px). I spill uten hopp står hovedhandlingen der. Kontekstbasert Bruk-knapp over eller til venstre for hopp, synlig bare når den kan brukes (UI4). Hurtigfelt nede i midten når spillet bruker utstyr. Dra utenfor styrespaken og knappene for kamera (KA5). Alt annet ligger i menyen. Knapper overlapper ikke hverandre eller viktige spillobjekter (UI7, UI8b). | Presiserer UI2, UI4, KA3–KA5 | A, E, V |
+| KM7 | **2D-, strategi- og byggespill:** samme hjørner for ☰ Meny, status og snarveier (KM1, KM2, KM5). Retningsstyring nede til venstre, handlinger nede til høyre, byggepanel eller hurtigfelt nede i midten. Markering med mus eller finger der spillet bygger eller velger. Resten tilpasses mekanikken. | Nytt | Q, V |
+| KM8 | **PC-taster**, så langt det passer: se tastetabellen under. Esc, P, M, L og Tab brukes aldri til noe annet (KS8). I brukes bare til sekk eller samling. Tidligere taster for samme funksjon kan virke i tillegg til de felles (for eksempel B for dyreboka). | Presiserer KS8, KA1, KA2, KA6 | A |
+| KM9 | **Felles visuelt uttrykk:** hjørneknapper 48 px med avrundede hjørner (14 px), menyruter minst 60 px høye, Fortsett i spillets knappefarge, synlig fokusring (3 px), menyer åpnes med en kort inntoning (ca. 160 ms) som slås av ved `prefers-reduced-motion`, felles bekreftelse (KS10) og feilmelding (KS15). Spillet velger farger og skrift gjennom `tema`, men ikke former, rekkefølge eller plassering. | Nytt | A, Q |
+| KM10 | **Ikoner** har samme betydning i alle spill (ikonordboka, KS6). Grafikken skal ha EVN Studios egen identitet og skal ikke kopiere Roblox. Emojiene i ikonordboka gjelder til et eget EVN-ikonsett er tegnet og godkjent av Even. | Presiserer KS6 | Q, V |
+| KM11 | **Ikke innført:** chat, byttehandel, rebirth og andre Roblox-funksjoner tas ikke inn bare fordi de finnes i referansespillet. | Nytt (avgrensning) | Q |
+| KM12 | **Felleskomponent:** KM1–KM5 og KS1–KS3, KS7–KS10 og KS12 leveres av EVN-PAUSE v3 (`felles/ui/evn-pause-v3.js`). Nye spill bruker den fra første versjon gjennom EVN Game Template. Spillet lager ikke sin egen meny, pause eller lydbryter. | Presiserer kravene til EVN Game Template | A |
+
+### Felles taster på PC (KM8)
+
+| Tast | Funksjon | Merknad |
+|---|---|---|
+| WASD / piltaster | Bevegelse | |
+| Mus | Kamera (3D) eller markering (2D, bygg) | Kamera etter KA5 |
+| Mellomrom | Hopp. I spill uten hopp: hovedhandling | KA1 |
+| E | Bruk eller samhandle | KA1 |
+| 1–5 | Hurtigfelt | Spill med flere plasser kan bruke 6–0 i tillegg |
+| I | Sekk eller samling | KA2 |
+| M | Kart | KS2 |
+| P / Esc | Meny (pause). Esc lukker det øverste som er åpent | KS1, KS7 |
+| L | Lyd av/på, også når menyen er åpen | KS9 |
+| H | Slik styrer du (i menyen) | Nytt, bare i menyen |
+| Tab | Flytter bare fokus | KS8 |
+
+Spillspesifikke taster (for eksempel B bygg, C snik, F granat) beholdes når de ikke kolliderer med tabellen.
+
+### Motstrid som er løst i 1.1
+
+| # | Krav før 1.1 | Ny retning (instruks 7.11.2026 og skissen) | Løsning |
+|---|---|---|---|
+| 1 | KS4: Avslutt synlig i HUD under spilling | Avslutt i menyen | Eierens valg: «Bare i ☰ Meny». KS4 endret |
+| 2 | KS5: Avslutt, ⏸ og 🗺️ fra høyre hjørne | ☰ Meny øverst | KS5 endret. ⏸ som egen knapp utgår |
+| 3 | UI5: status oppe til venstre | ☰ Meny oppe til venstre | Eierens valg: status øverst i midten (KM5) |
+| 4 | UI3: én inngang til alt annet | Skissen har tre snarveier (sekk, E-coins, innstillinger) | Eierens valg: høyst to (kart, sekk). KM2 |
+| 5 | KA8: saldo ikke fast i HUD | Skissen har E-coins oppe til høyre | KA8 uendret. Saldoen står i menyen |
+| 6 | UI10: menyer åpnes og lukkes med samme knapp | ☰ åpner, ✕ lukker | Tolkning: ☰ skjules mens menyen er åpen, og ✕ i menyen står der ☰ var. P og Esc virker begge veier. **Må bekreftes av eieren** |
+| 7 | Mørkeskogen: hurtigfelt 1–0 (10 våpen) | 1–5 | 1–5 er felles, 6–0 tillatt i tillegg (KM8) |
+| 8 | Era Defenders: E skyter, Era Defenders 2: E er kraftdytt | E = bruk | Avvik 13 står fortsatt. Endres bare etter Evens prøving |
+| 9 | Mørkeskogen: Hugg størst, Hopp mindre | Hopp størst nede til høyre | Prinsipp i KM6. Even prøver før endring |
+| 10 | «Innstillinger, inkludert lyd» | Felles lagret lyd er ikke innført | Ingen konflikt: lyd lagres per spill. Lyd står som egen rute fordi den er eneste innstilling i de fleste spill |
+| 11 | `CLAUDE.md`: ikke bygg om eksisterende spill etter UI1–UI10 uten Evens prøving og voksen godkjenning | Utrulling til alle spill | Uendret. Piloten er isolert, og hvert spill tas etter godkjenning |
 
 ## Anbefalt fellesstandard (KA1–KA8)
 
@@ -79,7 +144,8 @@ Disse skal ikke gjøres like:
 
 | Symbol | Betyr | Brukes ikke til |
 |---|---|---|
-| ⏸ | Pause | |
+| ☰ | Meny (pausen) | |
+| ⏸ | Pause (brukes ikke som egen knapp fra 1.1) | |
 | 🗺️ | Kart over verdenen | Verdensvalg (bruk 🌍) |
 | 🌍 | Velg verden eller tidsepoke | Kart |
 | ✕ | Lukk meny eller dialog | Avslutt spillet (foreløpig, se under) |
@@ -91,6 +157,9 @@ Disse skal ikke gjøres like:
 | 🗑️ | Start helt på nytt (sletter) | |
 | 📖 | Samling | |
 | 🎒 | Sekk | |
+| ⚙️ | Innstillinger | Lyd (egen rute) |
+| 🛒 | E-shop | |
+| 👕 | Garderobe | |
 
 **Foreløpig designvalg:** 🚪 for Avslutt og ✕ bare for Lukk. Even vurderer valget før spillene endres. Til da beholder spillene dagens symboler, og bruddet på KS6 rapporteres som et forbedringsforslag.
 
@@ -113,14 +182,19 @@ Slik hindres avvik mellom kopiene:
 | EVN-PAUSE | v2 (ingen kildefil ennå) | v2 | v2 | v2 | v2 | v2 |
 | EVN-NULLSTILL | v1 (ingen kildefil ennå) | v1 | v1 | v1 | v1 | v1 |
 | `#evnAvslutt` + `#evnSporsmal` | ingen kildefil ennå | egen `#avsluttKnapp` | ja | ja | ja | ja |
-| EVN-PAUSE v3 | planlagt, pilot i Magiske egg | | | | | |
+| EVN-PAUSE v3 (☰ Meny) | `felles/ui/evn-pause-v3.js` (på pilotgrenen `ui/meny-pilot-dyrepatruljen`, ikke på `main`) | | | | pilot 0.11.6 | |
 | EVN-FEIL, EVN-INNDATA | planlagt | | | | | |
 
 ## Innføring
 
-Prioriteringen følger vedtaket 4. november 2026. Først rettes konkrete problemer som ikke krever ny spillopplevelse: manglende vei tilbake og ut, safe area, tastaturnavigasjon og fokus i dialoger. Deretter kommer felles pause v3, med Magiske egg som pilot. Piloten koordineres med E-coins-økta, slik at bare én økt endrer pausen og E-coins-koden om gangen. Pause v3 beholder det `ecoins/ecoins.js` er avhengig av (`#evnPause .kort` og hendelsen `evn-ecoins-klar`). Endringer i styring, kamera, styrespak og symboler kommer etter at Even har prøvd dem.
+Prioriteringen fra vedtaket 4. november 2026 gjelder fortsatt: konkrete problemer (vei ut, safe area, tastatur og dialogfokus) rettes først. Felles meny og styring (1.1) innføres slik:
 
-Oppgaver per spill, pilot og testplan står i prosjektfila `claude/evn-ui-oppgaver.md`.
+1. **Pilot:** EVN-PAUSE v3 i Dyrepatruljen 0.11.6 på egen gren. Even prøver den. Ivar godkjenner eventuell publisering særskilt.
+2. **Nye spill og spill under utvikling** (Matdyr-regn, Vikinglandsby, Era Defenders 2) tar v3 i bruk neste gang økta deres endrer spillet, gjennom EVN Game Template.
+3. **Publiserte spill**, ett om gangen, i anbefalt rekkefølge: Fiskespillet, Mørkeskogen, Era Defenders. Magiske egg og Fossil Zoo tas når de kommer tilbake på nettsiden.
+4. Styring, kamera, hopp og hurtigfelt (KM6–KM8) endres per spill først etter at Even har prøvd dem.
+
+Hvert trinn får egen gren og PR, `node test/kjor.mjs` (med suiten `meny`), EVN Game QA, Evens test og voksen godkjenning. Kartlegging, avvik per spill, risiko og testbehov står i prosjektfila `claude/evn-meny-og-styring-kartlegging.md`. Eldre oppgaver står i `claude/evn-ui-oppgaver.md`.
 
 ## Versjonshistorikk
 
@@ -129,3 +203,4 @@ Oppgaver per spill, pilot og testplan står i prosjektfila `claude/evn-ui-oppgav
 | 1.0 | 3. november 2026 | Plassering og kravnivå godkjent. Første tekst: KS1–KS15, KA1–KA9, ikonordbok, komponenter og plan |
 | 1.0 utkast | 4. november 2026 kl. 07 | 🚪 for Avslutt og ✕ for Lukk (kalt 1.1 i PR #18) |
 | 1.0 revidert | 4. november 2026 kl. 10 | Eierens ti beslutninger: rollen til hvert krav er gjort tydelig mot eksisterende standarder, kravene er rådgivende og ikke blokkerende, 🚪 er et foreløpig valg, felles lydnøkkel (KA9) er tatt ut, KA3 og KA5 er prinsipper, og kopikontrollen er beskrevet |
+| 1.1 (forslag) | 7. november 2026 | Felles meny og styring etter eierens beslutning 7.11.2026: KM1–KM12, felles PC-taster, motstrid som er løst, og nye ikoner (☰, ⚙️, 🛒, 👕). KS1, KS2, KS4 og KS5 er skrevet om: ☰ Meny oppe til venstre, status i midten, høyst to snarveier, Avslutt i menyen. EVN-PAUSE v3 er første kildefil i `felles/ui/`. Nummeret 1.1 var trukket tilbake 4.11.2026 uten å ha vært i bruk, og brukes nå for denne versjonen |
