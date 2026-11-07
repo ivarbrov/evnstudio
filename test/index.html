@@ -51,7 +51,7 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
     { navn: 'statistikk', fil: 'test/statistikk/index.html', kjor: statistikk },
     { navn: 'ui', fil: 'prototype/ui/index.html', kjor: ui },
     { navn: 'ecoins', fil: 'test/ecoins/index.html', kjor: ecoins },
-    { navn: 'meny', fil: 'felles/ui/evn-pause-v3.js', kjor: meny }
+    { navn: 'meny', fil: 'felles/ui/evn-meny-1.0.js', kjor: meny }
   ];
   var tester = [], suiter = {};
 
@@ -190,20 +190,27 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
     });
   }
 
-  // ---- Felles meny og styring (EVN UI-standard 1.1, KM1–KM12) for spill med EVN-PAUSE v3, og kopikontroll ----
-  // Rådgivende: brudd gir «varsel». Spill med v2 hoppes over (info).
+  // ---- Felles meny og styring (EVN UI-standard 1.1, KM1–KM12) for spill med EVN-MENY 1.0, og kopikontroll ----
+  // Rådgivende: brudd gir «varsel». Spill uten EVN-MENY hoppes over (info).
+  // Kopikontroll: hver merket kopi (EVN-MENY 1.0, EVN-PAUSE v2) sammenlignes tegn for tegn med kilden i felles/ui/.
+  var KOPIER = [{ navn: 'EVN-MENY 1.0', fil: 'felles/ui/evn-meny-1.0.js' }, { navn: 'EVN-PAUSE v2', fil: 'felles/ui/evn-pause-v2.js' }];
+  function merkeFor(navn) { var n = navn.replace(/[.]/g, '\\.'); return new RegExp('/\\* ' + n + ' start \\*/[\\s\\S]*?/\\* ' + n + ' slutt \\*/'); }
   var MENY_STORRELSER = [[1280, 800], [375, 812], [740, 360], [568, 320]];
   function meny() {
-    var kilde = '';
-    var merke = /\/\* EVN-PAUSE v3 start \*\/[\s\S]*?\/\* EVN-PAUSE v3 slutt \*\//;
-    return fetch('/felles/ui/evn-pause-v3.js', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
-      var m = merke.exec(t); kilde = m ? m[0] : '';
-      legg('meny', 'felles', 'KM-kilde', 'KS/KM', 'Kildefila har start- og sluttmerke', !!kilde);
+    var kilder = {};
+    return rekke(KOPIER, function (x) {
+      return fetch('/' + x.fil, { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
+        var m = merkeFor(x.navn).exec(t); kilder[x.navn] = m ? m[0] : '';
+        legg('meny', 'felles', 'KM-kilde-' + x.navn, 'KM12', 'Kildefila ' + x.fil + ' har start- og sluttmerke', !!kilder[x.navn]);
+      });
+    }).then(function () {
       return rekke(SPILL, function (s) {
         return fetch('/spill/' + s.id + '/', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (html) {
-          var k = merke.exec(html);
-          if (!k) { info('meny', s.id, 'KM-v3', 'Bruker EVN-PAUSE v3', /EVN-PAUSE v2/.test(html) ? 'nei, v2 (ikke innført ennå)' : 'nei'); return; }
-          legg('meny', s.id, 'KM-kopi', 'Kopikontroll', 'Kopien av EVN-PAUSE v3 er lik kilden tegn for tegn', k[0] === kilde, k[0] === kilde ? '' : 'kopien avviker fra felles/ui/evn-pause-v3.js');
+          KOPIER.forEach(function (x) {
+            var k = merkeFor(x.navn).exec(html);
+            if (k) legg('meny', s.id, 'KM-kopi-' + x.navn, 'KM12', 'Kopien av ' + x.navn + ' er lik kilden tegn for tegn', k[0] === kilder[x.navn], k[0] === kilder[x.navn] ? '' : 'kopien avviker fra ' + x.fil);
+          });
+          if (!merkeFor('EVN-MENY 1.0').test(html)) { info('meny', s.id, 'KM-meny', 'Bruker EVN-MENY 1.0', 'nei (ikke innført ennå)'); return; }
           return rekke(MENY_STORRELSER, function (st) { return menySpill(s, st); });
         });
       });
@@ -260,6 +267,9 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
       legg('meny', s.id, 'KM3-rekkefolge' + k, 'KM3', 'Menyrutene står i fast rekkefølge (' + n + ')', idx.every(function (v, i) { return v >= 0 && (i === 0 || v >= idx[i - 1]); }), rekkef.join(' · '));
       // KS12: Tab fra siste element går til første
       var fok = [].filter.call(meny.querySelectorAll('button, a[href]'), function (e) { return !e.hidden && e.getClientRects().length; });
+      // KM13: Tab-rekkefølgen (DOM) er den samme som leserekkefølgen på skjermen (rad for rad, venstre mot høyre)
+      var syn = fok.slice().sort(function (a, b) { var x = rekt(a), y = rekt(b); return Math.abs(x.top - y.top) > 12 ? x.top - y.top : x.left - y.left; });
+      legg('meny', s.id, 'KM13-tab' + k, 'KM13, T2', 'Tab-rekkefølgen følger det man ser (' + n + ')', syn.every(function (e, i) { return e === fok[i]; }), fok.map(navn).join(' › '));
       fok[fok.length - 1].focus(); tast('Tab', 'Tab');
       legg('meny', s.id, 'KM6-tab' + k, 'KS12', 'Tab blir i menyen (' + n + ')', d.activeElement === fok[0], navn(d.activeElement));
       var lyd = d.getElementById('evnPauseLyd');
@@ -281,6 +291,26 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
       tast('KeyM', 'm');
       return vent(300).then(function () { var a = km.classList.contains('vis'); tast('Escape', 'Escape'); return vent(250).then(function () { legg('meny', s.id, 'KM9-kart' + k, 'KS2, KS7', 'M åpner kartet, og Esc lukker det (' + n + ')', a && !km.classList.contains('vis')); }); });
     }).then(function () {
+      // KM13: fokus tilbake til ☰ etter kart åpnet fra menyen
+      if (!d.getElementById('evnPauseKart')) return;
+      d.getElementById('evnPauseKnapp').click();
+      return vent(350).then(function () { d.getElementById('evnPauseKart').click(); return vent(350); })
+        .then(function () { tast('Escape', 'Escape'); return vent(400); })
+        .then(function () { legg('meny', s.id, 'KM13-kart' + k, 'KM13, KS12', 'Fokus tilbake til ☰ etter Meny › Kart › Esc (' + n + ')', d.activeElement === d.getElementById('evnPauseKnapp'), navn(d.activeElement || d.body)); });
+    }).then(function () {
+      // KM13: fokus tilbake etter sekken eller samlingen, åpnet fra menyen og fra snarveien (spillet lukker den med Esc, KS7)
+      if (!d.getElementById('evnPauseSekk')) return;
+      d.getElementById('evnPauseKnapp').click();
+      return vent(350).then(function () { d.getElementById('evnPauseSekk').click(); return vent(400); })
+        .then(function () { tast('Escape', 'Escape'); return vent(500); })
+        .then(function () {
+          legg('meny', s.id, 'KM13-sekk' + k, 'KM13, KS12', 'Fokus tilbake til ☰ etter Meny › Sekk › Esc (' + n + ')', d.activeElement === d.getElementById('evnPauseKnapp'), navn(d.activeElement || d.body));
+          var sv = d.getElementById('evnSekkKnapp'); if (!synlig(sv)) return;
+          sv.dispatchEvent(new w.PointerEvent('pointerdown', { bubbles: true })); sv.click();
+          return vent(400).then(function () { tast('Escape', 'Escape'); return vent(500); })
+            .then(function () { legg('meny', s.id, 'KM13-snarvei' + k, 'KM13, KS12', 'Fokus tilbake til snarveien etter at sekken er lukket (' + n + ')', d.activeElement === sv, navn(d.activeElement || d.body)); });
+        });
+    }).then(function () {
       d.getElementById('evnPauseKnapp').click();
       return vent(350);
     }).then(function () {
@@ -291,7 +321,10 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
       av.click();
       return vent(250).then(function () {
         var a = sp && sp.style.display === 'grid'; tast('Escape', 'Escape');
-        return vent(250).then(function () { legg('meny', s.id, 'KM11-avslutt' + k, 'KS10', 'Avslutt spør først, og Esc gir «Nei, spill videre» (' + n + ')', a && sp.style.display !== 'grid' && !meny.classList.contains('vis')); });
+        return vent(350).then(function () {
+          legg('meny', s.id, 'KM11-avslutt' + k, 'KS10', 'Avslutt spør først, og Esc gir «Nei, spill videre» (' + n + ')', a && sp.style.display !== 'grid' && !meny.classList.contains('vis'));
+          legg('meny', s.id, 'KM13-avslutt' + k, 'KM13, KS12', 'Fokus tilbake til ☰ etter Avslutt › Nei (' + n + ')', d.activeElement === d.getElementById('evnPauseKnapp'), navn(d.activeElement || d.body));
+        });
       });
     }).then(function () {
       legg('meny', s.id, 'KM-feil' + k, 'K1', 'Ingen ufangede feil under menytesten (' + n + ')', feil.length === 0, feil.slice(0, 3).join(' | '));
