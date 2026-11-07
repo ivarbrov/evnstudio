@@ -190,7 +190,7 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
     });
   }
 
-  // ---- Felles meny og styring (EVN UI-standard 1.1, KM1–KM12) for spill med EVN-MENY 1.0, og kopikontroll ----
+  // ---- Felles meny og styring (EVN UI-standard 1.1, KM1–KM13) for spill med EVN-MENY 1.0, og kopikontroll ----
   // Rådgivende: brudd gir «varsel». Spill uten EVN-MENY hoppes over (info).
   // Kopikontroll: hver merket kopi (EVN-MENY 1.0, EVN-PAUSE v2) sammenlignes tegn for tegn med kilden i felles/ui/.
   var KOPIER = [{ navn: 'EVN-MENY 1.0', fil: 'felles/ui/evn-meny-1.0.js' }, { navn: 'EVN-PAUSE v2', fil: 'felles/ui/evn-pause-v2.js' }];
@@ -211,6 +211,10 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
             if (k) legg('meny', s.id, 'KM-kopi-' + x.navn, 'KM12', 'Kopien av ' + x.navn + ' er lik kilden tegn for tegn', k[0] === kilder[x.navn], k[0] === kilder[x.navn] ? '' : 'kopien avviker fra ' + x.fil);
           });
           if (!merkeFor('EVN-MENY 1.0').test(html)) { info('meny', s.id, 'KM-meny', 'Bruker EVN-MENY 1.0', 'nei (ikke innført ennå)'); return; }
+          // KM12: menyen har ingen egen pause. Spillet må ha en merket kopi av den godkjente pausen (EVN-PAUSE v2) foran menyen.
+          var pm = merkeFor('EVN-PAUSE v2').exec(html), mm = merkeFor('EVN-MENY 1.0').exec(html);
+          legg('meny', s.id, 'KM12-pause', 'KM12', 'Spillet med EVN-MENY 1.0 har en merket kopi av EVN-PAUSE v2 foran menyen', !!pm && pm.index < mm.index,
+            !pm ? 'mangler merket EVN-PAUSE v2 (eller merkene er ødelagt)' : pm.index > mm.index ? 'EVN-PAUSE v2 står etter menyen' : '');
           return rekke(MENY_STORRELSER, function (st) { return menySpill(s, st); });
         });
       });
