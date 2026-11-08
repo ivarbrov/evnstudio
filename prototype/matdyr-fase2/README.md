@@ -31,7 +31,7 @@ Ingen lagring, E-coins eller statistikk ennå.
 
 «🎮 Spill» er nå en spillbar prototype med egen lagring (`evn-matdyr-gard-proto`). Produksjonslagringen leses ikke. Prototypen har ingen E-coins og ingen statistikk.
 
-- **Matdyrregn:** samme ID-er, sjeldenheter, priser og inntekter som produksjonsspillet (`matdyrdata.js`), med korte navn (B5). Bestillingsregnet er 15 %. I 🧪-menyen kan det settes til 0, 10 eller 15 %.
+- **Matdyrregn:** matdyrene regner ned på enga foran gården, aldri inne på tunet. Gjerdet har en port med sti ut til enga. Samme ID-er, sjeldenheter, priser og inntekter som produksjonsspillet (`matdyrdata.js`), med korte navn (B5). Bestillingsregnet er 15 %. I 🧪-menyen kan det settes til 0, 10 eller 15 %.
 - **Figurer:** Donutku, Burgersau, Pizzaskilpadde og Iskatt har ferdige 3D-figurer. Alle andre vises som en kule i sjeldenhetsfargen med dyr og mat over.
 - **Ta med og sett inn:**
   - Gå bort til et matdyr og trykk E eller handlingsknappen.

@@ -83,7 +83,7 @@
   function oppdaterDyr() { I.settGjennom(99); fyllDyr(); I.forberedGjennom(); I.settGjennom(Math.max(0, I.sp.etasje)); }
   function byggSpillGard(beholdRobot) {
     const r0 = I.robot(), pos = beholdRobot && r0 ? r0.position.clone() : null, rot = r0 ? r0.rotation.y : 0, gd = I.gd;
-    gd.niva = visNiva(); gd.neste = false; gd.gjennom = false; gd.aapne = plasserApne();
+    gd.niva = visNiva(); gd.neste = false; gd.gjennom = false; gd.aapne = plasserApne(); gd.eng = eng();
     gd.tegnDyr = (g, pl, ap) => { dyrG = new T.Group(); g.add(dyrG); plasserNa = pl; aapneNa = ap; fyllDyr(); };
     I.byggGard(); I.byggVegger(); I.forberedGjennom(); I.sp.etasje = -1;
     if (pos) { I.robot().position.copy(pos); I.robot().rotation.y = rot; }
@@ -92,15 +92,10 @@
   // =================== Matdyrregnet ===================
   const feltG = new T.Group(); I.scene.add(feltG); feltG.visible = false;
   const felt = []; let nesteRegn = 1;
-  const BYGG = [[-21.5, -6, 6], [-17.5, 6.5, 3], [16, 10, 3], [18, -9, 3], [-6, 15, 3.5], [-24, 14, 3]];
-  function iFeltet(x, z) {
-    const n = visNiva(), rx = n >= 2 ? 27 : 20, rz = n >= 2 ? 19.5 : 14;
-    if ((x / rx) ** 2 + (z / rz) ** 2 > 1) return false;
-    const bx = n >= 3 ? I.HX + 5.3 : I.HX + 2.5, bz = n >= 3 ? I.HZ + 5.7 : I.HZ + 2.5;
-    if (Math.abs(x) < bx && Math.abs(z) < bz) return false;
-    return !BYGG.some(([bx2, bz2, r]) => (x - bx2) ** 2 + (z - bz2) ** 2 < r * r);
-  }
-  function tilfeldigPunkt() { for (let k = 0; k < 80; k++) { const x = (Math.random() * 2 - 1) * 27, z = (Math.random() * 2 - 1) * 19.5; if (iFeltet(x, z)) return [x, z]; } return [I.A + 3, I.HZ + 9]; }
+  // Matdyrene regner ned på enga foran gården, aldri inne på tunet
+  const eng = () => { const d = visNiva() >= 2 ? 22 : 16; return { cx: 0, cz: d + 16, rx: 26, rz: 12 }; };
+  function iFeltet(x, z) { const e = eng(); return ((x - e.cx) / (e.rx - 1.5)) ** 2 + ((z - e.cz) / (e.rz - 1.5)) ** 2 < 1; }
+  function tilfeldigPunkt() { const e = eng(); for (let k = 0; k < 80; k++) { const x = e.cx + (Math.random() * 2 - 1) * e.rx, z = e.cz + (Math.random() * 2 - 1) * e.rz; if (iFeltet(x, z)) return [x, z]; } return [e.cx, e.cz]; }
   // Sjeldenheten trekkes med de vanlige vektene. Med bestillingsregn trekkes matdyret deretter blant artene neste gårdsnivå krever.
   function trekk() {
     const tot = R.reduce((s, r) => s + r.w, 0); let x = Math.random() * tot, r = 0;
