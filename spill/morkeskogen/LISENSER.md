@@ -2,7 +2,7 @@
 
 | Ressurs | Fil | Opphav | Lisens | Status |
 |---|---|---|---|---|
-| Helten (RobotExpressive), modell og animasjoner uendret, hovedfarge gul | `modeller/helt-robot.glb` | Tomás Laulhé (Quaternius), endret av Don McCurdy, fra three.js-eksemplene | CC0 1.0 | OK (beslutning 1.11.2026: roboten er helten) |
+| Helten (RobotExpressive) v2: ny geometri fra Blender (avfasede kanter, runde øyne, færre deler), skjelett og animasjoner uendret, hovedfarge gul | `modeller/helt-robot-v2.glb` (i bruk fra 2.0.3). Originalen `modeller/helt-robot.glb` er beholdt uendret | Tomás Laulhé (Quaternius), endret av Don McCurdy, fra three.js-eksemplene | CC0 1.0 | OK (beslutning 1.11.2026: roboten er helten) |
 | three.js r187 | `three-r187.global.js` | three.js-forfatterne | MIT (`three-r187-LICENSE.txt`) | OK |
 | GLTFLoader (i `grafikk2.js`) | `grafikk2.js` | three.js-forfatterne | MIT | OK |
 

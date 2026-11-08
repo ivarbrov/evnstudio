@@ -34,16 +34,13 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
         var v = d.querySelector('.verden.aapen');   // Start viser verdensvalget; velg første åpne verden
         if (v) v.click();
       } },
+    { id: 'fiskespillet', start: 'startBtn' },
     { id: 'magiske-egg', start: 'startBtn' },
-    { id: 'vikinglandsby', start: 'startBtn' },
-    { id: 'fossilspillet', start: 'startBtn', etterStart: function (d) {
-        var b = [].find.call(d.querySelectorAll('.lvcard button'), function (x) { return !x.disabled; });
-        if (b) b.click();
-      } }
+    { id: 'vikinglandsby', start: 'startBtn' }
   ];
   // Funn som står under «Kjente funn» i standarden. De gir «kjent» i stedet for «feil», og «rettet» når de er borte.
   var KJENTE = {
-    'fossilspillet/T3-zoom': 'Kjent funn i standarden: user-scalable=no sperrer zoom'
+    // Fossil Zoo (T3-zoom) er tatt av nettsiden 5.11.2026. Magiske egg er tilbake 6.11.2026.
     // Dyrepatruljen: funnene U1-versjon og F1-pause fra v0.10.3 er rettet i v0.10.12.
   };
   // Suiter for krav som ennå ikke er gjeldende. Brudd gir «varsel» og stopper ingenting.

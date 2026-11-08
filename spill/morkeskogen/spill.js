@@ -75,6 +75,18 @@ const WUP_MAX = 3, wupCost = L => ({ iron: 2 + L * 2, stone: 2 * L });          
 // Heltprofil: våpen, valgt våpen, oppgraderinger, XP og oppdrag. Lagres i nettleseren og følger helten fra spill til spill.
 const SAVE_KEY = 'mork3d.helt', HERO_NEW = () => ({ v: 1, owned: ['oks'], sel: 'oks', wlvl: {}, xp: 0, qdone: [], qprog: {} });
 let hero = (() => { try { const h = JSON.parse(localStorage.getItem(SAVE_KEY)); if (h && h.v === 1 && Array.isArray(h.owned)) return Object.assign(HERO_NEW(), h); } catch (e) {} return HERO_NEW(); })();
+// 2.0.5 (F3): rens hvert felt etter type, så en lagring med feil innhold ikke stopper spillet. Er lagringen uleselig, beholdes en kopi.
+(() => { const obj = v => v && typeof v === 'object' && !Array.isArray(v);
+  try { const raw = localStorage.getItem(SAVE_KEY); const ok = (() => { try { const h = JSON.parse(raw); return h && h.v === 1 && Array.isArray(h.owned); } catch (e) { return false; } })();
+    if (raw && !ok && !localStorage.getItem(SAVE_KEY + '.kopi')) localStorage.setItem(SAVE_KEY + '.kopi', raw); } catch (e) {}
+  hero.owned = Array.isArray(hero.owned) ? hero.owned.filter(id => typeof id === 'string') : ['oks'];
+  if (!Array.isArray(hero.qdone)) hero.qdone = []; hero.qdone = hero.qdone.filter(q => typeof q === 'string');
+  if (!obj(hero.qprog)) hero.qprog = {}; if (!obj(hero.wlvl)) hero.wlvl = {};
+  for (const k of Object.keys(hero.wlvl)) { const n = hero.wlvl[k]; if (typeof n !== 'number' || !(n >= 1)) delete hero.wlvl[k]; else hero.wlvl[k] = Math.min(WUP_MAX + 1, Math.floor(n)); }
+  for (const k of Object.keys(hero.qprog)) if (typeof hero.qprog[k] !== 'number' || !isFinite(hero.qprog[k])) delete hero.qprog[k];
+  if (typeof hero.xp !== 'number' || !isFinite(hero.xp) || hero.xp < 0) hero.xp = 0;
+  if (typeof hero.sel !== 'string') hero.sel = 'oks';
+  if ('fishBook' in hero && !obj(hero.fishBook)) delete hero.fishBook; })();
 hero.owned = hero.owned.filter(id => WEAPONS[id]); if (!hero.owned.includes('oks')) hero.owned.unshift('oks');
 function saveHero() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(hero)); } catch (e) {} }
 // Nivå: 100 XP til nivå 2, deretter 50 mer for hvert nivå. Maks nivå 10.
@@ -511,6 +523,9 @@ const TRACK = [];                                                               
   for (let i = 1; i < TRACK.length; i++) TRACK[i][2] = TRACK[i - 1][2] + Math.hypot(TRACK[i][0] - TRACK[i - 1][0], TRACK[i][1] - TRACK[i - 1][1]);
 })();
 const TRACK_LEN = TRACK[TRACK.length - 1][2], ST_A = 150, ST_B = TRACK_LEN - 150;
+// 2.0.6: ved stasjon A stopper lokomotivet lenger fram, så hele toget står på sporet ved perrongen. Før sto vogna (350 bak lokomotivet)
+// «før starten» av sporet og ble klemt sammen med kullvogna, så du satt utenfor vogna og vogna dukket først opp når toget kjørte.
+const ST_A_TOG = Math.max(ST_A, 175 * 2 + 40);
 // Toget og stasjonene er laget i dobbel størrelse (v4.8), så Even-figuren får plass i vogna
 const TRAIN_K = 2, CAR_TENDER = 78 * TRAIN_K, CAR_COACH = 175 * TRAIN_K;
 // Perrongen er et gulv du kan gå på
@@ -590,7 +605,7 @@ const TOWN_NPCS = [
 function newTown() {
   return { found: false, visited: false, sheriffTalked: false, sheriffDone: hero.qdone.includes('sheriff'), talkI: {},
     bandits: [[-250, -40], [260, 120], [-60, 360]].map(([x, y], i) => ({ x: tX(x), y: tY(y), hx: tX(x), hy: tY(y), hp: 6, max: 6, hit: 0, gone: false, active: false, walk: 0, ang: 0, i, said: 0 })),
-    train: { s: ST_A, v: 0, st: 'wait', at: 'A', t: 0, dir: 1, called: false, chug: 0 } };
+    train: { s: ST_A_TOG, v: 0, st: 'wait', at: 'A', t: 0, dir: 1, called: false, chug: 0 } };
 }
 // ---------- Logikk ----------
 function updateTrainTown(dt) {
@@ -600,7 +615,7 @@ function updateTrainTown(dt) {
   if (!hero.qdone.includes('stasjon') && dist(p.x, p.y, stA.x, stA.y) < 260) { questAdd('stasjon'); toast('🚉 Du fant Mørkeskogen stasjon! Gå om bord når toget står ved perrongen.'); }
   if (!T.found && townNear(p.x, p.y, 700)) { T.found = true; if (!g.ride) toast('🤠 Du fant Kaktusbyen! Snakk med sheriffen.'); }
   // toget: vent ved stasjonen, kjør mykt fram til den andre, brems og stopp ved perrongen
-  const target = tr.at === 'A' ? ST_B : ST_A;
+  const target = tr.at === 'A' ? ST_B : ST_A_TOG;
   if (tr.st === 'wait') {
     tr.t += dt;
     const other = tr.at === 'A' ? stB : stA;
@@ -616,7 +631,7 @@ function updateTrainTown(dt) {
     if (left < 0.5) {                                                                        // fram!
       tr.s = target; tr.v = 0; tr.st = 'wait'; tr.at = tr.at === 'A' ? 'B' : 'A'; tr.t = 0; sfx('whistle');
       if (g.ride) {                                                                           // gå av på perrongen
-        const st = trackPos(tr.s); g.ride = null;
+        const st = trackPos(tr.at === 'A' ? tr.s - CAR_COACH : tr.s); g.ride = null;   // gå av ved vogna (A) så «Gå om bord» vises med en gang
         p.x = st.x + st.ty * 40 * TRAIN_K; p.y = st.y - st.tx * 40 * TRAIN_K; p.h = undefined; p.z = 0;
         if (tr.at === 'B') { questAdd('cowboy'); toast('🤠 Velkommen til Kaktusbyen! Sheriffen trenger hjelp – snakk med ham.'); T.visited = true; }
         else toast('🌲 Tilbake i Mørkeskogen!');
@@ -735,8 +750,9 @@ function makeCoach() {
   G.add(mk(GEO.box, m.plankB, 32, 3, 96, 0, 13, 0), mk(GEO.box, m.black, 26, 6, 92, 0, 9, 0));
   for (const sx of [-1, 1]) G.add(mk(GEO.box, m.red, 2, 10, 96, sx * 15.5, 19, 0));                 // lav vegg
   for (const z of [-46, 46]) G.add(mk(GEO.box, m.red, 32, 10, 2, 0, 19, z));
-  for (const [x, z] of [[-14, -45], [14, -45], [-14, 45], [14, 45], [-14, 0], [14, 0]]) G.add(mk(GEO.cyl, m.brass, 1, 34, 1, x, 31, z, false));
-  G.add(mk(GEO.box, m.green, 36, 2.5, 100, 0, 49, 0), mk(GEO.box, m.brass, 36.6, 1, 100.6, 0, 47.6, 0, false));
+  // 2.0.6: taket er hevet 14 (før 49), så roboten sitter med hodet under taket
+  for (const [x, z] of [[-14, -45], [14, -45], [-14, 45], [14, 45], [-14, 0], [14, 0]]) G.add(mk(GEO.cyl, m.brass, 1, 48, 1, x, 38, z, false));
+  G.add(mk(GEO.box, m.green, 36, 2.5, 100, 0, 63, 0), mk(GEO.box, m.brass, 36.6, 1, 100.6, 0, 61.6, 0, false));
   for (let z = -36; z <= 36; z += 18) for (const sx of [-1, 1]) G.add(mk(GEO.box, m.seat, 11, 4, 9, sx * 7.5, 17, z), mk(GEO.box, m.seat, 11, 9, 2, sx * 7.5, 21, z - 4.5));
   for (const z of [-32, 32]) for (const sx of [-1, 1]) { const w = new THREE.Group(); w.position.set(sx * 14, 6, z); G.add(w); const tire = mk(GEO.cyl, m.black, 6, 3, 6, 0, 0, 0); tire.rotation.z = Math.PI / 2; w.add(tire); wheels.push(w); }
   G.userData = { wheels }; return G;
@@ -942,7 +958,7 @@ function updateLasso(dt) {
   if (!F.done && F.t >= F.dur) {
     F.done = true; const a = F.a;
     if (a && g.animals.includes(a) && dist(g.p.x, g.p.y, a.x, a.y) < WEAPONS.lasso.range + 80) {
-      const A = ANIMALS[a.type]; a.tame = true; a.flee = 0; a.hp = A.hp; a.heartT = 0;
+      const A = ANIMALS[a.type]; a.tame = true; a.flee = 0; a.hp = A.hp; a.max = A.hp; a.heartT = 0;
       g.pets = (g.pets || []).filter(q => g.animals.includes(q) && q.tame); g.pets.push(a);
       if (g.pets.length > PET_MAX) { const old = g.pets.shift(); old.tame = false; old.flee = 2; floatText(old.x, old.y - 40, 'Ha det! 👋'); }
       burst(a.x, a.y - 20, '#ff7aa8', 16); floatText(a.x, a.y - 50, `❤️ Du fanget ${ANIMAL_NAVN[a.type] || a.type}!`); sfx('sparkle');
@@ -1011,6 +1027,9 @@ function renderLasso(dt, time) {
 // Verden lages fra et fast «frø», så den blir lik hver gang. Det du bygger (hytter, lykter, verksted, senger) lagres og står der neste gang.
 const WORLD_KEY = 'mork3d.verden';
 let world = (() => { try { const w = JSON.parse(localStorage.getItem(WORLD_KEY)); if (w && w.v === 1) return w; } catch (e) {} return null; })();
+// 2.0.5 (F3): et frø som ikke er et tall gir ny verden; bygninger uten gyldig type eller posisjon hoppes over (som før for ukjent type).
+if (world && (typeof world.seed !== 'number' || !isFinite(world.seed))) world = null;
+if (world) world.buildings = Array.isArray(world.buildings) ? world.buildings.filter(b => b && typeof b.type === 'string' && isFinite(b.x) && isFinite(b.y)) : [];
 if (!world) world = { v: 1, seed: (Math.random() * 1e9) | 0, buildings: [] };
 function saveWorld() { try { world.buildings = g.buildings.map(b => ({ type: b.type, x: Math.round(b.x), y: Math.round(b.y) })); localStorage.setItem(WORLD_KEY, JSON.stringify(world)); } catch (e) {} }
 function newGame() {
@@ -1083,12 +1102,13 @@ function newGameGen() {
   for (const B of bridges) if (!B.lava) {
     const sgn = Math.sign((FX - B.x) * B.nx + (FY - B.y) * B.ny) || 1;
     const near1 = [B.x + B.nx * 75 * sgn, B.y + B.ny * 75 * sgn], far1 = [B.x - B.nx * 75 * sgn, B.y - B.ny * 75 * sgn];
-    paths.push(makePath(FX, FY + 60, near1[0], near1[1]));
-    paths.push(makePath(FX - 40, FY - 20, GHX + 10, GHY + GH_HY + 120));                   // sti til spøkelseshuset
+    { const bAnn = biomeAt(B.x - B.nx * 500 * sgn, B.y - B.ny * 500 * sgn), Bi = BIOMES[bAnn] || BIOMES.skog;   // 2.0.6: skiltet viser hva som er på andre siden av brua
+      const P0 = makePath(FX, FY + 60, near1[0], near1[1]); P0.mål = bAnn === 'skog' ? { icon: '🌉', n: 'Brua' } : { icon: Bi.icon, n: Bi.n }; paths.push(P0); }
+    { const P1 = makePath(FX - 40, FY - 20, GHX + 10, GHY + GH_HY + 120); P1.mål = { icon: '👻', n: 'Spøkelseshuset' }; paths.push(P1); }   // sti til spøkelseshuset
     const across = cabins.filter(c => fireSide(c.y) !== fireSide(FY)).sort((a, b) => dist(a.x, a.y, far1[0], far1[1]) - dist(b.x, b.y, far1[0], far1[1]))[0];
-    if (across && dist(across.x, across.y, far1[0], far1[1]) < 2600) paths.push(makePath(far1[0], far1[1], across.x - 8, across.y + 45));
+    if (across && dist(across.x, across.y, far1[0], far1[1]) < 2600) { const P2 = makePath(far1[0], far1[1], across.x - 8, across.y + 45); P2.mål = { icon: '🛖', n: 'Hytta' }; paths.push(P2); }
   }
-  for (const c of cabins) if (fireSide(c.y) === fireSide(FY) && dist(c.x, c.y, FX, FY) < 3200 * WS) paths.push(makePath(FX, FY + 60, c.x - 8, c.y + 45));
+  for (const c of cabins) if (fireSide(c.y) === fireSide(FY) && dist(c.x, c.y, FX, FY) < 3200 * WS) { const P3 = makePath(FX, FY + 60, c.x - 8, c.y + 45); P3.mål = { icon: '🛖', n: 'Hytta' }; paths.push(P3); }
   for (const P of paths) P.box = [Math.min(...P.map(q => q[0])), Math.max(...P.map(q => q[0])), Math.min(...P.map(q => q[1])), Math.max(...P.map(q => q[1]))];
   const pathNear = (x, y, d) => paths.some(P => { if (x < P.box[0] - d || x > P.box[1] + d || y < P.box[2] - d || y > P.box[3] + d) return false; for (let i = 0; i < P.length - 1; i++) { const [ax, ay] = P[i], [bx, by] = P[i + 1], dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy))); if (Math.hypot(x - ax - dx * t, y - ay - dy * t) < d) return true; } return false; });
   const nearBridge = (x, y, d = 110) => bridges.some(B => dist(x, y, B.x, B.y) < d) || cabins.some(c => dist(x, y, c.x, c.y) < 120) || dist(x, y, VX, VY) < VR + 90 || pathNear(x, y, 26);
@@ -1172,7 +1192,8 @@ function spawnAnimal(minPlayer) {
     const x = rand(80, W - 80), y = rand(80, H - 80), b = biomeAt(x, y);
     if (b !== 'lava' && dist(x, y, FX, FY) > 340 && waterDist(x, y) > 50 && !g.bases.some(B => dist(x, y, B.x, B.y) < 400) && !dcNear(x, y, 800) && pondDist(x, y) > 80 && dist(x, y, g.p.x, g.p.y) > minPlayer) {
       const mix = MIXES[b], type = mix[Math.floor(Math.random() * mix.length)];
-      g.animals.push({ type, x, y, hp: ANIMALS[type].hp, dir: rand(0, 6.28), turn: rand(1, 3), idle: false, flee: 0, face: 1, hit: 0, walk: 0 });
+      if (ANIMALS[type].hostile && dist(x, y, FX, FY) < LEIR_SPAWN) continue;   // 2.0.6: ingen rovdyr nær leiren
+      const liv = rovLiv(type); g.animals.push({ type, x, y, hp: liv, max: liv, dir: rand(0, 6.28), turn: rand(1, 3), idle: false, flee: 0, face: 1, hit: 0, walk: 0 });
       return;
     }
   }
@@ -1421,6 +1442,14 @@ const DEV_TIMES = { morgen: SUNRISE_P + 14, middag: (SUNRISE_P + SUNSET_P) / 2, 
 const FIRE_MAX = 10;
 const fireScale = () => 1 + (g.fireLvl - 1) * 0.07;
 const fireCost = L => ({ wood: 3 * L + 2, stone: 2 * L });
+// 2.0.6 (Ivars ønske): trygg leir. Så lenge bålet brenner, angriper ikke ville dyr innenfor LEIR_R fra bålet, og de går ut av leiren.
+// Rovdyr dukker heller ikke opp nærmere bålet enn LEIR_SPAWN. Nattmonstrene følger fortsatt lyset som før.
+const LEIR_R = 500, LEIR_SPAWN = 760;
+// 2.0.6 (Ivars ønske): rovdyrene er svakere de første nettene og blir sterkere for hver natt du overlever.
+// Skade: 40 % første dag, så +15 % per natt, full styrke fra natt 4. Liv ved fødsel: 50 % første dag, +12,5 % per natt, fullt fra natt 4.
+const rovSkade = () => Math.min(1, 0.4 + 0.15 * g.nights);
+const rovLiv = type => ANIMALS[type].hostile ? Math.max(2, Math.round(ANIMALS[type].hp * Math.min(1, 0.5 + 0.125 * g.nights))) : ANIMALS[type].hp;
+const iLeir = (x, y) => g.fuel > 0 && dist(x, y, FX, FY) < LEIR_R;
 const lightR = () => g.fuel > 0 ? (70 + g.fuel * 2.5) * (1 + (g.fireLvl - 1) * 0.09) : 0;
 
 let toastTimer = 0;
@@ -1992,7 +2021,7 @@ function update(dt) {
 
   const L = lights();
   // Dyr
-  const playerSafe = !!inAnyLight(p.x, p.y, L);
+  const playerSafe = !!inAnyLight(p.x, p.y, L) || iLeir(p.x, p.y);   // 2.0.6: også trygt i leiren rundt bålet
   for (const a of g.animals) {
     const A = ANIMALS[a.type];
     a.hit = Math.max(0, a.hit - dt); a.flee = Math.max(0, a.flee - dt);
@@ -2000,6 +2029,7 @@ function update(dt) {
     const dp = dist(a.x, a.y, p.x, p.y), lit = inAnyLight(a.x, a.y, L, 10);
     let vx = 0, vy = 0, sp = 0;
     if (lit) { vx = a.x - lit.x; vy = a.y - lit.y; sp = A.run * 0.8; }          // dyr er redde for lys
+    else if (A.hostile && iLeir(a.x, a.y)) { vx = a.x - FX; vy = a.y - FY; sp = A.sp; }   // 2.0.6: rovdyr går rolig ut av leiren
     else if (A.hostile && dp < A.aggro && !playerSafe) { vx = p.x - a.x; vy = p.y - a.y; sp = A.run; } // angriper
     else if (a.flee > 0 || (!A.hostile && dp < 140)) { vx = a.x - p.x; vy = a.y - p.y; sp = A.run; } // flykter
     else {
@@ -2015,7 +2045,7 @@ function update(dt) {
     }
     ghPush(a, 10); townPush(a, 14); dcSolid(a, 16); pondPush(a, 12);
     if (a.x < 30 || a.x > W - 30 || a.y < 30 || a.y > H - 30) { a.dir += Math.PI; a.x = clamp(a.x, 30, W - 30); a.y = clamp(a.y, 30, H - 30); }
-    if (A.hostile && dp < 22 * A.size + 10 && p.z < 25) { g.hp -= A.dmg * dt; p.hurt = 1; g.cause = 'animal'; g.flash = 0.25; }
+    if (A.hostile && dp < 22 * A.size + 10 && p.z < 25 && !iLeir(p.x, p.y)) { g.hp -= A.dmg * rovSkade() * dt;   /* 2.0.6: ingen skade i leiren */ p.hurt = 1; g.cause = 'animal'; g.flash = 0.25; }
   }
   if (g.animals.length < ANIMAL_COUNT && (g.aspawn -= dt) <= 0) { spawnAnimal(600); g.aspawn = 12; }
 
@@ -4052,6 +4082,7 @@ function dcSetup() {
   const far = (o, r) => Math.max(Math.abs(o.x - DCX), Math.abs(o.y - DCY)) > r;
   const P = dcPath(FX + 150, FY + 30, DCX, DCY + DC_HX + 80);
   P.box = [Math.min(...P.map(q => q[0])), Math.max(...P.map(q => q[0])), Math.min(...P.map(q => q[1])), Math.max(...P.map(q => q[1]))];
+  P.mål = { icon: '🦖', n: 'Dinoverdenen' };   // 2.0.6: skilt langs stien
   g.paths.push(P); g.dcPath = P;
   const nearP = (x, y, d) => { if (x < P.box[0] - d || x > P.box[1] + d || y < P.box[2] - d || y > P.box[3] + d) return false;
     for (let i = 0; i < P.length - 1; i++) { const [ax, ay] = P[i], [bx, by] = P[i + 1], dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy || 1, t = clamp(((x - ax) * dx + (y - ay) * dy) / l2, 0, 1); if (Math.hypot(x - ax - dx * t, y - ay - dy * t) < d) return true; } return false; };
@@ -5077,6 +5108,45 @@ function makeBuilding(type) {
   return G;
 }
 
+// 2.0.6: veiskilt. Første skilt ca. 700 ut på stien (utenfor leiren rundt bålet), så omtrent hver 1400. enhet, men ikke rett ved målet
+// og aldri nærmere enn 220 fra et annet skilt.
+// Skiltet står ved siden av stien, og pila peker mot målet. Bare grafikk: ingen kollisjon og ingen endring i verdenen.
+const SKILT_TEX = {};
+function skiltTex(m) {
+  const k = m.icon + m.n; if (SKILT_TEX[k]) return SKILT_TEX[k];
+  return SKILT_TEX[k] = cTex(512, 112, (x, w, h) => {
+    x.fillStyle = '#6b4426'; x.fillRect(0, 0, w, h); x.strokeStyle = '#3e2614'; x.lineWidth = 8; x.strokeRect(4, 4, w - 8, h - 8);
+    x.fillStyle = '#f6e7c1'; x.textAlign = 'center'; x.textBaseline = 'middle'; let f = 56; x.font = `bold ${f}px 'Lilita One', system-ui, sans-serif`;
+    const t = `${m.icon} ${m.n} ➜`; while (x.measureText(t).width > w - 36 && f > 30) { f -= 2; x.font = `bold ${f}px 'Lilita One', system-ui, sans-serif`; }
+    x.fillText(t, w / 2, h / 2 + 3);
+  });
+}
+function lagSkilt(G) {
+  const ut = [], postGeo = new THREE.CylinderGeometry(2.2, 2.6, 46, 6), postMat = new THREE.MeshLambertMaterial({ color: 0x5a3a20 });
+  const brettGeo = new THREE.BoxGeometry(84, 19, 2.4), planGeo = new THREE.PlaneGeometry(82, 18), up = new THREE.Vector3(0, 1, 0);
+  for (const P of g.paths) {
+    if (!P.mål || P.length < 3) continue;
+    let tot = 0; const acc = [0]; for (let i = 1; i < P.length; i++) { tot += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); acc.push(tot); }
+    const mål = []; for (let s = 700; s < tot - 400; s += 1400) mål.push(s);   // første skilt et stykke ut på stien, ikke ved bålet
+    for (const sd of mål) {
+      let i = 1; while (i < P.length - 1 && acc[i] < sd) i++;
+      const a = P[i - 1], b = P[i], f = (sd - acc[i - 1]) / Math.max(1e-6, acc[i] - acc[i - 1]);
+      const qx = a[0] + (b[0] - a[0]) * f, qz = a[1] + (b[1] - a[1]) * f;
+      let dx = b[0] - a[0], dz = b[1] - a[1]; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+      const zx = -dz, zz = dx, sx = qx - zx * 34, sz = qz - zz * 34;   // skiltet står 34 til siden, med forsiden mot stien
+      if (dist(sx, sz, FX, FY) < 650 || ut.some(o => dist(o.x, o.y, sx, sz) < 220) || trackDist(sx, sz) < 90) continue;   // ikke i leiren, ikke i klump, ikke ved togsporet   // ikke i leiren, og ikke flere skilt i klump
+      const grp = new THREE.Group(), y0 = groundH(sx, sz);
+      const brett = new THREE.Group(); brett.position.y = 40;
+      const post = new THREE.Mesh(postGeo, postMat); post.position.set(0, -17, -4); brett.add(post);   // stolpen står bak brettet
+      brett.add(new THREE.Mesh(brettGeo, postMat));
+      const plan = new THREE.Mesh(planGeo, new THREE.MeshBasicMaterial({ map: skiltTex(P.mål) })); plan.position.z = 1.3; brett.add(plan);
+      brett.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(dx, 0, dz), up, new THREE.Vector3(zx, 0, zz)));
+      grp.add(brett); grp.position.set(sx, y0, sz); G.add(grp);
+      ut.push({ x: sx, y: sz, _m: grp, mål: P.mål.n });
+    }
+  }
+  return ut;
+}
 function buildWorld() {
   const { scene } = R3;
   if (R3.group) scene.remove(R3.group);
@@ -5301,6 +5371,7 @@ function buildWorld() {
   for (const B of g.bases) { B._m = makeBase(B); G.add(B._m.grp); }
   for (const Bd of g.bridges) G.add(makeBridge(Bd));
   for (const cb of g.cabins) { cb._m = makeCabin(cb); G.add(cb._m); }
+  R3.skilt = lagSkilt(G);   // 2.0.6: veiskilt langs stiene
   R3.gh = makeGhostHouse(); G.add(R3.gh.grp);
   buildRailTown(G);
   R3.pond = makePond(); G.add(R3.pond.grp);
@@ -5413,8 +5484,8 @@ function bar(x, h, z, frac, color) {
 // «#kamera=original» i adressen gir 5.6.2-oppførselen (kameraet trekkes inn mot helten, ned til 16 % av avstanden).
 const EVN2_KAM_TRAER = !(typeof location !== 'undefined' && /kamera[=-]original/.test(location.hash)) && !(() => { try { return sessionStorage.getItem('evnKamera') === 'original'; } catch (e) { return false; } })();   // sessionStorage: bryteren i testkopien
 function draw(time) {
-  if (!window.THREE) return;
-  if (!R3) initR3();
+  if (!window.THREE || harWebGL === false) return;   // 2.0.5: uten WebGL vises meldingen på startskjermen i stedet
+  if (!R3) { try { initR3(); } catch (e) { R3 = null; visFeil(e, true); return; } }
   if (R3.world !== g) buildWorld();
   const dt = Math.min(0.05, Math.max(0, time - R3.lastT)); R3.lastT = time;
   const FWX = -Math.sin(R3.camYaw || 0), FWZ = -Math.cos(R3.camYaw || 0);                  // kameraets retning fremover langs bakken
@@ -5585,7 +5656,7 @@ function draw(time) {
   P.ang = turn(P.ang, want, Math.min(1, dt * (p.swing > 0 || p.draw > 0 ? 22 : 11 + 5 * amt)));   // myk vending i bevegelsesretningen
   P.grp.position.set(p.x, p.h !== undefined ? p.h : surfaceH(p.x, p.y), p.y); P.grp.rotation.y = P.ang;
   if (g.sleep) { const b = g.sleep.b; P.grp.position.set(b.x, groundH(b.x, b.y) + 22, b.y + 40); P.grp.rotation.set(-Math.PI / 2, 0, 0); } else if (P.grp.rotation.x) { P.grp.rotation.x = 0; P.grp.rotation.z = 0; }   // ligger i senga
-  if (g.ride) { P.ang = p.rideAng; P.grp.rotation.y = P.ang; P.grp.rotation.z = 0; }
+  if (g.ride) { P.ang = p.rideAng; P.grp.rotation.y = P.ang; P.grp.rotation.z = 0; if (P.robot) P.grp.position.y = p.h + 17; }   // 2.0.6: roboten sitter på benken (setet er 38 over vognbunnen)
   // Gange: hofter og skuldre svinger, knær og albuer bøyes, kroppen lener seg fremover når du løper
   P.body.position.y = Math.abs(Math.sin(p.walk)) * 2.2 * amt;
   P.torso.rotation.x = 0.14 * amt;
@@ -5741,6 +5812,7 @@ function draw(time) {
   // Dyr
   syncList(g.animals, 'animals', makeAnimal);
   for (const c of g.cabins) c._m.visible = near(c);
+  for (const s2 of R3.skilt || []) s2._m.visible = near(s2);
   renderGhostHouse(R3, dt, time);
   renderTrainTown(dt, time);
   renderDino(dt, time);
@@ -5805,6 +5877,9 @@ function draw(time) {
   for (; si < R3.smoke.length; si++) R3.smoke[si].visible = false;
 
   if (window.EVN2) EVN2.robotRamme(R3.player, p, dt);   // 2.0: robot-helten følger figuren og velger klipp
+  // 2.0.6: i toget sitter roboten (klippet «Sitting»). Når du går av, glir den tilbake til vanlig klipp av seg selv.
+  { const n = R3.player.robot, S = n && n.klipp.Sitting;
+    if (S && g.ride) { if (!S.isScheduled()) S.reset().play(); for (const a of Object.values(n.klipp)) if (a !== S && a.isScheduled()) a.setEffectiveWeight(0); S.setEffectiveWeight(1); n.mix.update(0); } }
   // Fisking: snøret går fra stangtuppen til duppen; duppen guppar, dykker ved napp og trekkes inn; fisken synes når den kjemper og når den landes
   { const F = p.fish, P2 = R3.player;
     if (!R3.fishLine) {
@@ -6048,7 +6123,7 @@ function draw(time) {
   for (const t of g.trees) if (t.alive && t.hp < t.max) bar(t.x, t.giant ? 60 : 100 * t.s * TREE_H, t.y, t.hp / t.max, '#ffd166');
   if (g.goat && g.goat.alive && g.goat.hp < g.goat.max) bar(g.goat.x, 110, g.goat.y, g.goat.hp / g.goat.max, g.goat.state === 'tired' ? '#ffd166' : '#ff6b5b');
   for (const tr of g.trolls) if (tr.hp < tr.max) bar(tr.x, 95, tr.y, tr.hp / tr.max, '#ff6b5b');
-  for (const a of g.animals) { const A = ANIMALS[a.type]; if (a.hp < A.hp) bar(a.x, 58 * A.size, a.y, a.hp / A.hp, A.hostile ? '#ff6b5b' : '#8ee07a'); }
+  for (const a of g.animals) { const A = ANIMALS[a.type]; if (a.hp < (a.max || A.hp)) bar(a.x, 58 * A.size, a.y, a.hp / (a.max || A.hp), A.hostile ? '#ff6b5b' : '#8ee07a'); }
   for (const r of g.rocks) if (r.alive && r.hp < r.max) bar(r.x, 26 * r.s, r.y, r.hp / r.max, r.ore ? '#e08a4a' : '#c9cdd1');
   drawDinoHud();
   octx.font = '800 18px Nunito, sans-serif'; octx.textAlign = 'center';
@@ -6239,11 +6314,28 @@ function fpsWatch(rawDt) {
   if (fps < 24) { qKey = qKey === 'hoy' ? 'middels' : 'lav'; Q = QUAL[qKey]; applyQuality(); toast(`🐢 Spillet gikk tregt, så grafikken er satt til «${Q.n}». Du kan endre den på startskjermen.`); }
 }
 function loop(ts) {
-  const raw = (ts - last) / 1000 || 0, dt = Math.min(0.05, raw); last = ts;
-  if (state === 'play') { update(dt); updateHud(); if (raw > 0 && raw < 2.5) fpsWatch(raw); }
-  if (g) draw(ts / 1000);
+  if (spillFeil) return;
   requestAnimationFrame(loop);
+  try {
+    const raw = (ts - last) / 1000 || 0, dt = Math.min(0.05, raw); last = ts;
+    if (state === 'play') { update(dt); updateHud(); if (raw > 0 && raw < 2.5) fpsWatch(raw); }
+    if (g) draw(ts / 1000);
+  } catch (e) { visFeil(e); }
 }
+// 2.0.5 (K2/B3): vennlig melding når noe går galt, med knapp for å laste siden på nytt. Det som er lagret, er trygt.
+let spillFeil = false;
+function visFeil(e, uten3D) {
+  if (spillFeil) return; spillFeil = true;
+  try { console.error('[Mørkeskogen]', e); } catch (x) {}
+  try { if (state === 'play' && g) { saveWorld(); saveHero(); } } catch (x) {}
+  const f = $('evnFeil'); if (!f) return;
+  $('evnFeilTekst').textContent = uten3D
+    ? 'Denne nettleseren kan ikke vise 3D-grafikken. Prøv en annen nettleser, eller slå på maskinvareakselerasjon. Det du har lagret, er trygt.'
+    : 'Noe gikk galt i spillet. Last siden på nytt for å spille videre. Det du har lagret, er trygt.';
+  f.hidden = false; const b = $('evnFeilLast'); if (b) b.focus();
+}
+window.addEventListener('error', e => { if (state === 'play' && e && /\/spill\/morkeskogen\//.test(e.filename || '')) visFeil(e.error || e.message); });
+window.addEventListener('unhandledrejection', e => { const r = e && e.reason; if (state === 'play' && r && /\/spill\/morkeskogen\//.test(String(r.stack || ''))) visFeil(r); });   // bare feil fra spillets egne filer (som 'error' over)
 
 let bakgrunnFersk = false;
 function start() {
@@ -6304,7 +6396,10 @@ let pinch0 = 0;
 const JOY_R = 55;
 const inJoyZone = (x, y) => x < VW * (VW > VH ? 0.4 : 0.5) && y > VH * (VW > VH ? 0.35 : 0.55);
 function joyShow(x, y, on) { const j = $('joy'); j.style.transform = `translate(${x}px,${y}px)`; j.classList.toggle('on', on); }
-function joyIdle() { joyShow(Math.max(84, VW * 0.13), VH - (VW > VH ? 110 : 130), false); $('joyKnob').style.transform = ''; }
+function joyIdle() {   // 2.0.4: hvileringen står alltid over hurtiglinja (på høykant kan den ha to rader nederst)
+  const hb = $('hotbar'), hbTop = VW <= VH && hb && !hb.hidden && hb.offsetHeight ? hb.getBoundingClientRect().top : VH;
+  joyShow(Math.max(84, VW * 0.13), Math.min(VH - (VW > VH ? 110 : 130), hbTop - 72), false); $('joyKnob').style.transform = ''; }
+window.addEventListener('resize', () => { if (JOY.id === null && !$('joy').hidden) joyIdle(); });   // snudd telefon: ringen følger med
 function joyRelease() { JOY.id = null; JOY.dx = JOY.dy = JOY.mag = 0; joyIdle(); }
 function camRotate(dx, dy) { if (!R3) return; R3.camYaw -= dx * 0.0085; R3.camPitch = clamp(R3.camPitch + dy * 0.004, -0.35, 0.45); }
 function camZoom(f) { if (R3) R3.camZoom = clamp(R3.camZoom * f, 0.55, 1.7); }
@@ -6398,17 +6493,23 @@ function devClock() {
 }
 $('againBtn').addEventListener('click', start);
 
-if (!window.THREE) $('no3d').hidden = false;
+// 2.0.5 (B3): meldingen vises også når nettleseren mangler WebGL, og Start skjules da (spillet kan ikke vises).
+var harWebGL = (() => { try { const c = document.createElement('canvas'); const x = window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')); if (x) { const l = x.getExtension('WEBGL_lose_context'); if (l) l.loseContext(); } return !!x; } catch (e) { return false; } })();   // prøvekonteksten frigis med en gang
+if (!window.THREE || !harWebGL) {
+  $('no3d').hidden = false; $('startBtn').hidden = true;
+  if (window.THREE) $('no3d').textContent = 'Denne nettleseren kan ikke vise 3D-grafikken. Prøv en annen nettleser, eller slå på maskinvareakselerasjon.';
+}
+cv.addEventListener('webglcontextlost', e => { e.preventDefault(); if (state === 'play') visFeil('WebGL-konteksten ble borte', false); });
 // «Start helt på nytt» på startskjermen (felles for alle EVN-spill). Grafikkvalget (mork3d.q) beholdes.
 EVNNullstill({
-  nokler: [SAVE_KEY, WORLD_KEY, FOG_KEY],
+  nokler: [SAVE_KEY, WORLD_KEY, FOG_KEY, SAVE_KEY + '.kopi'],
   tema: { panel: 'rgba(10,18,14,.97)', ink: '#f3ead6', hi: '#ff9a3c', btn: '#ff9a3c', btnInk: '#2a1606', font: "'Nunito',system-ui,sans-serif", head: "'Lilita One',system-ui,sans-serif", headW: 400 },
   tekst: 'Våpen, XP, oppdrag, slottet, kartet og alt du har bygget blir borte.',
   plasser: el => document.getElementById('evnTilbake').after(el),
   vis: () => state === 'start'
 });
 // Høyden på hurtiglinja (én eller to rader) brukes til å plassere «Hent ved …»-teksten over den
-try { new ResizeObserver(() => { const h = $('hotbar').offsetHeight; if (h) document.documentElement.style.setProperty('--hbH', h + 'px'); }).observe($('hotbar')); } catch (er) {}
+try { new ResizeObserver(() => { const h = $('hotbar').offsetHeight; if (h) document.documentElement.style.setProperty('--hbH', h + 'px'); if (JOY.id === null && !$('joy').hidden) joyIdle(); }).observe($('hotbar')); } catch (er) {}
 // Felles pause med spilletid (⏸ / P / Esc). Spilletid lagres i 'evn-spilletid-morkeskogen'.
 // Esc gir pause (nettleseren slipper musa på Esc uansett). B åpner byggemenyen. Fortsett fanger musa igjen hvis den var fanget.
 let laastFoer = false;

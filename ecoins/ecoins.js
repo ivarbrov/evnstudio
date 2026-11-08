@@ -34,7 +34,7 @@
     ["dyrepatruljen.verden.14", 25, "Alle 10 dyr reddet i Gruva"],
     ["dyrepatruljen.verden.15", 25, "Alle 10 dyr reddet i Eventyrlandet"],
     ["dyrepatruljen.alle", 100, "Alle 150 dyr i alle 15 verdener reddet"]]}, 
-   {"id": "fossil", "navn": "Fossil Zoo", "kommer": false, "m": [["fossil.dyr.dimetrodon", 15, "Dimetrodon vekket til live (5 deler)"],
+   {"id": "fossil", "navn": "Fossil Zoo", "kommer": false, "fjernet": true, "m": [["fossil.dyr.dimetrodon", 15, "Dimetrodon vekket til live (5 deler)"],
     ["fossil.dyr.meganeura", 15, "Kjempeøyenstikker vekket til live (3 deler)"],
     ["fossil.dyr.dunkle", 15, "Panserfisk vekket til live (3 deler)"],
     ["fossil.dyr.trilobitt", 15, "Trilobitt vekket til live (3 deler)"],

@@ -33,9 +33,14 @@
 #hud #evnRad{margin:0;gap:8px}
 #hud #evnRad #evnPauseKnapp,#hud #evnRad #evnKartKnapp,#h2Hjelp{width:44px;min-width:44px;height:44px;min-height:44px;padding:0;display:grid;place-items:center;
   border-radius:50%;font-size:18px;background:rgba(12,20,16,.72);border:1px solid rgba(243,234,214,.32);color:var(--bone);cursor:pointer;pointer-events:auto}
-/* Avslutt ligger i pausemenyen (🚪 Avslutt). Knappen i HUD-en gjøres usynlig uten display:none: EVN-PAUSE viser
-   «Avslutt» i pausen bare når lenken ikke har display:none (avsluttLenke()). */
-#evnAvslutt{visibility:hidden!important;position:fixed!important;left:-9999px!important;top:0!important;width:1px!important;height:1px!important;overflow:hidden!important;pointer-events:none!important}
+/* Avslutt står ytterst til høyre i toppraden, som i de andre EVN-spillene (EVN UI-standard KS4, KS5). På berøring vises bare ✕. */
+#hud #evnRad #evnAvslutt{position:static;transform:none;margin:0;height:44px;min-height:44px;min-width:44px;box-sizing:border-box;padding:0 14px;line-height:42px;text-align:center;
+  border-radius:999px;font:800 15px var(--body);background:rgba(12,20,16,.72);border:1px solid rgba(243,234,214,.32);color:var(--bone);text-decoration:none;pointer-events:auto}
+body.touchui #hud #evnRad #evnAvslutt{width:44px;padding:0;font-size:18px}
+body.touchui #hud #evnRad #evnAvslutt .evn-avs-tekst{display:none}
+/* Avslutt på «Åh nei!»-skjermen */
+#overAvslutt{display:block;margin:10px auto 0;min-height:44px;padding:0 18px;border-radius:12px;background:transparent;color:var(--bone);border:2px solid rgba(243,234,214,.35);font:800 16px var(--body);cursor:pointer}
+#overAvslutt[hidden]{display:none}
 #h2Netter{margin:2px 0 6px;font:700 14px var(--body);opacity:.9;text-align:center}
 
 /* ---------- Hurtiglinje ---------- */
@@ -104,6 +109,13 @@
   body.touchui #hud > .panel:first-child{min-width:0}
   body.touchui #hud .bar{width:min(110px,30vw)}
   body.touchui #toast{max-width:88vw}
+  /* 2.0.4: midten av skjermen er fri for roboten. Hurtiglinja ligger nederst, og knappene står over den.
+     Verktøyene (kamera, bygg, spis) står i en kolonne til høyre. Våpenlinja ligger under statusfeltet, og hintet over roboten (hud2.js). */
+  body.touchui #hotbar{bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+  body.touchui #touch{padding-bottom:calc(16px + var(--hbH,54px) + env(safe-area-inset-bottom,0px))}
+  body.touchui .acts .small{flex-direction:column}
+  body.touchui #h2Vapen{left:12px;transform:none}
+  body.touchui #h2Hint{white-space:normal;text-align:center;border-radius:16px;line-height:1.25}
 }
 
 /* Ryggsekk-faner */
