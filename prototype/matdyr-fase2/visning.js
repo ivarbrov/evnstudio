@@ -578,7 +578,9 @@
     requestAnimationFrame(loop);
   }
   storrelse();
-  robotKlar.then(() => { velgFane('matdyr'); requestAnimationFrame(loop); window.EVNKlar = true; });
+  // Start først når alle skriptene er lastet (spillkjerne.js kobler seg på etter denne filen)
+  const sideKlar = new Promise(ok => document.readyState === 'loading' ? addEventListener('DOMContentLoaded', ok) : ok());
+  Promise.all([robotKlar, sideKlar]).then(() => { velgFane('matdyr'); requestAnimationFrame(loop); window.EVNKlar = true; });
   // For automatiske skjermbilder: ?fane=gard&niva=6 eller ?figur=burgersau&vis=spill
   window.EVNIntern = { T, scene, sol, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
   window.EVNSpill = sp; window.EVNRobot = () => gd.robot; window.EVNSteg = steg; window.EVNSpor = SPOR; window.EVNGeo = { HX, HZ, EH, DEKKE, W, KX, KZ, A, B, LREP }; window.EVNBane = bane; window.EVNVegger = () => vegger;
