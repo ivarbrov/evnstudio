@@ -18,7 +18,7 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
 <main>
 <h1>EVN Testsuite</h1>
 <p>Automatiske, objektive tester for alle spill (krav merket A i EVN Game Standard). Virker bare lokalt (localhost eller 127.0.0.1). Ingenting sendes til GoatCounter.</p>
-<p>Kjøres av <code>node test/kjor.mjs</code> i Chrome eller Edge uten skjerm, eller her med <code>?auto</code>. Velg enkelte suiter med <code>?suiter=statisk,royk</code>.</p>
+<p>Kjøres av <code>node test/kjor.mjs</code> i Chrome eller Edge uten skjerm. Skriptet finner spillene i <code>spill/</code> og gir listen til denne siden, så siden virker bare via skriptets egen server. Velg enkelte suiter med <code>--suiter statisk,royk</code>.</p>
 <p><button id="kjor" type="button">Kjør testene</button> <span id="status"></span></p>
 <div id="ut"></div>
 <iframe id="ramme" title="Siden som testes"></iframe>
@@ -27,15 +27,14 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
 // Resultatet ligger i window.EVNTestResultat (leses av test/kjor.mjs og EVN Game QA).
 (function () {
   'use strict';
-  var SPILL = [
-    { id: 'eventyrspill', start: 'menyStart' },
-    { id: 'morkeskogen', start: 'startBtn' },
-    { id: 'dyrepatruljen', start: 'startBtn', etterStart: function (d) {
-        var v = d.querySelector('.verden.aapen');   // Start viser verdensvalget; velg første åpne verden
-        if (v) v.click();
-      } },
-    { id: 'fiskespillet', start: 'startBtn' }
-  ];
+  // Spillene finnes automatisk: test/kjor.mjs lister hver mappe spill/<id>/ med index.html i /__evn/spill.json.
+  // Et nytt spill trenger ingen endring her. Røyktesten trykker på #startBtn, eller det spill/<id>/evn-test.json oppgir.
+  // OPPSETT er betrodd oppsett for spill med en annen start. Det går foran evn-test.json og endres bare med særskilt kontroll.
+  var OPPSETT = {
+    eventyrspill: { start: 'menyStart' },
+    dyrepatruljen: { start: 'startBtn', etterStart: { klikk: '.verden.aapen' } }   // Start viser verdensvalget; velg første åpne verden
+  };
+  var SPILL = [];
   // Funn som står under «Kjente funn» i standarden. De gir «kjent» i stedet for «feil», og «rettet» når de er borte.
   var KJENTE = {
     // Fossil Zoo (T3-zoom) og Magiske egg er tatt av nettsiden 5.11.2026.
@@ -117,7 +116,11 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
       s.fantes = !!knapp;
       legg('royk', s.id, 'F1-startknapp', 'F1', 'Startknappen finnes og er synlig', synlig(knapp), knapp ? '' : 'fant ikke #' + s.start);
       if (knapp) knapp.click();
-      return vent(500).then(function () { if (s.etterStart) s.etterStart(d); return vent(1500); });
+      return vent(500).then(function () {
+        var e = s.etterStart && s.etterStart.klikk && d.querySelector(s.etterStart.klikk);
+        if (e) e.click();
+        return vent(1500);
+      });
     }).then(function () {
       legg('royk', s.id, 'F1-start', 'F1', 'Spillet starter: startknappen forsvinner', s.fantes && !synlig(d.getElementById(s.start)), s.fantes ? '' : 'startknappen fantes ikke');
       var p = d.getElementById('evnPauseKnapp'), kort = d.getElementById('evnPause');
@@ -203,19 +206,33 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
     document.getElementById('status').textContent = feil ? feil + ' kontroller feilet.' : 'Ingen kontroller feilet.';
   }
 
+  // Henter spillene fra test/kjor.mjs. Uten listen kan ingen spill testes, og kjøringen feiler.
+  function finnSpill() {
+    return fetch('/__evn/spill.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.json(); }).then(function (f) {
+      SPILL = f.spill.map(function (x) {
+        var o = OPPSETT[x.id] || x.oppsett || { start: 'startBtn' };
+        return { id: x.id, start: o.start, etterStart: o.etterStart || null };
+      });
+      if (!SPILL.length) legg('statisk', '–', 'F1-spilliste', 'F1', 'Testene fant spill å teste', false, 'ingen mapper spill/<id>/ med index.html');
+    }).catch(function (e) {
+      SPILL = [];
+      legg('statisk', '–', 'F1-spilliste', 'F1', 'Testene fant spill å teste', false, 'Fant ikke spillisten (/__evn/spill.json, ' + (e && e.message || e) + '). Kjør testene med node test/kjor.mjs.');
+    });
+  }
+
   function kjor() {
     if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) { document.getElementById('status').textContent = 'Testene virker bare lokalt.'; return; }
     var valgt = (new URLSearchParams(location.search).get('suiter') || '').split(',').filter(Boolean);
     var st = document.getElementById('status');
     tester = []; suiter = {};
-    rekke(SUITER.filter(function (s) { return !valgt.length || valgt.indexOf(s.navn) >= 0; }), function (s) {
+    finnSpill().then(function () { return rekke(SUITER.filter(function (s) { return !valgt.length || valgt.indexOf(s.navn) >= 0; }), function (s) {
       st.textContent = 'Kjører ' + s.navn + ' …';
       return (s.fil ? finnes(s.fil) : Promise.resolve(true)).then(function (ja) {
         if (!ja) { suiter[s.navn] = { status: 'mangler', fil: s.fil }; return; }
         suiter[s.navn] = { status: 'kjort', fil: s.fil };
         return Promise.resolve().then(s.kjor).catch(function (e) { legg(s.navn, '–', s.navn + '-kjoring', '', 'Suiten ble ferdig uten å krasje', false, String(e && e.message || e)); }).then(tom);
       });
-    }).then(function () {
+    }); }).then(function () {
       document.getElementById('ramme').src = 'about:blank';
       var feil = tester.filter(function (x) { return x.status === 'feil'; }).length;
       vis(feil);

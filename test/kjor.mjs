@@ -5,6 +5,9 @@
  *
  *   node test/kjor.mjs [--base origin/main] [--suiter statisk,royk] [--json fil.json] [--nettleser sti]
  *
+ * Spillene finnes automatisk: hver mappe spill/<id>/ med index.html testes (se test/spilloppsett.mjs).
+ * Testsiden får listen fra /__evn/spill.json, som bare denne serveren lager.
+ *
  * --base     grenen som avgjør hvilke tester som er obligatoriske. En test er obligatorisk når
  *            filen den tester, finnes på base. Mangler filen her, feiler kjøringen.
  * Nettleser: --nettleser, CHROME_PATH, eller Chrome/Edge på vanlige steder.
@@ -19,6 +22,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { lesOppsett, OPPSETTFIL, SPILL_ID } from './spilloppsett.mjs';
 
 const ROT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -33,10 +37,31 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.
 
 const git = (...a) => { try { return execFileSync('git', ['-c', 'core.quotePath=false', ...a], { cwd: ROT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return null; } };
 
+// ---- Spillene i repoet: hver mappe spill/<id>/ med index.html, med eventuelt eget oppsett ----
+function finnSpill() {
+  const spill = [], feil = [];
+  const mappe = path.join(ROT, 'spill');
+  const mapper = fs.existsSync(mappe) ? fs.readdirSync(mappe, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name).sort() : [];
+  for (const id of mapper) {
+    if (!fs.existsSync(path.join(mappe, id, 'index.html'))) continue;
+    if (!SPILL_ID.test(id)) { feil.push({ id, info: `Mappenavnet spill/${id}/ er ikke gyldig (små bokstaver, tall og -)` }); continue; }
+    const fil = path.join(mappe, id, OPPSETTFIL);
+    if (!fs.existsSync(fil)) { spill.push({ id, oppsett: null }); continue; }
+    const { oppsett, feil: f } = lesOppsett(fs.readFileSync(fil, 'utf8'));
+    if (f.length) feil.push({ id, info: `spill/${id}/${OPPSETTFIL}: ${f.join('; ')}` });
+    spill.push({ id, oppsett, ugyldig: f.length > 0 });
+  }
+  return { spill, feil };
+}
+
 // ---- Statisk server for repoet (som GitHub Pages: mappe gir index.html) ----
-function server() {
+function server(funnet) {
   return new Promise(r => {
     const s = http.createServer((req, res) => {
+      if (new URL(req.url, 'http://x').pathname === '/__evn/spill.json') {
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        return res.end(JSON.stringify(funnet));
+      }
       let f = path.join(ROT, decodeURIComponent(new URL(req.url, 'http://x').pathname));
       if (!f.startsWith(ROT)) { res.writeHead(403); return res.end(); }
       try {
@@ -92,7 +117,8 @@ async function main() {
   if (typeof WebSocket === 'undefined') { console.error('Krever Node 22 eller nyere (innebygd WebSocket).'); process.exit(2); }
   const bin = finnNettleser();
   if (!bin) { console.error('Fant ingen Chrome eller Edge. Oppgi --nettleser eller CHROME_PATH.'); process.exit(2); }
-  const srv = await server();
+  const funnet = finnSpill();
+  const srv = await server(funnet);
   const port = srv.address().port;
   const nl = await startNettleser(bin);
   const { targetId } = await nl.send('Target.createTarget', { url: 'about:blank' });
@@ -155,9 +181,10 @@ async function main() {
     else if (git('cat-file', '-e', BASE + ':' + fil) !== null) { x.status = 'feil'; x.info = `Obligatorisk test mangler: ${fil} finnes på ${BASE}, men ikke her`; }
     else { x.status = 'ikke innført'; x.info = `${fil} finnes verken her eller på ${BASE}`; }
   }
-  // Spillmapper uten røyktest
-  if (res.suiter.royk) for (const d of fs.readdirSync(path.join(ROT, 'spill'), { withFileTypes: true }).filter(d => d.isDirectory() && fs.existsSync(path.join(ROT, 'spill', d.name, 'index.html'))))
-    if (!res.spill.includes(d.name)) tester.push({ suite: 'royk', spill: d.name, id: 'F1-dekning', krav: 'F1', navn: 'Spillet har røyktest', status: 'feil', info: `spill/${d.name}/ mangler i SPILL i test/index.html` });
+  // Ugyldig oppsett eller mappenavn, og spill som ikke ble testet. Gjelder alle spill uansett hvilke suiter som kjøres.
+  for (const f of funnet.feil) tester.push({ suite: 'statisk', spill: f.id, id: 'F1-oppsett', krav: 'F1', navn: 'Spillets testoppsett er gyldig', status: 'feil', info: f.info });
+  for (const sp of funnet.spill)
+    if (res.suiter.royk && !res.spill.includes(sp.id)) tester.push({ suite: 'royk', spill: sp.id, id: 'F1-dekning', krav: 'F1', navn: 'Spillet har røyktest', status: 'feil', info: `spill/${sp.id}/ ble ikke testet` });
   const delvis = res.alleSuiter.filter(n => !res.suiter[n]);
 
   // Testkvittering: bare stabile opplysninger, så den kan sammenlignes mellom PC og Actions.
@@ -188,7 +215,7 @@ async function main() {
     console.log(`::notice title=Testkvittering::${kvittering}`);
   }
   const json = arg('json');
-  if (json) fs.writeFileSync(json, JSON.stringify({ format: 'evn1', commit, testversjon, arbeidstre: endret ? 'endret' : 'rent', suiter, radgivende: Object.keys(res.ikkeGjeldende || {}),
+  if (json) fs.writeFileSync(json, JSON.stringify({ format: 'evn1', commit, testversjon, arbeidstre: endret ? 'endret' : 'rent', suiter, spill: res.spill, radgivende: Object.keys(res.ikkeGjeldende || {}),
     base: harBase ? BASE : null, nettleser: path.basename(bin), kvittering, tester }, null, 2));
   process.exit(feil ? 1 : 0);
 }

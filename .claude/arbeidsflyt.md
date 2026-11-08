@@ -67,9 +67,11 @@ Laget i trinn 3 på grenen `kvalitet/tester`. Det trengs ingen nye verktøy elle
 
 | Fil | Hva den gjør |
 |---|---|
-| `test/index.html` | Testsiden. Kjører alle suitene i en ramme og legger resultatet i `window.EVNTestResultat`. Kan åpnes i en vanlig nettleser med `?auto`. |
-| `test/kjor.mjs` | Starter en liten lokal server og Chrome eller Edge uten skjerm, kjører testsiden, fanger feil som bare nettleseren ser, og skriver tabell og testkvittering. Avslutter med kode 1 ved feil. |
-| `test/publiseringssjekk.mjs` | Kontrollerer testkjøringen i Actions, QA-rapporten og versjonen ved PR til `main` (se under). |
+| `test/index.html` | Testsiden. Kjører alle suitene i en ramme og legger resultatet i `window.EVNTestResultat`. Får spillisten fra `kjor.mjs` og virker derfor bare via skriptets server. `OPPSETT` er betrodd startoppsett for spill på `main` som ikke bruker `#startBtn`. |
+| `test/kjor.mjs` | Finner spillene, starter en liten lokal server og Chrome eller Edge uten skjerm, kjører testsiden, fanger feil som bare nettleseren ser, og skriver tabell og testkvittering. Avslutter med kode 1 ved feil. |
+| `test/spilloppsett.mjs` | Felles regler for spillregistrering: gyldige mappenavn, kontroll av `evn-test.json` og hvilke kontroller hvert spill må ha. |
+| `test/publiseringssjekk.mjs` | Kontrollerer testkjøringen i Actions, dekningen, QA-rapporten og versjonen ved PR til `main` (se under). |
+| `test/publiseringssjekk.test.mjs` | Tester publiseringssjekken i et midlertidig repo: nye spill godtas, og manipulert testkode, testresultat og testoppsett avvises. Kjøres i «Automatiske tester». |
 | `.github/workflows/kvalitet.yml` og `publisering.yml` | De to kontrollene i GitHub Actions (se under). |
 
 | Suite | Krav | Kontroller | Blokkerer |
@@ -78,6 +80,8 @@ Laget i trinn 3 på grenen `kvalitet/tester`. Det trengs ingen nye verktøy elle
 | `royk` | F1, K1, U1, K3 | Versjon på startkortet, Start virker, pause og fortsett, ingen manglende filer, ingen ufangede feil (også ved oppstart) | Ja |
 | `statistikk` | ST1–ST5 | De 45 kontrollene i `test/statistikk/` (fra `feature/statistikk`) | Ja |
 | `ui` | UI7, T1 | `EVNUIMaal()` i fem størrelser: `under44`, `avstandUnder8`, `overlapp` og `panelOverlapp`. Dekket andel vises som informasjon | Bare varsel, til UI-kravene er gjeldende |
+
+**Nye spill registreres automatisk:** Hver mappe `spill/<id>/` med `index.html` er et spill og testes i `statisk` og `royk`. Det trengs ingen endring i `test/`. Røyktesten trykker på `#startBtn`. Har et nytt spill en annen startknapp, oppgis den i `spill/<id>/evn-test.json`, for eksempel `{ "start": "menyStart", "etterStart": { "klikk": ".verden.aapen" } }`. Filen er bare data med to tillatte nøkler. Den kan ikke slå av kontroller, merke funn som kjente eller kjøre kode, og den gjennomgås sammen med spillet i full QA. For spill som allerede finnes på `main`, står oppsettet i `OPPSETT` i `test/index.html` og endres bare med særskilt kontroll.
 
 **Kjente funn:** Funn som står under «Kjente funn» i standarden, gir «kjent» i stedet for «feil». Når de er rettet, gir de «rettet», som et tegn på at standarden bør oppdateres. Listen står øverst i `test/index.html`.
 
@@ -114,6 +118,10 @@ To arbeidsflyter gir to separate kontroller. Begge skal kreves i regelen for `ma
 4. **Full QA for hvert endret spill:** «Nivå: full», hver gjeldende krav-ID gjort rede for, og konklusjon som ikke er NEI. Felles kode regnes som endring i alle spill.
 5. **Testkvitteringen i rapporten:** gjelder samme commit, er laget på rent arbeidstre og har samme resultat som Actions i de obligatoriske suitene.
 6. **K3:** endrede spill har nytt versjonsnummer på startkortet, og det står i `ENDRINGSLOGG.md`.
+7. **Dekning:** Hvert spill på commiten er testet i Actions, og har hver påkrevde kontroll i `statisk` og `royk` (`PAKREVDE_KONTROLLER`) med status ok, kjent eller rettet. Listen over spill leses fra git, ikke fra resultatfilen. Resultatfilen kan ikke utelate et spill eller en kontroll, eller oppgi et spill som ikke finnes.
+8. **Testoppsett:** `evn-test.json` er bare lov for spill som ikke finnes på `main`, og må være gyldig. Legger PR-en til, endrer eller sletter filen for et spill på `main`, blir sjekken rød.
+
+**Særskilt kontroll:** Punkt 1 og 8 er grensen mellom å registrere et spill og å endre testene. Å registrere et nytt spill gir ingen rød sjekk. Endringer i testlogikken, publiseringssjekken, GitHub Actions eller testoppsettet for spill på `main` gir fortsatt rød sjekk, og eieren må gå gjennom dem.
 
 **Hvorfor resultatfilen kan brukes:** Punkt 1 sikrer at testskriptene og arbeidsflyten er de samme som på `main`, og resultatfilen må oppgi samme testversjon som `test/` på commiten. Hvilke suiter som er rådgivende, leses fra `main`, ikke fra filen. Testene kjører likevel PR-ens spillkode i samme nettleser. Spillkode som med vilje skrev til testresultatet, kunne i prinsippet påvirke det. Det er en restrisiko så lenge bare eieren og Claude kan pushe grener. Resultatfilen behandles bare som data. Stemmer den ikke med QA-rapportens kvittering, stopper PR-en.
 
@@ -163,6 +171,7 @@ Ingen av kjøringene startet publisering. Alle de 32 publiseringene til `github-
 **Begrensninger og manuell kontroll:**
 - Den første PR-en som legger arbeidsflytene på `main`, får ikke «QA før publisering», fordi `workflow_run` bare kjører fra `main`. Den må eieren gå gjennom manuelt og slå sammen med unntak.
 - PR-er som endrer `test/` eller `.github/`, krever alltid manuell gjennomgang.
+- Et nytt spill krever ikke lenger endring i `test/` og dermed ikke unntak (fra november 2026). Unntaket gjelder bare reelle endringer i testene og arbeidsflyten.
 - En PR kan i prinsippet endre `kvalitet.yml` og selv sette en falsk status med samme navn. Den blir likevel rød i «QA før publisering», fordi `.github/` er endret, men statusen som settes sist, gjelder. Derfor må eieren alltid sjekke at en PR ikke endrer `.github/`, før den slås sammen.
 - Sjekken viser at testene er kjørt på riktig commit, og at QA-rapporten gjelder samme commit og standard. Den kan ikke bevise at vurderingene i rapporten er riktige. Derfor er Evens test og eierens godkjenning egne lag.
 - Krav merket Q, E og V kan ikke testes automatisk.
