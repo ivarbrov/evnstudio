@@ -1316,7 +1316,8 @@ function renderMenu() {
     const fane = FANER.some(f => f[0] === window.EVN2_MENYFANE) ? window.EVN2_MENYFANE : 'sekk';
     pre = '<div class="h2Faner" role="tablist">' + FANER.map(([id, t]) => `<button type="button" role="tab" data-fane="${id}" aria-selected="${id === fane}" class="${id === fane ? 'on' : ''}">${t}</button>`).join('') + '</div>';
     if (fane === 'sekk') {
-      pre += invGrid();
+      // 2.0.9: Spis og Bygg øverst i sekken (på mobil er det ingen egne knapper for dem i spillet)
+      pre += `<div class="h2Snarvei"><button type="button" data-act="eat" ${g.cooked > 0 || g.raw > 0 ? '' : 'disabled'}>🍗 Spis${g.cooked > 0 ? ` <small>(${g.cooked} mat)</small>` : g.raw > 0 ? ' <small>(rått)</small>' : ''}</button><button type="button" data-act="buildmenu">🔨 Bygg</button></div>` + invGrid();
       if (g.sack > 0) rows.push({ icon: '🎒', n: g.packDown ? 'Sekken står på bakken' : `${SACKS[g.sack].n} på ryggen`, desc: g.packDown ? 'Gå bort til den og trykk E for å ta den på igjen.' : 'Sett den fra deg her (da har du bare lommeplass).', cost: {}, btn: g.packDown ? '—' : 'Ta av', act: g.packDown ? '' : 'packoff', ok: !g.packDown });
       const book = hero.fishBook || {}; const fk = Object.keys(FISH);
       rows.push({ icon: '📖', n: `Fiskeboka: ${fk.filter(k => book[k]).length} av ${fk.length} arter`, desc: fk.map(k => book[k] ? `${FISH[k].icon} ${FISH[k].n} ${book[k]} cm` : `❔ ${FISH[k].water === 'innsjø' ? 'innsjø' : FISH[k].biome === 'sno' ? 'elv i snøen' : FISH[k].biome === 'jungel' ? 'elv i jungelen' : 'elv'}`).join(' · '), cost: {}, btn: '', act: '', ok: false, nobtn: true });
@@ -1381,6 +1382,8 @@ function menuAction(act) {
     const id = act.slice(4); pay(wupCost(wLvl(id))); hero.wlvl[id] = wLvl(id) + 1; saveHero();
     toast(`${WEAPONS[id].icon} ${WEAPONS[id].n} er nå nivå ${hero.wlvl[id]}!`); renderMenu();
   } else if (act.startsWith('sel:')) { selectWeapon(act.slice(4)); renderMenu(); }
+  else if (act === 'eat') { eat(); renderMenu(); }
+  else if (act === 'buildmenu') openMenu('build');
   else if (act === 'cap') { hero.cap = hero.cap === false; saveHero(); if (R3 && R3.player && R3.player.head.userData.cap) setCap(R3.player.head); toast(hero.cap !== false ? '🧢 Capsen er på!' : 'Du tok av capsen.'); renderMenu(); }
   else if (act === 'newworld' && !(g._nyVerden && performance.now() - g._nyVerden < 6000)) { g._nyVerden = performance.now(); toast('⚠️ Det du har bygd blir borte! Trykk «Ny verden» en gang til for å bekrefte.'); }
   else if (act === 'newworld') { world = { v: 1, seed: (Math.random() * 1e9) | 0, buildings: [] }; try { localStorage.setItem(WORLD_KEY, JSON.stringify(world)); } catch (e) {} toast('🌍 Neste gang du starter et nytt spill, får du en helt ny verden!'); renderMenu(); }
@@ -1553,7 +1556,8 @@ function attack() {
   const p = g.p;
   if (p.cool > 0 || p.z > 0 || p.impact) return;
   if (g.build) { placeBuilding(); return; }
-  const id = curW(), Wp = WEAPONS[id];
+  let id = curW(), Wp = WEAPONS[id];
+  if (keys.ctx && ctxOks(target())) { id = 'oks'; Wp = WEAPONS.oks; }   // 2.0.9: handlingsknappen på mobil hugger med øksa ved tre og stein
   if (Wp.kind === 'rod') return;                                   // fiskestanga styres av updateFishing
   if (Wp.kind === 'lasso') { throwLasso(); return; }
   const t = target();
@@ -2316,7 +2320,7 @@ function initR3() {
   scene.add(hemi, sun, sun.target, moon, moon.target);
   const pool = [];
   for (let i = 0; i < 8; i++) { const l = new THREE.PointLight(0xffa955, 0, 300, 1); scene.add(l); pool.push(l); }
-  const pLight = new THREE.PointLight(0xc9d4ff, 0, 150, 1); scene.add(pLight);
+  const pLight = new THREE.PointLight(0xc9d4ff, 0, 260, 1); scene.add(pLight);
 
   Object.assign(GEO, {
     box: new THREE.BoxGeometry(1, 1, 1), cyl: new THREE.CylinderGeometry(1, 1, 1, 10), cone: new THREE.ConeGeometry(1, 1, 9),
@@ -5525,7 +5529,7 @@ function draw(time) {
     }
     if (EVN2_KAM_TRAER && !t.giant) {   // 2.0: tre mellom kameraet og helten (eller ved kameraet) tones ned til 30 %
       // Mål 30 % mens treet står i veien, og 0,6 s etterpå (hindrer blinking når treet så vidt er innenfor/utenfor)
-      const mål = m.okk !== undefined && R3.kamTid - m.okk < 0.6 ? 0.3 : 1;
+      const mål = m.okk !== undefined && R3.kamTid - m.okk < 0.6 ? 0.2 : 1;   // 2.0.9: 20 % (før 30 %), så figuren synes tydelig gjennom kronen
       if (mål < 1 || (m.fade2 !== undefined && m.fade2 < 1)) {
         if (!m.fMats) {   // egne kopier av materialene, laget én gang per tre som noen gang står i veien (samme shaderprogram)
           m.fMats = []; m.oMats = [];
@@ -5965,7 +5969,7 @@ function draw(time) {
       A.needsUpdate = true; R3.lavaFX.visible = near.length > 0;
     }
   }
-  R3.pLight.position.set(p.x, 45 + (p.h !== undefined ? p.h - p.z : groundH(p.x, p.y)), p.y); R3.pLight.intensity = 0.8 * dark;
+  R3.pLight.position.set(p.x, 45 + (p.h !== undefined ? p.h - p.z : groundH(p.x, p.y)), p.y); R3.pLight.intensity = 1.7 * dark;   // 2.0.9: sterkere og videre lys rundt helten om natten (før 0,8 og 150), så figuren og nærområdet er lesbare
   const bw = biomeW(R3.camT.x, R3.camT.z), BC = R3.biomeC;
   const dayMix = R3.mixA.setRGB(0, 0, 0), nightMix = R3.mixB.setRGB(0, 0, 0);
   for (const kb in bw) { dayMix.r += BC[kb][0].r * bw[kb]; dayMix.g += BC[kb][0].g * bw[kb]; dayMix.b += BC[kb][0].b * bw[kb];
@@ -6059,14 +6063,22 @@ function draw(time) {
     if (EVN2_KAM_TRAER) {   // 2.0: også trær rett ved kameraet blir gjennomsiktige (kameraet står aldri «inni» et synlig tre)
       // Siktlinja fra hodet til kameraet: et tre står i veien når stammen/kronen (sylinder) ligger nærmere linja enn radius,
       // og linja går under tretoppen der. Regnet eksakt (ikke i punkter), så tynne trær ikke faller inn og ut mellom punktene.
-      const cx = hx + ex * R3.camK, cy = hy + ey * R3.camK, cz = hz + ez * R3.camK, dx = cx - hx, dz = cz - hz, L2 = dx * dx + dz * dz || 1;
-      const x0 = Math.min(hx, cx) - 60, x1 = Math.max(hx, cx) + 60, z0 = Math.min(hz, cz) - 60, z1 = Math.max(hz, cz) + 60;
-      for (const t of g.trees) {
-        if (!t.alive || t.giant || !t._m || t.x < x0 || t.x > x1 || t.y < z0 || t.y > z1) continue;
-        const u = Math.max(0, Math.min(1, ((t.x - hx) * dx + (t.y - hz) * dz) / L2)), px = hx + dx * u, pz = hz + dz * u;
-        const r = 15 * t.s * treeWK(t) + (u > .85 ? 10 : 0), top = groundH(t.x, t.y) + 125 * t.s * treeHK(t);   // litt romsligere rett ved kameraet
-        if (u > .04 && Math.hypot(t.x - px, t.y - pz) < r && hy + (cy - hy) * u < top) t._m.okk = R3.kamTid;
-      }
+      const cx = hx + ex * R3.camK, cy = hy + ey * R3.camK, cz = hz + ez * R3.camK;
+      // 2.0.9: tre siktlinjer – til hodet, til midt på kroppen og til det helten samhandler med (dyr, kiste, bål …).
+      // Også treet helten hugger, tones ned hvis det står i veien. Litt bredere sone, så kronen ikke dekker kanten av figuren.
+      const mål = sistMål && sistMål.o && typeof sistMål.o.x === 'number' && sistMål.k !== 'tree' ? sistMål.o : null;
+      const linje = (ax, ay, az, ekstra) => {
+        const dx = cx - ax, dz = cz - az, L2 = dx * dx + dz * dz || 1;
+        const x0 = Math.min(ax, cx) - 80, x1 = Math.max(ax, cx) + 80, z0 = Math.min(az, cz) - 80, z1 = Math.max(az, cz) + 80;
+        for (const t of g.trees) {
+          if (!t.alive || t.giant || !t._m || t.x < x0 || t.x > x1 || t.y < z0 || t.y > z1) continue;
+          const u = Math.max(0, Math.min(1, ((t.x - ax) * dx + (t.y - az) * dz) / L2)), px = ax + dx * u, pz = az + dz * u;
+          const r = 15 * t.s * treeWK(t) + ekstra + (u > .85 ? 10 : 0), top = groundH(t.x, t.y) + 125 * t.s * treeHK(t);   // litt romsligere rett ved kameraet
+          if (u > .04 && Math.hypot(t.x - px, t.y - pz) < r && ay + (cy - ay) * u < top) t._m.okk = R3.kamTid;
+        }
+      };
+      linje(hx, hy, hz, 8); linje(hx, ch + 18, hz, 12);
+      if (mål && dist(mål.x, mål.y, p.x, p.y) < 400) linje(mål.x, groundH(mål.x, mål.y) + 30, mål.y, 6);
     }
     R3.camera.position.set(hx + ex * R3.camK, hy + ey * R3.camK, hz + ez * R3.camK);
   }
@@ -6264,7 +6276,6 @@ function updateHud() {
   { const B = BIOMES[g.biome]; const t = `${B.icon} ${B.n}`; if ($('biome').textContent !== t) $('biome').textContent = t; }
   { const id = curW(), W = WEAPONS[id], lv = heroLevel();
     $('axe').textContent = id === 'oks' ? AXES[g.axe].n : W.n + (wLvl(id) > 1 ? ` ${wLvl(id)}` : ''); $('wIcon').textContent = W.icon; $('lvl').textContent = lv.L;
-    if (isTouch && $('act').textContent !== W.icon) $('act').textContent = W.icon;
     const key = [hero.sel, hero.owned.join(), lv.L].join('|');
     if (key !== hotbarKey) {                                   // hurtiglinja tegnes bare på nytt når noe er endret
       hotbarKey = key;
@@ -6282,13 +6293,14 @@ function updateHud() {
   const ph = phaseInfo(g.time);
   $('phase').textContent = ph.dark > 0.5 ? `🌙 Natt ${g.nights + 1}` : `☀️ Dag ${g.nights + 1}`;
   const pr = $('prompt');
-  if (g.build) {
+  if (isTouch) mobilKnapper();
+  if (g.build) { sistMål = null;
     const B = BUILDINGS[g.build];
     const html = `<kbd>${isTouch ? WEAPONS[curW()].icon : 'E'}</kbd>Bygg ${B.n.toLowerCase()} &nbsp; <kbd>${isTouch ? '🔨' : 'Esc'}</kbd>Avbryt`;
     if (pr.innerHTML !== html) pr.innerHTML = html;
     pr.hidden = false; return;
   }
-  const t = g.sleep ? null : target(), useT = t && USE_K[t.k];
+  const t = g.sleep ? null : target(), useT = t && USE_K[t.k]; sistMål = t;
   if (isTouch) { const ub = $('useBtn'), want = !!useT; if (ub.hidden === want) ub.hidden = !want; }   // Bruk-knappen vises bare når det er noe å bruke
   const labels = {
     animal: 'Angrip dyret', water: 'Drikk vann',
@@ -6342,7 +6354,7 @@ function start() {
   if (bakgrunnFersk) bakgrunnFersk = false; else newGame();
   state = 'play'; nullstillZoom();
   $('startScreen').hidden = true; $('overScreen').hidden = true; $('hud').hidden = false;
-  $('touch').hidden = !isTouch; $('joy').hidden = !isTouch; resetPointers(); joyIdle(); $('hotbar').hidden = false; document.body.classList.toggle('touchui', isTouch); hotbarKey = '';
+  $('touch').hidden = !isTouch; $('joy').hidden = !isTouch; document.body.classList.toggle('touchui', isTouch); resetPointers(); joyIdle(); $('hotbar').hidden = false; hotbarKey = '';
   toast('Samle ved og bær før natten kommer!');
 }
 function gameOver() {
@@ -6353,6 +6365,35 @@ function gameOver() {
   $('overScreen').hidden = false;
   $('againBtn').focus();
 }
+
+// 2.0.9: mobil – én handlingsknapp som viser hva trykket gjør nå (ikon + kort tekst), og snarveier for spis og avbryt bygging
+const BRUK_ETIKETT = { fire: ['🔥', 'Legg ved'], water: ['💧', 'Drikk'], barrel: ['💧', 'Drikk'], npc: ['💬', 'Snakk'], board: ['🚂', 'Gå på'], bed: ['🛏️', 'Sov'],
+  cabin: ['🔎', 'Let'], basechest: ['📦', 'Åpne'], chest: ['📦', 'Åpne'], dchest: ['📦', 'Åpne'], bush: ['🫐', 'Plukk'], pack: ['🎒', 'Ta på'], wand: ['✨', 'Ta'], workshop: ['🔨', 'Verksted'] };
+const VERB = { melee: 'Slå', bow: 'Skyt', cast: 'Trylle', lasso: 'Kast', rod: 'Fisk' };
+// Ved tre og stein bruker handlingsknappen øksa, uansett hvilket våpen som er valgt (bare når knappen trykkes, ikke med mus/E)
+const ctxOks = t => !!(t && (t.k === 'tree' || t.k === 'rock') && !WEAPONS[curW()].tool && hero.owned.includes('oks'));
+let actSist = '', sistMål = null;   // sistMål: det helten står ved nå (brukes også av kameraet for å tone ned trær i veien)
+function mobilKnapper() {
+  const W = WEAPONS[curW()], F = g.p.fish;
+  let ik = W.icon, tx = VERB[W.kind] || 'Slå';
+  if (g.build) { ik = '🔨'; tx = 'Bygg'; }
+  else {
+    const t = g.sleep ? null : target(), u = t && USE_K[t.k] && !(t.k === 'water' && curW() === 'stang') ? BRUK_ETIKETT[t.k] : null;
+    if (u) [ik, tx] = t.k === 'fire' && g.fuel >= 99 ? ['🔥', 'Bålet'] : t.k === 'basechest' && !t.o.cleared ? ['🔒', 'Låst'] : u;
+    else if (t && (t.k === 'tree' || t.k === 'rock')) { ik = (W.tool || ctxOks(t)) ? WEAPONS.oks.icon : W.icon; tx = t.k === 'rock' && t.o.ore ? 'Hent jern' : 'Hugg'; }
+    else if (t && ENEMY_K[t.k]) tx = W.kind === 'lasso' ? 'Kast' : 'Angrip';
+    else if (W.kind === 'rod' && F) tx = F.st === 'bite' ? 'Napp!' : F.st === 'reel' ? 'Sveiv' : F.st === 'wait' ? 'Vent' : 'Fisk';
+  }
+  const key = ik + '|' + tx;
+  if (key !== actSist) { actSist = key; $('act').innerHTML = `<span class="ai">${ik}</span><span class="at">${tx}</span>`; $('act').setAttribute('aria-label', tx); }
+  // Snarvei: spis når magen er nesten tom (eller stek ved bålet), avbryt når du bygger
+  const ved = dist(g.p.x, g.p.y, FX, FY) < 95 * fireScale() && g.fuel > 0;
+  const spis = !g.build && ((g.food < 45 && g.cooked > 0) || (ved && (g.raw > 0 || g.fish.length > 0)));
+  const eb = $('eatBtn'); if (eb.hidden === spis) eb.hidden = !spis;
+  if (spis) { const h = ved && (g.raw > 0 || g.fish.length) ? '<span class="ai">🍖</span><span class="at">Stek</span>' : '<span class="ai">🍗</span><span class="at">Spis</span>'; if (eb.innerHTML !== h) eb.innerHTML = h; }
+  const bb = $('buildBtn'), bygg = !!g.build; if (bb.hidden === bygg) bb.hidden = !bygg;
+}
+window.EVN2_kamera = () => { if (R3) { R3.camMode = R3.camMode === 'near' ? 'far' : 'near'; toast(R3.camMode === 'near' ? '🎥 Kamera bak helten' : '🎥 Kamera ovenfra'); } };
 
 const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'jump', KeyE: 'act' };   // venstre musknapp = angrep
 window.addEventListener('keydown', e => {
@@ -6381,8 +6422,8 @@ $('menuList').addEventListener('click', e => { const b = e.target.closest('butto
 $('eatBtn').addEventListener('pointerdown', e => { e.preventDefault(); if (state === 'play') eat(); });
 document.querySelectorAll('#touch button[data-k]').forEach(b => {
   const k = b.dataset.k;
-  b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); keys[k] = true; b.classList.add('press'); try { b.setPointerCapture(e.pointerId); } catch (er) {} });
-  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, () => { keys[k] = false; b.classList.remove('press'); });
+  b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); keys[k] = true; if (b.id === 'act') keys.ctx = true; b.classList.add('press'); try { b.setPointerCapture(e.pointerId); } catch (er) {} });
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, () => { keys[k] = false; if (b.id === 'act') keys.ctx = false; b.classList.remove('press'); });
 });
 $('startBtn').addEventListener('click', start);
 $('hotbar').addEventListener('pointerdown', e => { const b = e.target.closest('button'); if (!b || state !== 'play') return; e.preventDefault(); e.stopPropagation();
@@ -6396,9 +6437,10 @@ let pinch0 = 0;
 const JOY_R = 55;
 const inJoyZone = (x, y) => x < VW * (VW > VH ? 0.4 : 0.5) && y > VH * (VW > VH ? 0.35 : 0.55);
 function joyShow(x, y, on) { const j = $('joy'); j.style.transform = `translate(${x}px,${y}px)`; j.classList.toggle('on', on); }
-function joyIdle() {   // 2.0.4: hvileringen står alltid over hurtiglinja (på høykant kan den ha to rader nederst)
-  const hb = $('hotbar'), hbTop = VW <= VH && hb && !hb.hidden && hb.offsetHeight ? hb.getBoundingClientRect().top : VH;
-  joyShow(Math.max(84, VW * 0.13), Math.min(VH - (VW > VH ? 110 : 130), hbTop - 72), false); $('joyKnob').style.transform = ''; }
+function joyIdle() {   // 2.0.9: hvileringen står nede til venstre, med bunnen på samme høyde som Hopp (som i Matdyr)
+  const jb = $('jumpBtn'), r = jb && jb.offsetWidth ? jb.getBoundingClientRect() : null;
+  let sl = 0; try { const m = document.createElement('div'); m.style.cssText = 'position:fixed;visibility:hidden;padding-left:env(safe-area-inset-left,0px)'; document.body.appendChild(m); sl = parseFloat(getComputedStyle(m).paddingLeft) || 0; m.remove(); } catch (e) {}
+  joyShow(18 + 70 + sl, r ? r.bottom - 70 : VH - 154, false); $('joyKnob').style.transform = ''; }
 window.addEventListener('resize', () => { if (JOY.id === null && !$('joy').hidden) joyIdle(); });   // snudd telefon: ringen følger med
 function joyRelease() { JOY.id = null; JOY.dx = JOY.dy = JOY.mag = 0; joyIdle(); }
 function camRotate(dx, dy) { if (!R3) return; R3.camYaw -= dx * 0.0085; R3.camPitch = clamp(R3.camPitch + dy * 0.004, -0.35, 0.45); }

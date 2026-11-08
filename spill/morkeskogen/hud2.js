@@ -51,6 +51,13 @@
         if (andre) t0 = 0; });
       kort.insertBefore(b, av);
     }
+    // 2.0.9: kart og kamera i pausemenyen (på mobil er bare ⏸ synlig under spilling)
+    if (kort && av && !$('h2PKart')) {
+      const lag = (id, tekst, fn) => { const b = document.createElement('button'); b.id = id; b.type = 'button'; b.className = 'liten'; b.textContent = tekst;
+        b.addEventListener('click', e => { e.stopPropagation(); fn(); }); kort.insertBefore(b, $('evnPauseStyrKnapp')); return b; };
+      lag('h2PKart', '🗺️ Kart', () => { const f = $('evnPauseFortsett'), k = $('evnKartKnapp'); if (f) f.click(); setTimeout(() => { if (k) k.click(); }, 30); });
+      lag('h2PKamera', '🎥 Bytt kamera', () => { if (typeof window.EVN2_kamera === 'function') window.EVN2_kamera(); const f = $('evnPauseFortsett'); if (f) f.click(); });
+    }
     if (kort && n && !$('h2Netter')) { const p = document.createElement('p'); p.id = 'h2Netter'; p.append('🌙 Netter overlevd: ', n); kort.insertBefore(p, $('evnPauseFortsett')); }
   }
   // Tab flytter bare fokus (EVN UI-standard KS8, T2). Spillet får ikke Tab, så Tab åpner ikke lenger ryggsekken (I og 🎒 gjør det).
@@ -64,7 +71,7 @@
     } }, true);
   // «Slik styrer du» i pausen: riktig tekst for musa (første klikk låser), kartknappen, spis og hjelp. Teksten i spill.js er uendret.
   const STYR_PC = '⌨️ Gå: <b>W A S D</b> eller pilene · Hopp: <b>mellomrom</b><br>🖱️ Første klikk: musa styrer kameraet · Hugg: <b>venstre musknapp</b><br>Se rundt uten å låse musa: <b>høyre musknapp</b> og dra · Zoom: musehjulet<br>Gjør ting: <b>E</b> · Spis: <b>F</b> eller <b>Q</b> · Våpen: <b>1–0</b><br>🔨 Bygg: <b>B</b> · 🎒 Sekk: <b>I</b> · 🗺️ Kart: <b>M</b> · 🎥 Kamera: <b>C</b><br>⏸ Pause: <b>P</b> eller <b>Esc</b> · ❓ Hjelp: <b>H</b>';
-  const STYR_TOUCH = '👆 Gå: dra med fingeren · Se rundt: dra med en annen finger · Zoom: knip<br>🪓 Hugg: trykk øksa · ⤴️ Hopp · ✋ Bruk: trykk hånda<br>🔨 Bygg · 🍖 Spis · 🎥 Kamera · 🗺️ Kart: trykk 🗺️ øverst<br>⏸ Pause · ❓ Hjelp';
+  const STYR_TOUCH = '👆 Gå: dra med tommelen nede til venstre · Se rundt: dra et annet sted · Zoom: knip<br>🟠 Den store knappen gjør det den viser: Hugg, Angrip, Plukk, Snakk …<br>⤒ Hopp: den gule knappen · Våpen: trykk i raden nederst<br>🎒 Ryggsekk: mat, bygging og våpen · 🍗 Spis-knappen kommer når du er sulten<br>⏸ Pause: kart, kamera, hjelp og avslutt';
   // Lytteren legges på selve knappen (i knapper()), fordi EVN-PAUSE stopper klikk fra å boble opp fra pausekortet.
   const skrivStyring = () => { const s = $('evnPauseStyr'); if (s && !s.hidden) s.innerHTML = document.body.classList.contains('touchui') ? STYR_TOUCH : STYR_PC; };
   // Hjelp = pausemenyen med «Slik styrer du» åpen (spillet står stille mens den vises)
@@ -84,11 +91,12 @@
     // Meldinger (#toast) under statusfeltet og topp-raden, så de aldri dekker dem (statusfeltet blir høyere når ressurser vises)
     const t = $('toast'), st = document.querySelector('#hud > .panel'), dg = $('h2Dag'), v = $('h2Vapen');
     const touch = document.body.classList.contains('touchui'), høykant = touch && innerHeight > innerWidth;
-    // Mobil på høykant: våpenlinja under statusfeltet (ellers over hurtiglinja, se under)
-    if (v) { if (høykant && st) { v.style.bottom = 'auto'; v.style.top = (st.getBoundingClientRect().bottom + 6) + 'px'; } else v.style.top = ''; }
-    const vUnder = høykant && v && !v.hidden ? v.getBoundingClientRect().bottom : 0;
+    // 2.0.9: på mobil står våpen og nivå tett under statusfeltet (både stående og liggende)
+    if (v) { if (touch && st) { const r = st.getBoundingClientRect(); v.style.bottom = 'auto'; v.style.top = (r.bottom + 4) + 'px'; v.style.left = r.left + 'px'; } else { v.style.top = ''; v.style.left = ''; } }
+    const vUnder = touch && v && !v.hidden ? v.getBoundingClientRect().bottom : 0;
     if (t && st) t.style.top = (Math.max(st.getBoundingClientRect().bottom, dg ? dg.getBoundingClientRect().bottom : 0, vUnder) + 10) + 'px';
     if (!touch) { h.style.maxWidth = ''; return; }
+    return;   // 2.0.9: hintet vises ikke på mobil (handlingsknappen viser hva trykket gjør)
     const acts = document.querySelector('#touch .acts'), hb = $('hotbar'); if (!acts) return;
     if (høykant) {   // høykant: hintet rett over roboten, i hele bredden. Hurtiglinja og knappene ligger nederst (hud2.css).
       // Bredden holder seg unna verktøykolonnen til høyre (symmetrisk rundt midten). Lange hint brytes over flere linjer (hud2.css).
