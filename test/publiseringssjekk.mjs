@@ -130,6 +130,10 @@ const spillHer = spillVed(REF), spillMain = new Set(spillVed(mb));
       feil.push(`${id}: PR-en ${gml === null ? 'legger til' : ny === null ? 'sletter' : 'endrer'} ${fil}. Testoppsettet for et spill som finnes på main, står i test/index.html og endres bare med særskilt kontroll.`);
     if (ny !== null) { const r = lesOppsett(ny); if (r.feil.length) feil.push(`${fil} er ugyldig: ${r.feil.join('; ')}.`); }
   }
+  // Et spill fra main som mangler på commiten, er fjernet eller har fått nytt navn. Det får da ikke det betrodde oppsettet,
+  // og det må derfor kontrolleres særskilt av eieren.
+  for (const id of spillMain) if (!spillHer.includes(id))
+    feil.push(`Spillet ${id} finnes på main, men ikke på commiten (fjernet eller nytt navn). Det krever særskilt kontroll av eieren.`);
   const nye = spillHer.filter(id => !spillMain.has(id));
   if (feil.length === f0) ok.push(`Testoppsettet er ikke endret for spill som finnes på main${nye.length ? `. Nye spill registrert automatisk: ${nye.join(', ')}` : ''}.`);
 }

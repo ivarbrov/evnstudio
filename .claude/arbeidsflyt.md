@@ -120,7 +120,7 @@ To arbeidsflyter gir to separate kontroller. Begge skal kreves i regelen for `ma
 5. **Testkvitteringen i rapporten:** gjelder samme commit, er laget på rent arbeidstre og har samme resultat som Actions i de obligatoriske suitene.
 6. **K3:** endrede spill har nytt versjonsnummer på startkortet, og det står i `ENDRINGSLOGG.md`.
 7. **Dekning:** Hvert spill på commiten er testet i Actions, og har hver påkrevde kontroll i `statisk` og `royk` (`PAKREVDE_KONTROLLER`) med status ok, kjent eller rettet. Listen over spill leses fra git, ikke fra resultatfilen. Publiseringssjekken godtar ikke et resultat som utelater et spill eller en kontroll, eller som oppgir et spill som ikke finnes.
-8. **Testoppsett:** `evn-test.json` er bare lov for spill som ikke finnes på `main`, og må være gyldig. Legger PR-en til, endrer eller sletter filen for et spill på `main`, blir sjekken rød.
+8. **Testoppsett:** `evn-test.json` er bare lov for spill som ikke finnes på `main`, og må være gyldig. Legger PR-en til, endrer eller sletter filen for et spill på `main`, blir sjekken rød. Det samme skjer hvis et spill fra `main` mangler (fjernet eller nytt navn).
 
 **Særskilt kontroll:** Punkt 1 og 8 er grensen mellom å registrere et spill og å endre testene. Å registrere et nytt spill gir ingen rød sjekk. Endringer i testlogikken, publiseringssjekken, GitHub Actions eller testoppsettet for spill på `main` gir fortsatt rød sjekk, og eieren må gå gjennom dem.
 

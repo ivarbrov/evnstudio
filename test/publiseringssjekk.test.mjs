@@ -102,6 +102,7 @@ const scenarier = [
   { navn: 'N18 Nytt evn-test.json for et spill på main avvises', endre: () => { okning('alfa', '1.0.1'); skriv('spill/alfa/evn-test.json', '{ "start": "alltidSkjult" }'); }, forventet: 1, tekst: ['PR-en legger til spill/alfa/evn-test.json'] },
   { navn: 'N19 Endret evn-test.json for et spill på main avvises', endre: () => { okning('beta', '2.0.1'); skriv('spill/beta/evn-test.json', '{ "start": "annenKnapp" }\n'); }, forventet: 1, tekst: ['PR-en endrer spill/beta/evn-test.json'] },
   { navn: 'N20 Slettet evn-test.json for et spill på main avvises', endre: () => { okning('beta', '2.0.1'); slett('spill/beta/evn-test.json'); }, forventet: 1, tekst: ['PR-en sletter spill/beta/evn-test.json'] },
+  { navn: 'N22 Spill fra main med nytt navn og eget testoppsett avvises', endre: () => { fs.renameSync(path.join(REPO, 'spill/alfa'), path.join(REPO, 'spill/alfa2')); skriv('spill/alfa2/index.html', spillside('1.0.1')); skriv('spill/alfa2/evn-test.json', '{ "start": "lokkeknapp" }'); fs.appendFileSync(path.join(REPO, 'ENDRINGSLOGG.md'), '| 2026-11-08 | alfa2 1.0.1 |\n'); }, forventet: 1, tekst: ['Spillet alfa finnes på main, men ikke på commiten'] },
   { navn: 'N21 Ugyldig mappenavn for nytt spill avvises', endre: () => nyttSpill('Gamma Spill'), forventet: 1, tekst: ['Mappenavnet spill/Gamma Spill/ er ikke gyldig'] }
 ];
 
