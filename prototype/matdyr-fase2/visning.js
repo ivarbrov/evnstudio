@@ -267,7 +267,7 @@
     const kant = [], tan = i => { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)]; const v = new T.Vector2(b[0] - a[0], b[1] - a[1]).normalize(); return v; };
     const pos = [], uv = [], idx = [];
     pts.forEach((q, i) => {
-      const t = tan(i), n = new T.Vector2(-t.y, t.x);                 // normal (venstre for fartsretningen = mot bygningen)
+      const t = tan(i), n = new T.Vector2(-t.y, t.x);                 // normal: i = ytterkanten (bort fra låven), o = innerkanten (mot låven)
       const ix = q[0] + n.x * W / 2, iz = q[1] + n.y * W / 2, ox = q[0] - n.x * W / 2, oz = q[1] - n.y * W / 2;
       kant.push({ q, ix, iz, ox, oz, t, n });
       pos.push(ix, q[4], iz, ox, q[4], oz, ix, q[4] - 0.3, iz, ox, q[4] - 0.3, oz);
@@ -282,13 +282,13 @@
     kant.forEach(k => { if (erRepos(k.q[3])) { if (gruppe.length) indreUtenRepos.push(gruppe); gruppe = []; } else gruppe.push(k); }); if (gruppe.length) indreUtenRepos.push(gruppe);
     ror(kant.map(k => new T.Vector3(k.ox, k.q[4] - 0.05, k.oz)), 0.16, GUL);
     ror(kant.map(k => new T.Vector3(k.ix, k.q[4] - 0.05, k.iz)), 0.16, GUL);
-    ror(kant.map(k => new T.Vector3(k.ox, k.q[4] + 1.35, k.oz)), 0.07, HVIT);
-    indreUtenRepos.forEach(gr => ror(gr.map(k => new T.Vector3(k.ix, k.q[4] + 1.35, k.iz)), 0.07, HVIT));
+    ror(kant.map(k => new T.Vector3(k.ix, k.q[4] + 1.35, k.iz)), 0.07, HVIT);                                   // ytterkant: sammenhengende rekkverk
+    indreUtenRepos.forEach(gr => ror(gr.map(k => new T.Vector3(k.ox, k.q[4] + 1.35, k.oz)), 0.07, HVIT));   // innerkant: åpen ved porten på reposen
     // Stolper: rekkverk hver 1,6, røde bærestolper hver 3,2
     let neste = 0, nesteB = 0;
     kant.forEach(k => {
       const d = k.q[3], y = k.q[4];
-      if (d >= neste) { neste = d + 1.6; boks(rr, 0.12, 1.3, 0.12, k.ox, y + 0.7, k.oz, HVIT); if (!erRepos(d)) boks(rr, 0.12, 1.3, 0.12, k.ix, y + 0.7, k.iz, HVIT); }
+      if (d >= neste) { neste = d + 1.6; boks(rr, 0.12, 1.3, 0.12, k.ix, y + 0.7, k.iz, HVIT); if (!erRepos(d)) boks(rr, 0.12, 1.3, 0.12, k.ox, y + 0.7, k.oz, HVIT); }
       if (d >= nesteB && y > 0.8) { nesteB = d + 3.2; for (const [x, z] of [[k.ox, k.oz], [k.ix, k.iz]]) boks(rr, 0.4, y - 0.3, 0.4, x, (y - 0.3) / 2, z, ROD); }
     });
     // Gule piler oppover rampa (ikke på reposene)
