@@ -28,6 +28,8 @@ jobs:
           node-version: 22
       - name: Test publiseringssjekken (negative tester)
         run: node test/publiseringssjekk.test.mjs
+      - name: Test at spillkode ikke kan forfalske testresultatet
+        run: node test/manipulering.test.mjs
       - name: Kjør testene
         run: node test/kjor.mjs --base origin/main --json "$RUNNER_TEMP/testresultat.json"
       - name: Lagre testresultatet

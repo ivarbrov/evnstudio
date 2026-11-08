@@ -58,7 +58,7 @@ function finnSpill() {
 function server(funnet) {
   return new Promise(r => {
     const s = http.createServer((req, res) => {
-      if (new URL(req.url, 'http://x').pathname === '/__evn/spill.json') {
+      if (funnet && new URL(req.url, 'http://x').pathname === '/__evn/spill.json') {
         res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
         return res.end(JSON.stringify(funnet));
       }
@@ -110,7 +110,88 @@ async function startNettleser(bin) {
     try { p.kill(); } catch {}
     for (let i = 0; i < 20; i++) { try { fs.rmSync(profil, { recursive: true, force: true }); return; } catch { await new Promise(r => setTimeout(r, 250)); } }
   };
-  return { send, lytt: l => lyttere.push(l), lukk };
+  return { send, lytt: l => { lyttere.push(l); return () => { const i = lyttere.indexOf(l); if (i >= 0) lyttere.splice(i, 1); }; }, lukk };
+}
+
+// ---- Røyktest: start, pause, fortsett, manglende filer og feil (F1, K1, U1) ----
+// Hvert spill kjøres i en egen fane på en egen port (egen opprinnelse), aldri inne i testsiden.
+// Kontrollene kjøres i en isolert verden: spillkoden deler DOM med dem, men ser ikke variablene deres
+// og kan ikke nå testsiden eller resultatet. Feil, CSP-brudd og manglende filer leses av nettleseren (CDP).
+const ROYK_HJELP = `globalThis.__evn = {
+  synlig(e) {
+    if (!e || !e.isConnected) return false;
+    const r = e.getBoundingClientRect(), cs = getComputedStyle(e);
+    return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && !e.closest('[hidden]');
+  }
+}; true`;
+async function roykSpill(nl, opprinnelse, sp) {
+  const vent = ms => new Promise(r => setTimeout(r, ms));
+  const rader = [], legg = (id, krav, navn, ok, info = '') => rader.push({ suite: 'royk', spill: sp.id, id, krav, navn, ok, info });
+  const { targetId } = await nl.send('Target.createTarget', { url: 'about:blank' });
+  const { sessionId } = await nl.send('Target.attachToTarget', { targetId, flatten: true });
+  const s = (m, p) => nl.send(m, p, sessionId);
+  const unntak = [], logg = [], mangler = [], kort = u => (u || '').replace(/^https?:\/\/[^/]+/, '');
+  let lastet = false;
+  const av = nl.lytt(d => {
+    if (d.sessionId !== sessionId) return;
+    const p = d.params;
+    if (d.method === 'Page.loadEventFired') lastet = true;
+    if (d.method === 'Runtime.exceptionThrown') { const e = p.exceptionDetails; unntak.push(((e.exception && e.exception.description) || e.text).split('\n')[0] + (e.url ? ' (' + kort(e.url) + ')' : '')); }
+    if (d.method === 'Log.entryAdded' && p.entry.level === 'error' && p.entry.source !== 'network') logg.push('Logg: ' + p.entry.text + (p.entry.url ? ' (' + kort(p.entry.url) + ')' : ''));
+    if (d.method === 'Network.responseReceived' && p.response.status >= 400) mangler.push(p.response.status + ' ' + kort(p.response.url));
+    if (d.method === 'Network.loadingFailed' && p.blockedReason) logg.push('Blokkert (' + p.blockedReason + ')');
+  });
+  try {
+    await Promise.all(['Page.enable', 'Runtime.enable', 'Log.enable', 'Network.enable'].map(m => s(m)));
+    await s('Emulation.setDeviceMetricsOverride', { width: 1024, height: 700, deviceScaleFactor: 1, mobile: false });
+    await s('Storage.clearDataForOrigin', { origin: opprinnelse, storageTypes: 'all' });
+    const { frameId } = await s('Page.navigate', { url: `${opprinnelse}/spill/${sp.id}/` });
+    for (let i = 0; i < 200 && !lastet; i++) await vent(100);
+    await vent(1000);
+    const { executionContextId } = await s('Page.createIsolatedWorld', { frameId, worldName: 'evn-royk' });
+    const ev = async uttrykk => {
+      const r = await s('Runtime.evaluate', { expression: uttrykk, contextId: executionContextId, returnByValue: true });
+      if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception ? r.exceptionDetails.exception.description : r.exceptionDetails.text);
+      return r.result.value;
+    };
+    await ev(ROYK_HJELP);
+    const J = JSON.stringify;
+    const ver = await ev(`(() => { const v = document.querySelector('.evn-ver'), m = v && /Versjon\\s+(\\d+(?:\\.\\d+){1,3})/.exec(v.textContent); return m ? m[1] : null; })()`);
+    legg('U1-versjon', 'U1, K3', 'Startkortet viser «Versjon x.y.z»', !!ver, ver || 'fant ikke .evn-ver med versjon');
+    const knapp = await ev(`(() => { const k = document.getElementById(${J(sp.start)}); return { fantes: !!k, synlig: __evn.synlig(k) }; })()`);
+    legg('F1-startknapp', 'F1', 'Startknappen finnes og er synlig', knapp.synlig, knapp.fantes ? '' : 'fant ikke #' + sp.start);
+    if (knapp.fantes) await ev(`document.getElementById(${J(sp.start)}).click(); true`);
+    await vent(500);
+    if (sp.etterStart && sp.etterStart.klikk) await ev(`(() => { const e = document.querySelector(${J(sp.etterStart.klikk)}); if (e) e.click(); return true; })()`);
+    await vent(1500);
+    const borte = await ev(`!__evn.synlig(document.getElementById(${J(sp.start)}))`);
+    legg('F1-start', 'F1', 'Spillet starter: startknappen forsvinner', knapp.fantes && borte, knapp.fantes ? '' : 'startknappen fantes ikke');
+    const harPause = await ev(`!!(document.getElementById('evnPauseKnapp') && document.getElementById('evnPause'))`);
+    if (!harPause) legg('F1-pause', 'F1', 'Pause åpner pausekortet', false, 'fant ikke felles pause (#evnPauseKnapp)');
+    else {
+      // Spillet kan ha pauset seg selv fordi vinduet mangler fokus
+      await ev(`(() => { if (document.getElementById('evnPause').classList.contains('vis')) { const f = document.getElementById('evnPauseFortsett'); if (f) f.click(); } return true; })()`);
+      await vent(300);
+      await ev(`document.getElementById('evnPauseKnapp').click(); true`);
+      await vent(400);
+      const pauset = await ev(`document.getElementById('evnPause').classList.contains('vis')`);
+      legg('F1-pause', 'F1', 'Pause åpner pausekortet', pauset);
+      await ev(`(() => { const f = document.getElementById('evnPauseFortsett'); if (f) f.click(); return true; })()`);
+      await vent(400);
+      const lukket = await ev(`!document.getElementById('evnPause').classList.contains('vis')`);
+      legg('F1-fortsett', 'F1', 'Fortsett lukker pausekortet', pauset && lukket, pauset ? '' : 'pausekortet åpnet seg ikke');
+    }
+  } catch (e) {
+    legg('F1-royk', 'F1', 'Røyktesten kunne fullføres', false, String(e && e.message || e));
+  } finally {
+    av();
+    try { await nl.send('Target.closeTarget', { targetId }); } catch {}
+  }
+  legg('K1-404', 'K1', 'Ingen filer mangler (status 400 eller høyere)', mangler.length === 0, [...new Set(mangler)].slice(0, 5).join(', '));
+  legg('K1-feil', 'K1', 'Ingen ufangede feil fra innlasting til etter pause', unntak.length === 0, [...new Set(unntak)].slice(0, 5).join(' | '));
+  const alle = [...unntak.map(x => 'Feil: ' + x), ...logg, ...mangler];
+  legg('K1-nettleser', 'K1', 'Ingen feil, CSP-brudd eller manglende filer sett av nettleseren', alle.length === 0, [...new Set(alle)].slice(0, 5).join(' | ').slice(0, 900));
+  return rader;
 }
 
 async function main() {
@@ -120,6 +201,9 @@ async function main() {
   const funnet = finnSpill();
   const srv = await server(funnet);
   const port = srv.address().port;
+  // Spillene i røyktesten får en egen port, altså en annen opprinnelse enn testsiden. Listen over spill gis bare på testsidens port.
+  const spillSrv = await server(null);
+  const spillOpprinnelse = 'http://127.0.0.1:' + spillSrv.address().port;
   const nl = await startNettleser(bin);
   const { targetId } = await nl.send('Target.createTarget', { url: 'about:blank' });
   const { sessionId } = await nl.send('Target.attachToTarget', { targetId, flatten: true });
@@ -161,16 +245,25 @@ async function main() {
     await new Promise(r => setTimeout(r, 1000));
     try { const v = await s('Runtime.evaluate', { expression: 'JSON.stringify(window.EVNTestResultat || null)', returnByValue: true }); res = JSON.parse(v.result.value); } catch {}
   }
-  await nl.lukk(); srv.close();
-  if (!res) { console.error('Testsiden ble ikke ferdig innen ' + MAKS_MS / 60000 + ' minutter.'); process.exit(2); }
+  if (!res) { await nl.lukk(); srv.close(); spillSrv.close(); console.error('Testsiden ble ikke ferdig innen ' + MAKS_MS / 60000 + ' minutter.'); process.exit(2); }
 
   const tester = res.tester;
-  for (const [spill, liste] of Object.entries(nettleserfeil)) {
-    const suite = spill === 'prototype' ? 'ui' : 'royk';
-    tester.push({ suite, spill, id: 'K1-nettleser', krav: 'K1', navn: 'Ingen feil, CSP-brudd eller manglende filer sett av nettleseren', status: res.ikkeGjeldende[suite] ? 'varsel' : 'feil', info: [...new Set(liste)].slice(0, 5).join(' | ') });
+  // Røyktesten kjøres her, ikke i testsiden, så spillkoden aldri deler opprinnelse med testsiden eller resultatet.
+  const roykTestet = new Set();
+  if (res.suiter.royk) for (const sp of res.spillOppsett) {
+    for (const r of await roykSpill(nl, spillOpprinnelse, sp)) {
+      let status = r.ok ? 'ok' : (res.ikkeGjeldende.royk ? 'varsel' : 'feil'), info = r.info;
+      const kjent = (res.kjente || {})[r.spill + '/' + r.id];
+      if (kjent) { status = r.ok ? 'rettet' : 'kjent'; info = (info ? info + '. ' : '') + kjent; }
+      tester.push({ suite: r.suite, spill: r.spill, id: r.id, krav: r.krav, navn: r.navn, status, info });
+    }
+    roykTestet.add(sp.id);
   }
-  for (const spill of res.spill) {
-    if (res.suiter.royk && !nettleserfeil[spill]) tester.push({ suite: 'royk', spill, id: 'K1-nettleser', krav: 'K1', navn: 'Ingen feil, CSP-brudd eller manglende filer sett av nettleseren', status: 'ok', info: '' });
+  await nl.lukk(); srv.close(); spillSrv.close();
+  // Feil i prototypen som bare nettleseren ser (suiten ui)
+  for (const [spill, liste] of Object.entries(nettleserfeil)) {
+    const suite = spill === 'prototype' ? 'ui' : 'statisk';
+    tester.push({ suite, spill, id: 'K1-nettleser', krav: 'K1', navn: 'Ingen feil, CSP-brudd eller manglende filer sett av nettleseren', status: res.ikkeGjeldende[suite] ? 'varsel' : 'feil', info: [...new Set(liste)].slice(0, 5).join(' | ') });
   }
 
   // Suiter som mangler: «ikke innført» hvis filen heller ikke finnes på base, ellers feil.
@@ -184,7 +277,7 @@ async function main() {
   // Ugyldig oppsett eller mappenavn, og spill som ikke ble testet. Gjelder alle spill uansett hvilke suiter som kjøres.
   for (const f of funnet.feil) tester.push({ suite: 'statisk', spill: f.id, id: 'F1-oppsett', krav: 'F1', navn: 'Spillets testoppsett er gyldig', status: 'feil', info: f.info });
   for (const sp of funnet.spill)
-    if (res.suiter.royk && !res.spill.includes(sp.id)) tester.push({ suite: 'royk', spill: sp.id, id: 'F1-dekning', krav: 'F1', navn: 'Spillet har røyktest', status: 'feil', info: `spill/${sp.id}/ ble ikke testet` });
+    if (res.suiter.royk && !roykTestet.has(sp.id)) tester.push({ suite: 'royk', spill: sp.id, id: 'F1-dekning', krav: 'F1', navn: 'Spillet har røyktest', status: 'feil', info: `spill/${sp.id}/ ble ikke testet` });
   const delvis = res.alleSuiter.filter(n => !res.suiter[n]);
 
   // Testkvittering: bare stabile opplysninger, så den kan sammenlignes mellom PC og Actions.

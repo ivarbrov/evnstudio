@@ -25,7 +25,7 @@ const MAKS_BYTE = 1024;
 // Kontrollene som må finnes for hvert spill i et fullt testresultat. Publiseringssjekken krever dem.
 export const PAKREVDE_KONTROLLER = Object.freeze({
   statisk: ['S1-csp', 'S1-domener', 'S1-eksterne-filer', 'S1-eval', 'T3-zoom'],
-  royk: ['U1-versjon', 'F1-startknapp', 'F1-start', 'F1-pause', 'F1-fortsett', 'K1-feil', 'K1-nettleser']
+  royk: ['U1-versjon', 'F1-startknapp', 'F1-start', 'F1-pause', 'F1-fortsett', 'K1-404', 'K1-feil', 'K1-nettleser']
 });
 
 // Leser og kontrollerer innholdet i evn-test.json. Gir { oppsett, feil }. Ved feil er oppsett null.

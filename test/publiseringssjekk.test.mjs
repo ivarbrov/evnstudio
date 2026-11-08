@@ -18,6 +18,7 @@ import { lesOppsett, PAKREVDE_KONTROLLER } from './spilloppsett.mjs';
 
 const TEST = path.dirname(fileURLToPath(import.meta.url));
 const ROT = fs.mkdtempSync(path.join(os.tmpdir(), 'evn-sjekk-'));
+process.on('exit', () => fs.rmSync(ROT, { recursive: true, force: true }));
 const REPO = path.join(ROT, 'repo'), MAIN = path.join(ROT, 'main');
 const git = (...a) => execFileSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', '-c', 'commit.gpgsign=false', '-c', 'init.defaultBranch=main', ...a],
   { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -115,10 +116,13 @@ const enhet = [
 ];
 
 let feil = 0;
-console.log('# Kontroll av evn-test.json');
-for (const [navn, tekst, test] of enhet) { const ok = test(lesOppsett(tekst).oppsett); if (!ok) feil++; console.log(`${ok ? 'OK  ' : 'FEIL'} ${navn}`); }
-console.log('\n# Publiseringssjekken (kjørt fra main)');
-for (const s of scenarier) if (!kjor(s)) feil++;
-fs.rmSync(ROT, { recursive: true, force: true });
+try {
+  console.log('# Kontroll av evn-test.json');
+  for (const [navn, tekst, test] of enhet) { const ok = test(lesOppsett(tekst).oppsett); if (!ok) feil++; console.log(`${ok ? 'OK  ' : 'FEIL'} ${navn}`); }
+  console.log('\n# Publiseringssjekken (kjørt fra main)');
+  for (const s of scenarier) if (!kjor(s)) feil++;
+} finally {
+  fs.rmSync(ROT, { recursive: true, force: true });
+}
 console.log(`\n${enhet.length + scenarier.length - feil} av ${enhet.length + scenarier.length} ga forventet utfall.`);
 process.exit(feil ? 1 : 0);

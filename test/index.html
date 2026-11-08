@@ -46,7 +46,7 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
   var STORRELSER = [[1280, 800], [375, 812], [740, 360], [320, 568], [568, 320]];
   var SUITER = [
     { navn: 'statisk', fil: null, kjor: statisk },
-    { navn: 'royk', fil: null, kjor: function () { return rekke(SPILL, royk); } },
+    { navn: 'royk', fil: null, ekstern: true },   // kjøres av test/kjor.mjs: hvert spill i egen fane og egen opprinnelse
     { navn: 'statistikk', fil: 'test/statistikk/index.html', kjor: statistikk },
     { navn: 'ui', fil: 'prototype/ui/index.html', kjor: ui },
     { navn: 'ecoins', fil: 'test/ecoins/index.html', kjor: ecoins }
@@ -74,11 +74,6 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
     return new Promise(function (r) { f.onload = function () { r(f); }; f.src = url; });
   }
   function tom() { var f = document.getElementById('ramme'); return new Promise(function (r) { f.onload = function () { r(); }; f.src = 'about:blank'; }); }
-  function synlig(e) {
-    if (!e || !e.isConnected) return false;
-    var r = e.getBoundingClientRect(), cs = e.ownerDocument.defaultView.getComputedStyle(e);
-    return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && !e.closest('[hidden]');
-  }
 
   // ---- Statisk kontroll av spillsidene: S1 og T3 ----
   function statisk() {
@@ -101,53 +96,9 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
     });
   }
 
-  // ---- Røyktest: start, pause, fortsett, manglende filer og feil (F1, K1, U1) ----
-  function royk(s) {
-    var feil = [], f, w, d;
-    return last('/spill/' + s.id + '/', 1024, 700).then(function (fr) {
-      f = fr; w = f.contentWindow; d = f.contentDocument;
-      w.addEventListener('error', function (e) { feil.push((e.message || 'feil') + (e.filename ? ' (' + e.filename.replace(location.origin, '') + ':' + e.lineno + ')' : '')); });
-      w.addEventListener('unhandledrejection', function (e) { feil.push('Uhåndtert promise: ' + String(e.reason)); });
-      return vent(1000);
-    }).then(function () {
-      var v = d.querySelector('.evn-ver'), m = v && /Versjon\s+(\d+(?:\.\d+){1,3})/.exec(v.textContent);
-      legg('royk', s.id, 'U1-versjon', 'U1, K3', 'Startkortet viser «Versjon x.y.z»', !!m, m ? m[1] : 'fant ikke .evn-ver med versjon');
-      var knapp = d.getElementById(s.start);
-      s.fantes = !!knapp;
-      legg('royk', s.id, 'F1-startknapp', 'F1', 'Startknappen finnes og er synlig', synlig(knapp), knapp ? '' : 'fant ikke #' + s.start);
-      if (knapp) knapp.click();
-      return vent(500).then(function () {
-        var e = s.etterStart && s.etterStart.klikk && d.querySelector(s.etterStart.klikk);
-        if (e) e.click();
-        return vent(1500);
-      });
-    }).then(function () {
-      legg('royk', s.id, 'F1-start', 'F1', 'Spillet starter: startknappen forsvinner', s.fantes && !synlig(d.getElementById(s.start)), s.fantes ? '' : 'startknappen fantes ikke');
-      var p = d.getElementById('evnPauseKnapp'), kort = d.getElementById('evnPause');
-      if (!p || !kort) { legg('royk', s.id, 'F1-pause', 'F1', 'Pause åpner pausekortet', false, 'fant ikke felles pause (#evnPauseKnapp)'); return; }
-      if (kort.classList.contains('vis')) d.getElementById('evnPauseFortsett').click();   // spillet kan ha pauset seg selv fordi vinduet mangler fokus
-      return vent(300).then(function () {
-        p.click();
-        return vent(400);
-      }).then(function () {
-        s.pauset = kort.classList.contains('vis');
-        legg('royk', s.id, 'F1-pause', 'F1', 'Pause åpner pausekortet', s.pauset);
-        var fo = d.getElementById('evnPauseFortsett');
-        if (fo) fo.click();
-        return vent(400);
-      }).then(function () {
-        legg('royk', s.id, 'F1-fortsett', 'F1', 'Fortsett lukker pausekortet', s.pauset && !kort.classList.contains('vis'), s.pauset ? '' : 'pausekortet åpnet seg ikke');
-      });
-    }).then(function () {
-      var alle = w.performance.getEntriesByType('navigation').concat(w.performance.getEntriesByType('resource'));
-      if (alle.length && typeof alle[0].responseStatus === 'undefined') { info('royk', s.id, 'K1-404', 'Manglende filer', 'nettleseren oppgir ikke statuskode; se K1-nettleser fra kjor.mjs'); }
-      else {
-        var mangler = alle.filter(function (e) { return e.responseStatus >= 400; }).map(function (e) { return e.responseStatus + ' ' + e.name.replace(location.origin, ''); });
-        legg('royk', s.id, 'K1-404', 'K1', 'Ingen filer mangler (status 400 eller høyere)', mangler.length === 0, mangler.join(', '));
-      }
-      legg('royk', s.id, 'K1-feil', 'K1', 'Ingen ufangede feil etter innlasting og under start og pause', feil.length === 0, feil.slice(0, 5).join(' | '));
-    }).catch(function (e) { legg('royk', s.id, 'F1-royk', 'F1', 'Røyktesten kunne fullføres', false, String(e && e.message || e)); });
-  }
+  // ---- Røyktest (F1, K1, U1) ----
+  // Kjøres ikke her. Spillkode som kjører i en ramme med samme opprinnelse som denne siden, kunne endre testresultatet.
+  // test/kjor.mjs kjører derfor hvert spill i en egen fane på en egen port, med kontrollene i en isolert verden.
 
   // ---- Statistikk: kjører den eksisterende testsiden (ST1–ST5) ----
   function statistikk() {
@@ -230,13 +181,14 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
       return (s.fil ? finnes(s.fil) : Promise.resolve(true)).then(function (ja) {
         if (!ja) { suiter[s.navn] = { status: 'mangler', fil: s.fil }; return; }
         suiter[s.navn] = { status: 'kjort', fil: s.fil };
+        if (s.ekstern) return;
         return Promise.resolve().then(s.kjor).catch(function (e) { legg(s.navn, '–', s.navn + '-kjoring', '', 'Suiten ble ferdig uten å krasje', false, String(e && e.message || e)); }).then(tom);
       });
     }); }).then(function () {
       document.getElementById('ramme').src = 'about:blank';
       var feil = tester.filter(function (x) { return x.status === 'feil'; }).length;
       vis(feil);
-      window.EVNTestResultat = { ferdig: true, feil: feil, suiter: suiter, tester: tester, ikkeGjeldende: IKKE_GJELDENDE, spill: SPILL.map(function (s) { return s.id; }), alleSuiter: SUITER.map(function (s) { return s.navn; }) };
+      window.EVNTestResultat = { ferdig: true, feil: feil, suiter: suiter, tester: tester, ikkeGjeldende: IKKE_GJELDENDE, kjente: KJENTE, spill: SPILL.map(function (s) { return s.id; }), spillOppsett: SPILL, alleSuiter: SUITER.map(function (s) { return s.navn; }) };
     });
   }
   document.getElementById('kjor').addEventListener('click', kjor);
