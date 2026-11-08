@@ -108,6 +108,7 @@ def pivot(o, punkt):
     return o
 
 def forelder(barn, rot):
+    bpy.context.view_layer.update()   # ellers er matrix_world foreldet for den sist pivoterte delen (den havnet ved origo)
     for b in barn:
         if b is None: continue
         mw = b.matrix_world.copy(); b.parent = rot; b.matrix_world = mw
@@ -273,12 +274,12 @@ def donutku():
     # Bein: korte og runde, hvite med brune klover
     bein = []
     for i, (bx, by) in enumerate([(-0.3, -0.32), (0.3, -0.32), (-0.3, 0.32), (0.3, 0.32)]):
-        b = [prim('syl', 'bein%d' % i, hvit, (bx, by, 0.24), (0.085, 0.085, 0.2), vertices=20, ss=1)]
-        b.append(prim('kule', 'klov%d' % i, klov, (bx, by - 0.01, 0.06), (0.1, 0.1, 0.07), segments=20, ring_count=10))
+        b = [prim('syl', 'bein%d' % i, hvit, (bx, by, 0.24), (0.095, 0.095, 0.2), vertices=20, ss=1)]
+        b.append(prim('kule', 'klov%d' % i, klov, (bx, by - 0.01, 0.06), (0.11, 0.11, 0.075), segments=20, ring_count=10))
         bein.append(pivot(slaa_sammen(['bein_vf', 'bein_hf', 'bein_vb', 'bein_hb'][i], b), (bx, by, H - 0.12)))
     # Hale med svart dusk bak på ringen
-    hale = [kurve('halestrå', [(0, R + r * 0.8, H + 0.05), (0, R + r * 1.2, H + 0.0), (0.03, R + r * 1.35, H - 0.18)], 0.022, hvit)]
-    hale.append(prim('kule', 'haledusk', sort, (0.03, R + r * 1.38, H - 0.24), (0.06, 0.06, 0.09), segments=16, ring_count=10))
+    hale = [kurve('halestrå', [(0, R + r * 0.8, H + 0.05), (0, R + r * 1.2, H + 0.02), (0.03, R + r * 1.4, H - 0.16)], 0.03, hvit, avsmal=lambda t: 1 - 0.3 * t)]
+    hale.append(prim('kule', 'haledusk', sort, (0.03, R + r * 1.44, H - 0.24), (0.085, 0.085, 0.12), segments=18, ring_count=12))
     hale = pivot(slaa_sammen('hale', hale), (0, R + r * 0.8, H + 0.05))
     kropp_all = slaa_sammen('kropp', [kropp, gl] + stro)
     rot = rot_node('Donutku'); forelder([kropp_all, hode, hale] + bein, rot)
@@ -343,7 +344,7 @@ def burgersau():
     kropp = slaa_sammen('kropp', deler)
     # Hodet stikker fram mellom brødene, med en majonesklatt som ull på toppen
     # Hodet sitter inne i burgeren, under brødluen og over salaten, så overgangen er dekket av mat
-    hx, hy, hz = 0, -0.55, H0 + 0.33
+    hx, hy, hz = 0, -0.52, H0 + 0.33
     hd = [prim('kule', 'sauhode', ansikt, (hx, hy, hz), (0.2, 0.19, 0.19), segments=40, ring_count=24)]
     hd.append(prim('kule', 'snute', mat('snute', '#4a4252', 0.6), (hx, hy - 0.15, hz - 0.08), (0.13, 0.1, 0.1), segments=28, ring_count=14))
     for s in (-1, 1):
@@ -359,7 +360,16 @@ def burgersau():
     krage = prim('torus', 'salatkrage', salat, (hx, hy + 0.05, hz - 0.12), (1, 0.8, 0.6), (0.35, 0, 0), major_radius=0.17, minor_radius=0.05, major_segments=40, minor_segments=10)
     for v in krage.data.vertices: v.co += v.normal * 0.02 * math.sin(math.atan2(v.co.y - hy, v.co.x - hx) * 9)
     hd.append(krage)
+    # Ullugg av lyse brødtotter i panna: samme ull som brødkanten, så brødluen og hodet henger sammen
+    for k, (dx, dz, rr2) in enumerate([(0, 0.17, 0.085), (-0.09, 0.15, 0.07), (0.09, 0.15, 0.07), (-0.05, 0.2, 0.06), (0.05, 0.2, 0.06)]):
+        hd.append(prim('kule', 'lugg%d' % k, brod_lys, (hx + dx, hy - 0.02, hz + dz), (rr2, rr2 * 0.9, rr2 * 0.8), segments=16, ring_count=10))
     hode = pivot(slaa_sammen('hode', hd), (hx, hy + 0.15, hz - 0.05))
+    # Ullkrage: en tett ring av brødtotter rundt nakken som går over i brødkanten, så hodet ser ut til å vokse ut av burgeren
+    krage2 = []
+    for k in range(15):
+        a = (k / 14 - 0.5) * math.radians(230)           # bue rundt hodet bak ansiktet, fra den ene kinnsiden over toppen til den andre
+        krage2.append(prim('kule', 'ullkrage%d' % k, brod_lys, (hx + 0.235 * math.sin(a), hy + 0.13, hz + 0.02 + 0.215 * math.cos(a)), (0.085, 0.075, 0.075), segments=14, ring_count=8))
+    kropp = slaa_sammen('kropp', [kropp] + krage2)
     bein = []
     for i, (bx, by) in enumerate([(-0.24, -0.26), (0.24, -0.26), (-0.24, 0.26), (0.24, 0.26)]):
         b = [prim('syl', 'bein%d' % i, ansikt, (bx, by, 0.16), (0.055, 0.055, 0.16), vertices=16, ss=1)]
@@ -375,7 +385,7 @@ def pizzaskilpadde():
     nullstill(); MATS.clear()
     skorpe = mat('skorpe', '#e2a45a', 0.65); saus = mat('saus', '#d8402e', 0.45); ost = mat('ost', '#ffd76a', 0.35)
     pepp = mat('pepperoni', '#c23a2b', 0.4); pepp_m = mat('pepperoni_mork', '#8e2219', 0.5); basilikum = mat('basilikum', '#3fa34d', 0.5)
-    hud = mat('skilpadde', '#86cf6a', 0.55); buk = mat('buk', '#f4e7a8', 0.6)
+    hud = mat('skilpadde', '#5fbe4c', 0.55); buk = mat('buk', '#f4e7a8', 0.6)
     H = 0.28
     # Skjoldet ER en hel pizza bøyd over ryggen: skorpekanten blir skjoldkanten, delt i seks pizzastykker
     sk = prim('kule', 'skjoldbunn', saus, (0, 0, H), (0.62, 0.68, 0.42), segments=64, ring_count=32)
@@ -413,21 +423,20 @@ def pizzaskilpadde():
     bukplate = prim('kule', 'buk', buk, (0, 0, H - 0.02), (0.55, 0.6, 0.08), segments=40, ring_count=16)
     kropp = slaa_sammen('kropp', [sk, ostlag, kant, bukplate] + pp + bl)
     # Hode med stor munn og glad mine
-    hx, hy, hz = 0, -0.78, H + 0.14
-    hd = [prim('kule', 'hode', hud, (hx, hy, hz), (0.22, 0.23, 0.21), segments=40, ring_count=24)]
-    hd.append(prim('syl', 'hals', hud, (hx, hy + 0.15, hz - 0.06), (0.12, 0.12, 0.13), (1.2, 0, 0), vertices=24, ss=1))
-    for s in (-1, 1):
-        hd += oye('oye%d' % s, (hx + s * 0.1, hy - 0.16, hz + 0.08), 0.06)
-        hd.append(kinn('kinn%d' % s, (hx + s * 0.16, hy - 0.15, hz - 0.03), 0.04))
-    hd.append(smil('smil', (hx, hy - 0.225, hz - 0.04), 0.07))
-    # Liten ostetråd fra munnviken – maten er med i ansiktet også
-    hd.append(kurve('osttraad', [(hx + 0.06, hy - 0.22, hz - 0.06), (hx + 0.09, hy - 0.24, hz - 0.12), (hx + 0.08, hy - 0.22, hz - 0.18)], 0.012, ost))
-    hode = pivot(slaa_sammen('hode', hd), (hx, hy + 0.2, hz - 0.08))
+    hx, hy, hz = 0, -0.84, H + 0.16
+    hd = [prim('kule', 'hode', hud, (hx, hy, hz), (0.28, 0.29, 0.26), segments=40, ring_count=24)]
+    hd.append(prim('syl', 'hals', hud, (hx, hy + 0.19, hz - 0.07), (0.15, 0.15, 0.15), (1.2, 0, 0), vertices=24, ss=1))
+    for s_ in (-1, 1):
+        hd += oye('oye%d' % s_, (hx + s_ * 0.125, hy - 0.2, hz + 0.09), 0.075, hvitt=True)
+        hd.append(kinn('kinn%d' % s_, (hx + s_ * 0.2, hy - 0.19, hz - 0.04), 0.05))
+    hd.append(smil('smil', (hx, hy - 0.285, hz - 0.05), 0.085, tykk=0.016))
+    hd.append(kurve('osttraad', [(hx + 0.08, hy - 0.28, hz - 0.07), (hx + 0.11, hy - 0.3, hz - 0.14), (hx + 0.1, hy - 0.28, hz - 0.21)], 0.015, ost))
+    hode = pivot(slaa_sammen('hode', hd), (hx, hy + 0.25, hz - 0.08))
     bein = []
     for i, (bx, by, rz) in enumerate([(-0.45, -0.42, 0.5), (0.45, -0.42, -0.5), (-0.45, 0.42, -0.4), (0.45, 0.42, 0.4)]):
-        f = prim('kule', 'fot%d' % i, hud, (bx, by, 0.13), (0.15, 0.17, 0.11), (0, 0, rz), segments=24, ring_count=14)
+        f = prim('kule', 'fot%d' % i, hud, (bx * 1.06, by * 1.06, 0.14), (0.18, 0.2, 0.13), (0, 0, rz), segments=24, ring_count=14)
         bein.append(pivot(slaa_sammen(['bein_vf', 'bein_hf', 'bein_vb', 'bein_hb'][i], [f]), (bx * 0.8, by * 0.8, H)))
-    hale = pivot(slaa_sammen('hale', [prim('kjegle', 'hale', hud, (0, 0.78, 0.18), (0.07, 0.07, 0.14), (-1.4, 0, 0), vertices=16, ss=1)]), (0, 0.66, 0.2))
+    hale = pivot(slaa_sammen('hale', [prim('kjegle', 'hale', hud, (0, 0.82, 0.19), (0.09, 0.09, 0.18), (-1.4, 0, 0), vertices=16, ss=1)]), (0, 0.66, 0.2))
     rot = rot_node('Pizzaskilpadde'); forelder([kropp, hode, hale] + bein, rot)
     eksporter(rot, 'pizzaskilpadde')
 
@@ -461,7 +470,12 @@ def shakeand():
         t = i / 45; a = t * 5.5 * math.pi; rr = 0.42 * (1 - t * 0.55)
         krembiter.append((rr * math.cos(a) * 0.95, rr * math.sin(a) * 1.15 + 0.06, kant(rr * math.sin(a) * 1.15 + 0.06) - 0.02 + t * 0.26))
     krem_o = kurve('kremlag', krembiter, 0.09, krem, rund=10, opp=4, avsmal=lambda t: 1.1 - 0.35 * t)
-    hals = kurve('kremhals', [(0, -0.26, H + 0.22), (0, -0.36, H + 0.32), (0, -0.38, H + 0.42)], 0.16, krem, rund=10, opp=6, avsmal=lambda t: 1.2 - 0.3 * t)
+    # Andehalsen vokser opp av shaken (gul), med en kremkrage der den går gjennom kremlaget
+    hals = kurve('andehals', [(0, -0.18, H + 0.08), (0, -0.28, H + 0.26), (0, -0.35, H + 0.4), (0, -0.38, H + 0.5)], 0.125, and_gul, rund=10, opp=6, avsmal=lambda t: 1.15 - 0.2 * t)
+    kk = prim('torus', 'kremkrage', krem, (0, -0.29, H + 0.28), (1, 1, 0.75), (0.55, 0, 0), major_radius=0.15, minor_radius=0.065, major_segments=40, minor_segments=12)
+    for v in kk.data.vertices: v.co += v.normal * 0.018 * math.sin(math.atan2(v.co.x, v.co.z - H) * 8)
+    # Halefjær i andegult bak, ved siden av sugerøret
+    halefj = [kurve('halefjaer%d' % k, [(dx, 0.5, H + 0.2), (dx * 1.3, 0.62, H + 0.36), (dx * 1.6, 0.7, H + 0.5)], 0.05, and_gul, rund=8, opp=4, avsmal=lambda t: 1.1 - 0.8 * t) for k, dx in enumerate((-0.09, 0.09))]
     kirs = [prim('kule', 'kirsebaer', kirsebaer, (0.0, 0.14, H + 0.5), (0.08,) * 3, segments=28, ring_count=16),
             kurve('stilk', [(0.0, 0.14, H + 0.56), (0.02, 0.17, H + 0.63), (0.06, 0.2, H + 0.66)], 0.01, mat('stilk', '#5b8a2f', 0.6))]
     stro = []
@@ -474,7 +488,7 @@ def shakeand():
     for k in range(9):
         a_, b_ = p0.lerp(p1, k / 9), p0.lerp(p1, (k + 1) / 9)
         sug.append(kurve('sug%d' % k, [tuple(a_), tuple((a_ + b_) / 2), tuple(b_)], 0.034, sug_r if k % 2 else sug_h, rund=8, opp=2))
-    kropp = slaa_sammen('kropp', [g, sh, krem_o, hals] + fot + kirs + stro + sug)
+    kropp = slaa_sammen('kropp', [g, sh, krem_o, hals, kk] + halefj + fot + kirs + stro + sug)
     # Andehodet vokser opp av kremhalsen
     hx, hy, hz = 0, -0.38, H + 0.6
     hd = [prim('kule', 'andehode', and_gul, (hx, hy, hz), (0.21, 0.2, 0.2), segments=40, ring_count=24)]
@@ -485,15 +499,16 @@ def shakeand():
         hd += oye('oye%d' % s, (hx + s * 0.095, hy - 0.14, hz + 0.05), 0.052)
         hd.append(kinn('kinn%d' % s, (hx + s * 0.15, hy - 0.12, hz - 0.04), 0.035))
     hode = pivot(slaa_sammen('hode', hd), (hx, hy + 0.06, hz - 0.16))
-    # Vinger av sprøytet krem: tre fjær-dusker langs hver side av glasset
+    # Vinger: gule andevinger som ligger tett inntil glasset, med tre fjær som blir lysere mot tuppen og en kremkant øverst
     vinger = []
     for s, navn in [(-1, 'vinge_v'), (1, 'vinge_h')]:
         v = []
-        for k in range(3):
-            y0 = -0.12 + k * 0.16; z0 = H + 0.12 - k * 0.04
-            pts = [(s * 0.46, y0, z0), (s * 0.53, y0 + 0.08, z0 - 0.03), (s * 0.55, y0 + 0.18, z0 - 0.02), (s * 0.52, y0 + 0.27, z0 + 0.03)]
-            v.append(kurve('fjaer%d%d' % (s, k), pts, 0.07 - k * 0.01, and_gul if k == 0 else krem, rund=8, opp=4, avsmal=lambda t: 1.2 - 0.9 * t))
-        vinger.append(pivot(slaa_sammen(navn, v), (s * 0.46, -0.12, H + 0.12)))
+        for k, (dy, dz, ly, farge) in enumerate([(0.0, 0.06, 0.24, and_gul), (0.1, 0.0, 0.22, and_gul), (0.19, -0.05, 0.18, mat('and_lys', '#ffe9a0', 0.55))]):
+            f = prim('kule', 'fjaer%d%d' % (s, k), farge, (0, 0, 0), (0.055, ly, 0.11 - k * 0.015), segments=28, ring_count=16)
+            f.data.transform(Matrix.Rotation(-0.35 - k * 0.12, 4, 'X')); f.data.transform(Matrix.Rotation(s * 0.12, 4, 'Z'))
+            f.data.transform(Matrix.Translation((s * (0.485 + k * 0.01), -0.06 + dy, H + 0.06 + dz))); v.append(f)
+        v.append(kurve('vingekrem%d' % s, [(s * 0.47, -0.22, H + 0.17), (s * 0.5, -0.08, H + 0.19), (s * 0.5, 0.06, H + 0.15)], 0.035, krem, rund=8, opp=4))
+        vinger.append(pivot(slaa_sammen(navn, v), (s * 0.47, -0.2, H + 0.14)))
     bein = []
     for i, s in enumerate((-1, 1)):
         f = prim('kule', 'fot%d' % i, nebb, (s * 0.13, -0.16, 0.03), (0.11, 0.15, 0.03), (0, 0, s * 0.2), segments=24, ring_count=10)
@@ -502,36 +517,51 @@ def shakeand():
     eksporter(rot, 'shakeand')
 
 # ---------------------------------------------------------------- 5 Spagettipingvin
-def pasta_tekstur(navn, B=1024, H=1024, mage=True):
-    """Spagetti som er viklet rundt kroppen, malt i én tekstur med normalkart (relieff), i stedet for løse rør.
-    u går rundt kroppen (sømmen bak), v nedenfra og opp. Magen foran er lys spagetti, ryggen svart blekksprutpasta."""
+def pasta_hoyde(B, H, fro=3, bredde=11, tetthet=2.4):
+    """Høydekart for spagetti som ligger hulter til bulter: mange lange, myke strenger i alle retninger som krysser hverandre.
+    Strengene tegnes etter hverandre, så den siste ligger øverst (synlige kryssinger). Bredden er lik i u og v når B = 2·H."""
+    from PIL import Image, ImageDraw, ImageFilter
     import numpy as np
+    rr = random.Random(fro)
+    img = Image.new('L', (B, H), 30); dr = ImageDraw.Draw(img)
+    snitt = 420; n = int(B * H / (snitt * bredde) * tetthet)
+    for k in range(n):
+        x, y = rr.uniform(0, B), rr.uniform(-20, H + 20); th = rr.uniform(0, 2 * math.pi); bue = rr.gauss(0, 0.03)
+        L = rr.uniform(snitt * 0.55, snitt * 1.45); pts = []
+        for _ in range(int(L / 4)):
+            pts.append((x, y)); bue += rr.gauss(0, 0.012); bue = max(-0.06, min(0.06, bue)); th += bue
+            x += 4 * math.cos(th); y += 4 * math.sin(th)
+        w = bredde * rr.uniform(0.85, 1.15)
+        for dx in (-B, 0, B):
+            q = [(px + dx, py) for px, py in pts]
+            if max(px for px, _ in q) < 0 or min(px for px, _ in q) > B: continue
+            dr.line(q, fill=95, width=int(w), joint='curve')
+            dr.line(q, fill=175, width=max(1, int(w * 0.62)), joint='curve')
+            dr.line(q, fill=240, width=max(1, int(w * 0.28)), joint='curve')
+    img = img.filter(ImageFilter.GaussianBlur(1.3))
+    return np.asarray(img, dtype=np.float32)[::-1] / 255.0      # rad 0 = v 0 (nederst)
+
+def pasta_tekstur(navn, B=1024, H=512, mage=True, fro=3):
+    """Spagetti malt i én tekstur med normalkart (relieff), viklet hulter til bulter rundt kroppen i stedet for parallelle ringer.
+    u går rundt kroppen (sømmen bak), v nedenfra og opp. Magen foran er lys spagetti, ryggen svart blekksprutpasta.
+    Returnerer materialet og høydekartet (brukes også til å løfte geometrien litt)."""
+    import numpy as np
+    hoyde = pasta_hoyde(B, H, fro)
     u = (np.arange(B) + 0.5) / B; v = (np.arange(H) + 0.5) / H
     U, V = np.meshgrid(u, v)
-    a = U * 2 * math.pi + math.pi / 2          # vinkel rundt kroppen; foran (-Y) er a = -pi/2 + 2pi
-    # Nudlene går nesten vannrett rundt, med myke bølger og litt skrått, slik at de ser viklet ut
-    fase = V * 30 + 0.55 * np.sin(a * 2 + V * 4) + 0.25 * np.sin(a * 5 + 1.3) + 0.12 * np.sin(a * 11 + V * 20) + 0.9 * U
-    f = fase - np.floor(fase)
-    s = np.abs(f - 0.5) * 2                     # 0 midt på nudelen, 1 i fugen
-    hoyde = np.sqrt(np.clip(1 - s ** 2, 0, 1))  # rund nudel
-    # Noen nudler krysser over de andre (gir liv, men flaten er fortsatt sammenhengende)
-    kryss_f = V * 9 - 1.4 * np.sin(a * 1 + 0.7) - U * 3
-    kf = kryss_f - np.floor(kryss_f); ks = np.abs(kf - 0.5) * 2
-    kryss = np.clip((0.3 - ks) / 0.08, 0, 1) * np.clip((np.sin(a * 2 + 0.4) - 0.8) / 0.1, 0, 1) * (1 - np.clip((-np.sin(a) - 0.2) / 0.2, 0, 1))
-    hoyde = np.maximum(hoyde * 0.85, kryss * 1.0)
+    a = U * 2 * math.pi + math.pi / 2
     if mage:
-        foran = -np.sin(a)                                   # 1 rett foran
+        foran = -np.sin(a)
         m = np.clip((foran - 0.4) / 0.07, 0, 1) * np.clip((0.72 - V) / 0.04, 0, 1)
     else:
         m = np.zeros_like(V)
-    lys_p = np.array([1.0, 0.88, 0.58]); mork_p = np.array([0.36, 0.4, 0.52])
+    lys_p = np.array([1.0, 0.86, 0.55]); mork_p = np.array([0.33, 0.37, 0.5])
     base = lys_p[None, None, :] * m[..., None] + mork_p[None, None, :] * (1 - m[..., None])
-    skygge = 0.78 + 0.22 * hoyde                             # mørkere i fugene mellom nudlene
-    glans = np.clip(hoyde - 0.82, 0, 1) * 1.1                # lys stripe på toppen av hver nudel
-    farge = np.clip(base * skygge[..., None] + glans[..., None] * np.array([0.25, 0.22, 0.18]), 0, 1)
-    # Normalkart fra høyden
+    skygge = 0.68 + 0.32 * np.clip(hoyde * 1.15, 0, 1)        # mørkt i hulrommene mellom strengene
+    glans = np.clip(hoyde - 0.8, 0, 1) * 1.6                   # blank stripe midt på hver streng
+    farge = np.clip(base * skygge[..., None] + glans[..., None] * np.array([0.3, 0.27, 0.22]), 0, 1)
     gy, gx = np.gradient(hoyde)
-    st = 2.2
+    st = 3.0
     nx, ny, nz = -gx * st, -gy * st, np.ones_like(hoyde)
     l = np.sqrt(nx * nx + ny * ny + nz * nz); nx, ny, nz = nx / l, ny / l, nz / l
     def bilde(navn2, rgb, farge_rom):
@@ -548,8 +578,8 @@ def pasta_tekstur(navn, B=1024, H=1024, mage=True):
     tn = nt.nodes.new('ShaderNodeTexImage'); tn.image = nimg
     nm = nt.nodes.new('ShaderNodeNormalMap'); nm.inputs['Strength'].default_value = 1.0
     nt.links.new(tn.outputs['Color'], nm.inputs['Color']); nt.links.new(nm.outputs['Normal'], b.inputs['Normal'])
-    b.inputs['Roughness'].default_value = 0.42
-    return mt, (lambda uu, vv: float(np.interp(0, [0], [0])))
+    b.inputs['Roughness'].default_value = 0.4
+    return mt, hoyde
 
 def sylinder_uv(o, senter, z0, z1, u0=0.0, ub=1.0):
     """UV rundt en loddrett akse: u = vinkel (søm bak, +Y), v = høyde."""
@@ -575,8 +605,8 @@ def spagettipingvin():
     nullstill(); MATS.clear()
     saus = mat('tomatsaus', '#d8432f', 0.35)
     kjott = mat('kjottbolle', '#7a3d25', 0.75); nebb = mat('nebb', '#ff9a2e', 0.4); parm = mat('parmesan', '#fff6dc', 0.6); basil = mat('basilikum', '#3fa34d', 0.5)
-    pasta, _ = pasta_tekstur('spagettikropp')
-    vingepasta, _ = pasta_tekstur('spagettivinge', 512, 512, mage=False)
+    pasta, hkart = pasta_tekstur('spagettikropp')
+    vingepasta, _ = pasta_tekstur('spagettivinge', 512, 512, mage=False, fro=5)
     C, AX = Vector((0, 0.02, 0.62)), Vector((0.43, 0.39, 0.6))
     z0, z1 = C.z - AX.z * 1.02, C.z + AX.z * 1.02
     # Kroppen: eggform, litt tyngre nederst og litt smalere ved «nakken», og nudlene løftes som et svakt relieff
@@ -587,15 +617,14 @@ def spagettipingvin():
         vt.co.x = C.x + d.x * bred; vt.co.y = C.y + d.y * bred
         if zt < -0.86: vt.co.z = C.z + max(d.z, -AX.z * 0.9)          # flat underside så den står støtt
     sylinder_uv(kropp, C, z0, z1)
-    # Relieff: løft geometrien litt etter samme nudelmønster som teksturen (synlig i silhuetten)
+    # Relieff: løft geometrien litt etter samme høydekart som teksturen, så strengene også ses i silhuetten
     me = kropp.data; uvl = me.uv_layers.active.data; vuv = {}
     for li, lp in enumerate(me.loops): vuv[lp.vertex_index] = uvl[li].uv[:]
+    HH, BB = hkart.shape
     for vt in me.vertices:
-        uu, vv = vuv[vt.index]; a = uu * 2 * math.pi + math.pi / 2
-        fase = vv * 30 + 0.55 * math.sin(a * 2 + vv * 4) + 0.25 * math.sin(a * 5 + 1.3) + 0.12 * math.sin(a * 11 + vv * 20) + 0.9 * uu
-        f = fase - math.floor(fase); s = abs(f - 0.5) * 2
+        uu, vv = vuv[vt.index]; h = float(hkart[min(HH - 1, max(0, int(vv * HH))), int((uu % 1.0) * BB) % BB])
         n = (vt.co - C); n.z *= 0.6; n.normalize()
-        if -0.85 < (vt.co.z - C.z) / AX.z < 0.8: vt.co += n * 0.009 * (math.sqrt(max(0, 1 - s * s)) - 0.5)
+        if -0.85 < (vt.co.z - C.z) / AX.z < 0.8: vt.co += n * 0.012 * (h - 0.45)
     glatt(kropp)
     # Sausen som en myk lue med drypp, kjøttbolle, parmesan og basilikum
     r = random.Random(17)
@@ -612,7 +641,18 @@ def spagettipingvin():
     for vt in kb.data.vertices: vt.co += (vt.co - Vector((0.02, 0.06, 1.27))).normalized() * 0.008 * math.sin(vt.co.x * 90) * math.sin(vt.co.z * 80)
     ost = [prim('kule', 'parm%d' % i, parm, (r.uniform(-0.2, 0.2), r.uniform(-0.18, 0.22), 1.22 + r.uniform(-0.01, 0.03)), (0.02, 0.018, 0.01), segments=8, ring_count=5) for i in range(10)]
     bb = prim('kule', 'basilblad', basil, (0.1, 0.04, 1.38), (0.07, 0.035, 0.012), (0.3, 0.2, 0.6), segments=16, ring_count=8)
-    kropp = slaa_sammen('kropp', [kropp, sau, kb, bb] + ost)
+    # Noen løse spagettistrenger som henger ned fra sausen og følger kroppen (mørke på ryggen, lyse foran ved magen)
+    def flate(theta, zt, ut=0.016):
+        bred = 1 + 0.13 * (1 - zt) * 0.5 - 0.05 * math.exp(-((zt - 0.42) / 0.18) ** 2); rxy = math.sqrt(max(0.0, 1 - zt * zt)) * bred
+        n = Vector((math.cos(theta) * rxy / AX.x, math.sin(theta) * rxy / AX.y, zt / AX.z)).normalized()
+        return tuple(Vector((C.x + AX.x * math.cos(theta) * rxy, C.y + AX.y * math.sin(theta) * rxy, C.z + AX.z * zt)) + n * ut)
+    lys_s = mat('spagetti_lys', '#ffdc8a', 0.4); mork_s = mat('spagetti_mork', '#58607a', 0.4)
+    lose = []
+    for k, (th0, z0_, z1_, bolge, m_) in enumerate([(1.35, 0.86, 0.35, 0.3, mork_s), (2.3, 0.85, 0.45, -0.35, mork_s),
+                                                  (-0.8, 0.83, 0.5, -0.25, lys_s), (-2.3, 0.83, 0.48, 0.25, lys_s)]):
+        pts = [flate(th0 + bolge * math.sin(i * 0.9) * (i / 7), z0_ + (z1_ - z0_) * i / 7, 0.01) for i in range(8)]
+        lose.append(kurve('los_streng%d' % k, pts, 0.013, m_, rund=6, opp=6))
+    kropp = slaa_sammen('kropp', [kropp, sau, kb, bb] + ost + lose)
     # Ansiktet: hvit maske som ligger tett inntil kroppen, oransje nebb og store øyne
     hx, hy, hz = 0, -0.335, 0.98
     maske = prim('kule', 'ansikt', mat('ansikt', '#f4f1ea', 0.55), (hx, hy + 0.06, hz), (0.27, 0.09, 0.18), segments=40, ring_count=24)
