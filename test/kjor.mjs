@@ -7,6 +7,9 @@
  *
  * --base     grenen som avgjør hvilke tester som er obligatoriske. En test er obligatorisk når
  *            filen den tester, finnes på base. Mangler filen her, feiler kjøringen.
+ * Spillene finnes automatisk: alle mapper i spill/ med index.html testes (se test/spillregister.mjs).
+ * Suiten «sikkerhet» kjører test/sikkerhet/manipulering.test.mjs, som viser at publiseringssjekken
+ * avviser forsøk på å endre testoppsettet.
  * Nettleser: --nettleser, CHROME_PATH, eller Chrome/Edge på vanlige steder.
  *
  * Avslutter med kode 1 hvis en kontroll feiler eller en obligatorisk test mangler.
@@ -17,8 +20,9 @@ import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn, execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { SPILL_ID } from './spillregister.mjs';
 
 const ROT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -128,12 +132,16 @@ async function main() {
     if (d.method === 'Network.responseReceived' && p.response.status >= 400 && rammer.has(p.frameId)) notér(p.response.status + ' ' + kort(p.response.url));
   });
   await Promise.all(['Page.enable', 'Runtime.enable', 'Log.enable', 'Network.enable'].map(m => s(m)));
-  await s('Page.navigate', { url: `http://127.0.0.1:${port}/test/?auto${SUITER ? '&suiter=' + SUITER : ''}` });
+  // Spillene som skal testes: alle mapper i spill/ med index.html. Mappenavn som ikke er gyldige, gir feil under.
+  const mapper = fs.readdirSync(path.join(ROT, 'spill'), { withFileTypes: true }).filter(d => d.isDirectory() && fs.existsSync(path.join(ROT, 'spill', d.name, 'index.html'))).map(d => d.name).sort();
+  const oppdaget = mapper.filter(m => SPILL_ID.test(m));
+  await s('Page.navigate', { url: `http://127.0.0.1:${port}/test/?auto&spill=${oppdaget.join(',')}${SUITER ? '&suiter=' + SUITER : ''}` });
 
   let res = null; const t0 = Date.now();
   while (!res && Date.now() - t0 < MAKS_MS) {
     await new Promise(r => setTimeout(r, 1000));
-    try { const v = await s('Runtime.evaluate', { expression: 'JSON.stringify(window.EVNTestResultat || null)', returnByValue: true }); res = JSON.parse(v.result.value); } catch {}
+    // Verdien hentes direkte av nettleseren (returnByValue), ikke via sidens egen JSON.
+    try { const v = await s('Runtime.evaluate', { expression: 'window.EVNTestResultat', returnByValue: true }); res = v.result.value || null; } catch {}
   }
   await nl.lukk(); srv.close();
   if (!res) { console.error('Testsiden ble ikke ferdig innen ' + MAKS_MS / 60000 + ' minutter.'); process.exit(2); }
@@ -155,9 +163,27 @@ async function main() {
     else if (git('cat-file', '-e', BASE + ':' + fil) !== null) { x.status = 'feil'; x.info = `Obligatorisk test mangler: ${fil} finnes på ${BASE}, men ikke her`; }
     else { x.status = 'ikke innført'; x.info = `${fil} finnes verken her eller på ${BASE}`; }
   }
-  // Spillmapper uten røyktest
-  if (res.suiter.royk) for (const d of fs.readdirSync(path.join(ROT, 'spill'), { withFileTypes: true }).filter(d => d.isDirectory() && fs.existsSync(path.join(ROT, 'spill', d.name, 'index.html'))))
-    if (!res.spill.includes(d.name)) tester.push({ suite: 'royk', spill: d.name, id: 'F1-dekning', krav: 'F1', navn: 'Spillet har røyktest', status: 'feil', info: `spill/${d.name}/ mangler i SPILL i test/index.html` });
+  // Spillmapper uten røyktest: ugyldig mappenavn eller ugyldig registrering (spill/<id>/evn-test.json)
+  if (res.suiter.royk) for (const m of mapper)
+    if (!res.spill.includes(m)) tester.push({ suite: 'royk', spill: m, id: 'F1-dekning', krav: 'F1', navn: 'Spillet har røyktest', status: 'feil', info: SPILL_ID.test(m) ? `spill/${m}/ ble ikke testet (se F1-registrering)` : `ugyldig mappenavn spill/${m}/ (små bokstaver, tall og -)` });
+
+  // Suiten «sikkerhet»: negative tester for publiseringssjekken. Kjøres i Node, ikke i nettleseren.
+  const SIKKERHET = 'test/sikkerhet/manipulering.test.mjs';
+  const valgte = SUITER.split(',').filter(Boolean);
+  res.alleSuiter = [...res.alleSuiter, 'sikkerhet'];
+  if (!valgte.length || valgte.includes('sikkerhet')) {
+    if (!fs.existsSync(path.join(ROT, SIKKERHET))) {
+      res.suiter.sikkerhet = { status: 'mangler', fil: SIKKERHET };
+      const paBase = harBase && git('cat-file', '-e', BASE + ':' + SIKKERHET) !== null;
+      tester.push({ suite: 'sikkerhet', spill: '–', id: 'suite', krav: '', navn: 'Suiten kunne ikke kjøres', status: paBase || !harBase ? 'feil' : 'ikke innført', info: paBase ? `Obligatorisk test mangler: ${SIKKERHET} finnes på ${BASE}, men ikke her` : `${SIKKERHET} finnes ikke her` });
+    } else {
+      res.suiter.sikkerhet = { status: 'kjort', fil: SIKKERHET };
+      const k = spawnSync(process.execPath, [path.join(ROT, SIKKERHET), '--json'], { cwd: ROT, encoding: 'utf8', maxBuffer: 16 << 20, timeout: 10 * 60 * 1000 });
+      let r = null; try { r = JSON.parse(k.stdout); } catch {}
+      if (!r || !Array.isArray(r.tester) || !r.tester.length) tester.push({ suite: 'sikkerhet', spill: '–', id: 'sikkerhet-kjoring', krav: '', navn: 'De negative testene ble ferdige', status: 'feil', info: ((k.stderr || '') + (k.error ? ' ' + k.error.message : '')).trim().slice(0, 300) });
+      else for (const x of r.tester) tester.push({ suite: 'sikkerhet', spill: '–', id: x.id, krav: '', navn: x.navn, status: x.ok ? 'ok' : 'feil', info: x.info || '' });
+    }
+  }
   const delvis = res.alleSuiter.filter(n => !res.suiter[n]);
 
   // Testkvittering: bare stabile opplysninger, så den kan sammenlignes mellom PC og Actions.
@@ -188,7 +214,7 @@ async function main() {
     console.log(`::notice title=Testkvittering::${kvittering}`);
   }
   const json = arg('json');
-  if (json) fs.writeFileSync(json, JSON.stringify({ format: 'evn1', commit, testversjon, arbeidstre: endret ? 'endret' : 'rent', suiter, radgivende: Object.keys(res.ikkeGjeldende || {}),
+  if (json) fs.writeFileSync(json, JSON.stringify({ format: 'evn1', commit, testversjon, arbeidstre: endret ? 'endret' : 'rent', suiter, spill: res.spill, radgivende: Object.keys(res.ikkeGjeldende || {}),
     base: harBase ? BASE : null, nettleser: path.basename(bin), kvittering, tester }, null, 2));
   process.exit(feil ? 1 : 0);
 }

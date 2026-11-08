@@ -27,15 +27,10 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
 // Resultatet ligger i window.EVNTestResultat (leses av test/kjor.mjs og EVN Game QA).
 (function () {
   'use strict';
-  var SPILL = [
-    { id: 'eventyrspill', start: 'menyStart' },
-    { id: 'morkeskogen', start: 'startBtn' },
-    { id: 'dyrepatruljen', start: 'startBtn', etterStart: function (d) {
-        var v = d.querySelector('.verden.aapen');   // Start viser verdensvalget; velg første åpne verden
-        if (v) v.click();
-      } },
-    { id: 'fiskespillet', start: 'startBtn' }
-  ];
+  // Spillene finnes automatisk: test/kjor.mjs sender mappene i spill/ som har index.html (?spill=a,b).
+  // Hvert spill kan ha spill/<id>/evn-test.json med startknapp og klikk etter Start (se test/spillregister.mjs).
+  // Filen er bare data og kan ikke slå av kontroller. Publiseringssjekken kontrollerer den med reglene fra main.
+  var SPILL = [];
   // Funn som står under «Kjente funn» i standarden. De gir «kjent» i stedet for «feil», og «rettet» når de er borte.
   var KJENTE = {
     // Fossil Zoo (T3-zoom) og Magiske egg er tatt av nettsiden 5.11.2026.
@@ -53,6 +48,10 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
     { navn: 'ecoins', fil: 'test/ecoins/index.html', kjor: ecoins }
   ];
   var tester = [], suiter = {};
+  // Resultatet kan bare settes av denne siden. Spill i rammen kan ikke legge inn et ferdig resultat før testene er ferdige.
+  var RESULTAT = null;
+  Object.defineProperty(window, 'EVNTestResultat', { get: function () { return RESULTAT; }, enumerable: true, configurable: false });
+  function frys(o) { if (o && typeof o === 'object' && !Object.isFrozen(o)) { Object.freeze(o); Object.keys(o).forEach(function (k) { frys(o[k]); }); } return o; }
 
   function vent(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   function rekke(liste, fn) { return liste.reduce(function (p, x) { return p.then(function () { return fn(x); }); }, Promise.resolve()); }
@@ -117,7 +116,13 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
       s.fantes = !!knapp;
       legg('royk', s.id, 'F1-startknapp', 'F1', 'Startknappen finnes og er synlig', synlig(knapp), knapp ? '' : 'fant ikke #' + s.start);
       if (knapp) knapp.click();
-      return vent(500).then(function () { if (s.etterStart) s.etterStart(d); return vent(1500); });
+      return vent(500).then(function () {
+        return rekke(s.etterStart, function (steg) {
+          var e = d.querySelector(steg.klikk);   // f.eks. Start viser verdensvalget; velg første åpne verden
+          if (e) e.click();
+          return vent(300);
+        });
+      }).then(function () { return vent(1500); });
     }).then(function () {
       legg('royk', s.id, 'F1-start', 'F1', 'Spillet starter: startknappen forsvinner', s.fantes && !synlig(d.getElementById(s.start)), s.fantes ? '' : 'startknappen fantes ikke');
       var p = d.getElementById('evnPauseKnapp'), kort = d.getElementById('evnPause');
@@ -203,23 +208,40 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
     document.getElementById('status').textContent = feil ? feil + ' kontroller feilet.' : 'Ingen kontroller feilet.';
   }
 
+  // ---- Spillene som skal testes: liste fra ?spill= og registreringsfilene ----
+  function lastSpill() {
+    var ider = (new URLSearchParams(location.search).get('spill') || '').split(',').filter(Boolean);
+    return import('/test/spillregister.mjs').then(function (reg) {
+      SPILL = [];
+      if (!ider.length) legg('royk', '–', 'F1-dekning', 'F1', 'Spillisten finnes (kjør node test/kjor.mjs, eller legg til ?spill=id1,id2)', false, 'ingen spill oppgitt');
+      return rekke(ider, function (id) {
+        if (!reg.SPILL_ID.test(id)) { legg('royk', id.slice(0, 40), 'F1-registrering', 'F1', 'Gyldig spillmappe', false, 'ugyldig mappenavn'); return; }
+        return fetch('/spill/' + id + '/' + reg.FILNAVN, { cache: 'no-store' }).then(function (r) { return r.status === 404 ? null : r.text(); }, function () { return null; }).then(function (tekst) {
+          var r = reg.lesRegistrering(tekst);
+          if (!r.ok) { legg('royk', id, 'F1-registrering', 'F1', 'Registreringen i ' + reg.FILNAVN + ' er gyldig', false, r.feil.join('; ')); return; }
+          SPILL.push({ id: id, start: r.konfig.start, etterStart: r.konfig.etterStart });
+        });
+      });
+    });
+  }
+
   function kjor() {
     if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) { document.getElementById('status').textContent = 'Testene virker bare lokalt.'; return; }
     var valgt = (new URLSearchParams(location.search).get('suiter') || '').split(',').filter(Boolean);
     var st = document.getElementById('status');
-    tester = []; suiter = {};
-    rekke(SUITER.filter(function (s) { return !valgt.length || valgt.indexOf(s.navn) >= 0; }), function (s) {
+    tester = []; suiter = {}; RESULTAT = null;
+    lastSpill().then(function () { return rekke(SUITER.filter(function (s) { return !valgt.length || valgt.indexOf(s.navn) >= 0; }), function (s) {
       st.textContent = 'Kjører ' + s.navn + ' …';
       return (s.fil ? finnes(s.fil) : Promise.resolve(true)).then(function (ja) {
         if (!ja) { suiter[s.navn] = { status: 'mangler', fil: s.fil }; return; }
         suiter[s.navn] = { status: 'kjort', fil: s.fil };
         return Promise.resolve().then(s.kjor).catch(function (e) { legg(s.navn, '–', s.navn + '-kjoring', '', 'Suiten ble ferdig uten å krasje', false, String(e && e.message || e)); }).then(tom);
       });
-    }).then(function () {
+    }); }).then(function () {
       document.getElementById('ramme').src = 'about:blank';
       var feil = tester.filter(function (x) { return x.status === 'feil'; }).length;
       vis(feil);
-      window.EVNTestResultat = { ferdig: true, feil: feil, suiter: suiter, tester: tester, ikkeGjeldende: IKKE_GJELDENDE, spill: SPILL.map(function (s) { return s.id; }), alleSuiter: SUITER.map(function (s) { return s.navn; }) };
+      RESULTAT = frys(JSON.parse(JSON.stringify({ ferdig: true, feil: feil, suiter: suiter, tester: tester, ikkeGjeldende: IKKE_GJELDENDE, spill: SPILL.map(function (s) { return s.id; }), alleSuiter: SUITER.map(function (s) { return s.navn; }) })));
     });
   }
   document.getElementById('kjor').addEventListener('click', kjor);
