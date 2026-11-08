@@ -61,14 +61,14 @@
   <div class="grp" role="group" aria-label="Trestil"><b>Trær</b>
     <button data-trestil="ny">Ny stil</button><button data-trestil="gammel">Før</button><button id="visTraer">Vis trær</button><button id="maalTraer">Mål trær</button></div>
 </div>
-<div id="info">Testscene 0.7.2 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
+<div id="info">Testscene 0.7.3 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
 <div id="maal"><div id="maalTekst">…</div><div class="maalKnapper"><button id="kopier">Kopier</button><button id="lukkMaal">Lukk</button></div></div>
 
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.7.2';
+const VERSJON = 'testscene 0.7.3';
 const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
@@ -539,7 +539,7 @@ function bladMat() { if (_bladMat) return _bladMat;
       [0.7, -0.7, 0].forEach(v => { const b = a + v; x.strokeStyle = `hsl(110,${18 + t * 6}%,${l + (v ? 0 : 3)}%)`; x.lineWidth = 6.5; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(b) * nl, py + Math.sin(b) * nl); x.stroke(); }); } }
   x.restore();
   const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 2;
-  _bladMat = std({map: t, vertexColors: true, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.8});
+  _bladMat = new THREE.MeshLambertMaterial({map: t, vertexColors: true, alphaTest: 0.45, side: THREE.DoubleSide}); // 0.7.3: lys per hjørne i stedet for per piksel. Bladkortene dekker mange piksler flere lag dypt, så dette sparer mest GPU-tid
   _bladMat.dybde = new THREE.MeshDepthMaterial({depthPacking: THREE.RGBADepthPacking, map: t, alphaTest: 0.45}); return _bladMat; }
 /* Gran 0.7: lag på lag med myke, nedhengende skjørt. Kanten har avrundede tunger, er lys ytterst og mørk innerst og under */
 function gran2Geo(v, fin) {
@@ -568,7 +568,7 @@ function treModell(art, v, fin) {
   const nokkel = art + v + fin + KVAL; if (treCache.has(nokkel)) return treCache.get(nokkel);
   const P = TREART[art]; let frø3 = 7 + v * 131 + art.length * 977; const r2 = () => (frø3 = (frø3 * 16807) % 2147483647) / 2147483647; r2.s = v * 3.1;
   const L = (a) => a[0] + r2() * (a[1] - a[0]);
-  const seg = art === 'fjern' ? [7, 5] : fin ? (KVAL === 'mobil' ? [9, 7] : [11, 8]) : [7, 5];
+  const seg = art === 'fjern' ? [7, 5] : fin ? (KVAL === 'mobil' ? [8, 6] : [11, 8]) : (KVAL === 'mobil' ? [6, 4] : [7, 5]); // 0.7.3: kjernene er nesten skjult av bladkortene, så mobil bruker færre trekanter i dem
   const klaser = [], ved = []; const h = P.h * (0.9 + r2() * 0.2);
   // stamme og greiner
   if (P.r) { ved.push({geo: stammeGeo(h + (P.soyle ? 2.2 : 0.35), P.r, fin, P.bjork), m: M4()}); }
@@ -740,6 +740,13 @@ function lagFjernskog() {
   ml.count = a; mg.count = b; [ml, mg].forEach(im => { im.frustumCulled = false; im.castShadow = false; im.receiveShadow = false; scene.add(im); });
 }
 const vegIM = []; // gress- og blomsterinstanser (fullGard fjerner dem inne i kopiene)
+function kuttInstanser() { // 0.7.3: InstancedMesh ble tegnet alltid (også kopiene i «Full gård» langt utenfor bildet og i skyggekartet). Nå får de en kule rundt alle instansene
+  const eier = new Map(), m = new THREE.Matrix4(), v = new THREE.Vector3();
+  scene.traverse(o => { if (!o.isInstancedMesh || o.frustumCulled || !o.visible || o.userData.art === 'bein' || vegIM.includes(o) || !o.count) return;
+    const g0 = o.geometry; if (!g0.boundingSphere) g0.computeBoundingSphere(); const r0 = g0.boundingSphere.radius, box = new THREE.Box3(); let sk = 1;
+    for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m); box.expandByPoint(v.setFromMatrixPosition(m)); sk = Math.max(sk, m.getMaxScaleOnAxis()); }
+    if (eier.has(g0) && eier.get(g0) !== o.instanceMatrix.array) o.geometry = g0.clone(); eier.set(o.geometry, o.instanceMatrix.array);
+    const kule = box.getBoundingSphere(new THREE.Sphere()); kule.radius += r0 * sk + 0.5; o.geometry.boundingSphere = kule; o.frustumCulled = true; }); }
 function lagGressOgBlomster() {
   // gress: klynger langs gjerder, stier, trær og elvebredd i stedet for jevnt mønster. Litt høyere og villere i områdene som kan kjøpes
   const tust = new THREE.BufferGeometry();
@@ -1201,7 +1208,7 @@ function registrerBein(g, art, lagGeo, pos, topp, offs, blank) {
   pos.forEach(([x, z], i) => B.liste.push({g, x, z, off: offs[i]}));
   const u = g.userData; if (u.a.amp) u.a = Object.assign({}, u.a, {steg: 4 * topp * g.scale.x * Math.sin(u.a.amp)}); // skrittlengde = det foten faktisk flytter seg, så dyret ikke glir
   if (B.im) scene.remove(B.im);
-  const im = new THREE.InstancedMesh(B.geo, B.mat, B.liste.length); im.castShadow = true; im.receiveShadow = true; im.frustumCulled = false; im.userData.art = 'bein'; im.userData.kat = 'dyr'; scene.add(im); B.im = im;
+  const im = new THREE.InstancedMesh(B.geo, B.mat, B.liste.length); im.castShadow = true; im.receiveShadow = true; im.frustumCulled = true; im.userData.art = 'bein'; im.userData.kat = 'dyr'; scene.add(im); B.im = im;
 }
 const firbeinGeo = (mat, hovMat, h, r) => () => { const geo = samle([{geo: new THREE.CylinderGeometry(r * 0.9, r, h, 8), m: M4(0, h / 2 + 0.08, 0), lin: mat.color}, {geo: new THREE.CylinderGeometry(r * 1.05, r * 1.1, 0.16, 8), m: M4(0, 0.08, 0), lin: hovMat.color}]); geo.translate(0, -(h + 0.08), 0); return geo; };
 const honeBeinGeo = (gul) => () => { const d = [{geo: new THREE.CylinderGeometry(0.03, 0.035, 0.3, 6), m: M4(0, 0.16, 0), lin: gul.color}];
@@ -1212,7 +1219,9 @@ function oppdaterBein() {
     const vinkel = A.amp * u.gangAmp * Math.sin(f), loft = u.gangAmp * Math.max(0, Math.cos(f)) * 0.14; // foten løftes når beinet føres fram
     if (i === 0 || B.liste[i - 1].g !== b.g) b.g.updateMatrix();
     _bm.compose(_bp.set(b.x, B.topp, b.z), _bq.setFromAxisAngle(AKSE_Z, vinkel), _bs.set(1, 1 - loft, 1)); _bm2.multiplyMatrices(b.g.matrix, _bm); B.im.setMatrixAt(i, _bm2); });
-    B.im.instanceMatrix.needsUpdate = true; }
+    B.im.instanceMatrix.needsUpdate = true;
+    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9, y1 = 0; B.liste.forEach(b => { const p = b.g.position; x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z); y1 = Math.max(y1, p.y); });
+    if (!B.geo.boundingSphere) B.geo.computeBoundingSphere(); B.geo.boundingSphere.center.set((x0 + x1) / 2, y1 / 2, (z0 + z1) / 2); B.geo.boundingSphere.radius = Math.hypot(x1 - x0, z1 - z0) / 2 + 1.5; } // 0.7.3: beina kuttes bort når dyrene er utenfor bildet
 }
 const mot = (a, b, k, dt) => a + (b - a) * Math.min(1, k * dt);
 function sirkler(g, ut) { const u = g.userData, fx = Math.cos(u.retn), fz = -Math.sin(u.retn); ut.length = 0; for (const [o, r] of u.a.sirk) ut.push(g.position.x + fx * o, g.position.z + fz * o, r); return ut; }
@@ -1648,7 +1657,7 @@ function diagEtterBilde(tA, tB, tC) { const m = renderer.info.memory, pr = rende
    Per bilde lagres også tegnekall, trekanter, kamerabevegelse og GPU-tid (bare der nettleseren har EXT_disjoint_timer_query_webgl2).
    Valgfri automatisk kamerarute (Meny → Test → Auto-kamera) gir like forhold mellom tester. Skjermlås hindres med Wake Lock der det støttes. */
 const LMAX = 150000;
-const lang = {paa: false, t0: 0, aktivMs: 0, iv: new Float32Array(LMAX), aktiv: new Uint8Array(LMAX), ts: new Float64Array(LMAX), kall: new Uint16Array(LMAX), tri: new Uint16Array(LMAX), gpu: new Float32Array(LMAX), n: 0,
+const lang = {paa: false, t0: 0, aktivMs: 0, iv: new Float32Array(LMAX), aktiv: new Uint8Array(LMAX), ts: new Float64Array(LMAX), kall: new Uint16Array(LMAX), tri: new Uint16Array(LMAX), gpu: new Float32Array(LMAX), seg: new Uint8Array(LMAX), n: 0, mk: null,
   avbrudd: [], hoppNeste: false, resize: 0, wake: null, wakeStatus: '', batteri: ['', '']};
 const langKnapp = document.getElementById('langtest');
 const tidNaa = () => performance.now();
@@ -1656,7 +1665,7 @@ async function batteri() { try { if (!navigator.getBattery) return 'ikke tilgjen
 async function vekk() { try { if (!('wakeLock' in navigator)) { lang.wakeStatus = 'ikke støttet'; return; } lang.wake = await navigator.wakeLock.request('screen'); lang.wakeStatus = 'aktiv'; } catch (e) { lang.wakeStatus = 'avvist'; } }
 async function langStart() { if (maaler) return; hendelser.length = 0;
   Object.assign(lang, {paa: true, t0: tidNaa(), aktivMs: 0, n: 0, avbrudd: [], hoppNeste: true, resize: 0, pr: renderer.getPixelRatio(), retning: innerWidth > innerHeight ? 'liggende' : 'stående', css: `${innerWidth}×${innerHeight}`, ruteT0: tidNaa()});
-  lang.gpu.fill(NaN); maalBoks.classList.remove('vis'); langKnapp.classList.add('on'); lang.batteri[0] = await batteri(); vekk(); }
+  lang.gpu.fill(NaN); lang.seg.fill(255); lang.mk = {n: 0, prog: 0, opp: 0, pan: 0, trykk: 0, js: 0, ingen: 0}; maalBoks.classList.remove('vis'); langKnapp.classList.add('on'); lang.batteri[0] = await batteri(); vekk(); }
 function avbruddStart(type) { if (!lang.paa) return; const sist = lang.avbrudd[lang.avbrudd.length - 1]; if (sist && sist.slutt === null) return; lang.avbrudd.push({type, aktivVed: lang.aktivMs, start: tidNaa(), slutt: null}); }
 function avbruddSlutt() { if (!lang.paa) return; const sist = lang.avbrudd[lang.avbrudd.length - 1]; if (sist && sist.slutt === null) sist.slutt = tidNaa(); lang.hoppNeste = true; if (document.visibilityState === 'visible' && lang.wakeStatus === 'aktiv') vekk(); }
 document.addEventListener('visibilitychange', () => document.hidden ? avbruddStart('siden skjult') : avbruddSlutt());
@@ -1670,7 +1679,9 @@ function langRegistrer(intervall, naa) {
   if (lang.n >= LMAX) return; const i = lang.n++; lang.aktivMs += intervall;
   lang.iv[i] = intervall; lang.aktiv[i] = pek.size > 0 || naa - sistHjul < 400 || ruteBeveger ? 1 : 0; lang.ts[i] = lang.aktivMs;
   if (diag.f) { lang.kall[i] = Math.min(65535, diag.f.kall); lang.tri[i] = Math.min(65535, Math.round(diag.f.tri / 1000)); }
-  if (intervall > 25 && diag.f && hendelser.length < 3000) hendelser.push(Object.assign({t: lang.aktivMs, iv: intervall, i}, diag.f));
+  lang.seg[i] = TEST.rute ? ruteSeg : 255;
+  if (intervall > 25 && diag.f) { const f = diag.f, M = lang.mk, o = f.dGeo > 0 || f.dTex > 0, j = f.upd + f.ren > 12; M.n++; if (f.dProg > 0) M.prog++; if (o) M.opp++; if (f.pan) M.pan++; if (f.trykk) M.trykk++; if (j) M.js++; if (!o && f.dProg <= 0 && !j && !f.pan && !f.trykk) M.ingen++;
+    if (hendelser.length < 3000) hendelser.push(Object.assign({t: lang.aktivMs, iv: intervall, i}, f)); } // 0.7.3: markørene telles for alle hakk; bare de 3 000 første lagres med detaljer
   if (lang.aktivMs > 600000) langStopp('stoppet automatisk etter 10 min aktiv tid');
 }
 // GPU-tid per bilde (asynkront, bare der det støttes)
@@ -1680,9 +1691,9 @@ function gpuEtter(q) { const gl = renderer.getContext(); if (q) { gl.endQuery(TQ
   while (gpuKo.length && gl.getQueryParameter(gpuKo[0].q, gl.QUERY_RESULT_AVAILABLE)) { const {q: qq, i} = gpuKo.shift(); const ns = gl.getQueryParameter(qq, gl.QUERY_RESULT); if (!gl.getParameter(TQ.GPU_DISJOINT_EXT) && i < LMAX) lang.gpu[i] = ns / 1e6; gl.deleteQuery(qq); } }
 // Automatisk kamerarute: 7 stopp à 10 s (6 s bevegelse, 4 s stille), gjentas. Gir samme kameraforløp i hver test.
 const KAMERARUTE = [[-0.5, 1.5, 46], [6.5, -4, 16], [-11.5, 3, 13], [-4, -2, 80], [2, -21, 24], [-22, 0, 26], [2, 22, 40]];
-let ruteBeveger = false;
+let ruteBeveger = false, ruteSeg = 255;
 function ruteKamera(naa) { if (!lang.paa || !TEST.rute) { ruteBeveger = false; return; } const sek = Math.max(0, (naa - lang.ruteT0) / 1000), seg = Math.floor(sek / 10) % KAMERARUTE.length, u = (sek % 10) / 6;
-  const a = KAMERARUTE[seg], b = KAMERARUTE[(seg + 1) % KAMERARUTE.length], s = THREE.MathUtils.smoothstep(Math.min(u, 1), 0, 1); ruteBeveger = u < 1;
+  ruteSeg = seg; const a = KAMERARUTE[seg], b = KAMERARUTE[(seg + 1) % KAMERARUTE.length], s = THREE.MathUtils.smoothstep(Math.min(u, 1), 0, 1); ruteBeveger = u < 1;
   cam.target.set(a[0] + (b[0] - a[0]) * s, 0, a[1] + (b[1] - a[1]) * s); cam.dist = a[2] + (b[2] - a[2]) * s; plasserKamera(); }
 function persentil(a, p) { const s = Array.from(a).sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(s.length * p))]; }
 function oppsummer(iv, med) { if (!iv.length) return null; const sum = iv.reduce((x, y) => x + y, 0); const hakk = iv.filter(v => v > med * 1.5).length;
@@ -1700,6 +1711,14 @@ async function langStopp(grunn) {
   const min = []; for (let m = 0; m * 60 < aktiv; m++) { const idx = []; for (let i = 0; i < n; i++) if (ts[i] > m * 60000 && ts[i] <= (m + 1) * 60000) idx.push(i); const o = oppsummer(idx.map(i => iv[i]), med); if (!o) continue;
     const g = snitt(lang.gpu, idx), pan = idx.filter(i => ak[i]).length / idx.length;
     min.push(rad(`minutt ${m + 1}`, o) + ` · kall ${k(snitt(lang.kall, idx))} · trekanter ${k(snitt(lang.tri, idx))}k · bevegelse ${k(pan * 100)} %${g !== null ? ' · GPU ' + k(g, 1) + ' ms' : ''}`); }
+  // 0.7.3: alle intervaller i klasser (ingen øvre grense), GPU-tid i bilder med og uten hakk, og hvert stopp i kameraruten for seg
+  const kategorier = () => { let a = 0, b2 = 0, c = 0, d = 0; for (let i = 0; i < n; i++) { const v = iv[i]; if (v <= med * 1.5) a++; else if (v <= med * 2.5) b2++; else if (v <= 50) c++; else d++; }
+    const pr = x => `${x} (${k(x / n * 100, 2)} %)`; return ['Intervallklasser (avbrudd er tatt ut over):', `  normale ≤ ${k(med * 1.5, 1)} ms: ${pr(a)}`, `  ett tapt bilde (${k(med * 1.5, 1)}–${k(med * 2.5, 1)} ms, typisk 33 ms): ${pr(b2)}`, `  flere tapte bilder (${k(med * 2.5, 1)}–50 ms): ${pr(c)}`, `  alvorlige hakk (over 50 ms): ${pr(d)}`]; };
+  const gpuAnalyse = () => { const B = 1000 / 60; let sh = 0, ch = 0, sn = 0, cn = 0, over = 0, ok = 0, hOver = 0, hN = 0; for (let i = 0; i < n; i++) { const g = lang.gpu[i]; if (Number.isNaN(g)) continue; ok++; if (g > B) over++; if (iv[i] > med * 1.5) { sh += g; ch++; if (g > B * 0.9) hOver++; hN++; } else { sn += g; cn++; } }
+    if (!ok) return ['GPU-tid per bilde: ikke målt.']; return [`GPU-tid: snitt ${k((sh + sn) / ok, 1)} ms · ${k(over / ok * 100, 1)} % av bildene over 16,7 ms · i bilder med hakk ${ch ? k(sh / ch, 1) : '–'} ms, uten hakk ${cn ? k(sn / cn, 1) : '–'} ms · hakk der GPU var over 15 ms: ${hN ? k(hOver / hN * 100) : '–'} %`]; };
+  const perStopp = () => { if (!TEST.rute) return []; const ut = ['Per stopp i kameraruten (b/s · hakk · GPU snitt/95 % · kall · trekanter):'];
+    for (let sgm = 0; sgm < KAMERARUTE.length; sgm++) { const idx = []; for (let i = 0; i < n; i++) if (lang.seg[i] === sgm) idx.push(i); const o = oppsummer(idx.map(i => iv[i]), med); if (!o) continue; const gs = idx.map(i => lang.gpu[i]).filter(v => !Number.isNaN(v));
+      ut.push(`  ${sgm + 1} (${KAMERARUTE[sgm].join(', ')}): ${k(o.fps, 1)} b/s · hakk ${k(o.hakk / o.n * 100, 1)} % · GPU ${gs.length ? k(gs.reduce((x, y) => x + y, 0) / gs.length, 1) + '/' + k(persentil(gs, 0.95), 1) : '–'} ms · ${k(snitt(lang.kall, idx))} · ${k(snitt(lang.tri, idx))}k`); } return ut; };
   const avb = lang.avbrudd.map(a => `  ${mmss(a.aktivVed)} aktiv tid: ${a.type}, ${k(((a.slutt ?? tidNaa()) - a.start) / 1000, 1)} s${a.intervall ? ' (intervall ' + k(a.intervall / 1000, 1) + ' s tatt ut)' : ''}`);
   const linjer = [`Langtest ${VERSJON} · ${KVAL} · ${TID} · ${lang.css} CSS-px (${lang.retning}) · dpr ${k(DPR, 2)}`,
     `Oppløsning: fast ${skalaTekst(lang.pr)}`,
@@ -1708,13 +1727,14 @@ async function langStopp(grunn) {
     `Avbrudd (tatt ut av statistikken): ${lang.avbrudd.length}${lang.resize ? ' · størrelse/retning endret ' + lang.resize + ' gang(er)' : ''}`, ...avb,
     `Skjermlås hindret: ${lang.wakeStatus || '–'} · batteri ${lang.batteri[0]} → ${lang.batteri[1]} · GPU-tid per bilde: ${TQ ? 'målt' : 'ikke tilgjengelig i denne nettleseren'}`,
     `Median bildeintervall ${k(med, 1)} ms (≈ ${k(1000 / med)} Hz). Hakk = intervall over ${k(med * 1.5, 1)} ms.`,
-    rad('alle', alle), rad('bevegelse', oppsummer(iBev, med)), rad('i ro', oppsummer(iRo, med)), 'Per minutt (aktiv tid):', ...min,
+    rad('alle', alle), rad('bevegelse', oppsummer(iBev, med)), rad('i ro', oppsummer(iRo, med)), ...kategorier(), ...gpuAnalyse(), ...perStopp(), 'Per minutt (aktiv tid):', ...min,
     'b/s er snitt. «1 % lav» og «0,1 % lav» er bildefrekvensen ved de tregeste 1 % og 0,1 % av bildene.'];
   const H = hendelser, ant = f => H.filter(f).length;
   const opp = h => h.dGeo > 0 || h.dTex > 0, js = h => h.upd + h.ren > 12, ingen = h => !opp(h) && h.dProg <= 0 && !js(h) && !h.pan && !h.trykk;
-  linjer.push(`Hakk-analyse, intervaller over 25 ms: ${H.length}`,
-    `  ny shader: ${ant(h => h.dProg > 0)} · opplasting av geometri/tekstur: ${ant(opp)} · bevegelse: ${ant(h => h.pan)} · trykk: ${ant(h => h.trykk)} · vår JS over 12 ms: ${ant(js)}`,
-    `  uten markør: ${ant(ingen)}. Årsaken er ikke identifisert. Lav JS-tid utelukker ikke at scenen belaster GPU-en (GPU-tid måles bare der det støttes), minnerydding, nettleseren eller systemet.`,
+  const M = lang.mk;
+  linjer.push(`Hakk-analyse, alle intervaller over 25 ms: ${M.n} (detaljer lagret for de første ${H.length})`,
+    `  ny shader: ${M.prog} · opplasting av geometri/tekstur: ${M.opp} · bevegelse: ${M.pan} · trykk: ${M.trykk} · vår JS over 12 ms: ${M.js}`,
+    `  uten markør: ${M.ingen}. Årsaken er ikke identifisert. Lav JS-tid utelukker ikke at scenen belaster GPU-en (GPU-tid måles bare der det støttes), minnerydding, nettleseren eller systemet.`,
     'Lengste intervaller:', ...H.slice().sort((a, b) => b.iv - a.iv).slice(0, 10).map(h => `  ${mmss(h.t)}  ${k(h.iv)} ms  JS ${k(h.upd + h.ren, 1)} ms · kall ${h.kall} · ${k(h.tri / 1000)}k${Number.isNaN(lang.gpu[h.i]) ? '' : ' · GPU ' + k(lang.gpu[h.i], 1) + ' ms'}${h.dProg > 0 ? ' · ny shader' : ''}${opp(h) ? ' · opplasting' : ''}${h.pan ? ' · bevegelse' : ''}${h.trykk ? ' · trykk' : ''} · robot ${h.robot}`));
   window.__langtest = {alle, med, aktiv, total, avbrudd: lang.avbrudd}; maalBoks.classList.add('vis'); maalTekst.textContent = linjer.join('\n');
 }
@@ -1726,7 +1746,7 @@ document.getElementById('kopier').onclick = async () => { const t = maalTekst.te
 function bygg() {
   renderer.setPixelRatio(+PR_VALG); sol.shadow.mapSize.set(KV[KVAL].skygge, KV[KVAL].skygge); if (KVAL === 'mobil') renderer.shadowMap.type = THREE.PCFShadowMap;
   const kat = (navn, fn) => { const for_ = new Set(scene.children); fn(); scene.children.forEach(c => { if (!for_.has(c)) c.userData.kat = navn; }); };
-  kat('terreng', lagTerreng); kat('omrader', lagOmrader); { const t0 = performance.now(); kat('vegetasjon', lagVegetasjon); window.__byggTid = performance.now() - t0; } /* byggetid for vegetasjonen, vises i testene */ kat('gjerde', lagGjerde); kat('laave', lagLave); kat('honsehus', lagHonsehus); kat('dyr', lagBeite); kat('akre', lagAkre); kat('markedsbod', lagMarkedsbod); kat('detaljer', lagDetaljer); kat('vaer', lagVaer); settTid('dag'); lagRev(); if (TEST.full) fullGard();
+  kat('terreng', lagTerreng); kat('omrader', lagOmrader); { const t0 = performance.now(); kat('vegetasjon', lagVegetasjon); window.__byggTid = performance.now() - t0; } /* byggetid for vegetasjonen, vises i testene */ kat('gjerde', lagGjerde); kat('laave', lagLave); kat('honsehus', lagHonsehus); kat('dyr', lagBeite); kat('akre', lagAkre); kat('markedsbod', lagMarkedsbod); kat('detaljer', lagDetaljer); kat('vaer', lagVaer); settTid('dag'); lagRev(); if (TEST.full) fullGard(); kuttInstanser();
   new THREE.GLTFLoader().load(ROBOT_URL, gl => {
     robot = gl.scene; const b = new THREE.Box3().setFromObject(robot); robot.scale.setScalar(1.9 / (b.max.y - b.min.y)); const b2 = new THREE.Box3().setFromObject(robot); robot.position.set(-0.8, -b2.min.y, 0.2);
     robot.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } if (o.isBone && /^Head(_\d+)?$/.test(o.name) && !hode) hode = o; });
@@ -1785,7 +1805,7 @@ function profil(n = 12) {
   return res;
 }
 addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
-window.__testscene = {vinkel: (yaw, pitch) => { cam.yaw = yaw; if (pitch !== undefined) cam.pitch = pitch; plasserKamera(); }, profil, settTid, nyttNivaa, kamera: (x, z, d) => { cam.target.set(x, 0, z); if (d) cam.dist = d; plasserKamera(); }, info: () => Object.assign({}, renderer.info.render), get robot() { return robot; }, spill: (n, l) => spill(n, l), klipp, get rev() { return rev; }, kameraObj: camera, hilsRev, get modus() { return modus; }, set modus(v) { modus = v; }};
+window.__testscene = {get bladMesher() { return bladMesher; }, get bladMat() { return _bladMat; }, tidRender: (n = 4) => { const gl = renderer.getContext(), px = new Uint8Array(4); renderer.render(scene, camera); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); const t0 = performance.now(); for (let i = 0; i < n; i++) { renderer.render(scene, camera); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); } return (performance.now() - t0) / n; }, vinkel: (yaw, pitch) => { cam.yaw = yaw; if (pitch !== undefined) cam.pitch = pitch; plasserKamera(); }, profil, settTid, nyttNivaa, kamera: (x, z, d) => { cam.target.set(x, 0, z); if (d) cam.dist = d; plasserKamera(); }, info: () => Object.assign({}, renderer.info.render), get robot() { return robot; }, spill: (n, l) => spill(n, l), klipp, get rev() { return rev; }, kameraObj: camera, hilsRev, get modus() { return modus; }, set modus(v) { modus = v; }};
 bygg(); loop();
 </script>
 </body>
