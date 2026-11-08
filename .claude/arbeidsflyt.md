@@ -67,7 +67,7 @@ Laget i trinn 3 på grenen `kvalitet/tester`. Det trengs ingen nye verktøy elle
 
 | Fil | Hva den gjør |
 |---|---|
-| `test/index.html` | Testsiden. Kjører alle suitene i en ramme og legger resultatet i `window.EVNTestResultat`. Kan åpnes i en vanlig nettleser med `?auto`. |
+| `test/index.html` | Testsiden. Kjører suitene `statisk`, `statistikk`, `ui` og `ecoins` og legger resultatet i `window.EVNTestResultat`. Kan åpnes i en vanlig nettleser med `?auto&spill=id1,id2`. |
 | `test/kjor.mjs` | Starter en liten lokal server og Chrome eller Edge uten skjerm, kjører testsiden, fanger feil som bare nettleseren ser, og skriver tabell og testkvittering. Avslutter med kode 1 ved feil. |
 | `test/publiseringssjekk.mjs` | Kontrollerer testkjøringen i Actions, QA-rapporten og versjonen ved PR til `main` (se under). |
 | `.github/workflows/kvalitet.yml` og `publisering.yml` | De to kontrollene i GitHub Actions (se under). |
@@ -132,29 +132,46 @@ To arbeidsflyter gir to separate kontroller. Begge skal kreves i regelen for `ma
    - Registreringen til et spill som finnes på `main`, er uendret. En endring krever særskilt kontroll, fordi den endrer hva testene trykker på.
    - Resultatfilen fra Actions oppgir hvilke spill som ble testet. Den har alle påkrevde kontroller for hvert spill, også nye, med status `ok`, `kjent` eller `rettet`.
    - Suiten `sikkerhet` (de negative testene i `test/sikkerhet/`) er kjørt og grønn, når den finnes på `main`.
-   - Linjer som PR-en legger til utenfor `test/`, `qa/`, `.github/` og `.claude/`, kan ikke nå testsiden fra et spill i rammen (`parent`, `top`, `frameElement` eller `EVN…Resultat`).
+   - Linjer som PR-en legger til og som prøver å nå en forelder, et toppvindu eller testresultatet (`parent`, `top`, `frameElement` eller `EVN…Resultat`), gir et varsel til den som går gjennom PR-en. Søket kan omgås, så det er ikke sperren. Sperren er isolasjonen under.
    - Krav som er gjeldende i standarden på `main`, kreves fortsatt, også om standarden på grenen fjerner dem. Sjekken gir da et varsel.
+   - Bare QA-rapportene (`qa/rapporter/*.md`) er unntatt fra «siste kodeendring». Andre filer i `qa/` regnes som kode.
+   - Bare `spill/<id>/evn-test.json` regnes som testdata. En fil med samme navn i en undermappe regnes som en endring i spillet.
 
-**Negative tester:** `node test/sikkerhet/manipulering.test.mjs` lager et midlertidig git-repo som deler objektene med dette, og prøver 38 scenarier mot publiseringssjekken:
-- 4 som skal godtas: nytt spill med og uten registreringsfil, registrering lik standarden, og et fjernet spill (bare varsel).
-- 34 manipuleringer som skal avvises:
+**Isolasjon i nettleseren (utkast):** `test/kjor.mjs` kjører spillene slik at de ikke kan påvirke testresultatet:
+- Hvert spill røyktestes i en egen fane med eget opphav: `http://<id>.localhost:<port>/spill/<id>/`. Spillet deler ikke opphav med testsiden (`127.0.0.1`) eller med andre spill.
+- Målingene gjøres fra en isolert JS-verden (`Page.createIsolatedWorld`). Spillet kan ikke bytte ut funksjonene som måler, for eksempel `getElementById`, `getComputedStyle` eller `JSON`.
+- Feil, manglende filer og navigasjon registreres av nettleseren (CDP), ikke av spillet. Et spill som navigerer bort under testen, får feil.
+- Suitene på testsiden (`statisk`, `statistikk`, `ui`, `ecoins`) kjører hver i sin egen fane. Navigeres fanen bort fra testsiden, avvises resultatet.
+- `statisk` leser spillsidene bare som tekst, så spillkoden kjører ikke der.
+
+Røyktesten kjøres derfor bare av `node test/kjor.mjs`, ikke når testsiden åpnes i en vanlig nettleser.
+
+**Negative tester:** `node test/sikkerhet/manipulering.test.mjs` lager et midlertidig git-repo som deler objektene med dette, og prøver 42 scenarier mot publiseringssjekken:
+- 6 som skal godtas:
+  - nytt spill med og uten registreringsfil
+  - registrering som er lik standarden, og som ikke krever ny spillversjon
+  - et fjernet spill (bare varsel)
+  - en ny QA-rapport, som ikke er en kodeendring
+- 36 manipuleringer som skal avvises eller gi varsel:
   - endringer i testsiden, testkjøreren, publiseringssjekken, spillregisteret og arbeidsflyten, og sletting av de negative testene
-  - ugyldige registreringsfiler
+  - ugyldige registreringsfiler og mappenavn
   - endret registrering for eksisterende spill
   - resultatfiler som utelater et spill, en kontroll eller sikkerhetssuiten, har feil commit eller testversjon, eller har feil i røyktesten
-  - spillkode som når testsiden
+  - spillkode som peker mot testsiden (varsel)
+  - skript i `qa/` og `evn-test.json` i en undermappe
   - en standard der F1 er fjernet (kreves fortsatt, med varsel)
 
-Testene kjøres som suiten `sikkerhet` av `test/kjor.mjs`, også i Actions.
+Deretter kjører den `test/kjor.mjs` mot tre spill i `test/sikkerhet/juksespill/` (B1–B4):
+- `aerlig` skal bestå alle 13 kontrollene. Det viser at testene virker.
+- `toppnav` navigerer bort til en side med et falskt, grønt resultat (funn 1 i QA av 1711cbb).
+- `forelder` bytter ut DOM-funksjoner og globale objekter og prøver å nå en forelder (funn 2).
 
-**Hvorfor resultatfilen kan brukes:** Punkt 1 sikrer at testskriptene og arbeidsflyten er de samme som på `main`, og resultatfilen må oppgi samme testversjon som `test/` på commiten. Hvilke suiter som er rådgivende, leses fra `main`, ikke fra filen. Testene kjører likevel PR-ens spillkode i samme nettleser og med samme opphav som testsiden.
+Begge juksespillene skal gi feil og gjøre hele kjøringen rød. Testene kjøres som suiten `sikkerhet` av `test/kjor.mjs`, også i Actions.
 
-Utkastet gjør dette vanskeligere på tre måter:
-- `window.EVNTestResultat` kan ikke overskrives og fryses når testene er ferdige.
-- `kjor.mjs` henter resultatet direkte fra nettleseren, ikke via sidens egen JSON.
-- Ny spillkode som peker mot testsiden, stoppes (punkt 7).
+**Hvorfor resultatfilen kan brukes:** Punkt 1 sikrer at testskriptene og arbeidsflyten er de samme som på `main`, og resultatfilen må oppgi samme testversjon som `test/` på commiten. Hvilke suiter som er rådgivende, leses fra `main`, ikke fra filen. Spillene kjøres isolert fra testsiden (se over).
 
-Det er fortsatt en restrisiko, fordi kode som er skjult med vilje (for eksempel med et navn som settes sammen), ikke fanges av søket. En varig løsning er å kjøre spillene fra et annet opphav enn testsiden. Den holdes nede av at bare eieren og Claude kan pushe grener, at EVN Game QA leser diffen, og at eieren godkjenner. Resultatfilen behandles bare som data. Stemmer den ikke med QA-rapportens kvittering, stopper PR-en.
+**Restrisiko:** Felles kode som testes inne i testsiden (`ecoins/`, `statistikk.js`, `prototype/ui/`), kjører i fanen til sin egen suite. Den kan i prinsippet påvirke resultatet for den suiten, men ikke for spillene eller andre suiter. Slike endringer regnes som felles kode og krever full QA av alle spill. Et spill kan heller ikke bevise at det er morsomt eller virker over tid. Det er EVN Game QA, Even og eieren sine lag.
+Resultatfilen behandles bare som data. Stemmer den ikke med QA-rapportens kvittering, stopper PR-en.
 
 **Ulikt resultat i Actions og lokalt:** Kravene senkes ikke automatisk. PR-en stopper, og forskjellen undersøkes.
 
