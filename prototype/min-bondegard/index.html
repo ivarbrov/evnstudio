@@ -59,16 +59,16 @@
   <div class="grp" role="group" aria-label="Ytelsestest"><b>Test</b>
     <button data-test="forhand">Forhåndslast</button><button data-test="full">Full gård</button><button data-test="rute">Auto-kamera</button></div>
   <div class="grp" role="group" aria-label="Trestil"><b>Trær</b>
-    <button data-trestil="ny">Ny stil</button><button data-trestil="gammel">Før</button><button id="visTraer">Vis trær</button></div>
+    <button data-trestil="ny">Ny stil</button><button data-trestil="gammel">Før</button><button id="visTraer">Vis trær</button><button id="maalTraer">Mål trær</button></div>
 </div>
-<div id="info">Testscene 0.7.1 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
+<div id="info">Testscene 0.7.2 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
 <div id="maal"><div id="maalTekst">…</div><div class="maalKnapper"><button id="kopier">Kopier</button><button id="lukkMaal">Lukk</button></div></div>
 
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.7.1';
+const VERSJON = 'testscene 0.7.2';
 const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
@@ -311,6 +311,8 @@ function lagTerreng() {
     c.copy(gr2).lerp(gr1, n * 0.9).lerp(gr3, THREE.MathUtils.clamp(h / 9, 0, 0.7));
     const o = omradeVed(x, z); if (o) { c.lerp(vill, 0.32); c.lerp(toerr, THREE.MathUtils.smoothstep(vstoy(x * 0.3, 7, z * 0.3), 0.55, 0.8) * 0.45); }
     if (paVei(x, z)) c.copy(sand).offsetHSL(0, 0, (n - 0.5) * 0.06);
+    else if (paSti(x, z, 1.1)) c.lerp(sand, 0.62 * (1 - THREE.MathUtils.smoothstep(Math.abs(x - stiX(z)), 0.35, 1.1)) + 0.12);
+    else if (NYSTIL && Math.hypot(x + 17.6, z - 4) < 2.6) c.lerp(sand, 0.22 * (1 - Math.hypot(x + 17.6, z - 4) / 2.6));
     else if (Math.abs(z - VEI_Z) < 2.3 || (Math.abs(x + 5.5) < 1.9 && z > -1.5 && z < VEI_Z)) c.lerp(sand, 0.45);
     const k = elvKant(x, z);
     if (k < 0) c.copy(bunnF).lerp(vat, THREE.MathUtils.clamp(1 + k * 0.6, 0, 1)); // elvebunn, synlig gjennom vannet
@@ -426,7 +428,11 @@ function lagOmrader() {
 }
 
 /* ======================= Vegetasjon 0.4: organiske trekroner, grupper med åpne gressletter, gjengrodde områder ======================= */
-const revPlass = (x, z) => Math.hypot(x + 17.6, z - 4) < 2.4; // revens plass i skogkanten holdes fri
+const NYSTIL = (() => { try { return (localStorage.getItem('mb-trestil') || 'ny') === 'ny'; } catch (e) { return true; } })();
+// 0.7.2: en liten sti fra hovedveien opp til en lysning der reven Nysgjerrig står, så han er lett å finne (bare ny trestil, «Før» er uendret)
+const stiX = z => -18.3 + Math.sin(z * 0.55) * 0.55;
+const paSti = (x, z, b = 0.75) => NYSTIL && z > 5 && z < VEI_Z && Math.abs(x - stiX(z)) < b;
+const revPlass = (x, z) => Math.hypot(x + 17.6, z - 4) < (NYSTIL ? 4.2 : 2.4) || paSti(x, z, 2.2); // revens plass i skogkanten holdes fri
 function plassLedig(x, z) {
   if (revPlass(x, z)) return false;
   if (paVei(x, z)) return false;
@@ -436,7 +442,7 @@ function plassLedig(x, z) {
   return true;
 }
 const RUTE = 18; const ruter = new Map();
-const ruterBlad = new Map();
+const ruterBlad = new Map(), bladMesher = [];
 function iRuteBlad(x, z, del) { const k = Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterBlad.has(k)) ruterBlad.set(k, []); ruterBlad.get(k).push(...del); }
 function iRute(x, z, del) { const k = Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruter.has(k)) ruter.set(k, []); ruter.get(k).push(...del); }
 const skyggeBlob = [];
@@ -526,11 +532,11 @@ function bladMat() { if (_bladMat) return _bladMat;
   for (let k = 0; k < 10; k++) blad(k / 10 * 6.283 + Math.sin(k * 7.1) * 0.12, S * 0.04, S * (0.38 + Math.sin(k * 3.3) * 0.05), S * 0.13, 87);
   for (let k = 0; k < 6; k++) blad(k / 6 * 6.283 + 0.35, S * 0.0, S * 0.28, S * 0.12, 93);
   x.restore(); x.save(); x.translate(S * 1.5, S / 2); x.lineCap = 'round'; // barnåler: kvister med korte nåler, lysere mot tuppen
-  x.fillStyle = 'hsl(120,14%,40%)'; x.beginPath(); x.arc(0, 0, S * 0.12, 0, 6.29); x.fill();
-  for (let k = 0; k < 9; k++) { const a = k / 9 * 6.283 + Math.sin(k * 5.3) * 0.15, L = S * (0.4 + Math.sin(k * 2.7) * 0.04), ca = Math.cos(a), sa = Math.sin(a);
-    x.strokeStyle = 'hsl(30,20%,32%)'; x.lineWidth = 3; x.beginPath(); x.moveTo(0, 0); x.lineTo(ca * L, sa * L); x.stroke();
-    for (let t = 0.12; t < 0.97; t += 0.065) { const px = ca * L * t, py = sa * L * t, nl = S * 0.085 * (1 - t * 0.45), l = 48 + t * 40;
-      [0.85, -0.85].forEach(v => { const b = a + v; x.strokeStyle = `hsl(115,22%,${l}%)`; x.lineWidth = 3.4; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(b) * nl, py + Math.sin(b) * nl); x.stroke(); }); } }
+  // 0.7.2: mykere og mer samlet barnål: en takket tue som bunn, korte, butte nåler med liten kontrast
+  x.fillStyle = 'hsl(118,16%,47%)'; x.beginPath(); for (let k = 0; k <= 36; k++) { const a = k / 36 * 6.283, r = S * (0.34 + (k % 2 ? 0.06 : 0) + Math.sin(k * 1.7) * 0.02); k ? x.lineTo(Math.cos(a) * r, Math.sin(a) * r) : x.moveTo(Math.cos(a) * r, Math.sin(a) * r); } x.fill();
+  for (let k = 0; k < 11; k++) { const a = k / 11 * 6.283 + Math.sin(k * 5.3) * 0.15, L = S * (0.36 + Math.sin(k * 2.7) * 0.04), ca = Math.cos(a), sa = Math.sin(a);
+    for (let t = 0.08; t < 0.98; t += 0.09) { const px = ca * L * t, py = sa * L * t, nl = S * 0.06 * (1 - t * 0.35), l = 52 + t * 16;
+      [0.7, -0.7, 0].forEach(v => { const b = a + v; x.strokeStyle = `hsl(110,${18 + t * 6}%,${l + (v ? 0 : 3)}%)`; x.lineWidth = 6.5; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(b) * nl, py + Math.sin(b) * nl); x.stroke(); }); } }
   x.restore();
   const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 2;
   _bladMat = std({map: t, vertexColors: true, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.8});
@@ -552,8 +558,8 @@ function gran2Geo(v, fin) {
   const kp = [], kn = [], kc = [], ku = [], fak = fin ? (KVAL === 'mobil' ? 0.8 : 1) : (KVAL === 'mobil' ? 0.4 : 0.55), d = new THREE.Vector3(), ri = new THREE.Vector3(), up = new THREE.Vector3(), q = new THREE.Quaternion();
   if (fin !== 'fjern') for (let k = 0; k < lag; k++) { const R = 1.85 - k * 0.27, y0 = k * 0.78, n = Math.round((9 + R * 9) * fak);
     for (let j = 0; j < n; j++) { const a = j / n * 6.283 + r5() * 0.4, rr5 = R * (0.72 + r5() * 0.24), cx = Math.cos(a) * rr5, cz = Math.sin(a) * rr5, cy = y0 + 0.02 + (1 - rr5 / R) * 0.45 + r5() * 0.08;
-      d.set(Math.cos(a), 0.75 + r5() * 0.5, Math.sin(a)).add(new THREE.Vector3(r5() - 0.5, r5() - 0.5, r5() - 0.5).multiplyScalar(0.35)).normalize(); up.set(0, 1, 0); ri.crossVectors(up, d).normalize(); up.crossVectors(d, ri).normalize(); q.setFromAxisAngle(d, r5() * 6.28); ri.applyQuaternion(q); up.applyQuaternion(q);
-      const w = 0.55 + R * 0.28 + r5() * 0.15, kant = rr5 / R; c.copy(mid).lerp(lys, 0.25 + kant * 0.3 + k / lag * 0.1).multiplyScalar(0.92 + r5() * 0.16); const n3 = new THREE.Vector3(cx, (cy - 2.4) * 0.3 + 0.8, cz).normalize();
+      d.set(Math.cos(a), 1.0 + r5() * 0.4, Math.sin(a)).add(new THREE.Vector3(r5() - 0.5, r5() - 0.5, r5() - 0.5).multiplyScalar(0.2)).normalize(); up.set(0, 1, 0); ri.crossVectors(up, d).normalize(); up.crossVectors(d, ri).normalize(); q.setFromAxisAngle(d, r5() * 6.28); ri.applyQuaternion(q); up.applyQuaternion(q);
+      const w = 0.6 + R * 0.3 + r5() * 0.12, kant = rr5 / R; c.copy(mid).lerp(lys, 0.15 + kant * 0.25 + k / lag * 0.1).multiplyScalar(0.92 + r5() * 0.16); const n3 = new THREE.Vector3(cx, (cy - 2.4) * 0.3 + 0.8, cz).normalize();
       [[-1, -1, 0.5, 0], [1, -1, 1, 0], [1, 1, 1, 1], [-1, -1, 0.5, 0], [1, 1, 1, 1], [-1, 1, 0.5, 1]].forEach(([a2, b, u1, u2]) => { kp.push(cx + (ri.x * a2 + up.x * b) * w / 2, cy + (ri.y * a2 + up.y * b) * w / 2, cz + (ri.z * a2 + up.z * b) * w / 2); kn.push(n3.x, n3.y, n3.z); kc.push(c.r, c.g, c.b); ku.push(u1, u2); }); } }
   let blad = null; if (kp.length) { blad = new THREE.BufferGeometry(); blad.setAttribute('position', new THREE.Float32BufferAttribute(kp, 3)); blad.setAttribute('normal', new THREE.Float32BufferAttribute(kn, 3)); blad.setAttribute('color', new THREE.Float32BufferAttribute(kc, 3)); blad.setAttribute('uv', new THREE.Float32BufferAttribute(ku, 2)); }
   const ut = {krone: samle(deler), blad}; kroneCache.set(nokkel, ut); return ut; }
@@ -682,7 +688,7 @@ function lagVegetasjon() {
   for (let z = -11; z < 10; z += rr(2.2, 4.5)) busk(15.3, z, rr(0.6, 0.95), rnd() < 0.25 ? 'baer' : 'rund', j++);
   lagGjengroing();
   lagElvebredd();
-  ruterBlad.forEach((del) => { const me = mesh(samle(del), bladMat()); me.customDepthMaterial = bladMat().dybde; me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = Math.hypot(bs.x, bs.z) < 34; });
+  ruterBlad.forEach((del) => { const me = mesh(samle(del), bladMat()); bladMesher.push(me); me.customDepthMaterial = bladMat().dybde; me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = Math.hypot(bs.x, bs.z) < 34; });
   ruter.forEach((del) => { const me = mesh(samle(del), MAT.vertex); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = Math.hypot(bs.x, bs.z) < 34; }); // bare ruter nær gården kaster skygge
   lagFjernskog();
   [[-7, -6, 7.5], [6.5, -8, 3.2], [-10.5, 8, 2.6], [-12.9, -1.8, 2.2]].forEach(b => skyggeBlob.push(b));
@@ -740,7 +746,7 @@ function lagGressOgBlomster() {
   { const pos = [], col = []; const bl = (a, h) => { const cx = Math.cos(a), sz = Math.sin(a); pos.push(-0.1 * cx, 0, -0.1 * sz, 0.1 * cx, 0, 0.1 * sz, 0.05 * cx + 0.04 * sz, h, 0.05 * sz - 0.04 * cx); col.push(0.2, 0.4, 0.1, 0.2, 0.4, 0.1, 0.62, 0.86, 0.32); };
     for (let q = 0; q < 6; q++) bl(q * 1.05, 0.35 + (q % 3) * 0.12); tust.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); tust.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); tust.computeVertexNormals(); }
   const n = KV[KVAL].gress; const tuster = new THREE.InstancedMesh(tust, std({vertexColors: true, side: THREE.DoubleSide, roughness: 1}), n); let t = 0; const m4 = new THREE.Matrix4(), cc = new THREE.Color();
-  const forbudt = (x, z) => paVei(x, z) || elvKant(x, z) < 0.3 || (x > 0 && x < 13 && z > 0.5 && z < 10) || (x > -12.5 && x < -1.5 && z > -10.5 && z < -1) || (x > 2.5 && x < 10.5 && z > -10.5 && z < -0.3) || (x > -13 && x < -8 && z > 6.5 && z < 9.5);
+  const forbudt = (x, z) => paVei(x, z) || paSti(x, z, 0.8) || elvKant(x, z) < 0.3 || (x > 0 && x < 13 && z > 0.5 && z < 10) || (x > -12.5 && x < -1.5 && z > -10.5 && z < -1) || (x > 2.5 && x < 10.5 && z > -10.5 && z < -0.3) || (x > -13 && x < -8 && z > 6.5 && z < 9.5);
   const sentre = [];
   for (let x = -16; x < 14; x += 2.2) { sentre.push([x, 10.6, 0.8], [x, -12, 0.8]); } for (let z = -12; z < 10.6; z += 2.2) { sentre.push([-16, z, 0.8], [14, z, 0.8]); }
   for (let x = -40; x < 40; x += 3) { sentre.push([x, VEI_Z - 2.1, 0.7], [x, VEI_Z + 2.1, 0.7]); }
@@ -1139,7 +1145,19 @@ const HILSNER = ['Hei, nabo! Jeg er Nysgjerrig.', 'Skal vi gjøre gården til de
 let hilsI = 0;
 function hilsRev(vis) { if (!rev) return; if (robot) rev.rotation.y = Math.atan2(robot.position.x - rev.position.x, robot.position.z - rev.position.z); revSpill('Wave', false); setTimeout(() => revSpill('Idle'), 2200);
   if (vis !== false) { boble.textContent = HILSNER[hilsI++ % HILSNER.length]; boble.style.display = 'block'; bobleTid = 3.2; } }
-function lagRev() {
+/* 0.7.2: trampet sti fra hovedveien til lysningen der reven står. Egen flate over gresset med myke kanter */
+function lagRevesti() { if (!NYSTIL) return;
+  const kant = (rund) => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); const g = rund ? x.createRadialGradient(32, 32, 4, 32, 32, 32) : x.createLinearGradient(0, 0, 64, 0);
+    if (rund) { g.addColorStop(0, '#fff'); g.addColorStop(0.55, '#bbb'); g.addColorStop(1, '#000'); } else { g.addColorStop(0, '#000'); g.addColorStop(0.3, '#ccc'); g.addColorStop(0.5, '#fff'); g.addColorStop(0.7, '#ccc'); g.addColorStop(1, '#000'); }
+    x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); };
+  const z0 = 4.6, z1 = VEI_Z - 1.2, n = 28, B = 1.5, pos = [], uv = [], idx = [];
+  for (let i = 0; i <= n; i++) { const z = z0 + (z1 - z0) * i / n, x = stiX(z), b = B * (i === 0 ? 1.3 : 1); [-1, 1].forEach((s2, j) => { const px = x + s2 * b / 2; pos.push(px, hoyde(px, z) + 0.06, z); uv.push(j, (z - z0) / 1.6); }); if (i) { const a = (i - 1) * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); } }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+  const t = TEX.grus.clone(); t.needsUpdate = true; t.repeat.set(1, 1);
+  const m = std({map: t, alphaMap: kant(false), transparent: true, opacity: 0.8, depthWrite: false, roughness: 1, color: SRGB(0xe9dcc0)}); const sti = new THREE.Mesh(g, m); sti.receiveShadow = true; sti.renderOrder = 1; scene.add(sti);
+  const lg = new THREE.CircleGeometry(2.3, 24); lg.rotateX(-Math.PI / 2); const ly = std({map: t, alphaMap: kant(true), transparent: true, opacity: 0.45, depthWrite: false, roughness: 1, color: SRGB(0xd9e0a8)});
+  const lys = new THREE.Mesh(lg, ly); lys.position.set(-17.6, hoyde(-17.6, 4) + 0.055, 4); lys.receiveShadow = true; lys.renderOrder = 1; scene.add(lys); }
+function lagRev() { lagRevesti();
   new THREE.GLTFLoader().load(REV_URL, gl => { rev = gl.scene; const b = new THREE.Box3().setFromObject(rev); rev.scale.setScalar(2.05 / (b.max.y - b.min.y)); const b2 = new THREE.Box3().setFromObject(rev);
     rev.position.set(-17.6, hoyde(-17.6, 4.0) - b2.min.y, 4.0); rev.rotation.y = Math.PI / 2 + 0.35; // i skogkanten utenfor gjerdet rev.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.userData.eier = rev; } });
     rev.userData.kat = 'rev'; scene.add(rev);
@@ -1551,6 +1569,28 @@ document.getElementById('bench').onclick = async () => {
 /* ======================= Testvalg (0.5.1): lagres på enheten og gjelder fra neste lasting ======================= */
 const TEST = (() => { try { return JSON.parse(localStorage.getItem('mb-test') || '{}'); } catch (e) { return {}; } })();
 document.querySelectorAll('[data-trestil]').forEach(b => { b.classList.toggle('on', b.dataset.trestil === TRESTIL); b.onclick = () => { if (b.dataset.trestil === TRESTIL) return; try { localStorage.setItem('mb-trestil', b.dataset.trestil); } catch (e) {} location.reload(); }; });
+/* 0.7.2: Mål trær. Samme kamera og oppløsning; slår av én ting om gangen og måler GPU-tid (tidsspørring) og b/s.
+   Viser hva i vegetasjonen som faktisk koster, før noe reduseres. Ingenting endres permanent. */
+document.getElementById('maalTraer').onclick = async () => {
+  if (maaler || lang.paa) return; maaler = true; maalBoks.classList.add('vis'); maalTekst.textContent = 'Måler trærne … ikke rør skjermen (ca. 40 s)';
+  const lagret = {t: cam.target.clone(), d: cam.dist, yaw: cam.yaw, p: cam.pitch}; cam.target.set(-0.5, 0, 1.5); cam.dist = innerWidth / innerHeight < 1 ? 64 : 46; cam.yaw = Math.PI / 4; cam.pitch = 0.82; plasserKamera(); // fast standardvisning, lik for alle versjoner
+  const pr = renderer.getPixelRatio(), veg = scene.children.filter(c => c.userData.kat === 'vegetasjon'), skygge = bladMesher.map(m => m.castShadow), rader = [];
+  const ledd = async (navn, på, av) => { på(); await vent(300); const r = await maalRaf(3); const g = await gpuTid(pr, 10); const i = Object.assign({}, renderer.info.render); av(); rader.push({navn, r, g, kall: i.calls, tri: i.triangles}); };
+  const ingen = () => {};
+  await ledd('Alt som vanlig', ingen, ingen);
+  await ledd('Bladkort uten skygge', () => bladMesher.forEach(m => m.castShadow = false), () => bladMesher.forEach((m, i) => m.castShadow = skygge[i]));
+  await ledd('Bladkort uten alfatest', () => { if (_bladMat) { _bladMat.alphaTest = 0; _bladMat.needsUpdate = true; } }, () => { if (_bladMat) { _bladMat.alphaTest = 0.45; _bladMat.needsUpdate = true; } });
+  await ledd('Bladkort skjult', () => bladMesher.forEach(m => m.visible = false), () => bladMesher.forEach(m => m.visible = true));
+  await ledd('All vegetasjon skjult', () => veg.forEach(c => c.visible = false), () => veg.forEach(c => c.visible = true));
+  const a = rader[0], gl = renderer.getContext(), dbg = gl.getExtension('WEBGL_debug_renderer_info');
+  const linjer = [`Mål trær ${VERSJON} · ${KVAL} · trær ${TRESTIL === 'ny' ? 'ny stil' : 'før (0.6)'} · ${skalaTekst(pr)} · ${innerWidth}×${innerHeight} CSS-px`,
+    `Kamera: mål (${k(cam.target.x, 1)}; ${k(cam.target.z, 1)}) · avstand ${k(cam.dist)} · ${TID} · full gård ${TEST.full ? 'på' : 'av'} · GPU: ${dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : 'ukjent'}`,
+    '  variant                    b/s   1 % lav   GPU ms   kall   trekanter',
+    ...rader.map(x => `  ${x.navn.padEnd(25)} ${k(x.r.fps).padStart(4)}   ${k(x.r.lav).padStart(5)}   ${x.g === null ? '   –' : k(x.g, 1).padStart(6)}   ${String(x.kall).padStart(4)}   ${k(x.tri / 1000)}k`),
+    a.g === null ? 'GPU-tid kan ikke måles i denne nettleseren. Bruk b/s og sammenlign med «Før».' : `Bladkortene koster ${k(a.g - rader[3].g, 1)} ms GPU (av ${k(a.g, 1)} ms); skyggen deres ${k(a.g - rader[1].g, 1)} ms. Alfatesten: ${k(a.g - rader[2].g, 1)} ms (negativt tall: alfatesten er ikke kostnaden).`,
+    'Målingen bruker alltid standardvisningen av gården. Kjør den også med «Før» under Trær for sammenligning med 0.6.'];
+  cam.target.copy(lagret.t); cam.dist = lagret.d; cam.yaw = lagret.yaw; cam.pitch = lagret.p; plasserKamera();
+  maalTekst.textContent = linjer.join('\n'); window.__treMaaling = rader; maaler = false; nullstill(); };
 document.getElementById('visTraer').onclick = () => { cam.yaw = Math.PI / 4; cam.target.set(-22, 0, 19); cam.dist = 26; plasserKamera(); };
 document.querySelectorAll('[data-test]').forEach(b => { b.classList.toggle('on', !!TEST[b.dataset.test]); b.onclick = () => { TEST[b.dataset.test] = !TEST[b.dataset.test]; try { localStorage.setItem('mb-test', JSON.stringify(TEST)); } catch (e) {} location.reload(); }; });
 // Forhåndslast: kompilerer alle shadere og laster opp all geometri og alle teksturer til GPU-en før scenen vises,
