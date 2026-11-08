@@ -57,16 +57,16 @@
   <div class="grp" role="group" aria-label="Oppløsning"><b>Oppløsning</b>
     <span id="prKnapper"></span></div>
   <div class="grp" role="group" aria-label="Ytelsestest"><b>Test</b>
-    <button data-test="forhand">Forhåndslast</button><button data-test="full">Full gård</button></div>
+    <button data-test="forhand">Forhåndslast</button><button data-test="full">Full gård</button><button data-test="rute">Auto-kamera</button></div>
 </div>
-<div id="info">Testscene 0.5.2 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
+<div id="info">Testscene 0.5.3 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
 <div id="maal"><div id="maalTekst">…</div><div class="maalKnapper"><button id="kopier">Kopier</button><button id="lukkMaal">Lukk</button></div></div>
 
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.5.2';
+const VERSJON = 'testscene 0.5.3';
 const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
@@ -1266,45 +1266,85 @@ const oppstartTekst = () => `Oppstart: scenen klar etter ${klarMs === null ? '�
    tid i vår JS (oppdatering og render-kall), ny geometri/tekstur lastet opp, ny shader, kamerabevegelse, trykk og robotens tilstand. */
 const diag = {geo: 0, tex: 0, prog: 0, f: null}, hendelser = [];
 function diagEtterBilde(tA, tB, tC) { const m = renderer.info.memory, pr = renderer.info.programs ? renderer.info.programs.length : 0;
-  diag.f = {upd: tB - tA, ren: tC - tB, dGeo: m.geometries - diag.geo, dTex: m.textures - diag.tex, dProg: pr - diag.prog, pan: pek.size > 0 || tC - sistHjul < 400, trykk: tC - sistTrykk < 300, robot: mal ? 'går' : snuTil ? 'snur' : modus };
+  diag.f = {kall: renderer.info.render.calls, tri: renderer.info.render.triangles, upd: tB - tA, ren: tC - tB, dGeo: m.geometries - diag.geo, dTex: m.textures - diag.tex, dProg: pr - diag.prog, pan: pek.size > 0 || tC - sistHjul < 400 || ruteBeveger, trykk: tC - sistTrykk < 300, robot: mal ? 'går' : snuTil ? 'snur' : modus };
   diag.geo = m.geometries; diag.tex = m.textures; diag.prog = pr; }
-/* Langtest (0.4.5): registrerer hvert rAF-intervall over lang tid med fast oppløsning, og skiller bilder under panorering/zoom fra bilder i ro.
-   Et «hakk» er et intervall over 1,5 × median (et tapt skjermbilde). Stopper selv etter 10 minutter, eller hvis siden skjules. */
-const lang = {paa: false, t0: 0, iv: new Float32Array(150000), aktiv: new Uint8Array(150000), ts: new Float64Array(150000), n: 0, skjult: 0};
+/* Langtest (0.5.3). Registrerer hvert rAF-intervall med fast oppløsning i opptil 10 minutter aktiv tid.
+   Avbrudd: når siden skjules (visibilitychange/pagehide/freeze), eller et intervall er over 2 s uten slik hendelse, regnes intervallet som avbrudd.
+   Avbrudd tas ut av FPS-statistikken og den aktive tiden, men rapporteres for seg med tidspunkt og lengde.
+   Per bilde lagres også tegnekall, trekanter, kamerabevegelse og GPU-tid (bare der nettleseren har EXT_disjoint_timer_query_webgl2).
+   Valgfri automatisk kamerarute (Meny → Test → Auto-kamera) gir like forhold mellom tester. Skjermlås hindres med Wake Lock der det støttes. */
+const LMAX = 150000;
+const lang = {paa: false, t0: 0, aktivMs: 0, iv: new Float32Array(LMAX), aktiv: new Uint8Array(LMAX), ts: new Float64Array(LMAX), kall: new Uint16Array(LMAX), tri: new Uint16Array(LMAX), gpu: new Float32Array(LMAX), n: 0,
+  avbrudd: [], hoppNeste: false, resize: 0, wake: null, wakeStatus: '', batteri: ['', '']};
 const langKnapp = document.getElementById('langtest');
-function langStart() { if (maaler) return; hendelser.length = 0; Object.assign(lang, {paa: true, t0: performance.now(), n: 0, skjult: 0, pr: renderer.getPixelRatio()}); maalBoks.classList.remove('vis'); langKnapp.classList.add('on'); }
+const tidNaa = () => performance.now();
+async function batteri() { try { if (!navigator.getBattery) return 'ikke tilgjengelig'; const b = await navigator.getBattery(); return `${Math.round(b.level * 100)} %${b.charging ? ', lader' : ''}`; } catch (e) { return 'ikke tilgjengelig'; } }
+async function vekk() { try { if (!('wakeLock' in navigator)) { lang.wakeStatus = 'ikke støttet'; return; } lang.wake = await navigator.wakeLock.request('screen'); lang.wakeStatus = 'aktiv'; } catch (e) { lang.wakeStatus = 'avvist'; } }
+async function langStart() { if (maaler) return; hendelser.length = 0;
+  Object.assign(lang, {paa: true, t0: tidNaa(), aktivMs: 0, n: 0, avbrudd: [], hoppNeste: true, resize: 0, pr: renderer.getPixelRatio(), retning: innerWidth > innerHeight ? 'liggende' : 'stående', css: `${innerWidth}×${innerHeight}`, ruteT0: tidNaa()});
+  lang.gpu.fill(NaN); maalBoks.classList.remove('vis'); langKnapp.classList.add('on'); lang.batteri[0] = await batteri(); vekk(); }
+function avbruddStart(type) { if (!lang.paa) return; const sist = lang.avbrudd[lang.avbrudd.length - 1]; if (sist && sist.slutt === null) return; lang.avbrudd.push({type, aktivVed: lang.aktivMs, start: tidNaa(), slutt: null}); }
+function avbruddSlutt() { if (!lang.paa) return; const sist = lang.avbrudd[lang.avbrudd.length - 1]; if (sist && sist.slutt === null) sist.slutt = tidNaa(); lang.hoppNeste = true; if (document.visibilityState === 'visible' && lang.wakeStatus === 'aktiv') vekk(); }
+document.addEventListener('visibilitychange', () => document.hidden ? avbruddStart('siden skjult') : avbruddSlutt());
+addEventListener('pagehide', () => avbruddStart('siden lagt bort')); addEventListener('pageshow', avbruddSlutt);
+document.addEventListener('freeze', () => avbruddStart('nettleseren frøs siden')); document.addEventListener('resume', avbruddSlutt);
+addEventListener('resize', () => { if (lang.paa) { lang.resize++; lang.hoppNeste = true; } });
+function langRegistrer(intervall, naa) {
+  if (!lang.paa || document.hidden) return;
+  if (lang.hoppNeste) { lang.hoppNeste = false; const sist = lang.avbrudd[lang.avbrudd.length - 1]; if (sist && !sist.intervall && sist.slutt !== null) sist.intervall = intervall; return; } // intervallet som spenner over avbruddet
+  if (intervall > 2000) { lang.avbrudd.push({type: 'stopp uten synlighetshendelse', aktivVed: lang.aktivMs, start: naa - intervall, slutt: naa, intervall}); return; }
+  if (lang.n >= LMAX) return; const i = lang.n++; lang.aktivMs += intervall;
+  lang.iv[i] = intervall; lang.aktiv[i] = pek.size > 0 || naa - sistHjul < 400 || ruteBeveger ? 1 : 0; lang.ts[i] = lang.aktivMs;
+  if (diag.f) { lang.kall[i] = Math.min(65535, diag.f.kall); lang.tri[i] = Math.min(65535, Math.round(diag.f.tri / 1000)); }
+  if (intervall > 25 && diag.f && hendelser.length < 3000) hendelser.push(Object.assign({t: lang.aktivMs, iv: intervall, i}, diag.f));
+  if (lang.aktivMs > 600000) langStopp('stoppet automatisk etter 10 min aktiv tid');
+}
+// GPU-tid per bilde (asynkront, bare der det støttes)
+const gpuKo = [];
+function gpuFor() { if (!TQ || !lang.paa || gpuKo.length > 8) return null; const gl = renderer.getContext(), q = gl.createQuery(); gl.beginQuery(TQ.TIME_ELAPSED_EXT, q); return q; }
+function gpuEtter(q) { const gl = renderer.getContext(); if (q) { gl.endQuery(TQ.TIME_ELAPSED_EXT); gpuKo.push({q, i: lang.n}); }
+  while (gpuKo.length && gl.getQueryParameter(gpuKo[0].q, gl.QUERY_RESULT_AVAILABLE)) { const {q: qq, i} = gpuKo.shift(); const ns = gl.getQueryParameter(qq, gl.QUERY_RESULT); if (!gl.getParameter(TQ.GPU_DISJOINT_EXT) && i < LMAX) lang.gpu[i] = ns / 1e6; gl.deleteQuery(qq); } }
+// Automatisk kamerarute: 7 stopp à 10 s (6 s bevegelse, 4 s stille), gjentas. Gir samme kameraforløp i hver test.
+const KAMERARUTE = [[-0.5, 1.5, 46], [6.5, -4, 16], [-11.5, 3, 13], [-4, -2, 80], [2, -21, 24], [-22, 0, 26], [2, 22, 40]];
+let ruteBeveger = false;
+function ruteKamera(naa) { if (!lang.paa || !TEST.rute) { ruteBeveger = false; return; } const sek = Math.max(0, (naa - lang.ruteT0) / 1000), seg = Math.floor(sek / 10) % KAMERARUTE.length, u = (sek % 10) / 6;
+  const a = KAMERARUTE[seg], b = KAMERARUTE[(seg + 1) % KAMERARUTE.length], s = THREE.MathUtils.smoothstep(Math.min(u, 1), 0, 1); ruteBeveger = u < 1;
+  cam.target.set(a[0] + (b[0] - a[0]) * s, 0, a[1] + (b[1] - a[1]) * s); cam.dist = a[2] + (b[2] - a[2]) * s; plasserKamera(); }
 function persentil(a, p) { const s = Array.from(a).sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(s.length * p))]; }
 function oppsummer(iv, med) { if (!iv.length) return null; const sum = iv.reduce((x, y) => x + y, 0); const hakk = iv.filter(v => v > med * 1.5).length;
-  return {n: iv.length, fps: 1000 * iv.length / sum, lav1: 1000 / persentil(iv, 0.99), lav01: 1000 / persentil(iv, 0.999), hakk, over33: iv.filter(v => v > 33.4).length, over50: iv.filter(v => v > 50).length, maks: Math.max(...iv)}; }
-function langStopp(grunn) {
-  if (!lang.paa) return; lang.paa = false; langKnapp.classList.remove('on'); langKnapp.textContent = 'Langtest';
-  const n = lang.n, iv = lang.iv.subarray(0, n), ak = lang.aktiv.subarray(0, n), ts = lang.ts.subarray(0, n), varighet = (performance.now() - lang.t0) / 1000;
+  return {n: iv.length, fps: 1000 * iv.length / sum, lav1: 1000 / persentil(iv, 0.99), lav01: 1000 / persentil(iv, 0.999), hakk, over50: iv.filter(v => v > 50).length, maks: Math.max(...iv)}; }
+const mmss = ms0 => { const ms = Math.max(0, ms0); return `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`; };
+async function langStopp(grunn) {
+  if (!lang.paa) return; lang.paa = false; langKnapp.classList.remove('on'); langKnapp.textContent = 'Langtest'; try { if (lang.wake) await lang.wake.release(); } catch (e) {}
+  lang.batteri[1] = await batteri();
+  const n = lang.n, iv = lang.iv.subarray(0, n), ak = lang.aktiv.subarray(0, n), ts = lang.ts.subarray(0, n), total = (tidNaa() - lang.t0) / 1000, aktiv = lang.aktivMs / 1000;
   if (n < 30) { maalBoks.classList.add('vis'); maalTekst.textContent = 'Langtesten var for kort.'; return; }
   const med = persentil(iv, 0.5), alle = oppsummer(Array.from(iv), med);
   const iBev = [], iRo = []; for (let i = 0; i < n; i++) (ak[i] ? iBev : iRo).push(iv[i]);
-  const bev = oppsummer(iBev, med), ro = oppsummer(iRo, med);
   const rad = (navn, o) => o ? `${navn}: ${o.n} bilder · ${k(o.fps, 1)} b/s · 1 % lav ${k(o.lav1)} · 0,1 % lav ${k(o.lav01)} · hakk ${o.hakk} (${k(o.hakk / o.n * 100, 2)} %) · >50 ms ${o.over50} · maks ${k(o.maks)} ms` : `${navn}: –`;
-  const min = []; for (let m = 0; m * 60 < varighet; m++) { const del = []; for (let i = 0; i < n; i++) if (ts[i] >= m * 60000 && ts[i] < (m + 1) * 60000) del.push(iv[i]); const o = oppsummer(del, med); if (o) min.push(rad(`minutt ${m + 1}`, o)); }
-  const linjer = [`Langtest ${VERSJON} · ${KVAL} · ${TID} · ${innerWidth}×${innerHeight} CSS-px · dpr ${k(DPR, 2)}`,
-    `Oppløsning: fast ${skalaTekst(lang.pr)}`, `Varighet ${Math.floor(varighet / 60)} min ${k(varighet % 60)} s · ${grunn}${lang.skjult ? ' · siden var skjult ' + lang.skjult + ' gang(er)' : ''}`,
+  const snitt = (arr, idx) => { let s = 0, c = 0; idx.forEach(i => { const v = arr[i]; if (!Number.isNaN(v)) { s += v; c++; } }); return c ? s / c : null; };
+  const min = []; for (let m = 0; m * 60 < aktiv; m++) { const idx = []; for (let i = 0; i < n; i++) if (ts[i] > m * 60000 && ts[i] <= (m + 1) * 60000) idx.push(i); const o = oppsummer(idx.map(i => iv[i]), med); if (!o) continue;
+    const g = snitt(lang.gpu, idx), pan = idx.filter(i => ak[i]).length / idx.length;
+    min.push(rad(`minutt ${m + 1}`, o) + ` · kall ${k(snitt(lang.kall, idx))} · trekanter ${k(snitt(lang.tri, idx))}k · bevegelse ${k(pan * 100)} %${g !== null ? ' · GPU ' + k(g, 1) + ' ms' : ''}`); }
+  const avb = lang.avbrudd.map(a => `  ${mmss(a.aktivVed)} aktiv tid: ${a.type}, ${k(((a.slutt ?? tidNaa()) - a.start) / 1000, 1)} s${a.intervall ? ' (intervall ' + k(a.intervall / 1000, 1) + ' s tatt ut)' : ''}`);
+  const linjer = [`Langtest ${VERSJON} · ${KVAL} · ${TID} · ${lang.css} CSS-px (${lang.retning}) · dpr ${k(DPR, 2)}`,
+    `Oppløsning: fast ${skalaTekst(lang.pr)}`,
+    `Testvalg: forhåndslast ${TEST.forhand ? 'på' : 'av'} · full gård ${TEST.full ? 'på' : 'av'} · kamera ${TEST.rute ? 'automatisk rute' : 'manuelt'}`, oppstartTekst(),
+    `Aktiv tid ${Math.floor(aktiv / 60)} min ${k(aktiv % 60)} s av totalt ${Math.floor(total / 60)} min ${k(total % 60)} s · ${grunn}`,
+    `Avbrudd (tatt ut av statistikken): ${lang.avbrudd.length}${lang.resize ? ' · størrelse/retning endret ' + lang.resize + ' gang(er)' : ''}`, ...avb,
+    `Skjermlås hindret: ${lang.wakeStatus || '–'} · batteri ${lang.batteri[0]} → ${lang.batteri[1]} · GPU-tid per bilde: ${TQ ? 'målt' : 'ikke tilgjengelig i denne nettleseren'}`,
     `Median bildeintervall ${k(med, 1)} ms (≈ ${k(1000 / med)} Hz). Hakk = intervall over ${k(med * 1.5, 1)} ms.`,
-    rad('alle', alle), rad('panorer/zoom', bev), rad('i ro', ro), 'Per minutt:', ...min,
+    rad('alle', alle), rad('bevegelse', oppsummer(iBev, med)), rad('i ro', oppsummer(iRo, med)), 'Per minutt (aktiv tid):', ...min,
     'b/s er snitt. «1 % lav» og «0,1 % lav» er bildefrekvensen ved de tregeste 1 % og 0,1 % av bildene.'];
-  const H = hendelser, ant = f => H.filter(f).length, mmss = ms0 => { const ms = Math.max(0, ms0); return `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`; };
+  const H = hendelser, ant = f => H.filter(f).length;
   const opp = h => h.dGeo > 0 || h.dTex > 0, js = h => h.upd + h.ren > 12, ingen = h => !opp(h) && h.dProg <= 0 && !js(h) && !h.pan && !h.trykk;
   linjer.push(`Hakk-analyse, intervaller over 25 ms: ${H.length}`,
-    `  med ny shader: ${ant(h => h.dProg > 0)} · med opplasting av geometri/tekstur: ${ant(opp)}`,
-    `  under panorering/zoom: ${ant(h => h.pan)} · rett etter trykk: ${ant(h => h.trykk)}`,
-    `  vår JS over 12 ms (oppdatering + render-kall): ${ant(js)}`,
-    `  ingen av delene (trolig utenfor vår kode: minnerydding, nettleser eller system): ${ant(ingen)}`,
-    'Lengste intervaller:', ...H.slice().sort((a, b) => b.iv - a.iv).slice(0, 10).map(h => `  ${mmss(h.t)}  ${k(h.iv)} ms  JS ${k(h.upd + h.ren, 1)} ms${h.dProg > 0 ? ' · ny shader' : ''}${opp(h) ? ' · opplasting' : ''}${h.pan ? ' · panorering' : ''}${h.trykk ? ' · trykk' : ''} · robot ${h.robot}`),
-    `Forhåndslast: ${TEST.forhand ? 'på' : 'av'} · Full gård: ${TEST.full ? 'på' : 'av'}`, oppstartTekst());
-  window.__langtest = {alle, bev, ro, med, varighet}; maalBoks.classList.add('vis'); maalTekst.textContent = linjer.join('\n');
+    `  ny shader: ${ant(h => h.dProg > 0)} · opplasting av geometri/tekstur: ${ant(opp)} · bevegelse: ${ant(h => h.pan)} · trykk: ${ant(h => h.trykk)} · vår JS over 12 ms: ${ant(js)}`,
+    `  uten markør: ${ant(ingen)}. Årsaken er ikke identifisert. Lav JS-tid utelukker ikke at scenen belaster GPU-en (GPU-tid måles bare der det støttes), minnerydding, nettleseren eller systemet.`,
+    'Lengste intervaller:', ...H.slice().sort((a, b) => b.iv - a.iv).slice(0, 10).map(h => `  ${mmss(h.t)}  ${k(h.iv)} ms  JS ${k(h.upd + h.ren, 1)} ms · kall ${h.kall} · ${k(h.tri / 1000)}k${Number.isNaN(lang.gpu[h.i]) ? '' : ' · GPU ' + k(lang.gpu[h.i], 1) + ' ms'}${h.dProg > 0 ? ' · ny shader' : ''}${opp(h) ? ' · opplasting' : ''}${h.pan ? ' · bevegelse' : ''}${h.trykk ? ' · trykk' : ''} · robot ${h.robot}`));
+  window.__langtest = {alle, med, aktiv, total, avbrudd: lang.avbrudd}; maalBoks.classList.add('vis'); maalTekst.textContent = linjer.join('\n');
 }
 langKnapp.onclick = () => lang.paa ? langStopp('stoppet manuelt') : langStart();
-document.addEventListener('visibilitychange', () => { if (document.hidden && lang.paa) lang.skjult++; });
-function langRegistrer(intervall, naa) { if (!lang.paa) return; if (document.hidden) return; if (intervall > 25 && diag.f && hendelser.length < 3000) hendelser.push(Object.assign({t: naa - lang.t0, iv: intervall}, diag.f)); if (lang.n < lang.iv.length) { lang.iv[lang.n] = intervall; lang.aktiv[lang.n] = pek.size > 0 || naa - sistHjul < 400 ? 1 : 0; lang.ts[lang.n] = naa - lang.t0; lang.n++; }
-  if (naa - lang.t0 > 600000) langStopp('stoppet automatisk etter 10 min'); }
 document.getElementById('lukkMaal').onclick = () => maalBoks.classList.remove('vis');
 document.getElementById('kopier').onclick = async () => { const t = maalTekst.textContent; try { await navigator.clipboard.writeText(t); document.getElementById('kopier').textContent = 'Kopiert'; } catch (e) { const r = document.createRange(); r.selectNodeContents(maalTekst); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); document.getElementById('kopier').textContent = 'Merket – kopier selv'; } setTimeout(() => document.getElementById('kopier').textContent = 'Kopier', 2500); };
 
@@ -1351,8 +1391,8 @@ function loop(ts) {
   sol.target.position.copy(cam.target); sol.position.set(cam.target.x + TIDER[TID].pos[0], TIDER[TID].pos[1], cam.target.z + TIDER[TID].pos[2]);
   // Mobil: skyggekartet tegnes hvert 2. bilde (og alltid når kameraet flyttes). Skyggene til roboten og dyrene oppdateres da 30 ganger i sekundet.
   if (SKYGGE_HALV) { bildeNr++; renderer.shadowMap.needsUpdate = bildeNr % 2 === 0 || !sisteSkyggeMaal.equals(cam.target); if (renderer.shadowMap.needsUpdate) sisteSkyggeMaal.copy(cam.target); }
-  const tB = performance.now(); if (!stoppTegning) renderer.render(scene, camera); diagEtterBilde(tA, tB, performance.now());
-  if (lang.paa && t - sisteVis > 0.5) { const sek = (ts - lang.t0) / 1000; langKnapp.textContent = `Stopp ${Math.floor(sek / 60)}:${String(Math.floor(sek % 60)).padStart(2, '0')}`; }
+  ruteKamera(ts); const tB = performance.now(); const gq = stoppTegning ? null : gpuFor(); if (!stoppTegning) renderer.render(scene, camera); if (TQ && lang.paa) gpuEtter(gq); diagEtterBilde(tA, tB, performance.now());
+  if (lang.paa && t - sisteVis > 0.5) { const sek = lang.aktivMs / 1000; langKnapp.textContent = `Stopp ${Math.floor(sek / 60)}:${String(Math.floor(sek % 60)).padStart(2, '0')}`; }
   if (t - sisteVis > 0.5 && !maaler) { sisteVis = t; const s = stat(Array.from(ring.subarray(0, Math.min(ringI, 120)))); const i = renderer.info.render;
     fpsChip.textContent = `${s.fps.toFixed(0)} b/s · ${renderer.getPixelRatio().toFixed(2).replace('.', ',')}×` + (innerWidth > 480 ? ` · ${i.calls} kall` : ''); }
 }

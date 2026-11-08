@@ -82,3 +82,14 @@ Status: prototype, ikke spill. Ingen spillogikk, lagring, statistikk eller musik
   - Mobil har fått flere oppløsninger å teste: 2,5× og 3× (opp til dpr).
   - Testvalgene lagres under `mb-test` og gjelder etter omlasting.
 - 0.5.2: forhåndslasting skjer nå mens «Laster …» fortsatt vises, etter at både robot og rev er lastet. Før skjedde den 0,6 s etter at scenen var vist. Langtesten og «Mål ytelse» viser nå oppstartstid fra sidestart og tiden forhåndslastingen tok.
+- 0.5.3: langtesten er gjort pålitelig. Ingen endring i grafikk eller standardinnstillinger.
+  - **Avbrudd:** følgende tas ut av FPS-statistikken og den aktive tiden, men rapporteres for seg med tidspunkt, type og lengde:
+    - synlighetshendelser (`visibilitychange`, `pagehide`/`pageshow`, `freeze`/`resume`)
+    - intervaller over 2 s uten slik hendelse
+    - endring av størrelse eller retning
+
+    10 minutter betyr nå aktiv tid.
+  - **Per minutt:** gjennomsnittlig antall tegnekall og trekanter, andel bevegelse og GPU-tid, der `EXT_disjoint_timer_query_webgl2` finnes. De lengste hakkene viser det samme.
+  - **Meny → Test → Auto-kamera:** fast kamerarute med 7 stopp à 10 s (6 s bevegelse, 4 s stille) som gjentas. Den gir like forhold mellom A/B-tester.
+  - Skjermlås hindres under testen med Wake Lock der nettleseren støtter det. Batteri og lading registreres ved start og slutt der det er tilgjengelig.
+  - Rapporten oppgir retning (stående/liggende), CSS-størrelse og alle testvalg.
