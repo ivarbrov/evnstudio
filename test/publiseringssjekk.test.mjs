@@ -92,6 +92,7 @@ const scenarier = [
   { navn: 'N10 Testresultat med oppdiktet spill avvises', endre: () => nyttSpill(), ci: r => ({ ...r, spill: [...r.spill, 'falsk'] }), forventet: 1, tekst: ['oppgir spillet falsk, som ikke finnes'] },
   { navn: 'N11 Testresultat uten spilliste (gammelt format) avvises', endre: () => nyttSpill(), ci: r => { const { spill, ...x } = r; return x; }, forventet: 1, tekst: ['oppgir ikke hvilke spill som ble testet'] },
   { navn: 'N12 Testresultat med falsk testversjon avvises', endre: () => nyttSpill(), ci: r => ({ ...r, testversjon: '000000000000' }), forventet: 1, tekst: ['oppgir testversjon 000000000000'] },
+  { navn: 'N13b Testresultat som merker en feil som «kjent» uten at den står i KJENTE på main, avvises', endre: () => nyttSpill(), ci: r => ({ ...r, tester: r.tester.map(t => t.spill === 'gamma' && t.id === 'F1-start' ? { ...t, status: 'kjent' } : t) }), forventet: 1, tekst: ['står ikke i KJENTE på main'] },
   { navn: 'N13 Testresultat for en annen commit avvises', endre: () => nyttSpill(), ci: r => ({ ...r, commit: '0'.repeat(40) }), forventet: 1, tekst: ['Testkjøringen i Actions gjelder 0000000'] },
   // Manipulert testoppsett i spillmappen
   { navn: 'N14 evn-test.json med ukjent nøkkel (forsøk på å merke funn som kjente) avvises', endre: () => { nyttSpill(); skriv('spill/gamma/evn-test.json', '{ "start": "startBtn", "kjente": { "gamma/K1-feil": "x" } }'); }, forventet: 1, tekst: ['ukjent nøkkel «kjente»'] },

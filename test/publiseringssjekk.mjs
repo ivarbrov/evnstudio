@@ -143,6 +143,10 @@ if (ci) {
   if (!Array.isArray(ci.tester)) feil.push('Testresultatet fra Actions mangler listen over kontroller.');
   const rader = Array.isArray(ci.tester) ? ci.tester.filter(t => t && typeof t === 'object') : [];
   const godtatt = new Set(['ok', 'kjent', 'rettet']);
+  // «kjent» og «rettet» godtas bare for funn som står i KJENTE i test/index.html på main
+  const kjenteMain = new Set([...((/var KJENTE = \{([\s\S]*?)\n  \};/.exec(vis(mb, 'test/index.html') || '') || [])[1] || '').matchAll(/^\s*'([^'\n]+)':/gm)].map(m => m[1]));
+  for (const t of rader) if ((t.status === 'kjent' || t.status === 'rettet') && !kjenteMain.has(t.spill + '/' + t.id))
+    feil.push(`Actions: kontrollen ${t.suite}/${t.id} for ${t.spill} er «${t.status}», men funnet står ikke i KJENTE på main.`);
   for (const id of spillHer) for (const [suite, kontroller] of Object.entries(PAKREVDE_KONTROLLER)) for (const k of kontroller) {
     const r = rader.filter(t => t.suite === suite && t.spill === id && t.id === k);
     if (!r.length) feil.push(`Actions: kontrollen ${suite}/${k} mangler for ${id}.`);

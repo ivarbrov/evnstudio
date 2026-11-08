@@ -12,6 +12,7 @@
  * - «svak»: et spill uten pause, som skal få FEIL selv om «fiende» prøver å hjelpe det.
  * - «omdiriger»: et spill uten pause som går til «god» når det oppdager at det testes.
  * - «heng»: et spill som henger i en evig løkke etter Start.
+ * - «lokke»: et spill uten pause som går til en lokkeside i egen mappe når det merker at det testes.
  * Testen krever at «fiende» får FEIL på F1-start, F1-pause og K1-feil, at «svak» får FEIL på F1-pause, at «god» består,
  * og at det oppdiktede spillet ikke finnes i resultatet.
  */
@@ -78,6 +79,11 @@ self.addEventListener('fetch', e => { if (new URL(e.request.url).pathname.starts
 skriv('spill/omdiriger/index.html', hode('Omdiriger', true) + `<body><p class="evn-ver">Versjon 1.0.0</p><button id="startBtn">Start</button><script src="spill.js"></script></body></html>\n`);
 skriv('spill/omdiriger/spill.js', `if (navigator.webdriver || /Headless/.test(navigator.userAgent)) location.replace('/spill/god/');\n`);
 skriv('spill/omdiriger/ikon.svg', ikon);
+// Går til en lokkeside i egen mappe når det merker at det testes.
+skriv('spill/lokke/index.html', hode('Lokke', true) + `<body><p class="evn-ver">Versjon 1.0.0</p><button id="startBtn">Start</button><script src="spill.js"></script></body></html>\n`);
+skriv('spill/lokke/spill.js', `if (navigator.webdriver || /Headless/.test(navigator.userAgent)) location.replace('lokke.html');\n`);
+skriv('spill/lokke/lokke.html', fs.readFileSync(path.join(ROT, 'spill/god/index.html'), 'utf8'));
+skriv('spill/lokke/ikon.svg', ikon);
 // Henger etter Start.
 skriv('spill/heng/index.html', hode('Heng', true) + `<body><p class="evn-ver">Versjon 1.0.0</p><button id="startBtn">Start</button><script src="spill.js"></script></body></html>\n`);
 skriv('spill/heng/spill.js', `document.getElementById('startBtn').addEventListener('click', () => { setTimeout(() => { for (;;) {} }, 50); });\n`);
@@ -96,7 +102,8 @@ const rad = (spill, id) => r && r.tester.find(t => t.spill === spill && t.id ===
 const krav = [
   ['kjor.mjs avslutter med feil (kode 1)', p.status === 1],
   ['resultatet er skrevet av kjor.mjs', !!r],
-  ['spillisten er fiende, god, heng, omdiriger og svak, uten det oppdiktede spillet', r && JSON.stringify(r.spill) === JSON.stringify(['fiende', 'god', 'heng', 'omdiriger', 'svak'])],
+  ['lokke: F1-adresse er FEIL (lokkeside i egen mappe)', rad('lokke', 'F1-adresse') && rad('lokke', 'F1-adresse').status === 'feil'],
+  ['spillisten er fiende, god, heng, lokke, omdiriger og svak, uten det oppdiktede spillet', r && JSON.stringify(r.spill) === JSON.stringify(['fiende', 'god', 'heng', 'lokke', 'omdiriger', 'svak'])],
   ['omdiriger: F1-adresse er FEIL (spillet gikk til et annet spill)', rad('omdiriger', 'F1-adresse') && rad('omdiriger', 'F1-adresse').status === 'feil'],
   ['heng: røyktesten gir FEIL i stedet for å henge', r && r.tester.some(t => t.spill === 'heng' && t.status === 'feil' && /svarte ikke/.test(t.info))],
   ['fiende: F1-start er FEIL', rad('fiende', 'F1-start') && rad('fiende', 'F1-start').status === 'feil'],

@@ -114,6 +114,14 @@ async function startNettleser(bin) {
 }
 
 // ---- Spillene røyktesten skal kjøre: funnet i spill/, med betrodd OPPSETT fra test/index.html foran evn-test.json ----
+// Kjente funn og rådgivende suiter for røyktesten leses også her fra filen, ikke fra testsiden.
+function lesTestside() {
+  const side = fs.readFileSync(path.join(ROT, 'test', 'index.html'), 'utf8');
+  const kjente = {}, ikkeGjeldende = {};
+  for (const m of ((/var KJENTE = \{([\s\S]*?)\n  \};/.exec(side) || [])[1] || '').matchAll(/^\s*'([^'\n]+)': '([^'\n]*)'/gm)) kjente[m[1]] = m[2];
+  for (const m of ((/var IKKE_GJELDENDE = \{([^}]*)\}/.exec(side) || [])[1] || '').matchAll(/([a-z]+):/g)) ikkeGjeldende[m[1]] = true;
+  return { kjente, ikkeGjeldende };
+}
 function roykListe(funnet) {
   const side = fs.readFileSync(path.join(ROT, 'test', 'index.html'), 'utf8');
   const blokk = (/var OPPSETT = \{([\s\S]*?)\n  \};/.exec(side) || [])[1] || '';
@@ -149,7 +157,10 @@ async function roykSpill(nl, opprinnelse, sp) {
     const p = d.params;
     if (d.method === 'Page.loadEventFired') lastet = true;
     // Hovedrammen skal bli på spillets adresse. Går spillet til en annen side, gjelder kontrollene ikke spillet.
-    if (d.method === 'Page.frameNavigated' && !p.frame.parentId && p.frame.url !== 'about:blank' && !p.frame.url.startsWith(adresse)) bort.push(kort(p.frame.url));
+    if (d.method === 'Page.frameNavigated' && !p.frame.parentId && p.frame.url !== 'about:blank') {
+      const u = p.frame.url.replace(/[?#].*$/, '');
+      if (u !== adresse && u !== adresse + 'index.html') bort.push(kort(p.frame.url));
+    }
     if (d.method === 'Runtime.exceptionThrown') { const e = p.exceptionDetails; unntak.add(((e.exception && e.exception.description) || e.text).split('\n')[0]); }
     // Debuggeren stopper på alle ufangede unntak og avviste løfter, også når spillet kaller preventDefault(). Fortsett straks.
     if (d.method === 'Debugger.paused') {
@@ -166,6 +177,7 @@ async function roykSpill(nl, opprinnelse, sp) {
     await s('Debugger.setPauseOnExceptions', { state: 'uncaught' });
     await s('Emulation.setDeviceMetricsOverride', { width: 1024, height: 700, deviceScaleFactor: 1, mobile: false });
     await s('Storage.clearDataForOrigin', { origin: opprinnelse, storageTypes: 'all' });
+    await s('Network.clearBrowserCookies');   // informasjonskapsler på 127.0.0.1 gjelder alle porter
     const { frameId } = await s('Page.navigate', { url: adresse });
     for (let i = 0; i < 200 && !lastet; i++) await vent(100);
     await vent(1000);
@@ -270,15 +282,15 @@ async function main() {
   const tester = res.tester;
   // Røyktesten kjøres her, ikke i testsiden, så spillkoden aldri deler opprinnelse med testsiden eller resultatet.
   // Spillisten og oppsettet bygges her fra filsystemet og OPPSETT i test/index.html, ikke fra testsiden.
-  const roykTestet = new Set();
+  const roykTestet = new Set(), betrodd = lesTestside();
   if (res.suiter.royk) for (const sp of roykListe(funnet)) {
     // Egen server og port for hvert spill: et spill kan ikke påvirke de andre (for eksempel med en service worker)
     const spillSrv = await server(null);
     const rader = await roykSpill(nl, 'http://127.0.0.1:' + spillSrv.address().port, sp);
     spillSrv.close();
     for (const r of rader) {
-      let status = r.ok ? 'ok' : (res.ikkeGjeldende.royk ? 'varsel' : 'feil'), info = r.info;
-      const kjent = (res.kjente || {})[r.spill + '/' + r.id];
+      let status = r.ok ? 'ok' : (betrodd.ikkeGjeldende.royk ? 'varsel' : 'feil'), info = r.info;
+      const kjent = betrodd.kjente[r.spill + '/' + r.id];
       if (kjent) { status = r.ok ? 'rettet' : 'kjent'; info = (info ? info + '. ' : '') + kjent; }
       tester.push({ suite: r.suite, spill: r.spill, id: r.id, krav: r.krav, navn: r.navn, status, info });
     }
