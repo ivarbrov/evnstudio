@@ -10,6 +10,8 @@
  *   (alle spill ok og et oppdiktet spill), låser det, endrer DOM-funksjonene på siden så startknappen ser borte ut,
  *   skjuler egne feil med preventDefault(), og registrerer en service worker som prøver å bytte ut siden til «svak».
  * - «svak»: et spill uten pause, som skal få FEIL selv om «fiende» prøver å hjelpe det.
+ * - «omdiriger»: et spill uten pause som går til «god» når det oppdager at det testes.
+ * - «heng»: et spill som henger i en evig løkke etter Start.
  * Testen krever at «fiende» får FEIL på F1-start, F1-pause og K1-feil, at «svak» får FEIL på F1-pause, at «god» består,
  * og at det oppdiktede spillet ikke finnes i resultatet.
  */
@@ -72,6 +74,15 @@ skriv('sw.js', `self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(clients.claim()));
 self.addEventListener('fetch', e => { if (new URL(e.request.url).pathname.startsWith('/spill/svak/') && e.request.mode === 'navigate') e.respondWith(new Response(${JSON.stringify(falskSide)}, { headers: { 'Content-Type': 'text/html' } })); });\n`);
 
+// Går til et annet spill når det merker at det testes.
+skriv('spill/omdiriger/index.html', hode('Omdiriger', true) + `<body><p class="evn-ver">Versjon 1.0.0</p><button id="startBtn">Start</button><script src="spill.js"></script></body></html>\n`);
+skriv('spill/omdiriger/spill.js', `if (navigator.webdriver || /Headless/.test(navigator.userAgent)) location.replace('/spill/god/');\n`);
+skriv('spill/omdiriger/ikon.svg', ikon);
+// Henger etter Start.
+skriv('spill/heng/index.html', hode('Heng', true) + `<body><p class="evn-ver">Versjon 1.0.0</p><button id="startBtn">Start</button><script src="spill.js"></script></body></html>\n`);
+skriv('spill/heng/spill.js', `document.getElementById('startBtn').addEventListener('click', () => { setTimeout(() => { for (;;) {} }, 50); });\n`);
+skriv('spill/heng/ikon.svg', ikon);
+
 // Et spill uten pause. Start virker.
 skriv('spill/svak/index.html', hode('Svak', true) + `<body><div id="kort"><p class="evn-ver">Versjon 1.0.0</p><button id="startBtn">Start</button></div><script src="spill.js"></script></body></html>\n`);
 skriv('spill/svak/spill.js', `document.getElementById('startBtn').addEventListener('click', () => { document.getElementById('kort').hidden = true; });\n`);
@@ -85,7 +96,9 @@ const rad = (spill, id) => r && r.tester.find(t => t.spill === spill && t.id ===
 const krav = [
   ['kjor.mjs avslutter med feil (kode 1)', p.status === 1],
   ['resultatet er skrevet av kjor.mjs', !!r],
-  ['spillisten er fiende, god og svak, uten det oppdiktede spillet', r && JSON.stringify(r.spill) === JSON.stringify(['fiende', 'god', 'svak'])],
+  ['spillisten er fiende, god, heng, omdiriger og svak, uten det oppdiktede spillet', r && JSON.stringify(r.spill) === JSON.stringify(['fiende', 'god', 'heng', 'omdiriger', 'svak'])],
+  ['omdiriger: F1-adresse er FEIL (spillet gikk til et annet spill)', rad('omdiriger', 'F1-adresse') && rad('omdiriger', 'F1-adresse').status === 'feil'],
+  ['heng: røyktesten gir FEIL i stedet for å henge', r && r.tester.some(t => t.spill === 'heng' && t.status === 'feil' && /svarte ikke/.test(t.info))],
   ['fiende: F1-start er FEIL', rad('fiende', 'F1-start') && rad('fiende', 'F1-start').status === 'feil'],
   ['fiende: F1-pause er FEIL', rad('fiende', 'F1-pause') && rad('fiende', 'F1-pause').status === 'feil'],
   ['fiende: K1-feil er FEIL (feil skjult med preventDefault blir fanget)', rad('fiende', 'K1-feil') && rad('fiende', 'K1-feil').status === 'feil'],

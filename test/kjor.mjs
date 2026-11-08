@@ -113,6 +113,15 @@ async function startNettleser(bin) {
   return { send, lytt: l => { lyttere.push(l); return () => { const i = lyttere.indexOf(l); if (i >= 0) lyttere.splice(i, 1); }; }, lukk };
 }
 
+// ---- Spillene røyktesten skal kjøre: funnet i spill/, med betrodd OPPSETT fra test/index.html foran evn-test.json ----
+function roykListe(funnet) {
+  const side = fs.readFileSync(path.join(ROT, 'test', 'index.html'), 'utf8');
+  const blokk = (/var OPPSETT = \{([\s\S]*?)\n  \};/.exec(side) || [])[1] || '';
+  const betrodd = {};
+  for (const m of blokk.matchAll(/([a-z0-9-]+): \{ start: '([^']+)'(?:, etterStart: \{ klikk: '([^']+)' \})? \}/g)) betrodd[m[1]] = { start: m[2], etterStart: m[3] ? { klikk: m[3] } : null };
+  return funnet.spill.map(x => { const o = betrodd[x.id] || x.oppsett || { start: 'startBtn' }; return { id: x.id, start: o.start, etterStart: o.etterStart || null }; });
+}
+
 // ---- Røyktest: start, pause, fortsett, manglende filer og feil (F1, K1, U1) ----
 // Hvert spill kjøres i en egen fane på en egen port (egen opprinnelse, også forskjellig fra de andre spillene),
 // aldri inne i testsiden. Kontrollene kjøres i en isolert verden: spillkoden deler DOM med dem, men ser ikke
@@ -130,13 +139,17 @@ async function roykSpill(nl, opprinnelse, sp) {
   const rader = [], legg = (id, krav, navn, ok, info = '') => rader.push({ suite: 'royk', spill: sp.id, id, krav, navn, ok, info });
   const { targetId } = await nl.send('Target.createTarget', { url: 'about:blank' });
   const { sessionId } = await nl.send('Target.attachToTarget', { targetId, flatten: true });
-  const s = (m, p) => nl.send(m, p, sessionId);
-  const unntak = new Set(), logg = [], mangler = [], kort = u => (u || '').replace(/^https?:\/\/[^/]+/, '');
+  // Tidsgrense per kall, så et spill som henger (for eksempel en evig løkke), gir FEIL i stedet for å stoppe testene.
+  const s = (m, p) => Promise.race([nl.send(m, p, sessionId), new Promise((_, a) => setTimeout(() => a(new Error(`Spillet svarte ikke innen 20 s (${m})`)), 20000))]);
+  const unntak = new Set(), logg = [], mangler = [], bort = [], kort = u => (u || '').replace(/^https?:\/\/[^/]+/, '');
+  const adresse = `${opprinnelse}/spill/${sp.id}/`;
   let lastet = false;
   const av = nl.lytt(d => {
     if (d.sessionId !== sessionId) return;
     const p = d.params;
     if (d.method === 'Page.loadEventFired') lastet = true;
+    // Hovedrammen skal bli på spillets adresse. Går spillet til en annen side, gjelder kontrollene ikke spillet.
+    if (d.method === 'Page.frameNavigated' && !p.frame.parentId && p.frame.url !== 'about:blank' && !p.frame.url.startsWith(adresse)) bort.push(kort(p.frame.url));
     if (d.method === 'Runtime.exceptionThrown') { const e = p.exceptionDetails; unntak.add(((e.exception && e.exception.description) || e.text).split('\n')[0]); }
     // Debuggeren stopper på alle ufangede unntak og avviste løfter, også når spillet kaller preventDefault(). Fortsett straks.
     if (d.method === 'Debugger.paused') {
@@ -153,7 +166,7 @@ async function roykSpill(nl, opprinnelse, sp) {
     await s('Debugger.setPauseOnExceptions', { state: 'uncaught' });
     await s('Emulation.setDeviceMetricsOverride', { width: 1024, height: 700, deviceScaleFactor: 1, mobile: false });
     await s('Storage.clearDataForOrigin', { origin: opprinnelse, storageTypes: 'all' });
-    const { frameId } = await s('Page.navigate', { url: `${opprinnelse}/spill/${sp.id}/` });
+    const { frameId } = await s('Page.navigate', { url: adresse });
     for (let i = 0; i < 200 && !lastet; i++) await vent(100);
     await vent(1000);
     const { executionContextId } = await s('Page.createIsolatedWorld', { frameId, worldName: 'evn-royk' });
@@ -192,6 +205,7 @@ async function roykSpill(nl, opprinnelse, sp) {
   } catch (e) {
     legg('F1-royk', 'F1', 'Røyktesten kunne fullføres', false, String(e && e.message || e));
   } finally {
+    if (bort.length) legg('F1-adresse', 'F1', 'Spillet blir på sin egen adresse under røyktesten', false, 'gikk til ' + [...new Set(bort)].slice(0, 3).join(', '));
     av();
     try { await nl.send('Target.closeTarget', { targetId }); } catch {}
   }
@@ -255,8 +269,9 @@ async function main() {
 
   const tester = res.tester;
   // Røyktesten kjøres her, ikke i testsiden, så spillkoden aldri deler opprinnelse med testsiden eller resultatet.
+  // Spillisten og oppsettet bygges her fra filsystemet og OPPSETT i test/index.html, ikke fra testsiden.
   const roykTestet = new Set();
-  if (res.suiter.royk) for (const sp of res.spillOppsett) {
+  if (res.suiter.royk) for (const sp of roykListe(funnet)) {
     // Egen server og port for hvert spill: et spill kan ikke påvirke de andre (for eksempel med en service worker)
     const spillSrv = await server(null);
     const rader = await roykSpill(nl, 'http://127.0.0.1:' + spillSrv.address().port, sp);
@@ -318,7 +333,7 @@ async function main() {
     console.log(`::notice title=Testkvittering::${kvittering}`);
   }
   const json = arg('json');
-  if (json) fs.writeFileSync(json, JSON.stringify({ format: 'evn1', commit, testversjon, arbeidstre: endret ? 'endret' : 'rent', suiter, spill: res.spill, radgivende: Object.keys(res.ikkeGjeldende || {}),
+  if (json) fs.writeFileSync(json, JSON.stringify({ format: 'evn1', commit, testversjon, arbeidstre: endret ? 'endret' : 'rent', suiter, spill: funnet.spill.map(x => x.id), radgivende: Object.keys(res.ikkeGjeldende || {}),
     base: harBase ? BASE : null, nettleser: path.basename(bin), kvittering, tester }, null, 2));
   process.exit(feil ? 1 : 0);
 }
