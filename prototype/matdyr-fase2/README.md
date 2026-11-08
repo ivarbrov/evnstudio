@@ -83,3 +83,10 @@ Ny grafikk er standard. `?grafikk=gammel` viser den forrige versjonen til sammen
 - **Iskatt** har fortsatt den gamle figuren. Matdyr uten ny figur vises som en farget kule.
 
 Bygg modellene på nytt: `python3 blender/matdyr_hybrider.py modeller` og `python3 blender/miljo_ressurser.py modeller`. Begge krever bpy 5.x.
+
+### Justering 8.11.2026 (etter Ivars vurdering)
+- **Burgersau:** Sauehodet sitter inne i burgeren, under en brødlue som er strukket fram. Brødkanten er en ring av ulltotter, og en salatkrage går rundt halsen.
+- **Shakeand:** Kroppen er et andeformet sundae-glass, med bryst foran og en glasskant som løfter seg til hale. Kremen danner ryggen og en kort hals, hodet vokser opp av kremen, og vingene er sprøytet krem. Sugerøret er halefjæren.
+- **Spagettipingvin:** Hele kroppen er viklet av spagetti, med svart blekksprutpasta på ryggen og lys spagetti på magen. Vingene er nudelbunter.
+- **Bakken:** Gresset har store, rolige flater. Tunet har grus, stiene er av jord, skogbunnen ligger under trærne, og det er tredekke (plankegang) fra porten. Gress og blomster vokser bare i kantene. Detaljteksturen har lav kontrast og en flis på 14 m.
+- **Tonemapping:** ⚙️ → «Sammenlign tonemapping» (eller `?tonemap=sammenlign`) viser ACES til venstre og uten tonemapping til høyre, på samme skjerm.

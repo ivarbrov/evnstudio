@@ -113,25 +113,31 @@
   // ---------- Terreng ----------
   function stoy(x, z) { return Math.sin(x * 0.11 + Math.sin(z * 0.07)) * 0.5 + Math.sin(z * 0.13 + x * 0.05) * 0.35 + Math.sin((x + z) * 0.31) * 0.15; }
   // Flatt der spillet foregår (flat(x, z) = true), myke åser lenger ute. Fargen varierer i flekker.
-  function terreng({ storrelse = 340, ruter = 120, flat = () => true, hoyde = (x, z) => 0, sti = () => 0 } = {}) {
+  // Spillet bestemmer fargen per punkt med farge(x, z, c) (gress, jord, grus, skogbunn ...). Komponenten eier bare geometri,
+  // åser og en rolig detaljtekstur med lav kontrast, slik at store flater ikke ser gjentakende ut.
+  function terreng({ storrelse = 340, ruter = 120, flat = () => true, hoyde = (x, z) => 0, farge = null } = {}) {
     const g = new T.PlaneGeometry(storrelse, storrelse, ruter, ruter); g.rotateX(-Math.PI / 2);
-    const p = g.attributes.position, farge = new Float32Array(p.count * 3);
-    const gr1 = LC('#7cc95a'), gr2 = LC('#69b84b'), gr3 = LC('#93d46a'), jord = LC('#c9a26d'), c = new T.Color();
+    const p = g.attributes.position, fa = new Float32Array(p.count * 3), c = new T.Color(), gr = LC('#7cc95a');
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i), z = p.getZ(i);
-      const y = flat(x, z) ? 0 : hoyde(x, z); p.setY(i, y);
-      const n = stoy(x * 1.7, z * 1.7);
-      c.copy(gr1).lerp(n > 0 ? gr3 : gr2, Math.min(1, Math.abs(n) * 0.9));
-      const s = sti(x, z); if (s > 0) c.lerp(jord, Math.min(1, s));
-      farge[i * 3] = c.r; farge[i * 3 + 1] = c.g; farge[i * 3 + 2] = c.b;
+      p.setY(i, flat(x, z) ? 0 : hoyde(x, z));
+      c.copy(gr); if (farge) farge(x, z, c);
+      fa[i * 3] = c.r; fa[i * 3 + 1] = c.g; fa[i * 3 + 2] = c.b;
     }
-    g.setAttribute('color', new T.BufferAttribute(farge, 3)); g.computeVertexNormals();
-    // Detaljtekstur: små lyse og mørke strå som gjentas, ganget med fargene over
-    const cv = document.createElement('canvas'); cv.width = cv.height = 256; const x = cv.getContext('2d'), r = tilfeldig(4);
-    x.fillStyle = '#d9d9d9'; x.fillRect(0, 0, 256, 256);
-    for (let i = 0; i < 1400; i++) { const px = r() * 256, py = r() * 256, l = 3 + r() * 6, v = r(); x.strokeStyle = v > 0.5 ? 'rgba(255,255,255,' + (0.25 + r() * 0.3) + ')' : 'rgba(90,110,70,' + (0.18 + r() * 0.25) + ')'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(px, py); x.lineTo(px + (r() - 0.5) * 2.5, py - l); x.stroke(); }
-    const tx = new T.CanvasTexture(cv); tx.wrapS = tx.wrapT = T.RepeatWrapping; tx.repeat.set(storrelse / 5, storrelse / 5); tx.encoding = T.sRGBEncoding; tx.anisotropy = 4;
-    const m = new T.Mesh(g, new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, map: tx, color: new T.Color(1.12, 1.12, 1.12) })); m.receiveShadow = true;
+    g.setAttribute('color', new T.BufferAttribute(fa, 3)); g.computeVertexNormals();
+    // Detaljtekstur: myke, lyse og mørke flekker i flere størrelser og svak korning. Lav kontrast og stor flis (14 m)
+    const cv = document.createElement('canvas'); cv.width = cv.height = 512; const x = cv.getContext('2d'), r = tilfeldig(4);
+    x.fillStyle = '#e6e6e6'; x.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 260; i++) {
+      const px = r() * 512, py = r() * 512, rad = 10 + r() * 60, lys = r() > 0.5, a = 0.025 + r() * 0.04;
+      for (const [dx, dy] of [[0, 0], [512, 0], [-512, 0], [0, 512], [0, -512]]) {
+        const gg = x.createRadialGradient(px + dx, py + dy, 0, px + dx, py + dy, rad); gg.addColorStop(0, lys ? 'rgba(255,255,255,' + a + ')' : 'rgba(40,50,30,' + a + ')'); gg.addColorStop(1, 'rgba(0,0,0,0)');
+        x.fillStyle = gg; x.fillRect(px + dx - rad, py + dy - rad, rad * 2, rad * 2);
+      }
+    }
+    for (let i = 0; i < 9000; i++) { x.fillStyle = r() > 0.5 ? 'rgba(255,255,255,0.07)' : 'rgba(30,40,20,0.07)'; x.fillRect(r() * 512, r() * 512, 1.5, 1.5); }
+    const tx = new T.CanvasTexture(cv); tx.wrapS = tx.wrapT = T.RepeatWrapping; tx.repeat.set(storrelse / 14, storrelse / 14); tx.encoding = T.sRGBEncoding; tx.anisotropy = 4;
+    const m = new T.Mesh(g, new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, map: tx, color: new T.Color(1.08, 1.08, 1.08) })); m.receiveShadow = true;
     return m;
   }
 

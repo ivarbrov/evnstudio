@@ -16,9 +16,11 @@
   holder.appendChild(renderer.domElement);
   const scene = new T.Scene();
   const camera = new T.PerspectiveCamera(42, 1, 0.05, 500);
-  let sol, bakke;
+  let sol, bakke, LYS = null;
+  // Delt skjerm for å sammenligne tonemapping på samme skjerm: venstre ACES, høyre uten (?tonemap=sammenlign)
+  const SAMMENLIGN = NY && new URLSearchParams(location.search).get('tonemap') === 'sammenlign';
   if (NY) {
-    sol = EVNMiljo.lys(scene, renderer, KV).sol;
+    LYS = EVNMiljo.lys(scene, renderer, KV); sol = LYS.sol;
   } else {
     renderer.setPixelRatio(Math.min(TOUCH ? 1.5 : 2, devicePixelRatio || 1));
     renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
@@ -458,7 +460,21 @@
     const q = EVNMiljo.NIVAER[KV], ell = (x, z, rx, rz, cz = 0) => (x / rx) ** 2 + ((z - cz) / rz) ** 2;
     const AK = { x0: -31.5, x1: 31.5, z0: 23.5, z1: 56.5 }, iAker = (x, z, m = 0) => x > AK.x0 - m && x < AK.x1 + m && z > AK.z0 - m && z < AK.z1 + m;
     const sti = (x, z) => (Math.abs(x) < 3.2 && z > 15 && z < 24 ? 1 : 0);
-    const t = EVNMiljo.terreng({ storrelse: 360, ruter: 140, flat: (x, z) => ell(x, z, 95, 80, 8) < 1, hoyde: (x, z) => { const d = Math.sqrt(ell(x, z, 95, 80, 8)); return (d - 1) * 38 * (0.7 + 0.3 * EVNMiljo.stoy(x, z)); }, sti });
+    // Matdyr-regns bakke: rolig gress, grus på tunet, jordstier, skogbunn under trærne. Store flater får lite støy,
+    // så matdyrene er det som trekker blikket.
+    const S = EVNMiljo.stoy, LCc = EVNMiljo.LC, glatt = (a, b, v) => Math.max(0, Math.min(1, (v - a) / (b - a)));
+    const GR = LCc('#7bc457'), GR_L = LCc('#88cc62'), GR_M = LCc('#6eb54e'), GRUS = LCc('#cdb993'), GRUS_M = LCc('#a8977a'), JORD = LCc('#b58a5c'), SKOG = LCc('#5f9442'), SKOG_B = LCc('#7d7148');
+    const grus = (x, z) => { const kant = 0.06 * S(x * 0.9, z * 0.9);
+      return Math.max(1 - glatt(0.9, 1.0, ell(x, z, 19, 16) + kant), 1 - glatt(0.85, 1.0, ell(x + 19, z - 0.5, 7, 10) + kant)); };
+    const jord = (x, z) => Math.max(sti(x, z), Math.abs(z + 6) < 1.6 && x < -9 && x > -17 ? 1 : 0, Math.abs(x - 13.5) < 1.5 && z > 9 && z < 14 ? 0.8 : 0);
+    const skog = (x, z) => glatt(1.0, 1.35, ell(x, z, 40, 32)) * (iAker(x, z, 4) ? 0 : 1);
+    const farge = (x, z, c) => {
+      c.copy(GR).lerp(S(x * 0.35, z * 0.35) > 0 ? GR_L : GR_M, Math.min(1, Math.abs(S(x * 0.35, z * 0.35)) * 0.6));   // store, rolige gressflater
+      const sk = skog(x, z); if (sk > 0) c.lerp(SKOG, sk * 0.75).lerp(SKOG_B, sk * Math.max(0, S(x * 1.3, z * 1.3)) * 0.45);
+      const gu = grus(x, z); if (gu > 0) c.lerp(GRUS, gu).lerp(GRUS_M, gu * Math.max(0, S(x * 2, z * 2)) * 0.4);
+      const jo = jord(x, z); if (jo > 0) c.lerp(JORD, Math.min(1, jo));
+    };
+    const t = EVNMiljo.terreng({ storrelse: 360, ruter: 180, flat: (x, z) => ell(x, z, 95, 80, 8) < 1, hoyde: (x, z) => { const d = Math.sqrt(ell(x, z, 95, 80, 8)); return (d - 1) * 38 * (0.7 + 0.3 * EVNMiljo.stoy(x, z)); }, farge });
     scene.remove(bakke); bakke = t; scene.add(t);
     const fri = (x, z) => ell(x, z, 33, 25) > 1 && !iAker(x, z, 2.5) && !(Math.abs(x) < 5 && z > 10 && z < 25);
     const D = n => mdel(n), vis = (n, pl, o) => { const d = D(n); if (d && pl.length) verden.add(EVNMiljo.instanser(d, pl, o)); };
@@ -472,10 +488,10 @@
     const steiner = EVNMiljo.spred(Math.round(30 * q.traer), { fra: [-80, -70], til: [80, 85], avstand: 3, frø: 7, skala: [0.6, 1.8], lov: fri });
     vis('stein_1', steiner.filter((_, i) => i % 2)); vis('stein_2', steiner.filter((_, i) => !(i % 2)));
     // Blomster i klynger på enga og i gresset
-    const blomster = EVNMiljo.spred(Math.round(320 * q.blomst), { fra: [-60, -45], til: [60, 70], frø: 11, skala: [0.9, 1.4], lov: (x, z) => ell(x, z, 14, 11) > 1 && !iAker(x, z, 1) && !(Math.abs(x) < 3.5 && z > 12 && z < 25) && EVNMiljo.stoy(x * 3, z * 3) > 0.15 });
+    const blomster = EVNMiljo.spred(Math.round(320 * q.blomst), { fra: [-60, -45], til: [60, 70], frø: 11, skala: [0.9, 1.4], lov: (x, z) => grus(x, z) < 0.05 && !iAker(x, z, 1) && jord(x, z) === 0 && (Math.abs(Math.sqrt(ell(x, z, 30, 22)) - 1) < 0.12 || skog(x, z) > 0.2) && EVNMiljo.stoy(x * 3, z * 3) > 0.15 });
     vis('blomst_rod', blomster.filter((_, i) => i % 3 === 0), { skygge: false }); vis('blomst_gul', blomster.filter((_, i) => i % 3 === 1), { skygge: false }); vis('blomst_hvit', blomster.filter((_, i) => i % 3 === 2), { skygge: false });
     // Gresstuster overalt der det ikke står noe
-    vis('gress', EVNMiljo.spred(Math.round(3200 * q.gress), { fra: [-75, -60], til: [75, 75], frø: 13, skala: [1.0, 2.0], lov: (x, z) => ell(x, z, 12.5, 10.5) > 1 && sti(x, z) === 0 && !iAker(x, z, 1) && ell(x, z, 75, 65, 8) < 1 && EVNMiljo.stoy(x * 2.2, z * 2.2) > 0.05 }), { skygge: false });   // i flekker, ikke jevnt over alt
+    vis('gress', EVNMiljo.spred(Math.round(2400 * q.gress), { fra: [-75, -60], til: [75, 75], frø: 13, skala: [1.0, 2.0], lov: (x, z) => sti(x, z) === 0 && !iAker(x, z, 0.8) && grus(x, z) < 0.1 && ell(x, z, 75, 65, 8) < 1 && (Math.abs(Math.sqrt(ell(x, z, 30, 22)) - 1) < 0.07 || (iAker(x, z, 3.5) && !iAker(x, z, 0.8)) || skog(x, z) > 0.3 || Math.abs(Math.sqrt(ell(x, z, 19, 16)) - 1) < 0.06) && EVNMiljo.stoy(x * 2.2, z * 2.2) > -0.2 }), { skygge: false });   // i flekker, ikke jevnt over alt
     // Pynt på tunet og enga
     vis('hoyball', [{ x: -14, z: 14, ry: 0.4 }, { x: -12.4, z: 15.2, ry: 1.1 }, { x: 14, z: -13, ry: 2 }, { x: 35, z: 30, ry: 0.3 }, { x: 34.5, z: 32, ry: 1.3 }]);
     vis('kasse', [{ x: 5.2, z: 18, ry: 0.2 }, { x: -35, z: 40, ry: 0.9 }]);
@@ -488,6 +504,9 @@
     // Tunet
     if (!(NY && nyttGjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0))) gjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0);
     // Enga foran gården: her regner matdyrene ned (bare i spillet)
+    // Tredekke: plankegang fra porten inn til gårdsbygningen
+    if (NY && gd.eng) { const fra = HZ + 0.3, til = (n >= 2 ? 22 : 16) - 0.3, dm = plankeMat.clone(); dm.map = plankeMat.map.clone(); dm.map.needsUpdate = true; dm.map.repeat.set(0.85, (til - fra) / 4); const dekke = new T.Mesh(new T.BoxGeometry(3.4, 0.1, til - fra), dm); dekke.position.set(0, 0.05, (fra + til) / 2); dekke.receiveShadow = true; g.add(dekke);
+      for (const sx of [-1, 1]) boks(g, 0.14, 0.14, til - fra, sx * 1.75, 0.09, (fra + til) / 2, GUL); }
     // Åkeren rett foran gården: her regner matdyrene ned (bare i spillet)
     if (gd.eng) {
       const e = gd.eng, eg = new T.Group(); eg.userData.ikkeFlett = true; g.add(eg);
@@ -721,10 +740,11 @@
     const i = renderer.info.render, nv = NY ? EVNMiljo.NIVAER[KV] : null;
     d.innerHTML = '<h2>⚙️ Grafikk og ytelse</h2>' + (NY ? '<div class="rad">' + Object.keys(EVNMiljo.NIVAER).map(k => '<button type="button" data-k="' + k + '" aria-pressed="' + (k === KV) + '">' + EVNMiljo.NIVAER[k].navn + '</button>').join('') + '</div>' : '<p>Gammel grafikk (sammenligning).</p>') +
       '<p class="liten">' + (maaler ? maaler.gpu : '') + '<br>Skjerm ' + innerWidth + '×' + innerHeight + ' · piksler ×' + renderer.getPixelRatio() + ' · ' + i.calls + ' tegnekall · ' + Math.round(i.triangles / 1000) + 'k trekanter</p>' +
-      '<p id="maalRes" class="liten">Trykk «Mål» og la spillet stå i 10 sekunder.</p><div class="rad"><button type="button" id="maalStart">📊 Mål i 10 s</button><button type="button" id="maalBytt">' + (NY ? '↔ Vis gammel grafikk' : '↔ Vis ny grafikk') + '</button><button type="button" id="maalLukk">Lukk</button></div>';
+      (NY ? '<div class="rad"><button type="button" id="tmBytt">' + (SAMMENLIGN ? '◻ Vanlig visning' : '◧ Sammenlign tonemapping (delt skjerm)') + '</button></div>' : '') + '<p id="maalRes" class="liten">Trykk «Mål» og la spillet stå i 10 sekunder.</p><div class="rad"><button type="button" id="maalStart">📊 Mål i 10 s</button><button type="button" id="maalBytt">' + (NY ? '↔ Vis gammel grafikk' : '↔ Vis ny grafikk') + '</button><button type="button" id="maalLukk">Lukk</button></div>';
     d.hidden = false;
     d.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { EVNMiljo.lagreKvalitet(b.dataset.k); const u = new URL(location.href); u.searchParams.set('kvalitet', b.dataset.k); location.href = u; });
     $('maalLukk').onclick = () => { d.hidden = true; };
+    if ($('tmBytt')) $('tmBytt').onclick = () => { const u = new URL(location.href); if (SAMMENLIGN) u.searchParams.delete('tonemap'); else u.searchParams.set('tonemap', 'sammenlign'); location.href = u; };
     $('maalBytt').onclick = () => { const u = new URL(location.href); if (NY) u.searchParams.set('grafikk', 'gammel'); else u.searchParams.delete('grafikk'); location.href = u; };
     $('maalStart').onclick = () => { $('maalRes').textContent = 'Måler …'; const t0 = performance.now(); setTimeout(() => {
       const r = maaler ? maaler.rapport(10) : { fps, ms: +(1000 / Math.max(1, fps)).toFixed(1), p95: '?' }, ii = renderer.info.render;
@@ -742,11 +762,20 @@
     if (maaler) maaler.ramme();
     if (adaptivSteg && !/adaptiv=0/.test(location.search)) adaptivSteg();
     if (gd.molle && gd.molle.userData.vinge && !REDUSERT) gd.molle.userData.vinge.rotation.z += dt * 0.8;
-    renderer.render(scene, camera);
+    if (SAMMENLIGN && LYS) {
+      const w = renderer.domElement.clientWidth, h = renderer.domElement.clientHeight; renderer.setScissorTest(true);
+      for (const [x, aces] of [[0, true], [w / 2, false]]) {
+        renderer.toneMapping = aces ? T.ACESFilmicToneMapping : T.NoToneMapping;
+        LYS.himmel.intensity = aces ? 0.7 : 0.48; LYS.sol.intensity = aces ? 1.45 : 0.82; LYS.fyll.intensity = aces ? 0.35 : 0.16;
+        renderer.setViewport(0, 0, w, h); renderer.setScissor(x, 0, w / 2, h); renderer.render(scene, camera);
+      }
+      renderer.setScissorTest(false);
+    } else renderer.render(scene, camera);
     fpsN++; fpsT += ekteDt; if (fpsT > 0.5) { fps = Math.round(fpsN / fpsT); fpsN = 0; fpsT = 0; const i = renderer.info.render; $('maal').textContent = fps + ' FPS · ' + i.calls + ' tegnekall · ' + Math.round(i.triangles / 1000) + 'k trekanter'; window.EVNMaal = { fps, kall: i.calls, trekanter: i.triangles }; }
     requestAnimationFrame(loop);
   }
   storrelse();
+  if (SAMMENLIGN) { const e = document.createElement('div'); e.id = 'tmEtikett'; e.innerHTML = '<span>ACES</span><span>Uten tonemapping</span>'; document.body.appendChild(e); }
   // Start først når alle skriptene er lastet (spillkjerne.js kobler seg på etter denne filen)
   const sideKlar = new Promise(ok => document.readyState === 'loading' ? addEventListener('DOMContentLoaded', ok) : ok());
   Promise.all([robotKlar, sideKlar, ressurserKlar]).then(() => { if (NY) byggVerden(); velgFane('matdyr'); requestAnimationFrame(loop); window.EVNKlar = true; });

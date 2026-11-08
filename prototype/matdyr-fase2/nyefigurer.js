@@ -13,10 +13,10 @@
   const cam = new T.PerspectiveCamera(30, 1, 0.1, 100);
   const loader = new T.GLTFLoader(), figurer = [];
   const avstand = 2.3;
-  Promise.all(valgt.map((n, i) => new Promise(ok => loader.load('modeller/' + n + (q.get('lav') === '1' ? '_lav' : '') + '.glb', g => {
+  Promise.all(valgt.map((n, i) => new Promise(ok => EVNMiljo.lastGLB('modeller/' + n + (q.get('lav') === '1' ? '_lav' : '') + '.glb').then(g => { if (!g) return ok();
     const m = g.scene; m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.material.transparent) o.material.depthWrite = false; } });
     m.position.x = (i - (valgt.length - 1) / 2) * avstand; s.add(m); figurer[i] = m; ok();
-  }, undefined, e => { console.error(e); ok(); })))).then(() => {
+  })))).then(() => {
     document.getElementById('etikett').innerHTML = valgt.map(n => '<span>' + VIS[n] + '</span>').join('');
     if (q.get('etikett') === '0') document.getElementById('etikett').hidden = true;
     // Én visning per figur: hver figur står for seg selv og får sitt eget kamera (rutenett: kolonner = figurer, rader = vinkler)

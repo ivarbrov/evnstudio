@@ -54,6 +54,8 @@
   .status { color:#ffd23f; font-weight:800; }
   #grafikk { position:fixed; top:calc(64px + env(safe-area-inset-top)); right:10px; z-index:21; background:#1d2440; border:2px solid rgba(255,255,255,.35); border-radius:16px; padding:10px 14px; width:min(420px,calc(100vw - 20px)); }
   #grafikk h2 { margin:0 0 6px; font-size:18px; } #grafikk[hidden] { display:none; }
+  #tmEtikett { position:fixed; left:0; right:0; top:50%; display:flex; justify-content:space-around; z-index:4; pointer-events:none; font-weight:900; font-size:20px; text-shadow:0 2px 6px rgba(0,0,0,.6); }
+  #tmEtikett::after { content:''; position:fixed; left:50%; top:0; bottom:0; width:2px; background:rgba(255,255,255,.8); }
   @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
 </style>
 </head>

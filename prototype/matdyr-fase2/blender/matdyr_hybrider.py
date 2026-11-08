@@ -321,33 +321,44 @@ def burgersau():
     # Overbrødet er høyt og rundt som en sauekropp
     topp = prim('kule', 'overbrod', brod, (0, 0.02, H0 + 0.46), (0.53, 0.5, 0.36), segments=56, ring_count=28)
     bm = bmesh.new(); bm.from_mesh(topp.data); bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.z < H0 + 0.44], context='VERTS'); bm.to_mesh(topp.data); bm.free()
-    deler.append(topp); deler.append(prim('syl', 'overbrod_kant', brod_lys, (0, 0.02, H0 + 0.455), (0.525, 0.495, 0.02), vertices=56))
+    # Brødet strekkes fram og legger seg som en lue over sauehodet
+    strekk = lambda y: 0.08 * max(0.0, -(y - 0.02) / 0.52) ** 1.5
+    for v in topp.data.vertices: f = strekk(v.co.y); v.co.y -= f; v.co.z -= f * 0.35
+    deler.append(topp)
+    # Kanten på brødet er ull: en ring av små, lyse brødtotter rundt hele luen
+    for i in range(34):
+        a = i * 2 * math.pi / 34; x, y = 0.53 * math.cos(a), 0.5 * math.sin(a) + 0.02; f = strekk(y)
+        deler.append(prim('kule', 'ulltott%d' % i, brod_lys, (x * 1.0, y - f, H0 + 0.455 - f * 0.35), (0.075, 0.075, 0.06), segments=14, ring_count=8))
     # Sesamfrø følger kuppelen
     sesamer = []
     for i in range(46):
         u, v2 = rnd.uniform(0, 2 * math.pi), rnd.uniform(0.15, 1.15)
         n = Vector((math.cos(u) * math.sin(v2), math.sin(u) * math.sin(v2), math.cos(v2)))
         p = Vector((n.x * 0.53, n.y * 0.5 + 0.02, H0 + 0.46 + n.z * 0.36))
-        if p.y < -0.25 and p.z < H0 + 0.75: continue   # ikke der ansiktet er
+        f = 0.08 * max(0.0, -(p.y - 0.02) / 0.52) ** 1.5; p.y -= f; p.z -= f * 0.35
         s = prim('kule', 'sesam%d' % i, sesam, (0, 0, 0), (0.028, 0.014, 0.012), segments=8, ring_count=6)
         s.data.transform(Matrix.Rotation(rnd.uniform(0, 3), 4, 'Z')); s.data.transform(n.to_track_quat('Z', 'Y').to_matrix().to_4x4() @ Matrix.Rotation(math.pi / 2, 4, 'X') if False else Matrix())
         s.data.transform(Matrix.Translation(p)); sesamer.append(s)
     deler.append(slaa_sammen('sesamer', sesamer))
     kropp = slaa_sammen('kropp', deler)
     # Hodet stikker fram mellom brødene, med en majonesklatt som ull på toppen
-    hx, hy, hz = 0, -0.5, H0 + 0.38
-    hd = [prim('kule', 'sauhode', ansikt, (hx, hy, hz), (0.19, 0.2, 0.22), segments=40, ring_count=24)]
+    # Hodet sitter inne i burgeren, under brødluen og over salaten, så overgangen er dekket av mat
+    hx, hy, hz = 0, -0.55, H0 + 0.33
+    hd = [prim('kule', 'sauhode', ansikt, (hx, hy, hz), (0.2, 0.19, 0.19), segments=40, ring_count=24)]
     hd.append(prim('kule', 'snute', mat('snute', '#4a4252', 0.6), (hx, hy - 0.15, hz - 0.08), (0.13, 0.1, 0.1), segments=28, ring_count=14))
     for s in (-1, 1):
         hd += oye('oye%d' % s, (hx + s * 0.085, hy - 0.16, hz + 0.05), 0.05, hvitt=True)
-        hd.append(prim('kule', 'ore%d' % s, ansikt, (hx + s * 0.22, hy + 0.02, hz + 0.02), (0.11, 0.045, 0.055), (0, s * 0.2, s * -0.4), segments=18, ring_count=10))
-        hd.append(prim('kule', 'oreinn%d' % s, mat('oreinn', '#ff9db4', 0.6), (hx + s * 0.23, hy - 0.015, hz + 0.02), (0.07, 0.015, 0.03), (0, s * 0.2, s * -0.4), segments=14, ring_count=8))
+        hd.append(prim('kule', 'ore%d' % s, ansikt, (hx + s * 0.24, hy + 0.0, hz + 0.05), (0.12, 0.045, 0.055), (0, s * 0.2, s * -0.25), segments=18, ring_count=10))
+        hd.append(prim('kule', 'oreinn%d' % s, mat('oreinn', '#ff9db4', 0.6), (hx + s * 0.25, hy - 0.02, hz + 0.05), (0.075, 0.015, 0.03), (0, s * 0.2, s * -0.25), segments=14, ring_count=8))
         hd.append(kinn('kinn%d' % s, (hx + s * 0.13, hy - 0.16, hz - 0.05), 0.035))
     hd.append(smil('smil', (hx, hy - 0.245, hz - 0.1), 0.035, mat('munnlys', '#ffd5dd', 0.6)))
     # Majones-ull: en myk spiral oppå hodet
     spir = [(hx + 0.12 * math.cos(t) * (1 - t / 14), hy + 0.02 + 0.12 * math.sin(t) * (1 - t / 14), hz + 0.18 + t * 0.012) for t in [i * 0.5 for i in range(24)]]
     spir = [(hx + 0.17 * math.cos(t) * (1 - t / 13), hy + 0.03 + 0.15 * math.sin(t) * (1 - t / 13), hz + 0.16 + t * 0.014) for t in [i * 0.45 for i in range(28)]]
-    hd.append(kurve('majo', spir, 0.075, majo, rund=8, avsmal=lambda t: 1 - 0.55 * t))
+    # Salatkrage rundt halsen knytter hodet til burgerlagene
+    krage = prim('torus', 'salatkrage', salat, (hx, hy + 0.05, hz - 0.12), (1, 0.8, 0.6), (0.35, 0, 0), major_radius=0.17, minor_radius=0.05, major_segments=40, minor_segments=10)
+    for v in krage.data.vertices: v.co += v.normal * 0.02 * math.sin(math.atan2(v.co.y - hy, v.co.x - hx) * 9)
+    hd.append(krage)
     hode = pivot(slaa_sammen('hode', hd), (hx, hy + 0.15, hz - 0.05))
     bein = []
     for i, (bx, by) in enumerate([(-0.24, -0.26), (0.24, -0.26), (-0.24, 0.26), (0.24, 0.26)]):
@@ -422,130 +433,145 @@ def pizzaskilpadde():
 
 # ---------------------------------------------------------------- 4 Shakeand
 def shakeand():
+    """Kroppen er et andeformet sundae-glass: rund bryst foran, glasskanten løfter seg til en hale bak.
+    Shaken fyller kroppen, kremen er ryggen, halsen og vingene, og hodet vokser opp av kremen."""
     nullstill(); MATS.clear()
-    glass = mat('glass', '#e8f7ff', 0.05, alfa=0.26); shake = mat('shake', '#ff79b0', 0.32); krem = mat('krem', '#fffaf4', 0.3)
-    kirsebaer = mat('kirsebaer', '#e0213c', 0.15); sugeroer_r = mat('sugeroer_rod', '#ff4d5e', 0.4); sugeroer_h = mat('sugeroer_hvit', '#ffffff', 0.4)
-    and_gul = mat('and_gul', '#ffd84a', 0.55); nebb = mat('nebb', '#ff9a2e', 0.4); strossel_m = '#7a4cff'
-    # Kroppen ER milkshakeglasset: bred, rund kropp nederst, smalner mot «halsen» der kremen er. Glasset står på en liten fot.
-    profil = [(0.0, 0.08), (0.2, 0.08), (0.24, 0.1), (0.12, 0.14), (0.12, 0.2), (0.3, 0.26), (0.42, 0.4), (0.46, 0.58), (0.44, 0.78), (0.4, 0.94), (0.42, 1.0)]
-    me = bpy.data.meshes.new('glass'); bm = bmesh.new()
-    ringer = []
-    for (r, z) in profil:
-        ringer.append([bm.verts.new((r * math.cos(a), r * math.sin(a) * 0.92, z)) for a in [i * 2 * math.pi / 48 for i in range(48)]])
-    for a, b in zip(ringer, ringer[1:]):
-        for i in range(48): bm.faces.new((a[i], a[(i + 1) % 48], b[(i + 1) % 48], b[i]))
-    bm.faces.new(ringer[0][::-1])
-    bm.to_mesh(me); bm.free(); g = ny_obj('glass', me); subsurf(g, 1); glatt(g); sett_mat(g, glass)
-    # Shaken inni følger glasset, med en mørkere stripe sjokoladesaus som renner ned innsiden
-    inn = [(0.0, 0.27), (0.27, 0.28), (0.39, 0.4), (0.425, 0.58), (0.405, 0.78), (0.375, 0.92), (0.0, 0.93)]
-    me2 = bpy.data.meshes.new('shake'); bm = bmesh.new(); ringer = []
-    for (r, z) in inn: ringer.append([bm.verts.new((r * math.cos(a), r * math.sin(a) * 0.92, z)) for a in [i * 2 * math.pi / 40 for i in range(40)]])
-    for a, b in zip(ringer, ringer[1:]):
-        for i in range(40): bm.faces.new((a[i], a[(i + 1) % 40], b[(i + 1) % 40], b[i]))
-    bm.to_mesh(me2); bm.free(); sh = ny_obj('shake', me2); subsurf(sh, 1); glatt(sh); sett_mat(sh, shake)
-    # Kremtopp formet som andas rygg og bryst: tre lag spiral
-    spiral = []
-    for i in range(70):
-        t = i / 70; a = t * 6 * math.pi; rr = 0.42 * (1 - t * 0.8)
-        spiral.append((rr * math.cos(a), rr * math.sin(a) * 0.92 + 0.04, 0.98 + t * 0.32))
-    krem_o = kurve('krem', spiral, 0.1, krem, rund=10, opp=4, avsmal=lambda t: 1.15 - 0.55 * t)
-    kirs = [prim('kule', 'kirsebaer', kirsebaer, (0.02, 0.06, 1.42), (0.085,) * 3, segments=28, ring_count=16),
-            kurve('stilk', [(0.02, 0.06, 1.48), (0.04, 0.08, 1.56), (0.09, 0.1, 1.6)], 0.01, mat('stilk', '#5b8a2f', 0.6))]
-    pk = [(Vector(p), Vector((0, 0, 1))) for p in [(rnd.uniform(-0.3, 0.3), rnd.uniform(-0.25, 0.3), 0) for _ in range(30)]]
+    glass = mat('glass', '#e8f7ff', 0.05, alfa=0.3); shake = mat('shake', '#ff79b0', 0.32); krem = mat('krem', '#fffaf4', 0.3)
+    kirsebaer = mat('kirsebaer', '#e0213c', 0.15); sug_r = mat('sugeroer_rod', '#ff4d5e', 0.4); sug_h = mat('sugeroer_hvit', '#ffffff', 0.4)
+    and_gul = mat('and_gul', '#ffd84a', 0.55); nebb = mat('nebb', '#ff9a2e', 0.4)
+    H = 0.62   # midt i kroppen
+    def andeform(o, sx, sy, sz, kutt):
+        """Ellipsoide som får andekropp: bredere bryst foran, smalere og løftet bak, åpen over kutt."""
+        for v in o.data.vertices:
+            x, y, z = v.co.x / sx, v.co.y / sy, (v.co.z - H) / sz
+            bryst = 1 + 0.12 * max(0, -y)          # fyldigere foran
+            v.co.x = x * sx * bryst * (1 - 0.18 * max(0, y))
+            v.co.z = H + z * sz + 0.22 * max(0, y) ** 2.2 * (0.6 + 0.4 * z)   # bakkroppen løfter seg mot halen
+        bm = bmesh.new(); bm.from_mesh(o.data); bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.z > kutt(v.co.y)], context='VERTS'); bm.to_mesh(o.data); bm.free()
+        return o
+    kant = lambda y: H + 0.17 + 0.28 * max(0, y) ** 1.6          # glasskanten stiger mot halen
+    g = andeform(prim('kule', 'glasskropp', glass, (0, 0, H), (0.48, 0.6, 0.4), segments=56, ring_count=32), 0.48, 0.6, 0.4, kant)
+    so = g.modifiers.new('t', 'SOLIDIFY'); so.thickness = 0.02; bruk_mod(g); glatt(g)
+    sh = andeform(prim('kule', 'shake', shake, (0, 0, H), (0.45, 0.57, 0.37), segments=48, ring_count=28), 0.45, 0.57, 0.37, lambda y: kant(y) - 0.05)
+    # Glassfot under kroppen, som et sundae-glass
+    fot = [prim('syl', 'stett', glass, (0, 0.02, 0.14), (0.07, 0.07, 0.1), vertices=24), prim('syl', 'fotplate', glass, (0, 0.02, 0.04), (0.26, 0.22, 0.03), vertices=32, ss=1)]
+    # Krem: et fyldig lag over hele åpningen som stiger opp i en hals foran
+    krembiter = []
+    for i in range(46):
+        t = i / 45; a = t * 5.5 * math.pi; rr = 0.42 * (1 - t * 0.55)
+        krembiter.append((rr * math.cos(a) * 0.95, rr * math.sin(a) * 1.15 + 0.06, kant(rr * math.sin(a) * 1.15 + 0.06) - 0.02 + t * 0.26))
+    krem_o = kurve('kremlag', krembiter, 0.09, krem, rund=10, opp=4, avsmal=lambda t: 1.1 - 0.35 * t)
+    hals = kurve('kremhals', [(0, -0.26, H + 0.22), (0, -0.36, H + 0.32), (0, -0.38, H + 0.42)], 0.16, krem, rund=10, opp=6, avsmal=lambda t: 1.2 - 0.3 * t)
+    kirs = [prim('kule', 'kirsebaer', kirsebaer, (0.0, 0.14, H + 0.5), (0.08,) * 3, segments=28, ring_count=16),
+            kurve('stilk', [(0.0, 0.14, H + 0.56), (0.02, 0.17, H + 0.63), (0.06, 0.2, H + 0.66)], 0.01, mat('stilk', '#5b8a2f', 0.6))]
     stro = []
-    for i, (p, n) in enumerate(pk):
-        r2 = Vector((p.x, p.y)).length
-        z = 1.04 + max(0, 0.42 - r2) * 0.75
-        stro.append(kurve('s%d' % i, [(p.x - 0.025, p.y, z), (p.x, p.y + 0.01, z + 0.005), (p.x + 0.025, p.y, z)], 0.01, mat('str_' + str(i % 3), ['#7a4cff', '#ffd23f', '#4fd1ff'][i % 3], 0.35), rund=4, opp=2))
-    stro = slaa_sammen('strossel', stro)
-    # Sugerør på skrå bak, som en halefjær, med striper
+    for i in range(26):
+        x, y = rnd.uniform(-0.3, 0.3), rnd.uniform(-0.25, 0.4); z = kant(y) + 0.09
+        stro.append(kurve('s%d' % i, [(x - 0.022, y, z), (x, y + 0.01, z + 0.006), (x + 0.022, y, z)], 0.01, mat('str_' + str(i % 3), ['#7a4cff', '#ffd23f', '#4fd1ff'][i % 3], 0.35), rund=4, opp=2))
+    # Halen: glasskanten løfter seg, og sugerøret stikker opp som en halefjær
     sug = []
-    for k in range(10):
-        t0, t1 = k / 10, (k + 1) / 10
-        p0 = Vector((0.12, 0.25, 0.9)) + Vector((0.08, 0.3, 0.7)) * t0; p1 = Vector((0.12, 0.25, 0.9)) + Vector((0.08, 0.3, 0.7)) * t1
-        sug.append(kurve('sug%d' % k, [tuple(p0), tuple((p0 + p1) / 2), tuple(p1)], 0.035, sugeroer_r if k % 2 else sugeroer_h, rund=8, opp=2))
-    kropp = slaa_sammen('kropp', [g, sh, krem_o, stro] + kirs + sug)
-    # Andehodet kommer opp fra kremen foran
-    hx, hy, hz = 0, -0.3, 1.22
-    hd = [prim('kule', 'andehode', and_gul, (hx, hy, hz), (0.2, 0.19, 0.19), segments=40, ring_count=24)]
-    hd.append(prim('kule', 'nebb_overst', nebb, (hx, hy - 0.2, hz - 0.04), (0.13, 0.11, 0.045), (0.15, 0, 0), segments=32, ring_count=14))
-    hd.append(prim('kule', 'nebb_nederst', nebb, (hx, hy - 0.17, hz - 0.085), (0.1, 0.08, 0.03), (-0.1, 0, 0), segments=24, ring_count=10))
-    hd.append(kurve('dott', [(hx, hy + 0.02, hz + 0.17), (hx + 0.03, hy + 0.03, hz + 0.26), (hx - 0.02, hy + 0.06, hz + 0.3)], 0.02, and_gul, avsmal=lambda t: 1 - 0.7 * t))
+    p0, p1 = Vector((0.0, 0.42, H + 0.2)), Vector((0.0, 0.78, H + 0.72))
+    for k in range(9):
+        a_, b_ = p0.lerp(p1, k / 9), p0.lerp(p1, (k + 1) / 9)
+        sug.append(kurve('sug%d' % k, [tuple(a_), tuple((a_ + b_) / 2), tuple(b_)], 0.034, sug_r if k % 2 else sug_h, rund=8, opp=2))
+    kropp = slaa_sammen('kropp', [g, sh, krem_o, hals] + fot + kirs + stro + sug)
+    # Andehodet vokser opp av kremhalsen
+    hx, hy, hz = 0, -0.38, H + 0.6
+    hd = [prim('kule', 'andehode', and_gul, (hx, hy, hz), (0.21, 0.2, 0.2), segments=40, ring_count=24)]
+    hd.append(prim('kule', 'kremlugg', krem, (hx, hy + 0.02, hz + 0.17), (0.11, 0.1, 0.07), segments=24, ring_count=12))
+    hd.append(prim('kule', 'nebb_overst', nebb, (hx, hy - 0.2, hz - 0.05), (0.13, 0.11, 0.045), (0.15, 0, 0), segments=32, ring_count=14))
+    hd.append(prim('kule', 'nebb_nederst', nebb, (hx, hy - 0.17, hz - 0.095), (0.1, 0.08, 0.03), (-0.1, 0, 0), segments=24, ring_count=10))
     for s in (-1, 1):
-        hd += oye('oye%d' % s, (hx + s * 0.09, hy - 0.14, hz + 0.06), 0.05)
-        hd.append(kinn('kinn%d' % s, (hx + s * 0.14, hy - 0.12, hz - 0.03), 0.035))
-    hode = pivot(slaa_sammen('hode', hd), (hx, hy + 0.1, hz - 0.12))
-    # Vinger av gule fjær som griper rundt glasset
+        hd += oye('oye%d' % s, (hx + s * 0.095, hy - 0.14, hz + 0.05), 0.052)
+        hd.append(kinn('kinn%d' % s, (hx + s * 0.15, hy - 0.12, hz - 0.04), 0.035))
+    hode = pivot(slaa_sammen('hode', hd), (hx, hy + 0.06, hz - 0.16))
+    # Vinger av sprøytet krem: tre fjær-dusker langs hver side av glasset
     vinger = []
     for s, navn in [(-1, 'vinge_v'), (1, 'vinge_h')]:
-        v = [prim('kule', 'vinge%d' % s, and_gul, (s * 0.47, 0.04, 0.68), (0.07, 0.24, 0.17), (0.35, s * 0.25, 0), segments=28, ring_count=16)]
-        for k in range(3): v.append(prim('kule', 'fjaer%d%d' % (s, k), and_gul, (s * 0.49, 0.18 + k * 0.07, 0.57 - k * 0.04), (0.05, 0.09, 0.05), (0.6, 0, 0), segments=16, ring_count=10))
-        vinger.append(pivot(slaa_sammen(navn, v), (s * 0.44, 0.0, 0.8)))
-    # Svømmeføtter under glassfoten
+        v = []
+        for k in range(3):
+            y0 = -0.12 + k * 0.16; z0 = H + 0.12 - k * 0.04
+            pts = [(s * 0.46, y0, z0), (s * 0.53, y0 + 0.08, z0 - 0.03), (s * 0.55, y0 + 0.18, z0 - 0.02), (s * 0.52, y0 + 0.27, z0 + 0.03)]
+            v.append(kurve('fjaer%d%d' % (s, k), pts, 0.07 - k * 0.01, and_gul if k == 0 else krem, rund=8, opp=4, avsmal=lambda t: 1.2 - 0.9 * t))
+        vinger.append(pivot(slaa_sammen(navn, v), (s * 0.46, -0.12, H + 0.12)))
     bein = []
     for i, s in enumerate((-1, 1)):
-        f = prim('kule', 'fot%d' % i, nebb, (s * 0.12, -0.08, 0.035), (0.11, 0.15, 0.03), (0, 0, s * 0.2), segments=24, ring_count=10)
-        bein.append(pivot(slaa_sammen(['bein_vf', 'bein_hf'][i], [f, prim('syl', 'legg%d' % i, nebb, (s * 0.12, 0, 0.08), (0.025, 0.025, 0.06), vertices=12)]), (s * 0.12, 0, 0.12)))
+        f = prim('kule', 'fot%d' % i, nebb, (s * 0.13, -0.16, 0.03), (0.11, 0.15, 0.03), (0, 0, s * 0.2), segments=24, ring_count=10)
+        bein.append(pivot(slaa_sammen(['bein_vf', 'bein_hf'][i], [f, prim('syl', 'legg%d' % i, nebb, (s * 0.13, -0.08, 0.1), (0.028, 0.028, 0.09), vertices=12)]), (s * 0.13, -0.08, 0.18)))
     rot = rot_node('Shakeand'); forelder([kropp, hode] + vinger + bein, rot)
     eksporter(rot, 'shakeand')
 
 # ---------------------------------------------------------------- 5 Spagettipingvin
 def spagettipingvin():
+    """Hele kroppen er viklet av spagetti: svart blekksprutpasta på ryggen og vanlig spagetti på magen.
+    Løse nudler henger ned i kanten, vingene er bunter av nudler, og sausen renner fra hodet."""
     nullstill(); MATS.clear()
-    rygg = mat('pingvin', '#28324f', 0.55); pasta = mat('spagetti', '#f6d77a', 0.45); saus = mat('tomatsaus', '#d8432f', 0.35)
+    svart = mat('blekksprutpasta', '#232838', 0.45); pasta = mat('spagetti', '#f6d77a', 0.45); saus = mat('tomatsaus', '#d8432f', 0.35)
     kjott = mat('kjottbolle', '#7a3d25', 0.75); nebb = mat('nebb', '#ff9a2e', 0.4); parm = mat('parmesan', '#fff6dc', 0.6); basil = mat('basilikum', '#3fa34d', 0.5)
-    # Kroppen: mørk eggform bak, og hele magen foran er et tett nøste av spagetti
-    kropp_m = prim('kule', 'rygg', rygg, (0, 0.06, 0.62), (0.42, 0.4, 0.58), segments=48, ring_count=28)
-    nost = [prim('kule', 'pastakjerne', pasta, (0, -0.12, 0.56), (0.33, 0.24, 0.42), segments=40, ring_count=24)]
-    c0, ax = Vector((0, -0.12, 0.56)), Vector((0.345, 0.265, 0.44))
-    for k in range(52):
-        # tilfeldig «storsirkel» på kjernen, bare forsiden
-        u = Vector((rnd.uniform(-1, 1), rnd.uniform(-1, -0.2), rnd.uniform(-1, 1))).normalized()
-        w = u.orthogonal().normalized(); w.rotate(Matrix.Rotation(rnd.uniform(0, math.pi), 3, u)); v2 = u.cross(w)
-        a0 = rnd.uniform(0, 2 * math.pi); spenn = rnd.uniform(1.6, 3.0); pts = []
-        for i in range(18):
-            t = a0 + spenn * i / 17; d = (w * math.cos(t) + v2 * math.sin(t)).normalized()
-            if d.y > 0.25: break
-            off = 1.0 + 0.03 * math.sin(i * 1.7 + k)
-            pts.append(tuple(c0 + Vector((d.x * ax.x, d.y * ax.y, d.z * ax.z)) * off))
-        if len(pts) >= 4: nost.append(kurve('nudel%d' % k, pts, 0.024, pasta, rund=6, opp=3))
-    nost = slaa_sammen('nost', nost)
-    # Tomatsaus som renner ned fra hodet, med parmesan og basilikum
-    sau = prim('kule', 'saus', saus, (0, 0.04, 1.1), (0.36, 0.34, 0.16), segments=40, ring_count=20)
+    C, AX = Vector((0, 0.02, 0.62)), Vector((0.42, 0.38, 0.6))
+    def flate(a, z):   # punkt på eggformen (vinkel a rundt, høyde z i [-1, 1])
+        r = math.sqrt(max(0.0, 1 - z * z)) * (1 + 0.12 * (1 - z) * 0.5)   # litt tyngre nederst
+        return C + Vector((math.cos(a) * r * AX.x, math.sin(a) * r * AX.y, z * AX.z))
+    kjerne_s = prim('kule', 'kjerne_bak', svart, tuple(C), tuple(AX * 0.97), segments=40, ring_count=24)
+    kjerne_p = prim('kule', 'kjerne_foran', pasta, tuple(C + Vector((0, -0.04, -0.04))), (AX.x * 0.92, AX.y * 0.9, AX.z * 0.86), segments=40, ring_count=24)
+    nudler = []
+    r = random.Random(17)
+    for k in range(46):
+        z0 = -0.85 + 1.62 * k / 45 + r.uniform(-0.03, 0.03); a0 = r.uniform(0, 2 * math.pi); spenn = r.uniform(1.4, 2.2); dz = r.uniform(-0.08, 0.08)
+        pts = []
+        for i in range(16):
+            t = i / 15; a = a0 + spenn * t; z = max(-0.95, min(0.92, z0 + dz * t + 0.04 * math.sin(t * 9 + k)))
+            pts.append(tuple(C + (flate(a, z) - C) * (1.04 + 0.015 * math.sin(t * 13 + k))))
+        # Del nudelen der den krysser fra mage til rygg, så magen blir en tydelig lys flate foran
+        mage = lambda a, z: math.sin(a) < -0.45 and z < 0.5
+        bit, forrige = [], None
+        for i, pt in enumerate(pts):
+            a = a0 + spenn * i / 15; f = mage(a, z0)
+            if forrige is not None and f != forrige and len(bit) >= 2:
+                nudler.append(kurve('n%d_%d' % (k, i), bit, 0.026, pasta if forrige else svart, rund=6, opp=3)); bit = [bit[-1]]
+            bit.append(pt); forrige = f
+        if len(bit) >= 2: nudler.append(kurve('n%d_s' % k, bit, 0.026, pasta if forrige else svart, rund=6, opp=3))
+    # Løse nudler henger ned rundt kanten nederst og gir en levende silhuett
+    for k in range(6):
+        a = [0.2, 0.6, 2.5, 2.95, 1.2, 1.95][k]; p0 = flate(a, -0.45); ut = Vector((math.cos(a), math.sin(a), 0))
+        pts = [tuple(p0), tuple(p0 + ut * 0.06 + Vector((0, 0, -0.06))), tuple(p0 + ut * 0.05 + Vector((0.02 * math.sin(k), 0, -0.12))), tuple(p0 + ut * 0.02 + Vector((0, 0, -0.1)))]
+        nudler.append(kurve('heng%d' % k, pts, 0.022, pasta if math.sin(a) < -0.3 else svart, rund=6, opp=3))
+    pasta_n = slaa_sammen('nudler', nudler)
+    # Saus som renner fra toppen, med kjøttbolle, parmesan og basilikum
+    sau = prim('kule', 'saus', saus, (0, 0.02, 1.13), (0.3, 0.28, 0.12), segments=40, ring_count=20)
     bm = bmesh.new(); bm.from_mesh(sau.data)
-    drypp = [(a, rnd.uniform(0.06, 0.16)) for a in [0.3, 1.2, 2.2, 3.4, 4.3, 5.4]]
     for v in bm.verts:
-        a = math.atan2(v.co.y - 0.04, v.co.x)
-        if v.co.z < 1.06:
-            for a0, d in drypp:
+        a = math.atan2(v.co.y - 0.02, v.co.x)
+        if v.co.z < 1.1:
+            for a0, d in [(0.3, 0.12), (1.3, 0.08), (2.2, 0.15), (3.4, 0.1), (4.4, 0.13), (5.4, 0.09)]:
                 da = math.atan2(math.sin(a - a0), math.cos(a - a0)); v.co.z -= d * math.exp(-(da * 4) ** 2)
-    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.z < 0.93 - 0.18], context='VERTS')
-    bm.to_mesh(sau.data); bm.free()
-    kb = prim('kule', 'kjottbolle', kjott, (0.02, 0.08, 1.27), (0.13, 0.13, 0.12), segments=28, ring_count=16, ss=0)
-    for v in kb.data.vertices: v.co += (v.co - Vector((0.02, 0.08, 1.27))).normalized() * 0.008 * math.sin(v.co.x * 90) * math.sin(v.co.z * 80)
-    ost = [prim('kule', 'parm%d' % i, parm, (rnd.uniform(-0.22, 0.22), rnd.uniform(-0.2, 0.25), 1.2 + rnd.uniform(-0.01, 0.04)), (0.02, 0.018, 0.01), segments=8, ring_count=5) for i in range(16)]
-    bb = prim('kule', 'basilblad', basil, (0.1, 0.06, 1.39), (0.07, 0.035, 0.012), (0.3, 0.2, 0.6), segments=16, ring_count=8)
-    kropp = slaa_sammen('kropp', [kropp_m, nost, sau, kb, bb] + ost)
-    # Hodet er en del av kroppen (pingvinen har ikke hals). Ansiktet og nebbet ligger på en egen node.
-    hx, hy, hz = 0, -0.3, 0.98
-    hd = [prim('kule', 'ansikt', mat('ansikt', '#f4f1ea', 0.55), (hx, hy + 0.05, hz), (0.26, 0.1, 0.17), segments=36, ring_count=20)]
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.z < 0.86], context='VERTS'); bm.to_mesh(sau.data); bm.free()
+    kb = prim('kule', 'kjottbolle', kjott, (0.02, 0.06, 1.27), (0.12, 0.12, 0.11), segments=28, ring_count=16)
+    for v in kb.data.vertices: v.co += (v.co - Vector((0.02, 0.06, 1.27))).normalized() * 0.008 * math.sin(v.co.x * 90) * math.sin(v.co.z * 80)
+    ost = [prim('kule', 'parm%d' % i, parm, (r.uniform(-0.2, 0.2), r.uniform(-0.18, 0.22), 1.21 + r.uniform(-0.01, 0.03)), (0.02, 0.018, 0.01), segments=8, ring_count=5) for i in range(14)]
+    bb = prim('kule', 'basilblad', basil, (0.1, 0.04, 1.38), (0.07, 0.035, 0.012), (0.3, 0.2, 0.6), segments=16, ring_count=8)
+    kropp = slaa_sammen('kropp', [kjerne_s, kjerne_p, pasta_n, sau, kb, bb] + ost)
+    # Ansiktet: hvit maske, oransje nebb og store øyne
+    hx, hy, hz = 0, -0.33, 0.98
+    hd = [prim('kule', 'ansikt', mat('ansikt', '#f4f1ea', 0.55), (hx, hy + 0.04, hz), (0.28, 0.11, 0.18), segments=36, ring_count=20)]
     hd.append(prim('kjegle', 'nebb', nebb, (hx, hy - 0.08, hz - 0.03), (0.07, 0.05, 0.12), (math.pi / 2 + 0.15, 0, 0), vertices=20, ss=1))
     for s in (-1, 1):
         hd += oye('oye%d' % s, (hx + s * 0.1, hy - 0.04, hz + 0.05), 0.052)
         hd.append(kinn('kinn%d' % s, (hx + s * 0.17, hy - 0.02, hz - 0.05), 0.035))
     hode = pivot(slaa_sammen('hode', hd), (hx, hy + 0.15, hz - 0.1))
-    # Vingene er bunter av spagetti som henger ned langs siden
+    # Vinger: tette bunter av spagetti med saus på tuppen, formet som pingvinvinger
     vinger = []
     for s, navn in [(-1, 'vinge_v'), (1, 'vinge_h')]:
         v = []
-        for k in range(6):
-            o = (k - 2.5) * 0.028
-            pts = [(s * (0.38 + 0.12 * math.sin(t * 2.6) + 0.025 * math.sin(t * 19 + k)), o * (1 + t) + 0.02 * math.cos(t * 17 + k * 2), 0.86 - t * (0.5 + 0.02 * k)) for t in [i / 9 for i in range(10)]]
-            v.append(kurve('vingenudel%d%d' % (s, k), pts, 0.028, pasta, rund=6, opp=3))
-        vinger.append(pivot(slaa_sammen(navn, v), (s * 0.38, 0.0, 0.86)))
+        for k in range(8):
+            o = (k - 3.5) * 0.022
+            pts = [(s * 0.4, o, 0.86), (s * (0.5 + 0.01 * k), -0.01 + o, 0.72), (s * (0.53 + 0.015 * math.sin(k)), 0.02 + o, 0.55), (s * (0.5 + 0.02 * math.cos(k)), 0.04 + o * 1.3, 0.38 + 0.012 * k)]
+            v.append(kurve('vingenudel%d%d' % (s, k), pts, 0.024, svart if k < 3 else pasta, rund=6, opp=3))
+        v.append(prim('kule', 'sausdrape%d' % s, saus, (s * 0.5, 0.03, 0.4), (0.05, 0.07, 0.04), segments=14, ring_count=8))
+        vinger.append(pivot(slaa_sammen(navn, v), (s * 0.4, 0.0, 0.86)))
     bein = []
     for i, s in enumerate((-1, 1)):
-        f = prim('kule', 'fot%d' % i, nebb, (s * 0.15, -0.12, 0.03), (0.1, 0.14, 0.03), (0, 0, s * 0.25), segments=24, ring_count=10)
+        f = prim('kule', 'fot%d' % i, nebb, (s * 0.15, -0.14, 0.03), (0.1, 0.14, 0.03), (0, 0, s * 0.25), segments=24, ring_count=10)
         bein.append(pivot(slaa_sammen(['bein_vf', 'bein_hf'][i], [f]), (s * 0.15, 0, 0.1)))
     rot = rot_node('Spagettipingvin'); forelder([kropp, hode] + vinger + bein, rot)
     eksporter(rot, 'spagettipingvin')
