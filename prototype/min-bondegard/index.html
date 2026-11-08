@@ -13,8 +13,8 @@
 #omrade .mynt { width: 20px; height: 20px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe680, #f2b705 60%, #b9810a); box-shadow: inset 0 0 0 2px #d99a06; }
 #omrade .smaa { font-size: 13px; font-weight: 500; color: #5a5a5a; margin: 8px 0 10px; }
 #omrade button { width: 100%; background: #ffd23f; color: #2b2100; }
-#boble { position: fixed; display: none; transform: translate(-50%, -100%); background: #fffdf5; color: #2b2b2b; font: 600 16px/1.3 system-ui, sans-serif; padding: 10px 14px; border-radius: 16px; max-width: 220px; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,.25); pointer-events: none; z-index: 5; }
-#boble::after { content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -9px; border: 9px solid transparent; border-bottom: 0; border-top-color: #fffdf5; }
+#boble, #kattBoble { position: fixed; display: none; transform: translate(-50%, -100%); background: #fffdf5; color: #2b2b2b; font: 600 16px/1.3 system-ui, sans-serif; padding: 10px 14px; border-radius: 16px; max-width: 220px; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,.25); pointer-events: none; z-index: 5; }
+#boble::after, #kattBoble::after { content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -9px; border: 9px solid transparent; border-bottom: 0; border-top-color: #fffdf5; }
   html,body{margin:0;height:100%;overflow:hidden;background:#a9d8f2;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
   canvas{display:block}
   .topp{position:fixed;left:8px;top:8px;display:flex;gap:6px;align-items:center;z-index:4}
@@ -39,6 +39,7 @@
 </head>
 <body>
 <div id="boble"></div>
+<div id="kattBoble" aria-live="polite"></div>
 <div id="omrade" role="dialog" aria-live="polite"><div class="tittel"></div><div class="rad"><span class="laas" aria-hidden="true"></span><span class="nivaa"></span></div><div class="rad"><span class="mynt" aria-hidden="true"></span><span class="pris"></span></div><div class="smaa">Roboten rydder området når du kjøper det.</div><button>OK</button></div>
 <div id="last">Bygger gården …</div>
 <div class="topp">
@@ -61,14 +62,14 @@
   <div class="grp" role="group" aria-label="Trestil"><b>Trær</b>
     <button data-trestil="ny">Ny stil</button><button data-trestil="gammel">Før</button><button id="visTraer">Vis trær</button><button id="maalTraer">Mål trær</button></div>
 </div>
-<div id="info">Testscene 0.7.2 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
+<div id="info">Testscene 0.8.0 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
 <div id="maal"><div id="maalTekst">…</div><div class="maalKnapper"><button id="kopier">Kopier</button><button id="lukkMaal">Lukk</button></div></div>
 
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.7.2';
+const VERSJON = 'testscene 0.8.0';
 const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
@@ -1024,6 +1025,95 @@ function lagMarkedsbod() {
   mesh(avrundetBoks(0.4, 0.38, 0.65, 0.15, 3), fm(0xd23b2f, 0.5), 0, 1.25, 0, pk); mesh(new THREE.BoxGeometry(0.04, 0.25, 0.08), fm(0xf2c23b), 0.22, 1.35, -0.15, pk);
 }
 
+/* ======================= 0.8.0: Blomsterkatten – kunde som kommer til Gårdsbua ======================= */
+// Etter Evens tegning: bredt, mykt hode med spisse ører, prikkøyne, «w»-munn og blomster mellom ørene. Kroppen er en myk klokkeform
+// med opprullet kant, to små poter og blå hjerter. Faste deler slås sammen per materiale (7 tegnekall). Alt er laget av enkle former i koden (ingen modellfil).
+// Kunden går langs veien, inn gjennom åpningen i gjerdet, sier hva hun vil kjøpe, blir glad og går videre. Ingen handel ennå (bare visning).
+const KATT_VARIANTER = [
+  {navn: 'Lavendel', pels: 0xcaa8e6},
+  {navn: 'Mynte', pels: 0xa8dcc6},
+  {navn: 'Fersken', pels: 0xf5c3a4},
+];
+const KATT_ONSKER = ['Tre egg, takk! 🥚', 'Ett brød, takk! 🍞', 'En bunt hvete, takk! 🌾', 'Noen epler, takk! 🍎'];
+const BOD_FORAN = new THREE.Vector3(-10.3, 0, 9.5), VEI_INN = new THREE.Vector3(-10.3, 0, 12.6);
+let katt = null, kattBobleTid = 0, kattVariant = 0, kattOnske = -1;
+const kattBoble = document.getElementById('kattBoble');
+function filtTekstur() { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); const d = x.createImageData(128, 128);
+  for (let i = 0; i < d.data.length; i += 4) { const v = 150 + Math.random() * 105; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } x.putImageData(d, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(10, 10); return t; }
+function hjerteGeo(s) { const h = new THREE.Shape(); h.moveTo(0, -0.9 * s); h.bezierCurveTo(-0.15 * s, -0.55 * s, -1 * s, -0.2 * s, -0.75 * s, 0.35 * s); h.bezierCurveTo(-0.55 * s, 0.85 * s, -0.05 * s, 0.75 * s, 0, 0.3 * s);
+  h.bezierCurveTo(0.05 * s, 0.75 * s, 0.55 * s, 0.85 * s, 0.75 * s, 0.35 * s); h.bezierCurveTo(1 * s, -0.2 * s, 0.15 * s, -0.55 * s, 0, -0.9 * s); return new THREE.ShapeGeometry(h, 10); }
+function pinne(a, b, r, mat, parent) { const d = new THREE.Vector3().subVectors(b, a), m = mesh(new THREE.CylinderGeometry(r * 0.8, r, d.length(), 6), mat, 0, 0, 0, parent, false);
+  m.position.copy(a).addScaledVector(d, 0.5); m.quaternion.setFromUnitVectors(OPP, d.clone().normalize()); return m; }
+function lagKatt() {
+  const g = new THREE.Group(), kropp = new THREE.Group(); g.add(kropp); g.visible = false; scene.add(g);
+  const pels = std({color: SRGB(KATT_VARIANTER[0].pels), roughness: 0.95, bumpMap: filtTekstur(), bumpScale: 0.03});
+  const rosa = fm(0xf3a9c3, 0.9), lilla = fm(0x55307a, 0.4), gronn = fm(0x86b84e, 0.8);
+  // Kropp: klokkeform som dreieflate, med kant som bretter seg litt opp
+  const prof = [[0, 0.04], [0.5, 0.04], [0.58, 0.07], [0.61, 0.14], [0.55, 0.12], [0.45, 0.16], [0.34, 0.27], [0.25, 0.44], [0.2, 0.62], [0.18, 0.8], [0.19, 0.95], [0, 0.97]].map(([r, y]) => new THREE.Vector2(r, y));
+  const k = mesh(new THREE.LatheGeometry(prof, 28), pels, 0, 0, 0, kropp); k.scale.set(1.12, 1, 0.92);
+  const rKropp = y => { for (let i = 5; i < prof.length - 1; i++) if (y >= prof[i].y && y <= prof[i + 1].y) return prof[i].x + (prof[i + 1].x - prof[i].x) * (y - prof[i].y) / (prof[i + 1].y - prof[i].y); return 0.4; };
+  // Blå hjerter på kjolekanten: to til venstre og tre til høyre, som på tegningen
+  const hjFyll = fm(0xbcdcff, 0.6), hjKant = fm(0x3f8fe6, 0.6);
+  const gFyll = hjerteGeo(0.062), gKant = hjerteGeo(0.078);
+  [[-1.0, 0.17], [-0.74, 0.24], [0.6, 0.25], [0.84, 0.2], [1.08, 0.16]].forEach(([th, y]) => { const r = rKropp(y) + 0.008, p = new THREE.Vector3(Math.sin(th) * r * 1.12, y, Math.cos(th) * r * 0.92), n = new THREE.Vector3(Math.sin(th), 0.75, Math.cos(th)).normalize();
+    [[gKant, hjKant, 0], [gFyll, hjFyll, 0.004]].forEach(([geo, mat, ut]) => { const h = mesh(geo, mat, 0, 0, 0, kropp, false); h.position.copy(p).addScaledVector(n, ut); h.lookAt(h.position.clone().add(n)); }); });
+  // Poter som titter fram under kanten (faste, slås sammen med kroppen)
+  [-1, 1].forEach(s => mesh(new THREE.SphereGeometry(1, 12, 8), pels, s * 0.17, 0.05, 0.45, kropp).scale.set(0.1, 0.06, 0.12)); bakeDirekte(kropp);
+  // Hode: bredt og flatt, med ørene som en del av formen
+  const hode = new THREE.Group(); hode.position.y = 1.24; kropp.add(hode);
+  const A = 0.6, B = 0.37, C = 0.45; mesh(new THREE.SphereGeometry(1, 32, 20), pels, 0, 0, 0, hode).scale.set(A, B, C);
+  [-1, 1].forEach(s => { const o = new THREE.Group(); o.position.set(s * 0.42, 0.17, -0.02); o.rotation.z = -s * 0.36; hode.add(o);
+    mesh(new THREE.ConeGeometry(0.2, 0.46, 16), pels, 0, 0.18, 0, o).scale.z = 0.62;
+    const inn = mesh(new THREE.ConeGeometry(0.13, 0.33, 12), rosa, 0, 0.15, 0.07, o, false); inn.scale.z = 0.35; o.updateMatrix(); [...o.children].forEach(m => { m.applyMatrix4(o.matrix); hode.add(m); }); hode.remove(o); });
+  const flate = (x, y, ut = 0.004) => new THREE.Vector3(x, y, C * Math.sqrt(Math.max(0, 1 - (x / A) ** 2 - (y / B) ** 2)) + ut);
+  const oyne = new THREE.Group(); oyne.position.y = 0.05; hode.add(oyne); /* begge øynene i én gruppe, så de blunker sammen og tegnes med ett kall */
+  [-1, 1].forEach(s => { const p = flate(s * 0.12, 0.05, -0.005);
+    mesh(new THREE.SphereGeometry(1, 12, 10), lilla, p.x, 0, p.z, oyne, false).scale.set(0.028, 0.038, 0.02);
+    mesh(new THREE.SphereGeometry(0.009, 6, 4), fm(0xffffff, 0.3), p.x + 0.008, 0.014, p.z + 0.017, oyne, false); }); bakeDirekte(oyne);
+  // Munn: liten strek ned fra nesen og en myk «w»
+  const munn = [[0, -0.02], [0, -0.095]].map(([x, y]) => flate(x, y));
+  mesh(new THREE.TubeGeometry(new THREE.LineCurve3(munn[0], munn[1]), 2, 0.011, 6), lilla, 0, 0, 0, hode, false);
+  const w = new THREE.CatmullRomCurve3([[-0.13, -0.1], [-0.09, -0.145], [-0.04, -0.145], [0, -0.095], [0.04, -0.145], [0.09, -0.145], [0.13, -0.1]].map(([x, y]) => flate(x, y)));
+  mesh(new THREE.TubeGeometry(w, 24, 0.011, 6), lilla, 0, 0, 0, hode, false);
+  // Blomster mellom ørene: prestekrage, rosa knopp og en kvist med blå knopper
+  const blomst = new THREE.Group(); blomst.position.set(0, B * 0.75, 0); hode.add(blomst);
+  const V = (x, y, z = 0) => new THREE.Vector3(x, y, z);
+  pinne(V(-0.1, 0), V(-0.2, 0.52, 0.02), 0.014, gronn, blomst); pinne(V(0.08, 0), V(0.14, 0.48, 0.01), 0.013, gronn, blomst); pinne(V(0.12, 0.22), V(0.3, 0.4, 0.02), 0.01, gronn, blomst);
+  const P = [-0.2, 0.55, 0.03], kronblad = fm(0xfff3f5, 0.7);
+  for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2, b = mesh(new THREE.SphereGeometry(1, 8, 6), kronblad, P[0] + Math.cos(a) * 0.075, P[1] + Math.sin(a) * 0.075, P[2], blomst, false); b.scale.set(0.072, 0.025, 0.012); b.rotation.z = a; }
+  mesh(new THREE.SphereGeometry(1, 10, 8), fm(0xf2b21d, 0.6), P[0], P[1], P[2] + 0.012, blomst, false).scale.set(0.042, 0.042, 0.022);
+  mesh(new THREE.SphereGeometry(1, 10, 8), fm(0xe8699b, 0.6), 0.14, 0.52, 0.01, blomst, false).scale.set(0.035, 0.06, 0.035);
+  [[0.3, 0.42], [0.23, 0.37], [0.34, 0.36]].forEach(([x, y]) => mesh(new THREE.SphereGeometry(0.026, 8, 6), fm(0xc4dcf2, 0.6), x, y, 0.02, blomst, false));
+  [[-0.14, 0.18, 0.6], [0.11, 0.25, -0.6], [-0.18, 0.36, -0.5]].forEach(([x, y, r]) => { const l = mesh(new THREE.SphereGeometry(1, 8, 6), gronn, x, y, 0.01, blomst, false); l.scale.set(0.065, 0.02, 0.025); l.rotation.z = r; }); bakeDirekte(blomst); bakeDirekte(hode);
+  // Usynlig trykkflate som følger katten
+  const treff = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 2.1, 10), new THREE.MeshBasicMaterial({visible: false})); treff.position.y = 1.0; g.add(treff); treff.userData.eier = g; klikkbar(treff);
+  g.scale.setScalar(0.95); g.userData = {katt: true, hjerteY: 2.3, kropp, hode, oyne, blomst, pels, tilst: 'borte', tid: 1.5, vei: [], etter: null, hopp: 0, fase: 0, blunk: 2};
+  katt = g;
+}
+function kattSi(tekst, tid = 3) { kattBoble.textContent = tekst; kattBoble.style.display = 'block'; kattBobleTid = tid; }
+function kattTrykk() { const u = katt.userData; u.hopp = 0.5; visHjerte(_v1.copy(katt.position).add(_v2.set(0, u.hjerteY, 0)));
+  const v = KATT_VARIANTER[kattVariant]; kattSi(u.tilst === 'onsker' ? `${v.navn}: ${KATT_ONSKER[kattOnske]}` : `Mjau! Jeg er ${v.navn}.`, 2.6); }
+function oppdaterKatt(dt, t) { if (!katt) return; const u = katt.userData, fart = 1.5;
+  if (u.tilst === 'borte') { u.tid -= dt; if (u.tid <= 0) { if (u.vart) kattVariant = (kattVariant + 1) % KATT_VARIANTER.length; u.vart = true; u.pels.color.copy(SRGB(KATT_VARIANTER[kattVariant].pels));
+      katt.position.set(-32, 0, VEI_INN.z); katt.rotation.y = Math.PI / 2; u.vei = [VEI_INN.clone(), BOD_FORAN.clone()]; u.etter = 'ankomst'; u.tilst = 'gaar'; katt.visible = true; } return; }
+  let gaar = false;
+  if (u.tilst === 'gaar') { tmp.copy(u.vei[0]).sub(katt.position); tmp.y = 0; const d = tmp.length();
+    if (d < 0.06) { u.vei.shift(); if (!u.vei.length) { if (u.etter === 'ankomst') { u.tilst = 'onsker'; u.tid = 4.5; kattOnske = (kattOnske + 1) % KATT_ONSKER.length; kattSi(`${KATT_VARIANTER[kattVariant].navn}: ${KATT_ONSKER[kattOnske]}`, 4.2); } else { u.tilst = 'borte'; u.tid = rr(4, 8); katt.visible = false; } } }
+    else { katt.rotation.y = snuMot(katt.rotation.y, Math.atan2(tmp.x, tmp.z), dt * 6); katt.position.addScaledVector(tmp.normalize(), Math.min(d, dt * fart)); gaar = true; } }
+  else if (u.tilst === 'onsker') { katt.rotation.y = snuMot(katt.rotation.y, Math.atan2(-10.5 - katt.position.x, 8.0 - katt.position.z), dt * 5); u.tid -= dt;
+    if (u.tid <= 0) { u.tilst = 'glad'; u.tid = 2.2; u.hopp = 0.5; visHjerte(_v1.copy(katt.position).add(_v2.set(0, u.hjerteY, 0))); kattSi('Takk! 💜', 2); } }
+  else if (u.tilst === 'glad') { u.tid -= dt; if (u.tid <= 0) { u.vei = [VEI_INN.clone(), V3(32, VEI_INN.z)]; u.etter = 'ut'; u.tilst = 'gaar'; } }
+  // Gange: vugging fra side til side, små hopp og potene på skift
+  u.fase += dt * (gaar ? 9 : 0); const s = Math.sin(u.fase);
+  u.kropp.rotation.z = mot(u.kropp.rotation.z, gaar ? s * 0.08 : 0, 8, dt);
+  let y = gaar ? Math.abs(s) * 0.035 : 0; if (u.hopp > 0) { u.hopp -= dt; y += Math.sin(Math.max(0, 0.5 - u.hopp) / 0.5 * Math.PI) * 0.35; }
+  katt.position.y = Math.max(0, hoyde(katt.position.x, katt.position.z)) + y;
+  u.kropp.scale.y = 1 + Math.sin(t * 2.2) * 0.012; u.blomst.rotation.z = Math.sin(t * 1.7) * 0.06 + (gaar ? s * 0.05 : 0); u.hode.rotation.z = gaar ? 0 : Math.sin(t * 0.9) * 0.05;
+  u.blunk -= dt; const lukk = u.blunk < 0.12; u.oyne.scale.y = lukk ? 0.12 : 1; if (u.blunk < 0) u.blunk = rr(2, 5);
+  if (kattBobleTid > 0) { kattBobleTid -= dt; tmp.copy(katt.position); tmp.y += 2.25; tmp.project(camera); kattBoble.style.left = Math.min(innerWidth - 118, Math.max(118, (tmp.x + 1) / 2 * innerWidth)) + 'px'; /* holdes inne på skjermen */ kattBoble.style.top = ((1 - tmp.y) / 2 * innerHeight) + 'px'; if (kattBobleTid <= 0 || !katt.visible) { kattBoble.style.display = 'none'; kattBobleTid = 0; } }
+}
+
 /* ======================= Miljødetaljer ved byggene ======================= */
 function lagDetaljer() {
   const G = new THREE.Group(); scene.add(G);
@@ -1470,7 +1560,7 @@ el.addEventListener('wheel', e => { e.preventDefault(); sistHjul = performance.n
 let sistTrykk = 0;
 function trykk(x, y) { sistTrykk = performance.now(); ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
   const t = ray.intersectObjects(klikkbare, true)[0]; if (!t) return; const o = t.object.userData.eier || t.object;
-  if (o.userData.omrade) { visOmrade(o.userData.omrade); if (o.isGroup) sprett.push({o, t: 0}); } else if (o.userData.art) { o.userData.hopp = o.userData.art === 'kylling' ? 0.4 : 0.5; visHjerte(_v1.copy(o.position).add(_v2.set(0, o.userData.hjerteY || (o.userData.art === 'kylling' ? 0.9 : 1.8), 0))); } else sprett.push({o, t: 0});
+  if (o.userData.katt) kattTrykk(); else if (o.userData.omrade) { visOmrade(o.userData.omrade); if (o.isGroup) sprett.push({o, t: 0}); } else if (o.userData.art) { o.userData.hopp = o.userData.art === 'kylling' ? 0.4 : 0.5; visHjerte(_v1.copy(o.position).add(_v2.set(0, o.userData.hjerteY || (o.userData.art === 'kylling' ? 0.9 : 1.8), 0))); } else sprett.push({o, t: 0});
   if (robot && modus === 'vent') { const p = o.userData.omrade && !o.isGroup ? t.point : o.getWorldPosition(new THREE.Vector3()); robot.rotation.y = Math.atan2(p.x - robot.position.x, p.z - robot.position.z); robot.position.y = 0; mal = null; snuTil = null; if (utVei) { robot.position.copy(utVei[0]); utVei = null; } spill('Wave', false); ventSteg = 2; ventTimer = 1.6; }
   if (o === rev) hilsRev(true); }
 
@@ -1726,7 +1816,7 @@ document.getElementById('kopier').onclick = async () => { const t = maalTekst.te
 function bygg() {
   renderer.setPixelRatio(+PR_VALG); sol.shadow.mapSize.set(KV[KVAL].skygge, KV[KVAL].skygge); if (KVAL === 'mobil') renderer.shadowMap.type = THREE.PCFShadowMap;
   const kat = (navn, fn) => { const for_ = new Set(scene.children); fn(); scene.children.forEach(c => { if (!for_.has(c)) c.userData.kat = navn; }); };
-  kat('terreng', lagTerreng); kat('omrader', lagOmrader); { const t0 = performance.now(); kat('vegetasjon', lagVegetasjon); window.__byggTid = performance.now() - t0; } /* byggetid for vegetasjonen, vises i testene */ kat('gjerde', lagGjerde); kat('laave', lagLave); kat('honsehus', lagHonsehus); kat('dyr', lagBeite); kat('akre', lagAkre); kat('markedsbod', lagMarkedsbod); kat('detaljer', lagDetaljer); kat('vaer', lagVaer); settTid('dag'); lagRev(); if (TEST.full) fullGard();
+  kat('terreng', lagTerreng); kat('omrader', lagOmrader); { const t0 = performance.now(); kat('vegetasjon', lagVegetasjon); window.__byggTid = performance.now() - t0; } /* byggetid for vegetasjonen, vises i testene */ kat('gjerde', lagGjerde); kat('laave', lagLave); kat('honsehus', lagHonsehus); kat('dyr', lagBeite); kat('akre', lagAkre); kat('markedsbod', lagMarkedsbod); kat('kunde', lagKatt); kat('detaljer', lagDetaljer); kat('vaer', lagVaer); settTid('dag'); lagRev(); if (TEST.full) fullGard();
   new THREE.GLTFLoader().load(ROBOT_URL, gl => {
     robot = gl.scene; const b = new THREE.Box3().setFromObject(robot); robot.scale.setScalar(1.9 / (b.max.y - b.min.y)); const b2 = new THREE.Box3().setFromObject(robot); robot.position.set(-0.8, -b2.min.y, 0.2);
     robot.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } if (o.isBone && /^Head(_\d+)?$/.test(o.name) && !hode) hode = o; });
@@ -1756,7 +1846,7 @@ function loop(ts) {
     else if (snuTil) { robot.rotation.y = snuMot(robot.rotation.y, snuTil.r, dt * 7); if (Math.abs(vinkelDiff(robot.rotation.y, snuTil.r)) < 0.02) { const f = snuTil.ferdig; snuTil = null; f(); } }
     else if (modus === 'vent') { ventTimer -= dt; if (ventTimer <= 0) { if (ventSteg === 2) { spill('Idle'); robot.position.y = 0; ventSteg = 0; ventTimer = 1.5; } else nesteVent(); } }
   }
-  oppdaterDyrene(dt, t);
+  oppdaterDyrene(dt, t); oppdaterKatt(dt, t);
   for (let i = sprett.length - 1; i >= 0; i--) { const s = sprett[i]; s.t += dt; const k = Math.sin(Math.min(s.t / 0.35, 1) * Math.PI); if (s.o.userData.skala0 === undefined) s.o.userData.skala0 = s.o.scale.x; const base = s.o.userData.skala0; s.o.scale.setScalar(base * (1 + k * 0.08)); if (s.t > 0.35) { s.o.scale.setScalar(base); sprett.splice(i, 1); } }
   if (VANN) VANN.material.uniforms.tid.value = t;
   if (omradeVist) { omradeTid += dt; omradeVist.kant.material.opacity = 0.65 + 0.3 * Math.sin(omradeTid * 5); }
