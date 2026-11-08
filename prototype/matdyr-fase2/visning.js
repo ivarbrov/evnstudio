@@ -715,6 +715,7 @@
   let sist = performance.now(), fpsT = 0, fpsN = 0, fps = 0;
   // ---------- Grafikk og ytelse: kvalitetsvalg og måling på ekte enhet ----------
   const maaler = NY ? EVNMiljo.maaler(renderer) : null;
+  const adaptivSteg = NY ? EVNMiljo.adaptiv(renderer, KV, () => storrelse()) : null;
   function apneGrafikk() {
     let d = $('grafikk'); if (!d) { d = document.createElement('div'); d.id = 'grafikk'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Grafikk og ytelse'); document.body.appendChild(d); }
     const i = renderer.info.render, nv = NY ? EVNMiljo.NIVAER[KV] : null;
@@ -739,6 +740,7 @@
     else if (sol.target.position.lengthSq()) { sol.position.set(12, 22, 10); sol.target.position.set(0, 0, 0); }
     if (robotMixer) robotMixer.update(dt);
     if (maaler) maaler.ramme();
+    if (adaptivSteg && !/adaptiv=0/.test(location.search)) adaptivSteg();
     if (gd.molle && gd.molle.userData.vinge && !REDUSERT) gd.molle.userData.vinge.rotation.z += dt * 0.8;
     renderer.render(scene, camera);
     fpsN++; fpsT += ekteDt; if (fpsT > 0.5) { fps = Math.round(fpsN / fpsT); fpsN = 0; fpsT = 0; const i = renderer.info.render; $('maal').textContent = fps + ' FPS · ' + i.calls + ' tegnekall · ' + Math.round(i.triangles / 1000) + 'k trekanter'; window.EVNMaal = { fps, kall: i.calls, trekanter: i.triangles }; }

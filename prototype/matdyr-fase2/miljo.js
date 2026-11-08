@@ -32,23 +32,33 @@
   function lys(scene, renderer, k) {
     const q = NIVAER[k];
     renderer.setPixelRatio(Math.min(q.pr, devicePixelRatio || 1));
-    renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+    renderer.outputEncoding = T.sRGBEncoding;
+    // ACES er beholdt her: i denne scenen ga den mettere farger enn lys uten tonemapping (Min Bondegård 0.3 fant det motsatte).
+    // ?tonemap=ingen viser alternativet, så valget kan avgjøres på ekte skjerm.
+    const TM = new URLSearchParams(location.search).get('tonemap'); renderer.toneMapping = TM === 'ingen' ? T.NoToneMapping : T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = q.skyggeType;
     scene.background = LC('#8fcff3'); scene.fog = new T.Fog(LC('#bfe2f5'), 95, 260);
-    const himmel = new T.HemisphereLight(LC('#e9f6ff'), LC('#6f9c4c'), 0.7);
-    const sol = new T.DirectionalLight(LC('#fff0d6'), 1.45); sol.position.set(14, 26, 12); sol.castShadow = true;
+    const aces = renderer.toneMapping === T.ACESFilmicToneMapping;
+    const himmel = new T.HemisphereLight(LC('#e9f6ff'), LC('#5f8a40'), aces ? 0.7 : 0.48);
+    const sol = new T.DirectionalLight(LC('#fff0d6'), aces ? 1.45 : 0.82); sol.position.set(14, 26, 12); sol.castShadow = true;
     sol.shadow.mapSize.set(q.skygge, q.skygge); sol.shadow.bias = -0.0004; sol.shadow.normalBias = 0.035; sol.shadow.radius = 3;
     Object.assign(sol.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 90 });
-    const fyll = new T.DirectionalLight(LC('#bcd8ff'), 0.35); fyll.position.set(-12, 9, -14);
+    const fyll = new T.DirectionalLight(LC('#bcd8ff'), aces ? 0.35 : 0.16); fyll.position.set(-12, 9, -14);
     scene.add(himmel, sol, sol.target, fyll);
     return { himmel, sol, fyll };
   }
 
   // ---------- Ressurser ----------
+  // Laster en GLB. Først prøves en innpakket kopi (<url>.js med base64, for verter som ikke serverer .glb),
+  // deretter selve filen. Mangler begge, gis null, og spillet bruker de gamle figurene.
   function lastGLB(url) {
+    const parse = buf => new Promise(ok => { try { new T.GLTFLoader().parse(buf, '', g => ok(g), e => { console.warn('Kunne ikke lese', url, e); ok(null); }); } catch (e) { ok(null); } });
+    const fraFil = () => new Promise(ok => { try { new T.GLTFLoader().load(url, g => ok(g), undefined, () => ok(null)); } catch (e) { ok(null); } });
     return new Promise(ok => {
-      try { new T.GLTFLoader().load(url, g => ok(g), undefined, e => { console.warn('Kunne ikke laste', url, e && e.message); ok(null); }); }
-      catch (e) { console.warn('GLTFLoader mangler', e); ok(null); }
+      const s = document.createElement('script'); s.src = url + '.js'; s.async = true;
+      s.onload = () => { const b64 = window.EVN_GLB && window.EVN_GLB[url]; if (!b64) return fraFil().then(ok); const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); delete window.EVN_GLB[url]; parse(u.buffer).then(ok); };
+      s.onerror = () => fraFil().then(ok);
+      document.head.appendChild(s);
     });
   }
   // Slår sammen alle mesher under en node per materiale, med nodenes transformasjoner bakt inn.
@@ -154,5 +164,13 @@
     };
   }
 
-  window.EVNMiljo = { NIVAER, velgKvalitet, lagreKvalitet, lys, lastGLB, deler, instanser, kopi, terreng, spred, maaler, LC, stoy };
+  // Adaptiv oppløsning (som i Min Bondegård 0.3): ned 0,25 når FPS < 50, opp igjen over 58, aldri under 0,75
+  function adaptiv(renderer, k, settStorrelse) {
+    const maks = Math.min(NIVAER[k].pr, devicePixelRatio || 1); let n = 0, sum = 0, vent = 0, sist = performance.now();
+    return () => { const t = performance.now(), dt = t - sist; sist = t; if (dt > 250) return; sum += dt; n++; if (vent > 0) { vent--; return; }
+      if (n >= 60) { const fps = 1000 / (sum / n); n = 0; sum = 0; const pr = renderer.getPixelRatio();
+        if (fps < 50 && pr > 0.75) { renderer.setPixelRatio(Math.max(0.75, pr - 0.25)); settStorrelse(); vent = 120; }
+        else if (fps > 58 && pr < maks) { renderer.setPixelRatio(Math.min(maks, pr + 0.25)); settStorrelse(); vent = 120; } } };
+  }
+  window.EVNMiljo = { NIVAER, velgKvalitet, lagreKvalitet, lys, lastGLB, deler, instanser, kopi, terreng, spred, maaler, adaptiv, LC, stoy };
 })();
