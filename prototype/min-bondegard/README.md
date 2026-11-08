@@ -55,3 +55,4 @@ Status: prototype, ikke spill. Ingen spillogikk, lagring, statistikk eller musik
   - «Synkron tegnetid» er tiden for `render()` + `readPixels(1 px)`. Den inkluderer CPU, GPU og ventetid for synkronisering, og er ikke ren GPU-tid. GPU-tid måles med `EXT_disjoint_timer_query_webgl2` der nettleseren har utvidelsen.
   - Auto bruker ikke synkron tegnetid alene. En høyere oppløsning må også gi minst 90 % av den viste bildefrekvensen ved 1,0×.
   - «Mål ytelse» måler vist b/s, synkron tid og GPU-tid ved 1,0×, 1,5× og 2× med samme kamera, og viser tegneflate og skala mot dpr. Testen med tom scene omtales som en indikasjon.
+- 0.4.4: to trær stod i veien. Trær og busker holder nå avstand til veien, slik at heller ikke kronene henger over den.
