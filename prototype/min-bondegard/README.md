@@ -42,3 +42,10 @@ Status: prototype, ikke spill. Ingen spillogikk, lagring, statistikk eller musik
   - Utvidelsesområder (bare visuelt): område 2 «Skogkanten» (nivå 10, 1 500 mynter) og område 3 «Elvebredden» (nivå 18, 6 000 mynter). Områdene er gjengrodde, med trær, busker, stubber, en veltet stokk og stein. Grensen er en svak lys stripe med små stikker, og hvert område har et «Til salgs»-skilt med nivået. Trykk på området eller skiltet viser navn, nivå og pris, og grensen lyser gult. Det finnes ikke noe kjøpssystem.
   - Landskap: skogholt rundt hele gården, og skog på åsene langt unna (instansert, to tegnekall, uten skygge).
   - Ytelse: krone- og grangeometri lages én gang per variant og gjenbrukes. Trær nær gården har finere geometri enn trær langt unna. Bare vegetasjonsruter nær gården kaster skygge. Vannanimasjonen ligger i shaderen og krever ingen oppdatering av geometrien.
+- 0.4.1: bildekvalitet, måling og meny. Ingen grafiske endringer.
+  - Den gamle automatikken senket oppløsningen hver gang vist bildefrekvens var under 50 b/s, ned til 0,75×. Når nettleseren eller mobilen holder siden på 30 b/s, endte det alltid på 0,75×, og derfor ble bildet mykt. Automatikken er fjernet.
+  - Ny «Auto» måler hvor lang tid ett bilde tar å tegne (render + `readPixels`, uavhengig av rAF). Den velger høyeste oppløsning under 14 ms, ellers under 28 ms, og går ikke under 1,0× med mindre ett bilde tar over 40 ms. Oppløsningen kan også velges manuelt (0,75×–2×, opp til `devicePixelRatio`).
+  - Bildefrekvensen måles med rå rAF-intervaller. Før ble intervallene kappet ved 50 ms, så «1 % lav» kunne aldri vise under 20.
+  - «Mål ytelse» måler vist bildefrekvens, den samme siden med tom scene (for å se om grensen ligger utenfor prototypen) og kapasitet per oppløsning. Den måler også skygge hvert 2. bilde og viser GPU. Resultatet kan kopieres.
+  - På Mobil tegnes skyggekartet hvert 2. bilde, og alltid når kameraet flyttes. `?helskygge` slår dette av.
+  - Testmenyen kan legges sammen, og den er lagt sammen fra start på mobil og i stående format. «Mål ytelse» og en liten bildefrekvensvisning er alltid synlige.
