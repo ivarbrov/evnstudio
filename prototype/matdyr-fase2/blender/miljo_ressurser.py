@@ -196,6 +196,14 @@ def silo():
     for z in (2, 4, 6): d.append(prim('torus', 'band%d' % z, jern, (0, 0, z), major_radius=1.73, minor_radius=0.05, major_segments=48, minor_segments=6))
     for z in [i * 0.4 + 0.4 for i in range(20)]: d.append(kasse('trinn', jern, (0, -1.82, z), (0.5, 0.05, 0.05), 0.0))
     for x in (-0.25, 0.25): d.append(kasse('stige', jern, (x, -1.82, 4.2), (0.06, 0.06, 8.2), 0.0))
+    # Steinfot rundt bunnen
+    sm, sm2 = mat('stein', '#a9a49b', 0.9), mat('stein_mork', '#8b867e', 0.9)
+    for i in range(22):
+        a = i * 2 * math.pi / 22
+        for z, off in ((0.22, 0), (0.62, 0.14)):
+            k = prim('iko', 'silostein%d_%d' % (i, z * 10), sm if (i + int(z * 10)) % 3 else sm2, (math.cos(a + off) * 1.78, math.sin(a + off) * 1.78, z), (0.32, 0.22, 0.2), subdivisions=2)
+            k.data.transform(Matrix.Translation((-math.cos(a + off) * 1.78, -math.sin(a + off) * 1.78, -z))); k.data.transform(Matrix.Rotation(a + off, 4, 'Z')); k.data.transform(Matrix.Translation((math.cos(a + off) * 1.78, math.sin(a + off) * 1.78, z)))
+            ujevn(k, 0.03, 5, i); d.append(k)
     return rot('silo', d)
 
 def honsehus():

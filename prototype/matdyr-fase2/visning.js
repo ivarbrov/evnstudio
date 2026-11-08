@@ -39,9 +39,10 @@
   // Ressurser fra Blender (lastes parallelt med roboten; spillet virker uten dem)
   const NYE_FIGURER = ['donutku', 'burgersau', 'pizzaskilpadde', 'shakeand', 'spagettipingvin'];
   const NY_ID = { donutku: 127, burgersau: 508, pizzaskilpadde: 700, shakeand: 599, spagettipingvin: 179 };
-  const res = { miljo: null, fig: {} };
+  const res = { miljo: null, gard: null, fig: {} };
   const ressurserKlar = !NY ? Promise.resolve() : Promise.all([
     EVNMiljo.lastGLB('modeller/miljo.glb').then(g => { res.miljo = g; }),
+    EVNMiljo.lastGLB('modeller/gard.glb').then(g => { res.gard = g; }),
     ...NYE_FIGURER.map(n => Promise.all([EVNMiljo.lastGLB('modeller/' + n + '.glb'), EVNMiljo.lastGLB('modeller/' + n + '_lav.glb')]).then(([full, lav]) => { if (full) res.fig[n] = { full, lav: lav || full }; }))
   ]);
 
@@ -288,7 +289,36 @@
     p.forEach(q => q[4] = hoyde(q[3]));
     return { p, del: { 1: [0, l1e], 2: [l1e, l2e], 3: [l2e, L] }, repos: { 1: [l1s, l1e], 2: [l2s, l2e], 3: [l3s, L] } };
   })();
+  // ---------- Ny grafikk: gårdsbygningen settes sammen av moduler fra gard.glb (låvepreg) ----------
+  // Modulene følger den faste geometrien, så etasjer, plasser, ramper og kollisjon er uendret.
+  const gmCache = {};
+  const NYGARD = () => NY && !!res.gard;
+  function gm(navn) { if (gmCache[navn] !== undefined) return gmCache[navn]; const n = res.gard && res.gard.scene.getObjectByName(navn); return (gmCache[navn] = n ? EVNMiljo.deler(n) : null); }
+  function modul(g, navn, x, y, z, ry = 0, sx = 1, sy = 1, sz = 1, rz = 0) {
+    const d = gm(navn); if (!d) return null;
+    const o = new T.Group(); o.position.set(x, y, z); o.rotation.set(0, ry, rz, 'YZX'); o.scale.set(sx, sy, sz);
+    for (const { geo, mat } of d) { const m = new T.Mesh(geo, mat); m.castShadow = !mat.transparent; m.receiveShadow = true; o.add(m); }
+    g.add(o); return o;
+  }
+  // Modul langs et linjestykke fra a til b (3D), med lokal X langs linjen; utsiden (lokal +Z) mot «ut» når den er gitt
+  function langs(g, navn, a, b, lengde, yOff = 0, ut = null, sy = 1) {
+    let p = a, q = b; const dx = q.x - p.x, dz = q.z - p.z;
+    if (ut && (Math.sin(-Math.atan2(dz, dx)) * ut.x + Math.cos(-Math.atan2(dz, dx)) * ut.z) < 0) { p = b; q = a; }
+    const ex = q.x - p.x, ey = q.y - p.y, ez = q.z - p.z, h = Math.hypot(ex, ez), L = Math.hypot(h, ey);
+    return modul(g, navn, p.x, p.y + yOff, p.z, -Math.atan2(ez, ex), L / lengde, sy, 1, Math.atan2(ey, h));
+  }
+  // Tre sider av en etasje: start, retning (ry), lengde og utoverretning
+  const SIDER = () => [{ x: -HX, z: HZ, ry: 0, L: BX, ut: [0, 1] }, { x: HX, z: -HZ, ry: Math.PI, L: BX, ut: [0, -1] }, { x: -HX, z: -HZ, ry: -Math.PI / 2, L: BZ, ut: [-1, 0] }, { x: HX, z: HZ, ry: Math.PI / 2, L: BZ, ut: [1, 0] }];
+  function nyStolpe(e, x, bunn, topp, z, fot) {
+    if (fot) modul(e, 'stolpe_fot', x, bunn, z);
+    const b0 = fot ? bunn + 0.5 : bunn; modul(e, 'stolpe_skaft', x, b0, z, 0, 1, topp - b0, 1);
+  }
   function rekkverk(e, x0, z0, x1, z1, y = 0) {
+    if (NYGARD()) {
+      const L = Math.hypot(x1 - x0, z1 - z0); if (L < 0.3) return; const n = Math.max(1, Math.round(L / 2)), ry = -Math.atan2(z1 - z0, x1 - x0);
+      for (let i = 0; i < n; i++) modul(e, 'rekkverk', x0 + (x1 - x0) * i / n, y + DEKKE - 0.05, z0 + (z1 - z0) * i / n, ry, L / n / 2);
+      modul(e, 'rekk_stolpe', x1, y + DEKKE - 0.05, z1); return;
+    }
     const L = Math.hypot(x1 - x0, z1 - z0); if (L < 0.3) return; const n = Math.max(1, Math.round(L / 1.6));
     for (let i = 0; i <= n; i++) { const t = i / n; boks(e, 0.14, 1.0, 0.14, x0 + (x1 - x0) * t, y + 0.95, z0 + (z1 - z0) * t, HVIT); }
     const r = boks(e, L, 0.12, 0.12, (x0 + x1) / 2, y + 1.45, (z0 + z1) / 2, HVIT); r.rotation.y = -Math.atan2(z1 - z0, x1 - x0);
@@ -297,6 +327,7 @@
     const [x0, z0, x1, z1, ak] = { f: [-HX, HZ, HX, HZ, 'x'], b: [-HX, -HZ, HX, -HZ, 'x'], v: [-HX, -HZ, -HX, HZ, 'z'], h: [HX, -HZ, HX, HZ, 'z'] }[side];
     if (!ap || ap.side !== side) return rekkverk(e, x0, z0, x1, z1);
     if (ak === 'x') { rekkverk(e, x0, z0, ap.fra, z0); rekkverk(e, ap.til, z0, x1, z1); } else { rekkverk(e, x0, z0, x0, ap.fra); rekkverk(e, x0, ap.til, x1, z1); }
+    if (NYGARD()) { const c = (ap.fra + ap.til) / 2; if (ak === 'x') modul(e, 'portbue', c, DEKKE, z0, side === 'f' ? 0 : Math.PI); else modul(e, 'portbue', x0, DEKKE, c, side === 'h' ? Math.PI / 2 : -Math.PI / 2); return; }
     // Gul port rundt åpningen
     const [px0, pz0, px1, pz1] = ak === 'x' ? [ap.fra, z0, ap.til, z0] : [x0, ap.fra, x0, ap.til];
     const PH = 4.0;   // fri høyde over dekket; roboten er ca. 3,0
@@ -306,6 +337,38 @@
   function etasje(g, nr) {
     const y = nr * EH, e = new T.Group(); e.position.y = y; e.userData.etasje = nr; g.add(e);
     boks(e, BX, DEKKE, BZ, 0, DEKKE / 2, 0, plankeMat);
+    if (NYGARD()) {
+      // Rød bjelke med hvit list rundt dekket
+      for (const sd of SIDER()) modul(e, 'bjelke', sd.x + sd.ut[0] * 0.15, DEKKE - 0.2, sd.z + sd.ut[1] * 0.15, sd.ry, sd.L + 0.3);
+      if (nr > 0) {
+        const xs = [-1, -1 / 3, 1 / 3, 1].map(s => s * (HX - 0.35)), zs = [-1, 1].map(s => s * (HZ - 0.35)), bunn = -(EH - DEKKE), topp = -0.38;
+        const stolper = []; xs.forEach(x => zs.forEach(z => stolper.push([x, z])));
+        if (nr === 1) { stolper.push([-(HX - 0.35), 0], [HX - 0.35, 0]); }          // midtstolper på sidene i fjøset
+        stolper.forEach(([x, z]) => nyStolpe(e, x, bunn, topp, z, nr === 1));
+        // Knebånd øverst på hver stolpe mot naboene langs kanten
+        stolper.forEach(([x, z]) => {
+          const ret = [];
+          if (Math.abs(Math.abs(z) - (HZ - 0.35)) < 0.01) { if (x > -(HX - 0.4)) ret.push(Math.PI); if (x < HX - 0.4) ret.push(0); }
+          if (Math.abs(Math.abs(x) - (HX - 0.35)) < 0.01) { if (z > -(HZ - 0.4)) ret.push(Math.PI / 2); if (z < HZ - 0.4) ret.push(-Math.PI / 2); }
+          ret.forEach(ry => modul(e, 'knebaand', x + Math.cos(ry) * 0.25, topp - 1.0, z - Math.sin(ry) * 0.25, ry, 0.95, 0.95, 0.95));
+        });
+        // Fjøsbuer i første etasje: røde felt med hvit buekant mellom stolpene, åpne nedenfor (matdyrene og veien vises)
+        if (nr === 1) {
+          const bue = (ax, az, bx, bz, ut) => { const L = Math.hypot(bx - ax, bz - az) - 0.5; const dx = (bx - ax) / (L + 0.5), dz = (bz - az) / (L + 0.5); langs(e, 'bue', { x: ax + dx * 0.25 + ut[0] * 0.02, y: topp - 2.0, z: az + dz * 0.25 + ut[1] * 0.02 }, { x: bx - dx * 0.25 + ut[0] * 0.02, y: topp - 2.0, z: bz - dz * 0.25 + ut[1] * 0.02 }, 1, 0, { x: ut[0], z: ut[1] }, 1.25); };
+          for (let i = 0; i < 3; i++) { bue(xs[i], zs[1], xs[i + 1], zs[1], [0, 1]); bue(xs[i], zs[0], xs[i + 1], zs[0], [0, -1]); }
+          for (const sx of [-1, 1]) { const x = sx * (HX - 0.35); bue(x, zs[0], x, 0, [sx, 0]); bue(x, 0, x, zs[1], [sx, 0]); }
+          // Høyballer og tønner i hjørnene inne i fjøset, der det ikke står plasser
+          modul(e, 'hoyball_firk', -HX + 1.0, bunn, -HZ + 0.9, 0.2); modul(e, 'tonne', HX - 0.9, bunn, HZ - 0.9); modul(e, 'tonne', HX - 0.9, bunn, -HZ + 0.9);
+        }
+        // Lykter på hjørnestolpene, vendt utover
+        for (const [x, z] of [[xs[0], zs[1]], [xs[3], zs[1]], [xs[0], zs[0]], [xs[3], zs[0]]]) modul(e, 'lykt', x, topp - 1.15, z + Math.sign(z) * 0.27, z > 0 ? 0 : Math.PI);
+        // Blomsterkasser utenpå rekkverket foran og bak
+        for (const x of [-HX * 0.55, HX * 0.55]) { modul(e, 'blomsterkasse', x, DEKKE + 0.25, HZ + 0.32, 0); modul(e, 'blomsterkasse', -x, DEKKE + 0.25, -HZ - 0.32, Math.PI); }
+        const ap = VEI.apning[nr];
+        for (const side of ['f', 'b', 'v', 'h']) sideMedApning(e, side, ap);
+      }
+      return e;
+    }
     // Gul kant rundt dekket
     boks(e, BX + 0.3, 0.3, 0.3, 0, DEKKE - 0.1, HZ, GUL); boks(e, BX + 0.3, 0.3, 0.3, 0, DEKKE - 0.1, -HZ, GUL);
     boks(e, 0.3, 0.3, BZ, HX, DEKKE - 0.1, 0, GUL); boks(e, 0.3, 0.3, BZ, -HX, DEKKE - 0.1, 0, GUL);
@@ -346,6 +409,28 @@
     });
     const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
     const dekke = new T.Mesh(geo, rampeMat); dekke.castShadow = dekke.receiveShadow = true; rr.add(dekke);
+    if (NYGARD()) {
+      const V3 = (x, y, z) => ({ x, y, z });
+      const ut = k => ({ x: k.n.x, z: k.n.y });
+      // Røde sidebjelker hver ~1 m (følger svingen), med hvit list
+      for (let i = 0; i + 4 < kant.length; i += 4) {
+        const a = kant[i], b = kant[i + 4];
+        langs(rr, 'bjelke', V3(a.ix, a.q[4] - 0.2, a.iz), V3(b.ix, b.q[4] - 0.2, b.iz), 1, 0, ut(a));
+        langs(rr, 'bjelke', V3(a.ox, a.q[4] - 0.2, a.oz), V3(b.ox, b.q[4] - 0.2, b.oz), 1, 0, { x: -a.n.x, z: -a.n.y });
+      }
+      // Hvitt rekkverk hver ~2 m på yttersiden, og på innersiden unntatt reposen
+      for (let i = 0; i + 8 < kant.length; i += 8) {
+        const a = kant[i], b = kant[i + 8];
+        langs(rr, 'rekkverk', V3(a.ix, a.q[4], a.iz), V3(b.ix, b.q[4], b.iz), 2, 0, ut(a));
+        if (!erRepos(a.q[3]) && !erRepos(b.q[3])) langs(rr, 'rekkverk', V3(a.ox, a.q[4], a.oz), V3(b.ox, b.q[4], b.oz), 2, 0, { x: -a.n.x, z: -a.n.y });
+      }
+      const sist = kant[kant.length - 1]; modul(rr, 'rekk_stolpe', sist.ix, sist.q[4], sist.iz);
+      // Bærestolper med steinfot
+      let nesteB = 0;
+      kant.forEach(k => { const d = k.q[3], y = k.q[4]; if (d >= nesteB && y > 1.2) { nesteB = d + 3.2; for (const [x, z] of [[k.ox, k.oz], [k.ix, k.iz]]) nyStolpe(rr, x, 0, y - 0.38, z, true); } });
+      // Lyktestolper der rampa starter
+      if (nr === 1) { const k0 = kant[0]; for (const [x, z, s] of [[k0.ix, k0.iz, 1], [k0.ox, k0.oz, -1]]) { modul(rr, 'stolpe_fot', x, 0, z, 0, 0.6, 0.6, 0.6); modul(rr, 'stolpe_skaft', x, 0.3, z, 0, 0.55, 2.3, 0.55); modul(rr, 'lykt', x, 2.4, z, Math.atan2(k0.n.x * s, k0.n.y * s)); } }
+    } else {
     // Gule kanter og hvitt toppekkverk som rør langs kantene
     const ror = (punkter, r, farge) => { if (punkter.length < 2) return; const k = new T.CatmullRomCurve3(punkter); rr.add(mesh(new T.TubeGeometry(k, Math.max(8, punkter.length), r, 6, false), M(farge, 0.45))); };
     const indreUtenRepos = []; let gruppe = [];
@@ -361,6 +446,7 @@
       if (d >= neste) { neste = d + 1.6; boks(rr, 0.12, 1.3, 0.12, k.ix, y + 0.7, k.iz, HVIT); if (!erRepos(d)) boks(rr, 0.12, 1.3, 0.12, k.ox, y + 0.7, k.oz, HVIT); }
       if (d >= nesteB && y > 0.8) { nesteB = d + 3.2; for (const [x, z] of [[k.ox, k.oz], [k.ix, k.iz]]) stolpe(rr, 0.4, y - 0.3, 0.4, x, (y - 0.3) / 2, z); }
     });
+    }
     // Gule piler oppover rampa (ikke på reposene)
     let nesteP = d0 + 2;
     kant.forEach(k => { if (k.q[3] >= nesteP && !erRepos(k.q[3])) { nesteP = k.q[3] + 4.5; const p = new T.Mesh(pilGeo, M(GUL, 0.4, { emissive: LC(GUL), emissiveIntensity: 0.15 })); p.position.set(k.q[0], k.q[4] + 0.02, k.q[1]); p.rotation.y = Math.atan2(k.t.x, k.t.y); p.receiveShadow = true; rr.add(p); } });
@@ -407,6 +493,24 @@
  H.DET.v = 0.5;
     figurDeler = NOKLER.map(n => { const f = H.lag[n](); const s = H.spillSkala(f); f.g.scale.setScalar(s); const rot = new T.Group(); rot.add(f.g); return { deler: slaSammen(rot), sj: f.sj }; });
     H.DET.v = 1;
+  }
+  // Matdyrplassene: en høyseng med hvit kant (åpen) eller et dempet tredekke med hengelås (låst)
+  const plassMatC = {};
+  function plassTekstur(aapen) {
+    const k = aapen ? 'a' : 'l'; if (plassMatC[k]) return plassMatC[k];
+    const cv = document.createElement('canvas'); cv.width = cv.height = 256; const x = cv.getContext('2d');
+    if (aapen) {
+      x.fillStyle = '#e9c66e'; x.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 900; i++) { const px = Math.random() * 256, py = Math.random() * 256, a = Math.random() * 6.28, l = 6 + Math.random() * 14; x.strokeStyle = ['#f6db8d', '#d9ae52', '#c89a40', '#fbe7a6'][i % 4]; x.lineWidth = 1.6; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a) * l, py + Math.sin(a) * l); x.stroke(); }
+      x.strokeStyle = '#fbf6ec'; x.lineWidth = 14; x.strokeRect(7, 7, 242, 242); x.strokeStyle = 'rgba(120,80,30,.35)'; x.lineWidth = 3; x.strokeRect(15, 15, 226, 226);
+    } else {
+      for (let i = 0; i < 6; i++) { x.fillStyle = i % 2 ? '#8f7a62' : '#9a846b'; x.fillRect(0, i * 43, 256, 43); x.fillStyle = 'rgba(40,30,20,.35)'; x.fillRect(0, i * 43, 256, 2); }
+      x.fillStyle = 'rgba(60,70,50,.25)'; x.fillRect(0, 0, 256, 256);
+      x.strokeStyle = '#6d5c4a'; x.lineWidth = 12; x.strokeRect(6, 6, 244, 244);
+      x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(108, 122, 40, 32); x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 6; x.beginPath(); x.arc(128, 120, 13, Math.PI, 0); x.stroke();
+    }
+    const t = new T.CanvasTexture(cv); t.encoding = T.sRGBEncoding; t.anisotropy = 4;
+    return (plassMatC[k] = new T.MeshStandardMaterial({ map: t, roughness: 0.9 }));
   }
   // ---------- Ny grafikk: ressurser fra miljo.glb ----------
   const miljoCache = {};
@@ -466,7 +570,8 @@
     const GR = LCc('#7bc457'), GR_L = LCc('#88cc62'), GR_M = LCc('#6eb54e'), GRUS = LCc('#cdb993'), GRUS_M = LCc('#a8977a'), JORD = LCc('#b58a5c'), SKOG = LCc('#5f9442'), SKOG_B = LCc('#7d7148');
     const grus = (x, z) => { const kant = 0.06 * S(x * 0.9, z * 0.9);
       return Math.max(1 - glatt(0.9, 1.0, ell(x, z, 19, 16) + kant), 1 - glatt(0.85, 1.0, ell(x + 19, z - 0.5, 7, 10) + kant)); };
-    const jord = (x, z) => Math.max(sti(x, z), Math.abs(z + 6) < 1.6 && x < -9 && x > -17 ? 1 : 0, Math.abs(x - 13.5) < 1.5 && z > 9 && z < 14 ? 0.8 : 0);
+    const seg = (x, z, x0, z0, x1, z1, b) => { const dx = x1 - x0, dz = z1 - z0, t = Math.max(0, Math.min(1, ((x - x0) * dx + (z - z0) * dz) / (dx * dx + dz * dz))); return Math.hypot(x - x0 - dx * t, z - z0 - dz * t) < b ? 1 : 0; };
+    const jord = (x, z) => Math.max(sti(x, z), seg(x, z, -10, -6, -16, -6, 1.6), seg(x, z, -10, 2, -15, 6.5, 1.4), seg(x, z, 0, 9, 10.9, 12, 1.4) * 0.9, seg(x, z, 10, 8, 14, 9.2, 1.3) * 0.8);
     const skog = (x, z) => glatt(1.0, 1.35, ell(x, z, 40, 32)) * (iAker(x, z, 4) ? 0 : 1);
     const farge = (x, z, c) => {
       c.copy(GR).lerp(S(x * 0.35, z * 0.35) > 0 ? GR_L : GR_M, Math.min(1, Math.abs(S(x * 0.35, z * 0.35)) * 0.6));   // store, rolige gressflater
@@ -495,6 +600,14 @@
     // Pynt på tunet og enga
     vis('hoyball', [{ x: -14, z: 14, ry: 0.4 }, { x: -12.4, z: 15.2, ry: 1.1 }, { x: 14, z: -13, ry: 2 }, { x: 35, z: 30, ry: 0.3 }, { x: 34.5, z: 32, ry: 1.3 }]);
     vis('kasse', [{ x: 5.2, z: 18, ry: 0.2 }, { x: -35, z: 40, ry: 0.9 }]);
+    // Fjell og en innsjø i det fjerne gir dybde (få trekanter, myke farger som går i tåken)
+    const fjellMat = new T.MeshStandardMaterial({ color: LC('#7fa98a'), roughness: 1, flatShading: true }), snoMat = new T.MeshStandardMaterial({ color: LC('#eef4f6'), roughness: 1, flatShading: true });
+    [[-0.9, 300, 95, 110], [-0.45, 330, 120, 140], [0.0, 310, 80, 120], [0.5, 340, 130, 150], [1.0, 300, 90, 110], [2.6, 320, 110, 130], [3.3, 300, 85, 120], [4.2, 330, 120, 140], [5.0, 310, 95, 115]].forEach(([a, d, h, r]) => {
+      const x = Math.sin(a) * d, z = -Math.cos(a) * d, f = new T.Mesh(new T.ConeGeometry(r, h, 7, 2), fjellMat); f.position.set(x, h / 2 - 8, z); f.rotation.y = a * 3; verden.add(f);
+      if (h > 110) { const t = new T.Mesh(new T.ConeGeometry(r * 0.28, h * 0.28, 7), snoMat); t.position.set(x, h - 8 - h * 0.14, z); t.rotation.y = a * 3; verden.add(t); }
+    });
+    const sjo = new T.Mesh(new T.CircleGeometry(1, 40), new T.MeshStandardMaterial({ color: LC('#5fb3d9'), roughness: 0.2, metalness: 0.1 })); sjo.rotation.x = -Math.PI / 2; sjo.scale.set(55, 22, 1); sjo.position.set(70, 0.3, -140); verden.add(sjo);
+    scene.fog.far = 520;
     verden.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
   }
 
@@ -517,6 +630,17 @@
       skilt(eg, ['🌧️ Åkeren', 'Her regner matdyrene'], 5.4, 0, e.z0 - 1.6, Math.PI, '#ffe9a8');
     }
     if (!(NY && byggPaaTun('laave', g, -BX / 2 - 12.5, -6, Math.PI / 2, n >= 5 ? 1.25 : 1))) lave(g, n >= 5, -BX / 2 - 12.5, -6);
+    // Tunet: steinlagte stier mellom porten, fjøset, rampa, låven og byggene, og litt gårdsliv
+    if (NYGARD()) {
+      const d = n >= 2 ? 22 : 16, stier = [[[0, d - 0.8], [0, HZ + 1.2]], [[0, HZ + 3.2], [A, HZ + 4.8]], [[-HX - 1.2, -6], [-BX / 2 - 12.5 + (n >= 5 ? 5 : 4) * 1.0 + 0.6, -6]], [[-HX - 1.2, 2], [-BX / 2 - 8.5 + 2.2, 6.5]]];
+      if (n >= 4) stier.push([[HX + 1.2, 8], [BX / 2 + 5.2, 9.2]]);
+      if (n >= 5) stier.push([[HX + 1.2, -7], [BX / 2 + 7.4, -8.4]]);
+      let frø = 3; const rnd = () => (frø = (frø * 9301 + 49297) % 233280) / 233280;
+      for (const [[x0, z0], [x1, z1]] of stier) { const L = Math.hypot(x1 - x0, z1 - z0), k = Math.max(1, Math.round(L / 1.7)); for (let i = 0; i <= k; i++) modul(g, 'heller', x0 + (x1 - x0) * i / k + (rnd() - 0.5) * 0.25, 0.005, z0 + (z1 - z0) * i / k + (rnd() - 0.5) * 0.25, rnd() * 6.28, 1.25, 1, 1.25); }
+      modul(g, 'kjerre', -BX / 2 - 7.2, 0, -12.5, 0.6); modul(g, 'hoyball_firk', -BX / 2 - 6.5, 0, 1.2, 0.3); modul(g, 'hoyball_firk', -BX / 2 - 6.1, 0, 2.4, -0.2); modul(g, 'hoyball_firk', -BX / 2 - 6.3, 0.7, 1.8, 0.1);
+      modul(g, 'tonne', HX + 1.4, 0, -HZ - 1.2); modul(g, 'tonne', HX + 2.2, 0, -HZ - 0.9);
+      modul(g, 'vaerhane', -BX / 2 - 12.5, 7.15 * (n >= 5 ? 1.25 : 1), -6, 0.5);
+    }
     if (!(NY && byggPaaTun('silo', g, -BX / 2 - 8.5, 6.5, 0, n >= 4 ? 1.35 : 0.9))) silo(g, n >= 4 ? 11 : 7, -BX / 2 - 8.5, 6.5);
     skal(4, gg => { if (!(NY && byggPaaTun('honsehus', gg, BX / 2 + 7, 10, -0.6))) honsehus(gg, BX / 2 + 7, 10); });
     skal(5, gg => { if (!(NY && nyMolle(gg, BX / 2 + 9, -9))) gd.molle = molle(gg, BX / 2 + 9, -9); });
@@ -541,7 +665,7 @@
     ghost.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.28; o.material.depthWrite = false; o.castShadow = false; } });
     // Plasser og matdyr
     const tak = NIVA[n].tak, etasjer = n >= 9 ? 3 : n >= 6 ? 3 : n >= 3 ? 2 : 1, antPlasser = Math.min(etasjer * 12, n >= 9 ? 36 : etasjer * 12);
-    const plassMatAapen = M('#d3b07a', 0.8), plassMatLaast = M('#7d7d7d', 0.9);
+    const plassMatAapen = NY ? plassTekstur(true) : M('#d3b07a', 0.8), plassMatLaast = NY ? plassTekstur(false) : M('#7d7d7d', 0.9);
     const plasser = []; for (let i = 0; i < antPlasser; i++) plasser.push(plassPos(i)); if (n >= 9) for (let k = 0; k < 4; k++) plasser.push(takPlass(k));
     const aapne = gd.aapne != null ? Math.min(gd.aapne, plasser.length) : Math.min(tak, plasser.length);
     const plateInst = new T.InstancedMesh(plateGeo, plassMatAapen, aapne), laastInst = new T.InstancedMesh(plateGeo, plassMatLaast, Math.max(0, plasser.length - aapne));

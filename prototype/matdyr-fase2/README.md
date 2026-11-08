@@ -90,3 +90,21 @@ Bygg modellene på nytt: `python3 blender/matdyr_hybrider.py modeller` og `pytho
 - **Spagettipingvin:** Hele kroppen er viklet av spagetti, med svart blekksprutpasta på ryggen og lys spagetti på magen. Vingene er nudelbunter.
 - **Bakken:** Gresset har store, rolige flater. Tunet har grus, stiene er av jord, skogbunnen ligger under trærne, og det er tredekke (plankegang) fra porten. Gress og blomster vokser bare i kantene. Detaljteksturen har lav kontrast og en flis på 14 m.
 - **Tonemapping:** ⚙️ → «Sammenlign tonemapping» (eller `?tonemap=sammenlign`) viser ACES til venstre og uten tonemapping til høyre, på samme skjerm.
+
+### Gårdsbygningen med låvepreg (8.11.2026)
+- `blender/gard_moduler.py` lager `modeller/gard.glb` med disse modulene:
+  - stolpe med steinfot
+  - rød bjelke med hvit list
+  - knebånd
+  - fjøsbue
+  - hvitt rekkverk
+  - lykt
+  - blomsterkasse
+  - portbue med skilt
+  - steinheller
+  - kjerre, tønne, firkantet høyball og værhane
+- Modulene settes sammen langs den faste geometrien. Etasjer, plasser, ramper, åpninger og kollisjon er uendret, og spilltestene og rampetesten består.
+- **1. etasje** har fjøsbuer mellom stolpene. De er åpne nedenfor, så matdyrene vises og roboten kan gå inn. De øvre etasjene er åpne, med knebånd, lykter og blomsterkasser utenpå rekkverket.
+- **Plassene:** åpne plasser er høysenger med hvit kant. Låste plasser er dempet tredekke med hengelås.
+- **Tunet** har steinheller mellom porten, fjøset, rampa, låven, siloen, hønsehuset og mølla. Det er også grus, jord, en kjerre med gulrøtter, høyballer, tønner og en værhane på låven. Siloen har fått steinfot, og i det fjerne er det fjell og en innsjø.
+- **Kostnad på Høy** (gården på nivå 9, headless): 336 tegnekall og 1,06 mill. trekanter, inkludert skyggepasset. Før var det 190 tegnekall og 0,84 mill. trekanter. Kan reduseres med felles materialer og vertexfarger hvis målingene på mobil krever det.
