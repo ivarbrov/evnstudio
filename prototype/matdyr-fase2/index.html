@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob: data:; object-src 'none'; base-uri 'none'">
 <link rel="icon" href="data:,">
 <title>Matdyr-regn – nye matdyr og gården (prototype)</title>
 <style>
@@ -52,6 +52,8 @@
   button.hoved { background:linear-gradient(#5fd068,#2e9e3c); } button.hoved:disabled { opacity:.45; background:var(--mork); } button.fare { background:#c0392b; }
   .del { background:rgba(255,255,255,.08); border-radius:12px; padding:8px 10px; margin:8px 0; } .del ul { margin:4px 0 0; padding-left:20px; }
   .status { color:#ffd23f; font-weight:800; }
+  #grafikk { position:fixed; top:calc(64px + env(safe-area-inset-top)); right:10px; z-index:21; background:#1d2440; border:2px solid rgba(255,255,255,.35); border-radius:16px; padding:10px 14px; width:min(420px,calc(100vw - 20px)); }
+  #grafikk h2 { margin:0 0 6px; font-size:18px; } #grafikk[hidden] { display:none; }
   @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
 </style>
 </head>
@@ -61,6 +63,7 @@
   <button type="button" id="fMatdyr" aria-pressed="true">🐮 Matdyr</button>
   <button type="button" id="fGard" aria-pressed="false">🏡 Gården</button>
   <button type="button" id="fSpill" aria-pressed="false">🎮 Spill</button>
+  <button type="button" id="fGrafikk" aria-label="Grafikk og ytelse" title="Grafikk og ytelse">⚙️</button>
 </nav>
 <div class="kort" id="kort" aria-live="polite"></div>
 <div id="maal" aria-hidden="true"></div>
@@ -76,6 +79,7 @@
 <script src="helt-robot.js"></script>
 <script src="figurer.js"></script>
 <script src="matdyrdata.js"></script>
+<script src="miljo.js"></script>
 <script src="visning.js"></script>
 <script src="spillkjerne.js"></script>
 </body>

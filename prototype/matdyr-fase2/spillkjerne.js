@@ -47,9 +47,13 @@
     const s = new T.Sprite(new T.SpriteMaterial({ map: tekstur('e' + ci, 256, 128, x => { x.font = '92px ' + EMOJIFONT; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(c.a + c.f, 128, 68); }) }));
     s.scale.set(2.2, 1.1, 1); s.position.y = 2.2; g.add(s); return g;
   }
+  // Nye figurer fra Blender (GLB) brukes når de er lastet; de animeres etter kroppen sin
+  const nyDetalj = () => I.NY ? EVNMiljo.NIVAER[I.KV].figurDetalj : 'full';
   function modell(ci) {
+    const nn = I.nyNavnFor && I.nyNavnFor(ci);
+    if (nn) { const f = I.nyFigur(nn, nyDetalj()); f.kopi.scale.setScalar(I.nySkala(nn)); f.g.userData.fig = f; return f.g; }
     const fi = FIGUR[ci]; if (fi === undefined) return plassholder(ci);
-    const g = new T.Group(); for (const { geo, mat } of I.figurDelerFor()[fi].deler) { const m = new T.Mesh(geo, mat); m.castShadow = true; g.add(m); } return g;
+    const g = new T.Group(); for (const { geo, mat } of I.gamleFigurDeler()[fi].deler) { const m = new T.Mesh(geo, mat); m.castShadow = true; g.add(m); } return g;
   }
   function navneskilt(ci) {
     const c = COMBOS[ci], s = new T.Sprite(new T.SpriteMaterial({ depthWrite: false, map: tekstur('n' + ci, 512, 150, x => {
@@ -67,11 +71,12 @@
   let dyrG = null, plasserNa = [], aapneNa = 0;
   function fyllDyr() {
     if (!dyrG) return; dyrG.clear();
-    const deler = I.figurDelerFor(), m4 = new T.Matrix4(), V = T.Vector3, grupper = {}, enkle = [];
-    for (let i = 0; i < Math.min(aapneNa, S.base.length); i++) { const ci = S.base[i]; if (ci < 0) continue; const fi = FIGUR[ci]; if (fi === undefined) enkle.push(i); else (grupper[etasjeAv(i) + '|' + fi] = grupper[etasjeAv(i) + '|' + fi] || []).push(i); }
+    const deler = I.gamleFigurDeler(), m4 = new T.Matrix4(), V = T.Vector3, grupper = {}, enkle = [];
+    for (let i = 0; i < Math.min(aapneNa, S.base.length); i++) { const ci = S.base[i]; if (ci < 0) continue; const nn = I.nyNavnFor && I.nyNavnFor(ci), fi = nn ? 'n:' + nn : FIGUR[ci]; if (fi === undefined) enkle.push(i); else (grupper[etasjeAv(i) + '|' + fi] = grupper[etasjeAv(i) + '|' + fi] || []).push(i); }
     for (const [k, ids] of Object.entries(grupper)) {
-      const [e, fi] = k.split('|').map(Number), eg = new T.Group(); eg.userData.etasje = e; dyrG.add(eg);
-      for (const { geo, mat } of deler[fi].deler) {
+      const [es, fi] = k.split('|'), e = +es, eg = new T.Group(); eg.userData.etasje = e; dyrG.add(eg);
+      const dd = fi.startsWith('n:') ? I.nyFigurDeler(fi.slice(2), 'lav') : deler[+fi].deler;   // plassene viser alltid lav detalj (mange figurer samtidig)
+      for (const { geo, mat } of dd) {
         const inst = new T.InstancedMesh(geo, mat, ids.length);
         ids.forEach((pi, j) => { const p = plasserNa[pi]; m4.compose(new V(p.x, p.y + 0.2, p.z), new T.Quaternion().setFromAxisAngle(new V(0, 1, 0), ((pi * 37) % 7 - 3) * 0.18), new V(1, 1, 1)); inst.setMatrixAt(j, m4); });
         inst.castShadow = true; eg.add(inst);
@@ -93,9 +98,10 @@
   const feltG = new T.Group(); I.scene.add(feltG); feltG.visible = false;
   const felt = []; let nesteRegn = 1;
   // Matdyrene regner ned på enga foran gården, aldri inne på tunet
-  const eng = () => { const d = visNiva() >= 2 ? 22 : 16; return { cx: 0, cz: d + 16, rx: 26, rz: 12 }; };
-  function iFeltet(x, z) { const e = eng(); return ((x - e.cx) / (e.rx - 1.5)) ** 2 + ((z - e.cz) / (e.rz - 1.5)) ** 2 < 1; }
-  function tilfeldigPunkt() { const e = eng(); for (let k = 0; k < 80; k++) { const x = e.cx + (Math.random() * 2 - 1) * e.rx, z = e.cz + (Math.random() * 2 - 1) * e.rz; if (iFeltet(x, z)) return [x, z]; } return [e.cx, e.cz]; }
+  // Åkeren ligger rett foran gården, fast plass og størrelse (60 × 32 m)
+  const eng = () => ({ x0: -31, x1: 31, z0: 24, z1: 56 });
+  function iFeltet(x, z) { const e = eng(); return x > e.x0 + 1.2 && x < e.x1 - 1.2 && z > e.z0 + 1.2 && z < e.z1 - 1.2; }
+  function tilfeldigPunkt() { const e = eng(); return [e.x0 + 1.5 + Math.random() * (e.x1 - e.x0 - 3), e.z0 + 1.5 + Math.random() * (e.z1 - e.z0 - 3)]; }
   // Sjeldenheten trekkes med de vanlige vektene. Med bestillingsregn trekkes matdyret deretter blant artene neste gårdsnivå krever.
   function trekk() {
     const tot = R.reduce((s, r) => s + r.w, 0); let x = Math.random() * tot, r = 0;
@@ -119,7 +125,8 @@
       if ((a.snu -= dt) <= 0) { a.retning += (Math.random() - 0.5) * 2.4; a.snu = 2 + Math.random() * 3; }
       const nx = p.x + Math.sin(a.retning) * a.fart * dt, nz = p.z + Math.cos(a.retning) * a.fart * dt;
       if (iFeltet(nx, nz)) { p.x = nx; p.z = nz; } else a.retning += Math.PI * (0.7 + Math.random() * 0.6);
-      a.m.rotation.y = a.retning; a.m.position.y = I.REDUSERT ? 0 : Math.abs(Math.sin(t * 7 + a.alder)) * 0.12;
+      a.m.rotation.y = a.retning;
+      if (a.m.userData.fig) { if (!I.REDUSERT) I.animerNy(a.m.userData.fig, t + a.alder, true); } else a.m.position.y = I.REDUSERT ? 0 : Math.abs(Math.sin(t * 7 + a.alder)) * 0.12;
     }
   }
 
@@ -321,7 +328,7 @@
   // =================== Kobling til visningen ===================
   function startSpill() {
     byggSpillGard(false);
-    const r = I.robot(); r.position.set(I.A, 0, I.HZ + 7); r.rotation.y = Math.PI; I.sp.vy = 0; I.sp.paaBakken = true; I.sp.etasje = -1;
+    const r = I.robot(); if (visNiva() >= 3) r.position.set(I.A, 0, I.HZ + 7); else r.position.set(6, 0, I.HZ + 4.5);   // på nivå 1–2 står gjerdet nærmere r.rotation.y = Math.PI; I.sp.vy = 0; I.sp.paaBakken = true; I.sp.etasje = -1;
     Object.assign(I.bane, { teta: 0, fi: 1.12, r: innerWidth < 640 ? 18 : 15, rMin: 6, rMax: 40, auto: false });
     visKort();
   }
@@ -334,7 +341,7 @@
     oppdaterFelt(dt, t);
     S.penger += inntekt() * dt;
     const r = I.robot();
-    if (bar && r) { bar.m.position.set(r.position.x, r.position.y + 3.3, r.position.z); bar.m.rotation.y = r.rotation.y; const i = naerPlass(r.position, true, 1.4); if (i >= 0) settInn(i); }
+    if (bar && r) { bar.m.position.set(r.position.x, r.position.y + 3.3, r.position.z); bar.m.rotation.y = r.rotation.y; if (bar.m.userData.fig && !I.REDUSERT) I.animerNy(bar.m.userData.fig, t, false); const i = naerPlass(r.position, true, 1.4); if (i >= 0) settInn(i); }
     handling = r ? finnHandling() : null; visHandling();
     if ((kortTid -= dt) <= 0) { kortTid = 0.25; oppdaterKort(); oppdaterPanel(); }
     if ((lagreTid -= dt) <= 0) { lagreTid = 5; lagre(); }

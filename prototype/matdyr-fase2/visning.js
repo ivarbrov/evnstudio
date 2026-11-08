@@ -9,23 +9,39 @@
 
   // ---------- Renderer, scene og lys ----------
   const holder = $('scene');
-  const renderer = new T.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(TOUCH ? 1.5 : 2, devicePixelRatio || 1));
-  renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+  // Ny grafikk (fase 2): EVN 3D-miljø med kvalitetsnivå. ?grafikk=gammel viser den forrige versjonen til sammenligning.
+  const NY = new URLSearchParams(location.search).get('grafikk') !== 'gammel' && !!window.EVNMiljo && !!T.GLTFLoader;
+  const KV = NY ? EVNMiljo.velgKvalitet() : null;
+  const renderer = new T.WebGLRenderer({ antialias: NY ? EVNMiljo.NIVAER[KV].antialias : true });
   holder.appendChild(renderer.domElement);
-  const scene = new T.Scene(); scene.background = LC('#bfe3f7'); scene.fog = new T.Fog(LC('#cfe9f7'), 80, 220);
+  const scene = new T.Scene();
   const camera = new T.PerspectiveCamera(42, 1, 0.05, 500);
-  scene.add(new T.HemisphereLight(LC('#e8f6ff'), LC('#7fae5a'), 0.75));
-  const sol = new T.DirectionalLight(LC('#fff2d8'), 1.25); sol.position.set(12, 22, 10); sol.castShadow = true;
-  sol.shadow.mapSize.set(TOUCH ? 1024 : 2048, TOUCH ? 1024 : 2048); sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.03;
-  Object.assign(sol.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 80 });
-  scene.add(sol, sol.target);
-  const fyll = new T.DirectionalLight(LC('#c9e2ff'), 0.35); fyll.position.set(-10, 8, -12); scene.add(fyll);
-
-  // Bakke med gress
-  const bakke = new T.Mesh(new T.CircleGeometry(160, 64), new T.MeshStandardMaterial({ color: LC('#7cc95a'), roughness: 0.95 }));
+  let sol, bakke;
+  if (NY) {
+    sol = EVNMiljo.lys(scene, renderer, KV).sol;
+  } else {
+    renderer.setPixelRatio(Math.min(TOUCH ? 1.5 : 2, devicePixelRatio || 1));
+    renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+    scene.background = LC('#bfe3f7'); scene.fog = new T.Fog(LC('#cfe9f7'), 80, 220);
+    scene.add(new T.HemisphereLight(LC('#e8f6ff'), LC('#7fae5a'), 0.75));
+    sol = new T.DirectionalLight(LC('#fff2d8'), 1.25); sol.position.set(12, 22, 10); sol.castShadow = true;
+    sol.shadow.mapSize.set(TOUCH ? 1024 : 2048, TOUCH ? 1024 : 2048); sol.shadow.bias = -0.0005; sol.shadow.normalBias = 0.03;
+    Object.assign(sol.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 80 });
+    scene.add(sol, sol.target);
+    const fyll = new T.DirectionalLight(LC('#c9e2ff'), 0.35); fyll.position.set(-10, 8, -12); scene.add(fyll);
+  }
+  // Bakke: enkel sirkel (gammel), eller terreng med fargevariasjon og åser utenfor spilleområdet (ny)
+  bakke = new T.Mesh(new T.CircleGeometry(160, 64), new T.MeshStandardMaterial({ color: LC('#7cc95a'), roughness: 0.95 }));
   bakke.rotation.x = -Math.PI / 2; bakke.receiveShadow = true; scene.add(bakke);
+  // Ressurser fra Blender (lastes parallelt med roboten; spillet virker uten dem)
+  const NYE_FIGURER = ['donutku', 'burgersau', 'pizzaskilpadde', 'shakeand', 'spagettipingvin'];
+  const NY_ID = { donutku: 127, burgersau: 508, pizzaskilpadde: 700, shakeand: 599, spagettipingvin: 179 };
+  const res = { miljo: null, fig: {} };
+  const ressurserKlar = !NY ? Promise.resolve() : Promise.all([
+    EVNMiljo.lastGLB('modeller/miljo.glb').then(g => { res.miljo = g; }),
+    ...NYE_FIGURER.map(n => Promise.all([EVNMiljo.lastGLB('modeller/' + n + '.glb'), EVNMiljo.lastGLB('modeller/' + n + '_lav.glb')]).then(([full, lav]) => { if (full) res.fig[n] = { full, lav: lav || full }; }))
+  ]);
 
   // ---------- Sammenslåing: én mesh per materiale (færre tegnekall på mobil) ----------
   function slaSammen(rot) {
@@ -99,6 +115,39 @@
     return g;
   }
 
+  // ---------- Nye figurer fra Blender (GLB): adapter med animerbare noder ----------
+  const DATA = window.EVNMatdyrData;
+  const NY_INFO = {
+    donutku: 'Kroppen ER en donut: deigring med lys midtstripe og glasur med kumønster som renner over kanten. Hodet, hornene, beina og halen er kuas.',
+    burgersau: 'Kroppen ER en burger: brød, kjøtt, ost som henger ned, tomat, salat og et høyt sesambrød. Sauen titter fram mellom lagene, med majones som ull.',
+    pizzaskilpadde: 'Skjoldet ER en hel pizza: skorpa er skjoldkanten, osten renner over, og pepperonien sitter som skjoldplater.',
+    shakeand: 'Kroppen ER et milkshakeglass med rosa shake. Kremen er andas rygg, sugerøret er halen, og hodet, nebbet og vingene er andas.',
+    spagettipingvin: 'Magen ER et nøste av spagetti, og vingene er bunter av spagetti. Tomatsaus renner fra hodet, med kjøttbolle og basilikum på toppen.'
+  };
+  const nyNavnFor = ci => NY ? Object.keys(NY_ID).find(n => NY_ID[n] === ci && res.fig[n]) || null : null;
+  function nyFigur(n, detalj = 'full') {
+    const kopi = res.fig[n][detalj === 'lav' ? 'lav' : 'full'].scene.clone(true), g = new T.Group(); g.add(kopi);
+    kopi.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.material.transparent) o.material.depthWrite = false; } });
+    const nd = {}; ['hode', 'hale', 'bein_vf', 'bein_hf', 'bein_vb', 'bein_hb', 'vinge_v', 'vinge_h'].forEach(k => { const o = kopi.getObjectByName(k); if (o) nd[k] = { o, r: o.rotation.clone() }; });
+    const c = DATA.COMBOS[NY_ID[n]];
+    return { g, kopi, nd, ny: true, nokkel: n, navn: c.navn, ci: NY_ID[n], sj: c.r, mat: c.mat, dyr: c.art, hode: nd.hode && nd.hode.o, legs: [] };
+  }
+  // Bevegelse som passer kroppen: firbeinte går i kryss, tobeinte vagger, vinger og hale lever sitt eget liv
+  function animerNy(f, t, gaar) {
+    const nd = f.nd, fire = !!nd.bein_vb, k = f.kopi;
+    const sett = (n, x, y, z) => { const d = nd[n]; if (d) d.o.rotation.set(d.r.x + x, d.r.y + y, d.r.z + z); };
+    if (fire) { const a = gaar ? Math.sin(t * 9) * 0.45 : 0; sett('bein_vf', a, 0, 0); sett('bein_hb', a, 0, 0); sett('bein_hf', -a, 0, 0); sett('bein_vb', -a, 0, 0); k.position.y = gaar ? Math.abs(Math.sin(t * 9)) * 0.04 : Math.sin(t * 2.2) * 0.01; k.rotation.z = 0; }
+    else { const a = gaar ? Math.sin(t * 7) : 0; sett('bein_vf', a * 0.5, 0, 0); sett('bein_hf', -a * 0.5, 0, 0); k.rotation.z = gaar ? a * 0.09 : Math.sin(t * 1.6) * 0.025; k.position.y = gaar ? Math.abs(a) * 0.03 : 0; }
+    sett('hode', Math.sin(t * 1.3) * 0.07, Math.sin(t * 0.7) * 0.12, Math.sin(t * 0.9) * 0.05);
+    sett('hale', 0, Math.sin(t * (gaar ? 8 : 3)) * 0.35, 0);
+    const v = gaar ? Math.max(0, Math.sin(t * 8)) * 0.5 : (Math.sin(t * 1.8) * 0.5 + 0.5) * 0.12;
+    sett('vinge_v', 0, 0, -v); sett('vinge_h', 0, 0, v);
+  }
+  const nySkalaC = {};
+  const nySkala = n => nySkalaC[n] || (nySkalaC[n] = (() => { const f = nyFigur(n, 'full'), b = new T.Box3().setFromObject(f.kopi), st = b.getSize(new T.Vector3()); return 2.6 * (1 + 0.1 * f.sj) / Math.max(st.x, st.y, st.z * 0.85); })());
+  const nyDelCache = {};
+  function nyFigurDeler(n, detalj) { const k = n + detalj; if (!nyDelCache[k]) nyDelCache[k] = EVNMiljo.deler(res.fig[n][detalj === 'lav' ? 'lav' : 'full'].scene, nySkala(n)); return nyDelCache[k]; }
+
   // =====================================================================
   // ======================  FANE 1: MATDYR  ==============================
   // =====================================================================
@@ -115,13 +164,15 @@
   let robotIMd = null, plateIMd = null;
 
   function byggFigur(nokkel) {
+    if (res.fig[nokkel]) return nyFigur(nokkel, 'full');
     const f = H.lag[nokkel](); f.nokkel = nokkel; return f;
   }
+  const visNokler = () => NY && NYE_FIGURER.every(n => res.fig[n]) ? NYE_FIGURER : NOKLER;
   function visMatdyr() {
     md.gruppe.clear(); md.alle = [];
     const spill = md.visning === 'spill', alle = md.visning === 'alle';
     if (alle) {
-      NOKLER.forEach((n, i) => { const f = byggFigur(n), s = H.spillSkala(f); f.g.scale.setScalar(s); const holderG = new T.Group(); holderG.add(f.g); holderG.position.set((i - 2) * 4.2, 0, 0); md.gruppe.add(holderG); md.alle.push(f); });
+      visNokler().forEach((n, i) => { const f = byggFigur(n), s = H.spillSkala(f); f.g.scale.setScalar(s); const holderG = new T.Group(); holderG.add(f.g); holderG.position.set((i - 2) * 4.2, 0, 0); md.gruppe.add(holderG); md.alle.push(f); });
       const r = lagRobot(); r.g.position.set(-12.5, 0, 0); r.g.rotation.y = 0.5; md.gruppe.add(r.g);
     } else {
       const f = byggFigur(md.valgt); md.fig = f; md.alle.push(f);
@@ -159,7 +210,7 @@
   function visKortMatdyr() {
     if (md.visning === 'alle') { $('kort').innerHTML = '<h1>Alle fem</h1>I spillstørrelse ved siden av EVN-roboten. Størrelsen følger sjeldenheten, som i spillet.<div class="liten">Dra for å snu. Hjul eller to fingre for å zoome.</div>'; return; }
     const f = md.fig, [rn, rc] = RAR[f.sj];
-    $('kort').innerHTML = '<h1>' + f.navn + '</h1><div><span class="sj" style="color:' + rc + '">' + rn + '</span> · ' + f.mat + ' + ' + f.dyr + (f.ci != null ? ' · ID ' + f.ci : '') + '</div><div>' + INFO[f.nokkel] + '</div><div class="liten">Dra for å snu. Hjul eller to fingre for å zoome.</div>';
+    $('kort').innerHTML = '<h1>' + f.navn + '</h1><div><span class="sj" style="color:' + rc + '">' + rn + '</span> · ' + f.mat + ' + ' + f.dyr + (f.ci != null ? ' · ID ' + f.ci : '') + '</div><div>' + (NY_INFO[f.nokkel] || INFO[f.nokkel]) + '</div><div class="liten">Dra for å snu. Hjul eller to fingre for å zoome.</div>';
   }
 
   // =====================================================================
@@ -182,12 +233,28 @@
   const DX = 4.2, DZ = 4.4, EH = 5.6;                       // avstand mellom plasser, etasjehøyde
   const BX = 4 * DX + 1.2, BZ = 3 * DZ + 1.2;               // gulvflate per etasje (4 × 3 plasser)
   function planker() {
+    if (NY) {
+      const cv = document.createElement('canvas'); cv.width = 512; cv.height = 512; const x = cv.getContext('2d'), F = ['#c08a52', '#b7804a', '#c8945c', '#ad7743'];
+      for (let i = 0; i < 8; i++) {
+        x.fillStyle = F[i % 4]; x.fillRect(0, i * 64, 512, 64);
+        for (let k = 0; k < 14; k++) { x.strokeStyle = 'rgba(90,52,22,' + (0.08 + (k % 3) * 0.04) + ')'; x.lineWidth = 1 + (k % 2); x.beginPath(); const y0 = i * 64 + 6 + k * 4.2; x.moveTo(0, y0); for (let u = 0; u <= 512; u += 32) x.lineTo(u, y0 + Math.sin(u * 0.02 + k + i) * 2.2); x.stroke(); }
+        x.fillStyle = 'rgba(60,32,12,.55)'; x.fillRect(0, i * 64, 512, 3); const sk = (i * 173) % 512; x.fillRect(sk, i * 64, 3, 64);
+        x.fillStyle = 'rgba(255,240,210,.18)'; x.fillRect(0, i * 64 + 3, 512, 3);
+        x.fillStyle = 'rgba(70,60,55,.7)'; for (const u of [sk - 14, sk + 16]) { x.beginPath(); x.arc((u + 512) % 512, i * 64 + 32, 2.5, 0, 7); x.fill(); }
+      }
+      const t = new T.CanvasTexture(cv); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(4, 3); t.encoding = T.sRGBEncoding; t.anisotropy = 4; return t;
+    }
     const cv = document.createElement('canvas'); cv.width = 256; cv.height = 256; const x = cv.getContext('2d');
     for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? '#b07a45' : '#a46d3b'; x.fillRect(0, i * 32, 256, 32); x.fillStyle = 'rgba(70,40,15,.35)'; x.fillRect(0, i * 32, 256, 2); x.fillRect((i * 97) % 256, i * 32, 2, 32); }
     const t = new T.CanvasTexture(cv); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(4, 3); t.encoding = T.sRGBEncoding; return t;
   }
   const plankeMat = new T.MeshStandardMaterial({ map: planker(), roughness: 0.85 });
   const ROD = '#b8382f', HVIT = '#f6f1e6';
+  // Stolpe med avrundede kanter (deles av alle stolper; skaleres til riktig mål)
+  const rundStolpeGeo = (() => { const sh = new T.Shape(), r = 0.18, a = 0.5; sh.moveTo(-a + r, -a); sh.lineTo(a - r, -a); sh.quadraticCurveTo(a, -a, a, -a + r); sh.lineTo(a, a - r); sh.quadraticCurveTo(a, a, a - r, a); sh.lineTo(-a + r, a); sh.quadraticCurveTo(-a, a, -a, a - r); sh.lineTo(-a, -a + r); sh.quadraticCurveTo(-a, -a, -a + r, -a);
+    const g = new T.ExtrudeGeometry(sh, { depth: 1, bevelEnabled: false, curveSegments: 3 }); g.rotateX(-Math.PI / 2); g.translate(0, -0.5, 0); g.computeVertexNormals(); return g; })();
+  const stolpeMat = M('#c23b30', 0.6);
+  function stolpe(g, w, h, d, x, y, z) { if (!NY) return boks(g, w, h, d, x, y, z, ROD); const m = mesh(rundStolpeGeo, stolpeMat, x, y, z, w, h, d); g.add(m); return m; }
   function boks(g, w, h, d, x, y, z, mat) { const m = mesh(plateGeo, typeof mat === 'string' ? M(mat, 0.75) : mat, x, y, z, w, h, d); g.add(m); return m; }
 
   // ---- Én sammenhengende spiralrampe rundt bygningen ----
@@ -241,7 +308,7 @@
     boks(e, BX + 0.3, 0.3, 0.3, 0, DEKKE - 0.1, HZ, GUL); boks(e, BX + 0.3, 0.3, 0.3, 0, DEKKE - 0.1, -HZ, GUL);
     boks(e, 0.3, 0.3, BZ, HX, DEKKE - 0.1, 0, GUL); boks(e, 0.3, 0.3, BZ, -HX, DEKKE - 0.1, 0, GUL);
     if (nr > 0) {
-      for (const sx of [-1, -1 / 3, 1 / 3, 1]) for (const sz of [-1, 1]) boks(e, 0.6, EH - DEKKE, 0.6, sx * (HX - 0.35), -(EH - DEKKE) / 2, sz * (HZ - 0.35), ROD);
+      for (const sx of [-1, -1 / 3, 1 / 3, 1]) for (const sz of [-1, 1]) stolpe(e, 0.6, EH - DEKKE, 0.6, sx * (HX - 0.35), -(EH - DEKKE) / 2, sz * (HZ - 0.35));
       const ap = VEI.apning[nr];
       for (const side of ['f', 'b', 'v', 'h']) sideMedApning(e, side, ap);
     }
@@ -290,7 +357,7 @@
     kant.forEach(k => {
       const d = k.q[3], y = k.q[4];
       if (d >= neste) { neste = d + 1.6; boks(rr, 0.12, 1.3, 0.12, k.ix, y + 0.7, k.iz, HVIT); if (!erRepos(d)) boks(rr, 0.12, 1.3, 0.12, k.ox, y + 0.7, k.oz, HVIT); }
-      if (d >= nesteB && y > 0.8) { nesteB = d + 3.2; for (const [x, z] of [[k.ox, k.oz], [k.ix, k.iz]]) boks(rr, 0.4, y - 0.3, 0.4, x, (y - 0.3) / 2, z, ROD); }
+      if (d >= nesteB && y > 0.8) { nesteB = d + 3.2; for (const [x, z] of [[k.ox, k.oz], [k.ix, k.iz]]) stolpe(rr, 0.4, y - 0.3, 0.4, x, (y - 0.3) / 2, z); }
     });
     // Gule piler oppover rampa (ikke på reposene)
     let nesteP = d0 + 2;
@@ -331,30 +398,111 @@
 
   // Matdyr på plassene: instansert per figur og materiale, så 40 dyr koster få tegnekall
   let figurDeler = null;
+  let gamleDeler = null;
+  function gamleFigurDeler() { if (!gamleDeler) { H.DET.v = 0.5; gamleDeler = NOKLER.map(n => { const f = H.lag[n](); const s = H.spillSkala(f); f.g.scale.setScalar(s); const rot = new T.Group(); rot.add(f.g); return { deler: slaSammen(rot), sj: f.sj }; }); H.DET.v = 1; } return gamleDeler; }
   function lagFigurDeler() {
+    if (visNokler() === NYE_FIGURER) { figurDeler = NYE_FIGURER.map(n => ({ deler: nyFigurDeler(n, 'lav'), sj: DATA.COMBOS[NY_ID[n]].r })); return; }
  H.DET.v = 0.5;
     figurDeler = NOKLER.map(n => { const f = H.lag[n](); const s = H.spillSkala(f); f.g.scale.setScalar(s); const rot = new T.Group(); rot.add(f.g); return { deler: slaSammen(rot), sj: f.sj }; });
     H.DET.v = 1;
   }
+  // ---------- Ny grafikk: ressurser fra miljo.glb ----------
+  const miljoCache = {};
+  function mdel(navn) {
+    if (miljoCache[navn] !== undefined) return miljoCache[navn];
+    const n = res.miljo && res.miljo.scene.getObjectByName(navn);
+    return (miljoCache[navn] = n ? EVNMiljo.deler(n) : null);
+  }
+  // Bygg på tunet: nye modeller når de finnes, ellers de gamle
+  function byggPaaTun(navn, g, x, z, ry = 0, s = 1) { const d = mdel(navn); if (!d) return false; g.add(EVNMiljo.kopi(d, x, 0, z, ry, s)); return true; }
+  function nyMolle(g, x, z) {
+    const kropp = mdel('molle_kropp'), vn = res.miljo && res.miljo.scene.getObjectByName('vinge'); if (!kropp || !vn) return false;
+    const m = new T.Group(); m.position.set(x, 0, z); m.rotation.y = -0.5; m.userData.ikkeFlett = true; g.add(m);
+    m.add(EVNMiljo.kopi(kropp, 0, 0, 0));
+    const v = EVNMiljo.kopi(miljoCache.vinge || (miljoCache.vinge = EVNMiljo.deler(vn)), vn.position.x, vn.position.y, vn.position.z); m.add(v); m.userData.vinge = v;
+    gd.molle = m; return true;
+  }
+  // Åker: brun jord med furer og små grønne spirer i rader
+  function aakerTekstur(w, d) {
+    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 256; const x = cv.getContext('2d');
+    x.fillStyle = '#a97a4c'; x.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 8; i++) { const y = i * 32; const gr = x.createLinearGradient(0, y, 0, y + 32); gr.addColorStop(0, '#8e6238'); gr.addColorStop(0.45, '#b5865a'); gr.addColorStop(1, '#8a5e36'); x.fillStyle = gr; x.fillRect(0, y, 256, 32);
+      for (let k = 0; k < 10; k++) { const px = k * 25.6 + (i % 2) * 12; x.fillStyle = '#6fbf4a'; x.beginPath(); x.ellipse(px + 4, y + 15, 4, 2.4, -0.5, 0, 7); x.ellipse(px + 9, y + 15, 4, 2.4, 0.5, 0, 7); x.fill(); } }
+    for (let i = 0; i < 500; i++) { x.fillStyle = Math.random() < 0.5 ? 'rgba(70,40,15,.25)' : 'rgba(230,200,150,.2)'; x.fillRect(Math.random() * 256, Math.random() * 256, 2, 2); }
+    const t = new T.CanvasTexture(cv); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(w / 8, d / 8); t.encoding = T.sRGBEncoding; t.anisotropy = 4; return t;
+  }
+  // Rektangulært gjerde med port midt på siden nærmest gården
+  function rektGjerde(g, x0, x1, z0, z1) {
+    const st = NY && mdel('gjerde_stolpe'), le = NY && mdel('gjerde_ledd'), stolper = [], ledd = [];
+    const side = (ax, az, bx, bz) => { const L = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(L / 2.4)); for (let i = 0; i < n; i++) { const p = { x: ax + (bx - ax) * i / n, z: az + (bz - az) * i / n }, q = { x: ax + (bx - ax) * (i + 1) / n, z: az + (bz - az) * (i + 1) / n }; stolper.push(p); ledd.push({ x: p.x, z: p.z, ry: -Math.atan2(q.z - p.z, q.x - p.x), sx: Math.hypot(q.x - p.x, q.z - p.z) / 2.4 }); } };
+    side(x0, z0, -3.6, z0); side(3.6, z0, x1, z0); side(x1, z0, x1, z1); side(x1, z1, x0, z1); side(x0, z1, x0, z0); stolper.push({ x: -3.6, z: z0 });
+    if (st && le) { const gs = EVNMiljo.instanser(st, stolper), gl = EVNMiljo.instanser(le, ledd); gs.userData.ikkeFlett = gl.userData.ikkeFlett = true; g.add(gs, gl); }
+    else { stolper.forEach(p => boks(g, 0.2, 1.1, 0.2, p.x, 0.55, p.z, HVIT)); ledd.forEach(l => { const b = boks(g, l.sx * 2.4, 0.12, 0.08, l.x + Math.cos(-l.ry) * l.sx * 1.2, 0.95, l.z + Math.sin(-l.ry) * l.sx * 1.2, HVIT); b.rotation.y = l.ry; }); }
+    for (const sx of [-1, 1]) boks(g, 0.35, 2.0, 0.35, sx * 3.6, 1.0, z0, GUL);
+  }
+  // Tregjerde langs en ellipse: stolper og ledd instansert. Port (+1 forsiden, -1 baksiden) gir en åpning på 7 m.
+  function nyttGjerde(g, w, d, cx = 0, cz = 0, port = 0) {
+    const st = mdel('gjerde_stolpe'), le = mdel('gjerde_ledd'); if (!st || !le) return false;
+    const n = Math.round(2 * Math.PI * Math.sqrt((w * w + d * d) / 2) / 2.4), pkt = [];
+    for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; pkt.push({ x: cx + Math.cos(a) * w, z: cz + Math.sin(a) * d, a }); }
+    const i_port = p => port && Math.abs(p.x - cx) < 3.5 && Math.sign(p.z - cz) === port;
+    const stolper = pkt.filter(p => !i_port(p)), ledd = [];
+    pkt.forEach((p, i) => { const q = pkt[(i + 1) % n]; if (i_port(p) || i_port(q)) return; const dx = q.x - p.x, dz = q.z - p.z; ledd.push({ x: p.x, z: p.z, ry: -Math.atan2(dz, dx), sx: Math.hypot(dx, dz) / 2.4 }); });
+    const gs = EVNMiljo.instanser(st, stolper.map(p => ({ x: p.x, z: p.z, ry: p.a }))), gl = EVNMiljo.instanser(le, ledd); gs.userData.ikkeFlett = gl.userData.ikkeFlett = true; g.add(gs, gl);
+    if (port) for (const sx of [-1, 1]) boks(g, 0.35, 2.0, 0.35, cx + sx * 3.6, 1.0, cz + port * d * Math.cos(Math.asin(Math.min(1, 3.6 / w))), GUL);
+    return true;
+  }
+  // Verden rundt gården bygges én gang: terreng, sti, trær, busker, steiner, blomster og gress
+  const verden = new T.Group(); scene.add(verden);
+  function byggVerden() {
+    const q = EVNMiljo.NIVAER[KV], ell = (x, z, rx, rz, cz = 0) => (x / rx) ** 2 + ((z - cz) / rz) ** 2;
+    const AK = { x0: -31.5, x1: 31.5, z0: 23.5, z1: 56.5 }, iAker = (x, z, m = 0) => x > AK.x0 - m && x < AK.x1 + m && z > AK.z0 - m && z < AK.z1 + m;
+    const sti = (x, z) => (Math.abs(x) < 3.2 && z > 15 && z < 24 ? 1 : 0);
+    const t = EVNMiljo.terreng({ storrelse: 360, ruter: 140, flat: (x, z) => ell(x, z, 95, 80, 8) < 1, hoyde: (x, z) => { const d = Math.sqrt(ell(x, z, 95, 80, 8)); return (d - 1) * 38 * (0.7 + 0.3 * EVNMiljo.stoy(x, z)); }, sti });
+    scene.remove(bakke); bakke = t; scene.add(t);
+    const fri = (x, z) => ell(x, z, 33, 25) > 1 && !iAker(x, z, 2.5) && !(Math.abs(x) < 5 && z > 10 && z < 25);
+    const D = n => mdel(n), vis = (n, pl, o) => { const d = D(n); if (d && pl.length) verden.add(EVNMiljo.instanser(d, pl, o)); };
+    // Trær i en ring rundt gården og enga, tettere lenger ute
+    const traer = EVNMiljo.spred(Math.round(90 * q.traer), { fra: [-110, -95], til: [110, 110], avstand: 5.5, frø: 3, skala: [0.85, 1.35], lov: (x, z) => fri(x, z) && ell(x, z, 40, 32) > 1 && !iAker(x, z, 6) && ell(x, z, 110, 95, 8) < 1 });
+    vis('tre_eik', traer.filter((_, i) => i % 3 === 0)); vis('tre_gran', traer.filter((_, i) => i % 3 === 1)); vis('tre_eple', traer.filter((_, i) => i % 3 === 2));
+    vis('tre_gran', EVNMiljo.spred(Math.round(70 * q.traer), { fra: [-170, -170], til: [170, 170], avstand: 7, frø: 9, skala: [1.2, 2.0], lov: (x, z) => { const d = ell(x, z, 110, 95, 8); return d > 1 && d < 2.4; } }).map(p => ({ ...p, y: (Math.sqrt(ell(p.x, p.z, 95, 80, 8)) - 1) * 38 * (0.7 + 0.3 * EVNMiljo.stoy(p.x, p.z)) - 0.3 })));
+    // Busker langs utsiden av gjerdet og enga
+    const busker = EVNMiljo.spred(Math.round(46 * q.traer), { fra: [-45, -35], til: [45, 60], avstand: 2.6, frø: 5, skala: [0.8, 1.5], lov: (x, z) => fri(x, z) && (ell(x, z, 37, 28) < 1 || iAker(x, z, 4.5)) });
+    vis('busk_1', busker.filter((_, i) => i % 2)); vis('busk_2', busker.filter((_, i) => !(i % 2)));
+    const steiner = EVNMiljo.spred(Math.round(30 * q.traer), { fra: [-80, -70], til: [80, 85], avstand: 3, frø: 7, skala: [0.6, 1.8], lov: fri });
+    vis('stein_1', steiner.filter((_, i) => i % 2)); vis('stein_2', steiner.filter((_, i) => !(i % 2)));
+    // Blomster i klynger på enga og i gresset
+    const blomster = EVNMiljo.spred(Math.round(320 * q.blomst), { fra: [-60, -45], til: [60, 70], frø: 11, skala: [0.9, 1.4], lov: (x, z) => ell(x, z, 14, 11) > 1 && !iAker(x, z, 1) && !(Math.abs(x) < 3.5 && z > 12 && z < 25) && EVNMiljo.stoy(x * 3, z * 3) > 0.15 });
+    vis('blomst_rod', blomster.filter((_, i) => i % 3 === 0), { skygge: false }); vis('blomst_gul', blomster.filter((_, i) => i % 3 === 1), { skygge: false }); vis('blomst_hvit', blomster.filter((_, i) => i % 3 === 2), { skygge: false });
+    // Gresstuster overalt der det ikke står noe
+    vis('gress', EVNMiljo.spred(Math.round(3200 * q.gress), { fra: [-75, -60], til: [75, 75], frø: 13, skala: [1.0, 2.0], lov: (x, z) => ell(x, z, 12.5, 10.5) > 1 && sti(x, z) === 0 && !iAker(x, z, 1) && ell(x, z, 75, 65, 8) < 1 && EVNMiljo.stoy(x * 2.2, z * 2.2) > 0.05 }), { skygge: false });   // i flekker, ikke jevnt over alt
+    // Pynt på tunet og enga
+    vis('hoyball', [{ x: -14, z: 14, ry: 0.4 }, { x: -12.4, z: 15.2, ry: 1.1 }, { x: 14, z: -13, ry: 2 }, { x: 35, z: 30, ry: 0.3 }, { x: 34.5, z: 32, ry: 1.3 }]);
+    vis('kasse', [{ x: 5.2, z: 18, ry: 0.2 }, { x: -35, z: 40, ry: 0.9 }]);
+    verden.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+  }
+
   function byggGard() {
     gd.gruppe.clear(); const g = gd.gruppe, n = gd.niva, ghost = new T.Group(); g.add(ghost);
     const skal = (nv, fn) => { if (n >= nv) fn(g); else if (gd.neste && nv === n + 1) { fn(ghost); } };
     // Tunet
-    gjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0);
+    if (!(NY && nyttGjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0))) gjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0);
     // Enga foran gården: her regner matdyrene ned (bare i spillet)
+    // Åkeren rett foran gården: her regner matdyrene ned (bare i spillet)
     if (gd.eng) {
       const e = gd.eng, eg = new T.Group(); eg.userData.ikkeFlett = true; g.add(eg);
-      const flate = new T.Mesh(new T.CircleGeometry(1, 48), M('#9be07a', 0.95)); flate.rotation.x = -Math.PI / 2; flate.scale.set(e.rx, e.rz, 1); flate.position.set(e.cx, 0.02, e.cz); flate.receiveShadow = true; eg.add(flate);
-      gjerde(eg, e.rx + 0.6, e.rz + 0.6, e.cx, e.cz, -1);
-      const fra = n >= 2 ? 21.5 : 15.5, til = e.cz - e.rz; const sti = new T.Mesh(new T.PlaneGeometry(6, til - fra + 2), M('#c9a06a', 0.95)); sti.rotation.x = -Math.PI / 2; sti.position.set(0, 0.03, (fra + til) / 2); sti.receiveShadow = true; eg.add(sti);
-      skilt(eg, ['🌧️ Enga', 'Her regner matdyrene'], 5.2, 0, til + 0.8, Math.PI, '#ffe9a8');
-      for (let i = 0; i < 40; i++) { const a = i * 2.4, r = Math.sqrt((i * 0.618) % 1) * 0.9; eg.add(mesh(new T.SphereGeometry(0.18, 8, 6), M(['#ffffff', '#ffd23f', '#ff8fb1'][i % 3], 0.6), e.cx + Math.cos(a) * r * e.rx, 0.15, e.cz + Math.sin(a) * r * e.rz)); }
+      const w = e.x1 - e.x0, d = e.z1 - e.z0, cx = (e.x0 + e.x1) / 2, cz = (e.z0 + e.z1) / 2;
+      const jord = new T.Mesh(new T.PlaneGeometry(w, d), new T.MeshStandardMaterial({ map: aakerTekstur(w, d), roughness: 0.97 })); jord.rotation.x = -Math.PI / 2; jord.position.set(cx, 0.03, cz); jord.receiveShadow = true; eg.add(jord);
+      rektGjerde(eg, e.x0 - 0.6, e.x1 + 0.6, e.z0 - 0.6, e.z1 + 0.6);
+      const fra = n >= 2 ? 21.5 : 15.5, til = e.z0 - 0.4; const sti = new T.Mesh(new T.PlaneGeometry(6, til - fra + 1), M('#c9a06a', 0.95)); sti.rotation.x = -Math.PI / 2; sti.position.set(0, 0.04, (fra + til) / 2); sti.receiveShadow = true; eg.add(sti);
+      skilt(eg, ['🌧️ Åkeren', 'Her regner matdyrene'], 5.4, 0, e.z0 - 1.6, Math.PI, '#ffe9a8');
     }
-    lave(g, n >= 5, -BX / 2 - 12.5, -6); silo(g, n >= 4 ? 11 : 7, -BX / 2 - 8.5, 6.5);
-    skal(4, gg => honsehus(gg, BX / 2 + 7, 10));
-    skal(5, gg => { gd.molle = molle(gg, BX / 2 + 9, -9); });
-    skal(7, gg => drivhus(gg, -6, 15));
-    skal(8, gg => taarn(gg, -BX / 2 - 15, 14));
+    if (!(NY && byggPaaTun('laave', g, -BX / 2 - 12.5, -6, Math.PI / 2, n >= 5 ? 1.25 : 1))) lave(g, n >= 5, -BX / 2 - 12.5, -6);
+    if (!(NY && byggPaaTun('silo', g, -BX / 2 - 8.5, 6.5, 0, n >= 4 ? 1.35 : 0.9))) silo(g, n >= 4 ? 11 : 7, -BX / 2 - 8.5, 6.5);
+    skal(4, gg => { if (!(NY && byggPaaTun('honsehus', gg, BX / 2 + 7, 10, -0.6))) honsehus(gg, BX / 2 + 7, 10); });
+    skal(5, gg => { if (!(NY && nyMolle(gg, BX / 2 + 9, -9))) gd.molle = molle(gg, BX / 2 + 9, -9); });
+    skal(7, gg => { if (!(NY && byggPaaTun('drivhus', gg, -6, 15, 0))) drivhus(gg, -6, 15); });
+    skal(8, gg => { if (!(NY && byggPaaTun('taarn', gg, -BX / 2 - 15, 14, 0.3))) taarn(gg, -BX / 2 - 15, 14); });
     // Selve gårdsbygningen
     etasje(g, 0);
     skal(3, gg => { etasje(gg, 1); spiral(gg, 1); });
@@ -419,8 +567,8 @@
     const p = $('panel'); p.textContent = '';
     const r1 = document.createElement('div'); r1.className = 'rad';
     const smal = innerWidth < 640;
-    const navn = { donutku: ['🍩', 'Donutku'], burgersau: ['🍔', 'Burgersau'], pizzaskilpadde: ['🍕', 'Pizzaskilpadde'], croissantrev: ['🥐', 'Croissantrev'], iskatt: ['🍦', 'Iskatt'] };
-    NOKLER.forEach(n => { const b = knapp(smal ? navn[n][0] : navn[n].join(' '), md.visning !== 'alle' && md.valgt === n, () => { md.valgt = n; if (md.visning === 'alle') md.visning = 'forfra'; visMatdyr(); byggPanelMatdyr(); }); b.setAttribute('aria-label', navn[n][1]); if (smal) b.style.fontSize = '22px'; r1.appendChild(b); });
+    const navn = { donutku: ['🍩', 'Donutku'], burgersau: ['🍔', 'Burgersau'], pizzaskilpadde: ['🍕', 'Pizzaskilpadde'], croissantrev: ['🥐', 'Croissantrev'], iskatt: ['🍦', 'Iskatt'], shakeand: ['🥤', 'Shakeand'], spagettipingvin: ['🍝', 'Spagettipingvin'] };
+    visNokler().forEach(n => { const b = knapp(smal ? navn[n][0] : navn[n].join(' '), md.visning !== 'alle' && md.valgt === n, () => { md.valgt = n; if (md.visning === 'alle') md.visning = 'forfra'; visMatdyr(); byggPanelMatdyr(); }); b.setAttribute('aria-label', navn[n][1]); if (smal) b.style.fontSize = '22px'; r1.appendChild(b); });
     r1.appendChild(knapp('👥 Alle', md.visning === 'alle', () => { md.visning = 'alle'; visMatdyr(); byggPanelMatdyr(); }));
     const r2 = document.createElement('div'); r2.className = 'rad';
     [['forfra', 'Forfra', 'Forfra'], ['siden', 'Siden', 'Side'], ['bak', 'Bakfra', 'Bak'], ['oppe', 'Ovenfra', 'Topp'], ['naert', '🔍 Nært', '🔍'], ['spill', '🤖 I spillet', '🤖']].forEach(([v, t, k]) => r2.appendChild(knapp(smal ? k : t, md.visning === v, () => { if (md.visning === 'alle') md.visning = v, visMatdyr(); else { const bytt = (v === 'spill') !== (md.visning === 'spill'); md.visning = v; bytt ? visMatdyr() : settKameraMatdyr(); } byggPanelMatdyr(); }, t.replace(/^\S+ /u, '').trim() || t)));
@@ -499,7 +647,7 @@
     const gaar = m > 0.1;
     if (gaar) {
       const nx = p.x + vx * dt, nz = p.z + vz * dt, y = p.y;
-      const ok = (x, z) => { const rh = rampeHoyde(x, z); return !(rh !== null && rh > y + STEG && rh < y + 2.6) && !blokkert(p.x, p.z, x, z, y) && flateVed(x, z, y) <= y + STEG && ((x / 31) ** 2 + (z / 23) ** 2 < 1 || (gd.eng && ((x - gd.eng.cx) / gd.eng.rx) ** 2 + ((z - gd.eng.cz) / gd.eng.rz) ** 2 < 1) || (gd.eng && Math.abs(x) < 3 && z > 0 && z < gd.eng.cz)); };
+      const ok = (x, z) => { const rh = rampeHoyde(x, z); return !(rh !== null && rh > y + STEG && rh < y + 2.6) && !blokkert(p.x, p.z, x, z, y) && flateVed(x, z, y) <= y + STEG && ((x / 31) ** 2 + (z / 23) ** 2 < 1 || (gd.eng && x > gd.eng.x0 && x < gd.eng.x1 && z > gd.eng.z0 && z < gd.eng.z1) || (gd.eng && Math.abs(x) < 3 && z > 0 && z < gd.eng.z0 + 1)); };
       if (ok(nx, nz)) { p.x = nx; p.z = nz; } else if (ok(nx, p.z)) p.x = nx; else if (ok(p.x, nz)) p.z = nz;
       const mal = Math.atan2(vx, vz); let d = mal - r.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); r.rotation.y += d * Math.min(1, dt * 12);
     }
@@ -556,6 +704,7 @@
     else { holder.classList.remove('ramme'); storrelse(); scene.fog.near = 120; startSpill(); byggPanelSpill(); }
     if (krok.fane) krok.fane(f);
   }
+  $('fGrafikk').addEventListener('click', () => apneGrafikk());
   $('fSpill').addEventListener('click', () => velgFane('spill'));
   $('fMatdyr').addEventListener('click', () => velgFane('matdyr'));
   $('fGard').addEventListener('click', () => velgFane('gard'));
@@ -564,14 +713,32 @@
   function storrelse() { const w = holder.clientWidth || innerWidth, h = holder.clientHeight || innerHeight; renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); }
   addEventListener('resize', () => { storrelse(); if (fane === 'matdyr') { if (md.visning === 'spill') settKameraMatdyr(); byggPanelMatdyr(); } });
   let sist = performance.now(), fpsT = 0, fpsN = 0, fps = 0;
+  // ---------- Grafikk og ytelse: kvalitetsvalg og måling på ekte enhet ----------
+  const maaler = NY ? EVNMiljo.maaler(renderer) : null;
+  function apneGrafikk() {
+    let d = $('grafikk'); if (!d) { d = document.createElement('div'); d.id = 'grafikk'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Grafikk og ytelse'); document.body.appendChild(d); }
+    const i = renderer.info.render, nv = NY ? EVNMiljo.NIVAER[KV] : null;
+    d.innerHTML = '<h2>⚙️ Grafikk og ytelse</h2>' + (NY ? '<div class="rad">' + Object.keys(EVNMiljo.NIVAER).map(k => '<button type="button" data-k="' + k + '" aria-pressed="' + (k === KV) + '">' + EVNMiljo.NIVAER[k].navn + '</button>').join('') + '</div>' : '<p>Gammel grafikk (sammenligning).</p>') +
+      '<p class="liten">' + (maaler ? maaler.gpu : '') + '<br>Skjerm ' + innerWidth + '×' + innerHeight + ' · piksler ×' + renderer.getPixelRatio() + ' · ' + i.calls + ' tegnekall · ' + Math.round(i.triangles / 1000) + 'k trekanter</p>' +
+      '<p id="maalRes" class="liten">Trykk «Mål» og la spillet stå i 10 sekunder.</p><div class="rad"><button type="button" id="maalStart">📊 Mål i 10 s</button><button type="button" id="maalBytt">' + (NY ? '↔ Vis gammel grafikk' : '↔ Vis ny grafikk') + '</button><button type="button" id="maalLukk">Lukk</button></div>';
+    d.hidden = false;
+    d.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { EVNMiljo.lagreKvalitet(b.dataset.k); const u = new URL(location.href); u.searchParams.set('kvalitet', b.dataset.k); location.href = u; });
+    $('maalLukk').onclick = () => { d.hidden = true; };
+    $('maalBytt').onclick = () => { const u = new URL(location.href); if (NY) u.searchParams.set('grafikk', 'gammel'); else u.searchParams.delete('grafikk'); location.href = u; };
+    $('maalStart').onclick = () => { $('maalRes').textContent = 'Måler …'; const t0 = performance.now(); setTimeout(() => {
+      const r = maaler ? maaler.rapport(10) : { fps, ms: +(1000 / Math.max(1, fps)).toFixed(1), p95: '?' }, ii = renderer.info.render;
+      const tekst = 'Matdyr-regn prototype · ' + (NY ? 'ny grafikk, ' + nv.navn : 'gammel grafikk') + ' · ' + r.fps + ' FPS (snitt ' + r.ms + ' ms, 95 % under ' + r.p95 + ' ms) · ' + ii.calls + ' tegnekall · ' + Math.round(ii.triangles / 1000) + 'k trekanter · ' + innerWidth + '×' + innerHeight + '@' + renderer.getPixelRatio() + ' · ' + (maaler ? maaler.gpu : '');
+      $('maalRes').innerHTML = '<b>' + r.fps + ' FPS</b><br><span style="user-select:all">' + tekst + '</span>'; window.EVNMaaling = tekst; }, 10000); };
+  }
   function loop(na) {
     const ekteDt = (na - sist) / 1000, dt = Math.min(0.05, ekteDt); sist = na; const t = na / 1000;
     if (bane.auto && !REDUSERT) bane.teta += dt * 0.35;
     oppdaterKamera();
-    if (fane === 'matdyr') md.alle.forEach(f => H.animer(f, t, md.gaar && !REDUSERT));
+    if (fane === 'matdyr') md.alle.forEach(f => f.ny ? (!REDUSERT && animerNy(f, t, md.gaar)) : H.animer(f, t, md.gaar && !REDUSERT));
     if (fane === 'spill') { steg(dt); if (krok.steg) krok.steg(dt, t); if (gd.robot) { const p = gd.robot.position; sol.position.set(p.x + 12, p.y + 22, p.z + 10); sol.target.position.set(p.x, p.y, p.z); } }
     else if (sol.target.position.lengthSq()) { sol.position.set(12, 22, 10); sol.target.position.set(0, 0, 0); }
     if (robotMixer) robotMixer.update(dt);
+    if (maaler) maaler.ramme();
     if (gd.molle && gd.molle.userData.vinge && !REDUSERT) gd.molle.userData.vinge.rotation.z += dt * 0.8;
     renderer.render(scene, camera);
     fpsN++; fpsT += ekteDt; if (fpsT > 0.5) { fps = Math.round(fpsN / fpsT); fpsN = 0; fpsT = 0; const i = renderer.info.render; $('maal').textContent = fps + ' FPS · ' + i.calls + ' tegnekall · ' + Math.round(i.triangles / 1000) + 'k trekanter'; window.EVNMaal = { fps, kall: i.calls, trekanter: i.triangles }; }
@@ -580,9 +747,9 @@
   storrelse();
   // Start først når alle skriptene er lastet (spillkjerne.js kobler seg på etter denne filen)
   const sideKlar = new Promise(ok => document.readyState === 'loading' ? addEventListener('DOMContentLoaded', ok) : ok());
-  Promise.all([robotKlar, sideKlar]).then(() => { velgFane('matdyr'); requestAnimationFrame(loop); window.EVNKlar = true; });
+  Promise.all([robotKlar, sideKlar, ressurserKlar]).then(() => { if (NY) byggVerden(); velgFane('matdyr'); requestAnimationFrame(loop); window.EVNKlar = true; });
   // For automatiske skjermbilder: ?fane=gard&niva=6 eller ?figur=burgersau&vis=spill
-  window.EVNIntern = { T, scene, sol, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
+  window.EVNIntern = { T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
   window.EVNSpill = sp; window.EVNRobot = () => gd.robot; window.EVNSteg = steg; window.EVNSpor = SPOR; window.EVNGeo = { HX, HZ, EH, DEKKE, W, KX, KZ, A, B, LREP }; window.EVNBane = bane; window.EVNVegger = () => vegger;
   window.EVNVis = (o) => { if (o.fane === 'spill') { if (o.niva) sp.niva = sp.testNiva = o.niva; velgFane('spill'); return; } if (o.fane === 'gard') { if (o.niva) gd.niva = o.niva; if (o.neste !== undefined) gd.neste = o.neste; velgFane('gard'); if (o.teta !== undefined) { bane.teta = o.teta; oppdaterKamera(); } } else { if (o.figur) md.valgt = o.figur; if (o.vis) md.visning = o.vis; if (o.mobil) holder.classList.add('ramme'); storrelse(); velgFane('matdyr'); if (o.teta !== undefined) bane.teta = o.teta; } };
 })();

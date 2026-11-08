@@ -61,3 +61,25 @@ Matdyrboka og 🔍 Finn er neste del.
 - dobbelttrykk
 - at bare de innleverte matdyrene forsvinner
 - gårdsnivå 1 → 10 i rekkefølge
+
+## Ny grafikk (fase 2, 8.11.2026)
+
+Ny grafikk er standard. `?grafikk=gammel` viser den forrige versjonen til sammenligning, og ⚙️ har en knapp for å bytte.
+
+- **Fem nye hybrider** er modellert i Blender: Donutku, Burgersau, Pizzaskilpadde, Shakeand og Spagettipingvin.
+  - Maten er selve kroppen.
+  - Hver figur finnes i to versjoner: `modeller/<navn>.glb` (full) og `<navn>_lav.glb` (cirka 7 000 trekanter).
+  - Animerte deler (hode, bein, hale og vinger) er egne noder.
+  - Kildeskript: `blender/matdyr_hybrider.py`.
+- **Miljøet** er også modellert i Blender: trær, busker, steiner, blomster, gress, låve, silo, hønsehus, mølle, drivhus, tårn, gjerde, høyball og kasse.
+  - Kildeskript: `blender/miljo_ressurser.py`, som gir `modeller/miljo.glb`.
+- **`miljo.js`** er en kandidat til felles EVN-komponent. Den har kvalitetsnivå, lys, terreng, spredning, instansering av GLB-ressurser og ytelsesmåling.
+- **Åkeren** (60 × 32 m) ligger rett foran gården. Matdyrene regner ned der.
+- **⚙️ Grafikk og ytelse:** velg Lav, Middels eller Høy, og mål FPS i 10 s på ekte PC eller mobil. Resultatet kan kopieres.
+- **`nyefigurer.html`** viser figurene fra flere vinkler. Parametere:
+  - `?vinkler=34,fram,side,bak,topp,spill`
+  - `?lav=1` for lav detalj
+  - `?figur=navn` for én figur
+- **Iskatt** har fortsatt den gamle figuren. Matdyr uten ny figur vises som en farget kule.
+
+Bygg modellene på nytt: `python3 blender/matdyr_hybrider.py modeller` og `python3 blender/miljo_ressurser.py modeller`. Begge krever bpy 5.x.
