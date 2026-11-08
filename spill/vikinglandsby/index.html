@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Vikinglandsby 0.2.0 – EVN Studio</title>
+<title>Vikinglandsby 0.3.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -43,6 +43,10 @@
   #handling:active { transform:translateY(4px); box-shadow:0 2px 0 #b8770c; }
   #byggKnapp { min-width:64px; min-height:64px; padding:6px 16px; border-radius:20px; border:3px solid #fff; background:linear-gradient(#8fd17a,#3f8f3a); color:#fff; font-family:'Lilita One',sans-serif; font-size:22px; box-shadow:0 5px 0 #2a6127; }
   #byggKnapp:active { transform:translateY(3px); box-shadow:0 2px 0 #2a6127; }
+  #hoppKnapp { width:72px; height:72px; border-radius:50%; border:3px solid #fff; background:linear-gradient(#7fc6ff,#2f7fc4); color:#fff; font-size:30px; box-shadow:0 5px 0 #1f5a8f; display:none; }
+  #hoppKnapp:active { transform:translateY(3px); box-shadow:0 2px 0 #1f5a8f; }
+  html.touch #hoppKnapp { display:flex; align-items:center; justify-content:center; }
+  #hoppKnapp:focus-visible { outline:3px solid #fff; outline-offset:2px; }
   .tast { font-size:14px; opacity:.75; margin-left:6px; font-family:'Nunito',sans-serif; font-weight:800; }
   html.touch .tast { display:none; }
 
@@ -150,6 +154,7 @@
 <div id="melding" role="status" aria-live="polite"></div>
 <div id="handlinger" hidden>
   <button id="handling" type="button"></button>
+  <button id="hoppKnapp" class="bare-touch-knapp" type="button" title="Hopp (mellomrom)" aria-label="Hopp">⤴️</button>
   <button id="byggKnapp" type="button" title="Bygg (B)">🔨 Bygg<span class="tast">(B)</span></button>
 </div>
 <div id="hjelp"></div>
@@ -174,12 +179,12 @@
       <p>Du er robothøvdingen! 👑 Samle tre, stein og mat, og bygg en vikinglandsby ved fjorden. ⚔️🏠</p>
     </div>
     <div class="styring">
-      <div class="bare-pc">Piltaster eller WASD for å gå.<br>E eller mellomrom for å hogge, plukke og fiske.<br>B for å bygge. M for kart.</div>
-      <div class="bare-touch">Dra fingeren for å gå.<br>Trykk på den gule knappen for å hogge, plukke og fiske.<br>Trykk på 🔨 Bygg for å bygge.</div>
+      <div class="bare-pc">Piltaster eller WASD for å gå.<br>E for å hogge, plukke og fiske. Mellomrom for å hoppe.<br>B for å bygge. M for kart.</div>
+      <div class="bare-touch">Dra fingeren for å gå.<br>Trykk på den gule knappen for å hogge, plukke og fiske.<br>Trykk på ⤴️ for å hoppe.<br>Trykk på 🔨 Bygg for å bygge.</div>
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.2.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.3.0</div>
   </div>
 </div>
 
@@ -455,7 +460,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.2.0';
+const VERSJON = '0.3.0';
 const LAGRING = 'evn-vikinglandsby-v1';
 const LYD_NOKKEL = 'evn-vikinglandsby-lyd';
 const TEST = location.hash === '#test';
@@ -473,6 +478,8 @@ const INNST = {
   fiskIGjen: 3,  fiskVokser: 25,    // fisk per fiskeplass
   jobbTid: { tre: 9, stein: 12, mat: 9 },   // sekunder før en arbeider har samlet 1 til deg
   vikingFart: 5,
+  hopp: 12,                 // hvor høyt roboten hopper (fart opp)
+  tyngde: 34,               // hvor fort roboten faller ned igjen
 };
 if (TEST) Object.assign(INNST, { treVokser: 5, steinVokser: 5, baerVokser: 5, fiskVokser: 5, jobbTid: { tre: 2, stein: 2, mat: 2 } });
 
@@ -1146,7 +1153,7 @@ noder.forEach(visNode);
 // ======================================================
 //  Roboten (spilleren)
 // ======================================================
-const spiller = { pos: new THREE.Vector3(0, 0, 10), retning: Math.PI, fart: 0 };
+const spiller = { pos: new THREE.Vector3(0, 0, 10), retning: Math.PI, fart: 0, hoppY: 0, vy: 0 };
 const helt = new THREE.Group(); scene.add(helt);
 const reserve = new THREE.Group(); helt.add(reserve);   // enkel gul figur til roboten er lastet
 mesh(new THREE.CylinderGeometry(0.6, 0.6, 1.4, 14), fm(0xffcc00), 0, 0.9, 0, reserve); mesh(new THREE.SphereGeometry(0.55, 14, 10), fm(0xffcc00), 0, 2.0, 0, reserve);
@@ -1168,6 +1175,7 @@ function brukRobot(gltf) {
   reserve.visible = false; helt.add(modell);
   klipp.Idle.play();
   robot = { modell, mix, klipp, aktiv: klipp.Idle, igjen: 0, gar: false };
+  festOks(modell);
   // Robothøvdingen har vikinghjelm. Har spilleren valgt noe på hodet i Garderoben, vises det i stedet.
   try { if (window.EVNTilbehor && window.EVNEcoins) {
     mix.update(0);
@@ -1184,6 +1192,28 @@ function brukRobot(gltf) {
     else fetch('../../ecoins/helt-robot-v2.glb').then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(parse).catch(e => console.warn('Roboten kunne ikke lastes', e));
   } catch (e) { console.warn('Roboten kunne ikke lastes', e); }
 })();
+// Øks i høyre hånd, festet til håndleddet som våpnene i Mørkeskogen 2.0 (Palm2.R)
+function lagOks() {
+  const g = new THREE.Group();
+  mesh(stammeGeo(1.25, 0.06, true), MAT.vertex, 0, -0.25, 0, g, true);                       // skaft
+  mesh(avrundetBoks(0.12, 0.1, 0.12, 0.03, 1), MAT.mork, 0, 0.95, 0, g);                       // ende
+  const blad = new THREE.Shape(); blad.moveTo(0, -0.16); blad.lineTo(0.2, -0.24); blad.quadraticCurveTo(0.5, 0, 0.2, 0.24); blad.lineTo(0, 0.16); blad.lineTo(0, -0.16);
+  const bg = new THREE.ExtrudeGeometry(blad, { depth: 0.07, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 2 }); bg.translate(0.04, 0, -0.035);
+  mesh(bg, std({ color: SRGB(0xc9d1d8), roughness: 0.3, metalness: 0.75 }), 0, 0.82, 0, g);   // blad
+  mesh(avrundetBoks(0.14, 0.26, 0.14, 0.03, 1), MAT.metall, 0, 0.82, 0, g);                      // holk
+  return g;
+}
+function festOks(modell) {
+  let hand = null; modell.traverse(o => { if (o.isBone && o.name.replace(/[^a-z0-9]/gi, '') === 'Palm2R' && !hand) hand = o; });
+  if (!hand) { console.warn('Fant ikke robotens høyre hånd (Palm2.R)'); return; }
+  modell.updateMatrixWorld(true);
+  const ws = new THREE.Vector3(); hand.getWorldScale(ws);
+  const feste = new THREE.Group(); feste.scale.setScalar(1 / ws.x); feste.rotation.set(0, 0, Math.PI); hand.add(feste);
+  const oks = lagOks(); oks.position.set(OKS.x, OKS.y, OKS.z); oks.rotation.set(OKS.rx, OKS.ry, OKS.rz); oks.scale.setScalar(OKS.s); feste.add(oks);
+  oks.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+  robot.oks = oks;
+}
+const OKS = { x: 0, y: 0.75, z: 0, rx: Math.PI / 2, ry: 0, rz: 0, s: 1.4 };   // grep nederst på skaftet, øksehodet opp og fram
 function byttTil(navn, fade) {
   const ny = robot.klipp[navn]; if (!ny || ny === robot.aktiv) return;
   ny.reset(); ny.play(); robot.aktiv.crossFadeTo(ny, fade || 0.2, false); robot.aktiv = ny;
@@ -1475,6 +1505,7 @@ const lydPlask = () => pip(320, 0.25, 'triangle', 0.08, 0.35);
 const lydBygg = () => [262, 330, 392, 523].forEach((f, i) => pip(f, 0.16, 'triangle', 0.07, 0, i * 0.09));
 const lydJobb = () => { pip(523, 0.1, 'square', 0.04); pip(784, 0.14, 'square', 0.04, 0, 0.1); };
 const lydHorn = () => { pip(147, 0.7, 'sawtooth', 0.05, 1.0); pip(220, 0.9, 'sawtooth', 0.04, 1.0, 0.45); };
+const lydHopp = () => pip(330, 0.18, 'sine', 0.06, 1.8);
 const lydNei = () => pip(200, 0.18, 'square', 0.05, 0.8);
 const lydFanfare = () => [392, 523, 659, 784, 1047].forEach((f, i) => pip(f, 0.2, 'triangle', 0.07, 0, i * 0.12));
 let visPauseLyd = null;
@@ -1557,6 +1588,11 @@ function hent(n) {
   }
   visNode(n);
 }
+function hopp() {
+  if (spillTilstand !== 'spill' || modalApen() || bygg.aktiv) return;
+  if (spiller.hoppY > 0 || spiller.vy > 0) return;   // bare fra bakken
+  spiller.vy = INNST.hopp; spiller.hoppY = 0.001; robotGjor('Jump', 0.75); lydHopp();
+}
 function gjorHandling() {
   if (spillTilstand !== 'spill' || modalApen() || bygg.aktiv) return;
   const na = performance.now(); if (na < nesteSlag) return;   // tiden følger klokka, også når bildefrekvensen er lav
@@ -1572,7 +1608,9 @@ function oppdaterHandling() {
 // Hold knappen inne for å fortsette å hogge
 $('handling').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); holder = true; gjorHandling(); });
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => $('handling').addEventListener(ev, () => { holder = false; }));
-$('handling').addEventListener('click', e => { if (e.detail === 0) gjorHandling(); });   // Enter eller mellomrom når knappen har fokus
+$('handling').addEventListener('click', e => { if (e.detail === 0) gjorHandling(); });
+$('hoppKnapp').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); hopp(); });
+$('hoppKnapp').addEventListener('click', e => { if (e.detail === 0) hopp(); });   // Enter eller mellomrom når knappen har fokus
 
 // ======================================================
 //  Byggemodus
@@ -1701,10 +1739,11 @@ addEventListener('keydown', e => {
     if ((k === 'e' || k === 'enter' || k === ' ') && !(pa && pa.closest && pa.closest('#byggPanel'))) { e.preventDefault(); if (!e.repeat) { bygg.sistInn = 'tast'; plasser(); } return; }
   }
   const pa = document.activeElement, paKnapp = pa && pa.tagName === 'BUTTON' && pa !== $('handling');
-  if ((k === 'e' || (k === ' ' && !paKnapp)) && !bygg.aktiv) { e.preventDefault(); if (!e.repeat) { holder = true; gjorHandling(); } return; }
+  if (k === ' ' && !paKnapp && !bygg.aktiv) { e.preventDefault(); if (!e.repeat) hopp(); return; }   // KA1: mellomrom er hopp
+  if (k === 'e' && !bygg.aktiv) { e.preventDefault(); if (!e.repeat) { holder = true; gjorHandling(); } return; }
   if (k.startsWith('arrow') || 'wasd'.includes(k)) { taster[k] = true; if (bygg.aktiv) bygg.sistInn = 'tast'; if (k.startsWith('arrow')) e.preventDefault(); }
 }, true);
-addEventListener('keyup', e => { const k = e.key.toLowerCase(); taster[k] = false; if (k === 'e' || k === ' ') holder = false; });
+addEventListener('keyup', e => { const k = e.key.toLowerCase(); taster[k] = false; if (k === 'e') holder = false; });
 addEventListener('blur', () => { for (const k in taster) taster[k] = false; holder = false; slippAlt(); });
 addEventListener('wheel', e => {
   if (spillTilstand !== 'spill' || modalApen()) return;
@@ -1909,7 +1948,8 @@ function oppdaterSpiller(dt) {
     kollisjon(spiller.pos, 0.9); klemSpiller();
   }
   spiller.pos.y = standY(spiller.pos.x, spiller.pos.z);
-  helt.position.copy(spiller.pos); helt.rotation.y = spiller.retning;
+  if (spiller.hoppY > 0 || spiller.vy > 0) { spiller.vy -= INNST.tyngde * dt; spiller.hoppY = Math.max(0, spiller.hoppY + spiller.vy * dt); if (spiller.hoppY === 0) { spiller.vy = 0; sprut(new THREE.Vector3(spiller.pos.x, spiller.pos.y + 0.2, spiller.pos.z), 0xc9b48a, 4); } }
+  helt.position.copy(spiller.pos); helt.position.y += spiller.hoppY; helt.rotation.y = spiller.retning;
   reserve.position.y = Math.abs(Math.sin(tid * 10)) * 0.2 * Math.min(1, spiller.fart / INNST.fart);
   ring.position.set(spiller.pos.x, spiller.pos.y + 0.08, spiller.pos.z);
   if (holder) gjorHandling();
@@ -1984,6 +2024,7 @@ function oppdaterEffekter(dt) {
   for (let i = partikler.length - 1; i >= 0; i--) { const p = partikler[i]; p.t += dt; p.v.y -= 18 * dt; p.m.position.addScaledVector(p.v, dt); p.m.rotation.x += dt * 6; if (p.t > p.liv || p.m.position.y < 0) { scene.remove(p.m); partikler.splice(i, 1); } }
 }
 function oppdaterKamera(dt) {
+  if (window.__kamFri) return;   // bare for testing av nærbilder
   if (bygg.aktiv) {
     tmp.copy(bygg.senter).addScaledVector(KAM_BYGG, zoomBygg);
     camera.position.lerp(tmp, Math.min(1, dt * 5));
@@ -2061,8 +2102,8 @@ window.__evnP = EVNPause({
   fortsett: () => { spillTilstand = 'spill'; for (const k in taster) taster[k] = false; sisteTid = performance.now(); },
   lagre: lagre,
   styring: () => touchNa()
-    ? '👆 Dra fingeren for å gå<br>🟡 Den gule knappen: hogg, hakk, plukk, fisk og gi jobb (hold inne for å fortsette)<br>🔨 Bygg: velg hus, trykk der det skal stå, og trykk ✔ Bygg her<br>📜 Ønskene viser hva landsbyen trenger<br>🗺️ Kartet viser hvor alt er'
-    : '⬆️ Piltaster eller WASD: gå<br>E eller mellomrom: hogg, hakk, plukk, fisk og gi jobb (hold inne)<br>B: bygg · 1–5: velg hus · R: snu huset<br>Klikk med musa der huset skal stå, eller E/Enter<br>M: kart · L: lyd · P eller Esc: pause'
+    ? '👆 Dra fingeren for å gå<br>🟡 Den gule knappen: hogg, hakk, plukk, fisk og gi jobb (hold inne for å fortsette)<br>⤴️ Hopp: roboten hopper<br>🔨 Bygg: velg hus, trykk der det skal stå, og trykk ✔ Bygg her<br>📜 Ønskene viser hva landsbyen trenger<br>🗺️ Kartet viser hvor alt er'
+    : '⬆️ Piltaster eller WASD: gå<br>E: hogg, hakk, plukk, fisk og gi jobb (hold inne)<br>Mellomrom: hopp<br>B: bygg · 1–5: velg hus · R: snu huset<br>Klikk med musa der huset skal stå, eller E/Enter<br>M: kart · L: lyd · P eller Esc: pause'
 });
 // KS9: lydbryter også i pausen (lagt til av spillet, den felles pausekoden er uendret)
 { const k = document.createElement('button'); k.type = 'button'; k.className = 'liten'; k.id = 'pauseLyd';
@@ -2071,7 +2112,7 @@ window.__evnP = EVNPause({
   $('evnPauseAvslutt').before(k); visPauseLyd = vis; vis(); }
 requestAnimationFrame(loop);
 // Til testing
-window.__spill = { t, spiller, noder, INNST, HUS, ONSKER, bygg, gjorHandling, finnHandling, hent, giJobb, apneBygg, lukkBygg, velgHus, plasser, sjekkPlass, byggHus, nyViking, lagre, lastInn, scene, camera, renderer, sjekkOnsker, get spillTilstand() { return spillTilstand; } };
+window.__spill = { hopp, OKS, get robot() { return robot; }, t, spiller, noder, INNST, HUS, ONSKER, bygg, gjorHandling, finnHandling, hent, giJobb, apneBygg, lukkBygg, velgHus, plasser, sjekkPlass, byggHus, nyViking, lagre, lastInn, scene, camera, renderer, sjekkOnsker, get spillTilstand() { return spillTilstand; } };
 </script>
 <!-- EVN Studio: knapp tilbake til forsiden (vises bare under /spill/) -->
 <style>
