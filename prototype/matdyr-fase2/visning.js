@@ -142,6 +142,8 @@
   // Bevegelse som passer kroppen: firbeinte går i kryss, tobeinte vagger, vinger og hale lever sitt eget liv
   // Porten ut av åkeren: halv bredde (m). Bred nok til at to matdyr kan gå ut side om side.
   const PORT_HALV = 3.4;
+  // Busker i landskapet øst for åkerporten (porten står ved x = 31,6, z = 40)
+  const UTBUSKER = [[41.5, 33], [42.5, 47.5], [45, 37.5], [46, 43.5], [47.5, 30.5], [48.5, 50], [50, 35.5], [51, 45], [44, 27.5], [44.5, 53], [53.5, 40], [54, 30], [55, 49]].map(([x, z], i) => ({ x, z, ry: i * 1.3, s: 1.4 + (i % 3) * 0.25 }));
   // Gangfart for matdyrene på åkeren: 1 = vanlig (ca. 30–50 s over åkeren). Kan prøves som 0.7 eller 1.4 via ⚙️ i spilltest (?gangfart=).
   const GANGFART = [0.7, 1, 1.4].includes(+new URLSearchParams(location.search).get('gangfart')) ? +new URLSearchParams(location.search).get('gangfart') : 1;
   // fase (valgfri): tilbakelagt gangdistanse i meter. Da følger bein, vugging og vinger farten: ett skritt ≈ 0,9 m for firbeinte og 0,7 m for tobeinte.
@@ -666,11 +668,11 @@
       // Porten ut av åkeren i øst: to gule stolper, en sti ut og en hekk der matdyrene går videre ut i verden
       const pz = (e.z0 + e.z1) / 2, px = e.x1 + 0.6;
       for (const s2 of [-1, 1]) boks(eg, 0.35, 2.0, 0.35, px, 1.0, pz + s2 * PORT_HALV, GUL);
-      const utsti = new T.Mesh(new T.PlaneGeometry(14, PORT_HALV * 2 - 0.6), M('#c9a06a', 0.95)); utsti.rotation.x = -Math.PI / 2; utsti.position.set(px + 6.8, 0.04, pz); utsti.receiveShadow = true; eg.add(utsti);
+      const utsti = new T.Mesh(new T.PlaneGeometry(9, PORT_HALV * 2 - 0.6), M('#c9a06a', 0.95)); utsti.rotation.x = -Math.PI / 2; utsti.position.set(px + 4.3, 0.04, pz); utsti.receiveShadow = true; eg.add(utsti);
       skilt(eg, ['👋 Ut av åkeren'], px + 1.2, 0, pz - PORT_HALV - 1.2, -Math.PI / 2, '#ffe9a8');
-      const hekk = []; for (let i = 0; i < 9; i++) hekk.push({ x: px + 12 + (i % 2) * 1.2, z: pz - 6.4 + i * 1.6, ry: i * 1.3, s: 1.5 + (i % 3) * 0.25 });
-      if (NY && mdel('busk')) { const hg = EVNMiljo.instanser(mdel('busk'), hekk); hg.userData.ikkeFlett = true; eg.add(hg); }
-      else hekk.forEach(h => { const b = new T.Mesh(new T.SphereGeometry(1.1 * h.s, 12, 8), M('#4f9a3a', 0.9)); b.position.set(h.x, 0.8, h.z); eg.add(b); });
+      // Buskene ute i landskapet øst for porten. Matdyrene går mellom dem og tones bort der. Samme liste brukes som hindringer i navigasjonen.
+      if (NY && mdel('busk')) { const hg = EVNMiljo.instanser(mdel('busk'), UTBUSKER); hg.userData.ikkeFlett = true; eg.add(hg); }
+      else UTBUSKER.forEach(h => { const b = new T.Mesh(new T.SphereGeometry(1.1 * h.s, 12, 8), M('#4f9a3a', 0.9)); b.position.set(h.x, 0.8, h.z); eg.add(b); });
       const fra = n >= 2 ? 21.5 : 15.5, til = e.z0 - 0.4; const sti = new T.Mesh(new T.PlaneGeometry(6, til - fra + 1), M('#c9a06a', 0.95)); sti.rotation.x = -Math.PI / 2; sti.position.set(0, 0.04, (fra + til) / 2); sti.receiveShadow = true; eg.add(sti);
       skilt(eg, ['🌧️ Åkeren', 'Her regner matdyrene'], 5.4, 0, e.z0 - 1.6, Math.PI, '#ffe9a8');
     }
@@ -959,7 +961,7 @@
   const sideKlar = new Promise(ok => document.readyState === 'loading' ? addEventListener('DOMContentLoaded', ok) : ok());
   Promise.all([robotKlar, sideKlar, ressurserKlar]).then(() => { if (NY) byggVerden(); velgFane('matdyr'); requestAnimationFrame(loop); window.EVNKlar = true; });
   // For automatiske skjermbilder: ?fane=gard&niva=6 eller ?figur=burgersau&vis=spill
-  window.EVNIntern = { PORT_HALV, GANGFART, T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
+  window.EVNIntern = { UTBUSKER, PORT_HALV, GANGFART, T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
   window.EVNSpill = sp; window.EVNRobot = () => gd.robot; window.EVNSteg = steg; window.EVNSpor = SPOR; window.EVNGeo = { HX, HZ, EH, DEKKE, W, KX, KZ, A, B, LREP }; window.EVNBane = bane; window.EVNVegger = () => vegger;
   window.EVNVis = (o) => { if (o.fane === 'spill') { if (o.niva) sp.niva = sp.testNiva = o.niva; velgFane('spill'); return; } if (o.fane === 'gard') { if (o.niva) gd.niva = o.niva; if (o.neste !== undefined) gd.neste = o.neste; velgFane('gard'); if (o.teta !== undefined) { bane.teta = o.teta; oppdaterKamera(); } } else { if (o.figur) md.valgt = o.figur; if (o.vis) md.visning = o.vis; if (o.mobil) holder.classList.add('ramme'); storrelse(); velgFane('matdyr'); if (o.teta !== undefined) bane.teta = o.teta; } };
 })();

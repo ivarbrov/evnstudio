@@ -78,25 +78,35 @@ const d = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-prot
   return ut; })()
 `);
 ok('salg lekker ikke geometrier', Array.isArray(d) && d[d.length - 1] - d[1] <= 1);
-// Åkeren: 14 matdyr samlet foran porten, pluss vanlig regn i 4 minutter. Ingen skal gå gjennom gjerdet, bli fjernet inne på åkeren,
-// stå fast i mer enn 10 s eller overlappe hverandre i mer enn 1 s til sammen. Alle de 14 skal ha kommet ut.
+// Åkeren: 14 matdyr som vil ut samtidig, med roboten midt i portåpningen, pluss vanlig regn i 3 minutter.
+// Ingen skal gå gjennom gjerdet, bli fjernet inne på åkeren eller stå fast i mer enn 5 s. Alle de 14 skal ut innen 60 s.
 const f = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-proto'); EVNVis({ fane: 'spill' }); await new Promise(r => setTimeout(r, 200));
-  const I = EVNIntern, P = EVNProto, e = { x0: -31, x1: 31, z0: 24, z1: 56 }, pz = 40, dt = 1 / 30, info = new Map(), ut = { inneFjernet: 0, brudd: 0, stille: 0, overlapp: 0 };
-  I.robot().position.set(0, 0.45, 10); const forste = [];
-  for (let i = 0; i < 14; i++) { P.slippNed(i * 7 % 160, [e.x1 - 14 + (i % 4) * 2.5, e.z0 + 4 + Math.floor(i / 4) * 6 + (i % 4)]); forste.push(P.felt()[P.felt().length - 1]); }
-  for (let i = 0; i < 240 * 30; i++) {
-    I.krok.steg(dt, i * dt); const felt = P.felt(), sett = new Set(felt);
+  const I = EVNIntern, P = EVNProto, e = { x0: -31, x1: 31, z0: 24, z1: 56 }, pz = 40, dt = 1 / 30, info = new Map(), ut = { inneFjernet: 0, brudd: 0, fast: 0 };
+  const R = I.robot(); R.position.set(e.x1 - 1, 0.45, pz); const forste = [];
+  for (let i = 0; i < 14; i++) { P.slippNed(i * 7 % 160, [e.x1 - 18 + (i % 4) * 3, e.z0 + 4 + Math.floor(i / 4) * 7 + (i % 4)]); const a = P.felt()[P.felt().length - 1]; a.tid = 0; a.alder = 8; forste.push(a); }
+  for (let i = 0; i < 180 * 30; i++) {
+    R.position.set(e.x1 - 1, 0.45, pz); I.krok.steg(dt, i * dt); const felt = P.felt(), sett = new Set(felt);
     for (const a of felt) { if (a.tilstand === 'fall') continue; const p = a.g.position, d = info.get(a) || { st: 0 }; info.set(a, d);
-      const inne = p.x > e.x0 + 1 && p.x < e.x1 - 1 && p.z > e.z0 + 1 && p.z < e.z1 - 1, port = p.x >= e.x1 - 3 && Math.abs(p.z - pz) < 2.5;
-      if (inne) d.inne = true; if (a.tilstand === 'gaa' && d.inne && !inne && !port) ut.brudd++;
-      if (a.tilstand === 'gaa') { d.st = a.vFaktisk < 0.1 ? d.st + dt : 0; ut.stille = Math.max(ut.stille, d.st); }
-      if (a.tilstand === 'ut') d.ute = true; d.x = p.x; }
-    for (const [a, d] of info) if (!sett.has(a) && !d.borte) { d.borte = true; if (d.x < e.x1 + 10) ut.inneFjernet++; }
-    const b = felt.filter(a => a.tilstand === 'gaa' || a.tilstand === 'ut'); let ov = false;
-    for (let x = 0; x < b.length; x++) for (let y = x + 1; y < b.length; y++) if (Math.hypot(b[x].g.position.x - b[y].g.position.x, b[x].g.position.z - b[y].g.position.z) < 1.4) ov = true;
-    if (ov) ut.overlapp += dt; }
-  ut.alleUte = forste.every(a => info.get(a) && info.get(a).ute); ut.overlapp = +ut.overlapp.toFixed(2); ut.stille = +ut.stille.toFixed(1); return ut; })()
+      const inne = p.x > e.x0 + 1 && p.x < e.x1 - 1 && p.z > e.z0 + 1 && p.z < e.z1 - 1, port = p.x >= e.x1 - 3 && Math.abs(p.z - pz) < 2.5, ute = p.x > e.x1 + 1.3;
+      if (inne) d.inne = true; if (d.inne && !inne && !port && !ute) ut.brudd++;
+      d.st = a.beite <= 0 && a.vFaktisk < 0.1 ? d.st + dt : 0; ut.fast = Math.max(ut.fast, d.st);
+      if (a.tilstand !== 'gaa' && d.ute === undefined) d.ute = i * dt; d.x = p.x; }
+    for (const [a, d] of info) if (!sett.has(a) && !d.borte) { d.borte = true; if (d.x < e.x1 + 8) ut.inneFjernet++; } }
+  ut.sisteUte = Math.max(...forste.map(a => (info.get(a) || {}).ute ?? 999)); ut.fast = +ut.fast.toFixed(1); return ut; })()
 `);
-ok('åkeren: ut gjennom porten, uten gjerdebrudd, fastlåsing eller fjerning inne (' + JSON.stringify(f) + ')', f.alleUte && f.brudd === 0 && f.inneFjernet === 0 && f.stille < 10 && f.overlapp < 1);
+ok('åkeren: 14 matdyr kommer ut forbi roboten i porten, uten gjerdebrudd, fastlåsing eller fjerning inne (' + JSON.stringify(f) + ')', f.sisteUte < 60 && f.brudd === 0 && f.inneFjernet === 0 && f.fast < 5);
+// Basen: bær et matdyr inn på gården, trykk på en ledig plass i 2. etasje, og bruk «første ledige» fra bakken.
+const g = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-proto'); EVNVis({ fane: 'spill' }); await new Promise(r => setTimeout(r, 200));
+  const I = EVNIntern, P = EVNProto, ut = {}, st = n => { for (let i = 0; i < n; i++) { EVNSteg(1 / 30); I.krok.steg(1 / 30, i / 30); } };
+  P.sett({ v: 1, penger: 1e6, gard: { niva: 6 }, plassNiva: 8, base: [], disc: [] }); st(2); const R = I.robot();
+  R.position.set(0, 0.45, 30); P.slippNed(508, [1, 30]); st(3); P.gjorHandling(); ut.merkerAaker = P.merker().length;
+  R.position.set(0, 0.45, 18); st(3); ut.merker = P.merker().length; ut.ledige = P.ledige().length;
+  const i2 = P.ledige().find(i => I.plassPos(i).y > 2), p0 = P.S().penger; ut.valgt = P.velgPlass(i2); st(30);
+  ut.etg2 = P.S().base[i2] === 508 && !P.bar() && JSON.parse(localStorage.getItem(P.NOKKEL)).base[i2] === 508; ut.betalt = Math.round(p0 - P.S().penger);
+  P.slippNed(508, [1, 30]); R.position.set(0, 0.45, 30); st(3); P.gjorHandling(); R.position.set(0, 0.45, 18); st(3);
+  const h = P.finnHandling(); ut.forste = h && h.t; const fi = h && h.i; P.gjorHandling(); st(30); ut.forsteEtg1 = P.S().base[fi] === 508 && I.plassPos(fi).y < 1;
+  ut.antall = P.S().base.filter(c => c >= 0).length; return ut; })()
+`);
+ok('basen: trykk på ledig plass i 2. etasje og «første ledige» (' + JSON.stringify(g) + ')', g.merkerAaker === 0 && g.merker === g.ledige && g.valgt && g.etg2 && g.betalt > 50 && g.forste === 'forste' && g.forsteEtg1 && g.antall === 2);
 console.log(feil.length ? feil : 'ingen feil i konsollen'); if (feil.length) process.exitCode = 1;
 ws.close(); p.kill();

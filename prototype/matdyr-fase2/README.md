@@ -183,3 +183,37 @@ Gangfart kan velges under ⚙️ (spilltest): 🐢 Rolig (0,7×), 🚶 Vanlig og
 | 🐇 Rask | 29 s | 23–35 s | ca. 21 |
 
 Det kan være høyst 14 matdyr på åkeren samtidig. Roligere gange gir derfor også færre nye matdyr per minutt.
+
+## Levende matdyr og plassering i basen (Ivar, 8.11.2026 kl. 21.19)
+Denne løsningen erstatter køen med tre felt som ble kvalitetssikret tidligere samme kveld.
+
+**Åkeren**
+- Matdyrene lander i vest. De vandrer fritt i 12–22 s mot tilfeldige mål over hele åkeren og stopper av og til for å beite.
+- Deretter søker de gradvis mot porten i løpet av 8 s. Hvert matdyr har sitt eget mellompunkt, sitt eget punkt i portåpningen og sitt eget mål ute i landskapet.
+- Utenfor porten går de inn mellom busker og krymper rolig bort i løpet av ca. 2 s, 9–20 m utenfor gjerdet.
+- **Styring:** Hver frame prøver matdyret 11 retninger rundt den ønskede. Det velger den som gir minst kollisjon med andre matdyr (der de vil være om 0,4–1,6 s), roboten, portstolpene, buskene og gjerdet.
+- **Lovlige områder:** Åkeren, portåpningen og landskapet øst for porten. Bare porten forbinder dem. Et matdyr som fortsatt vandrer, holder seg inne på åkeren.
+- **Står fast mer enn 2 s:** Matdyret bytter side og velger ny rute.
+- **Roboten i veien:** Har et matdyr som vil ut vært stoppet av roboten i mer enn 1,2 s, hopper det over roboten. Roboten flyttes ikke, og gjerdene gjelder fortsatt.
+- **Navneskilt:** Skilt som ville dekke et viktigere skilt, tones ut. Viktigst er matdyret nærmest roboten, deretter det nærmest kameraet.
+
+**Basen**
+- Bærer roboten et matdyr utenfor åkeren, får hver ledige plass i alle etasjer en grønn ＋ med etasjenummer. Plasser i andre etasjer vises litt mindre.
+- Trykk eller klikk på en ＋, så flyr matdyret i en kort bue til plassen (0,7 s). Betalingen skjer når det flytter inn, som før.
+- Handlingsknappen viser «🏠 Plasser på første ledige plass» (E). Den velger første ledige plass på robotens etasje, ellers laveste plassnummer.
+- Å gå rett bort på en ledig plass fungerer fortsatt. Andre matdyr flyttes aldri.
+
+**Målt i simulering (headless, 300 s)**
+| Scenario | Resultat |
+|---|---|
+| Vanlig regn | Median 49 s fra landing til porten (10–90 %: 39–58 s). Ingen gjerdebrudd, ingen fjernet inne. |
+| 14 vil ut samtidig | Alle ute etter 22 s. |
+| Roboten står midt i porten | Alle 14 ute etter 34–38 s. |
+| Roboten jager matdyrene og stiller seg foran dem | Lengste stillstand 1 s, maks 91 s på åkeren. |
+
+Spilltest-sjekk 9 (roboten i porten) og sjekk 10 (plassering i 2. etasje og «første ledige») er lagt til.
+
+**Ikke løst:** 144 av 160 matdyr har ennå ingen ferdig figur og vises som kule med symboler. De byttes ut etter hvert som figurene godkjennes (MS5).
+
+## Figurrettinger etter Ivars vurdering (8.11.2026 kl. 21.45)
+Donutku, Burgersau, Pizzaskilpadde, Shakeand og Spagettipingvin er rettet i `blender/matdyr_hybrider.py`. Feilen i `forelder()` som plasserte siste del feil ved eksport er også rettet. Den ga en hale under Burgersau og for lave føtter på Shakeand og Spagettipingvin. Sammenligning: `figurer-for-etter.png`. Venter på Evens vurdering.
