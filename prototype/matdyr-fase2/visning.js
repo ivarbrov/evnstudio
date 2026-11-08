@@ -188,39 +188,97 @@
   const ROD = '#b8382f', HVIT = '#f6f1e6';
   function boks(g, w, h, d, x, y, z, mat) { const m = mesh(plateGeo, typeof mat === 'string' ? M(mat, 0.75) : mat, x, y, z, w, h, d); g.add(m); return m; }
 
-  // Én etasje: dekke, stolper i låvestil, rekkverk med åpning der rampa kommer
-  function etasje(g, nr, apningSide) {
+  // ---- Én sammenhengende vei opp: ramper rundt bygningen med reposer ved hjørnene ----
+  // Rampe 1 langs høyre side (bakken → etasje 2), rampe 2 langs baksiden (→ etasje 3) og rampe 3 langs venstre side
+  // (→ takterrassen). Hver rampe ender på en repos. Neste rampe starter fra samme repos, og reposen har en åpning
+  // i rekkverket inn til etasjen.
+  const W = 3.4, HX = BX / 2, HZ = BZ / 2, DEKKE = 0.45;
+  const VEI = {
+    // etasje nr: åpning i rekkverket (side og intervall langs siden)
+    apning: { 1: { side: 'h', fra: -HZ, til: -HZ + W }, 2: { side: 'v', fra: -HZ, til: -HZ + W }, 3: { side: 'f', fra: -HX, til: -HX + W } },
+    // reposer: [xmin, xmax, zmin, zmax, etasje]
+    repos: { 1: [HX, HX + W, -HZ - W, -HZ + W, 1], 2: [-HX - W, -HX, -HZ - W, -HZ + W, 2], 3: [-HX - W, -HX + W, HZ, HZ + W, 3] },
+    // ramper: fra (x, z, etasje) til (x, z, etasje), bredde W, langs akse
+    rampe: {
+      1: { akse: 'z', x: HX + W / 2, fra: HZ + 2.6, til: -HZ + W, e0: 0, e1: 1, ytre: 1 },
+      2: { akse: 'x', z: -HZ - W / 2, fra: HX, til: -HX, e0: 1, e1: 2, ytre: -1 },
+      3: { akse: 'z', x: -HX - W / 2, fra: -HZ + W, til: HZ, e0: 2, e1: 3, ytre: -1 }
+    }
+  };
+  function rekkverk(e, x0, z0, x1, z1, y = 0) {
+    const L = Math.hypot(x1 - x0, z1 - z0); if (L < 0.3) return; const n = Math.max(1, Math.round(L / 1.6));
+    for (let i = 0; i <= n; i++) { const t = i / n; boks(e, 0.14, 1.0, 0.14, x0 + (x1 - x0) * t, y + 0.95, z0 + (z1 - z0) * t, HVIT); }
+    const r = boks(e, L, 0.12, 0.12, (x0 + x1) / 2, y + 1.45, (z0 + z1) / 2, HVIT); r.rotation.y = -Math.atan2(z1 - z0, x1 - x0);
+  }
+  // Rekkverk langs en side, med en eventuell åpning [fra, til] langs siden
+  function sideMedApning(e, side, ap) {
+    const linje = { f: [-HX, HZ, HX, HZ, 'x'], b: [-HX, -HZ, HX, -HZ, 'x'], v: [-HX, -HZ, -HX, HZ, 'z'], h: [HX, -HZ, HX, HZ, 'z'] }[side];
+    const [x0, z0, x1, z1, ak] = linje;
+    if (!ap || ap.side !== side) return rekkverk(e, x0, z0, x1, z1);
+    if (ak === 'x') { rekkverk(e, x0, z0, ap.fra, z0); rekkverk(e, ap.til, z0, x1, z1); }
+    else { rekkverk(e, x0, z0, x0, ap.fra); rekkverk(e, x0, ap.til, x1, z1); }
+  }
+  function etasje(g, nr) {
     const y = nr * EH, e = new T.Group(); e.position.y = y; e.userData.etasje = nr; g.add(e);
-    boks(e, BX, 0.45, BZ, 0, 0.22, 0, plankeMat);
+    boks(e, BX, DEKKE, BZ, 0, DEKKE / 2, 0, plankeMat);
     if (nr > 0) {
-      for (const sx of [-1, 0, 1]) for (const sz of [-1, 1]) boks(e, 0.5, EH - 0.45, 0.5, sx * (BX / 2 - 0.25), -(EH - 0.45) / 2, sz * (BZ / 2 - 0.25), ROD);
-      // Hvite kryss mellom stolpene på kortsidene (låvestil)
-      for (const sx of [-1, 1]) for (const d of [-1, 1]) { const k = boks(e, 0.18, Math.hypot(BZ, EH) * 0.92, 0.18, sx * (BX / 2 - 0.1), -EH / 2 + 0.2, 0, HVIT); k.rotation.x = d * Math.atan2(BZ, EH); }
-      boks(e, BX + 0.2, 0.35, 0.35, 0, -0.05, BZ / 2, HVIT); boks(e, BX + 0.2, 0.35, 0.35, 0, -0.05, -BZ / 2, HVIT);
-      // Rekkverk
-      const rekk = (x0, z0, x1, z1) => { const L = Math.hypot(x1 - x0, z1 - z0), n = Math.max(2, Math.round(L / 1.6)); for (let i = 0; i <= n; i++) { const t = i / n; boks(e, 0.14, 1.0, 0.14, x0 + (x1 - x0) * t, 0.95, z0 + (z1 - z0) * t, HVIT); } const r = boks(e, L, 0.12, 0.12, (x0 + x1) / 2, 1.45, (z0 + z1) / 2, HVIT); r.rotation.y = -Math.atan2(z1 - z0, x1 - x0); };
-      const hx = BX / 2, hz = BZ / 2;
-      rekk(-hx, hz, hx, hz); rekk(-hx, -hz, hx, -hz);
-      if (apningSide !== 'v') rekk(-hx, -hz, -hx, hz); else rekk(-hx, -hz, -hx, -hz + 3.4);
-      if (apningSide !== 'h') rekk(hx, -hz, hx, hz); else rekk(hx, -hz, hx, -hz + 3.4);
+      for (const sx of [-1, 0, 1]) for (const sz of [-1, 1]) boks(e, 0.5, EH - DEKKE, 0.5, sx * (HX - 0.25), -(EH - DEKKE) / 2, sz * (HZ - 0.25), ROD);
+      for (const sx of [-1, 1]) for (const d of [-1, 1]) { const k = boks(e, 0.18, Math.hypot(BZ, EH) * 0.92, 0.18, sx * (HX - 0.1), -EH / 2 + 0.2, 0, HVIT); k.rotation.x = d * Math.atan2(BZ, EH); }
+      boks(e, BX + 0.2, 0.35, 0.35, 0, -0.05, HZ, HVIT); boks(e, BX + 0.2, 0.35, 0.35, 0, -0.05, -HZ, HVIT);
+      const ap = VEI.apning[nr];
+      for (const side of ['f', 'b', 'v', 'h']) sideMedApning(e, side, ap);
     }
     return e;
   }
-  // Bred rampe langs en langside fra etasje a til b
-  function rampe(g, fra, til, side) {
-    const x = side * (BX / 2 + 2.0), z0 = BZ / 2 + 1.6, z1 = -BZ / 2 + 1.7, y0 = fra * EH + 0.45, y1 = til * EH + 0.45, L = Math.hypot(z0 - z1, y1 - y0);
-    const r = new T.Group(); g.add(r);
-    const dekke = boks(r, 3.4, 0.3, L, x, (y0 + y1) / 2, (z0 + z1) / 2, plankeMat); dekke.rotation.x = Math.atan2(y1 - y0, z0 - z1);
-    for (let i = 0; i < 6; i++) { const t = i / 5, yy = y0 + (y1 - y0) * t, zz = z0 + (z1 - z0) * t; if (yy > 0.6) boks(r, 0.3, yy, 0.3, x + side * 1.6, yy / 2, zz, ROD); boks(r, 0.12, 1.0, 0.12, x + side * 1.6, yy + 0.65, zz, HVIT); }
-    const rail = boks(r, 0.12, 0.12, L, x + side * 1.6, (y0 + y1) / 2 + 1.15, (z0 + z1) / 2, HVIT); rail.rotation.x = dekke.rotation.x;
-    boks(r, 2.6, 0.3, 3.4, side * (BX / 2 + 1.0), y1 - 0.15, z1 - 1.0, plankeMat); // repos inn til etasjen
+  // Skilt med tekst (lerret) på en stolpe
+  function skilt(g, tekst, x, y, z, roty) {
+    const cv = document.createElement('canvas'); cv.width = 256; cv.height = 96; const c = cv.getContext('2d');
+    c.fillStyle = '#7a4a22'; c.fillRect(0, 0, 256, 96); c.fillStyle = '#f6f1e6'; c.fillRect(6, 6, 244, 84);
+    c.fillStyle = '#3a2210'; c.font = 'bold 40px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(tekst, 128, 50);
+    const t = new T.CanvasTexture(cv); t.encoding = T.sRGBEncoding;
+    const s = new T.Group(); s.position.set(x, y, z); s.rotation.y = roty; g.add(s);
+    s.add(mesh(new T.CylinderGeometry(0.08, 0.08, 2.2, 8), M('#7a4a22', 0.8), 0, 1.1, 0));
+    const tavle = new T.Mesh(new T.PlaneGeometry(1.9, 0.72), new T.MeshStandardMaterial({ map: t, roughness: 0.8, side: T.DoubleSide })); tavle.position.y = 2.1; s.add(tavle);
+  }
+  function repos(g, nr) {
+    const [x0, x1, z0, z1, e] = VEI.repos[nr], y = e * EH, r = new T.Group(); r.userData.etasje = e; g.add(r);
+    boks(r, x1 - x0, DEKKE, z1 - z0, (x0 + x1) / 2, y + DEKKE / 2, (z0 + z1) / 2, plankeMat);
+    for (const [x, z] of [[x0, z0], [x1, z0], [x0, z1], [x1, z1]]) boks(r, 0.35, y, 0.35, x + (x === x0 ? 0.2 : -0.2), y / 2, z + (z === z0 ? 0.2 : -0.2), ROD);
+    // Rekkverk på de ytterste kantene (bort fra bygningen)
+    const ytreX = Math.abs(x0) > Math.abs(x1) ? x0 : x1, ytreZ = Math.abs(z0) > Math.abs(z1) ? z0 : z1;
+    rekkverk(r, ytreX, z0, ytreX, z1, y); rekkverk(r, x0, ytreZ, x1, ytreZ, y);
     return r;
+  }
+  function rampe(g, nr) {
+    const R = VEI.rampe[nr], y0 = R.e0 * EH + (R.e0 ? DEKKE : 0.05), y1 = R.e1 * EH + DEKKE, L = Math.abs(R.til - R.fra), rr = new T.Group(); g.add(rr);
+    const helning = Math.atan2(y1 - y0, L), lengde = Math.hypot(L, y1 - y0), midt = (R.fra + R.til) / 2, ym = (y0 + y1) / 2 - 0.12;
+    const d = R.akse === 'z' ? boks(rr, W, 0.25, lengde, R.x, ym, midt, plankeMat) : boks(rr, lengde, 0.25, W, midt, ym, R.z, plankeMat);
+    if (R.akse === 'z') d.rotation.x = Math.sign(R.fra - R.til) * helning; else d.rotation.z = Math.sign(R.til - R.fra) * helning;
+    // Tverrlister så rampa ser gripevennlig ut
+    const n = Math.round(L / 0.9);
+    for (let i = 1; i < n; i++) { const t = i / n, p = R.fra + (R.til - R.fra) * t, yy = y0 + (y1 - y0) * t + 0.03; if (R.akse === 'z') boks(rr, W - 0.2, 0.06, 0.12, R.x, yy, p, '#8b5a2b'); else boks(rr, 0.12, 0.06, W - 0.2, p, yy, R.z, '#8b5a2b'); }
+    // Stolper og rekkverk på yttersiden, stolper også på innsiden
+    const ytre = R.akse === 'z' ? R.x + R.ytre * (W / 2 - 0.1) : R.z + R.ytre * (W / 2 - 0.1);
+    const indre = R.akse === 'z' ? R.x - R.ytre * (W / 2 - 0.1) : R.z - R.ytre * (W / 2 - 0.1);
+    const m = Math.max(3, Math.round(L / 2.6));
+    for (let i = 0; i <= m; i++) {
+      const t = i / m, p = R.fra + (R.til - R.fra) * t, yy = y0 + (y1 - y0) * t;
+      for (const q of [ytre, indre]) if (yy > 0.5) { const [x, z] = R.akse === 'z' ? [q, p] : [p, q]; boks(rr, 0.3, yy - 0.1, 0.3, x, (yy - 0.1) / 2, z, ROD); }
+      const [x, z] = R.akse === 'z' ? [ytre, p] : [p, ytre]; boks(rr, 0.12, 1.0, 0.12, x, yy + 0.6, z, HVIT);
+    }
+    const rail = R.akse === 'z' ? boks(rr, 0.12, 0.12, lengde, ytre, ym + 1.2, midt, HVIT) : boks(rr, lengde, 0.12, 0.12, midt, ym + 1.2, ytre, HVIT);
+    if (R.akse === 'z') rail.rotation.x = d.rotation.x; else rail.rotation.z = d.rotation.z;
+    // Skilt ved foten av rampa
+    const navn = { 1: 'Etasje 2 ⬆', 2: 'Etasje 3 ⬆', 3: 'Takterrasse ⬆' }[nr];
+    const [sx, sz] = R.akse === 'z' ? [R.x + R.ytre * (W / 2 + 0.6), R.fra + Math.sign(R.til - R.fra) * 0.6] : [R.fra + Math.sign(R.til - R.fra) * 0.8, R.z + R.ytre * (W / 2 + 0.6)];
+    skilt(rr, navn, sx, R.e0 * EH + (R.e0 ? DEKKE : 0), sz, R.akse === 'z' ? (R.fra > R.til ? 0 : Math.PI) : (R.fra > R.til ? Math.PI / 2 : -Math.PI / 2));
+    return rr;
   }
   // Bygg på tunet
   function silo(g, hoy, x, z) { const s = new T.Group(); s.position.set(x, 0, z); g.add(s); s.add(mesh(new T.CylinderGeometry(1.6, 1.6, hoy, 24), M('#d9d4c7', 0.6), 0, hoy / 2, 0)); s.add(mesh(new T.SphereGeometry(1.65, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), M(ROD, 0.5), 0, hoy, 0)); for (let i = 1; i < hoy / 2; i++) s.add(mesh(new T.TorusGeometry(1.62, 0.05, 6, 32).rotateX(Math.PI / 2), M('#9a9488', 0.6), 0, i * 2, 0)); }
   function lave(g, stor, x, z) { const l = new T.Group(); l.position.set(x, 0, z); g.add(l); const w = stor ? 9 : 6, h = stor ? 6 : 4.2, d = stor ? 7 : 5; boks(l, w, h, d, 0, h / 2, 0, ROD); const tak = new T.CylinderGeometry(0.01, w * 0.62, h * 0.55, 4, 1); const t = mesh(tak, M('#5a3a2e', 0.7), 0, h + h * 0.27, 0, 1, 1, d / w * 1.25); t.rotation.y = Math.PI / 4; l.add(t); boks(l, w * 0.42, h * 0.62, 0.1, 0, h * 0.31, d / 2 + 0.05, HVIT); boks(l, w * 0.34, h * 0.52, 0.12, 0, h * 0.27, d / 2 + 0.08, '#7a2a24'); }
   function honsehus(g, x, z) { const l = new T.Group(); l.position.set(x, 0, z); g.add(l); boks(l, 3.2, 2.2, 2.6, 0, 1.1, 0, '#e7c879'); const t = mesh(new T.ConeGeometry(2.5, 1.4, 4), M(ROD, 0.6), 0, 2.9, 0); t.rotation.y = Math.PI / 4; l.add(t); boks(l, 0.8, 1.0, 0.1, 0, 0.6, 1.32, '#5a3a2e'); }
-  function molle(g, x, z, t0) { const m = new T.Group(); m.position.set(x, 0, z); g.add(m); m.add(mesh(new T.CylinderGeometry(1.0, 1.7, 7, 8), M(HVIT, 0.7), 0, 3.5, 0)); m.add(mesh(new T.ConeGeometry(1.4, 1.6, 8), M(ROD, 0.6), 0, 7.8, 0)); const v = new T.Group(); v.position.set(0, 6.4, 1.2); m.add(v); for (let i = 0; i < 4; i++) { const b = boks(v, 0.45, 4.6, 0.08, 0, 0, 0, '#d9c49b'); b.geometry = plateGeo; b.rotation.z = i * Math.PI / 2; b.translateY(2.3); } m.userData.vinge = v; return m; }
+  function molle(g, x, z, t0) { const m = new T.Group(); m.position.set(x, 0, z); g.add(m); m.add(mesh(new T.CylinderGeometry(1.0, 1.7, 7, 8), M(HVIT, 0.7), 0, 3.5, 0)); m.add(mesh(new T.ConeGeometry(1.4, 1.6, 8), M(ROD, 0.6), 0, 7.8, 0)); const v = new T.Group(); v.position.set(0, 6.4, 1.2); m.add(v); for (let i = 0; i < 4; i++) { const b = boks(v, 0.45, 4.6, 0.08, 0, 0, 0, '#d9c49b'); b.geometry = plateGeo; b.rotation.z = i * Math.PI / 2; b.translateY(2.3); } m.userData.vinge = v; m.userData.ikkeFlett = true; return m; }
   function drivhus(g, x, z) { const d = new T.Group(); d.position.set(x, 0, z); g.add(d); boks(d, 5, 0.4, 3.4, 0, 0.2, 0, '#8b5a2b'); const glass = new T.MeshStandardMaterial({ color: LC('#cfefff'), roughness: 0.1, transparent: true, opacity: 0.35 }); boks(d, 5, 2.4, 3.4, 0, 1.6, 0, glass); for (let i = 0; i < 5; i++) d.add(mesh(new T.SphereGeometry(0.35, 10, 8), M(['#ff6b6b', '#ffd23f', '#7ad66b'][i % 3], 0.6), -2 + i, 0.9, 0)); }
   function taarn(g, x, z) { const t = new T.Group(); t.position.set(x, 0, z); g.add(t); for (const sx of [-1, 1]) for (const sz of [-1, 1]) boks(t, 0.3, 9, 0.3, sx * 1.1, 4.5, sz * 1.1, '#8b5a2b'); boks(t, 3, 0.3, 3, 0, 9, 0, plankeMat); const tk = mesh(new T.ConeGeometry(2.3, 1.8, 4), M(ROD, 0.6), 0, 10.8, 0); tk.rotation.y = Math.PI / 4; t.add(tk); }
   function gjerde(g, w, d) { const n = 34; for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; const x = Math.cos(a) * w, z = Math.sin(a) * d; boks(g, 0.2, 1.1, 0.2, x, 0.55, z, HVIT); } const kurve = new T.CatmullRomCurve3(Array.from({ length: 48 }, (_, i) => { const a = i / 48 * Math.PI * 2; return new T.Vector3(Math.cos(a) * w, 0.95, Math.sin(a) * d); }), true); const ring = new T.Mesh(new T.TubeGeometry(kurve, 160, 0.07, 6, true), M(HVIT, 0.7)); ring.castShadow = true; g.add(ring); }
@@ -249,10 +307,19 @@
     skal(8, gg => taarn(gg, -BX / 2 - 15, 14));
     // Selve gårdsbygningen
     etasje(g, 0);
-    skal(3, gg => { etasje(gg, 1, 'h'); rampe(gg, 0, 1, 1); });
-    skal(6, gg => { etasje(gg, 2, 'v'); rampe(gg, 1, 2, -1); });
-    skal(9, gg => { const t = etasje(gg, 3, 'h'); rampe(gg, 2, 3, 1); flagg(gg, BX / 2 - 0.5, 3 * EH + 0.45, -BZ / 2 + 0.5, '#2f80ed'); });
+    skal(3, gg => { etasje(gg, 1); rampe(gg, 1); repos(gg, 1); });
+    skal(6, gg => { etasje(gg, 2); rampe(gg, 2); repos(gg, 2); });
+    skal(9, gg => { etasje(gg, 3); rampe(gg, 3); repos(gg, 3); flagg(gg, HX - 0.5, 3 * EH + DEKKE, -HZ + 0.5, '#2f80ed'); });
     if (n >= 10) { for (let e = 1; e <= 3; e++) boks(g, BX + 0.6, 0.25, BZ + 0.6, 0, e * EH + 0.05, 0, M('#ffd23f', 0.3, { metalness: 0.5 })); for (let i = 0; i < 8; i++) flagg(g, (i - 3.5) * 2.2, 3 * EH + 1.2, BZ / 2 + 0.3, ['#ff5e5e', '#ffd23f', '#54c7ff', '#7ad66b'][i % 4]).scale.set(0.4, 0.6, 1); }
+    // Faste deler slås sammen per materiale (etasje for etasje), så hele gården koster få tegnekall
+    const flett = forelder => [...forelder.children].forEach(c => {
+      if (!c.isGroup || c === ghost || c.userData.ikkeFlett) return;
+      const ny = new T.Group(); ny.position.copy(c.position); ny.rotation.copy(c.rotation); ny.userData = c.userData;
+      c.position.set(0, 0, 0); c.rotation.set(0, 0, 0); c.updateMatrixWorld(true);
+      const tmp = new T.Group(); tmp.add(c); for (const { geo, mat } of slaSammen(tmp)) { const m = new T.Mesh(geo, mat); m.castShadow = m.receiveShadow = true; ny.add(m); }
+      forelder.add(ny);
+    });
+    flett(g); flett(ghost);
     // Gjennomsiktige deler for neste nivå
     ghost.traverse(o => { if (o.isMesh) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.28; o.material.depthWrite = false; o.castShadow = false; } });
     // Plasser og matdyr
@@ -276,7 +343,7 @@
       }
     });
     // Roboten på bakkeplanet ved rampa
-    const r = lagRobot(); r.g.position.set(BX / 2 + 2, 0, BZ / 2 + 4); r.g.rotation.y = -2.6; g.add(r.g);
+    const r = lagRobot(); r.g.userData.ikkeFlett = true; r.g.position.set(HX + W / 2, 0, HZ + 4.6); r.g.rotation.y = Math.PI; g.add(r.g);   // ved foten av rampe 1
     // Etasjer over roboten gjøres gjennomsiktige
     if (gd.gjennom) g.traverse(o => { if (!o.isMesh) return; let p = o; while (p && p.userData.etasje === undefined) p = p.parent; const e = p ? p.userData.etasje : 0; if (e >= 1 && !(o.material.opacity < 0.3)) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.45; o.material.depthWrite = false; } });
     visKortGard(aapne, plasser.length);
