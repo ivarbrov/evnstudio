@@ -131,8 +131,17 @@
   function iFeltet(x, z) { const e = eng(); return x > e.x0 + 1.2 && x < e.x1 - 1.2 && z > e.z0 + 1.2 && z < e.z1 - 1.2; }
   // Matdyrene lander i starten av åkeren (vest), vandrer østover over åkeren og går ut gjennom porten i østgjerdet.
   // Utenfor porten følger de stien inn bak hekken og blir borte der, i stedet for å forsvinne midt på åkeren.
-  const port = () => { const e = eng(); return { x: e.x1, z: (e.z0 + e.z1) / 2, halv: 2.2 }; };
-  function tilfeldigPunkt() { const e = eng(); return [e.x0 + 1.5 + Math.random() * 11, e.z0 + 2 + Math.random() * (e.z1 - e.z0 - 4)]; }
+  const port = () => { const e = eng(); return { x: e.x1, z: (e.z0 + e.z1) / 2, halv: I.PORT_HALV || 3.4 }; };
+  // Landingspunkt i vest, helst med god avstand til matdyr som allerede står der (så de ikke lander oppå hverandre)
+  function tilfeldigPunkt() {
+    const e = eng(); let best = null, bd = -1;
+    for (let i = 0; i < 10; i++) {
+      const x = e.x0 + 2 + Math.random() * 11, z = e.z0 + 2.5 + Math.random() * (e.z1 - e.z0 - 5);
+      const d = felt.reduce((m, a) => Math.min(m, Math.hypot(a.g.position.x - x, a.g.position.z - z)), 99);
+      if (d > bd) { bd = d; best = [x, z]; } if (d > 3) break;
+    }
+    return best;
+  }
   // Sjeldenheten trekkes med de vanlige vektene. Med bestillingsregn trekkes matdyret deretter blant artene neste gårdsnivå krever.
   function trekk() {
     const tot = R.reduce((s, r) => s + r.w, 0); let x = Math.random() * tot, r = 0;
@@ -144,32 +153,82 @@
   function slippNed(ci, xz) {
     const [x, z] = xz || tilfeldigPunkt(), g = new T.Group(); g.position.set(x, xz ? 0 : 26, z);
     const m = modell(ci), lab = navneskilt(ci); lab.position.y = 3.9 + COMBOS[ci].r * 0.15; g.add(m, lab); feltG.add(g);
-    felt.push({ ci, g, m, tilstand: xz ? 'gaa' : 'fall', retning: Math.PI / 2 + (Math.random() - 0.5) * 1.2, fart: 1.2 + Math.random() * 0.8, snu: 2 + Math.random() * 3, alder: 0 });
+    felt.push({ ci, g, m, tilstand: xz ? 'gaa' : 'fall', retning: Math.PI / 2 + (Math.random() - 0.5) * 1.2, fart: (1.2 + Math.random() * 0.8) * (I.GANGFART || 1), snu: 2 + Math.random() * 3, alder: 0, fase: Math.random(), v: 0, lab });
   }
   function fjern(a) { feltG.remove(a.g); felt.splice(felt.indexOf(a), 1); }
+  // Bevegelse på åkeren:
+  // - Hvert matdyr holder avstand til de andre (RADIUS) og til roboten. Det som ligger bak i køen mot porten, senker farten
+  //   i stedet for å dytte. Rekkefølgen er entydig (lengst øst går først), så to matdyr kan ikke stoppe hverandre for godt.
+  // - Gjerdet holder dem inne. Bare porten i øst slipper dem ut, og de blir borte først bak hekken, utenfor åkeren.
+  // - Har et matdyr vært lenge på åkeren (LANG s), går det rett mot porten uten å vente på andre. Det fjernes aldri inne på åkeren.
+  const RADIUS = 1.05, LANG = 150;
+  const fremdrift = a => a.tilstand === 'gaa' ? a.g.position.x : 100 + a.g.position.x;
   function oppdaterFelt(dt, t) {
     if ((nesteRegn -= dt) <= 0 && felt.length < 14) { slippNed(trekk()); nesteRegn = 1.2 + Math.random() * 0.8; }
+    const e = eng(), po = port(), r = I.robot && I.robot(), rp = r && r.position.y < 1 ? r.position : null;
+    const iOmraadet = (x, z) => iFeltet(x, z) || (x > e.x1 - 3 && Math.abs(z - po.z) < po.halv - 1.0);   // åkeren pluss portåpningen
+    const bakke = felt.filter(a => a.tilstand === 'gaa' || a.tilstand === 'ut' || a.tilstand === 'borte');
     for (const a of [...felt]) {
       a.alder += dt; const p = a.g.position;
       if (a.tilstand === 'fall') { p.y -= dt * 16; if (p.y <= 0) { p.y = 0; a.tilstand = 'gaa'; } continue; }
-      if (a.alder > 240) { fjern(a); continue; }   // sikkerhetsnett: et dyr som har satt seg fast
-      const e = eng(), po = port();
+      const iAaker = iOmraadet(p.x, p.z);
+      // Et matdyr som er sluppet på tunet (utenfor åkeren) blir stående. Etter 4 minutter krymper det bort der.
+      if (a.tilstand === 'gaa' && !iAaker && a.alder > 240) a.tilstand = 'krymp';
+      if (a.tilstand === 'krymp') { a.krymp = (a.krymp || 1) - dt * 1.6; if (a.krymp <= 0) fjern(a); else a.g.scale.setScalar(a.krymp); continue; }
       if (a.tilstand === 'borte') { a.krymp = (a.krymp || 1) - dt * 1.6; if (a.krymp <= 0) { fjern(a); continue; } a.g.scale.setScalar(a.krymp); }
       // Ønsket retning: østover med litt vandring, mot porten den siste biten, og langs stien ut til hekken
       if ((a.snu -= dt) <= 0) { a.vandre = (Math.random() - 0.5) * 1.6; a.snu = 2 + Math.random() * 3; }
+      const haster = a.alder > LANG;
       let maal;
-      if (a.tilstand === 'ut' || a.tilstand === 'borte') maal = Math.PI / 2 + (po.z - p.z) * 0.15;
-      else if (p.x > e.x1 - 12) maal = Math.atan2(po.x + 2 - p.x, po.z - p.z);
+      if (a.tilstand !== 'gaa') maal = Math.PI / 2 + (po.z + (a.bane || 0) - p.z) * 0.25;
+      else if (p.x > e.x1 - 14 || haster) {
+        const B = po.halv - 1.3;   // tre felt gjennom porten: -B, 0 og +B
+        if (a.bane === undefined) a.bane = Math.max(-1, Math.min(1, Math.round((p.z - po.z) / 4))) * B;
+        // Har matdyret ventet en stund, bytter det til feltet med færrest matdyr foran seg
+        if ((a.vent || 0) > 1.2) { const foran = f => bakke.filter(b => b !== a && fremdrift(b) > fremdrift(a) && Math.abs(b.g.position.z - (po.z + f)) < 1.6).length;
+          a.bane = [-B, 0, B].sort((u, w) => foran(u) - foran(w) || Math.abs(u - a.bane) - Math.abs(w - a.bane))[0]; a.vent = 0; }
+        const mz = po.z + a.bane, tx = p.x > e.x1 - 5 && Math.abs(p.z - mz) > 0.8 ? p.x + 0.4 : po.x + 3;   // inntil gjerdet: gå først sidelengs til feltet
+        maal = Math.atan2(tx - p.x, mz - p.z); }
       else maal = Math.PI / 2 + (a.vandre || 0);
-      const diff = Math.atan2(Math.sin(maal - a.retning), Math.cos(maal - a.retning)); a.retning += diff * Math.min(1, dt * 1.5);
-      const nx = p.x + Math.sin(a.retning) * a.fart * dt, nz = p.z + Math.cos(a.retning) * a.fart * dt;
-      const iPorten = Math.abs(nz - po.z) < po.halv - 0.6 && nx > e.x1 - 3;
-      if (a.tilstand === 'ut' || a.tilstand === 'borte' || iFeltet(nx, nz) || iPorten) { p.x = nx; p.z = nz; }
-      else if (iFeltet(p.x, p.z)) { p.z = Math.min(e.z1 - 1.3, Math.max(e.z0 + 1.3, nz)); p.x = Math.min(Math.max(nx, e.x0 + 1.3), e.x1 - 1.3); }   // glir langs gjerdet mot porten (et matdyr utenfor åkeren blir stående)
-      if (a.tilstand === 'gaa' && p.x > e.x1 + 0.5) a.tilstand = 'ut';
-      if (a.tilstand === 'ut' && p.x > e.x1 + 9) a.tilstand = 'borte';
+      // Unnvikelse: styr bort fra naboer og roboten, og senk farten bak et matdyr som er lenger fremme
+      let fart = a.fart, sving = 0;
+      const fx = Math.sin(a.retning), fz = Math.cos(a.retning);
+      const hindre = bakke.filter(b => b !== a).map(b => ({ x: b.g.position.x, z: b.g.position.z, foran: fremdrift(b) > fremdrift(a), rob: false }));
+      if (rp && a.tilstand === 'gaa') hindre.push({ x: rp.x, z: rp.z, foran: true, rob: true });
+      for (const h of hindre) {
+        const dx = h.x - p.x, dz = h.z - p.z, d = Math.hypot(dx, dz), min = h.rob ? RADIUS + 0.7 : 2 * RADIUS;
+        if (d > min + 2.2 || d < 1e-4) continue;
+        const fram = dx * fx + dz * fz, side = dx * fz - dz * fx;   // side > 0: hinderet er til venstre
+        if (fram > 0 && Math.abs(side) < min && (h.foran || h.rob) && !(haster && !h.rob)) fart = Math.min(fart, a.fart * Math.max(0, Math.min(1, (d - min) / 1.6)));
+        if (fram > -0.5 && (h.rob || p.x < e.x1 - 6)) sving += -Math.sign(side || 1) * (1 - (d - min) / 2.2) * 0.9;
+      }
+      a.vent = fart < a.fart * 0.3 && a.tilstand === 'gaa' ? (a.vent || 0) + dt : 0;
+      maal += Math.max(-1.1, Math.min(1.1, sving));
+      const diff = Math.atan2(Math.sin(maal - a.retning), Math.cos(maal - a.retning)); a.retning += diff * Math.min(1, dt * 2);
+      // Myk start og stopp, så beina ikke rykker
+      a.v += (fart - a.v) * Math.min(1, dt * 4);
+      let nx = p.x + Math.sin(a.retning) * a.v * dt, nz = p.z + Math.cos(a.retning) * a.v * dt;
+      // Overlapp rettes ved at matdyret skyves fra naboer (den bakerste skyves mest). Roboten skyves ikke.
+      for (const h of hindre) {
+        const dx = nx - h.x, dz = nz - h.z, d = Math.hypot(dx, dz), min = h.rob ? RADIUS + 0.6 : 2 * RADIUS - 0.1;
+        if (d < min && d > 1e-4 && !(haster && !h.rob)) { const k = (min - d) * (h.rob ? 1 : (h.foran ? 0.8 : 0.2)); nx += dx / d * k; nz += dz / d * k; }
+      }
+      if (a.tilstand !== 'gaa') { nz = Math.max(po.z - po.halv + 1.0, Math.min(po.z + po.halv - 1.0, nz)); p.x = Math.max(p.x, nx); p.z = nz; }   // på stien: aldri tilbake inn
+      else if (!iAaker) { /* på tunet: blir stående */ }
+      else if (iOmraadet(nx, nz)) { p.x = nx; p.z = nz; }
+      else { p.z = Math.min(e.z1 - 1.3, Math.max(e.z0 + 1.3, nz)); p.x = Math.min(Math.max(nx, e.x0 + 1.3), e.x1 - 1.3); if (Math.abs(p.z - po.z) < po.halv - 1.0) p.x = Math.max(p.x, Math.min(nx, e.x1 + 1)); }   // glir langs gjerdet
+      const flytt = a.forrX === undefined ? 0 : Math.hypot(p.x - a.forrX, p.z - a.forrZ);
+      a.forrX = p.x; a.forrZ = p.z;
+      a.vFaktisk = flytt / Math.max(dt, 1e-3); a.fase += flytt;
+      if (a.tilstand === 'gaa' && p.x > e.x1 + 0.6) a.tilstand = 'ut';
+      if (a.tilstand === 'ut' && p.x > e.x1 + 13.5) a.tilstand = 'borte';   // bak hekken
       a.m.rotation.y = a.retning;
-      if (a.m.userData.fig) { if (!I.REDUSERT) I.animerNy(a.m.userData.fig, t + a.alder, true); } else a.m.position.y = I.REDUSERT ? 0 : Math.abs(Math.sin(t * 7 + a.alder)) * 0.12;
+      // Navneskiltet blir aldri større på skjermen enn et skilt ca. 16 m unna (22 m på smal skjerm), og tones ut helt inntil kameraet.
+      // Ellers dekker skiltene skjermen når mange matdyr står samlet ved porten.
+      if (a.lab) { const cam = I.camera, d = cam.position.distanceTo(a.g.position), D0 = cam.aspect < 1 ? 22 : 16, k = Math.min(1, d / D0); a.lab.scale.set(4.2 * k, 1.23 * k, 1); a.lab.material.opacity = Math.max(0, Math.min(1, (d - 3) / 4)); a.lab.material.transparent = true; }
+      const gaar = a.vFaktisk > 0.15;
+      if (a.m.userData.fig) { if (!I.REDUSERT) I.animerNy(a.m.userData.fig, t + a.alder, gaar, a.fase); }
+      else a.m.position.y = I.REDUSERT || !gaar ? 0 : Math.abs(Math.sin(a.fase * Math.PI / 0.8)) * 0.12;
     }
   }
 

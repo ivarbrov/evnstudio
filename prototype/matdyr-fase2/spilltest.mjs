@@ -78,5 +78,25 @@ const d = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-prot
   return ut; })()
 `);
 ok('salg lekker ikke geometrier', Array.isArray(d) && d[d.length - 1] - d[1] <= 1);
+// Åkeren: 14 matdyr samlet foran porten, pluss vanlig regn i 4 minutter. Ingen skal gå gjennom gjerdet, bli fjernet inne på åkeren,
+// stå fast i mer enn 10 s eller overlappe hverandre i mer enn 1 s til sammen. Alle de 14 skal ha kommet ut.
+const f = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-proto'); EVNVis({ fane: 'spill' }); await new Promise(r => setTimeout(r, 200));
+  const I = EVNIntern, P = EVNProto, e = { x0: -31, x1: 31, z0: 24, z1: 56 }, pz = 40, dt = 1 / 30, info = new Map(), ut = { inneFjernet: 0, brudd: 0, stille: 0, overlapp: 0 };
+  I.robot().position.set(0, 0.45, 10); const forste = [];
+  for (let i = 0; i < 14; i++) { P.slippNed(i * 7 % 160, [e.x1 - 14 + (i % 4) * 2.5, e.z0 + 4 + Math.floor(i / 4) * 6 + (i % 4)]); forste.push(P.felt()[P.felt().length - 1]); }
+  for (let i = 0; i < 240 * 30; i++) {
+    I.krok.steg(dt, i * dt); const felt = P.felt(), sett = new Set(felt);
+    for (const a of felt) { if (a.tilstand === 'fall') continue; const p = a.g.position, d = info.get(a) || { st: 0 }; info.set(a, d);
+      const inne = p.x > e.x0 + 1 && p.x < e.x1 - 1 && p.z > e.z0 + 1 && p.z < e.z1 - 1, port = p.x >= e.x1 - 3 && Math.abs(p.z - pz) < 2.5;
+      if (inne) d.inne = true; if (a.tilstand === 'gaa' && d.inne && !inne && !port) ut.brudd++;
+      if (a.tilstand === 'gaa') { d.st = a.vFaktisk < 0.1 ? d.st + dt : 0; ut.stille = Math.max(ut.stille, d.st); }
+      if (a.tilstand === 'ut') d.ute = true; d.x = p.x; }
+    for (const [a, d] of info) if (!sett.has(a) && !d.borte) { d.borte = true; if (d.x < e.x1 + 10) ut.inneFjernet++; }
+    const b = felt.filter(a => a.tilstand === 'gaa' || a.tilstand === 'ut'); let ov = false;
+    for (let x = 0; x < b.length; x++) for (let y = x + 1; y < b.length; y++) if (Math.hypot(b[x].g.position.x - b[y].g.position.x, b[x].g.position.z - b[y].g.position.z) < 1.4) ov = true;
+    if (ov) ut.overlapp += dt; }
+  ut.alleUte = forste.every(a => info.get(a) && info.get(a).ute); ut.overlapp = +ut.overlapp.toFixed(2); ut.stille = +ut.stille.toFixed(1); return ut; })()
+`);
+ok('åkeren: ut gjennom porten, uten gjerdebrudd, fastlåsing eller fjerning inne (' + JSON.stringify(f) + ')', f.alleUte && f.brudd === 0 && f.inneFjernet === 0 && f.stille < 10 && f.overlapp < 1);
 console.log(feil.length ? feil : 'ingen feil i konsollen'); if (feil.length) process.exitCode = 1;
 ws.close(); p.kill();

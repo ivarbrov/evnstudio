@@ -160,4 +160,26 @@ Før forsvant matdyrene etter 70 sekunder, uansett hvor de var. Nå skjer dette:
 - De vandrer østover over åkeren.
 - Til slutt går de ut gjennom en port i østgjerdet og følger en sti bak en hekk, der de blir borte.
 
-Et matdyr som har satt seg fast, fjernes etter 4 minutter. Roboten kan ikke gå ut gjennom porten.
+Roboten kan ikke gå ut gjennom porten.
+
+### Kvalitetssikring av gangen (Ivar, 8.11.2026 kveld)
+Ivar har bedt om kvalitetssikring av seks punkter. Status for hvert punkt:
+
+1. **Gangbevegelser følger farten.** Bein, vugging, hale og vinger styres av tilbakelagt distanse. Ett skritt er ca. 0,9 m for firbeinte og 0,7 m for tobeinte. Når et matdyr venter, står det stille. Farten øker og avtar mykt.
+2. **Ingen går gjennom hverandre, gjerdet eller roboten.** Hvert matdyr holder avstand (radius 1,05 m) og styrer unna. Gjerdet holder dem inne, og bare porten slipper dem ut.
+3. **Ingen blokkerer hverandre ved porten.** Porten er utvidet fra 4,8 til 6,8 m, så det er tre felt gjennom den. Den som ligger bak, venter i stedet for å dytte. Rekkefølgen er entydig: den som er lengst øst, går først. Venter et matdyr mer enn 1,2 s, bytter det til feltet med færrest foran seg.
+4. **Ingen forsvinner på åkeren.** Et matdyr blir bare borte bak hekken, 13,5 m utenfor porten. Sikkerhetsnettet på 4 minutter gjelder nå bare matdyr som roboten har sluppet på tunet. De krymper bort der. Har et matdyr vært 150 s på åkeren, går det rett mot porten.
+5. **Tid til å fange.** Matdyrene kan tas med hele veien til porten. Vanlig gangfart gir disse tidene, fra landing til porten, i 600 simulerte sekunder: median 38 s, 10 % under 33 s, 90 % under 49 s, maks 57 s.
+6. **Mobil og PC.** Testet i 1280×800 og som mobil med berøring i 390×844 og 844×390. Navneskiltene blir aldri større på skjermen enn et skilt ca. 16 m unna (22 m på stående mobil). De tones ut helt inntil kameraet. Bildefrekvens er ikke målt på ekte enhet.
+
+Spilltest-sjekk 9 fyller 14 matdyr foran porten og simulerer 4 minutter med regn. Ingen får gå gjennom gjerdet, bli fjernet inne på åkeren eller stå fast mer enn 10 s.
+
+Gangfart kan velges under ⚙️ (spilltest): 🐢 Rolig (0,7×), 🚶 Vanlig og 🐇 Rask (1,4×). Det samme kan settes med `?gangfart=0.7` eller `?gangfart=1.4`.
+
+| Gangfart | Median på åkeren | 10–90 % | Matdyr per minutt |
+|---|---|---|---|
+| 🐢 Rolig | 55 s | 46–70 s | ca. 11 |
+| 🚶 Vanlig | 38 s | 33–49 s | ca. 16 |
+| 🐇 Rask | 29 s | 23–35 s | ca. 21 |
+
+Det kan være høyst 14 matdyr på åkeren samtidig. Roligere gange gir derfor også færre nye matdyr per minutt.

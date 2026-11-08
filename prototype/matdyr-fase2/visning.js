@@ -140,14 +140,21 @@
     return { g, kopi, nd, ny: true, nokkel: n, navn: c.navn, ci: NY_ID[n], sj: c.r, mat: c.mat, dyr: c.art, hode: nd.hode && nd.hode.o, legs: [] };
   }
   // Bevegelse som passer kroppen: firbeinte går i kryss, tobeinte vagger, vinger og hale lever sitt eget liv
-  function animerNy(f, t, gaar) {
+  // Porten ut av åkeren: halv bredde (m). Bred nok til at to matdyr kan gå ut side om side.
+  const PORT_HALV = 3.4;
+  // Gangfart for matdyrene på åkeren: 1 = vanlig (ca. 30–50 s over åkeren). Kan prøves som 0.7 eller 1.4 via ⚙️ i spilltest (?gangfart=).
+  const GANGFART = [0.7, 1, 1.4].includes(+new URLSearchParams(location.search).get('gangfart')) ? +new URLSearchParams(location.search).get('gangfart') : 1;
+  // fase (valgfri): tilbakelagt gangdistanse i meter. Da følger bein, vugging og vinger farten: ett skritt ≈ 0,9 m for firbeinte og 0,7 m for tobeinte.
+  // Uten fase brukes tiden som før (fast takt, f.eks. i Matdyr-fanen). Hode og hvilebevegelser følger alltid tiden.
+  function animerNy(f, t, gaar, fase) {
     const nd = f.nd, fire = !!nd.bein_vb, k = f.kopi;
+    const w = fase === undefined ? t * (fire ? 9 : 7) : fase * 2 * Math.PI / (fire ? 0.9 : 0.7);   // gangvinkel
     const sett = (n, x, y, z) => { const d = nd[n]; if (d) d.o.rotation.set(d.r.x + x, d.r.y + y, d.r.z + z); };
-    if (fire) { const a = gaar ? Math.sin(t * 9) * 0.45 : 0; sett('bein_vf', a, 0, 0); sett('bein_hb', a, 0, 0); sett('bein_hf', -a, 0, 0); sett('bein_vb', -a, 0, 0); k.position.y = gaar ? Math.abs(Math.sin(t * 9)) * 0.04 : Math.sin(t * 2.2) * 0.01; k.rotation.z = 0; }
-    else { const a = gaar ? Math.sin(t * 7) : 0; sett('bein_vf', a * 0.5, 0, 0); sett('bein_hf', -a * 0.5, 0, 0); k.rotation.z = gaar ? a * 0.09 : Math.sin(t * 1.6) * 0.025; k.position.y = gaar ? Math.abs(a) * 0.03 : 0; }
+    if (fire) { const a = gaar ? Math.sin(w) * 0.45 : 0; sett('bein_vf', a, 0, 0); sett('bein_hb', a, 0, 0); sett('bein_hf', -a, 0, 0); sett('bein_vb', -a, 0, 0); k.position.y = gaar ? Math.abs(Math.sin(w)) * 0.04 : Math.sin(t * 2.2) * 0.01; k.rotation.z = 0; }
+    else { const a = gaar ? Math.sin(w) : 0; sett('bein_vf', a * 0.5, 0, 0); sett('bein_hf', -a * 0.5, 0, 0); k.rotation.z = gaar ? a * 0.09 : Math.sin(t * 1.6) * 0.025; k.position.y = gaar ? Math.abs(a) * 0.03 : 0; }
     sett('hode', Math.sin(t * 1.3) * 0.07, Math.sin(t * 0.7) * 0.12, Math.sin(t * 0.9) * 0.05);
-    sett('hale', 0, Math.sin(t * (gaar ? 8 : 3)) * 0.35, 0);
-    const v = gaar ? Math.max(0, Math.sin(t * 8)) * 0.5 : (Math.sin(t * 1.8) * 0.5 + 0.5) * 0.12;
+    sett('hale', 0, gaar ? Math.sin(w * 0.9) * 0.35 : Math.sin(t * 3) * 0.35, 0);
+    const v = gaar ? Math.max(0, Math.sin(w * 0.9)) * 0.5 : (Math.sin(t * 1.8) * 0.5 + 0.5) * 0.12;
     sett('vinge_v', 0, 0, -v); sett('vinge_h', 0, 0, v);
   }
   const nySkalaC = {};
@@ -655,13 +662,13 @@
       const e = gd.eng, eg = new T.Group(); eg.userData.ikkeFlett = true; g.add(eg);
       const w = e.x1 - e.x0, d = e.z1 - e.z0, cx = (e.x0 + e.x1) / 2, cz = (e.z0 + e.z1) / 2;
       const jord = new T.Mesh(new T.PlaneGeometry(w, d), new T.MeshStandardMaterial({ map: aakerTekstur(w, d), roughness: 0.97 })); jord.rotation.x = -Math.PI / 2; jord.position.set(cx, 0.03, cz); jord.receiveShadow = true; eg.add(jord);
-      rektGjerde(eg, e.x0 - 0.6, e.x1 + 0.6, e.z0 - 0.6, e.z1 + 0.6, 2.4);
+      rektGjerde(eg, e.x0 - 0.6, e.x1 + 0.6, e.z0 - 0.6, e.z1 + 0.6, PORT_HALV);
       // Porten ut av åkeren i øst: to gule stolper, en sti ut og en hekk der matdyrene går videre ut i verden
       const pz = (e.z0 + e.z1) / 2, px = e.x1 + 0.6;
-      for (const s2 of [-1, 1]) boks(eg, 0.35, 2.0, 0.35, px, 1.0, pz + s2 * 2.4, GUL);
-      const utsti = new T.Mesh(new T.PlaneGeometry(11, 4.2), M('#c9a06a', 0.95)); utsti.rotation.x = -Math.PI / 2; utsti.position.set(px + 5.3, 0.04, pz); utsti.receiveShadow = true; eg.add(utsti);
-      skilt(eg, ['👋 Ut av åkeren'], px + 1.2, 0, pz - 3.6, -Math.PI / 2, '#ffe9a8');
-      const hekk = []; for (let i = 0; i < 9; i++) hekk.push({ x: px + 10.5 + (i % 2) * 1.2, z: pz - 6 + i * 1.5, ry: i * 1.3, s: 1.5 + (i % 3) * 0.25 });
+      for (const s2 of [-1, 1]) boks(eg, 0.35, 2.0, 0.35, px, 1.0, pz + s2 * PORT_HALV, GUL);
+      const utsti = new T.Mesh(new T.PlaneGeometry(14, PORT_HALV * 2 - 0.6), M('#c9a06a', 0.95)); utsti.rotation.x = -Math.PI / 2; utsti.position.set(px + 6.8, 0.04, pz); utsti.receiveShadow = true; eg.add(utsti);
+      skilt(eg, ['👋 Ut av åkeren'], px + 1.2, 0, pz - PORT_HALV - 1.2, -Math.PI / 2, '#ffe9a8');
+      const hekk = []; for (let i = 0; i < 9; i++) hekk.push({ x: px + 12 + (i % 2) * 1.2, z: pz - 6.4 + i * 1.6, ry: i * 1.3, s: 1.5 + (i % 3) * 0.25 });
       if (NY && mdel('busk')) { const hg = EVNMiljo.instanser(mdel('busk'), hekk); hg.userData.ikkeFlett = true; eg.add(hg); }
       else hekk.forEach(h => { const b = new T.Mesh(new T.SphereGeometry(1.1 * h.s, 12, 8), M('#4f9a3a', 0.9)); b.position.set(h.x, 0.8, h.z); eg.add(b); });
       const fra = n >= 2 ? 21.5 : 15.5, til = e.z0 - 0.4; const sti = new T.Mesh(new T.PlaneGeometry(6, til - fra + 1), M('#c9a06a', 0.95)); sti.rotation.x = -Math.PI / 2; sti.position.set(0, 0.04, (fra + til) / 2); sti.receiveShadow = true; eg.add(sti);
@@ -906,10 +913,12 @@
     d.innerHTML = '<h2>⚙️ Grafikk og ytelse</h2>' + (NY ? '<div class="rad">' + Object.keys(EVNMiljo.NIVAER).map(k => '<button type="button" data-k="' + k + '" aria-pressed="' + (k === KV) + '">' + EVNMiljo.NIVAER[k].navn + '</button>').join('') + '</div>' : '<p>Gammel grafikk (sammenligning).</p>') +
       '<p class="liten">' + (maaler ? maaler.gpu : '') + '<br>Skjerm ' + innerWidth + '×' + innerHeight + ' · piksler ×' + renderer.getPixelRatio() + ' · ' + i.calls + ' tegnekall · ' + Math.round(i.triangles / 1000) + 'k trekanter</p>' +
       (NY ? '<div class="rad"><button type="button" id="profilBytt">' + (EVNMiljo.PROFIL === 'mb' ? '↩ Vanlig grafikkprofil' : '🎨 Prøv Min Bondegård-profilen') + '</button></div>' : '') +
+      '<p class="liten">Gangfart på åkeren (spilltest)</p><div class="rad">' + [['0.7', '🐢 Rolig'], ['1', '🚶 Vanlig'], ['1.4', '🐇 Rask']].map(([v, n]) => '<button type="button" data-gang="' + v + '" aria-pressed="' + (String(GANGFART) === v) + '">' + n + '</button>').join('') + '</div>' +
       (NY ? '<div class="rad"><button type="button" id="pilotBytt">' + (PILOT.length ? '↩ Uten figurpiloten' : '🧪 Figurpiloten i spillet') + '</button><button type="button" id="pilotVis">🖼️ Figurpiloten (16)</button></div>' : '') + (NY && EVNMiljo.PROFIL !== 'mb' ? '<div class="rad"><button type="button" id="tmBytt">' + (SAMMENLIGN ? '◻ Vanlig visning' : '◧ Sammenlign tonemapping (delt skjerm)') + '</button></div>' : '') + '<p id="maalRes" class="liten">Trykk «Mål» og la spillet stå i 10 sekunder.</p><div class="rad"><button type="button" id="maalStart">📊 Mål i 10 s</button><button type="button" id="maalBytt">' + (NY ? '↔ Vis gammel grafikk' : '↔ Vis ny grafikk') + '</button><button type="button" id="maalLukk">Lukk</button></div>';
     d.hidden = false;
     d.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { EVNMiljo.lagreKvalitet(b.dataset.k); const u = new URL(location.href); u.searchParams.set('kvalitet', b.dataset.k); location.href = u; });
     $('maalLukk').onclick = () => { d.hidden = true; };
+    d.querySelectorAll('[data-gang]').forEach(b => b.onclick = () => { const u = new URL(location.href); if (b.dataset.gang === '1') u.searchParams.delete('gangfart'); else u.searchParams.set('gangfart', b.dataset.gang); location.href = u; });
     if ($('pilotBytt')) $('pilotBytt').onclick = () => { const u = new URL(location.href); if (PILOT.length) u.searchParams.delete('pilot'); else u.searchParams.set('pilot', '1'); location.href = u; };
     if ($('pilotVis')) $('pilotVis').onclick = () => { location.href = 'nyefigurer.html?profil=mb&vinkler=34&figur=' + Object.keys(PILOT_ID).join(','); };
     if ($('profilBytt')) $('profilBytt').onclick = () => { const u = new URL(location.href); if (EVNMiljo.PROFIL === 'mb') u.searchParams.delete('profil'); else { u.searchParams.set('profil', 'mb'); u.searchParams.delete('tonemap'); } location.href = u; };
@@ -950,7 +959,7 @@
   const sideKlar = new Promise(ok => document.readyState === 'loading' ? addEventListener('DOMContentLoaded', ok) : ok());
   Promise.all([robotKlar, sideKlar, ressurserKlar]).then(() => { if (NY) byggVerden(); velgFane('matdyr'); requestAnimationFrame(loop); window.EVNKlar = true; });
   // For automatiske skjermbilder: ?fane=gard&niva=6 eller ?figur=burgersau&vis=spill
-  window.EVNIntern = { T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
+  window.EVNIntern = { PORT_HALV, GANGFART, T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
   window.EVNSpill = sp; window.EVNRobot = () => gd.robot; window.EVNSteg = steg; window.EVNSpor = SPOR; window.EVNGeo = { HX, HZ, EH, DEKKE, W, KX, KZ, A, B, LREP }; window.EVNBane = bane; window.EVNVegger = () => vegger;
   window.EVNVis = (o) => { if (o.fane === 'spill') { if (o.niva) sp.niva = sp.testNiva = o.niva; velgFane('spill'); return; } if (o.fane === 'gard') { if (o.niva) gd.niva = o.niva; if (o.neste !== undefined) gd.neste = o.neste; velgFane('gard'); if (o.teta !== undefined) { bane.teta = o.teta; oppdaterKamera(); } } else { if (o.figur) md.valgt = o.figur; if (o.vis) md.visning = o.vis; if (o.mobil) holder.classList.add('ramme'); storrelse(); velgFane('matdyr'); if (o.teta !== undefined) bane.teta = o.teta; } };
 })();
