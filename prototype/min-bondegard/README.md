@@ -81,3 +81,4 @@ Status: prototype, ikke spill. Ingen spillogikk, lagring, statistikk eller musik
   - **Meny → Test → Full gård** legger til plassholdere for en større gård: en ekstra låve, et hønsehus, 6 åkre, et beite og 6 dyr. Kopiene står sør for veien. De gir 18–21 % flere tegnekall og 23 % flere trekanter.
   - Mobil har fått flere oppløsninger å teste: 2,5× og 3× (opp til dpr).
   - Testvalgene lagres under `mb-test` og gjelder etter omlasting.
+- 0.5.2: forhåndslasting skjer nå mens «Laster …» fortsatt vises, etter at både robot og rev er lastet. Før skjedde den 0,6 s etter at scenen var vist. Langtesten og «Mål ytelse» viser nå oppstartstid fra sidestart og tiden forhåndslastingen tok.

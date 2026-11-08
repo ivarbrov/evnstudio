@@ -59,14 +59,14 @@
   <div class="grp" role="group" aria-label="Ytelsestest"><b>Test</b>
     <button data-test="forhand">Forhåndslast</button><button data-test="full">Full gård</button></div>
 </div>
-<div id="info">Testscene 0.5.1 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
+<div id="info">Testscene 0.5.2 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
 <div id="maal"><div id="maalTekst">…</div><div class="maalKnapper"><button id="kopier">Kopier</button><button id="lukkMaal">Lukk</button></div></div>
 
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.5.1';
+const VERSJON = 'testscene 0.5.2';
 const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
@@ -1022,7 +1022,7 @@ function lagRev() {
     rev.position.set(-17.6, hoyde(-17.6, 4.0) - b2.min.y, 4.0); rev.rotation.y = Math.PI / 2 + 0.35; // i skogkanten utenfor gjerdet rev.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.userData.eier = rev; } });
     rev.userData.kat = 'rev'; scene.add(rev);
     // Usynlig trykkflate: skinnet modell treffes ikke presist av raycast i r128
-    const flate = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 2.2, 10), new THREE.MeshBasicMaterial({visible: false})); flate.position.set(rev.position.x, rev.position.y + 1.1, rev.position.z); flate.userData.eier = rev; scene.add(flate); klikkbar(flate); revMixer = new THREE.AnimationMixer(rev); gl.animations.forEach(a => revKlipp[a.name] = a); revSpill('Idle'); }, undefined, () => {});
+    const flate = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 2.2, 10), new THREE.MeshBasicMaterial({visible: false})); flate.position.set(rev.position.x, rev.position.y + 1.1, rev.position.z); flate.userData.eier = rev; scene.add(flate); klikkbar(flate); revMixer = new THREE.AnimationMixer(rev); gl.animations.forEach(a => revKlipp[a.name] = a); revSpill('Idle'); ferdigLast(); }, undefined, ferdigLast);
 }
 
 /* ======================= Ku, gris og sau (0.5): samme stil som hønene – myke former, store øyne med lokk, rosa kinn ======================= */
@@ -1236,7 +1236,7 @@ document.getElementById('bench').onclick = async () => {
     `Skygge hvert 2. bilde ved ${k(prNaa, 2)}× (synkron): ${k(halv, 1)} ms mot ${k(hel, 1)} ms${gtHel !== null ? ' · GPU hel: ' + k(gtHel, 1) + ' ms' : ''}`,
     `Skyggekart i drift: ${SKYGGE_HALV ? 'hvert 2. bilde' : 'hvert bilde'} · tegnekall ${info.calls} · trekanter ${k(info.triangles / 1000)}k`,
     `GPU-tidsmåling: ${TQ ? 'tilgjengelig' : 'ikke tilgjengelig i denne nettleseren'} · GPU: ${gpu}`,
-    'Synkron = render() + readPixels: CPU + GPU + ventetid. Ikke ren GPU-tid, og ikke egnet til å rangere oppløsninger (kan synke med høyere oppløsning).');
+    'Synkron = render() + readPixels: CPU + GPU + ventetid. Ikke ren GPU-tid, og ikke egnet til å rangere oppløsninger (kan synke med høyere oppløsning).', oppstartTekst(), `Forhåndslast: ${TEST.forhand ? 'på' : 'av'} · Full gård: ${TEST.full ? 'på' : 'av'}`);
   window.__benchmark = {vist, tom, rader, hel, halv, gtHel, gpu, prNaa}; maalTekst.textContent = linjer.join('\n'); maaler = false; nullstill();
 };
 /* ======================= Testvalg (0.5.1): lagres på enheten og gjelder fra neste lasting ======================= */
@@ -1256,7 +1256,11 @@ function fullGard() {
   kopi('laave', 0, 26); kopi('honsehus', -26, 24); kopi('akre', 0, 18); kopi('dyr', 30, 18, true);
   [[lagKu, 15.8, 19.4], [lagKu, 17.2, 21.6], [lagGris, 18.6, 19.6], [lagGris, 19.6, 21.8], [lagSau, 20.6, 19.4], [lagSau, 21.2, 21.6]].forEach(([f, x, z]) => { const g = f(x, z); g.userData.sone = [15.2, 21.8]; g.userData.zs = [19.1, 22.4]; });
 }
-let fullInfo = '', forhandMs = null;
+let fullInfo = '', forhandMs = null, klarMs = null, antLastet = 0;
+function ferdigLast() { if (++antLastet < 2) return;
+  if (TEST.forhand) forhandMs = forhandslast();
+  klarMs = performance.now(); document.getElementById('last').style.display = 'none'; }
+const oppstartTekst = () => `Oppstart: scenen klar etter ${klarMs === null ? '–' : k(klarMs / 1000, 1) + ' s'} fra sidestart${TEST.forhand ? ', herav forhåndslast ' + (forhandMs === null ? '–' : k(forhandMs) + ' ms') : ' (uten forhåndslast)'}`;
 
 /* Hakk-analyse (0.5.1): for hvert intervall over 25 ms lagres det som skjedde i bildet før:
    tid i vår JS (oppdatering og render-kall), ny geometri/tekstur lastet opp, ny shader, kamerabevegelse, trykk og robotens tilstand. */
@@ -1294,7 +1298,7 @@ function langStopp(grunn) {
     `  vår JS over 12 ms (oppdatering + render-kall): ${ant(js)}`,
     `  ingen av delene (trolig utenfor vår kode: minnerydding, nettleser eller system): ${ant(ingen)}`,
     'Lengste intervaller:', ...H.slice().sort((a, b) => b.iv - a.iv).slice(0, 10).map(h => `  ${mmss(h.t)}  ${k(h.iv)} ms  JS ${k(h.upd + h.ren, 1)} ms${h.dProg > 0 ? ' · ny shader' : ''}${opp(h) ? ' · opplasting' : ''}${h.pan ? ' · panorering' : ''}${h.trykk ? ' · trykk' : ''} · robot ${h.robot}`),
-    `Forhåndslast: ${TEST.forhand ? 'på' + (forhandMs !== null ? ' (' + k(forhandMs) + ' ms ved start)' : '') : 'av'} · Full gård: ${TEST.full ? 'på' : 'av'}`);
+    `Forhåndslast: ${TEST.forhand ? 'på' : 'av'} · Full gård: ${TEST.full ? 'på' : 'av'}`, oppstartTekst());
   window.__langtest = {alle, bev, ro, med, varighet}; maalBoks.classList.add('vis'); maalTekst.textContent = linjer.join('\n');
 }
 langKnapp.onclick = () => lang.paa ? langStopp('stoppet manuelt') : langStart();
@@ -1317,8 +1321,7 @@ function bygg() {
       // Hatten festes til hodeleddet, så den følger alle hodebevegelser (nikk, dans, sitting)
       hatt.position.set(hp.x, hp.y + hattOffset, hp.z); hatt.rotation.set(0, robot.rotation.y, 0); hatt.updateMatrixWorld(true); hode.attach(hatt); }
     robot.position.y = 0;
-    document.getElementById('last').style.display = 'none';
-    if (TEST.forhand) setTimeout(() => { forhandMs = forhandslast(); }, 600); // etter at reven også er lastet
+    ferdigLast();
   }, undefined, () => { document.getElementById('last').textContent = 'Fant ikke roboten'; });
 }
 
