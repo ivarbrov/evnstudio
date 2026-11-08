@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Vikinglandsby 0.3.1 – EVN Studio</title>
+<title>Vikinglandsby 0.3.2 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -184,7 +184,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.3.1</div>
+    <div class="evn-ver" id="versjon">Versjon 0.3.2</div>
   </div>
 </div>
 
@@ -460,7 +460,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.3.1';
+const VERSJON = '0.3.2';
 const LAGRING = 'evn-vikinglandsby-v1';
 const LYD_NOKKEL = 'evn-vikinglandsby-lyd';
 const TEST = location.hash === '#test';
@@ -2035,7 +2035,7 @@ function oppdaterVikinger(dt) {
 }
 function oppdaterEffekter(dt) {
   for (let i = flytere.length - 1; i >= 0; i--) { const f = flytere[i]; f.t += dt; f.s.position.y += dt * 2.5; f.s.material.opacity = 1 - f.t / 1.3; if (f.t > 1.3) { scene.remove(f.s); f.s.material.map.dispose(); f.s.material.dispose(); flytere.splice(i, 1); } }
-  for (let i = partikler.length - 1; i >= 0; i--) { const p = partikler[i]; p.t += dt; p.v.y -= 18 * dt; p.m.position.addScaledVector(p.v, dt); p.m.rotation.x += dt * 6; if (p.t > p.liv || p.m.position.y < 0) { scene.remove(p.m); partikler.splice(i, 1); } }
+  for (let i = partikler.length - 1; i >= 0; i--) { const p = partikler[i]; p.t += dt; p.v.y -= 18 * dt; p.m.position.addScaledVector(p.v, dt); p.m.rotation.x += dt * 6; if (p.t > p.liv || (p.v.y < 0 && p.m.position.y < bakkeY(p.m.position.x, p.m.position.z) - 0.1)) { scene.remove(p.m); partikler.splice(i, 1); } }
 }
 function oppdaterKamera(dt) {
   if (window.__kamFri) return;   // bare for testing av nærbilder
