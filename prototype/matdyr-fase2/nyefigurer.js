@@ -2,7 +2,7 @@
 (function () {
   const T = THREE, q = new URLSearchParams(location.search), NAVN = ['donutku', 'burgersau', 'pizzaskilpadde', 'shakeand', 'spagettipingvin'];
   const VIS = { donutku: 'Donutku', burgersau: 'Burgersau', pizzaskilpadde: 'Pizzaskilpadde', shakeand: 'Shakeand', spagettipingvin: 'Spagettipingvin' };
-  const valgt = q.get('figur') ? [q.get('figur')] : NAVN, vinkel = q.get('vinkel') || '34';
+  const valgt = q.get('figur') ? q.get('figur').split(',') : NAVN, vinkel = q.get('vinkel') || '34';
   const r = new T.WebGLRenderer({ antialias: true }); r.setPixelRatio(Math.min(2, devicePixelRatio)); r.outputEncoding = T.sRGBEncoding; r.toneMapping = T.ACESFilmicToneMapping; r.shadowMap.enabled = true; r.shadowMap.type = T.PCFSoftShadowMap;
   document.getElementById('v').appendChild(r.domElement);
   const s = new T.Scene(); s.background = new T.Color('#bfe3f7').convertSRGBToLinear();
@@ -24,7 +24,7 @@
     const m = g.scene; m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.material.transparent) o.material.depthWrite = false; } });
     m.position.x = (i - (valgt.length - 1) / 2) * avstand; s.add(m); figurer[i] = m; ok();
   })))).then(() => {
-    document.getElementById('etikett').innerHTML = valgt.map(n => '<span>' + VIS[n] + '</span>').join('');
+    document.getElementById('etikett').innerHTML = valgt.map(n => '<span>' + (VIS[n] || n.replace('pilot_', '').replace('_', ' + ')) + '</span>').join('');
     if (q.get('etikett') === '0') document.getElementById('etikett').hidden = true;
     // Én visning per figur: hver figur står for seg selv og får sitt eget kamera (rutenett: kolonner = figurer, rader = vinkler)
     const vinkler = (q.get('vinkler') || vinkel).split(',');

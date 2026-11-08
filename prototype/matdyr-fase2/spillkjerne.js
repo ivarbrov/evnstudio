@@ -73,14 +73,24 @@
     if (!dyrG) return; dyrG.clear();
     const deler = I.gamleFigurDeler(), m4 = new T.Matrix4(), V = T.Vector3, grupper = {}, enkle = [];
     for (let i = 0; i < Math.min(aapneNa, S.base.length); i++) { const ci = S.base[i]; if (ci < 0) continue; const nn = I.nyNavnFor && I.nyNavnFor(ci), fi = nn ? 'n:' + nn : FIGUR[ci]; if (fi === undefined) enkle.push(i); else (grupper[etasjeAv(i) + '|' + fi] = grupper[etasjeAv(i) + '|' + fi] || []).push(i); }
+    // Plassene viser alltid lav detalj. Delene uten tekstur (felles vertexfarge-materialer) slås sammen per etasje til én mesh per materiale,
+    // så antall tegnekall ikke vokser med antall ulike matdyr. Teksturerte deler (glasur, vaffel, pasta) instanseres per figur.
+    const felles = {};
     for (const [k, ids] of Object.entries(grupper)) {
-      const [es, fi] = k.split('|'), e = +es, eg = new T.Group(); eg.userData.etasje = e; dyrG.add(eg);
-      const dd = fi.startsWith('n:') ? I.nyFigurDeler(fi.slice(2), 'lav') : deler[+fi].deler;   // plassene viser alltid lav detalj (mange figurer samtidig)
+      const [es, fi] = k.split('|'), e = +es; let eg = dyrG.children.find(c => c.userData.etasje === e && c.userData.figur === fi);
+      if (!eg) { eg = new T.Group(); eg.userData.etasje = e; eg.userData.figur = fi; dyrG.add(eg); }
+      const dd = fi.startsWith('n:') ? I.nyFigurDeler(fi.slice(2), 'plass') : deler[+fi].deler;
+      const matr = ids.map(pi => { const p = plasserNa[pi]; return new T.Matrix4().compose(new V(p.x, p.y + 0.2, p.z), new T.Quaternion().setFromAxisAngle(new V(0, 1, 0), ((pi * 37) % 7 - 3) * 0.18), new V(1, 1, 1)); });
       for (const { geo, mat } of dd) {
+        if (mat.userData && mat.userData.felles) { const nk = e + '|' + mat.uuid; (felles[nk] = felles[nk] || { e, mat, geos: [] }).geos.push(...matr.map(m => geo.clone().applyMatrix4(m))); continue; }
         const inst = new T.InstancedMesh(geo, mat, ids.length);
-        ids.forEach((pi, j) => { const p = plasserNa[pi]; m4.compose(new V(p.x, p.y + 0.2, p.z), new T.Quaternion().setFromAxisAngle(new V(0, 1, 0), ((pi * 37) % 7 - 3) * 0.18), new V(1, 1, 1)); inst.setMatrixAt(j, m4); });
+        matr.forEach((m, j) => inst.setMatrixAt(j, m));
         inst.castShadow = true; eg.add(inst);
       }
+    }
+    for (const { e, mat, geos } of Object.values(felles)) {
+      const eg = new T.Group(); eg.userData.etasje = e; dyrG.add(eg);
+      const m = new T.Mesh(EVNMiljo.flett(geos), mat); m.castShadow = true; eg.add(m);
     }
     // Ledige plasser får en lysegrønn ramme med pluss, så de skiller seg tydelig fra opptatte og låste plasser
     const ledige = []; for (let i = 0; i < Math.min(aapneNa, S.base.length); i++) if (S.base[i] < 0) ledige.push(i);

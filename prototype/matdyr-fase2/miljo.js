@@ -92,7 +92,10 @@
   // vf = true: alle enkle fargematerialer (uten tekstur, gjennomsiktighet eller glød) slås sammen til ett felles
   // materiale med vertexfarger. Det gir langt færre tegnekall (samme grep som i Min Bondegård 0.3).
   let vfMat = null;
-  const fellesVF = () => vfMat || (vfMat = new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.68, metalness: 0 }));
+  let vfGlans = null;
+  // To felles materialer: matt og blankt (glasur, is, øyne). Alt annet ligger i vertexfargene.
+  const fellesVF = (glans = false) => glans ? (vfGlans || (vfGlans = Object.assign(new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.3, metalness: 0 }), { userData: { felles: true } })))
+    : (vfMat || (vfMat = Object.assign(new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.68, metalness: 0 }), { userData: { felles: true } })));
   // Materialkategorier (Min Bondegård-profilen): materialnavnet fra Blender bestemmer overflaten.
   // Fargen kommer fortsatt fra vertexfargene, så mange deler deler samme materiale (få tegnekall).
   const KATEGORI = [
@@ -165,13 +168,14 @@
     m.customProgramCacheKey = () => 'tp_' + k;
     return (katMat[k] = m);
   }
-  function deler(node, skala = 1, { vf = false } = {}) {
+  // vf: enkle materialer slås sammen til felles vertexfarge-materialer. alt: også selvlysende småting (lysprikker i øynene) – brukes for figurer på avstand.
+  function deler(node, skala = 1, { vf = false, alt = false } = {}) {
     node.updateMatrixWorld(true);
     const inv = new T.Matrix4().copy(node.matrixWorld).invert(), per = new Map();
     node.traverse(o => {
       if (!o.isMesh) return;
-      const m0 = o.material, enkel = vf && !m0.map && !m0.transparent && !(m0.emissive && m0.emissive.getHex() && m0.emissiveIntensity > 0);
-      const kat = enkel ? kategori(m0.name) : null, m = kat ? kategoriMaterial(kat) : enkel ? fellesVF() : delMat(m0), g = o.geometry.clone();
+      const m0 = o.material, enkel = vf && !m0.map && !m0.transparent && (alt || !(m0.emissive && m0.emissive.getHex() && m0.emissiveIntensity > 0));
+      const kat = enkel ? kategori(m0.name) : null, m = kat ? kategoriMaterial(kat) : enkel ? fellesVF(alt && m0.roughness < 0.4) : delMat(m0), g = o.geometry.clone();
       g.applyMatrix4(new T.Matrix4().multiplyMatrices(inv, o.matrixWorld));
       if (skala !== 1) g.scale(skala, skala, skala);
       for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(k)) g.deleteAttribute(k);
@@ -280,5 +284,5 @@
         if (fps < 50 && pr > 0.75) { renderer.setPixelRatio(Math.max(0.75, pr - 0.25)); settStorrelse(); vent = 120; }
         else if (fps > 58 && pr < maks) { renderer.setPixelRatio(Math.min(maks, pr + 0.25)); settStorrelse(); vent = 120; } } };
   }
-  window.EVNMiljo = { PROFIL, kategoriMaterial, detaljTekstur, NIVAER, velgKvalitet, lagreKvalitet, lys, lastGLB, deler, instanser, kopi, terreng, spred, maaler, adaptiv, LC, stoy };
+  window.EVNMiljo = { flett, PROFIL, kategoriMaterial, detaljTekstur, NIVAER, velgKvalitet, lagreKvalitet, lys, lastGLB, deler, instanser, kopi, terreng, spred, maaler, adaptiv, LC, stoy };
 })();

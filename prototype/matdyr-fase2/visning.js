@@ -38,12 +38,16 @@
   bakke.rotation.x = -Math.PI / 2; bakke.receiveShadow = true; scene.add(bakke);
   // Ressurser fra Blender (lastes parallelt med roboten; spillet virker uten dem)
   const NYE_FIGURER = ['donutku', 'burgersau', 'pizzaskilpadde', 'shakeand', 'spagettipingvin'];
-  const NY_ID = { donutku: 127, burgersau: 508, pizzaskilpadde: 700, shakeand: 599, spagettipingvin: 179 };
+  // ?pilot=1: figurpiloten (MS5) – 16 modulære figurer, 4 arter × 4 matvarer. De går foran de håndlagde med samme ID.
+  const PILOT_ID = { pilot_ku_pizza: 125, pilot_ku_smultring: 127, pilot_ku_banan: 130, pilot_ku_is: 134, pilot_pingvin_pizza: 175, pilot_pingvin_smultring: 177, pilot_pingvin_banan: 180, pilot_pingvin_is: 184,
+    pilot_hval_pizza: 225, pilot_hval_smultring: 227, pilot_hval_banan: 230, pilot_hval_is: 234, pilot_skilpadde_pizza: 700, pilot_skilpadde_smultring: 702, pilot_skilpadde_banan: 705, pilot_skilpadde_is: 709 };
+  const PILOT = new URLSearchParams(location.search).get('pilot') === '1' ? Object.keys(PILOT_ID) : [];
+  const NY_ID = { ...Object.fromEntries(PILOT.map(n => [n, PILOT_ID[n]])), donutku: 127, burgersau: 508, pizzaskilpadde: 700, shakeand: 599, spagettipingvin: 179 };
   const res = { miljo: null, gard: null, fig: {} };
   const ressurserKlar = !NY ? Promise.resolve() : Promise.all([
     EVNMiljo.lastGLB('modeller/miljo.glb').then(g => { res.miljo = g; }),
     EVNMiljo.lastGLB('modeller/gard.glb').then(g => { res.gard = g; }),
-    ...NYE_FIGURER.map(n => Promise.all([EVNMiljo.lastGLB('modeller/' + n + '.glb'), EVNMiljo.lastGLB('modeller/' + n + '_lav.glb')]).then(([full, lav]) => { if (full) res.fig[n] = { full, lav: lav || full }; }))
+    ...NYE_FIGURER.concat(PILOT).map(n => Promise.all([EVNMiljo.lastGLB('modeller/' + n + '.glb'), EVNMiljo.lastGLB('modeller/' + n + '_lav.glb')]).then(([full, lav]) => { if (full) res.fig[n] = { full, lav: lav || full }; }))
   ]);
 
   // ---------- Sammenslåing: én mesh per materiale (færre tegnekall på mobil) ----------
@@ -149,7 +153,8 @@
   const nySkalaC = {};
   const nySkala = n => nySkalaC[n] || (nySkalaC[n] = (() => { const f = nyFigur(n, 'full'), b = new T.Box3().setFromObject(f.kopi), st = b.getSize(new T.Vector3()); return 2.6 * (1 + 0.1 * f.sj) / Math.max(st.x, st.y, st.z * 0.85); })());
   const nyDelCache = {};
-  function nyFigurDeler(n, detalj) { const k = n + detalj; if (!nyDelCache[k]) nyDelCache[k] = EVNMiljo.deler(res.fig[n][detalj === 'lav' ? 'lav' : 'full'].scene, nySkala(n)); return nyDelCache[k]; }
+  // 'plass': lav detalj der alt uten tekstur går inn i to felles materialer, så alle figurene på en etasje kan slås sammen til få tegnekall
+  function nyFigurDeler(n, detalj) { const k = n + detalj; if (!nyDelCache[k]) nyDelCache[k] = EVNMiljo.deler(res.fig[n][detalj === 'full' ? 'full' : 'lav'].scene, nySkala(n), detalj === 'plass' ? { vf: true, alt: true } : {}); return nyDelCache[k]; }
 
   // =====================================================================
   // ======================  FANE 1: MATDYR  ==============================

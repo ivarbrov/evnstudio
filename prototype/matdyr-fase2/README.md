@@ -137,3 +137,19 @@ God retning, men ikke en endelig godkjenning av profilen. Prøven ligger bak fla
 - Rampeplanker: for mørke og stripete. Tilpass teksturstørrelse og kontrast til treverket i Min Bondegård.
 - Låste plasser: behold tydelig hengelås og forskjell mellom plassene. Demp stripene og tilpass materialet til gårdsmiljøet.
 - Landskap: ta med de sammenhengende trekronene og landskapsuttrykket fra Min Bondegård. Behold rolige gressflater og naturlige overganger ved steinstier og bygninger.
+
+## Figurpilot (MS5, 8. november 2026)
+
+`blender/matdyr_modul.py` bygger matdyr av to moduler:
+- **Dyresett:** hode, bein, hale og vinger, og plassen kroppen skal stå på.
+- **Matkropp:** maten er selve kroppen, og den melder tilbake hvor hodet og halen skal festes.
+
+Kroppen kan ligge, stå eller være en kuppel. Piloten har 4 arter (ku, pingvin, skilpadde, hval) og 4 matvarer (pizza, smultring, is, banan), til sammen 16 figurer. De ligger i `modeller/pilot_<art>_<mat>.glb` med `_lav`. Nodenavnene er de samme som for de håndlagde figurene.
+
+- Kjør: `FIGURER=ku:pizza,pingvin:is python3 blender/matdyr_modul.py modeller` (uten FIGURER bygges alle 16). Kjør deretter pakkeskriptet for `.glb.js`.
+- Visning:
+  - `nyefigurer.html?figur=pilot_ku_pizza,pilot_hval_is&vinkler=34,fram,side,bak&profil=mb`
+  - I spillet med `?pilot=1`. Piloten går da foran de håndlagde figurene med samme ID (Donutku 127, Pizzaskilpadde 700).
+- Plassene i spillet: alt uten tekstur slås nå sammen til to felles materialer (matt og blankt) og til én mesh per etasje. Med 16 ulike figurer på 16 plasser ble det 98 tegnekall, mot 321 før sammenslåingen. Målt headless, ikke på ekte enhet.
+- Trekanter: full 13–33 k, lav ≤ 7 k. Filstørrelse: lav 205 kB per figur, full 650 kB. Bilde: `figurpilot-kontaktark.png`.
+- Ingen masseproduksjon før Even har godkjent piloten (MS5).
