@@ -63,3 +63,13 @@ Status: prototype, ikke spill. Ingen spillogikk, lagring, statistikk eller musik
     - Den registrerer om siden har vært skjult.
   - Auto er fjernet. Vi bruker bare fast oppløsning, fordi synkron tid ikke kan rangere oppløsninger (målingen på mobil viste lavere tid ved høyere oppløsning).
   - Skyggekartet tegnes igjen i hvert bilde. Å tegne det hvert annet bilde ga ingen dokumentert gevinst på mobil. `?halvskygge` slår det på for test.
+- 0.5.0: mobilstandard, færre allokeringer, og ku, gris og sau.
+  - **Mobil:** fast 1,5× er foreløpig standard, ut fra Ivars langtest på én telefon. Den er ikke validert for alle mobiler. 1,0× kan velges for ytelse og 2,0× for ekstra skarphet. Lagringsnøkkelen er nå `mb-pr3`, slik at den nye standarden tar effekt.
+  - **Hønene:** 9 nye `Vector3` per bilde er nå 0. Vektorene gjenbrukes.
+  - **Hjertene:** før fikk hvert hjerte et nytt `SpriteMaterial` som aldri ble frigjort (50 hjerter ga 50 materialer). Nå brukes en fast pool på høyst 10.
+  - **Bildefrekvensvisningen** bruker en ringbuffer i stedet for `push`/`shift` på en tabell med 600 elementer.
+  - **Beite** til venstre for gårdsveien, med ku, gris og sau i samme stil som hønene. Dyrene blunker, logrer med ørene, svinger halen, går rolig rundt og beiter. Trykk gir hopp og hjerte. Beitet har også høykrybbe, vannkar og sølepytt.
+  - **Robotens rute:**
+    - Går rundt beitet til Nysgjerrig.
+    - Går utenom åkrene på vei til benken. Før gikk den rett over åkrene, og det var en eldre feil.
+    - Starter ved åkerkanten.
