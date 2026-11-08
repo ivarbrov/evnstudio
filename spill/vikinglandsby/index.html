@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Vikinglandsby 0.3.0 – EVN Studio</title>
+<title>Vikinglandsby 0.3.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -184,7 +184,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.3.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.3.1</div>
   </div>
 </div>
 
@@ -460,7 +460,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.3.0';
+const VERSJON = '0.3.1';
 const LAGRING = 'evn-vikinglandsby-v1';
 const LYD_NOKKEL = 'evn-vikinglandsby-lyd';
 const TEST = location.hash === '#test';
@@ -1204,16 +1204,30 @@ function lagOks() {
   return g;
 }
 function festOks(modell) {
-  let hand = null; modell.traverse(o => { if (o.isBone && o.name.replace(/[^a-z0-9]/gi, '') === 'Palm2R' && !hand) hand = o; });
-  if (!hand) { console.warn('Fant ikke robotens høyre hånd (Palm2.R)'); return; }
-  modell.updateMatrixWorld(true);
-  const ws = new THREE.Vector3(); hand.getWorldScale(ws);
-  const feste = new THREE.Group(); feste.scale.setScalar(1 / ws.x); feste.rotation.set(0, 0, Math.PI); hand.add(feste);
-  const oks = lagOks(); oks.position.set(OKS.x, OKS.y, OKS.z); oks.rotation.set(OKS.rx, OKS.ry, OKS.rz); oks.scale.setScalar(OKS.s); feste.add(oks);
+  // Øksa legges inn i knyttneven: skaftet går på tvers av håndflaten (fra pekefingeren mot ringfingeren),
+  // gjennom midten av hånden. Beregnes én gang i hvilestillingen og festes til håndleddet (Palm2.R).
+  const ben = {}; modell.traverse(o => { if (o.isBone) { const n = o.name.replace(/[^a-z0-9]/gi, ''); if (!ben[n]) ben[n] = o; } });
+  const hand = ben.Palm2R;
+  if (!hand || !ben.IndexR || !ben.Ring1R || !ben.Middle2R) { console.warn('Fant ikke robotens høyre hånd (Palm2.R)'); return; }
+  const { mix, klipp } = robot; klipp.Idle.reset().play(); mix.update(0); helt.updateMatrixWorld(true);
+  const pos = b => b.getWorldPosition(new THREE.Vector3());
+  const P = pos(hand), I = pos(ben.IndexR), R = pos(ben.Ring1R), M2 = pos(ben.Middle2R);
+  const grep = P.clone().lerp(M2, OKS.grep).add(I.clone().add(R).multiplyScalar(0.5).sub(P).multiplyScalar(0.25));
+  const fram = new THREE.Vector3(0, 0, 1).applyQuaternion(helt.getWorldQuaternion(new THREE.Quaternion()));
+  const Y = I.clone().sub(R).normalize(); if (Y.dot(fram) < 0) Y.negate();                       // skaftet peker framover
+  const X = new THREE.Vector3(0, -1, 0).addScaledVector(Y, Y.y).normalize();                     // eggen ned når armen henger
+  if (OKS.eggOpp) X.negate();
+  const Z = new THREE.Vector3().crossVectors(X, Y).normalize(); X.crossVectors(Y, Z);
+  const oks = lagOks();
+  const verden = new THREE.Matrix4().makeBasis(X, Y, Z).scale(new THREE.Vector3(OKS.s, OKS.s, OKS.s));
+  verden.setPosition(grep.clone().addScaledVector(Y, -OKS.skaft * OKS.s));                      // hånden holder nederst på skaftet
+  const lokal = new THREE.Matrix4().copy(hand.matrixWorld).invert().multiply(verden);
+  lokal.decompose(oks.position, oks.quaternion, oks.scale);
+  hand.add(oks);
   oks.traverse(o => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
   robot.oks = oks;
 }
-const OKS = { x: 0, y: 0.75, z: 0, rx: Math.PI / 2, ry: 0, rz: 0, s: 1.4 };   // grep nederst på skaftet, øksehodet opp og fram
+const OKS = { s: 1.25, skaft: -0.55, grep: 0.5, eggOpp: false };   // skaft: hvor på skaftet hånden griper (−0,875 er nederst)
 function byttTil(navn, fade) {
   const ny = robot.klipp[navn]; if (!ny || ny === robot.aktiv) return;
   ny.reset(); ny.play(); robot.aktiv.crossFadeTo(ny, fade || 0.2, false); robot.aktiv = ny;
