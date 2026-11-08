@@ -50,3 +50,8 @@ Status: prototype, ikke spill. Ingen spillogikk, lagring, statistikk eller musik
   - På Mobil tegnes skyggekartet hvert 2. bilde, og alltid når kameraet flyttes. `?helskygge` slår dette av.
   - Testmenyen kan legges sammen, og den er lagt sammen fra start på mobil og i stående format. «Mål ytelse» og en liten bildefrekvensvisning er alltid synlige.
 - 0.4.2: løpegården var åpen bak, mot hønsehuset. Den er nå lukket med netting, og en smal sluse fører fra åpningen opp til rampa og døra.
+- 0.4.3: målingen er presisert. Ingen grafiske endringer.
+  - Standard er nå fast oppløsning: Mobil 1,0×, Høy min(dpr, 2). Auto er et frivillig forsøk som bare kjøres når det velges. Fast oppløsning endres aldri underveis.
+  - «Synkron tegnetid» er tiden for `render()` + `readPixels(1 px)`. Den inkluderer CPU, GPU og ventetid for synkronisering, og er ikke ren GPU-tid. GPU-tid måles med `EXT_disjoint_timer_query_webgl2` der nettleseren har utvidelsen.
+  - Auto bruker ikke synkron tegnetid alene. En høyere oppløsning må også gi minst 90 % av den viste bildefrekvensen ved 1,0×.
+  - «Mål ytelse» måler vist b/s, synkron tid og GPU-tid ved 1,0×, 1,5× og 2× med samme kamera, og viser tegneflate og skala mot dpr. Testen med tom scene omtales som en indikasjon.

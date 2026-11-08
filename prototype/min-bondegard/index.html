@@ -54,16 +54,16 @@
   <div class="grp" role="group" aria-label="Kvalitet"><b>Kvalitet</b>
     <button data-kval="hoy">Høy</button><button data-kval="mobil">Mobil</button></div>
   <div class="grp" role="group" aria-label="Oppløsning"><b>Oppløsning</b>
-    <button data-pr="auto">Auto</button></div>
+    <button data-pr="auto" title="Forsøk: prøver oppløsninger og velger én">Auto</button></div>
 </div>
-<div id="info">Testscene 0.4.2 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
+<div id="info">Testscene 0.4.3 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
 <div id="maal"><div id="maalTekst">…</div><div class="maalKnapper"><button id="kopier">Kopier</button><button id="lukkMaal">Lukk</button></div></div>
 
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.4.2';
+const VERSJON = 'testscene 0.4.3';
 const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
@@ -1038,74 +1038,109 @@ document.querySelectorAll('[data-tid]').forEach(b => b.onclick = () => { velg('t
 document.querySelectorAll('[data-robot]').forEach(b => b.onclick = () => { velg('robot', b.dataset.robot); if (b.dataset.robot === 'dans') nyttNivaa(); else if (robot) { spill('Idle'); modus = 'vent'; ventTimer = 1; ventSteg = 0; } });
 document.querySelectorAll('[data-kval]').forEach(b => b.onclick = () => { if (b.dataset.kval !== KVAL) { const u = new URL(location.href); u.searchParams.set('kval', b.dataset.kval); location.href = u.href; } });
 velg('kval', KVAL);
-/* ======================= Meny, oppløsning og ytelsesmåling (0.4.1) =======================
+/* ======================= Meny, oppløsning og ytelsesmåling (0.4.3) =======================
    Prototypen har ingen egen FPS-grense: løkka går på requestAnimationFrame (rAF), som nettleseren styrer etter skjermfrekvens,
-   strømsparing og om siden ligger i en innebygd ramme. Derfor måles to ting hver for seg:
-   1) vist bildefrekvens (rAF-intervaller, uten avkapping), og
-   2) kapasitet: hvor lang tid ett bilde faktisk tar å tegne (render + readPixels tvinger GPU-en ferdig), uavhengig av rAF. */
+   strømsparing og om siden ligger i en innebygd ramme. Målingen skiller derfor mellom:
+   - Vist bildefrekvens: rAF-intervaller, uten avkapping.
+   - Synkron tegnetid: tid fra renderer.render() starter til gl.readPixels() har fått ett piksel tilbake. readPixels venter til
+     GPU-en har fullført alle kommandoer, så tallet inkluderer CPU-arbeid, GPU-arbeid og ventetid for synkronisering.
+     Det er IKKE ren GPU-tid og heller ikke bare CPU-tid. Det er en indikasjon, trolig høyere enn tiden i normal drift
+     der CPU og GPU arbeider parallelt.
+   - GPU-tid: målt med EXT_disjoint_timer_query_webgl2 når nettleseren har den (mange mobilnettlesere har den ikke).
+   Oppløsningsskala r: tegneflaten er CSS-størrelse × r piksler. devicePixelRatio (dpr) er skjermens fysiske piksler per CSS-piksel.
+   r = dpr gir én tegnet piksel per skjermpiksel. r < dpr skaleres opp med faktoren dpr / r og blir mykere. */
 const meny = document.getElementById('meny'), menyKnapp = document.getElementById('menyKnapp');
 function visMeny(paa) { meny.classList.toggle('skjult', !paa); menyKnapp.setAttribute('aria-expanded', String(paa)); try { localStorage.setItem('mb-meny', paa ? '1' : '0'); } catch (e) {} }
 menyKnapp.onclick = () => visMeny(meny.classList.contains('skjult'));
 visMeny((() => { try { const v = localStorage.getItem('mb-meny'); if (v) return v === '1'; } catch (e) {} return !(erMobil || innerHeight > innerWidth); })());
-const DPR = devicePixelRatio || 1, PR_MAKS = KV[KVAL].pr;
-const PR_TRINN = [0.75, 1, 1.25, 1.5, 2].filter(v => v <= Math.max(1, DPR) + 0.01);
-let PR_VALG = (() => { try { return localStorage.getItem('mb-pr') || 'auto'; } catch (e) { return 'auto'; } })();
+const DPR = devicePixelRatio || 1;
+const PR_TRINN = [0.75, 1, 1.25, 1.5, 2, 3].filter(v => v <= Math.max(1, DPR) + 0.01);
+// Standard er en FAST oppløsning (Mobil 1,0×, Høy min(dpr, 2)), til målinger på ekte enheter avgjør noe annet. Auto er et frivillig forsøk.
+const PR_STANDARD = String(KVAL === 'mobil' ? 1 : PR_TRINN.filter(v => v <= Math.min(DPR, 2) + 0.01).pop());
+let PR_VALG = (() => { try { const v = localStorage.getItem('mb-pr2'); return v && (v === 'auto' || PR_TRINN.includes(+v)) ? v : PR_STANDARD; } catch (e) { return PR_STANDARD; } })();
 const prGrp = document.querySelector('[data-pr="auto"]').parentNode;
-PR_TRINN.forEach(v => { const k = document.createElement('button'); k.dataset.pr = String(v); k.textContent = String(v).replace('.', ',') + '×'; prGrp.appendChild(k); });
-let autoInfo = '';
+PR_TRINN.forEach(v => { const kn = document.createElement('button'); kn.dataset.pr = String(v); kn.textContent = String(v).replace('.', ',') + '×'; prGrp.appendChild(kn); });
+let autoInfo = '', stoppTegning = false;
 function settPR(v) { renderer.setPixelRatio(v); }
-// kostnad per bilde i ms, målt synkront (uavhengig av skjermfrekvens og rAF-struping)
-function kost(pr, n = 6, opp = {}) {
+const nesteBilde = () => new Promise(r => requestAnimationFrame(r));
+const vent = ms => new Promise(r => setTimeout(r, ms));
+// Synkron tegnetid i ms (se forklaringen over)
+function synkTid(pr, n = 6, opp = {}) {
   const gl = renderer.getContext(), px = new Uint8Array(4), gammel = renderer.getPixelRatio(); renderer.setPixelRatio(pr);
   const f = i => { if (opp.halvSkygge) renderer.shadowMap.needsUpdate = i % 2 === 0; renderer.render(scene, camera); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); };
   const au = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = !opp.halvSkygge;
   f(0); f(1); const t0 = performance.now(); for (let i = 0; i < n; i++) f(i); const ms = (performance.now() - t0) / n;
   renderer.shadowMap.autoUpdate = au; renderer.setPixelRatio(gammel); return ms;
 }
-// Auto: velg høyeste oppløsning som tegnes på under 14 ms (rom for 60 b/s), ellers under 28 ms (30 b/s). Aldri under 1,0× hvis det går.
-function kalibrer() {
-  const kand = PR_TRINN.filter(v => v >= 1 && v <= PR_MAKS + 0.01).reverse(); const tab = [];
-  let valgt = null; for (const v of kand) { const ms = kost(v, 5); tab.push(v.toFixed(2) + '× ' + ms.toFixed(1) + ' ms'); if (ms <= 14) { valgt = v; break; } }
-  if (valgt === null) { for (const v of kand) { const ms = kost(v, 3); if (ms <= 28) { valgt = v; break; } } }
-  if (valgt === null) valgt = kost(1, 3) <= 40 ? 1 : 0.75;
-  autoInfo = 'auto: ' + tab.join(', '); settPR(valgt); return valgt;
+// GPU-tid i ms med tidsspørring, eller null hvis nettleseren ikke støtter det
+const GL2 = renderer.capabilities.isWebGL2, TQ = GL2 ? renderer.getContext().getExtension('EXT_disjoint_timer_query_webgl2') : null;
+async function gpuTid(pr, n = 8) {
+  if (!TQ) return null; const gl = renderer.getContext(), gammel = renderer.getPixelRatio(); renderer.setPixelRatio(pr); stoppTegning = true;
+  const q = []; await nesteBilde(); renderer.render(scene, camera);
+  for (let i = 0; i < n; i++) { await nesteBilde(); const qq = gl.createQuery(); gl.beginQuery(TQ.TIME_ELAPSED_EXT, qq); renderer.render(scene, camera); gl.endQuery(TQ.TIME_ELAPSED_EXT); q.push(qq); }
+  let ms = [], forstyrret = false;
+  for (let tries = 0; tries < 60 && ms.length < q.length; tries++) { await nesteBilde(); ms = [];
+    for (const qq of q) { if (!gl.getQueryParameter(qq, gl.QUERY_RESULT_AVAILABLE)) { ms = [-1]; break; } ms.push(gl.getQueryParameter(qq, gl.QUERY_RESULT) / 1e6); }
+    if (ms[0] === -1) ms = []; }
+  if (gl.getParameter(TQ.GPU_DISJOINT_EXT)) forstyrret = true; q.forEach(qq => gl.deleteQuery(qq));
+  stoppTegning = false; renderer.setPixelRatio(gammel);
+  if (forstyrret || ms.length < q.length) return null; return ms.reduce((a, b) => a + b, 0) / ms.length;
 }
-function velgPR(v) { PR_VALG = v; try { localStorage.setItem('mb-pr', v); } catch (e) {} velg('pr', v); if (v === 'auto') { if (robot) kalibrer(); } else { autoInfo = ''; settPR(+v); } nullstill(); }
-document.querySelectorAll('[data-pr]').forEach(b => b.onclick = () => velgPR(b.dataset.pr));
-velg('pr', PR_VALG); if (PR_VALG !== 'auto') settPR(+PR_VALG);
-
 const maalBoks = document.getElementById('maal'), maalTekst = document.getElementById('maalTekst'), fpsChip = document.getElementById('fpsChip');
 let ramme = [], sisteVis = 0, sistTs = 0, maaler = false;
 function nullstill() { ramme = []; }
 function stat(liste = ramme) { if (!liste.length) return {fps: 0, lav: 0, med: 0}; const s = liste.slice().sort((a, b) => a - b), snitt = liste.reduce((a, b) => a + b, 0) / liste.length;
   return {fps: 1000 / snitt, lav: 1000 / s[Math.min(s.length - 1, Math.floor(s.length * 0.99))], med: s[Math.floor(s.length / 2)]}; }
-const vent = ms => new Promise(r => setTimeout(r, ms));
 async function maalRaf(sek) { await vent(400); nullstill(); await vent(sek * 1000); return stat(); }
 const k = (x, d = 0) => x.toFixed(d).replace('.', ',');
+const flate = pr => `${Math.round(innerWidth * pr)}×${Math.round(innerHeight * pr)}`;
+const skalaTekst = pr => `${k(pr, 2)}× → tegneflate ${flate(pr)} px, skjermen har ${flate(DPR)} px, ${k(Math.min(1, (pr / DPR) ** 2) * 100)} % av skjermpikslene` + (pr < DPR ? `, skaleres opp ${k(DPR / pr, 2)}×` : '');
+// Auto (forsøk): bruker ikke synkron tegnetid alene. Kandidaten må også gi minst 90 % av vist bildefrekvens ved 1,0×.
+async function kalibrer() {
+  if (maaler) return; maaler = true; maalBoks.classList.add('vis'); maalTekst.textContent = 'Auto prøver oppløsninger … ikke rør skjermen';
+  const kand = PR_TRINN.filter(v => v >= 1 && v <= Math.min(DPR, 2) + 0.01).reverse(), logg = [];
+  settPR(1); const base = await maalRaf(2); logg.push(`1,00×: vist ${k(base.fps)} b/s`); let valgt = 1;
+  for (const v of kand) { if (v === 1) break; const st = synkTid(v, 4), gt = await gpuTid(v, 6); const grense = gt !== null ? gt <= 12 : st <= 16;
+    if (!grense) { logg.push(`${k(v, 2)}×: synkron ${k(st, 1)} ms${gt !== null ? ', GPU ' + k(gt, 1) + ' ms' : ''} → for høy`); continue; }
+    settPR(v); const r = await maalRaf(2); logg.push(`${k(v, 2)}×: synkron ${k(st, 1)} ms${gt !== null ? ', GPU ' + k(gt, 1) + ' ms' : ''}, vist ${k(r.fps)} b/s`);
+    if (r.fps >= base.fps * 0.9) { valgt = v; break; } }
+  settPR(valgt); autoInfo = 'Auto valgte ' + k(valgt, 2) + '× (' + logg.join('; ') + ')'; maalTekst.textContent = autoInfo; maaler = false; nullstill();
+}
+function velgPR(v) { if (maaler) return; PR_VALG = v; try { localStorage.setItem('mb-pr2', v); } catch (e) {} velg('pr', v); if (v === 'auto') { if (robot) kalibrer(); } else { autoInfo = ''; settPR(+v); } nullstill(); }
+document.querySelectorAll('[data-pr]').forEach(b => b.onclick = () => velgPR(b.dataset.pr));
+velg('pr', PR_VALG); if (PR_VALG !== 'auto') settPR(+PR_VALG);
+
 document.getElementById('bench').onclick = async () => {
-  if (maaler) return; maaler = true; maalBoks.classList.add('vis'); maalTekst.textContent = 'Måler … ikke rør skjermen (ca. 15 s)';
-  const info = Object.assign({}, renderer.info.render), prNaa = renderer.getPixelRatio(), cv = renderer.domElement;
+  if (maaler) return; maaler = true; maalBoks.classList.add('vis'); maalTekst.textContent = 'Måler … ikke rør skjermen (ca. 25 s)';
+  const info = Object.assign({}, renderer.info.render), prNaa = renderer.getPixelRatio(), linjer = [];
   const vist = await maalRaf(4);
-  // samme scene, men uten noe å tegne: viser om grensen ligger utenfor prototypen
   const synlig = scene.children.filter(c => c.visible); synlig.forEach(c => c.visible = false); const tom = await maalRaf(3); synlig.forEach(c => c.visible = true);
-  await vent(300);
-  const kap = PR_TRINN.map(v => [v, kost(v, 6)]); const halv = kost(prNaa, 8, {halvSkygge: true}); const hel = kost(prNaa, 8);
+  const sml = [...new Set([1, 1.5, 2, prNaa].filter(v => PR_TRINN.includes(v) || v === prNaa))].sort((a, b) => a - b), rader = [];
+  for (const v of sml) { settPR(v); const r = await maalRaf(2.5); const st = synkTid(v, 6), gt = await gpuTid(v, 8); rader.push({v, r, st, gt}); }
+  settPR(prNaa); await vent(200);
+  const hel = synkTid(prNaa, 8), halv = synkTid(prNaa, 8, {halvSkygge: true}), gtHel = await gpuTid(prNaa, 8);
   const gl = renderer.getContext(), dbg = gl.getExtension('WEBGL_debug_renderer_info'); const gpu = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : 'ukjent';
-  let dom; if (tom.fps < 45 && vist.fps > tom.fps * 0.85) dom = `Tom scene gir også ${k(tom.fps)} b/s: grensen ligger utenfor prototypen (skjerm, strømsparing, nettleser eller innebygd ramme).`;
-    else if (tom.fps >= 50 && vist.fps < 50) dom = 'Tom scene går raskere: scenen er for tung ved denne oppløsningen.';
-    else dom = 'Ingen tydelig ytre grense.';
-  const tekst = [`Måling ${VERSJON} · ${KVAL} · ${TID}`, `Skjerm ${innerWidth}×${innerHeight} css, devicePixelRatio ${k(DPR, 2)}, tegneflate ${cv.width}×${cv.height} (${k(prNaa, 2)}×)`,
-    `Vist:      ${k(vist.fps)} b/s · 1 % lav ${k(vist.lav)} · median ${k(vist.med, 1)} ms`, `Tom scene: ${k(tom.fps)} b/s · median ${k(tom.med, 1)} ms`, dom,
-    'Kapasitet (tid for ett bilde, uten rAF-grense):', ...kap.map(([v, ms]) => `  ${k(v, 2)}×  ${k(ms, 1).padStart(5)} ms  ≈ ${k(1000 / ms).padStart(3)} b/s`),
-    `  Skygge hvert 2. bilde ved ${k(prNaa, 2)}×: ${k(halv, 1)} ms (mot ${k(hel, 1)} ms)`, `Tegnekall ${info.calls} · trekanter ${k(info.triangles / 1000)}k`, `GPU: ${gpu}`, autoInfo].filter(Boolean).join('\n');
-  window.__benchmark = {vist, tom, kap, halv, hel, gpu, prNaa}; maalTekst.textContent = tekst; maaler = false; nullstill();
+  let ind; if (tom.fps < 45 && vist.fps > tom.fps * 0.85) ind = `Indikasjon: tom scene gir også ${k(tom.fps)} b/s. Grensen kan ligge utenfor scenen (skjerm, strømsparing, nettleser eller innebygd ramme). Bekreft uten strømsparing og med fast oppløsning.`;
+    else if (tom.fps > vist.fps * 1.3) ind = `Indikasjon: tom scene gir ${k(tom.fps)} b/s og full scene ${k(vist.fps)} b/s. Innholdet påvirker bildefrekvensen under disse forholdene, men testen viser ikke om flaskehalsen er CPU, GPU, skygger eller oppløsning.`;
+    else ind = 'Indikasjon: ingen tydelig forskjell mellom tom og full scene.';
+  linjer.push(`Måling ${VERSJON} · ${KVAL} · ${TID} · ${innerWidth}×${innerHeight} CSS-px · dpr ${k(DPR, 2)}`,
+    `Oppløsning nå: ${PR_VALG === 'auto' ? 'Auto' : 'fast'} ${skalaTekst(prNaa)}`,
+    `Vist (rAF):  ${k(vist.fps)} b/s · 1 % lav ${k(vist.lav)} · median ${k(vist.med, 1)} ms`, `Tom scene:   ${k(tom.fps)} b/s · median ${k(tom.med, 1)} ms`, ind,
+    'Per oppløsning (samme kamera):', '  skala   tegneflate   vist b/s   synkron ms   GPU ms',
+    ...rader.map(({v, r, st, gt}) => `  ${k(v, 2).padEnd(6)} ${flate(v).padEnd(12)} ${k(r.fps).padStart(5)}      ${k(st, 1).padStart(6)}      ${gt === null ? '–' : k(gt, 1)}`),
+    `Skygge hvert 2. bilde ved ${k(prNaa, 2)}× (synkron): ${k(halv, 1)} ms mot ${k(hel, 1)} ms${gtHel !== null ? ' · GPU hel: ' + k(gtHel, 1) + ' ms' : ''}`,
+    `Skyggekart i drift: ${SKYGGE_HALV ? 'hvert 2. bilde' : 'hvert bilde'} · tegnekall ${info.calls} · trekanter ${k(info.triangles / 1000)}k`,
+    `GPU-tidsmåling: ${TQ ? 'tilgjengelig' : 'ikke tilgjengelig i denne nettleseren'} · GPU: ${gpu}`,
+    'Synkron = render() + readPixels: CPU + GPU + ventetid, ikke ren GPU-tid. Bruk som indikasjon.');
+  if (autoInfo) linjer.push(autoInfo);
+  window.__benchmark = {vist, tom, rader, hel, halv, gtHel, gpu, prNaa}; maalTekst.textContent = linjer.join('\n'); maaler = false; nullstill();
 };
 document.getElementById('lukkMaal').onclick = () => maalBoks.classList.remove('vis');
 document.getElementById('kopier').onclick = async () => { const t = maalTekst.textContent; try { await navigator.clipboard.writeText(t); document.getElementById('kopier').textContent = 'Kopiert'; } catch (e) { const r = document.createRange(); r.selectNodeContents(maalTekst); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); document.getElementById('kopier').textContent = 'Merket – kopier selv'; } setTimeout(() => document.getElementById('kopier').textContent = 'Kopier', 2500); };
 
 /* ======================= Bygg alt ======================= */
 function bygg() {
-  renderer.setPixelRatio(PR_VALG === 'auto' ? KV[KVAL].pr : +PR_VALG); sol.shadow.mapSize.set(KV[KVAL].skygge, KV[KVAL].skygge); if (KVAL === 'mobil') renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.setPixelRatio(PR_VALG === 'auto' ? 1 : +PR_VALG); sol.shadow.mapSize.set(KV[KVAL].skygge, KV[KVAL].skygge); if (KVAL === 'mobil') renderer.shadowMap.type = THREE.PCFShadowMap;
   const kat = (navn, fn) => { const for_ = new Set(scene.children); fn(); scene.children.forEach(c => { if (!for_.has(c)) c.userData.kat = navn; }); };
   kat('terreng', lagTerreng); kat('omrader', lagOmrader); kat('vegetasjon', lagVegetasjon); kat('gjerde', lagGjerde); kat('laave', lagLave); kat('honsehus', lagHonsehus); kat('akre', lagAkre); kat('markedsbod', lagMarkedsbod); kat('detaljer', lagDetaljer); kat('vaer', lagVaer); settTid('dag'); lagRev();
   new THREE.GLTFLoader().load(ROBOT_URL, gl => {
@@ -1117,7 +1152,7 @@ function bygg() {
       hatt.position.set(hp.x, hp.y + hattOffset, hp.z); hatt.rotation.set(0, robot.rotation.y, 0); hatt.updateMatrixWorld(true); hode.attach(hatt); }
     robot.position.y = 0;
     document.getElementById('last').style.display = 'none';
-    if (PR_VALG === 'auto' && !new URLSearchParams(location.search).has('fast')) setTimeout(kalibrer, 1200); // når alt er lastet og shaderne kompilert
+    if (PR_VALG === 'auto' && !new URLSearchParams(location.search).has('fast')) setTimeout(kalibrer, 1500); // bare hvis Auto er valgt; kjøres én gang
   }, undefined, () => { document.getElementById('last').textContent = 'Fant ikke roboten'; });
 }
 
@@ -1147,9 +1182,9 @@ function loop(ts) {
   sol.target.position.copy(cam.target); sol.position.set(cam.target.x + TIDER[TID].pos[0], TIDER[TID].pos[1], cam.target.z + TIDER[TID].pos[2]);
   // Mobil: skyggekartet tegnes hvert 2. bilde (og alltid når kameraet flyttes). Skyggene til roboten og dyrene oppdateres da 30 ganger i sekundet.
   if (SKYGGE_HALV) { bildeNr++; renderer.shadowMap.needsUpdate = bildeNr % 2 === 0 || !sisteSkyggeMaal.equals(cam.target); if (renderer.shadowMap.needsUpdate) sisteSkyggeMaal.copy(cam.target); }
-  renderer.render(scene, camera);
+  if (!stoppTegning) renderer.render(scene, camera);
   if (t - sisteVis > 0.5 && !maaler) { sisteVis = t; const s = stat(ramme.slice(-120)); const i = renderer.info.render;
-    fpsChip.textContent = `${s.fps.toFixed(0)} b/s · ${renderer.getPixelRatio().toFixed(2).replace('.', ',')}× · ${i.calls} kall`; }
+    fpsChip.textContent = `${s.fps.toFixed(0)} b/s · ${PR_VALG === 'auto' ? 'auto ' : 'fast '}${renderer.getPixelRatio().toFixed(2).replace('.', ',')}× · ${i.calls} kall`; }
 }
 
 /* Kostnadsanalyse: tegner scenen mange ganger og måler tid per kategori */
