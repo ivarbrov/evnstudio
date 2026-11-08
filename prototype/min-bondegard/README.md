@@ -73,3 +73,11 @@ Status: prototype, ikke spill. Ingen spillogikk, lagring, statistikk eller musik
     - Går rundt beitet til Nysgjerrig.
     - Går utenom åkrene på vei til benken. Før gikk den rett over åkrene, og det var en eldre feil.
     - Starter ved åkerkanten.
+- 0.5.1: hakk-analyse og testvalg. Ingen endring i standardoppførselen.
+  - **Langtesten** lagrer hendelser for hvert intervall over 25 ms. For hver hendelse registreres tid i vår JS (oppdatering og render-kall), ny shader, opplasting av geometri eller tekstur, panorering/zoom, trykk og robotens tilstand. Rapporten teller hendelsene per årsak og viser de 10 lengste med tidspunkt.
+  - **Meny → Test → Forhåndslast** (av som standard) kompilerer alle shadere og laster opp all geometri og alle teksturer ved start (`renderer.compile` + én tegning uten frustum-kulling).
+    - Uten forhåndslast lastet headless 12 geometrier, 8 teksturer og 3 shaderprogrammer opp under panorering, regn og dans.
+    - Med forhåndslast var tallene 0, 1 og 0.
+  - **Meny → Test → Full gård** legger til plassholdere for en større gård: en ekstra låve, et hønsehus, 6 åkre, et beite og 6 dyr. Kopiene står sør for veien. De gir 18–21 % flere tegnekall og 23 % flere trekanter.
+  - Mobil har fått flere oppløsninger å teste: 2,5× og 3× (opp til dpr).
+  - Testvalgene lagres under `mb-test` og gjelder etter omlasting.

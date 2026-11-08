@@ -56,15 +56,17 @@
     <button data-kval="hoy">Høy</button><button data-kval="mobil">Mobil</button></div>
   <div class="grp" role="group" aria-label="Oppløsning"><b>Oppløsning</b>
     <span id="prKnapper"></span></div>
+  <div class="grp" role="group" aria-label="Ytelsestest"><b>Test</b>
+    <button data-test="forhand">Forhåndslast</button><button data-test="full">Full gård</button></div>
 </div>
-<div id="info">Testscene 0.5.0 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
+<div id="info">Testscene 0.5.1 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
 <div id="maal"><div id="maalTekst">…</div><div class="maalKnapper"><button id="kopier">Kopier</button><button id="lukkMaal">Lukk</button></div></div>
 
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.5.0';
+const VERSJON = 'testscene 0.5.1';
 const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
@@ -1123,7 +1125,7 @@ function oppdaterDyr(dt, t) {
     const til = _v1.copy(u.mal).sub(g.position); til.y = 0; const d = til.length();
     if (d > 0.08) { g.rotation.y = Math.atan2(-til.z, til.x); g.position.addScaledVector(til.normalize(), Math.min(d, dt * u.fart)); u.kropp.position.y = Math.abs(Math.sin(t * 9 + u.fase)) * 0.04; u.hode.rotation.z = 0; }
     else { u.kropp.position.y = 0; u.venter -= dt; u.beite += dt; u.hode.rotation.z = Math.sin(u.beite * 0.9) > 0.2 ? -0.45 : Math.sin(t * 1.5 + u.fase) * 0.06; // beiter med hodet ned, ser opp innimellom
-      if (u.venter < 0) { u.mal.set(rr(u.sone[0], u.sone[1]), 0, rr(BEITE.z0 + 1.0, BEITE.z1 - 1.0)); u.venter = rr(3, 7); } } }
+      if (u.venter < 0) { u.mal.set(rr(u.sone[0], u.sone[1]), 0, rr(u.zs ? u.zs[0] : BEITE.z0 + 1.0, u.zs ? u.zs[1] : BEITE.z1 - 1.0)); u.venter = rr(3, 7); } } }
 }
 
 /* ======================= Input ======================= */
@@ -1138,7 +1140,8 @@ el.addEventListener('pointermove', e => { if (!pek.has(e.pointerId)) return; pek
 el.addEventListener('pointerup', e => { if (pek.size === 1 && flyttet < 8) trykk(e.clientX, e.clientY); pek.delete(e.pointerId); if (!pek.size) dra = null; });
 el.addEventListener('pointercancel', e => { pek.delete(e.pointerId); dra = null; });
 el.addEventListener('wheel', e => { e.preventDefault(); sistHjul = performance.now(); cam.dist = THREE.MathUtils.clamp(cam.dist * (1 + Math.sign(e.deltaY) * 0.1), 18, 95); plasserKamera(); }, {passive: false});
-function trykk(x, y) { ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
+let sistTrykk = 0;
+function trykk(x, y) { sistTrykk = performance.now(); ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
   const t = ray.intersectObjects(klikkbare, true)[0]; if (!t) return; const o = t.object.userData.eier || t.object;
   if (o.userData.omrade) { visOmrade(o.userData.omrade); if (o.isGroup) sprett.push({o, t: 0}); } else if (o.userData.art) { o.userData.hopp = o.userData.art === 'kylling' ? 0.4 : 0.5; visHjerte(_v1.copy(o.position).add(_v2.set(0, o.userData.hjerteY || (o.userData.art === 'kylling' ? 0.9 : 1.8), 0))); } else sprett.push({o, t: 0});
   if (robot && modus === 'vent') { const p = o.userData.omrade && !o.isGroup ? t.point : o.getWorldPosition(new THREE.Vector3()); robot.rotation.y = Math.atan2(p.x - robot.position.x, p.z - robot.position.z); robot.position.y = 0; mal = null; snuTil = null; if (utVei) { robot.position.copy(utVei[0]); utVei = null; } spill('Wave', false); ventSteg = 2; ventTimer = 1.6; }
@@ -1166,7 +1169,7 @@ function visMeny(paa) { meny.classList.toggle('skjult', !paa); menyKnapp.setAttr
 menyKnapp.onclick = () => visMeny(meny.classList.contains('skjult'));
 visMeny((() => { try { const v = localStorage.getItem('mb-meny'); if (v) return v === '1'; } catch (e) {} return !(erMobil || innerHeight > innerWidth); })());
 const DPR = devicePixelRatio || 1;
-const PR_TRINN = (KVAL === 'mobil' ? [1, 1.5, 2] : [0.75, 1, 1.25, 1.5, 2, 3]).filter(v => v <= Math.max(1, DPR) + 0.01);
+const PR_TRINN = (KVAL === 'mobil' ? [1, 1.5, 2, 2.5, 3] : [0.75, 1, 1.25, 1.5, 2, 3]).filter(v => v <= Math.max(1, DPR) + 0.01);
 // Fast oppløsning. Mobil: foreløpig standard 1,5× (Ivar 8.11, langtest på én telefon; ikke validert for alle mobiler). 1,0× = ytelse, 2,0× = ekstra skarphet.
 // Høy: min(dpr, 2). Hvis skjermen har lavere dpr enn standarden, brukes høyeste trinn skjermen har.
 const PR_STANDARD = String(PR_TRINN.filter(v => v <= (KVAL === 'mobil' ? 1.5 : Math.min(DPR, 2)) + 0.01).pop());
@@ -1236,11 +1239,36 @@ document.getElementById('bench').onclick = async () => {
     'Synkron = render() + readPixels: CPU + GPU + ventetid. Ikke ren GPU-tid, og ikke egnet til å rangere oppløsninger (kan synke med høyere oppløsning).');
   window.__benchmark = {vist, tom, rader, hel, halv, gtHel, gpu, prNaa}; maalTekst.textContent = linjer.join('\n'); maaler = false; nullstill();
 };
+/* ======================= Testvalg (0.5.1): lagres på enheten og gjelder fra neste lasting ======================= */
+const TEST = (() => { try { return JSON.parse(localStorage.getItem('mb-test') || '{}'); } catch (e) { return {}; } })();
+document.querySelectorAll('[data-test]').forEach(b => { b.classList.toggle('on', !!TEST[b.dataset.test]); b.onclick = () => { TEST[b.dataset.test] = !TEST[b.dataset.test]; try { localStorage.setItem('mb-test', JSON.stringify(TEST)); } catch (e) {} location.reload(); }; });
+// Forhåndslast: kompilerer alle shadere og laster opp all geometri og alle teksturer til GPU-en før scenen vises,
+// i stedet for første gang et objekt kommer i bildet (ved panorering, regn, dans osv.). Av som standard til effekten er målt.
+function forhandslast() {
+  const skjulte = [], kull = []; scene.traverse(o => { if (!o.visible) { skjulte.push(o); o.visible = true; } if (o.frustumCulled) { kull.push(o); o.frustumCulled = false; } });
+  const t0 = performance.now(); renderer.compile(scene, camera); renderer.render(scene, camera); const ms = performance.now() - t0;
+  skjulte.forEach(o => o.visible = false); kull.forEach(o => o.frustumCulled = true); return ms;
+}
+// Full gård: plassholdere for en gård rundt nivå 20 (ekstra låve, hønsehus, 6 åkre, beite og 6 ekstra dyr). Bare for ytelsestest.
+// Kopiene står sør for veien, fordi område 2 og 3 er for små og gjengrodde til å romme dem uten overlapp. Belastningen i bildet er den samme.
+function fullGard() {
+  const kopi = (kat, dx, dz, utenDyr) => scene.children.filter(c => c.userData.kat === kat && !(utenDyr && c.userData.art)).forEach(c => { const lager = []; c.traverse(o => { lager.push([o, o.userData]); o.userData = {}; }); const k = c.clone(); lager.forEach(([o, u]) => o.userData = u); /* userData har sirkulære referanser */ k.position.x += dx; k.position.z += dz; k.userData = {kat: 'full'}; scene.add(k); });
+  kopi('laave', 0, 26); kopi('honsehus', -26, 24); kopi('akre', 0, 18); kopi('dyr', 30, 18, true);
+  [[lagKu, 15.8, 19.4], [lagKu, 17.2, 21.6], [lagGris, 18.6, 19.6], [lagGris, 19.6, 21.8], [lagSau, 20.6, 19.4], [lagSau, 21.2, 21.6]].forEach(([f, x, z]) => { const g = f(x, z); g.userData.sone = [15.2, 21.8]; g.userData.zs = [19.1, 22.4]; });
+}
+let fullInfo = '', forhandMs = null;
+
+/* Hakk-analyse (0.5.1): for hvert intervall over 25 ms lagres det som skjedde i bildet før:
+   tid i vår JS (oppdatering og render-kall), ny geometri/tekstur lastet opp, ny shader, kamerabevegelse, trykk og robotens tilstand. */
+const diag = {geo: 0, tex: 0, prog: 0, f: null}, hendelser = [];
+function diagEtterBilde(tA, tB, tC) { const m = renderer.info.memory, pr = renderer.info.programs ? renderer.info.programs.length : 0;
+  diag.f = {upd: tB - tA, ren: tC - tB, dGeo: m.geometries - diag.geo, dTex: m.textures - diag.tex, dProg: pr - diag.prog, pan: pek.size > 0 || tC - sistHjul < 400, trykk: tC - sistTrykk < 300, robot: mal ? 'går' : snuTil ? 'snur' : modus };
+  diag.geo = m.geometries; diag.tex = m.textures; diag.prog = pr; }
 /* Langtest (0.4.5): registrerer hvert rAF-intervall over lang tid med fast oppløsning, og skiller bilder under panorering/zoom fra bilder i ro.
    Et «hakk» er et intervall over 1,5 × median (et tapt skjermbilde). Stopper selv etter 10 minutter, eller hvis siden skjules. */
 const lang = {paa: false, t0: 0, iv: new Float32Array(150000), aktiv: new Uint8Array(150000), ts: new Float64Array(150000), n: 0, skjult: 0};
 const langKnapp = document.getElementById('langtest');
-function langStart() { if (maaler) return; Object.assign(lang, {paa: true, t0: performance.now(), n: 0, skjult: 0, pr: renderer.getPixelRatio()}); maalBoks.classList.remove('vis'); langKnapp.classList.add('on'); }
+function langStart() { if (maaler) return; hendelser.length = 0; Object.assign(lang, {paa: true, t0: performance.now(), n: 0, skjult: 0, pr: renderer.getPixelRatio()}); maalBoks.classList.remove('vis'); langKnapp.classList.add('on'); }
 function persentil(a, p) { const s = Array.from(a).sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(s.length * p))]; }
 function oppsummer(iv, med) { if (!iv.length) return null; const sum = iv.reduce((x, y) => x + y, 0); const hakk = iv.filter(v => v > med * 1.5).length;
   return {n: iv.length, fps: 1000 * iv.length / sum, lav1: 1000 / persentil(iv, 0.99), lav01: 1000 / persentil(iv, 0.999), hakk, over33: iv.filter(v => v > 33.4).length, over50: iv.filter(v => v > 50).length, maks: Math.max(...iv)}; }
@@ -1258,11 +1286,20 @@ function langStopp(grunn) {
     `Median bildeintervall ${k(med, 1)} ms (≈ ${k(1000 / med)} Hz). Hakk = intervall over ${k(med * 1.5, 1)} ms.`,
     rad('alle', alle), rad('panorer/zoom', bev), rad('i ro', ro), 'Per minutt:', ...min,
     'b/s er snitt. «1 % lav» og «0,1 % lav» er bildefrekvensen ved de tregeste 1 % og 0,1 % av bildene.'];
+  const H = hendelser, ant = f => H.filter(f).length, mmss = ms0 => { const ms = Math.max(0, ms0); return `${String(Math.floor(ms / 60000)).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`; };
+  const opp = h => h.dGeo > 0 || h.dTex > 0, js = h => h.upd + h.ren > 12, ingen = h => !opp(h) && h.dProg <= 0 && !js(h) && !h.pan && !h.trykk;
+  linjer.push(`Hakk-analyse, intervaller over 25 ms: ${H.length}`,
+    `  med ny shader: ${ant(h => h.dProg > 0)} · med opplasting av geometri/tekstur: ${ant(opp)}`,
+    `  under panorering/zoom: ${ant(h => h.pan)} · rett etter trykk: ${ant(h => h.trykk)}`,
+    `  vår JS over 12 ms (oppdatering + render-kall): ${ant(js)}`,
+    `  ingen av delene (trolig utenfor vår kode: minnerydding, nettleser eller system): ${ant(ingen)}`,
+    'Lengste intervaller:', ...H.slice().sort((a, b) => b.iv - a.iv).slice(0, 10).map(h => `  ${mmss(h.t)}  ${k(h.iv)} ms  JS ${k(h.upd + h.ren, 1)} ms${h.dProg > 0 ? ' · ny shader' : ''}${opp(h) ? ' · opplasting' : ''}${h.pan ? ' · panorering' : ''}${h.trykk ? ' · trykk' : ''} · robot ${h.robot}`),
+    `Forhåndslast: ${TEST.forhand ? 'på' + (forhandMs !== null ? ' (' + k(forhandMs) + ' ms ved start)' : '') : 'av'} · Full gård: ${TEST.full ? 'på' : 'av'}`);
   window.__langtest = {alle, bev, ro, med, varighet}; maalBoks.classList.add('vis'); maalTekst.textContent = linjer.join('\n');
 }
 langKnapp.onclick = () => lang.paa ? langStopp('stoppet manuelt') : langStart();
 document.addEventListener('visibilitychange', () => { if (document.hidden && lang.paa) lang.skjult++; });
-function langRegistrer(intervall, naa) { if (!lang.paa) return; if (document.hidden) return; if (lang.n < lang.iv.length) { lang.iv[lang.n] = intervall; lang.aktiv[lang.n] = pek.size > 0 || naa - sistHjul < 400 ? 1 : 0; lang.ts[lang.n] = naa - lang.t0; lang.n++; }
+function langRegistrer(intervall, naa) { if (!lang.paa) return; if (document.hidden) return; if (intervall > 25 && diag.f && hendelser.length < 3000) hendelser.push(Object.assign({t: naa - lang.t0, iv: intervall}, diag.f)); if (lang.n < lang.iv.length) { lang.iv[lang.n] = intervall; lang.aktiv[lang.n] = pek.size > 0 || naa - sistHjul < 400 ? 1 : 0; lang.ts[lang.n] = naa - lang.t0; lang.n++; }
   if (naa - lang.t0 > 600000) langStopp('stoppet automatisk etter 10 min'); }
 document.getElementById('lukkMaal').onclick = () => maalBoks.classList.remove('vis');
 document.getElementById('kopier').onclick = async () => { const t = maalTekst.textContent; try { await navigator.clipboard.writeText(t); document.getElementById('kopier').textContent = 'Kopiert'; } catch (e) { const r = document.createRange(); r.selectNodeContents(maalTekst); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); document.getElementById('kopier').textContent = 'Merket – kopier selv'; } setTimeout(() => document.getElementById('kopier').textContent = 'Kopier', 2500); };
@@ -1271,7 +1308,7 @@ document.getElementById('kopier').onclick = async () => { const t = maalTekst.te
 function bygg() {
   renderer.setPixelRatio(+PR_VALG); sol.shadow.mapSize.set(KV[KVAL].skygge, KV[KVAL].skygge); if (KVAL === 'mobil') renderer.shadowMap.type = THREE.PCFShadowMap;
   const kat = (navn, fn) => { const for_ = new Set(scene.children); fn(); scene.children.forEach(c => { if (!for_.has(c)) c.userData.kat = navn; }); };
-  kat('terreng', lagTerreng); kat('omrader', lagOmrader); kat('vegetasjon', lagVegetasjon); kat('gjerde', lagGjerde); kat('laave', lagLave); kat('honsehus', lagHonsehus); kat('dyr', lagBeite); kat('akre', lagAkre); kat('markedsbod', lagMarkedsbod); kat('detaljer', lagDetaljer); kat('vaer', lagVaer); settTid('dag'); lagRev();
+  kat('terreng', lagTerreng); kat('omrader', lagOmrader); kat('vegetasjon', lagVegetasjon); kat('gjerde', lagGjerde); kat('laave', lagLave); kat('honsehus', lagHonsehus); kat('dyr', lagBeite); kat('akre', lagAkre); kat('markedsbod', lagMarkedsbod); kat('detaljer', lagDetaljer); kat('vaer', lagVaer); settTid('dag'); lagRev(); if (TEST.full) fullGard();
   new THREE.GLTFLoader().load(ROBOT_URL, gl => {
     robot = gl.scene; const b = new THREE.Box3().setFromObject(robot); robot.scale.setScalar(1.9 / (b.max.y - b.min.y)); const b2 = new THREE.Box3().setFromObject(robot); robot.position.set(-0.8, -b2.min.y, 0.2);
     robot.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } if (o.isBone && /^Head(_\d+)?$/.test(o.name) && !hode) hode = o; });
@@ -1281,6 +1318,7 @@ function bygg() {
       hatt.position.set(hp.x, hp.y + hattOffset, hp.z); hatt.rotation.set(0, robot.rotation.y, 0); hatt.updateMatrixWorld(true); hode.attach(hatt); }
     robot.position.y = 0;
     document.getElementById('last').style.display = 'none';
+    if (TEST.forhand) setTimeout(() => { forhandMs = forhandslast(); }, 600); // etter at reven også er lastet
   }, undefined, () => { document.getElementById('last').textContent = 'Fant ikke roboten'; });
 }
 
@@ -1289,7 +1327,7 @@ const SKYGGE_HALV = new URLSearchParams(location.search).has('halvskygge'); // 0
 const klokke = new THREE.Clock(), tmp = new THREE.Vector3(), m4 = new THREE.Matrix4();
 let bildeNr = 0; const sisteSkyggeMaal = new THREE.Vector3(1e9, 0, 0);
 function loop(ts) {
-  requestAnimationFrame(loop);
+  requestAnimationFrame(loop); const tA = performance.now();
   if (sistTs) { ring[ringI++ % 120] = ts - sistTs; if (maaler) ramme.push(ts - sistTs); langRegistrer(ts - sistTs, ts); } sistTs = ts; // rå intervaller, ikke avkappet (1 % lav kan nå bli lavere enn 20)
   const dt = Math.min(klokke.getDelta(), 0.05), t = klokke.elapsedTime; // dt er avkappet bare for animasjonene
   if (mixer) mixer.update(dt); if (revMixer) revMixer.update(dt);
@@ -1310,7 +1348,7 @@ function loop(ts) {
   sol.target.position.copy(cam.target); sol.position.set(cam.target.x + TIDER[TID].pos[0], TIDER[TID].pos[1], cam.target.z + TIDER[TID].pos[2]);
   // Mobil: skyggekartet tegnes hvert 2. bilde (og alltid når kameraet flyttes). Skyggene til roboten og dyrene oppdateres da 30 ganger i sekundet.
   if (SKYGGE_HALV) { bildeNr++; renderer.shadowMap.needsUpdate = bildeNr % 2 === 0 || !sisteSkyggeMaal.equals(cam.target); if (renderer.shadowMap.needsUpdate) sisteSkyggeMaal.copy(cam.target); }
-  if (!stoppTegning) renderer.render(scene, camera);
+  const tB = performance.now(); if (!stoppTegning) renderer.render(scene, camera); diagEtterBilde(tA, tB, performance.now());
   if (lang.paa && t - sisteVis > 0.5) { const sek = (ts - lang.t0) / 1000; langKnapp.textContent = `Stopp ${Math.floor(sek / 60)}:${String(Math.floor(sek % 60)).padStart(2, '0')}`; }
   if (t - sisteVis > 0.5 && !maaler) { sisteVis = t; const s = stat(Array.from(ring.subarray(0, Math.min(ringI, 120)))); const i = renderer.info.render;
     fpsChip.textContent = `${s.fps.toFixed(0)} b/s · ${renderer.getPixelRatio().toFixed(2).replace('.', ',')}×` + (innerWidth > 480 ? ` · ${i.calls} kall` : ''); }
