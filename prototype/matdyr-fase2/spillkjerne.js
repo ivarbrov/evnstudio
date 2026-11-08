@@ -165,7 +165,7 @@
       const nx = p.x + Math.sin(a.retning) * a.fart * dt, nz = p.z + Math.cos(a.retning) * a.fart * dt;
       const iPorten = Math.abs(nz - po.z) < po.halv - 0.6 && nx > e.x1 - 3;
       if (a.tilstand === 'ut' || a.tilstand === 'borte' || iFeltet(nx, nz) || iPorten) { p.x = nx; p.z = nz; }
-      else { p.z = Math.min(e.z1 - 1.3, Math.max(e.z0 + 1.3, nz)); p.x = Math.min(Math.max(nx, e.x0 + 1.3), e.x1 - 1.3); }   // glir langs gjerdet mot porten
+      else if (iFeltet(p.x, p.z)) { p.z = Math.min(e.z1 - 1.3, Math.max(e.z0 + 1.3, nz)); p.x = Math.min(Math.max(nx, e.x0 + 1.3), e.x1 - 1.3); }   // glir langs gjerdet mot porten (et matdyr utenfor åkeren blir stående)
       if (a.tilstand === 'gaa' && p.x > e.x1 + 0.5) a.tilstand = 'ut';
       if (a.tilstand === 'ut' && p.x > e.x1 + 9) a.tilstand = 'borte';
       a.m.rotation.y = a.retning;
