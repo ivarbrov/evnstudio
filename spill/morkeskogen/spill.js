@@ -525,9 +525,12 @@ const TRACK = [];                                                               
 const TRACK_LEN = TRACK[TRACK.length - 1][2], ST_A = 150, ST_B = TRACK_LEN - 150;
 // 2.0.6: ved stasjon A stopper lokomotivet lenger fram, så hele toget står på sporet ved perrongen. Før sto vogna (350 bak lokomotivet)
 // «før starten» av sporet og ble klemt sammen med kullvogna, så du satt utenfor vogna og vogna dukket først opp når toget kjørte.
-const ST_A_TOG = Math.max(ST_A, 175 * 2 + 40);
 // Toget og stasjonene er laget i dobbel størrelse (v4.8), så Even-figuren får plass i vogna
 const TRAIN_K = 2, CAR_TENDER = 78 * TRAIN_K, CAR_COACH = 175 * TRAIN_K;
+// 2.0.9: et lokomotiv i hver ende, så toget aldri rygger: på vei tilbake til bålet går det bakre lokomotivet først.
+// Det bakre lokomotivet står snudd, rett bak vogna (vogna er ±101 lang, lokomotivet 96 bak og 118 foran midten).
+const CAR_LOCO2 = CAR_COACH + 101 + 8 + 96;
+const ST_A_TOG = CAR_LOCO2 + 118;   // ved stasjon A står det bakre lokomotivet helt på sporet, og vogna ved perrongen
 // Perrongen er et gulv du kan gå på
 function platformH(x, y) {
   for (const s of [ST_A, ST_B]) { const q = trackPos(s), dx = x - q.x, dy = y - q.y, along = dx * q.tx + dy * q.ty, side = dx * q.ty - dy * q.tx;
@@ -641,7 +644,7 @@ function updateTrainTown(dt) {
   if (g.ride) {                                                                             // du sitter i vogna
     const c = trackPos(tr.s - CAR_COACH + 2), sg = g.ride.seat ? 1 : -1;
     p.x = c.x + c.ty * 7.5 * TRAIN_K * sg; p.y = c.y - c.tx * 7.5 * TRAIN_K * sg;
-    p.h = c.h + 19 * TRAIN_K - 32; p.z = 0; p.vx = p.vy = p.vz = 0; p.swing = 0; p.draw = 0; p.rideAng = c.ang;
+    p.h = c.h + 19 * TRAIN_K - 32; p.z = 0; p.vx = p.vy = p.vz = 0; p.swing = 0; p.draw = 0; p.rideAng = c.ang + (tr.at === 'A' ? 0 : Math.PI);   // 2.0.9: sitter med ansiktet i kjøreretningen
   }
   // skurkene: gjemmer seg til sheriffen har bedt om hjelp, så kommer de fram og slåss
   for (const b of T.bandits) {
@@ -823,8 +826,8 @@ function makeTown() {
     H2.add(mk(GEO.box, mat, W2, h, D2, 0, h / 2, 0));
     H2.add(mk(GEO.box, mat, W2 + 6, h + 22, 3, 0, (h + 22) / 2, D2 / 2 + 1.5));              // høy, falsk fasade
     H2.add(mk(GEO.box, m.roof, W2 + 10, 3, D2 + 6, 0, h + 1.5, 0));
-    H2.add(mk(GEO.box, m.woodD, W2 + 8, 2.5, 22, 0, 30, D2 / 2 + 13));                       // verandatak
-    for (const px of [-W2 / 2 - 2, W2 / 2 + 2, 0]) H2.add(mk(GEO.box, m.woodD, 2.4, 30, 2.4, px, 15, D2 / 2 + 23));
+    H2.add(mk(GEO.box, m.woodD, W2 + 8, 2.5, 22, 0, 40, D2 / 2 + 13));                       // verandatak (2.0.9: hevet fra 30 til 40, så hodet og hatten til figurene ikke går opp i taket)
+    for (const px of [-W2 / 2 - 2, W2 / 2 + 2, 0]) H2.add(mk(GEO.box, m.woodD, 2.4, 40, 2.4, px, 20, D2 / 2 + 23));
     H2.add(mk(GEO.box, m.plankD, W2 + 8, 2, 24, 0, 1, D2 / 2 + 12));                         // plankegang
     H2.add(mk(GEO.box, m.woodD, 16, 26, 1, 0, 13, D2 / 2 + 3.2, false));                     // dør
     if (type === 'saloon') { for (const sx of [-1, 1]) { const dd = mk(GEO.box, m.plankB, 7, 12, 1, sx * 4, 16, D2 / 2 + 4); dd.rotation.y = sx * .4; H2.add(dd); } }   // svingdører
@@ -849,10 +852,10 @@ function makeTown() {
   return { grp: OUT, npcs, horses };
 }
 function makeTrainSet() {
-  const loco = makeLoco(), tender = makeTender(), coach = makeCoach(), G = new THREE.Group();
-  G.add(loco, tender, coach); for (const o of [loco, tender, coach]) o.scale.setScalar(TRAIN_K);
+  const loco = makeLoco(), tender = makeTender(), coach = makeCoach(), loco2 = makeLoco(), G = new THREE.Group();
+  G.add(loco, tender, coach, loco2); for (const o of [loco, tender, coach, loco2]) o.scale.setScalar(TRAIN_K);
   const smoke = []; for (let i = 0; i < 16; i++) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: R3.magicTex, color: 0x8e8882, transparent: true, depthWrite: false, opacity: 0 })); sp.userData = { t: 9 }; G.add(sp); smoke.push(sp); }
-  return { grp: G, loco, tender, coach, smoke, si: 0, st: 0 };
+  return { grp: G, loco, tender, coach, loco2, smoke, si: 0, st: 0 };
 }
 function buildRailTown(G) {
   R3.rail = makeRailWorld(); G.add(R3.rail);
@@ -867,13 +870,16 @@ function renderTrainTown(dt, time) {
   R3.town.grp.visible = near(TOWNX, TOWNY + TOWN_OY, 2600);
   const place = (obj, s) => { const q = trackPos(s); obj.position.set(q.x, q.h + 1, q.y); obj.rotation.y = q.ang; return q; };
   const ql = place(Rt.loco, tr.s); place(Rt.tender, tr.s - CAR_TENDER); place(Rt.coach, tr.s - CAR_COACH);
+  place(Rt.loco2, tr.s - CAR_LOCO2); Rt.loco2.rotation.y += Math.PI;                       // bakre lokomotiv, snudd
+  const lead = tr.at === 'A' ? Rt.loco : Rt.loco2;                                          // lokomotivet som går først (røyken kommer derfra)
   Rt.grp.visible = near(ql.x, ql.y, 2200);
   if (Rt.grp.visible) {
     Rt.loco.userData.wheels.forEach((w, i) => { w.rotation.x = tr.s / ((i < 6 ? 9 : 5) * TRAIN_K); });                                // hjulene ruller
+    Rt.loco2.userData.wheels.forEach((w, i) => { w.rotation.x = -tr.s / ((i < 6 ? 9 : 5) * TRAIN_K); });
     Rt.tender.userData.wheels.concat(Rt.coach.userData.wheels).forEach(w => w.rotation.x = tr.s / (6 * TRAIN_K));
-    Rt.loco.userData.rods.forEach(r2 => { const a = tr.s / (9 * TRAIN_K); r2.position.y = 9 + Math.sin(a) * 4; r2.position.z = -2 + Math.cos(a) * 4; });   // stengene går rundt
+    for (const [L, sg] of [[Rt.loco, 1], [Rt.loco2, -1]]) L.userData.rods.forEach(r2 => { const a = sg * tr.s / (9 * TRAIN_K); r2.position.y = 9 + Math.sin(a) * 4; r2.position.z = -2 + Math.cos(a) * 4; });   // stengene går rundt
     // røyk fra skorsteinen: oftere og tykkere når toget kjører
-    Rt.st -= dt; if (Rt.st <= 0) { Rt.st = tr.st === 'go' ? 0.12 : 0.6; const sp = Rt.smoke[Rt.si++ % Rt.smoke.length], wp = Rt.loco.localToWorld(Rt.loco.userData.stack.clone()); sp.position.copy(wp); sp.userData.t = 0; sp.userData.v = new THREE.Vector3((Math.random() - .5) * 10, 30 + Math.random() * 15, (Math.random() - .5) * 10); }
+    Rt.st -= dt; if (Rt.st <= 0) { Rt.st = tr.st === 'go' ? 0.12 : 0.6; const sp = Rt.smoke[Rt.si++ % Rt.smoke.length], wp = lead.localToWorld(lead.userData.stack.clone()); sp.position.copy(wp); sp.userData.t = 0; sp.userData.v = new THREE.Vector3((Math.random() - .5) * 10, 30 + Math.random() * 15, (Math.random() - .5) * 10); }
     for (const sp of Rt.smoke) { const u = sp.userData; if (u.t > 3) { sp.visible = false; continue; } u.t += dt; sp.visible = true; sp.position.addScaledVector(u.v, dt); sp.scale.setScalar((14 + u.t * 26) * TRAIN_K); sp.material.opacity = Math.max(0, .55 * (1 - u.t / 3)); }
   }
   // figurer: puster litt og snur seg mot deg når du er nær
