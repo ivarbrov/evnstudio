@@ -43,10 +43,13 @@
     pilot_hval_pizza: 225, pilot_hval_smultring: 227, pilot_hval_banan: 230, pilot_hval_is: 234, pilot_skilpadde_pizza: 700, pilot_skilpadde_smultring: 702, pilot_skilpadde_banan: 705, pilot_skilpadde_is: 709 };
   const PILOT = new URLSearchParams(location.search).get('pilot') === '1' ? Object.keys(PILOT_ID) : [];
   const NY_ID = { ...Object.fromEntries(PILOT.map(n => [n, PILOT_ID[n]])), donutku: 127, burgersau: 508, pizzaskilpadde: 700, shakeand: 599, spagettipingvin: 179 };
-  const res = { miljo: null, gard: null, fig: {} };
+  // ?laave=a|b|c: tre låvevarianter til vurdering (Ivar 8.11.2026). Uten flagget brukes den vanlige låven.
+  const LAAVE = ['a', 'b', 'c'].includes(new URLSearchParams(location.search).get('laave')) ? new URLSearchParams(location.search).get('laave') : null;
+  const res = { miljo: null, gard: null, fig: {}, laaver: null };
   const ressurserKlar = !NY ? Promise.resolve() : Promise.all([
     EVNMiljo.lastGLB('modeller/miljo.glb').then(g => { res.miljo = g; }),
     EVNMiljo.lastGLB('modeller/gard.glb').then(g => { res.gard = g; }),
+    LAAVE ? EVNMiljo.lastGLB('modeller/laaver.glb').then(g => { res.laaver = g; }) : null,
     ...NYE_FIGURER.concat(PILOT).map(n => Promise.all([EVNMiljo.lastGLB('modeller/' + n + '.glb'), EVNMiljo.lastGLB('modeller/' + n + '_lav.glb')]).then(([full, lav]) => { if (full) res.fig[n] = { full, lav: lav || full }; }))
   ]);
 
@@ -676,19 +679,25 @@
       const fra = n >= 2 ? 21.5 : 15.5, til = e.z0 - 0.4; const sti = new T.Mesh(new T.PlaneGeometry(6, til - fra + 1), M('#c9a06a', 0.95)); sti.rotation.x = -Math.PI / 2; sti.position.set(0, 0.04, (fra + til) / 2); sti.receiveShadow = true; eg.add(sti);
       skilt(eg, ['🌧️ Åkeren', 'Her regner matdyrene'], 5.4, 0, e.z0 - 1.6, Math.PI, '#ffe9a8');
     }
-    if (!(NY && byggPaaTun('laave', g, -BX / 2 - 12.5, -6, Math.PI / 2, n >= 5 ? 1.25 : 1))) lave(g, n >= 5, -BX / 2 - 12.5, -6);
+    // Låvevariantene står med fronten mot tunet (+z), slik at port, høyluke og vinduer synes fra gården og stien
+    const LVX = -BX / 2 - 11.5, LVZ = -5.5;   // litt nærmere tunet enn den gamle låven, så bakhjørnet holder seg innenfor gjerdet
+    const lvNode = NY && LAAVE && res.laaver && res.laaver.scene.getObjectByName('laave_' + LAAVE);
+    if (lvNode) { const d = miljoCache['lv' + LAAVE] || (miljoCache['lv' + LAAVE] = EVNMiljo.deler(lvNode, 1, { vf: true })); g.add(EVNMiljo.kopi(d, LVX, 0, LVZ, 0, n >= 5 ? 1.25 : 1)); }
+    else if (!(NY && byggPaaTun('laave', g, -BX / 2 - 12.5, -6, Math.PI / 2, n >= 5 ? 1.25 : 1))) lave(g, n >= 5, -BX / 2 - 12.5, -6);
     // Tunet: steinlagte stier mellom porten, fjøset, rampa, låven og byggene, og litt gårdsliv
     if (NYGARD()) {
-      const d = n >= 2 ? 22 : 16, stier = [[[0, d - 0.8], [0, HZ + 1.2]], [[0, HZ + 3.2], [A, HZ + 4.8]], [[-HX - 1.2, -6], [-BX / 2 - 12.5 + (n >= 5 ? 5 : 4) * 1.0 + 0.6, -6]], [[-HX - 1.2, 2], [-BX / 2 - 8.5 + 2.2, 6.5]]];
+      const d = n >= 2 ? 22 : 16, stier = [[[0, d - 0.8], [0, HZ + 1.2]], [[0, HZ + 3.2], [A, HZ + 4.8]], (lvNode ? [[-HX - 1.2, -1], [LVX, LVZ + (n >= 5 ? 6.6 : 5.4)]] : [[-HX - 1.2, -6], [-BX / 2 - 12.5 + (n >= 5 ? 5 : 4) * 1.0 + 0.6, -6]]), (lvNode ? [[-HX - 1.2, -9], [LVX + (n >= 5 ? 7.2 : 5.9) + 2.2, LVZ - 3.5]] : [[-HX - 1.2, 2], [-BX / 2 - 8.5 + 2.2, 6.5]])];
       if (n >= 4) stier.push([[HX + 1.2, 8], [BX / 2 + 5.2, 9.2]]);
       if (n >= 5) stier.push([[HX + 1.2, -7], [BX / 2 + 7.4, -8.4]]);
       let frø = 3; const rnd = () => (frø = (frø * 9301 + 49297) % 233280) / 233280;
       for (const [[x0, z0], [x1, z1]] of stier) { const L = Math.hypot(x1 - x0, z1 - z0), k = Math.max(1, Math.round(L / 1.7)); for (let i = 0; i <= k; i++) modul(g, 'heller', x0 + (x1 - x0) * i / k + (rnd() - 0.5) * 0.25, 0.005, z0 + (z1 - z0) * i / k + (rnd() - 0.5) * 0.25, rnd() * 6.28, 1.25, 1, 1.25); }
       modul(g, 'kjerre', -BX / 2 - 7.2, 0, -12.5, 0.6); modul(g, 'hoyball_firk', -BX / 2 - 6.5, 0, 1.2, 0.3); modul(g, 'hoyball_firk', -BX / 2 - 6.1, 0, 2.4, -0.2); modul(g, 'hoyball_firk', -BX / 2 - 6.3, 0.7, 1.8, 0.1);
       modul(g, 'tonne', HX + 1.4, 0, -HZ - 1.2); modul(g, 'tonne', HX + 2.2, 0, -HZ - 0.9);
-      modul(g, 'vaerhane', -BX / 2 - 12.5, 7.15 * (n >= 5 ? 1.25 : 1), -6, 0.5);
+      if (!lvNode) modul(g, 'vaerhane', -BX / 2 - 12.5, 7.15 * (n >= 5 ? 1.25 : 1), -6, 0.5);
     }
-    if (!(NY && byggPaaTun('silo', g, -BX / 2 - 8.5, 6.5, 0, n >= 4 ? 1.35 : 0.9))) silo(g, n >= 4 ? 11 : 7, -BX / 2 - 8.5, 6.5);
+    // Med en låvevariant står siloen inntil låvens østside, bak på tunet, så låvefronten er fri og låve og silo leses som ett tun
+    const siloX = lvNode ? LVX + (n >= 5 ? 7.2 : 5.9) : -BX / 2 - 8.5, siloZ = lvNode ? LVZ - 4 : 6.5;
+    if (!(NY && byggPaaTun('silo', g, siloX, siloZ, 0, n >= 4 ? 1.35 : 0.9))) silo(g, n >= 4 ? 11 : 7, siloX, siloZ);
     skal(4, gg => { if (!(NY && byggPaaTun('honsehus', gg, BX / 2 + 7, 10, -0.6))) honsehus(gg, BX / 2 + 7, 10); });
     skal(5, gg => { if (!(NY && nyMolle(gg, BX / 2 + 9, -9))) gd.molle = molle(gg, BX / 2 + 9, -9); });
     skal(7, gg => { if (!(NY && byggPaaTun('drivhus', gg, -6, 15, 0))) drivhus(gg, -6, 15); });

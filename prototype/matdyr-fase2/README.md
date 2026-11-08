@@ -217,3 +217,21 @@ Spilltest-sjekk 9 (roboten i porten) og sjekk 10 (plassering i 2. etasje og «f�
 
 ## Figurrettinger etter Ivars vurdering (8.11.2026 kl. 21.45)
 Donutku, Burgersau, Pizzaskilpadde, Shakeand og Spagettipingvin er rettet i `blender/matdyr_hybrider.py`. Feilen i `forelder()` som plasserte siste del feil ved eksport er også rettet. Den ga en hale under Burgersau og for lave føtter på Shakeand og Spagettipingvin. Sammenligning: `figurer-for-etter.png`. Venter på Evens vurdering.
+
+## Låvevarianter og gavlretting (Ivar, 8.11.2026 kl. 21.30 og 22.45)
+- **Tre varianter til vurdering** (`blender/laave_varianter.py` → `modeller/laaver.glb`), vist med `?laave=a`, `?laave=b` eller `?laave=c`:
+  - A: klassisk mansardlåve
+  - B: norsk låve med saltak
+  - C: koselig storlåve med høyhette, blomsterkasser og lykter
+- **Felles for alle tre:**
+  - én takform, der gavlveggen er laget av takets egen profil og derfor aldri stikker opp gjennom taket
+  - hvite vindskier og hjørnebord
+  - port med hvitt kryss, høyluke med høy og symmetriske vinduer
+  - steinsokkel i samme stein som siloen
+  - fronten vender mot tunet
+- **Plassering med en variant:** Siloen flyttes inntil låvens østside, og stiene følger etter.
+- **Uten flagget:** Gården er som før.
+- **Sammenligning:** `laave-varianter.png`
+- **Gavlfeil rettet i `blender/miljo_ressurser.py`:** Gavlen på dagens låve stakk opp til 0,6 m over taket, og hønsehuset hadde mansardgavl under saltak. Begge gavlene følger nå takets underside.
+- **Ikke endret:** spillregler og progresjon.
+- **Gjenstår (eldre problem):** Roboten kan gå gjennom låven fordi den ikke har kollisjon. Ytelse er ikke målt på ekte mobil. Hver låvevariant har ca. 11 000 trekanter.

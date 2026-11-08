@@ -127,10 +127,21 @@ def planke_vegg(navn, m, bredde, hoyde, x, y, z, rot_z=0, planke=0.32):
     o = slaa(navn, deler); o.data.transform(Matrix.Rotation(rot_z, 4, 'Z')); o.data.transform(Matrix.Translation((x, y, z)))
     return o
 
-def gavl(navn, m, b, h0, h1, y, tykk=0.12):
-    """Mansardgavl (låvetak med knekk) som et flatt 5-kantet stykke."""
+def langs(profil, x):
+    """z på en takprofil (liste av (x, z) fra venstre til høyre takfot) ved x."""
+    for (x0, z0), (x1, z1) in zip(profil, profil[1:]):
+        if min(x0, x1) - 1e-6 <= x <= max(x0, x1) + 1e-6 and abs(x1 - x0) > 1e-6: return z0 + (z1 - z0) * (x - x0) / (x1 - x0)
+    return profil[0][1]
+
+def gavl(navn, m, b, h0, h1, y, tykk=0.12, profil=None):
+    """Gavl som et flatt stykke. Med profil følger toppen takets underside (8 cm under takflatene), så gavlen aldri stikker
+    opp gjennom taket. Uten profil: den gamle mansardformen."""
     me = bpy.data.meshes.new(navn); bm = bmesh.new()
-    pts = [(-b / 2, h0), (b / 2, h0), (b / 2 * 0.98, h0 + (h1 - h0) * 0.55), (b * 0.25, h1 - 0.05), (0, h1), (-b * 0.25, h1 - 0.05), (-b / 2 * 0.98, h0 + (h1 - h0) * 0.55)]
+    if profil:
+        xs = [b / 2] + sorted([x for x, z in profil if -b / 2 < x < b / 2], reverse=True) + [-b / 2]
+        pts = [(-b / 2, h0), (b / 2, h0)] + [(x, max(h0 + 0.01, langs(profil, x) - 0.08)) for x in xs]
+    else:
+        pts = [(-b / 2, h0), (b / 2, h0), (b / 2 * 0.98, h0 + (h1 - h0) * 0.55), (b * 0.25, h1 - 0.05), (0, h1), (-b * 0.25, h1 - 0.05), (-b / 2 * 0.98, h0 + (h1 - h0) * 0.55)]
     f1 = [bm.verts.new((x, y - tykk / 2, z)) for x, z in pts]; f2 = [bm.verts.new((x, y + tykk / 2, z)) for x, z in pts]
     bm.faces.new(f1[::-1]); bm.faces.new(f2)
     for i in range(len(pts)): j = (i + 1) % len(pts); bm.faces.new((f1[i], f1[j], f2[j], f2[i]))
@@ -154,7 +165,9 @@ def laave():
     B, L, H0, H1 = 7.0, 8.0, 4.2, 7.0
     d = [planke_vegg('vegg_fram', rod, B, H0, 0, -L / 2, 0), planke_vegg('vegg_bak', rod, B, H0, 0, L / 2, 0)]
     d += [planke_vegg('vegg_v', rod, L, H0, -B / 2, 0, 0, math.pi / 2), planke_vegg('vegg_h', rod, L, H0, B / 2, 0, 0, math.pi / 2)]
-    d += [gavl('gavl_f', rod, B, H0, H1, -L / 2), gavl('gavl_b', rod, B, H0, H1, L / 2)]
+    dh = H1 - H0
+    takprofil = [(-(B / 2 + 0.35), H0 - 0.2), (-B / 2 * 0.965, H0 + 0.545 * dh), (0, H1 + 0.08), (B / 2 * 0.965, H0 + 0.545 * dh), (B / 2 + 0.35, H0 - 0.2)]
+    d += [gavl('gavl_f', rod, B, H0, H1, -L / 2, profil=takprofil), gavl('gavl_b', rod, B, H0, H1, L / 2, profil=takprofil)]
     # Tak med knekk på begge sider og møne
     for s in (-1, 1):
         d.append(tak_flate('tak_nedre%d' % s, tak, (s * (B / 2 + 0.35), H0 - 0.2), (s * B / 2 * 0.98 * 0.98, H0 + (H1 - H0) * 0.56), L + 0.6, 3))
@@ -213,7 +226,8 @@ def honsehus():
         for sy in (-1, 1): d.append(kasse('stolpe', mork, (sx * 1.35, sy * 1.05, 0.3), (0.2, 0.2, 0.7), 0.03))
     d.append(kasse('gulv', mork, (0, 0, 0.62), (3.1, 2.5, 0.12), 0.03))
     for s in (-1, 1): d.append(tak_flate('ht%d' % s, rod, (s * 1.8, 2.5), (0, 3.6), 3.0, 4))
-    d.append(gavl('hg_f', tre, 3.0, 2.6, 3.6, -1.2)); d.append(gavl('hg_b', tre, 3.0, 2.6, 3.6, 1.2))
+    hp = [(-1.8, 2.5), (0, 3.6), (1.8, 2.5)]   # saltak: gavlen er en trekant som følger taket
+    d.append(gavl('hg_f', tre, 3.0, 2.6, 3.6, -1.2, profil=hp)); d.append(gavl('hg_b', tre, 3.0, 2.6, 3.6, 1.2, profil=hp))
     d.append(kasse('hdor', mork, (0, -1.3, 1.25), (0.7, 0.08, 0.9), 0.03))
     d.append(kasse('rampe', mork, (0, -1.8, 0.35), (0.6, 1.2, 0.06), 0.02, rot=(0.45, 0, 0)))
     d.append(kasse('vindu', mat('vindu', '#bfe8ff', 0.15, emit=0.2), (1.0, -1.28, 1.9), (0.6, 0.05, 0.5), 0.02))
