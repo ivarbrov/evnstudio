@@ -195,7 +195,7 @@ try {
   // Krav kan ikke svekkes i samme PR
   const f1 = standard.split('\n').find(l => l.startsWith('| F1 |'));
   if (f1) { sha = commit({ '.claude/evn-game-standard.md': standard.replace(f1 + '\n', '') });
-    forvent('N34', 'Standard der F1 er fjernet, gir varsel, og F1 kreves fortsatt', sha, arligResultat(sha), { varsel: /fjerner gjeldende krav \(F1/ }); }
+    forvent('N34', 'Standard der F1 er fjernet, gir varsel om at F1 fortsatt kreves', sha, arligResultat(sha), { varsel: /fjerner gjeldende krav \(F1/ }); }
   else tester.push({ id: 'N34', navn: 'Standard der F1 er fjernet', ok: false, info: 'fant ikke F1 i standarden' });
   await kjorJobber(Math.max(2, Math.min(8, os.cpus().length)));
 } finally {
