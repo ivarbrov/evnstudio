@@ -7,8 +7,11 @@
  * Lager en midlertidig kopi av testene med to spill og kjører test/kjor.mjs (statisk og royk) på kopien:
  * - «god»: et lite, riktig spill som skal bestå alle kontroller.
  * - «fiende»: et spill der Start ikke virker, og som prøver å skjule det. Det setter et forfalsket testresultat
- *   (alle spill ok og et oppdiktet spill), låser det, og endrer DOM-funksjonene på siden så startknappen ser borte ut.
- * Testen krever at «fiende» får FEIL på F1-start og F1-pause, at «god» består, og at det oppdiktede spillet ikke finnes i resultatet.
+ *   (alle spill ok og et oppdiktet spill), låser det, endrer DOM-funksjonene på siden så startknappen ser borte ut,
+ *   skjuler egne feil med preventDefault(), og registrerer en service worker som prøver å bytte ut siden til «svak».
+ * - «svak»: et spill uten pause, som skal få FEIL selv om «fiende» prøver å hjelpe det.
+ * Testen krever at «fiende» får FEIL på F1-start, F1-pause og K1-feil, at «svak» får FEIL på F1-pause, at «god» består,
+ * og at det oppdiktede spillet ikke finnes i resultatet.
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -55,8 +58,24 @@ skriv('spill/fiende/spill.js', `(function () {
   try { localStorage.setItem('EVNTestResultat', JSON.stringify(falskt)); } catch (e) {}
   try { new BroadcastChannel('evn').postMessage(falskt); } catch (e) {}
   try { window.parent.postMessage(falskt, '*'); } catch (e) {}
+  // 4. Skjul egne feil for testen, og lag feil.
+  addEventListener('error', e => e.preventDefault());
+  addEventListener('unhandledrejection', e => e.preventDefault());
+  setTimeout(() => { null.x; }, 10);
+  Promise.reject(new Error('skjult avvisning'));
+  // 5. Service worker som bytter ut siden til et annet spill med en side som består.
+  try { navigator.serviceWorker.register('/sw.js', { scope: '/' }); } catch (e) {}
 })();\n`);
 skriv('spill/fiende/ikon.svg', ikon);
+const falskSide = `<!doctype html><html><head><link rel="icon" href="data:,"></head><body><div id="kort"><p class="evn-ver">Versjon 9.9.9</p><button id="startBtn" onclick="kort.hidden=true">Start</button></div><button id="evnPauseKnapp" onclick="evnPause.classList.add('vis')">P</button><div id="evnPause"><button id="evnPauseFortsett" onclick="evnPause.classList.remove('vis')">F</button></div></body></html>`;
+skriv('sw.js', `self.addEventListener('install', e => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+self.addEventListener('fetch', e => { if (new URL(e.request.url).pathname.startsWith('/spill/svak/') && e.request.mode === 'navigate') e.respondWith(new Response(${JSON.stringify(falskSide)}, { headers: { 'Content-Type': 'text/html' } })); });\n`);
+
+// Et spill uten pause. Start virker.
+skriv('spill/svak/index.html', hode('Svak', true) + `<body><div id="kort"><p class="evn-ver">Versjon 1.0.0</p><button id="startBtn">Start</button></div><script src="spill.js"></script></body></html>\n`);
+skriv('spill/svak/spill.js', `document.getElementById('startBtn').addEventListener('click', () => { document.getElementById('kort').hidden = true; });\n`);
+skriv('spill/svak/ikon.svg', ikon);
 
 const resultat = path.join(ROT, 'resultat.json');
 const p = spawnSync(process.execPath, [path.join(ROT, 'test', 'kjor.mjs'), '--suiter', 'statisk,royk', '--json', resultat], { cwd: ROT, encoding: 'utf8', timeout: 10 * 60 * 1000 });
@@ -66,9 +85,12 @@ const rad = (spill, id) => r && r.tester.find(t => t.spill === spill && t.id ===
 const krav = [
   ['kjor.mjs avslutter med feil (kode 1)', p.status === 1],
   ['resultatet er skrevet av kjor.mjs', !!r],
-  ['spillisten er god og fiende, uten det oppdiktede spillet', r && JSON.stringify(r.spill) === JSON.stringify(['fiende', 'god'])],
+  ['spillisten er fiende, god og svak, uten det oppdiktede spillet', r && JSON.stringify(r.spill) === JSON.stringify(['fiende', 'god', 'svak'])],
   ['fiende: F1-start er FEIL', rad('fiende', 'F1-start') && rad('fiende', 'F1-start').status === 'feil'],
   ['fiende: F1-pause er FEIL', rad('fiende', 'F1-pause') && rad('fiende', 'F1-pause').status === 'feil'],
+  ['fiende: K1-feil er FEIL (feil skjult med preventDefault blir fanget)', rad('fiende', 'K1-feil') && rad('fiende', 'K1-feil').status === 'feil'],
+  ['svak: F1-pause er FEIL (service worker fra et annet spill virker ikke)', rad('svak', 'F1-pause') && rad('svak', 'F1-pause').status === 'feil'],
+  ['svak: versjonen er 1.0.0, ikke den falske siden', rad('svak', 'U1-versjon') && rad('svak', 'U1-versjon').info === '1.0.0'],
   ['fiende: F1-startknapp er OK (knappen er synlig, selv om spillet skjuler den for egen kode)', rad('fiende', 'F1-startknapp') && rad('fiende', 'F1-startknapp').status === 'ok'],
   ['god: alle kontroller i royk og statisk er OK', r && r.tester.filter(t => t.spill === 'god').length >= 13 && r.tester.filter(t => t.spill === 'god').every(t => t.status === 'ok')],
   ['ingen rader for det oppdiktede spillet', r && !r.tester.some(t => t.spill === 'falsk')],

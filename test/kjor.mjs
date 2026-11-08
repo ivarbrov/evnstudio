@@ -114,9 +114,10 @@ async function startNettleser(bin) {
 }
 
 // ---- Røyktest: start, pause, fortsett, manglende filer og feil (F1, K1, U1) ----
-// Hvert spill kjøres i en egen fane på en egen port (egen opprinnelse), aldri inne i testsiden.
-// Kontrollene kjøres i en isolert verden: spillkoden deler DOM med dem, men ser ikke variablene deres
-// og kan ikke nå testsiden eller resultatet. Feil, CSP-brudd og manglende filer leses av nettleseren (CDP).
+// Hvert spill kjøres i en egen fane på en egen port (egen opprinnelse, også forskjellig fra de andre spillene),
+// aldri inne i testsiden. Kontrollene kjøres i en isolert verden: spillkoden deler DOM med dem, men ser ikke
+// variablene deres og kan ikke nå testsiden eller resultatet. Feil, CSP-brudd og manglende filer leses av
+// nettleseren (CDP). Ufangede feil fanges også av debuggeren, så spillet ikke kan skjule dem med preventDefault().
 const ROYK_HJELP = `globalThis.__evn = {
   synlig(e) {
     if (!e || !e.isConnected) return false;
@@ -130,19 +131,26 @@ async function roykSpill(nl, opprinnelse, sp) {
   const { targetId } = await nl.send('Target.createTarget', { url: 'about:blank' });
   const { sessionId } = await nl.send('Target.attachToTarget', { targetId, flatten: true });
   const s = (m, p) => nl.send(m, p, sessionId);
-  const unntak = [], logg = [], mangler = [], kort = u => (u || '').replace(/^https?:\/\/[^/]+/, '');
+  const unntak = new Set(), logg = [], mangler = [], kort = u => (u || '').replace(/^https?:\/\/[^/]+/, '');
   let lastet = false;
   const av = nl.lytt(d => {
     if (d.sessionId !== sessionId) return;
     const p = d.params;
     if (d.method === 'Page.loadEventFired') lastet = true;
-    if (d.method === 'Runtime.exceptionThrown') { const e = p.exceptionDetails; unntak.push(((e.exception && e.exception.description) || e.text).split('\n')[0] + (e.url ? ' (' + kort(e.url) + ')' : '')); }
+    if (d.method === 'Runtime.exceptionThrown') { const e = p.exceptionDetails; unntak.add(((e.exception && e.exception.description) || e.text).split('\n')[0]); }
+    // Debuggeren stopper på alle ufangede unntak og avviste løfter, også når spillet kaller preventDefault(). Fortsett straks.
+    if (d.method === 'Debugger.paused') {
+      if (p.reason === 'exception' || p.reason === 'promiseRejection') unntak.add(String((p.data && (p.data.description || p.data.value)) || p.reason).split('\n')[0]);
+      s('Debugger.resume').catch(() => {});
+    }
     if (d.method === 'Log.entryAdded' && p.entry.level === 'error' && p.entry.source !== 'network') logg.push('Logg: ' + p.entry.text + (p.entry.url ? ' (' + kort(p.entry.url) + ')' : ''));
-    if (d.method === 'Network.responseReceived' && p.response.status >= 400) mangler.push(p.response.status + ' ' + kort(p.response.url));
+    // /favicon.ico i roten hentes av nettleseren selv når en fane åpnes (ikke i en ramme, som før). Den regnes ikke med.
+    if (d.method === 'Network.responseReceived' && p.response.status >= 400 && p.response.url !== opprinnelse + '/favicon.ico') mangler.push(p.response.status + ' ' + kort(p.response.url));
     if (d.method === 'Network.loadingFailed' && p.blockedReason) logg.push('Blokkert (' + p.blockedReason + ')');
   });
   try {
-    await Promise.all(['Page.enable', 'Runtime.enable', 'Log.enable', 'Network.enable'].map(m => s(m)));
+    await Promise.all(['Page.enable', 'Runtime.enable', 'Log.enable', 'Network.enable', 'Debugger.enable'].map(m => s(m)));
+    await s('Debugger.setPauseOnExceptions', { state: 'uncaught' });
     await s('Emulation.setDeviceMetricsOverride', { width: 1024, height: 700, deviceScaleFactor: 1, mobile: false });
     await s('Storage.clearDataForOrigin', { origin: opprinnelse, storageTypes: 'all' });
     const { frameId } = await s('Page.navigate', { url: `${opprinnelse}/spill/${sp.id}/` });
@@ -188,8 +196,8 @@ async function roykSpill(nl, opprinnelse, sp) {
     try { await nl.send('Target.closeTarget', { targetId }); } catch {}
   }
   legg('K1-404', 'K1', 'Ingen filer mangler (status 400 eller høyere)', mangler.length === 0, [...new Set(mangler)].slice(0, 5).join(', '));
-  legg('K1-feil', 'K1', 'Ingen ufangede feil fra innlasting til etter pause', unntak.length === 0, [...new Set(unntak)].slice(0, 5).join(' | '));
-  const alle = [...unntak.map(x => 'Feil: ' + x), ...logg, ...mangler];
+  legg('K1-feil', 'K1', 'Ingen ufangede feil fra innlasting til etter pause', unntak.size === 0, [...unntak].slice(0, 5).join(' | '));
+  const alle = [...[...unntak].map(x => 'Feil: ' + x), ...logg, ...mangler];
   legg('K1-nettleser', 'K1', 'Ingen feil, CSP-brudd eller manglende filer sett av nettleseren', alle.length === 0, [...new Set(alle)].slice(0, 5).join(' | ').slice(0, 900));
   return rader;
 }
@@ -201,9 +209,7 @@ async function main() {
   const funnet = finnSpill();
   const srv = await server(funnet);
   const port = srv.address().port;
-  // Spillene i røyktesten får en egen port, altså en annen opprinnelse enn testsiden. Listen over spill gis bare på testsidens port.
-  const spillSrv = await server(null);
-  const spillOpprinnelse = 'http://127.0.0.1:' + spillSrv.address().port;
+
   const nl = await startNettleser(bin);
   const { targetId } = await nl.send('Target.createTarget', { url: 'about:blank' });
   const { sessionId } = await nl.send('Target.attachToTarget', { targetId, flatten: true });
@@ -245,13 +251,17 @@ async function main() {
     await new Promise(r => setTimeout(r, 1000));
     try { const v = await s('Runtime.evaluate', { expression: 'JSON.stringify(window.EVNTestResultat || null)', returnByValue: true }); res = JSON.parse(v.result.value); } catch {}
   }
-  if (!res) { await nl.lukk(); srv.close(); spillSrv.close(); console.error('Testsiden ble ikke ferdig innen ' + MAKS_MS / 60000 + ' minutter.'); process.exit(2); }
+  if (!res) { await nl.lukk(); srv.close(); console.error('Testsiden ble ikke ferdig innen ' + MAKS_MS / 60000 + ' minutter.'); process.exit(2); }
 
   const tester = res.tester;
   // Røyktesten kjøres her, ikke i testsiden, så spillkoden aldri deler opprinnelse med testsiden eller resultatet.
   const roykTestet = new Set();
   if (res.suiter.royk) for (const sp of res.spillOppsett) {
-    for (const r of await roykSpill(nl, spillOpprinnelse, sp)) {
+    // Egen server og port for hvert spill: et spill kan ikke påvirke de andre (for eksempel med en service worker)
+    const spillSrv = await server(null);
+    const rader = await roykSpill(nl, 'http://127.0.0.1:' + spillSrv.address().port, sp);
+    spillSrv.close();
+    for (const r of rader) {
       let status = r.ok ? 'ok' : (res.ikkeGjeldende.royk ? 'varsel' : 'feil'), info = r.info;
       const kjent = (res.kjente || {})[r.spill + '/' + r.id];
       if (kjent) { status = r.ok ? 'rettet' : 'kjent'; info = (info ? info + '. ' : '') + kjent; }
@@ -259,7 +269,7 @@ async function main() {
     }
     roykTestet.add(sp.id);
   }
-  await nl.lukk(); srv.close(); spillSrv.close();
+  await nl.lukk(); srv.close();
   // Feil i prototypen som bare nettleseren ser (suiten ui)
   for (const [spill, liste] of Object.entries(nettleserfeil)) {
     const suite = spill === 'prototype' ? 'ui' : 'statisk';
