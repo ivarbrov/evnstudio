@@ -176,7 +176,8 @@
     { tak: 36, nytt: 'Utsiktstårn og lykter i låven' },
     { tak: 40, nytt: 'Takterrasse med 4 gullplasser og flagg' },
     { tak: 40, nytt: 'Storgård: gullkanter og vimpler' }];
-  const gd = { gruppe: new T.Group(), niva: 3, neste: true, gjennom: false, figurInst: null };
+  const gd = { gruppe: new T.Group(), niva: 3, neste: true, gjennom: false, figurInst: null, aapne: null, tegnDyr: null };
+  const krok = {};   // spillkjerne.js kobler seg på her (start, panel, steg, fane)
   scene.add(gd.gruppe);
   const DX = 4.2, DZ = 4.4, EH = 5.6;                       // avstand mellom plasser, etasjehøyde
   const BX = 4 * DX + 1.2, BZ = 3 * DZ + 1.2;               // gulvflate per etasje (4 × 3 plasser)
@@ -358,12 +359,14 @@
     const tak = NIVA[n].tak, etasjer = n >= 9 ? 3 : n >= 6 ? 3 : n >= 3 ? 2 : 1, antPlasser = Math.min(etasjer * 12, n >= 9 ? 36 : etasjer * 12);
     const plassMatAapen = M('#d3b07a', 0.8), plassMatLaast = M('#7d7d7d', 0.9);
     const plasser = []; for (let i = 0; i < antPlasser; i++) plasser.push(plassPos(i)); if (n >= 9) for (let k = 0; k < 4; k++) plasser.push(takPlass(k));
-    const aapne = Math.min(tak, plasser.length);
+    const aapne = gd.aapne != null ? Math.min(gd.aapne, plasser.length) : Math.min(tak, plasser.length);
     const plateInst = new T.InstancedMesh(plateGeo, plassMatAapen, aapne), laastInst = new T.InstancedMesh(plateGeo, plassMatLaast, Math.max(0, plasser.length - aapne));
     const m4 = new T.Matrix4(), q = new T.Quaternion(), sk = new T.Vector3(3.2, 0.2, 3.2);
     plasser.forEach((p, i) => { m4.compose(new T.Vector3(p.x, p.y + 0.1, p.z), q, sk); if (i < aapne) plateInst.setMatrixAt(i, m4); else laastInst.setMatrixAt(i - aapne, m4); });
     plateInst.receiveShadow = laastInst.receiveShadow = true; g.add(plateInst, laastInst);
-    // Fyll de åpne plassene med matdyr (de fem figurene om hverandre)
+    // Fyll de åpne plassene med matdyr: i spillet fra lagringen, ellers de fem figurene om hverandre
+    if (gd.tegnDyr) gd.tegnDyr(g, plasser, aapne);
+    else {
     if (!figurDeler) lagFigurDeler();
     const per = NOKLER.map(() => []); for (let i = 0; i < aapne; i++) per[i % 5].push(i);
     figurDeler.forEach((fd, k) => {
@@ -374,11 +377,12 @@
         inst.castShadow = true; inst.receiveShadow = true; inst.userData.etasje = Math.floor(ids[0] / 12); g.add(inst);
       }
     });
+    }
     // Roboten på bakkeplanet ved rampa
     const r = lagRobot(); r.g.userData.ikkeFlett = true; r.g.position.set(A - 2.4, 0, HZ + 6.6); r.g.rotation.y = Math.PI * 0.85; g.add(r.g); gd.robot = r.g;   // ved foten av rampe 1
     // Etasjer over roboten gjøres gjennomsiktige
     if (gd.gjennom) g.traverse(o => { if (!o.isMesh) return; let p = o; while (p && p.userData.etasje === undefined) p = p.parent; const e = p ? p.userData.etasje : 0; if (e >= 1 && !(o.material.opacity < 0.3)) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.45; o.material.depthWrite = false; } });
-    visKortGard(aapne, plasser.length);
+    if (fane === 'gard') visKortGard(aapne, plasser.length);
   }
   function visKortGard(aapne, alle) {
     const n = gd.niva, neste = NIVA[n + 1];
@@ -469,7 +473,7 @@
   }
   function etasjeNavn(y) { return y < EH * 0.6 ? '1. etasje (bakken)' : y < EH * 1.6 ? '2. etasje' : y < EH * 2.6 ? '3. etasje' : 'Takterrassen 🏁'; }
   function steg(dt) {
-    const r = gd.robot; if (!r) return;
+    const r = gd.robot; if (!r || sp.pause) return;
     let ix = (sp.taster.d || sp.taster.arrowright ? 1 : 0) - (sp.taster.a || sp.taster.arrowleft ? 1 : 0) + sp.inn.x;
     let iz = (sp.taster.w || sp.taster.arrowup ? 1 : 0) - (sp.taster.s || sp.taster.arrowdown ? 1 : 0) + sp.inn.z;
     const m = Math.hypot(ix, iz); if (m > 1) { ix /= m; iz /= m; }
@@ -501,18 +505,20 @@
   }
   function settGjennom(e) { etasjeMesher.forEach(([o, et]) => { o.material = et > e ? o.userData.glass : o.userData.orig; }); }
   function startSpill() {
-    gd.niva = sp.niva; gd.neste = false; gd.gjennom = false; byggGard(); byggVegger(); forberedGjennom();
+    if (krok.start) return krok.start();
+    gd.aapne = null; gd.tegnDyr = null; gd.niva = sp.niva; gd.neste = false; gd.gjennom = false; byggGard(); byggVegger(); forberedGjennom();
     const r = gd.robot; r.position.set(A, 0, HZ + 7); r.rotation.y = Math.PI; sp.vy = 0; sp.paaBakken = true; sp.etasje = -1;
     Object.assign(bane, { teta: 0, fi: 1.12, r: innerWidth < 640 ? 18 : 15, rMin: 6, rMax: 40, auto: false });
     $('kort').innerHTML = '<h1>Prøv rampa</h1><div>Gå opp spiralrampa og inn i etasjene. Prøv å hoppe.</div><div class="liten">' + (TOUCH ? 'Styrespak nede til venstre, hopp nede til høyre. Dra på skjermen for å snu kameraet.' : 'WASD eller piltaster: gå · Mellomrom: hopp · Dra med musa: kamera · Hjul: zoom') + '</div><div id="spillStatus" class="rute">📍 1. etasje (bakken)</div>';
   }
   function byggPanelSpill() {
+    if (krok.panel) return krok.panel();
     const p = $('panel'); p.textContent = ''; const r1 = document.createElement('div'); r1.className = 'rad';
     const smal = innerWidth < 640; [3, 6, 9].forEach(n => { const t = (smal ? 'Nivå ' : 'Gårdsnivå ') + n; r1.appendChild(knapp(t, sp.niva === n, () => { sp.niva = n; startSpill(); byggPanelSpill(); })); });
     r1.appendChild(knapp(smal ? '↺ Start' : '↺ Til start', false, () => { startSpill(); }));
     p.append(r1);
   }
-  addEventListener('keydown', e => { if (fane !== 'spill') return; const k = e.key.toLowerCase(); if (k === ' ') { sp.hopp = true; e.preventDefault(); } sp.taster[k] = true; if (k.startsWith('arrow')) e.preventDefault(); });
+  addEventListener('keydown', e => { if (fane !== 'spill' || sp.pause) return; const k = e.key.toLowerCase(); if (k === ' ') { sp.hopp = true; e.preventDefault(); } sp.taster[k] = true; if (k.startsWith('arrow')) e.preventDefault(); });
   addEventListener('keyup', e => { sp.taster[e.key.toLowerCase()] = false; });
   addEventListener('blur', () => { sp.taster = {}; sp.inn = { x: 0, z: 0 }; });
   // Mobil: styrespak og hoppknapp
@@ -529,8 +535,9 @@
     md.gruppe.visible = f === 'matdyr'; gd.gruppe.visible = f !== 'matdyr';
     document.body.classList.toggle('spiller', f === 'spill');
     if (f === 'matdyr') { scene.fog.near = 80; visMatdyr(); byggPanelMatdyr(); }
-    else if (f === 'gard') { holder.classList.remove('ramme'); storrelse(); scene.fog.near = 120; byggGard(); settKameraGard(); byggPanelGard(); }
+    else if (f === 'gard') { holder.classList.remove('ramme'); storrelse(); scene.fog.near = 120; gd.aapne = null; gd.tegnDyr = null; byggGard(); settKameraGard(); byggPanelGard(); }
     else { holder.classList.remove('ramme'); storrelse(); scene.fog.near = 120; startSpill(); byggPanelSpill(); }
+    if (krok.fane) krok.fane(f);
   }
   $('fSpill').addEventListener('click', () => velgFane('spill'));
   $('fMatdyr').addEventListener('click', () => velgFane('matdyr'));
@@ -545,7 +552,7 @@
     if (bane.auto && !REDUSERT) bane.teta += dt * 0.35;
     oppdaterKamera();
     if (fane === 'matdyr') md.alle.forEach(f => H.animer(f, t, md.gaar && !REDUSERT));
-    if (fane === 'spill') steg(dt);
+    if (fane === 'spill') { steg(dt); if (krok.steg) krok.steg(dt, t); }
     if (robotMixer) robotMixer.update(dt);
     if (gd.molle && gd.molle.userData.vinge && !REDUSERT) gd.molle.userData.vinge.rotation.z += dt * 0.8;
     renderer.render(scene, camera);
@@ -555,6 +562,7 @@
   storrelse();
   robotKlar.then(() => { velgFane('matdyr'); requestAnimationFrame(loop); window.EVNKlar = true; });
   // For automatiske skjermbilder: ?fane=gard&niva=6 eller ?figur=burgersau&vis=spill
+  window.EVNIntern = { T, scene, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
   window.EVNSpill = sp; window.EVNRobot = () => gd.robot; window.EVNSteg = steg; window.EVNSpor = SPOR; window.EVNGeo = { HX, HZ, EH, DEKKE, W, KX, KZ, A, B, LREP }; window.EVNBane = bane; window.EVNVegger = () => vegger;
-  window.EVNVis = (o) => { if (o.fane === 'spill') { if (o.niva) sp.niva = o.niva; velgFane('spill'); return; } if (o.fane === 'gard') { if (o.niva) gd.niva = o.niva; if (o.neste !== undefined) gd.neste = o.neste; velgFane('gard'); if (o.teta !== undefined) { bane.teta = o.teta; oppdaterKamera(); } } else { if (o.figur) md.valgt = o.figur; if (o.vis) md.visning = o.vis; if (o.mobil) holder.classList.add('ramme'); storrelse(); velgFane('matdyr'); if (o.teta !== undefined) bane.teta = o.teta; } };
+  window.EVNVis = (o) => { if (o.fane === 'spill') { if (o.niva) sp.niva = sp.testNiva = o.niva; velgFane('spill'); return; } if (o.fane === 'gard') { if (o.niva) gd.niva = o.niva; if (o.neste !== undefined) gd.neste = o.neste; velgFane('gard'); if (o.teta !== undefined) { bane.teta = o.teta; oppdaterKamera(); } } else { if (o.figur) md.valgt = o.figur; if (o.vis) md.visning = o.vis; if (o.mobil) holder.classList.add('ramme'); storrelse(); velgFane('matdyr'); if (o.teta !== undefined) bane.teta = o.teta; } };
 })();

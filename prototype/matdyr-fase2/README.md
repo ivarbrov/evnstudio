@@ -26,3 +26,38 @@ Roboten kan gå, hoppe og ta spiralrampa opp til takterrassen.
 `rutetest.mjs` lar roboten gå hele ruta automatisk. Testen sjekker høydene (6,05, 11,65 og 17,25), at roboten kommer inn i hver etasje, og at den ikke kommer ut over rekkverket.
 
 Ingen lagring, E-coins eller statistikk ennå.
+
+## Trinn 3, del 2: spill-løkka og Gårdsnivå
+
+«🎮 Spill» er nå en spillbar prototype med egen lagring (`evn-matdyr-gard-proto`). Produksjonslagringen leses ikke. Prototypen har ingen E-coins og ingen statistikk.
+
+- **Matdyrregn:** samme ID-er, sjeldenheter, priser og inntekter som produksjonsspillet (`matdyrdata.js`), med korte navn (B5). Bestillingsregnet er 15 %. I 🧪-menyen kan det settes til 0, 10 eller 15 %.
+- **Figurer:** Donutku, Burgersau, Pizzaskilpadde og Iskatt har ferdige 3D-figurer. Alle andre vises som en kule i sjeldenhetsfargen med dyr og mat over.
+- **Ta med og sett inn:**
+  - Gå bort til et matdyr og trykk E eller handlingsknappen.
+  - Bær matdyret til en ledig plass i hvilken som helst etasje. Du betaler når det settes inn.
+  - Ved en full plass kan matdyret selges for halv pris.
+- **Gårdsnivå-menyen:**
+  - Menyen viser kravene, og forslaget er de svakeste matdyrene som passer. Et sjeldnere matdyr enn kravet velges aldri automatisk. Trykk på et matdyr for å bytte.
+  - Før oppgraderingen kommer en bekreftelse med «Du leverer inn», «Du får» og «Du beholder».
+- **Sikker oppgradering:**
+  - Knappen låses straks den trykkes.
+  - Alt kontrolleres på nytt rett før oppgraderingen, og en annen fane stoppes.
+  - Ny tilstand lagres først og tas i bruk bare hvis lagringen lyktes.
+- **Flere plasser:** kjøpes som i dag innenfor taket for gårdsnivået.
+- **🧪 Testvalg:** bestillingsregn, testpenger, «Dyr til neste nivå» og nullstilling.
+
+**Forenklinger i prototypen:**
+- Legendary og bedre kan tas med uten fangst.
+- Det finnes ikke bytte med det svakeste matdyret.
+
+Matdyrboka og 🔍 Finn er neste del.
+
+`spilltest.mjs` tester disse tilfellene:
+- ta med og sett inn
+- at forslaget aldri velger et sjeldnere matdyr enn kravet
+- lagringsfeil
+- endring i en annen fane
+- dobbelttrykk
+- at bare de innleverte matdyrene forsvinner
+- gårdsnivå 1 → 10 i rekkefølge
