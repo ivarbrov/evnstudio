@@ -58,15 +58,17 @@
     <span id="prKnapper"></span></div>
   <div class="grp" role="group" aria-label="Ytelsestest"><b>Test</b>
     <button data-test="forhand">Forhåndslast</button><button data-test="full">Full gård</button><button data-test="rute">Auto-kamera</button></div>
+  <div class="grp" role="group" aria-label="Trestil"><b>Trær</b>
+    <button data-trestil="ny">Ny stil</button><button data-trestil="gammel">Før</button><button id="visTraer">Vis trær</button></div>
 </div>
-<div id="info">Testscene 0.6.0 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
+<div id="info">Testscene 0.7.0 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
 <div id="maal"><div id="maalTekst">…</div><div class="maalKnapper"><button id="kopier">Kopier</button><button id="lukkMaal">Lukk</button></div></div>
 
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.6.0';
+const VERSJON = 'testscene 0.7.0';
 const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
@@ -148,23 +150,19 @@ function klump(r, farge, opt = {}) {
   g.setAttribute('color', new THREE.Float32BufferAttribute(farger, 3)); g.computeVertexNormals(); return g;
 }
 /* Slå sammen mange geometrier til én (ett tegnekall) */
-function samle(deler) {
-  const pos = [], nor = [], col = [], uv = []; const c = new THREE.Color();
-  for (const d of deler) {
-    let g = d.geo.index ? d.geo.toNonIndexed() : d.geo.clone();
-    if (d.m) g.applyMatrix4(d.m);
-    const p = g.attributes.position, n = g.attributes.normal, ca = g.attributes.color, u = g.attributes.uv;
-    if (d.lin) c.copy(d.lin); else if (d.farge !== undefined) c.set(d.farge).convertSRGBToLinear();
-    for (let i = 0; i < p.count; i++) {
-      pos.push(p.getX(i), p.getY(i), p.getZ(i)); nor.push(n.getX(i), n.getY(i), n.getZ(i));
-      if (ca && d.farge === undefined && !d.lin) col.push(ca.getX(i), ca.getY(i), ca.getZ(i));
-      else col.push(c.r, c.g, c.b);
-      uv.push(u ? u.getX(i) : 0, u ? u.getY(i) : 0);
-    }
-  }
+function samle(deler) { // 0.7.0: skriver rett i typede tabeller (samme resultat som før, men raskere ved oppstart)
+  let n = 0; for (const d of deler) n += d.geo.index ? d.geo.index.count : d.geo.attributes.position.count;
+  const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3), uv = new Float32Array(n * 2), c = new THREE.Color(), v = new THREE.Vector3(), nm = new THREE.Matrix3(); let o = 0;
+  for (const d of deler) { const g = d.geo, ix = g.index ? g.index.array : null, p = g.attributes.position, nn = g.attributes.normal, ca = g.attributes.color, u = g.attributes.uv, m = d.m, k = ix ? ix.length : p.count;
+    const fast = d.lin || d.farge !== undefined || !ca; if (d.lin) c.copy(d.lin); else if (d.farge !== undefined) c.set(d.farge).convertSRGBToLinear(); else c.setRGB(1, 1, 1); if (m) nm.getNormalMatrix(m);
+    for (let t = 0; t < k; t++, o++) { const i = ix ? ix[t] : t;
+      v.fromBufferAttribute(p, i); if (m) v.applyMatrix4(m); pos[o * 3] = v.x; pos[o * 3 + 1] = v.y; pos[o * 3 + 2] = v.z;
+      v.fromBufferAttribute(nn, i); if (m) v.applyMatrix3(nm).normalize(); nor[o * 3] = v.x; nor[o * 3 + 1] = v.y; nor[o * 3 + 2] = v.z;
+      if (fast) { col[o * 3] = c.r; col[o * 3 + 1] = c.g; col[o * 3 + 2] = c.b; } else { col[o * 3] = ca.getX(i); col[o * 3 + 1] = ca.getY(i); col[o * 3 + 2] = ca.getZ(i); }
+      if (u) { uv[o * 2] = u.getX(i); uv[o * 2 + 1] = u.getY(i); } } }
   const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
-  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   return g;
 }
 
@@ -436,6 +434,8 @@ function plassLedig(x, z) {
   return true;
 }
 const RUTE = 18; const ruter = new Map();
+const ruterBlad = new Map();
+function iRuteBlad(x, z, del) { const k = Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterBlad.has(k)) ruterBlad.set(k, []); ruterBlad.get(k).push(...del); }
 function iRute(x, z, del) { const k = Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruter.has(k)) ruter.set(k, []); ruter.get(k).push(...del); }
 const skyggeBlob = [];
 // sveiser like hjørner (sømmen i kule- og dreiegeometri), slik at normalene blir myke uten synlige skjøter
@@ -489,22 +489,140 @@ function stammeGeo(h, r, fin, bjork) { const g = new THREE.CylinderGeometry(r * 
   for (let i = 0; i < p.count; i++) { const y = p.getY(i) + h / 2, t = y / h; const fot = 1 + Math.max(0, 0.25 - t) * (bjork ? 0.8 : 2.2); p.setX(i, p.getX(i) * fot + Math.sin(t * 2.5) * h * 0.035); p.setZ(i, p.getZ(i) * fot); p.setY(i, y);
     if (bjork) { const v = Math.sin(y * 9 + p.getX(i) * 14) > 0.72 ? 0.2 : 0.92; farger.push(v, v, v * 0.97); } else { const k = 0.75 + t * 0.35; farger.push(0.48 * k, 0.32 * k, 0.2 * k); } }
   g.setAttribute('color', new THREE.Float32BufferAttribute(farger, 3)); lineariser(g); g.computeVertexNormals(); return g; }
+/* ======================= Trær og busker 0.7 (Even 8.11: mer som Hay Day, men egne modeller) =======================
+   Kronen er bygd av flere frodige bladklaser som sitter på synlige greiner, ikke én glatt klump. Hver klase har mange små,
+   avrundede bladtuer i kanten, lyse topper og mørke søkk. Der klasene møtes blir det mørkt, så formene skiller seg fra hverandre.
+   Treslag: eik, lind (rund), bjørk, epletre, lønn (gyllen), osp (høy og smal), ungtre og busker. Hver variant lages én gang og gjenbrukes. */
+const TREART = {
+  // h: høyde til greinene, r: stammeradius, g: antall hovedgreiner, el: greinvinkel opp fra vannrett, len: greinlengde, k: klaseradius,
+  // topp: klaser på toppen, f: [middels, lys, mørk], tue: antall og høyde på bladtuene i hver klase
+  eik:  {h: 1.9, r: 0.36, g: 5, el: [0.35, 0.8], len: [1.5, 2.1], k: [0.95, 1.25], topp: 3, toppY: 1.9, toppR: 0.9, f: [0x3f9a35, 0x9fdc55, 0x1f5a22], tue: [20, 0.17]},
+  rund: {h: 1.7, r: 0.28, g: 3, el: [0.75, 1.05], len: [1.0, 1.35], k: [0.9, 1.1], topp: 3, toppY: 2.0, toppR: 0.6, f: [0x4cab3a, 0xb2e860, 0x2a6a26], tue: [18, 0.17]},
+  bjork: {h: 2.6, r: 0.17, g: 4, el: [1.0, 1.3], len: [0.9, 1.3], k: [0.55, 0.75], topp: 4, toppY: 2.4, toppR: 0.35, f: [0x7cc644, 0xd6f27a, 0x4a8f30], tue: [16, 0.18], bjork: true, stige: 0.55},
+  eple: {h: 1.3, r: 0.25, g: 4, el: [0.3, 0.6], len: [1.3, 1.6], k: [0.85, 1.0], topp: 2, toppY: 1.3, toppR: 0.6, f: [0x46a03a, 0xa6dc5c, 0x24602a], tue: [18, 0.16], epler: 12},
+  lonn: {h: 1.8, r: 0.27, g: 4, el: [0.6, 0.95], len: [1.1, 1.5], k: [0.85, 1.05], topp: 3, toppY: 1.9, toppR: 0.6, f: [0xf0a63a, 0xffdc72, 0xb8561f], tue: [18, 0.17]},
+  osp:  {h: 1.4, r: 0.2, g: 0, el: [1.2, 1.4], len: [0, 0], k: [0.62, 0.8], topp: 6, toppY: 4.6, toppR: 0.25, f: [0x52a447, 0xaedd6e, 0x2c6633], tue: [16, 0.17], soyle: true},
+  busk: {h: 0, r: 0, g: 0, el: [0, 0], len: [0, 0], k: [0.48, 0.62], topp: 4, toppY: 0.25, toppR: 0.55, f: [0x47993d, 0x9fd65e, 0x245a25], tue: [15, 0.17], busk: true},
+  fjern: {h: 0, r: 0, g: 0, el: [0, 0], len: [0, 0], k: [0.62, 0.72], topp: 3, toppY: 0.95, toppR: 0.45, f: [0x46953a, 0x92cc58, 0x2a6a2c], tue: [5, 0.16], busk: true},
+};
+const TRESTIL = (() => { try { return localStorage.getItem('mb-trestil'); } catch (e) { return null; } })() || 'ny';
+const _y = new THREE.Vector3(0, 1, 0);
+function bladklase(r2, seg, tue) { // én klase: kule med avrundede bladtuer, mykest mot toppen
+  const g = sveis(new THREE.SphereGeometry(1, seg[0], seg[1])), p = g.attributes.position, v3 = new THREE.Vector3(), tuer = [], rad = new Float32Array(p.count);
+  for (let i = 0; i < tue[0]; i++) { const th = r2() * 6.28, cy = r2() * 1.5 - 0.45, s = Math.sqrt(Math.max(0, 1 - cy * cy)); tuer.push([new THREE.Vector3(Math.cos(th) * s, cy, Math.sin(th) * s), tue[1] * (0.7 + r2() * 0.6)]); }
+  for (let i = 0; i < p.count; i++) { v3.fromBufferAttribute(p, i); let R = 0.84; for (const [d, a] of tuer) R += a * Math.pow(Math.max(0, v3.dot(d)), 7);
+    R += (vstoy(v3.x * 3 + r2.s, v3.y * 3, v3.z * 3) - 0.5) * 0.06; if (v3.y < -0.35) R *= 1 - (-0.35 - v3.y) * 0.35; rad[i] = R; v3.multiplyScalar(R); p.setXYZ(i, v3.x, v3.y, v3.z); }
+  return {g, rad}; }
+/* Bladtekstur: en rosett av avrundede, spisse blader med lys tupp, mørk rot og svak kant. Fargen kommer fra hjørnefargene, så samme tekstur passer alle treslag */
+let _bladMat = null;
+function bladMat() { if (_bladMat) return _bladMat;
+  const S = 256, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d'); x.translate(S / 2, S / 2);
+  const blad = (a, r0, len, br, lys) => { x.save(); x.rotate(a); const g = x.createLinearGradient(0, r0, 0, r0 + len); g.addColorStop(0, `hsl(95,12%,${lys - 22}%)`); g.addColorStop(0.55, `hsl(85,15%,${lys - 5}%)`); g.addColorStop(1, `hsl(70,25%,${lys}%)`);
+    x.beginPath(); x.moveTo(0, r0); x.bezierCurveTo(br * 1.1, r0 + len * 0.15, br * 1.15, r0 + len * 0.85, 0, r0 + len); x.bezierCurveTo(-br * 1.15, r0 + len * 0.85, -br * 1.1, r0 + len * 0.15, 0, r0); x.fillStyle = g; x.fill();
+    x.lineWidth = 2.2; x.strokeStyle = `hsla(100,25%,${lys - 40}%,0.45)`; x.stroke(); x.beginPath(); x.moveTo(0, r0 + len * 0.1); x.lineTo(0, r0 + len * 0.8); x.lineWidth = 1.6; x.strokeStyle = `hsla(100,20%,${lys - 25}%,0.5)`; x.stroke(); x.restore(); };
+  x.fillStyle = 'hsl(95,12%,66%)'; x.beginPath(); x.arc(0, 0, S * 0.2, 0, 6.29); x.fill();
+  for (let k = 0; k < 10; k++) blad(k / 10 * 6.283 + Math.sin(k * 7.1) * 0.12, S * 0.04, S * (0.38 + Math.sin(k * 3.3) * 0.05), S * 0.13, 90);
+  for (let k = 0; k < 6; k++) blad(k / 6 * 6.283 + 0.35, S * 0.0, S * 0.28, S * 0.12, 98);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 2;
+  _bladMat = std({map: t, vertexColors: true, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.8});
+  _bladMat.dybde = new THREE.MeshDepthMaterial({depthPacking: THREE.RGBADepthPacking, map: t, alphaTest: 0.45}); return _bladMat; }
+/* Gran 0.7: lag på lag med myke, nedhengende skjørt. Kanten har avrundede tunger, er lys ytterst og mørk innerst og under */
+function gran2Geo(v, fin) {
+  const nokkel = 'gran2' + v + fin + KVAL; if (kroneCache.has(nokkel)) return kroneCache.get(nokkel);
+  let f5 = 31 + v * 59; const r5 = () => (f5 = (f5 * 16807) % 2147483647) / 2147483647;
+  const lag = 6, seg = fin === 'fjern' ? 7 : fin ? (KVAL === 'mobil' ? 22 : 28) : 12, deler = [], mork = LINEAR(0x21522b), mid = LINEAR(0x3a8a40), lys = LINEAR(0x8fd05e), c = new THREE.Color();
+  for (let k = 0; k < lag; k++) { const R = 1.85 - k * 0.27, y0 = k * 0.78, tunger = 7 + k % 3 + Math.round(r5() * 2), fase = r5() * 6.28;
+    const pr = [new THREE.Vector2(0.02, y0 + 0.85), new THREE.Vector2(R * 0.25, y0 + 0.7), new THREE.Vector2(R * 0.55, y0 + 0.42), new THREE.Vector2(R * 0.85, y0 + 0.12), new THREE.Vector2(R, y0 - 0.12), new THREE.Vector2(R * 0.93, y0 - 0.2), new THREE.Vector2(R * 0.6, y0 - 0.05), new THREE.Vector2(R * 0.15, y0 + 0.05)];
+    const g = sveis(new THREE.LatheGeometry(pr, seg)), p = g.attributes.position, v3 = new THREE.Vector3(), farger = [];
+    for (let i = 0; i < p.count; i++) { v3.fromBufferAttribute(p, i); const r = Math.hypot(v3.x, v3.z), a = Math.atan2(v3.z, v3.x), kant = r / R;
+      const tunge = Math.pow(Math.abs(Math.cos(a * tunger / 2 + fase)), 0.7), sk = 1 + (tunge - 0.55) * 0.22 * kant * kant; v3.x *= sk; v3.z *= sk; v3.y -= (1 - tunge) * 0.1 * kant * kant; p.setXYZ(i, v3.x, v3.y, v3.z);
+      const opp = v3.y > y0 - 0.05 + (1 - kant) * 0.3 ? 1 : 0.65; c.copy(mork).lerp(mid, THREE.MathUtils.smoothstep(kant, 0.3, 0.8)).lerp(lys, THREE.MathUtils.smoothstep(kant, 0.75, 1.05) * tunge * 0.8 + k / lag * 0.15); c.multiplyScalar(opp * (0.92 + vstoy(v3.x * 4 + v, v3.y * 4, v3.z * 4) * 0.18)); farger.push(c.r, c.g, c.b); }
+    g.setAttribute('color', new THREE.Float32BufferAttribute(farger, 3)); lineariser(g); g.computeVertexNormals(); deler.push({geo: g}); }
+  const top = new THREE.ConeGeometry(0.32, 0.8, fin ? 10 : 6); top.translate(0, lag * 0.78 + 0.55, 0); deler.push({geo: top, farge: 0x3d8a3e});
+  const geo = samle(deler); kroneCache.set(nokkel, geo); return geo; }
+const treCache = new Map();
+function treModell(art, v, fin) {
+  const nokkel = art + v + fin + KVAL; if (treCache.has(nokkel)) return treCache.get(nokkel);
+  const P = TREART[art]; let frø3 = 7 + v * 131 + art.length * 977; const r2 = () => (frø3 = (frø3 * 16807) % 2147483647) / 2147483647; r2.s = v * 3.1;
+  const L = (a) => a[0] + r2() * (a[1] - a[0]);
+  const seg = art === 'fjern' ? [7, 5] : fin ? (KVAL === 'mobil' ? [9, 7] : [11, 8]) : [7, 5];
+  const klaser = [], ved = []; const h = P.h * (0.9 + r2() * 0.2);
+  // stamme og greiner
+  if (P.r) { ved.push({geo: stammeGeo(h + (P.soyle ? 2.2 : 0.35), P.r, fin, P.bjork), m: M4()}); }
+  const grein = (a, b, r0, r1) => { const d = new THREE.Vector3().subVectors(b, a), l = d.length(); const c = new THREE.CylinderGeometry(r1, r0, l, fin ? 6 : 4, 1); c.translate(0, l / 2, 0);
+    const q = new THREE.Quaternion().setFromUnitVectors(_y, d.normalize()); ved.push({geo: c, m: new THREE.Matrix4().compose(a, q, new THREE.Vector3(1, 1, 1)), farge: P.bjork ? 0xe9e4da : 0x7a5233}); };
+  for (let i = 0; i < P.g; i++) { const th = i / P.g * 6.28 + r2() * 0.7, el = L(P.el), len = L(P.len);
+    const a = new THREE.Vector3(0, h * (0.78 + r2() * 0.22) + (P.stige ? i * P.stige : 0), 0), dir = new THREE.Vector3(Math.cos(el) * Math.cos(th), Math.sin(el), Math.cos(el) * Math.sin(th)), b = a.clone().addScaledVector(dir, len);
+    grein(a, b, P.r * 0.55, P.r * 0.22); const rk = L(P.k); klaser.push([b.x, b.y + rk * 0.3, b.z, rk]);
+    if (r2() < 0.75) { const m = a.clone().lerp(b, 0.55), d2 = new THREE.Vector3(Math.cos(th + 0.9), 0.9, Math.sin(th + 0.9)).normalize(), e = m.clone().addScaledVector(d2, len * 0.55); grein(m, e, P.r * 0.25, P.r * 0.1); const rk2 = rk * 0.72; klaser.push([e.x, e.y + rk2 * 0.25, e.z, rk2]); } }
+  for (let i = 0; i < P.topp; i++) { const th = i / Math.max(1, P.topp) * 6.28 + r2(), midt = i === 0 && !P.soyle, rr2 = midt ? 0 : P.toppR * (0.6 + r2() * 0.5);
+    const y = P.soyle ? h + 0.4 + i * (P.toppY - 0.4) / P.topp : (P.busk ? P.toppY + (midt ? 0.3 : 0) : h + P.toppY * (0.85 + r2() * 0.3) + (midt ? 0.25 : 0)); const rk = L(P.k) * (P.soyle ? 1 - i * 0.06 : 1);
+    klaser.push([Math.cos(th) * rr2 + (P.soyle ? (r2() - 0.5) * 0.3 : 0), y, Math.sin(th) * rr2, rk]); }
+  // klasene: bygg, farg etter høyde, topp og søkk, og skyggelegg der de møtes
+  let ymin = 1e9, ymax = -1e9; klaser.forEach(([, y, , r]) => { ymin = Math.min(ymin, y - r); ymax = Math.max(ymax, y + r); });
+  const sx = klaser.reduce((a, k) => a + k[0], 0) / klaser.length, sy = klaser.reduce((a, k) => a + k[1], 0) / klaser.length, sz = klaser.reduce((a, k) => a + k[2], 0) / klaser.length;
+  const f0 = LINEAR(P.f[0]), f1 = LINEAR(P.f[1]), f2 = LINEAR(P.f[2]), c = new THREE.Color(), deler = [], v3 = new THREE.Vector3(), n3 = new THREE.Vector3(), k3 = new THREE.Vector3();
+  const kort = art !== 'fjern', kjerne = kort ? 0.64 : 1; // med bladkort er kjernen litt mindre, og bladene stikker ut rundt den
+  const farge = (x, y, z, kx, ky, kz, kr, tupp, ki) => { let ao = 1; klaser.forEach(([ox, oy, oz, or], oj) => { if (oj === ki) return; const d = Math.hypot(x - ox, y - oy, z - oz) / or; if (d < 1.35) ao = Math.min(ao, 0.5 + 0.5 * THREE.MathUtils.smoothstep(d, 0.85, 1.35)); });
+    const t = (y - ymin) / (ymax - ymin + 1e-6), ly = (y - ky) / kr; c.copy(f2).lerp(f0, THREE.MathUtils.smoothstep(t * 0.6 + (ly * 0.5 + 0.5) * 0.4, 0.1, 0.6)).lerp(f1, THREE.MathUtils.smoothstep(ly, 0.2, 1.0) * 0.55 + tupp * 0.3);
+    return c.multiplyScalar((0.66 + 0.44 * tupp) * ao * (0.9 + vstoy(x * 5.5 + r2.s, y * 5.5, z * 5.5) * 0.22)); };
+  const kp = [], kn = [], kc = [], ku = [];
+  klaser.forEach(([kx, ky, kz, kr], ki) => {
+    const {g, rad} = bladklase(r2, seg, P.tue); const p = g.attributes.position; g.computeVertexNormals(); const nn = g.attributes.normal;
+    const rmin = Math.min(...rad), rmax = Math.max(...rad), lys = 0.94 + r2() * 0.14, farger = [];
+    for (let i = 0; i < p.count; i++) { v3.fromBufferAttribute(p, i); const ly = v3.y / rad[i]; v3.multiplyScalar(kr * kjerne).add(k3.set(kx, ky, kz)); p.setXYZ(i, v3.x, v3.y, v3.z);
+      let ao = 1; klaser.forEach(([ox, oy, oz, or], oj) => { if (oj === ki) return; const d = Math.hypot(v3.x - ox, v3.y - oy, v3.z - oz) / or; if (d < 1.35) ao = Math.min(ao, 0.5 + 0.5 * THREE.MathUtils.smoothstep(d, 0.85, 1.35)); });
+      const t = (v3.y - ymin) / (ymax - ymin + 1e-6), tupp = (rad[i] - rmin) / (rmax - rmin + 1e-6);
+      c.copy(f2).lerp(f0, THREE.MathUtils.smoothstep(t * 0.6 + (ly * 0.5 + 0.5) * 0.4, 0.1, 0.6)).lerp(f1, THREE.MathUtils.smoothstep(ly, 0.2, 1.0) * 0.55 + tupp * 0.3);
+      const flekk = 0.9 + vstoy(v3.x * 5.5 + r2.s, v3.y * 5.5, v3.z * 5.5) * 0.22; c.multiplyScalar((0.66 + 0.44 * tupp) * ao * lys * flekk * (kort ? 0.62 : 1)); farger.push(c.r, c.g, c.b);
+      // myk belysning: blanding av flatenormal, retningen ut fra klasen og ut fra hele kronen
+      n3.fromBufferAttribute(nn, i).multiplyScalar(0.3); k3.set(v3.x - kx, v3.y - ky, v3.z - kz).normalize().multiplyScalar(0.5); n3.add(k3); k3.set(v3.x - sx, v3.y - sy + 0.3, v3.z - sz).normalize().multiplyScalar(0.2); n3.add(k3).normalize(); nn.setXYZ(i, n3.x, n3.y, n3.z); }
+    g.setAttribute('color', new THREE.Float32BufferAttribute(farger, 3)); lineariser(g);
+    // fjern trekanter som ligger helt inne i en annen klase (sparer trekanter uten synlig forskjell)
+    const idx = g.index.array, behold = []; const inne = (i) => { const x = p.getX(i), y = p.getY(i), z = p.getZ(i); return klaser.some(([ox, oy, oz, or], oj) => oj !== ki && Math.hypot(x - ox, y - oy, z - oz) < or * 0.8); };
+    const inneA = new Uint8Array(p.count); for (let i = 0; i < p.count; i++) inneA[i] = inne(i) ? 1 : 0;
+    for (let i = 0; i < idx.length; i += 3) if (!(inneA[idx[i]] && inneA[idx[i + 1]] && inneA[idx[i + 2]])) behold.push(idx[i], idx[i + 1], idx[i + 2]);
+    g.setIndex(behold); deler.push({geo: g});
+    // bladkort: små rosetter av blader rundt klasen. De gir en frodig, takkete silhuett med få trekanter
+    if (kort) { const n = Math.round((18 + kr * kr * 30) * (fin ? (KVAL === 'mobil' ? 0.8 : 1) : 0.55)), up = new THREE.Vector3(), ri = new THREE.Vector3(), d = new THREE.Vector3(), q = new THREE.Quaternion();
+      for (let j = 0; j < n; j++) { const th = r2() * 6.28, cy = Math.min(1, (j + 0.5) / n * 1.7 - 0.6) * 0.98 + (r2() - 0.5) * 0.15, sn = Math.sqrt(Math.max(0, 1 - cy * cy)); d.set(Math.cos(th) * sn, cy, Math.sin(th) * sn).normalize();
+        const rk = kr * (0.7 + r2() * 0.14), cx = kx + d.x * rk, cyy = ky + d.y * rk, cz = kz + d.z * rk;
+        if (klaser.some(([ox, oy, oz, or], oj) => oj !== ki && Math.hypot(cx - ox, cyy - oy, cz - oz) < or * 0.78)) continue;
+        const nrm = d.clone().add(new THREE.Vector3(r2() - 0.5, r2() - 0.5, r2() - 0.5).multiplyScalar(0.55)).normalize(); up.set(0, 1, 0); if (Math.abs(nrm.y) > 0.95) up.set(1, 0, 0);
+        ri.crossVectors(up, nrm).normalize(); up.crossVectors(nrm, ri).normalize(); q.setFromAxisAngle(nrm, r2() * 6.28); ri.applyQuaternion(q); up.applyQuaternion(q);
+        const w = kr * (0.85 + r2() * 0.3), tupp = 0.55 + d.y * 0.45, col = farge(cx, cyy, cz, kx, ky, kz, kr, tupp, ki).clone().multiplyScalar(1.22).convertSRGBToLinear(); n3.set(cx - kx, cyy - ky, cz - kz).normalize().multiplyScalar(0.7); k3.set(cx - sx, cyy - sy + 0.3, cz - sz).normalize().multiplyScalar(0.3); n3.add(k3).normalize();
+        [[-1, -1, 0, 0], [1, -1, 1, 0], [1, 1, 1, 1], [-1, -1, 0, 0], [1, 1, 1, 1], [-1, 1, 0, 1]].forEach(([a, b, u1, u2]) => { kp.push(cx + (ri.x * a + up.x * b) * w / 2, cyy + (ri.y * a + up.y * b) * w / 2, cz + (ri.z * a + up.z * b) * w / 2); kn.push(n3.x, n3.y, n3.z); kc.push(col.r, col.g, col.b); ku.push(u1, u2); }); } } });
+  // frukt på overflaten
+  for (let i = 0; i < (P.epler || 0); i++) { const [kx, ky, kz, kr] = klaser[Math.floor(r2() * klaser.length)], th = r2() * 6.28, cy = r2() * 0.9 - 0.3, s = Math.sqrt(1 - cy * cy);
+    deler.push({geo: new THREE.SphereGeometry(0.12, 7, 5), m: M4(kx + Math.cos(th) * s * kr * 0.95, ky + cy * kr * 0.95, kz + Math.sin(th) * s * kr * 0.95), farge: 0xdc2f2a}); }
+  let blad = null; if (kp.length) { blad = new THREE.BufferGeometry(); blad.setAttribute('position', new THREE.Float32BufferAttribute(kp, 3)); blad.setAttribute('normal', new THREE.Float32BufferAttribute(kn, 3)); blad.setAttribute('color', new THREE.Float32BufferAttribute(kc, 3)); blad.setAttribute('uv', new THREE.Float32BufferAttribute(ku, 2)); }
+  const ut = {blad, krone: samle(deler), ved: ved.length ? samle(ved.map(d => d.farge !== undefined ? d : {geo: d.geo, m: d.m})) : null, klaser, bredde: Math.max(...klaser.map(([x, , z, r]) => Math.hypot(x, z) + r))};
+  ut.krone.computeBoundingSphere(); treCache.set(nokkel, ut); return ut;
+}
+// punkter på overflaten av en busk eller krone (til blomster og bær)
+function paKlase(M, r2) { const [kx, ky, kz, kr] = M.klaser[Math.floor(r2() * M.klaser.length)], th = r2() * 6.28, cy = r2() * 0.9 - 0.1, s = Math.sqrt(1 - cy * cy); return [kx + Math.cos(th) * s * kr * 0.97, ky + cy * kr * 0.97, kz + Math.sin(th) * s * kr * 0.97]; }
 const naer = (x, z) => Math.hypot(x, z) < 40;
-const trePlass = []; const TRE_R = {eik: 2.6, rund: 2.1, eple: 2.2, gran: 1.9, bjork: 1.5, ung: 0.9};
+const trePlass = []; const TRE_R = {eik: 2.6, rund: 2.1, eple: 2.2, gran: 1.9, bjork: 1.5, ung: 0.9, lonn: 2.1, osp: 1.5};
 function tre(x, z, type, v, skala = 1, ut = null) {
   if (revPlass(x, z)) return false; const rr0 = TRE_R[type] * skala;
   if (Math.abs(z - VEI_Z) < 1.7 + rr0 * 0.75 || (Math.abs(x + 5.5) < 1.4 + rr0 * 0.75 && z > -1 && z < VEI_Z)) return false; // ingen trær (eller kroner) over veien
   if (trePlass.some(([a, b, r]) => Math.hypot(a - x, b - z) < (r + rr0) * 0.8)) return false; trePlass.push([x, z, rr0]); const y = hoyde(x, z), fin = naer(x, z), s = skala * rr(0.85, 1.25), rot = rr(0, 6.28), d = [];
-  if (type === 'gran') { d.push({geo: stammeGeo(1.2 * s, 0.24 * s, fin), m: M4(x, y, z)}); d.push({geo: granGeo(v % 5, fin), m: M4(x, y + 0.85 * s, z, 0, rot, 0, 0.92 * s, 1.1 * s, 0.92 * s)}); }
+  if (TRESTIL === 'ny' && type !== 'gran') { const M = treModell(type === 'ung' ? 'rund' : type, fin ? v % 6 : v % 3, fin), /* færre varianter langt unna: kortere byggetid */ k = (type === 'ung' ? 0.45 : 1) * s; if (M.ved) d.push({geo: M.ved, m: M4(x, y, z, 0, rot, 0, k)}); d.push({geo: M.krone, m: M4(x, y, z, 0, rot, 0, k)}); if (M.blad) iRuteBlad(x, z, [{geo: M.blad, m: M4(x, y, z, 0, rot, 0, k)}]); }
+  else if (type === 'gran' && TRESTIL === 'ny') { d.push({geo: stammeGeo(1.3 * s, 0.25 * s, fin), m: M4(x, y, z)}); d.push({geo: gran2Geo(v % 5, fin), m: M4(x, y + 0.75 * s, z, 0, rot, 0, 0.95 * s, 1.08 * s, 0.95 * s)}); }
+  else if (type === 'gran') { d.push({geo: stammeGeo(1.2 * s, 0.24 * s, fin), m: M4(x, y, z)}); d.push({geo: granGeo(v % 5, fin), m: M4(x, y + 0.85 * s, z, 0, rot, 0, 0.92 * s, 1.1 * s, 0.92 * s)}); }
   else if (type === 'bjork') { const h = 3.4 * s; d.push({geo: stammeGeo(h, 0.17 * s, fin, true), m: M4(x, y, z)}); d.push({geo: krone('bjork', v % 6, fin), m: M4(x, y + h * 0.82, z, 0, rot, 0, 1.25 * s)}); }
   else if (type === 'eple') { d.push({geo: stammeGeo(1.7 * s, 0.24 * s, fin), m: M4(x, y, z)}); d.push({geo: krone('eple', v % 6, fin), m: M4(x, y + 2.35 * s, z, 0, rot, 0, 1.45 * s)});
     for (let a = 0; a < 10; a++) { const t = a / 10 * 6.28 + rot, r = 1.45 * s * 1.05; d.push({geo: new THREE.SphereGeometry(0.11, 6, 5), m: M4(x + Math.cos(t) * r, y + (2.2 + Math.sin(a * 2.3) * 0.45) * s, z + Math.sin(t) * r), farge: 0xd8322a}); } }
   else if (type === 'ung') { d.push({geo: stammeGeo(0.9 * s, 0.07 * s, fin), m: M4(x, y, z)}); d.push({geo: krone('rund', v % 6, fin), m: M4(x, y + 1.1 * s, z, 0, rot, 0, 0.55 * s)}); }
-  else { const h = (type === 'eik' ? 2.0 : 1.9) * s; d.push({geo: stammeGeo(h, (type === 'eik' ? 0.34 : 0.27) * s, fin), m: M4(x, y, z)});
+  else { if (type === 'lonn' || type === 'osp') type = 'rund'; const h = (type === 'eik' ? 2.0 : 1.9) * s; d.push({geo: stammeGeo(h, (type === 'eik' ? 0.34 : 0.27) * s, fin), m: M4(x, y, z)});
     d.push({geo: krone(type, v % 6, fin), m: M4(x, y + h + (type === 'eik' ? 1.1 : 1.15) * s, z, 0, rot, 0, (type === 'eik' ? 1.75 : 1.45) * s)}); }
   if (ut) ut.push(...d); else iRute(x, z, d); return true; skyggeBlob.push([x, z, (type === 'ung' ? 0.9 : type === 'bjork' ? 1.8 : 2.4) * s]);
 }
 function busk(x, z, s, type, j) { if (revPlass(x, z) || Math.abs(z - VEI_Z) < 1.7 + s * 1.1 || trePlass.some(([a, b]) => Math.hypot(a - x, b - z) < 1.1)) return; const y = hoyde(x, z), d = [], rot = rr(0, 6.28);
+  if (TRESTIL === 'ny') { const M = treModell('busk', j % 6, naer(x, z)); d.push({geo: M.krone, m: M4(x, y + 0.1 * s, z, 0, rot, 0, 1.05 * s)}); if (M.blad) iRuteBlad(x, z, [{geo: M.blad, m: M4(x, y + 0.1 * s, z, 0, rot, 0, 1.05 * s)}]); let f4 = 500 + j * 37; const r4 = () => (f4 = (f4 * 16807) % 2147483647) / 2147483647, m4 = M4(x, y + 0.1 * s, z, 0, rot, 0, 1.05 * s), q = new THREE.Vector3();
+    if (type === 'blomst') { const bf = [0xff8fb8, 0xffffff, 0xf7e05a][j % 3]; for (let b = 0; b < 14; b++) { q.set(...paKlase(M, r4)).applyMatrix4(m4); d.push({geo: new THREE.SphereGeometry(0.075, 6, 4), m: M4(q.x, q.y, q.z), farge: bf}); } }
+    if (type === 'baer') for (let b = 0; b < 10; b++) { q.set(...paKlase(M, r4)).applyMatrix4(m4); d.push({geo: new THREE.SphereGeometry(0.065, 6, 4), m: M4(q.x, q.y, q.z), farge: 0xd92f46}); }
+    iRute(x, z, d); skyggeBlob.push([x, z, 1.3 * s]); return; }
   d.push({geo: krone('busk', j % 6, naer(x, z)), m: M4(x, y + 0.42 * s, z, 0, rot, 0, 0.95 * s)});
   if (type === 'blomst') { const bf = [0xff8fb8, 0xffffff, 0xf7e05a][j % 3]; for (let b = 0; b < 10; b++) { const a = rr(0, 6.28), e = rr(0.3, 1.2); d.push({geo: new THREE.SphereGeometry(0.085, 5, 4), m: M4(x + Math.cos(a) * 1.08 * s * Math.sin(e), y + 0.45 * s + Math.cos(e) * 0.7 * s, z + Math.sin(a) * 1.08 * s * Math.sin(e)), farge: bf}); } }
   if (type === 'baer') for (let b = 0; b < 7; b++) { const a = rr(0, 6.28); d.push({geo: new THREE.SphereGeometry(0.07, 5, 4), m: M4(x + Math.cos(a) * 0.95 * s, y + rr(0.4, 0.85) * s, z + Math.sin(a) * 0.95 * s), farge: 0xd92f46}); }
@@ -533,7 +651,7 @@ function lagVegetasjon() {
     [2, 36, 12, 10, 'eik'], [-30, 34, 8, 7, 'bjork'], [31, 31, 8, 8, 'gran'], [-44, -6, 9, 10, 'gran'], [-20, -38, 10, 9, 'gran'], [10, -42, 11, 10, 'eik'], [44, -24, 9, 8, 'gran'], [-52, 12, 10, 9, 'eik']];
   let v = 0;
   holt.forEach(([cx, cz, r, ant, hoved]) => { for (let i = 0; i < ant * 3 && ant > 0; i++) { const a = rnd() * 6.28, d = Math.sqrt(rnd()) * r; const x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d; if (!plassLedig(x, z)) continue;
-    const u = rnd(); if (tre(x, z, u < 0.6 ? hoved : u < 0.75 ? 'rund' : u < 0.9 ? (hoved === 'gran' ? 'eik' : 'gran') : 'bjork', v++, d > r * 0.7 ? 0.85 : 1.08)) ant--; }
+    const u = rnd(); if (tre(x, z, u < 0.6 ? hoved : u < 0.68 ? 'rund' : u < 0.75 ? 'lonn' : u < 0.9 ? (hoved === 'gran' ? 'eik' : 'gran') : u < 0.95 ? 'bjork' : 'osp', v++, d > r * 0.7 ? 0.85 : 1.08)) ant--; } // lønn og osp har samme plassbehov som treet de erstatter, så plasseringen er uendret
     for (let i = 0; i < 5; i++) { const a = rnd() * 6.28, d = r + rr(-0.5, 2.2); const x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d; if (plassLedig(x, z)) busk(x, z, rr(0.6, 1.1), ['rund', 'blomst', 'baer', 'mork'][i % 4], v++); } // busker i kanten av holtet
     for (let i = 0; i < 3; i++) { const x = cx + rr(-r, r) * 0.6, z = cz + r * 0.8 + rr(-1, 1); if (!plassLedig(x, z)) continue; const y = hoyde(x, z); // sopp
       iRute(x, z, [{geo: new THREE.CylinderGeometry(0.05, 0.06, 0.18, 6), m: M4(x, y + 0.09, z), farge: 0xf3ead8}, {geo: new THREE.SphereGeometry(0.13, 8, 5, 0, 6.29, 0, 1.6), m: M4(x, y + 0.17, z, 0, 0, 0, 1, 0.75, 1), farge: 0xd23a2c}]); } });
@@ -544,6 +662,7 @@ function lagVegetasjon() {
   for (let z = -11; z < 10; z += rr(2.2, 4.5)) busk(15.3, z, rr(0.6, 0.95), rnd() < 0.25 ? 'baer' : 'rund', j++);
   lagGjengroing();
   lagElvebredd();
+  ruterBlad.forEach((del) => { const me = mesh(samle(del), bladMat()); me.customDepthMaterial = bladMat().dybde; me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = Math.hypot(bs.x, bs.z) < 34; });
   ruter.forEach((del) => { const me = mesh(samle(del), MAT.vertex); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = Math.hypot(bs.x, bs.z) < 34; }); // bare ruter nær gården kaster skygge
   lagFjernskog();
   [[-7, -6, 7.5], [6.5, -8, 3.2], [-10.5, 8, 2.6], [-12.9, -1.8, 2.2]].forEach(b => skyggeBlob.push(b));
@@ -588,7 +707,7 @@ function lagFjernskog() {
   const n = KVAL === 'mobil' ? 320 : 560, plass = [];
   for (let i = 0; i < n * 4 && plass.length < n; i++) { const a = rr(0, 6.28), d = rr(46, 108), x = Math.cos(a) * d / 0.85, z = Math.sin(a) * d; if (Math.abs(x) > 108 || Math.abs(z) > 108) continue;
     if (vstoy(x * 0.045, 3, z * 0.045) < 0.47 || elvKant(x, z) < 2 || Math.abs(z - VEI_Z) < 6) continue; plass.push([x, z]); }
-  const lov = krone('fjern', 0, false).clone().translate(0, 1.3, 0); const gran = granGeo(0, 'fjern').clone().scale(0.75, 0.85, 0.75);
+  const lov = TRESTIL === 'ny' ? treModell('fjern', 0, false).krone.clone().translate(0, 0.35, 0) : krone('fjern', 0, false).clone().translate(0, 1.3, 0); const gran = granGeo(0, 'fjern').clone().scale(0.75, 0.85, 0.75);
   const ml = new THREE.InstancedMesh(lov, MAT.vertex, plass.length), mg = new THREE.InstancedMesh(gran, MAT.vertex, plass.length); let a = 0, b = 0; const m = new THREE.Matrix4(), c = new THREE.Color();
   plass.forEach(([x, z]) => { const s = rr(1.4, 2.4), y = hoyde(x, z); m.compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rr(0, 6), 0)), new THREE.Vector3(s, s * rr(0.9, 1.25), s));
     c.setHSL(0, 0, rr(0.82, 1.05)); if (vstoy(x * 0.03, 8, z * 0.03) > 0.55) { mg.setMatrixAt(b, m); mg.setColorAt(b++, c); } else { ml.setMatrixAt(a, m); ml.setColorAt(a++, c); } });
@@ -1410,6 +1529,8 @@ document.getElementById('bench').onclick = async () => {
 };
 /* ======================= Testvalg (0.5.1): lagres på enheten og gjelder fra neste lasting ======================= */
 const TEST = (() => { try { return JSON.parse(localStorage.getItem('mb-test') || '{}'); } catch (e) { return {}; } })();
+document.querySelectorAll('[data-trestil]').forEach(b => { b.classList.toggle('on', b.dataset.trestil === TRESTIL); b.onclick = () => { if (b.dataset.trestil === TRESTIL) return; try { localStorage.setItem('mb-trestil', b.dataset.trestil); } catch (e) {} location.reload(); }; });
+document.getElementById('visTraer').onclick = () => { cam.yaw = Math.PI / 4; cam.target.set(-22, 0, 19); cam.dist = 26; plasserKamera(); };
 document.querySelectorAll('[data-test]').forEach(b => { b.classList.toggle('on', !!TEST[b.dataset.test]); b.onclick = () => { TEST[b.dataset.test] = !TEST[b.dataset.test]; try { localStorage.setItem('mb-test', JSON.stringify(TEST)); } catch (e) {} location.reload(); }; });
 // Forhåndslast: kompilerer alle shadere og laster opp all geometri og alle teksturer til GPU-en før scenen vises,
 // i stedet for første gang et objekt kommer i bildet (ved panorering, regn, dans osv.). Av som standard til effekten er målt.
@@ -1536,7 +1657,7 @@ document.getElementById('kopier').onclick = async () => { const t = maalTekst.te
 function bygg() {
   renderer.setPixelRatio(+PR_VALG); sol.shadow.mapSize.set(KV[KVAL].skygge, KV[KVAL].skygge); if (KVAL === 'mobil') renderer.shadowMap.type = THREE.PCFShadowMap;
   const kat = (navn, fn) => { const for_ = new Set(scene.children); fn(); scene.children.forEach(c => { if (!for_.has(c)) c.userData.kat = navn; }); };
-  kat('terreng', lagTerreng); kat('omrader', lagOmrader); kat('vegetasjon', lagVegetasjon); kat('gjerde', lagGjerde); kat('laave', lagLave); kat('honsehus', lagHonsehus); kat('dyr', lagBeite); kat('akre', lagAkre); kat('markedsbod', lagMarkedsbod); kat('detaljer', lagDetaljer); kat('vaer', lagVaer); settTid('dag'); lagRev(); if (TEST.full) fullGard();
+  kat('terreng', lagTerreng); kat('omrader', lagOmrader); { const t0 = performance.now(); kat('vegetasjon', lagVegetasjon); window.__byggTid = performance.now() - t0; } /* byggetid for vegetasjonen, vises i testene */ kat('gjerde', lagGjerde); kat('laave', lagLave); kat('honsehus', lagHonsehus); kat('dyr', lagBeite); kat('akre', lagAkre); kat('markedsbod', lagMarkedsbod); kat('detaljer', lagDetaljer); kat('vaer', lagVaer); settTid('dag'); lagRev(); if (TEST.full) fullGard();
   new THREE.GLTFLoader().load(ROBOT_URL, gl => {
     robot = gl.scene; const b = new THREE.Box3().setFromObject(robot); robot.scale.setScalar(1.9 / (b.max.y - b.min.y)); const b2 = new THREE.Box3().setFromObject(robot); robot.position.set(-0.8, -b2.min.y, 0.2);
     robot.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } if (o.isBone && /^Head(_\d+)?$/.test(o.name) && !hode) hode = o; });
