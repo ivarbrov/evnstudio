@@ -83,6 +83,7 @@ const scenarier = [
   { navn: 'N2 Endret test/kjor.mjs avvises', endre: () => { nyttSpill(); fs.appendFileSync(path.join(REPO, 'test/kjor.mjs'), '\n// endret\n'); }, forventet: 1, tekst: ['test/kjor.mjs'] },
   { navn: 'N3 PR-ens publiseringssjekk som alltid godkjenner, brukes ikke', endre: () => { nyttSpill(); skriv('test/publiseringssjekk.mjs', 'process.exit(0);\n'); }, forventet: 1, tekst: ['test/publiseringssjekk.mjs'] },
   { navn: 'N4 Endret test/spilloppsett.mjs (færre påkrevde kontroller) avvises', endre: () => { nyttSpill(); skriv('test/spilloppsett.mjs', fs.readFileSync(path.join(REPO, 'test/spilloppsett.mjs'), 'utf8').replace("'F1-start', ", '')); }, forventet: 1, tekst: ['test/spilloppsett.mjs'] },
+  { navn: 'N4b Testfil flyttet ut av test/ avvises', endre: () => { nyttSpill(); fs.mkdirSync(path.join(REPO, 'verktoy'), { recursive: true }); fs.renameSync(path.join(REPO, 'test/kjor.mjs'), path.join(REPO, 'verktoy/kjor.mjs')); }, forventet: 1, tekst: ['test/kjor.mjs'] },
   { navn: 'N5 Endret GitHub Actions avvises', endre: () => { nyttSpill(); skriv('.github/workflows/publisering.yml', 'name: Publiseringssjekk\n# endret\n'); }, forventet: 1, tekst: ['.github/workflows/publisering.yml'] },
   // Manipulert testresultat
   { navn: 'N6 Testresultat uten det nye spillet avvises', endre: () => nyttSpill(), ci: r => uten(r, 'gamma'), forventet: 1, tekst: ['spillet gamma finnes på', 'ble ikke testet'] },

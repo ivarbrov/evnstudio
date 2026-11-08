@@ -48,7 +48,8 @@ const HEAD = git('rev-parse', '--verify', '--quiet', REF + '^{commit}');
 if (!HEAD) { console.error('Fant ikke commiten ' + REF + '.'); process.exit(2); }
 const mb = git('merge-base', BASE, REF);
 if (!mb) { console.error('Fant ikke felles commit med ' + BASE + '.'); process.exit(2); }
-const endrede = (git('diff', '--name-only', mb, REF) || '').split('\n').filter(Boolean);
+// --no-renames: en fil som flyttes ut av test/, skal telle som endring i test/
+const endrede = (git('diff', '--no-renames', '--name-only', mb, REF) || '').split('\n').filter(Boolean);
 const kode = git('log', '-1', '--format=%H', REF, '--', '.', ':(exclude)qa');
 // Testene og arbeidsflyten skal være de samme som på main, ellers er testresultatet ikke betrodd.
 const betrodd = endrede.filter(f => f.startsWith('test/') || f.startsWith('.github/'));

@@ -297,7 +297,8 @@ async function main() {
     roykTestet.add(sp.id);
   }
   await nl.lukk(); srv.close();
-  // Feil i prototypen som bare nettleseren ser (suiten ui)
+  // Feil i prototypen som bare nettleseren ser (suiten ui). Testsiden laster aldri spill selv (statisk bruker fetch),
+  // så en rad for et spill her betyr at testsiden har lastet en spillside. Den føres som feil i statisk.
   for (const [spill, liste] of Object.entries(nettleserfeil)) {
     const suite = spill === 'prototype' ? 'ui' : 'statisk';
     tester.push({ suite, spill, id: 'K1-nettleser', krav: 'K1', navn: 'Ingen feil, CSP-brudd eller manglende filer sett av nettleseren', status: res.ikkeGjeldende[suite] ? 'varsel' : 'feil', info: [...new Set(liste)].slice(0, 5).join(' | ') });
