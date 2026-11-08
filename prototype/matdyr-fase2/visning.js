@@ -299,7 +299,6 @@
   function spiral(g, nr) {
     const { rr, kant } = rampedel(g, nr), k0 = kant[0], [r0, r1] = SPOR.repos[nr], km = kant.find(k => k.q[3] >= (r0 + r1) / 2);
     const vend = k => Math.atan2(k.t.x, k.t.y) + Math.PI;
-    if (nr === 1) skilt(rr, ['⬆ Start', 'Rampe 1: bakke → 2. etasje'], k0.ox - k0.n.x * -0.9 + 1.2, 0, k0.oz + 0.5, vend(k0), '#5fcf6b', '#123a17');
     if (nr === 1) skilt(rr, ['📍 Repos 1', 'Inn til 2. etasje'], km.ox - km.n.x * 1.2, km.q[4], km.oz - km.n.y * 1.2, -Math.PI / 2, '#ffe9a8');
     if (nr === 2) { const kk = kant[6]; skilt(rr, ['↗ Rampe 2', '2. → 3. etasje'], kk.ox - kk.n.x * 1.1, kk.q[4] - 0.2, kk.oz - kk.n.y * 1.1, -Math.PI / 2 + 0.6); skilt(rr, ['📍 Repos 2', 'Inn til 3. etasje'], km.ox - km.n.x * 1.2, km.q[4], km.oz - km.n.y * 1.2, Math.PI / 2, '#ffe9a8'); }
     if (nr === 3) { const kk = kant[6]; skilt(rr, ['↗ Rampe 3', '3. etasje → topp'], kk.ox - kk.n.x * 1.1, kk.q[4] - 0.2, kk.oz - kk.n.y * 1.1, Math.PI / 2 - 0.4); }
