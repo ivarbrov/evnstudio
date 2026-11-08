@@ -130,3 +130,10 @@ Bygg modellene på nytt: `python3 blender/matdyr_hybrider.py modeller` og `pytho
 - Ikke gjort ennå: trekroner som én flate (som 0.4), låve og bygninger på tunet, de tre andre figurene.
 
 `sammenligning-mb-profil.png` viser Min Bondegård og Matdyr med samme kamera. Ytelse er ikke målt på ekte enheter (headless: 172 tegnekall på gårdsnivå 3 i oversikten, mot 171 før).
+
+### Tilbakemelding fra Ivar 8.11 (neste grafikkrunde, ikke startet)
+God retning, men ikke en endelig godkjenning av profilen. Prøven ligger bak flagget `?profil=mb`. Min Bondegård er fortsatt den visuelle referansen. Materialene og lyset fra prøven er utgangspunktet.
+- Spagettipingvin: behold kroppen og de myke vingene. Gjør spagettien tydeligere med noen få myke pastastrenger som følger kroppen. Den skal leses som mat og dyr også på vanlig spilleavstand.
+- Rampeplanker: for mørke og stripete. Tilpass teksturstørrelse og kontrast til treverket i Min Bondegård.
+- Låste plasser: behold tydelig hengelås og forskjell mellom plassene. Demp stripene og tilpass materialet til gårdsmiljøet.
+- Landskap: ta med de sammenhengende trekronene og landskapsuttrykket fra Min Bondegård. Behold rolige gressflater og naturlige overganger ved steinstier og bygninger.
