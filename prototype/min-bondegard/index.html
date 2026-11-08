@@ -59,14 +59,14 @@
   <div class="grp" role="group" aria-label="Ytelsestest"><b>Test</b>
     <button data-test="forhand">Forhåndslast</button><button data-test="full">Full gård</button><button data-test="rute">Auto-kamera</button></div>
 </div>
-<div id="info">Testscene 0.5.5 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
+<div id="info">Testscene 0.6.0 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
 <div id="maal"><div id="maalTekst">…</div><div class="maalKnapper"><button id="kopier">Kopier</button><button id="lukkMaal">Lukk</button></div></div>
 
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.5.5';
+const VERSJON = 'testscene 0.6.0';
 const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
@@ -683,8 +683,9 @@ function lagLave() {
   mesh(new THREE.ExtrudeGeometry(hane, {depth: 0.03, bevelEnabled: false}), MAT.mork, 0, 2.15, 0, ryt);
   [-2.2, 2.2].forEach(x => { mesh(new THREE.BoxGeometry(0.1, 0.1, 0.35), MAT.mork, x, 3.95, D / 2 + 0.25, L); mesh(new THREE.CylinderGeometry(0.14, 0.12, 0.3, 8), MAT.glass, x, 3.7, D / 2 + 0.42, L); mesh(new THREE.ConeGeometry(0.2, 0.15, 8), MAT.mork, x, 3.92, D / 2 + 0.42, L); });
   bake(L); klikkbar(L);
-  const ball = (x, z, r, liggende) => { const b = mesh(new THREE.CylinderGeometry(0.75, 0.75, 1.3, 22), MAT.hoy, x, liggende ? 0.75 : 0.65, z); if (liggende) b.rotation.z = Math.PI / 2; b.rotation.y = r; klikkbar(b); };
-  ball(-13.3, -2.6, 0.3, true); ball(-13.1, -1.0, 1.2, true); ball(-12.6, -1.9, 0.7, false);
+  const balls = []; const ball = (x, z, r, liggende) => { const b = mesh(new THREE.CylinderGeometry(0.75, 0.75, 1.3, 22), MAT.hoy, x, liggende ? 0.75 : 0.65, z); if (liggende) b.rotation.z = Math.PI / 2; b.rotation.y = r; klikkbar(b); balls.push(b); };
+  // 0.6.0 (Even 8.11): ballene gikk inni hverandre. Nå ligger to side om side med en liten glipe, og den tredje ligger stablet i søkket mellom dem
+  ball(-14.42, -1.65, Math.PI / 2, true); ball(-12.88, -1.65, Math.PI / 2, true); ball(-13.65, -1.65 + 0.06, Math.PI / 2, true); balls[2].position.y = 0.75 + Math.sqrt(1.52 * 1.52 - 0.77 * 0.77);
   mesh(new THREE.CylinderGeometry(0.42, 0.38, 0.95, 14), MAT.brunPlank, -1.6, 0.48, -1.2);
   [0.18, 0.78].forEach(y => mesh(new THREE.TorusGeometry(0.41, 0.03, 4, 18), MAT.metall, -1.6, y, -1.2).rotation.x = Math.PI / 2);
 }
@@ -741,7 +742,7 @@ const hjerter = [];
 const hjertePool = []; // 0.4.6: gjenbrukes. Før fikk hvert hjerte et nytt materiale som aldri ble frigjort
 function visHjerte(pos) { let h = hjertePool.find(x => !x.sp.visible); if (!h) { if (hjertePool.length >= 10) h = hjertePool[0]; else { h = {sp: new THREE.Sprite(new THREE.SpriteMaterial({map: hjerteTex, transparent: true, depthWrite: false})), t: 0}; h.sp.scale.setScalar(0.55); h.sp.visible = false; scene.add(h.sp); hjertePool.push(h); } }
   h.sp.position.copy(pos); h.sp.visible = true; h.t = 0; if (!hjerter.includes(h)) hjerter.push(h); }
-function lagHone(x, z, i) {
+function lagHone(x, z, i, binge = BINGER.hone) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = i * 1.9; scene.add(g);
   const farger = [[0xfdf8ee, 0xece2cf], [0xd3925a, 0xab6c3a], [0xfdf8ee, 0xece2cf]][i];
   const fjM = fm(farger[0], 0.8), fj2 = fm(farger[1], 0.8), rodM = fm(0xe0382d, 0.45), gulM = fm(0xf2a72e, 0.5), kinn = fm(0xffa3a3, 0.6);
@@ -765,10 +766,11 @@ function lagHone(x, z, i) {
     mesh(new THREE.SphereGeometry(0.066, 10, 8), pupill, 0.05, 0.005, s > 0 ? 0.02 : -0.02, o, false);
     mesh(new THREE.SphereGeometry(0.022, 6, 4), glimt, 0.105, 0.035, s > 0 ? 0.04 : -0.005, o, false);
     const lokk = mesh(new THREE.SphereGeometry(0.106, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2.4), fjM, 0, 0, 0, o, false); lokk.rotation.z = 0.35; bakeDirekte(o); oyne.push(o); });
-  [0.13, -0.13].forEach(s => { mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.3, 6), gulM, 0.05, 0.16, s, g); [-0.4, 0, 0.4].forEach(a => { const t = mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.16, 5), gulM, 0.1 + Math.cos(a) * 0.06, 0.02, s + Math.sin(a) * 0.06, g); t.rotation.z = Math.PI / 2; t.rotation.y = -a; }); });
+  /* beina er nå felles, animerte instanser (0.6.0), se registrerBein */
   bakeDirekte(g);
-  g.userData = {hode, kropp, oyne, vinger, fase: i * 2.1, mal: new THREE.Vector3(x, 0, z), venter: rr(1, 3), hakk: 0, blunk: rr(1, 4), flaks: rr(3, 8), hopp: 0, nysgjerrig: 0, art: 'hone'};
+  g.userData = {hode, kropp, oyne, vinger, fase: i * 2.1, blunk: rr(1, 4), flaks: rr(3, 8), hopp: 0, art: 'hone'};
   g.traverse(o => { if (o.isMesh) o.userData.eier = g; }); klikkbar(g);
+  startBevegelse(g, 'hone', binge); registrerBein(g, 'hone', honeBeinGeo(gulM), [[0.05, 0.13], [0.05, -0.13]], 0.31, [0, Math.PI], true);
   return g;
 }
 function lagKylling(mor, i) {
@@ -782,32 +784,12 @@ function lagKylling(mor, i) {
   [0.06, -0.06].forEach(s => mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.1, 5), or, 0.02, 0.05, s, kropp));
   bakeDirekte(kropp);
   g.userData = {kropp, mor, forskyv: new THREE.Vector3(-0.7 - i * 0.45, 0, 0.55 - i * 0.9), fase: i * 3, art: 'kylling', hopp: 0};
-  g.traverse(o => { if (o.isMesh) o.userData.eier = g; }); klikkbar(g);
+  g.traverse(o => { if (o.isMesh) o.userData.eier = g; }); klikkbar(g); startBevegelse(g, 'kylling', mor.userData.binge);
   return g;
 }
 const kyllinger = []; window.__kyllinger = kyllinger;
 // gjenbrukte hjelpevektorer: ingen nye objekter per bilde (0.4.6)
 const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), OPP = new THREE.Vector3(0, 1, 0);
-function oppdaterHoner(dt, t) {
-  hoener.forEach(h => { const u = h.userData;
-    u.blunk -= dt; const lukk = u.blunk < 0 && u.blunk > -0.13; u.oyne.forEach(o => o.scale.y = lukk ? 0.12 : 1); if (u.blunk < -0.13) u.blunk = rr(2, 5);
-    u.flaks -= dt; const fl = u.flaks < 0 ? Math.sin(-u.flaks * 30) * 0.6 : 0; u.vinger[0].rotation.x = -Math.abs(fl); u.vinger[1].rotation.x = Math.abs(fl); if (u.flaks < -0.5) u.flaks = rr(4, 9);
-    if (u.hopp > 0) { u.hopp -= dt; h.position.y = Math.sin((1 - u.hopp / 0.5) * Math.PI) * 0.35; u.kropp.scale.set(1.05, 0.95 + Math.sin(u.hopp * 20) * 0.08, 1.05); return; } else { h.position.y = 0; u.kropp.scale.set(1, 1, 1); }
-    if (robot && h.position.distanceTo(robot.position) < 2.6 && u.nysgjerrig <= 0) u.nysgjerrig = 2.5;
-    const til = _v1.copy(u.mal).sub(h.position); til.y = 0; const d = til.length();
-    if (u.nysgjerrig > 0) { u.nysgjerrig -= dt; const r = _v2.copy(robot.position).sub(h.position); h.rotation.y = Math.atan2(-r.z, r.x); u.hode.rotation.x = Math.sin(t * 3) * 0.35; u.hode.rotation.z = 0.15; u.kropp.position.y = 0; if (u.nysgjerrig <= 0) u.nysgjerrig = -4; }
-    else if (d > 0.08) { if (u.nysgjerrig < 0) u.nysgjerrig += dt; h.rotation.y = Math.atan2(-til.z, til.x); h.position.addScaledVector(til.normalize(), Math.min(d, dt * 0.9)); u.kropp.position.y = Math.abs(Math.sin(t * 14)) * 0.05; u.kropp.rotation.x = Math.sin(t * 14) * 0.07; u.hode.rotation.set(0, 0, 0); u.hode.position.y = 1.13; }
-    else { if (u.nysgjerrig < 0) u.nysgjerrig += dt; u.kropp.position.y = 0; u.kropp.rotation.x = 0; u.venter -= dt; u.hakk += dt;
-      const hakker = Math.sin(u.hakk * 5) > 0.85; u.hode.rotation.set(0, 0, hakker ? -0.6 : Math.sin(t * 2 + u.fase) * 0.1); u.hode.position.y = hakker ? 1.0 : 1.13;
-      if (u.venter < 0) { u.mal.set(rr(3.4, 9.0), 0, rr(-4.0, -1.0)); u.venter = rr(2, 5); u.hakk = 0; } }
-  });
-  kyllinger.forEach(k => { const u = k.userData; const mal = _v1.copy(u.mor.position).add(_v2.copy(u.forskyv).applyAxisAngle(OPP, u.mor.rotation.y)); mal.y = 0;
-    const til = mal.sub(k.position); til.y = 0; const d = til.length();
-    if (u.hopp > 0) { u.hopp -= dt; k.position.y = Math.sin((1 - u.hopp / 0.4) * Math.PI) * 0.3; }
-    else if (d > 0.15) { k.rotation.y = Math.atan2(-til.z, til.x); k.position.addScaledVector(til.normalize(), Math.min(d, dt * 1.6)); k.position.y = Math.abs(Math.sin(t * 18 + u.fase)) * 0.07; }
-    else { k.position.y = 0; u.kropp.rotation.z = Math.max(0, Math.sin(t * 4 + u.fase)) > 0.9 ? -0.4 : 0; } });
-  for (let i = hjerter.length - 1; i >= 0; i--) { const h = hjerter[i]; h.t += dt; h.sp.position.y += dt * 0.8; h.sp.material.opacity = 1 - h.t / 1.2; if (h.t > 1.2) { h.sp.visible = false; hjerter.splice(i, 1); } }
-}
 /* ======================= Åkre med vekststadier ======================= */
 function lagAkre() {
   const STR = 3.3; const plass = []; const jordDeler = []; for (let i = 0; i < 6; i++) plass.push([2.4 + (i % 3) * 3.75, 2.6 + Math.floor(i / 3) * 3.75]);
@@ -1027,6 +1009,197 @@ function lagRev() {
 
 /* ======================= Ku, gris og sau (0.5): samme stil som hønene – myke former, store øyne med lokk, rosa kinn ======================= */
 // Beitet er bare en visning av stilen. Dyrene låses opp på nivå 6 (ku), 10 (gris) og 16 (sau) i spillet.
+/* ======================= Dyrebevegelse (0.6.0): én felles styring for høner, kyllinger, ku, gris og sau ======================= */
+// Lett lokal kollisjon uten fysikkmotor. Hvert dyr er én eller to sirkler langs kroppen. Dyrene svinger med begrenset fart og går bare
+// dit de peker (ingen glidning sidelengs). De styrer unna hverandre og hindringer, stopper når veien er sperret, og skyves fra hverandre
+// hvis de likevel overlapper. Beina animeres ut fra tilbakelagt avstand, så gangen og farten henger sammen.
+// sirk: [forskyvning langs kroppen, radius] i meter (kropp, bakpart og hode, målt mot modellene). R: radius for unnvikelse. sving: maks rad/s. amp: beinutslag (rad). akt: hva dyret gjør når det står.
+const ART = {
+  hone:    {sirk: [[0.3, 0.45], [-0.2, 0.45]], R: 0.55, fart: 1.0, sving: 4.5, amp: 0.55, vekt: 1, tur: [0.8, 2.6], stå: [1.2, 4], akt: ['hakke', 'hakke', 'se']},
+  kylling: {sirk: [[0.06, 0.22]], R: 0.24, fart: 1.7, sving: 7, amp: 0, steg: 0.3, vekt: 0.25, tur: [0.3, 1], stå: [0.5, 1.5], akt: ['hakke']},
+  ku:      {sirk: [[0.62, 0.58], [-0.42, 0.56], [1.15, 0.28]], R: 0.85, fart: 0.5, sving: 1.0, amp: 0.3, vekt: 4, tur: [1.2, 3.5], stå: [4, 10], akt: ['beite', 'beite', 'se', 'tygge']},
+  gris:    {sirk: [[0.4, 0.45], [-0.3, 0.44], [0.8, 0.22]], R: 0.65, fart: 0.75, sving: 1.9, amp: 0.5, vekt: 2, tur: [0.8, 3], stå: [2, 6], akt: ['snuse', 'snuse', 'se']},
+  sau:     {sirk: [[0.38, 0.5], [-0.25, 0.5], [0.82, 0.18]], R: 0.65, fart: 0.6, sving: 1.5, amp: 0.42, vekt: 2, tur: [1, 3], stå: [3, 8], akt: ['beite', 'beite', 'se']},
+};
+// Binger: indre flate (gjerdet trukket fra), hindringer som bokser [x0, x1, z0, z1] og steder dyret liker å gå til (se: retningen det snur seg mot)
+const BINGER = {};
+function lagBinge(navn, x0, x1, z0, z1, hinder, steder) { return BINGER[navn] = {navn, x0: x0 + 0.12, x1: x1 - 0.12, z0: z0 + 0.12, z1: z1 - 0.12, hinder, steder, dyr: []}; }
+function flyttBinge(b, dx, dz) { return {navn: b.navn + '+', x0: b.x0 + dx, x1: b.x1 + dx, z0: b.z0 + dz, z1: b.z1 + dz, hinder: b.hinder.map(h => [h[0] + dx, h[1] + dx, h[2] + dz, h[3] + dz]), steder: b.steder.map(s => Object.assign({}, s, {x: s.x + dx, z: s.z + dz})), dyr: []}; }
+lagBinge('hone', 2.8, 10.2, -4.8, -0.4, [[8.55, 9.65, -1.625, -1.175], [9.25, 9.95, -4.45, -3.75]], [{x: 8.5, z: -4.1, se: 0, akt: 'hakke'}, {x: 9.1, z: -2.4, se: -Math.PI / 2, akt: 'drikke'}]);
+lagBinge('ku', -15.7, -12.6, -0.2, 5.2, [[-15.2, -13.6, 0.3, 0.9]], [{x: -14.4, z: 2.35, se: Math.PI / 2, akt: 'krybbe'}]);
+lagBinge('gris', -12.6, -9.9, -0.2, 5.2, [], [{x: -11.25, z: 3.6, akt: 'gjorme'}]);
+lagBinge('sau', -9.9, -7.2, -0.2, 5.2, [[-9.1, -8.1, 3.9, 4.9]], [{x: -8.6, z: 2.85, se: -Math.PI / 2, akt: 'drikke'}]);
+const alleDyr = [], brukteBinger = new Set();
+function startBevegelse(g, art, binge) {
+  const u = g.userData; u.art2 = art; u.a = ART[art]; u.binge = binge; binge.dyr.push(g); brukteBinger.add(binge); alleDyr.push(g);
+  u.ytre = Math.max(...u.a.sirk.map(([o, r]) => Math.abs(o) + r));
+  Object.assign(u, {retn: g.rotation.y, v: 0, gang: rr(0, 6), gangAmp: 0, snu: 0, tilst: 'staa', akt: 'se', tid: rr(0.5, 2.5), mal: new THREE.Vector3().copy(g.position), sted: null, blokk: 0, fremg: 0, best: 1e9, fartF: 1, wr: 0, sx: Math.cos(g.rotation.y), sz: -Math.sin(g.rotation.y), hYaw: 0, hPitch: 0, hDy: 0, hDx: 0, yawM: 0, tiltM: 0, seTid: 0, pk: 0, pkT: 0, nysg: 0, hopp: 0});
+}
+// beina: én InstancedMesh per art (ett tegnekall), dreid om hofta
+const BEIN = {}; const _bm = new THREE.Matrix4(), _bm2 = new THREE.Matrix4(), _bp = new THREE.Vector3(), _bq = new THREE.Quaternion(), _bs = new THREE.Vector3(), AKSE_Z = new THREE.Vector3(0, 0, 1);
+const GANG4 = [Math.PI / 2, Math.PI * 1.5, 0, Math.PI]; // forbein V, H, bakbein V, H: skrittgang der ett bein flyttes om gangen
+function registrerBein(g, art, lagGeo, pos, topp, offs, blank) {
+  let B = BEIN[art]; if (!B) B = BEIN[art] = {geo: lagGeo(), liste: [], im: null, topp, mat: blank ? MAT.vcBlank : MAT.vcMatt};
+  pos.forEach(([x, z], i) => B.liste.push({g, x, z, off: offs[i]}));
+  const u = g.userData; if (u.a.amp) u.a = Object.assign({}, u.a, {steg: 4 * topp * g.scale.x * Math.sin(u.a.amp)}); // skrittlengde = det foten faktisk flytter seg, så dyret ikke glir
+  if (B.im) scene.remove(B.im);
+  const im = new THREE.InstancedMesh(B.geo, B.mat, B.liste.length); im.castShadow = true; im.receiveShadow = true; im.frustumCulled = false; im.userData.art = 'bein'; im.userData.kat = 'dyr'; scene.add(im); B.im = im;
+}
+const firbeinGeo = (mat, hovMat, h, r) => () => { const geo = samle([{geo: new THREE.CylinderGeometry(r * 0.9, r, h, 8), m: M4(0, h / 2 + 0.08, 0), lin: mat.color}, {geo: new THREE.CylinderGeometry(r * 1.05, r * 1.1, 0.16, 8), m: M4(0, 0.08, 0), lin: hovMat.color}]); geo.translate(0, -(h + 0.08), 0); return geo; };
+const honeBeinGeo = (gul) => () => { const d = [{geo: new THREE.CylinderGeometry(0.03, 0.035, 0.3, 6), m: M4(0, 0.16, 0), lin: gul.color}];
+  [-0.4, 0, 0.4].forEach(a => d.push({geo: new THREE.CylinderGeometry(0.018, 0.022, 0.16, 5), m: M4(0.05 + Math.cos(a) * 0.06, 0.02, Math.sin(a) * 0.06, 0, -a, Math.PI / 2), lin: gul.color}));
+  const geo = samle(d); geo.translate(0, -0.31, 0); return geo; };
+function oppdaterBein() {
+  for (const k in BEIN) { const B = BEIN[k]; B.liste.forEach((b, i) => { const u = b.g.userData, A = u.a; const f = u.gang + b.off;
+    const vinkel = A.amp * u.gangAmp * Math.sin(f), loft = u.gangAmp * Math.max(0, Math.cos(f)) * 0.14; // foten løftes når beinet føres fram
+    if (i === 0 || B.liste[i - 1].g !== b.g) b.g.updateMatrix();
+    _bm.compose(_bp.set(b.x, B.topp, b.z), _bq.setFromAxisAngle(AKSE_Z, vinkel), _bs.set(1, 1 - loft, 1)); _bm2.multiplyMatrices(b.g.matrix, _bm); B.im.setMatrixAt(i, _bm2); });
+    B.im.instanceMatrix.needsUpdate = true; }
+}
+const mot = (a, b, k, dt) => a + (b - a) * Math.min(1, k * dt);
+function sirkler(g, ut) { const u = g.userData, fx = Math.cos(u.retn), fz = -Math.sin(u.retn); ut.length = 0; for (const [o, r] of u.a.sirk) ut.push(g.position.x + fx * o, g.position.z + fz * o, r); return ut; }
+function iHinder(b, x, z, m) { return b.hinder.some(h => x > h[0] - m && x < h[1] + m && z > h[2] - m && z < h[3] + m); }
+function velgMal(g) {
+  const u = g.userData, A = u.a, b = u.binge, y = u.ytre + 0.08; u.sted = null; u.fartF = 1;
+  const ledig = (x, z, m) => !b.dyr.some(o => o !== g && (Math.hypot(o.position.x - x, o.position.z - z) < m + o.userData.a.R || Math.hypot(o.userData.mal.x - x, o.userData.mal.z - z) < m + o.userData.a.R));
+  const steder = b.steder.filter(s => s.art === undefined || s.art === u.art2);
+  if (u.art2 !== 'kylling' && steder.length && rnd() < 0.3) { const s = steder[Math.floor(rnd() * steder.length)]; if (ledig(s.x, s.z, A.R + 0.4)) { u.sted = s; u.mal.set(s.x, 0, s.z); u.sx = Math.cos(u.retn); u.sz = -Math.sin(u.retn); u.tilst = 'gaa'; u.best = 1e9; u.fremg = 0; u.blokk = 0; return; } }
+  let beste = null, bp = -1e9;
+  for (let i = 0; i < 14; i++) { const x = rr(b.x0 + y, b.x1 - y), z = rr(b.z0 + y, b.z1 - y), d = Math.hypot(x - g.position.x, z - g.position.z);
+    if (iHinder(b, x, z, y)) continue; let p = ledig(x, z, A.R + 0.35) ? 10 : 0; p -= d < A.tur[0] ? (A.tur[0] - d) * 3 : d > A.tur[1] ? (d - A.tur[1]) : 0; if (p > bp) { bp = p; beste = [x, z]; } }
+  if (!beste) beste = [(b.x0 + b.x1) / 2, (b.z0 + b.z1) / 2];
+  u.mal.set(beste[0], 0, beste[1]); u.sx = Math.cos(u.retn); u.sz = -Math.sin(u.retn); u.tilst = 'gaa'; u.best = 1e9; u.fremg = 0; u.blokk = 0;
+  if (u.art2 === 'gris' && rnd() < 0.45) u.fartF = 0.45; // grisen går sakte og snuser i bakken
+}
+const _cp = [], _cq = [];
+function penetrasjon(g) { // summen av hvor langt dyret går inn i gjerde, hindringer og andre dyr (m)
+  const u = g.userData, b = u.binge, c = sirkler(g, _cp); let m = 0; const p = v => { if (v > 0) m += v; };
+  for (let s = 0; s < c.length; s += 3) { const x = c[s], z = c[s + 1], r = c[s + 2]; p(b.x0 - (x - r)); p((x + r) - b.x1); p(b.z0 - (z - r)); p((z + r) - b.z1);
+    for (const h of b.hinder) { const qx = THREE.MathUtils.clamp(x, h[0], h[1]), qz = THREE.MathUtils.clamp(z, h[2], h[3]); p(r - Math.hypot(x - qx, z - qz)); } }
+  for (const o of b.dyr) { if (o === g) continue; const ou = o.userData; if (Math.abs(o.position.x - g.position.x) > u.ytre + ou.ytre || Math.abs(o.position.z - g.position.z) > u.ytre + ou.ytre) continue;
+    const d = sirkler(o, _cq); for (let s = 0; s < c.length; s += 3) for (let q = 0; q < d.length; q += 3) p(c[s + 2] + d[q + 2] - Math.hypot(c[s] - d[q], c[s + 1] - d[q + 1])); }
+  return m; }
+function staaStille(g, akt, tid) { const u = g.userData; u.tilst = 'staa'; u.akt = akt; u.tid = tid; u.blokk = 0; }
+function styr(g, dt) {
+  const u = g.userData, A = u.a, p = g.position; if (u.hopp > 0) return; const ox = p.x, oz = p.z, or = u.retn, pen0 = penetrasjon(g);
+  if (u.art2 === 'kylling') { const m = u.mor, mu = m.userData, c = Math.cos(mu.retn), s = Math.sin(mu.retn), fx = u.forskyv.x, fz = u.forskyv.z;
+    u.mal.set(m.position.x + fx * c + fz * s, 0, m.position.z - fx * s + fz * c); u.mal.x = THREE.MathUtils.clamp(u.mal.x, u.binge.x0 + 0.3, u.binge.x1 - 0.3); u.mal.z = THREE.MathUtils.clamp(u.mal.z, u.binge.z0 + 0.3, u.binge.z1 - 0.3);
+    const d = Math.hypot(u.mal.x - p.x, u.mal.z - p.z); if (u.tilst === 'staa' && d > 0.45 && u.tid < 0) { u.tilst = 'gaa'; u.best = 1e9; u.fremg = 0; } }
+  if (u.art2 === 'hone' && robot && u.nysg <= 0 && Math.hypot(robot.position.x - p.x, robot.position.z - p.z) < 2.6) { staaStille(g, 'nysgjerrig', 2.5); u.sted = null; u.nysg = 6.5; } // ser nysgjerrig på roboten
+  if (u.nysg > 0) u.nysg -= dt;
+  let dr = 0;
+  if (u.tilst === 'staa') {
+    u.v = Math.max(0, u.v - dt * 2.5);
+    let onsk = null; if (u.akt === 'nysgjerrig' && robot) onsk = Math.atan2(-(robot.position.z - p.z), robot.position.x - p.x); else if (u.sted && u.sted.se !== undefined) onsk = u.sted.se;
+    const feil = onsk === null ? 0 : vinkelDiff(u.retn, onsk); u.wr = mot(u.wr, Math.abs(feil) > 0.04 ? THREE.MathUtils.clamp(feil * 2.5, -A.sving * 0.6, A.sving * 0.6) : 0, 8, dt); dr = u.wr * dt; u.retn += dr;
+    u.tid -= dt; if (u.tid < 0 && u.art2 !== 'kylling') velgMal(g);
+  } else {
+    const dx = u.mal.x - p.x, dz = u.mal.z - p.z, d = Math.hypot(dx, dz);
+    if (d < 0.12 || (d < 0.3 && u.v < 0.08)) { const s = u.sted; u.wr *= 0.5; staaStille(g, s ? s.akt : A.akt[Math.floor(rnd() * A.akt.length)], s ? rr(5, 10) : rr(A.stå[0], A.stå[1])); }
+    else {
+      const tx = dx / d, tz = dz / d; let sx = tx, sz = tz; const fx = Math.cos(u.retn), fz = -Math.sin(u.retn); let blokk = false;
+      for (const o of u.binge.dyr) { if (o === g || (u.art2 === 'kylling' && o === u.mor)) continue; const rx = o.position.x - p.x, rz = o.position.z - p.z, ds = Math.hypot(rx, rz), R = A.R + o.userData.a.R, fang = R + 1.1;
+        if (ds > fang || ds < 1e-4) continue; const fram = rx * tx + rz * tz; if (fram < -0.1) continue; const lat = rx * tz - rz * tx; // lat > 0: det andre dyret er til venstre for veien mot målet
+        if (Math.abs(lat) < R + 0.15) { const w = (1 - ds / fang) * 2.2, side = lat > 0.15 ? -1 : 1; sx += tz * side * w; sz -= tx * side * w; }
+        const framH = rx * fx + rz * fz, latH = rx * fz - rz * fx; if (framH > 0 && ds < R + 0.3 && Math.abs(latH) < R * 0.85) blokk = true; }
+      for (const h of u.binge.hinder) { const qx = THREE.MathUtils.clamp(p.x, h[0], h[1]), qz = THREE.MathUtils.clamp(p.z, h[2], h[3]), rx = qx - p.x, rz = qz - p.z, ds = Math.hypot(rx, rz), fang = u.ytre + 0.7;
+        if (ds > fang || ds < 1e-4 || rx * tx + rz * tz < 0) continue; const lat = rx * tz - rz * tx, w = (1 - ds / fang) * 1.8, side = lat > 0 ? -1 : 1; sx += tz * side * w; sz -= tx * side * w; }
+      u.sx = mot(u.sx, sx, 5, dt); u.sz = mot(u.sz, sz, 5, dt); // ønsket retning glattes, så dyret ikke vingler
+      const feil = vinkelDiff(u.retn, Math.atan2(-u.sz, u.sx)); u.wr = mot(u.wr, THREE.MathUtils.clamp(feil * 3, -A.sving, A.sving), 8, dt); dr = u.wr * dt; u.retn += dr;
+      const k = Math.cos(Math.min(Math.abs(feil), Math.PI / 2)); let mv = A.fart * u.fartF * k * k; if (d < 0.6) mv *= Math.max(0.35, d / 0.6);
+      if (blokk) { mv = 0; u.blokk += dt; } else u.blokk = Math.max(0, u.blokk - dt * 0.5);
+      u.v = mot(u.v, mv, blokk ? 8 : 3, dt);
+      if (d < u.best - 0.05) { u.best = d; u.fremg = 0; } else u.fremg += dt;
+      if (u.blokk > 1.0 || u.fremg > 3) { staaStille(g, u.art2 === 'kylling' ? 'hakke' : 'se', rr(0.8, 2)); u.sted = null; } // stopper, ser seg rundt og velger en ny vei
+    }
+  }
+  if (u.v > 0) { p.x += Math.cos(u.retn) * u.v * dt; p.z -= Math.sin(u.retn) * u.v * dt; }
+  // et steg som ville presset dyret inn i noe, blir ikke tatt: prøv bare å snu, så bare å gå, ellers stå
+  const grense = pen0 + 0.002;
+  if ((dr || u.v > 0) && penetrasjon(g) > grense) { const nx = p.x, nz = p.z; p.x = ox; p.z = oz;
+    if (!dr || penetrasjon(g) > grense) { u.retn = or; dr = 0; u.wr = 0; p.x = nx; p.z = nz; if (penetrasjon(g) > grense) { p.x = ox; p.z = oz; u.v = 0; } } else u.v *= 0.5;
+    if (u.tilst === 'gaa' && (p.x === ox && p.z === oz)) { u.blokk += dt * 1.5; if (u.blokk > 1.0) { staaStille(g, u.art2 === 'kylling' ? 'hakke' : 'se', rr(0.6, 1.5)); u.sted = null; } } }
+  u.snu = Math.abs(dr) / Math.max(dt, 1e-4);
+  u.gang += (u.v * dt + Math.abs(dr) * u.ytre * 0.6) / u.a.steg * Math.PI * 2;
+  u.gangAmp = mot(u.gangAmp, Math.min(1, u.v / (A.fart * 0.35) + u.snu / A.sving * 0.8), 6, dt);
+  g.rotation.y = u.retn;
+}
+const _ca = [], _cb = [];
+function loesBinge(b) {
+  const D = b.dyr, n = D.length;
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) { const gi = D[i], gj = D[j], ui = gi.userData, uj = gj.userData;
+    if (Math.abs(gi.position.x - gj.position.x) > ui.ytre + uj.ytre || Math.abs(gi.position.z - gj.position.z) > ui.ytre + uj.ytre) continue;
+    const a = sirkler(gi, _ca), c = sirkler(gj, _cb); let px = 0, pz = 0;
+    for (let s = 0; s < a.length; s += 3) for (let q = 0; q < c.length; q += 3) { let dx = c[q] - a[s], dz = c[q + 1] - a[s + 1]; const dd = Math.hypot(dx, dz), min = a[s + 2] + c[q + 2];
+      if (dd >= min) continue; if (dd < 1e-4) { dx = 1; dz = 0; } else { dx /= dd; dz /= dd; } const inn = min - dd; if (inn > Math.hypot(px, pz)) { px = dx * inn; pz = dz * inn; } }
+    if (!px && !pz) continue;
+    const mi = ui.a.vekt * (ui.tilst === 'staa' ? 3 : 1), mj = uj.a.vekt * (uj.tilst === 'staa' ? 3 : 1), wi = mj / (mi + mj), wj = mi / (mi + mj);
+    gi.position.x -= px * wi; gi.position.z -= pz * wi; gj.position.x += px * wj; gj.position.z += pz * wj; }
+  for (const g of D) { const c = sirkler(g, _ca); let sx = 0, sz = 0;
+    for (let s = 0; s < c.length; s += 3) { const x = c[s], z = c[s + 1], r = c[s + 2];
+      if (x - r < b.x0) sx = Math.max(sx, b.x0 - (x - r)); if (x + r > b.x1) sx = Math.min(sx, b.x1 - (x + r)); if (z - r < b.z0) sz = Math.max(sz, b.z0 - (z - r)); if (z + r > b.z1) sz = Math.min(sz, b.z1 - (z + r));
+      for (const h of b.hinder) { const qx = THREE.MathUtils.clamp(x, h[0], h[1]), qz = THREE.MathUtils.clamp(z, h[2], h[3]); let dx = x - qx, dz = z - qz; const dd = Math.hypot(dx, dz);
+        if (dd >= r) continue; if (dd < 1e-4) { const v = [h[0] - x, h[1] - x, h[2] - z, h[3] - z], k = v.map(Math.abs).indexOf(Math.min(...v.map(Math.abs))); dx = k === 0 ? -1 : k === 1 ? 1 : 0; dz = k === 2 ? -1 : k === 3 ? 1 : 0; sx += dx * (Math.abs(v[k]) + r); sz += dz * (Math.abs(v[k]) + r); }
+        else { sx += dx / dd * (r - dd); sz += dz / dd * (r - dd); } } }
+    g.position.x += sx; g.position.z += sz; }
+}
+// artsspesifikk animasjon (hode, kropp, hale). Beina styres av oppdaterBein.
+function animerHone(g, dt, t) {
+  const u = g.userData, H = u.hode, K = u.kropp;
+  u.blunk -= dt; const lukk = u.blunk < 0 && u.blunk > -0.13; u.oyne.forEach(o => o.scale.y = lukk ? 0.12 : 1); if (u.blunk < -0.13) u.blunk = rr(2, 5);
+  u.flaks -= dt; const fl = u.flaks < 0 ? Math.sin(-u.flaks * 30) * 0.6 : 0; u.vinger[0].rotation.x = -Math.abs(fl); u.vinger[1].rotation.x = Math.abs(fl); if (u.flaks < -0.5) u.flaks = rr(4, 9);
+  const ga = u.gangAmp, frac = (u.gang / Math.PI) % 1; let yaw = 0, pitch = 0, dy = 0, dx = 0, tilt = 0, kt = 0;
+  if (u.tilst === 'gaa' || ga > 0.3) dx = ga * (0.06 - 0.12 * frac); // hodet står stille mens kroppen går, og rykker fram ved hvert skritt
+  if (u.tilst === 'staa') {
+    if (u.akt === 'hakke' || u.akt === 'drikke') { u.pk -= dt; if (u.pk < 0) { u.pkT = u.akt === 'drikke' ? 0.5 : 0.2; u.pk = u.pkT + (rnd() < 0.3 ? rr(0.6, 1.4) : rr(0.12, 0.3)); }
+      u.pkT -= dt; if (u.pkT > 0) { pitch = u.akt === 'drikke' ? -0.55 : -0.8; dy = -0.17; dx = 0.06; kt = -0.18; } else if (u.akt === 'drikke' && u.pk < 0.4) pitch = 0.35; }
+    else if (u.akt === 'se') { u.seTid -= dt; if (u.seTid < 0) { u.yawM = rr(-0.8, 0.8); u.tiltM = rr(-0.3, 0.3); u.seTid = rr(0.35, 1.0); } yaw = u.yawM; tilt = u.tiltM; }
+    else if (u.akt === 'nysgjerrig') { pitch = Math.sin(t * 3) * 0.3; tilt = 0.25; }
+  }
+  const r = u.akt === 'se' ? 20 : 14; H.rotation.y = mot(H.rotation.y, yaw, r, dt); H.rotation.x = mot(H.rotation.x, tilt, r, dt); H.rotation.z = mot(H.rotation.z, pitch, 16, dt);
+  H.position.y = mot(H.position.y, 1.13 + dy, 16, dt); H.position.x = mot(H.position.x, 0.36 + dx, 25, dt);
+  if (u.hopp > 0) { u.hopp -= dt; g.position.y = Math.sin((1 - u.hopp / 0.5) * Math.PI) * 0.35; K.scale.set(1.05, 0.95 + Math.sin(u.hopp * 20) * 0.08, 1.05); return; }
+  g.position.y = 0; K.scale.set(1, 1, 1);
+  K.position.y = Math.abs(Math.sin(u.gang)) * 0.04 * ga; K.rotation.x = Math.sin(u.gang) * 0.07 * ga; K.rotation.z = mot(K.rotation.z, kt, 12, dt);
+}
+function animerKylling(g, dt, t) {
+  const u = g.userData, K = u.kropp;
+  if (u.hopp > 0) { u.hopp -= dt; g.position.y = Math.sin((1 - u.hopp / 0.4) * Math.PI) * 0.3; return; } g.position.y = 0;
+  K.position.y = Math.abs(Math.sin(u.gang)) * 0.06 * u.gangAmp;
+  K.rotation.z = mot(K.rotation.z, u.tilst === 'staa' && Math.sin(t * 4 + u.fase) > 0.85 ? -0.4 : 0, 15, dt);
+}
+function animerFirbein(g, dt, t) {
+  const u = g.userData, H = u.hode, K = u.kropp, art = u.art2, ga = u.gangAmp;
+  u.blunk -= dt; const lukk = u.blunk < 0 && u.blunk > -0.13; u.oyne[0].scale.y = u.oyne[1].scale.y = lukk ? 0.12 : 1; if (u.blunk < -0.13) u.blunk = rr(2, 5);
+  u.ore -= dt; const fl = u.ore < 0 ? Math.sin(-u.ore * 25) * 0.35 : 0; u.orer[0].rotation.y = fl; u.orer[1].rotation.y = -fl; if (u.ore < -0.4) u.ore = rr(3, 7);
+  let yaw = 0, pitch = 0, dy = 0, dx = 0, rate = 3, hale = Math.sin(t * 2.2 + u.fase) * 0.35, vugg = 0;
+  if (u.tilst === 'gaa') { pitch = Math.sin(u.gang * 2) * 0.05 * ga - 0.05;
+    if (art === 'gris' && u.fartF < 1) { pitch = -0.45; dy = -0.16; yaw = Math.sin(t * 8) * 0.12; rate = 6; } }
+  else if (u.akt === 'beite' || u.akt === 'krybbe') { const krybbe = u.akt === 'krybbe';
+    u.seTid -= dt; if (u.seTid < -rr(3, 7)) u.seTid = rr(1.2, 2.2); const opp = u.seTid > 0; // løfter hodet innimellom og ser seg rundt
+    if (!opp) { pitch = krybbe ? -0.5 : -0.75; dy = art === 'ku' ? (krybbe ? -0.45 : -0.85) : -0.45; dx = art === 'ku' ? 0.12 : 0.08; yaw = Math.sin(t * 4.5 + u.fase) * 0.05; } else { yaw = Math.sin(u.fase * 3) * 0.4; }
+    vugg = Math.sin(t * 0.7 + u.fase) * 0.025; rate = 2.2; }
+  else if (u.akt === 'drikke') { u.pk -= dt; if (u.pk < 0) u.pk = rr(2.5, 4); const ned = u.pk > 0.9; pitch = ned ? -0.6 : 0.05; dy = ned ? -0.35 : 0; dx = 0.06; rate = 2.5; }
+  else if (u.akt === 'snuse' || u.akt === 'gjorme') { pitch = -0.5; dy = -0.2; dx = 0.05; yaw = Math.sin(t * 8) * 0.15 * (Math.sin(t * 0.9 + u.fase) > 0 ? 1 : 0.3); rate = 5;
+    if (u.akt === 'gjorme') { vugg = Math.sin(t * 3) * 0.06; hale = Math.sin(t * 9) * 0.5; } }
+  else if (u.akt === 'se' || u.akt === 'tygge') { u.seTid -= dt; if (u.seTid < 0) { u.yawM = rr(-0.6, 0.6); u.tiltM = rr(-0.1, 0.15); u.seTid = rr(1.8, 4); } yaw = u.yawM; pitch = u.tiltM; rate = 2.5;
+    if (u.akt === 'tygge') yaw += Math.sin(t * 4.5) * 0.04; }
+  if (art === 'ku' && u.tilst === 'staa' && Math.sin(t * 0.37 + u.fase) > 0.8) hale = Math.sin(t * 7) * 0.7; // ku: slår med halen innimellom
+  H.rotation.y = mot(H.rotation.y, yaw, rate, dt); H.rotation.z = mot(H.rotation.z, pitch, rate, dt); H.position.y = mot(H.position.y, u.hodeY + dy, rate, dt); H.position.x = mot(H.position.x, u.hodeX + dx, rate, dt);
+  u.hale.rotation.x = mot(u.hale.rotation.x, hale, 8, dt);
+  if (u.hopp > 0) { u.hopp -= dt; g.position.y = Math.sin((1 - u.hopp / 0.5) * Math.PI) * 0.3; K.scale.set(1.04, 0.96 + Math.sin(u.hopp * 20) * 0.06, 1.04); return; }
+  g.position.y = 0; K.scale.set(1, 1, 1);
+  K.position.y = Math.abs(Math.sin(u.gang)) * (art === 'ku' ? 0.025 : 0.035) * ga; K.rotation.x = mot(K.rotation.x, Math.sin(u.gang) * 0.03 * ga + vugg, 6, dt);
+}
+function oppdaterDyrene(dt, t) {
+  for (const g of alleDyr) styr(g, dt);
+  for (let k = 0; k < 4; k++) brukteBinger.forEach(loesBinge);
+  for (const g of alleDyr) { const a = g.userData.art2; if (a === 'hone') animerHone(g, dt, t); else if (a === 'kylling') animerKylling(g, dt, t); else animerFirbein(g, dt, t); }
+  oppdaterBein();
+  for (let i = hjerter.length - 1; i >= 0; i--) { const h = hjerter[i]; h.t += dt; h.sp.position.y += dt * 0.8; h.sp.material.opacity = 1 - h.t / 1.2; if (h.t > 1.2) { h.sp.visible = false; hjerter.splice(i, 1); } }
+}
+window.__dyr = {penetrasjon, alle: alleDyr, BINGER, oppdater: oppdaterDyrene, lag: (art, x, z, binge) => ({ku: lagKu, gris: lagGris, sau: lagSau})[art](x, z, binge), sirkler: g => sirkler(g, []).slice()};
+
 const BEITE = {x0: -15.7, x1: -7.2, z0: -0.2, z1: 5.2}; // 0.5.5: større binger (Even 8.11)
 const dyr = [];
 function lagOyne(hode, x, y, z, r, lokkMat) { const hvitO = fm(0xffffff, 0.3), pupill = fm(0x1d1612, 0.2), glimt = new THREE.MeshBasicMaterial({color: 0xffffff}), oyne = [];
@@ -1036,14 +1209,15 @@ function lagOyne(hode, x, y, z, r, lokkMat) { const hvitO = fm(0xffffff, 0.3), p
     mesh(new THREE.SphereGeometry(r * 0.22, 6, 4), glimt, r * 1.05, r * 0.35, s > 0 ? r * 0.4 : -r * 0.05, o, false);
     const lokk = mesh(new THREE.SphereGeometry(r * 1.06, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2.4), lokkMat, 0, 0, 0, o, false); lokk.rotation.z = 0.35; bakeDirekte(o); oyne.push(o); });
   return oyne; }
-function bein(g, mat, hovMat, pos, h, r) { pos.forEach(([x, z]) => { mesh(new THREE.CylinderGeometry(r * 0.9, r, h, 8), mat, x, h / 2 + 0.08, z, g); mesh(new THREE.CylinderGeometry(r * 1.05, r * 1.1, 0.16, 8), hovMat, x, 0.08, z, g); }); }
+function bein(K, mat, hovMat, pos, h, r) { K.parent.userData.bein = {mat, hovMat, pos, h, r}; } /* 0.6.0: beina lages som animerte instanser i ferdigDyr */
 function dyrGruppe(x, z, rot, art, ekstra) { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g); const kropp = new THREE.Group(); g.add(kropp);
   g.userData = Object.assign({art, kropp, mal: new THREE.Vector3(x, 0, z), venter: rr(1, 4), blunk: rr(1, 4), ore: rr(2, 6), hopp: 0, beite: 0, fase: rr(0, 6)}, ekstra); return g; }
 const DYR_SKALA = {ku: 0.8, gris: 0.85, sau: 0.85};
-function ferdigDyr(g, type) { if (type) { g.scale.setScalar(DYR_SKALA[type]); g.userData.hjerteY *= DYR_SKALA[type]; } bakeDirekte(g.userData.kropp); bakeDirekte(g); const u = g.userData; [...u.orer, u.hale].forEach(d => d.traverse(o => { if (o.isMesh) o.castShadow = false; })); /* små deler kaster ikke skygge (færre tegnekall i skyggepasset) */ g.traverse(o => { if (o.isMesh) o.userData.eier = g; }); klikkbar(g); dyr.push(g); return g; }
+function ferdigDyr(g, type, binge) { if (type) { g.scale.setScalar(DYR_SKALA[type]); g.userData.hjerteY *= DYR_SKALA[type]; } bakeDirekte(g.userData.kropp); bakeDirekte(g); const u = g.userData; [...u.orer, u.hale].forEach(d => d.traverse(o => { if (o.isMesh) o.castShadow = false; })); /* små deler kaster ikke skygge (færre tegnekall i skyggepasset) */ g.traverse(o => { if (o.isMesh) o.userData.eier = g; }); klikkbar(g); dyr.push(g);
+  u.hodeX = u.hode.position.x; startBevegelse(g, type, binge); const b = u.bein; registrerBein(g, type, firbeinGeo(b.mat, b.hovMat, b.h, b.r), b.pos, b.h + 0.08, GANG4); return g; }
 
-function lagKu(x, z) {
-  const g = dyrGruppe(x, z, 0.4, 'dyr', {fart: 0.45, sone: [-15.0, -13.3], hjerteY: 2.7, hodeY: 1.62}); const u = g.userData, K = u.kropp;
+function lagKu(x, z, binge = BINGER.ku) {
+  const g = dyrGruppe(x, z, 0.4, 'dyr', {hjerteY: 2.7, hodeY: 1.62}); const u = g.userData, K = u.kropp;
   const hvit = fm(0xfbf7f0, 0.8), flekk = fm(0x2b2622, 0.8), rosa = fm(0xf3a7a6, 0.6), hov = fm(0x4a3a30, 0.6), horn = fm(0xf1e4c4, 0.5), kinn = fm(0xffa3a3, 0.6);
   mesh(new THREE.SphereGeometry(0.75, 22, 16), hvit, 0, 1.15, 0, K).scale.set(1.45, 0.92, 0.92);
   // flekker: mørke kuler som stikker litt ut av kroppen, så de ser ut som myke flekker
@@ -1064,10 +1238,10 @@ function lagKu(x, z) {
   u.oyne = lagOyne(hode, 0.3, 0.1, 0.24, 0.1, hvit);
   u.hale = new THREE.Group(); u.hale.position.set(-1.05, 1.4, 0); K.add(u.hale);
   mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.7, 6), hvit, 0, -0.35, 0, u.hale); mesh(new THREE.SphereGeometry(0.09, 8, 6), flekk, 0, -0.72, 0, u.hale).scale.set(1, 1.5, 1); bakeDirekte(u.hale);
-  u.hode = hode; return ferdigDyr(g, 'ku');
+  u.hode = hode; return ferdigDyr(g, 'ku', binge);
 }
-function lagGris(x, z) {
-  const g = dyrGruppe(x, z, -0.6, 'dyr', {fart: 0.7, sone: [-12.0, -10.5], hjerteY: 1.6, hodeY: 0.8}); const u = g.userData, K = u.kropp;
+function lagGris(x, z, binge = BINGER.gris) {
+  const g = dyrGruppe(x, z, -0.6, 'dyr', {hjerteY: 1.6, hodeY: 0.8}); const u = g.userData, K = u.kropp;
   const rosa = fm(0xf6b3b8, 0.65), mork = fm(0xe48f98, 0.65), hov = fm(0x8b5a5a, 0.6), kinn = fm(0xff8f9a, 0.6);
   mesh(new THREE.SphereGeometry(0.55, 22, 16), rosa, 0, 0.62, 0, K).scale.set(1.3, 0.92, 0.95);
   bein(K, rosa, hov, [[0.4, 0.26], [0.4, -0.26], [-0.4, 0.26], [-0.4, -0.26]], 0.22, 0.09);
@@ -1081,10 +1255,10 @@ function lagGris(x, z) {
   u.oyne = lagOyne(hode, 0.27, 0.1, 0.2, 0.085, rosa);
   u.hale = new THREE.Group(); u.hale.position.set(-0.7, 0.75, 0); K.add(u.hale);
   const krolle = mesh(new THREE.TorusGeometry(0.08, 0.022, 6, 14, Math.PI * 1.7), rosa, -0.06, 0, 0, u.hale); krolle.rotation.y = Math.PI / 2; bakeDirekte(u.hale);
-  u.hode = hode; return ferdigDyr(g, 'gris');
+  u.hode = hode; return ferdigDyr(g, 'gris', binge);
 }
-function lagSau(x, z) {
-  const g = dyrGruppe(x, z, 2.6, 'dyr', {fart: 0.6, sone: [-9.2, -7.9], hjerteY: 1.9, hodeY: 1.0}); const u = g.userData, K = u.kropp;
+function lagSau(x, z, binge = BINGER.sau) {
+  const g = dyrGruppe(x, z, 2.6, 'dyr', {hjerteY: 1.9, hodeY: 1.0}); const u = g.userData, K = u.kropp;
   const ansikt = fm(0x4a4443, 0.7), hov = fm(0x2e2a29, 0.6), kinn = fm(0xff9fa6, 0.6), ullM = MAT.vertex;
   const ull = new THREE.Mesh(krone('ull', 0, true), ullM); ull.position.set(0, 0.95, 0); ull.scale.set(0.55, 0.56, 0.5); ull.castShadow = true; ull.receiveShadow = true; K.add(ull);
   bein(K, ansikt, hov, [[0.32, 0.2], [0.32, -0.2], [-0.32, 0.2], [-0.32, -0.2]], 0.42, 0.07);
@@ -1096,7 +1270,7 @@ function lagSau(x, z) {
   u.orer = [1, -1].map(s => { const o = new THREE.Group(); o.position.set(-0.04, 0.08, s * 0.24); hode.add(o); const m = mesh(new THREE.SphereGeometry(0.11, 10, 8), ansikt, 0, 0, s * 0.08, o); m.scale.set(0.5, 0.3, 1.2); bakeDirekte(o); o.rotation.x = s * 0.3; return o; });
   u.oyne = lagOyne(hode, 0.22, 0.06, 0.16, 0.075, ansikt);
   u.hale = new THREE.Group(); u.hale.position.set(-0.68, 0.95, 0); K.add(u.hale); const hu = new THREE.Mesh(krone('ull', 2, false), ullM); hu.scale.setScalar(0.14); u.hale.add(hu);
-  u.hode = hode; return ferdigDyr(g, 'sau');
+  u.hode = hode; return ferdigDyr(g, 'sau', binge);
 }
 function lagBeite() {
   const G = new THREE.Group(); scene.add(G); const {x0, x1, z0, z1} = BEITE; const stolper = [], lekter = [];
@@ -1123,18 +1297,6 @@ function lagBeite() {
   bake(G);
   lagKu(-14.0, 3.0); lagGris(-11.2, 2.0); lagSau(-8.5, 2.2);
 }
-function oppdaterDyr(dt, t) {
-  for (const g of dyr) { const u = g.userData;
-    u.blunk -= dt; const lukk = u.blunk < 0 && u.blunk > -0.13; u.oyne[0].scale.y = u.oyne[1].scale.y = lukk ? 0.12 : 1; if (u.blunk < -0.13) u.blunk = rr(2, 5);
-    u.ore -= dt; const fl = u.ore < 0 ? Math.sin(-u.ore * 25) * 0.35 : 0; u.orer[0].rotation.y = fl; u.orer[1].rotation.y = -fl; if (u.ore < -0.4) u.ore = rr(3, 7);
-    u.hale.rotation.x = Math.sin(t * 2.2 + u.fase) * 0.45;
-    if (u.hopp > 0) { u.hopp -= dt; g.position.y = Math.sin((1 - u.hopp / 0.5) * Math.PI) * 0.3; u.kropp.scale.set(1.04, 0.96 + Math.sin(u.hopp * 20) * 0.06, 1.04); continue; } else { g.position.y = 0; u.kropp.scale.set(1, 1, 1); }
-    const til = _v1.copy(u.mal).sub(g.position); til.y = 0; const d = til.length();
-    if (d > 0.08) { g.rotation.y = Math.atan2(-til.z, til.x); g.position.addScaledVector(til.normalize(), Math.min(d, dt * u.fart)); u.kropp.position.y = Math.abs(Math.sin(t * 9 + u.fase)) * 0.04; u.hode.rotation.z = 0; }
-    else { u.kropp.position.y = 0; u.venter -= dt; u.beite += dt; u.hode.rotation.z = Math.sin(u.beite * 0.9) > 0.2 ? -0.45 : Math.sin(t * 1.5 + u.fase) * 0.06; // beiter med hodet ned, ser opp innimellom
-      if (u.venter < 0) { u.mal.set(rr(u.sone[0], u.sone[1]), 0, rr(u.zs ? u.zs[0] : BEITE.z0 + 1.0, u.zs ? u.zs[1] : BEITE.z1 - 1.0)); u.venter = rr(3, 7); } } }
-}
-
 /* ======================= Input ======================= */
 let sistHjul = 0; const pek = new Map(); let dra = null, flyttet = 0, knip0 = 0, dist0 = 0; const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 const el = renderer.domElement;
@@ -1272,9 +1434,11 @@ function fullGard() {
     const off = finnPlass(boks); if (!off) return null;
     deler.forEach(c => { const lager = []; c.traverse(o => { lager.push([o, o.userData]); o.userData = {}; }); const k = c.clone(); lager.forEach(([o, u]) => o.userData = u); /* userData har sirkulære referanser */ k.position.x += off[0]; k.position.z += off[1]; k.userData = {kat: 'full'}; scene.add(k); });
     return off; };
-  kopi('laave'); kopi('honsehus'); kopi('akre'); const b = kopi('dyr', true);
-  if (b) [[lagKu, -14.0, 3.4, [-15.0, -13.3]], [lagKu, -13.9, 1.5, [-15.0, -13.3]], [lagGris, -11.2, 2.0, [-12.0, -10.5]], [lagGris, -11.0, 4.0, [-12.0, -10.5]], [lagSau, -8.5, 1.8, [-9.2, -7.9]], [lagSau, -8.6, 3.9, [-9.2, -7.9]]]
-    .forEach(([f, x, z, sone]) => { const g = f(x + b[0], z + b[1]); g.userData.sone = [sone[0] + b[0], sone[1] + b[0]]; g.userData.zs = [BEITE.z0 + 1 + b[1], BEITE.z1 - 1 + b[1]]; });
+  kopi('laave'); const h = kopi('honsehus', true); kopi('akre'); const b = kopi('dyr', true);
+  if (h) { const hb = flyttBinge(BINGER.hone, h[0], h[1]); for (let i = 0; i < 3; i++) { const hn = lagHone(4.6 + i * 1.7 + h[0], -2.6 + (i % 2) * 0.9 + h[1], i, hb); hn.userData.kat = 'full'; hoener.push(hn); }
+    const n = hoener.length; [0, 1].forEach(i => { const k = lagKylling(hoener[n - 3], i); k.userData.kat = 'full'; kyllinger.push(k); }); }
+  if (b) { const bb = {ku: flyttBinge(BINGER.ku, b[0], b[1]), gris: flyttBinge(BINGER.gris, b[0], b[1]), sau: flyttBinge(BINGER.sau, b[0], b[1])};
+    [['ku', -14.0, 3.6], ['ku', -14.2, 1.4], ['gris', -11.2, 1.6], ['gris', -11.0, 4.2], ['sau', -8.5, 1.6], ['sau', -8.6, 4.0]].forEach(([a, x, z]) => window.__dyr.lag(a, x + b[0], z + b[1], bb[a]).userData.kat = 'full'); }
 }
 let fullInfo = '', forhandMs = null, klarMs = null, antLastet = 0;
 function ferdigLast() { if (++antLastet < 2) return;
@@ -1402,7 +1566,7 @@ function loop(ts) {
     else if (snuTil) { robot.rotation.y = snuMot(robot.rotation.y, snuTil.r, dt * 7); if (Math.abs(vinkelDiff(robot.rotation.y, snuTil.r)) < 0.02) { const f = snuTil.ferdig; snuTil = null; f(); } }
     else if (modus === 'vent') { ventTimer -= dt; if (ventTimer <= 0) { if (ventSteg === 2) { spill('Idle'); robot.position.y = 0; ventSteg = 0; ventTimer = 1.5; } else nesteVent(); } }
   }
-  oppdaterHoner(dt, t); oppdaterDyr(dt, t);
+  oppdaterDyrene(dt, t);
   for (let i = sprett.length - 1; i >= 0; i--) { const s = sprett[i]; s.t += dt; const k = Math.sin(Math.min(s.t / 0.35, 1) * Math.PI); if (s.o.userData.skala0 === undefined) s.o.userData.skala0 = s.o.scale.x; const base = s.o.userData.skala0; s.o.scale.setScalar(base * (1 + k * 0.08)); if (s.t > 0.35) { s.o.scale.setScalar(base); sprett.splice(i, 1); } }
   if (VANN) VANN.material.uniforms.tid.value = t;
   if (omradeVist) { omradeTid += dt; omradeVist.kant.material.opacity = 0.65 + 0.3 * Math.sin(omradeTid * 5); }
@@ -1431,7 +1595,7 @@ function profil(n = 12) {
   return res;
 }
 addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
-window.__testscene = {profil, settTid, nyttNivaa, kamera: (x, z, d) => { cam.target.set(x, 0, z); if (d) cam.dist = d; plasserKamera(); }, info: () => Object.assign({}, renderer.info.render), get robot() { return robot; }, spill: (n, l) => spill(n, l), klipp, get rev() { return rev; }, kameraObj: camera, hilsRev, get modus() { return modus; }, set modus(v) { modus = v; }};
+window.__testscene = {vinkel: (yaw, pitch) => { cam.yaw = yaw; if (pitch !== undefined) cam.pitch = pitch; plasserKamera(); }, profil, settTid, nyttNivaa, kamera: (x, z, d) => { cam.target.set(x, 0, z); if (d) cam.dist = d; plasserKamera(); }, info: () => Object.assign({}, renderer.info.render), get robot() { return robot; }, spill: (n, l) => spill(n, l), klipp, get rev() { return rev; }, kameraObj: camera, hilsRev, get modus() { return modus; }, set modus(v) { modus = v; }};
 bygg(); loop();
 </script>
 </body>
