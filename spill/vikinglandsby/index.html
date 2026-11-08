@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Vikinglandsby 0.3.2 – EVN Studio</title>
+<title>Vikinglandsby 0.3.3 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -154,7 +154,7 @@
 <div id="melding" role="status" aria-live="polite"></div>
 <div id="handlinger" hidden>
   <button id="handling" type="button"></button>
-  <button id="hoppKnapp" class="bare-touch-knapp" type="button" title="Hopp (mellomrom)" aria-label="Hopp">⤴️</button>
+  <button id="hoppKnapp" type="button" title="Hopp (mellomrom)" aria-label="Hopp">⤴️</button>
   <button id="byggKnapp" type="button" title="Bygg (B)">🔨 Bygg<span class="tast">(B)</span></button>
 </div>
 <div id="hjelp"></div>
@@ -184,7 +184,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.3.2</div>
+    <div class="evn-ver" id="versjon">Versjon 0.3.3</div>
   </div>
 </div>
 
@@ -460,7 +460,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.3.2';
+const VERSJON = '0.3.3';
 const LAGRING = 'evn-vikinglandsby-v1';
 const LYD_NOKKEL = 'evn-vikinglandsby-lyd';
 const TEST = location.hash === '#test';
@@ -1750,10 +1750,10 @@ addEventListener('keydown', e => {
     if (k === 'r' && !e.repeat) { snu(); return; }
     if (/^[1-5]$/.test(k) && !e.repeat) { velgHus(REKKE[+k - 1]); return; }
     const pa = document.activeElement;
-    if ((k === 'e' || k === 'enter' || k === ' ') && !(pa && pa.closest && pa.closest('#byggPanel'))) { e.preventDefault(); if (!e.repeat) { bygg.sistInn = 'tast'; plasser(); } return; }
+    if ((k === 'e' || k === 'enter') && !(pa && pa.closest && pa.closest('#byggPanel'))) { e.preventDefault(); if (!e.repeat) { bygg.sistInn = 'tast'; plasser(); } return; }
   }
   const pa = document.activeElement, paKnapp = pa && pa.tagName === 'BUTTON' && pa !== $('handling');
-  if (k === ' ' && !paKnapp && !bygg.aktiv) { e.preventDefault(); if (!e.repeat) hopp(); return; }   // KA1: mellomrom er hopp
+  if (k === ' ' && !bygg.aktiv) { e.preventDefault(); if (!e.repeat) hopp(); return; }   // KA1: mellomrom er alltid hopp under spilling (Enter trykker knapper)
   if (k === 'e' && !bygg.aktiv) { e.preventDefault(); if (!e.repeat) { holder = true; gjorHandling(); } return; }
   if (k.startsWith('arrow') || 'wasd'.includes(k)) { taster[k] = true; if (bygg.aktiv) bygg.sistInn = 'tast'; if (k.startsWith('arrow')) e.preventDefault(); }
 }, true);
