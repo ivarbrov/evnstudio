@@ -235,3 +235,11 @@ Donutku, Burgersau, Pizzaskilpadde, Shakeand og Spagettipingvin er rettet i `ble
 - **Gavlfeil rettet i `blender/miljo_ressurser.py`:** Gavlen på dagens låve stakk opp til 0,6 m over taket, og hønsehuset hadde mansardgavl under saltak. Begge gavlene følger nå takets underside.
 - **Ikke endret:** spillregler og progresjon.
 - **Gjenstår (eldre problem):** Roboten kan gå gjennom låven fordi den ikke har kollisjon. Ytelse er ikke målt på ekte mobil. Hver låvevariant har ca. 11 000 trekanter.
+
+### Rettinger etter QA av 221eb59 (9.11.2026)
+1. **Ingen sprang etter hopp.** Når et hopp slutter, regnes roboten med som hindring i samme bilde. Et matdyr lander aldri oppå roboten eller et annet matdyr, fordi hoppet forlenges opptil tre ganger. Skyvet er begrenset til 3,5 m/s. Ved gjerdet og i porten skyves matdyret bare i en lovlig retning. Målt største flytting per bilde: 0,12–0,18 m, mot 1,15 m før.
+2. **Fri utgang.** Ingen spredte trær, busker eller steiner står lenger øst for porten (x 29–62, z 22–58). Der står bare `UTBUSKER`, som navigasjonen kjenner.
+3. **＋-merkene** er aldri lavere enn 56 px på skjermen. Trykk regnes som treff innenfor halve merkehøyden, minst 26 px fra midten. Målt 53–72 px på 1280×800 og 320×568. Trykk og slipp måles med `e.timeStamp`, grense 800 ms.
+4. **Meldingen** ved fangst er kortere (3 s) og skjules når merkene vises. Merker under statuspanel og knapper på små skjermer er ikke løst. «Første ledige» og å gå bort til plassen virker alltid.
+5. **Knappeteksten** er «🏠 Første ledige plass», så knappen blir smalere.
+6. **Tilbudet av matdyr** er tilbake på ca. 16 per minutt når åkeren er i gang (målt 14,7 per minutt over 600 s, oppvarmingen medregnet). Den frie vandringen er kortet til 6–14 s. Median fra landing til porten er 44–45 s.

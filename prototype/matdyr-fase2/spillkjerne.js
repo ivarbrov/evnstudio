@@ -154,7 +154,7 @@
     const [x, z] = xz || tilfeldigPunkt(), g = new T.Group(); g.position.set(x, xz ? 0 : 26, z);
     const m = modell(ci), lab = navneskilt(ci); lab.position.y = 3.9 + COMBOS[ci].r * 0.15; lab.material.transparent = true; g.add(m, lab); feltG.add(g);
     felt.push({ ci, g, m, lab, tilstand: xz ? 'gaa' : 'fall', retning: Math.random() * Math.PI * 2, fart: (1.2 + Math.random() * 0.8) * (I.GANGFART || 1),
-      tid: 12 + Math.random() * 10,            // så lenge matdyret vandrer fritt før det begynner å søke mot porten (s)
+      tid: 6 + Math.random() * 8,            // så lenge matdyret vandrer fritt før det begynner å søke mot porten (s)
       side: Math.random() < 0.5 ? -1 : 1,      // foretrukket side å gå rundt hindringer på, så to matdyr ikke speiler hverandre
       alder: 0, fase: Math.random(), v: 0, vx: 0, vz: 0, labA: 1, beite: 0, fast: 0, robotFast: 0 });
   }
@@ -241,9 +241,10 @@
       // ---- Hindringer: andre matdyr, roboten og faste hindringer ----
       const hindre = faste.slice();
       for (const b of felt) if (b !== a && b.tilstand !== 'fall' && b.tilstand !== 'krymp') { const d = Math.abs(b.g.position.x - p.x) + Math.abs(b.g.position.z - p.z); if (d < 9) hindre.push({ x: b.g.position.x, z: b.g.position.z, vx: b.vx, vz: b.vz, r: RADIUS * (b.tilstand === 'borte' ? Math.max(0.2, b.krymp ?? 1) : 1) }); }
-      if (rp && a.tilstand === 'gaa' && !a.hopp) hindre.push({ x: rp.x, z: rp.z, r: 0.75, rob: true });
-      if (a.hopp) { a.hopp.t += dt / 1.5; if (a.hopp.t >= 1 && rp && Math.hypot(rp.x - p.x, rp.z - p.z) < 1.9 && (a.hopp.n = (a.hopp.n || 0) + 1) < 3) a.hopp.t = 0.85;   // lander ikke oppå roboten
+      if (a.hopp) { a.hopp.t += dt / 1.5; const opptatt = (rp && Math.hypot(rp.x - p.x, rp.z - p.z) < 1.9) || hindre.some(h => h.vx !== undefined && Math.hypot(h.x - p.x, h.z - p.z) < 2 * RADIUS);
+        if (a.hopp.t >= 1 && opptatt && (a.hopp.n = (a.hopp.n || 0) + 1) < 4) a.hopp.t = 0.85;   // lander ikke oppå roboten eller et annet matdyr
         if (a.hopp.t >= 1) { a.hopp = null; p.y = 0; } else { p.y = Math.sin(Math.PI * a.hopp.t) * 2.6; fart = a.fart * 1.6; } }
+      if (rp && a.tilstand === 'gaa' && !a.hopp) hindre.push({ x: rp.x, z: rp.z, r: 0.75, rob: true });
       let valgt = a.hopp ? a.retning : onsket;
       if (fart > 0 && !a.hopp) {
         const s2 = styr(a, onsket, hindre); valgt = s2.h;
@@ -263,9 +264,16 @@
       a.v += (maalFart - a.v) * Math.min(1, dt * 3);
       let nx = p.x + Math.sin(a.retning) * a.v * dt, nz = p.z + Math.cos(a.retning) * a.v * dt;
       // Overlapp rettes ved å skyve matdyret fra naboer og roboten, men bare til lovlige steder
-      for (const h of hindre) {
+      // Skyvet begrenses til 3,5 m/s, så et matdyr som har landet tett inntil noe glir mykt bort i stedet for å hoppe
+      let sx = 0, sz = 0;
+      if (!a.hopp) for (const h of hindre) {
         const dx = nx - h.x, dz = nz - h.z, d = Math.hypot(dx, dz), min = RADIUS + h.r - 0.1;
-        if (d < min && d > 1e-4) { const k = (min - d) * (h.vx === undefined || h.rob ? 1 : 0.5); if (lovlig(nx + dx / d * k, nz + dz / d * k, a.inneL)) { nx += dx / d * k; nz += dz / d * k; } }
+        if (d < min && d > 1e-4) { const k = (min - d) * (h.vx === undefined || h.rob ? 1 : 0.5); sx += dx / d * k; sz += dz / d * k; }
+      }
+      const sl = Math.hypot(sx, sz), maks = 3.5 * dt;
+      if (sl > maks) { sx *= maks / sl; sz *= maks / sl; }
+      if (sl > 0) {   // ved gjerdet eller i porten: skyv i den retningen som er lovlig
+        for (const [ux, uz] of [[sx, sz], [sx, 0], [0, sz], [-sx * 0.5, sz], [sx, -sz * 0.5]]) if (lovlig(nx + ux, nz + uz, a.inneL)) { nx += ux; nz += uz; break; }
       }
       const L = (x, z) => lovlig(x, z, a.inneL);
       if (L(nx, nz)) { p.x = nx; p.z = nz; }
@@ -330,7 +338,7 @@
     const b = $('handling'), h = handling; let t = '', lav = false;
     if (h && h.t === 'ta') { const ci = h.a.ci, pr = PRICE(ci); if (S.penger < pr) { t = '🔒 Mangler 💰 ' + fmt(pr - S.penger); lav = true; } else if (!harLedig()) { t = '🔒 Ingen ledig plass'; lav = true; } else t = '🫳 Ta med ' + navn(ci) + ' (💰 ' + fmt(pr) + ')'; }
     else if (h && h.t === 'sett') t = '🏠 Sett inn ' + navn(bar.ci);
-    else if (h && h.t === 'forste') t = '🏠 Plasser på første ledige plass';
+    else if (h && h.t === 'forste') t = '🏠 Første ledige plass';
     else if (h && h.t === 'slipp') t = '⬇️ Slipp ' + navn(bar.ci);
     else if (h && h.t === 'selg') t = '💸 Selg ' + navn(S.base[h.i]);
     const full = t ? t + (I.TOUCH ? '' : ' (E)') + (lav ? '|lav' : '') : '';
@@ -344,7 +352,7 @@
       if (S.penger < pr) return melding('💰 Du mangler ' + fmt(pr - S.penger) + ' for å ta med ' + navn(ci) + '.');
       if (!harLedig()) return melding('🏠 Alle plassene er fulle. Selg et matdyr, eller kjøp flere plasser.');
       fjern(h.a); bar = { ci, m: modell(ci) }; bar.m.scale.setScalar(0.7); I.scene.add(bar.m);
-      melding('Bær ' + navn(ci) + ' inn på gården. Trykk på en grønn ＋ for å velge plass. Du betaler når den flytter inn.', 6);
+      melding('Bær ' + navn(ci) + ' inn på gården og trykk på en grønn ＋.', 3);
     } else if (h.t === 'sett') settInn(h.i);
     else if (h.t === 'forste') velgPlass(h.i);
     else if (h.t === 'slipp') { const ci = bar.ci; slippBar(); slippNed(ci); melding('⬇️ ' + navn(ci) + ' løp tilbake til enga.'); }
@@ -381,12 +389,19 @@
   function visMerker() {
     const vis = !!bar && !bar.flyr && I.fane() === 'spill' && iBasen(), l = vis ? ledige() : [], n = vis + ':' + l.join(',');
     if (n === merkNokkel) return; merkNokkel = n;
+    if (vis && l.length) { $('melding').hidden = true; meldingTid = 0; }   // meldingen skal ikke dekke merkene
     merkG.children.slice().forEach(c => { merkG.remove(c); c.material.dispose(); });
     for (const i of l) { const q = plassPos(i), sp = new T.Sprite(new T.SpriteMaterial({ map: merkeTekstur(etasjeKort(i)), depthTest: false, depthWrite: false, transparent: true })); sp.position.set(q.x, q.y + 1.6, q.z); sp.scale.set(1.5, 1.875, 1); sp.renderOrder = 20; sp.userData.plass = i; merkG.add(sp); }
   }
   function oppdaterMerker(t) {
     visMerker(); if (!merkG.children.length) return; const y = I.robot().position.y;
-    for (const sp of merkG.children) { const egen = Math.abs(plassPos(sp.userData.plass).y - y) < 1.0, k = (egen ? 1 : 0.8) * (1 + Math.sin(t * 4 + sp.userData.plass) * 0.06); sp.scale.set(1.5 * k, 1.875 * k, 1); sp.material.opacity = egen ? 1 : 0.75; }
+    // Merket er aldri lavere enn 56 px på skjermen (bredde 45 px), uansett zoom og skjermstørrelse
+    const cam = I.camera, f = 2 * Math.tan(cam.fov * Math.PI / 360) / innerHeight;
+    for (const sp of merkG.children) {
+      const egen = Math.abs(plassPos(sp.userData.plass).y - y) < 1.0, k = (egen ? 1 : 0.8) * (1 + Math.sin(t * 4 + sp.userData.plass) * 0.06);
+      const hMin = 56 * f * cam.position.distanceTo(sp.position), h = Math.max(1.875 * k, hMin * (1 + Math.sin(t * 4 + sp.userData.plass) * 0.06));
+      sp.scale.set(h * 0.8, h, 1); sp.material.opacity = egen ? 1 : 0.8;
+    }
   }
   function velgPlass(i) {
     if (!bar || bar.flyr || S.base[i] !== -1 || !(i < aapneNa)) return false;
@@ -400,12 +415,20 @@
     if (f.t >= 1) { const i = f.i; bar.flyr = null; if (S.base[i] === -1) settInn(i); else { melding('Plassen ble tatt. Velg en annen.'); } }
   }
   // Trykk/klikk på en ＋ (skilt fra kameradraging: kort trykk med lite bevegelse)
-  { const el = I.renderer.domElement, ray = new T.Raycaster(), mus = new T.Vector2(); let ned = null;
-    el.addEventListener('pointerdown', e => { ned = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+  { const el = I.renderer.domElement; let ned = null;
+    // Treff avgjøres på skjermen: nærmeste merke innenfor halve merkehøyden, men minst 26 px (trykkflate ≥ 52 px)
+    const v = new T.Vector3();
+    el.addEventListener('pointerdown', e => { ned = { x: e.clientX, y: e.clientY, t: e.timeStamp }; });
     el.addEventListener('pointerup', e => {
-      if (!ned || !merkG.children.length) return; const d = Math.hypot(e.clientX - ned.x, e.clientY - ned.y), tid = performance.now() - ned.t; ned = null;
-      if (d > 12 || tid > 600) return; const b = el.getBoundingClientRect(); mus.set((e.clientX - b.left) / b.width * 2 - 1, -(e.clientY - b.top) / b.height * 2 + 1);
-      ray.setFromCamera(mus, I.camera); const h = ray.intersectObjects(merkG.children, false)[0]; if (h) velgPlass(h.object.userData.plass);
+      if (!ned || !merkG.children.length) return; const d = Math.hypot(e.clientX - ned.x, e.clientY - ned.y), tid = e.timeStamp - ned.t; ned = null;
+      if (d > 14 || tid > 800) return; const b = el.getBoundingClientRect(), cam = I.camera, f = 2 * Math.tan(cam.fov * Math.PI / 360);
+      let best = null, bd = 1e9;
+      for (const sp of merkG.children) {
+        v.copy(sp.position).project(cam); if (v.z > 1) continue;
+        const sx = b.left + (v.x + 1) / 2 * b.width, sy = b.top + (1 - v.y) / 2 * b.height, hpx = sp.scale.y / (f * cam.position.distanceTo(sp.position)) * b.height;
+        const avst = Math.hypot(e.clientX - sx, e.clientY - sy); if (avst < Math.max(26, hpx / 2) && avst < bd) { bd = avst; best = sp; }
+      }
+      if (best) velgPlass(best.userData.plass);
     }); }
 
   // =================== Dialoger ===================

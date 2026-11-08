@@ -621,7 +621,9 @@
     };
     const t = EVNMiljo.terreng({ storrelse: 360, ruter: 180, flat: (x, z) => ell(x, z, 95, 80, 8) < 1, hoyde: (x, z) => { const d = Math.sqrt(ell(x, z, 95, 80, 8)); return (d - 1) * 38 * (0.7 + 0.3 * EVNMiljo.stoy(x, z)); }, farge });
     scene.remove(bakke); bakke = t; scene.add(t);
-    const fri = (x, z) => ell(x, z, 33, 25) > 1 && !iAker(x, z, 2.5) && !(Math.abs(x) < 5 && z > 10 && z < 25);
+    // Utgangen fra åkeren (øst for porten) holdes fri for spredte trær, busker og steiner. Der går matdyrene, og bare UTBUSKER står der.
+    const utgang = (x, z) => x > 29 && x < 62 && Math.abs(z - 40) < 18;
+    const fri = (x, z) => ell(x, z, 33, 25) > 1 && !iAker(x, z, 2.5) && !(Math.abs(x) < 5 && z > 10 && z < 25) && !utgang(x, z);
     const D = n => mdel(n), vis = (n, pl, o) => { const d = D(n); if (d && pl.length) verden.add(EVNMiljo.instanser(d, pl, o)); };
     // Trær i en ring rundt gården og enga, tettere lenger ute
     const traer = EVNMiljo.spred(Math.round(90 * q.traer), { fra: [-110, -95], til: [110, 110], avstand: 5.5, frø: 3, skala: [0.85, 1.35], lov: (x, z) => fri(x, z) && ell(x, z, 40, 32) > 1 && !iAker(x, z, 6) && ell(x, z, 110, 95, 8) < 1 });
