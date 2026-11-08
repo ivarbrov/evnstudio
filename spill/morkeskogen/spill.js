@@ -6387,8 +6387,8 @@ function mobilKnapper() {
     const t = g.sleep ? null : target(), u = t && USE_K[t.k] && !(t.k === 'water' && curW() === 'stang') ? BRUK_ETIKETT[t.k] : null;
     if (u) [ik, tx] = t.k === 'fire' && g.fuel >= 99 ? ['🔥', 'Bålet'] : t.k === 'basechest' && !t.o.cleared ? ['🔒', 'Låst'] : u;
     else if (t && (t.k === 'tree' || t.k === 'rock')) { ik = (W.tool || ctxOks(t)) ? WEAPONS.oks.icon : W.icon; tx = t.k === 'rock' && t.o.ore ? 'Hent jern' : 'Hugg'; }
+    else if (W.kind === 'rod') tx = !F ? 'Fisk' : F.st === 'bite' ? 'Napp!' : F.st === 'reel' ? 'Sveiv' : F.st === 'wait' ? 'Vent' : 'Fisk';   // fiskestanga fisker uansett hva som er i nærheten
     else if (t && ENEMY_K[t.k]) tx = W.kind === 'lasso' ? 'Kast' : 'Angrip';
-    else if (W.kind === 'rod' && F) tx = F.st === 'bite' ? 'Napp!' : F.st === 'reel' ? 'Sveiv' : F.st === 'wait' ? 'Vent' : 'Fisk';
   }
   const key = ik + '|' + tx;
   if (key !== actSist) { actSist = key; $('act').innerHTML = `<span class="ai">${ik}</span><span class="at">${tx}</span>`; $('act').setAttribute('aria-label', tx); }

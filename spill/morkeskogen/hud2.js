@@ -143,6 +143,8 @@
     if (!spiller) return;   // startskjerm, slutt: ingenting å oppdatere
     // Våpenlinja over hurtiglinja følger hurtiglinja
     const hb = $('hotbar'), v = $('h2Vapen'); if (v && hb) v.hidden = hb.hidden;
+    // 2.0.9: på mobil er Avslutt-lenken skjult (den ligger i pausen). Den skal da ikke kunne nås med Tab eller leses opp.
+    { const a = $('evnAvslutt'), t = document.body.classList.contains('touchui'); if (a && (a.getAttribute('aria-hidden') === 'true') !== t) { if (t) { a.setAttribute('aria-hidden', 'true'); a.tabIndex = -1; } else { a.removeAttribute('aria-hidden'); a.removeAttribute('tabindex'); } } }
     // Ressurser: endret siste 4 s, fullt lager, eller ved (når hintet handler om bålet)
     const pr = $('prompt'), bål = pr && !pr.hidden && /bål/i.test(pr.textContent);
     const kand = [];
