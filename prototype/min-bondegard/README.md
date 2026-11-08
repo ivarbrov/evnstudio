@@ -49,3 +49,4 @@ Status: prototype, ikke spill. Ingen spillogikk, lagring, statistikk eller musik
   - «Mål ytelse» måler vist bildefrekvens, den samme siden med tom scene (for å se om grensen ligger utenfor prototypen) og kapasitet per oppløsning. Den måler også skygge hvert 2. bilde og viser GPU. Resultatet kan kopieres.
   - På Mobil tegnes skyggekartet hvert 2. bilde, og alltid når kameraet flyttes. `?helskygge` slår dette av.
   - Testmenyen kan legges sammen, og den er lagt sammen fra start på mobil og i stående format. «Mål ytelse» og en liten bildefrekvensvisning er alltid synlige.
+- 0.4.2: løpegården var åpen bak, mot hønsehuset. Den er nå lukket med netting, og en smal sluse fører fra åpningen opp til rampa og døra.
