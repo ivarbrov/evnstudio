@@ -19,11 +19,17 @@
  * 4. Testkvitteringen i rapporten sammenlignes med Actions på stabile opplysninger: commit, versjon av test/
  *    og resultat per suite. Ulikt resultat i en obligatorisk suite stopper PR-en og må undersøkes.
  * 5. K3: endrede spill har ny versjon på startkortet, og versjonen står i ENDRINGSLOGG.md.
+ * 6. Dekning: hvert spill på commiten (mappe spill/<id>/ med index.html) er testet i Actions og har alle påkrevde
+ *    kontroller i statisk og royk (PAKREVDE_KONTROLLER i test/spilloppsett.mjs). Et nytt spill registreres derfor
+ *    uten endring i test/. Eget oppsett (spill/<id>/evn-test.json) er bare lov for spill som ikke finnes på main,
+ *    og må være gyldig. Oppsettet for spill på main står i test/index.html og endres bare med særskilt kontroll.
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+// Importeres fra samme mappe som skriptet. I Actions er det main, ikke PR-en.
+import { lesOppsett, OPPSETTFIL, PAKREVDE_KONTROLLER, SPILL_ID } from './spilloppsett.mjs';
 
 const ROT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -42,7 +48,8 @@ const HEAD = git('rev-parse', '--verify', '--quiet', REF + '^{commit}');
 if (!HEAD) { console.error('Fant ikke commiten ' + REF + '.'); process.exit(2); }
 const mb = git('merge-base', BASE, REF);
 if (!mb) { console.error('Fant ikke felles commit med ' + BASE + '.'); process.exit(2); }
-const endrede = (git('diff', '--name-only', mb, REF) || '').split('\n').filter(Boolean);
+// --no-renames: en fil som flyttes ut av test/, skal telle som endring i test/
+const endrede = (git('diff', '--no-renames', '--name-only', mb, REF) || '').split('\n').filter(Boolean);
 const kode = git('log', '-1', '--format=%H', REF, '--', '.', ':(exclude)qa');
 // Testene og arbeidsflyten skal være de samme som på main, ellers er testresultatet ikke betrodd.
 const betrodd = endrede.filter(f => f.startsWith('test/') || f.startsWith('.github/'));
@@ -109,6 +116,48 @@ if (ci) {
     else if (v === 'ikke-innfort') varsler.push(`Actions: suiten ${n} er ikke innført ennå (filen den tester, finnes verken her eller på main).`);
   }
   if (feil.length === f0) ok.push(`Actions kjørte testene på ${kort(HEAD)}: ${Object.entries(ci.suiter).map(([n, v]) => n + '=' + v).join(', ')}.`);
+}
+
+// ---- 6. Dekning og testoppsett per spill, lest fra git (ikke fra PR-ens testkode) ----
+const spillVed = rev => [...new Set((git('ls-tree', '-r', '--name-only', rev, 'spill/') || '').split('\n')
+  .map(f => (/^spill\/([^/]+)\/index\.html$/.exec(f) || [])[1]).filter(Boolean))].sort();
+const spillHer = spillVed(REF), spillMain = new Set(spillVed(mb));
+{
+  const f0 = feil.length;
+  for (const id of spillHer) {
+    if (!SPILL_ID.test(id)) { feil.push(`Mappenavnet spill/${id}/ er ikke gyldig (små bokstaver, tall og -).`); continue; }
+    const fil = `spill/${id}/${OPPSETTFIL}`, ny = vis(REF, fil), gml = vis(mb, fil);
+    if (spillMain.has(id) && ny !== gml)
+      feil.push(`${id}: PR-en ${gml === null ? 'legger til' : ny === null ? 'sletter' : 'endrer'} ${fil}. Testoppsettet for et spill som finnes på main, står i test/index.html og endres bare med særskilt kontroll.`);
+    if (ny !== null) { const r = lesOppsett(ny); if (r.feil.length) feil.push(`${fil} er ugyldig: ${r.feil.join('; ')}.`); }
+  }
+  // Et spill fra main som mangler på commiten, er fjernet eller har fått nytt navn. Det får da ikke det betrodde oppsettet,
+  // og det må derfor kontrolleres særskilt av eieren.
+  for (const id of spillMain) if (!spillHer.includes(id))
+    feil.push(`Spillet ${id} finnes på main, men ikke på commiten (fjernet eller nytt navn). Det krever særskilt kontroll av eieren.`);
+  const nye = spillHer.filter(id => !spillMain.has(id));
+  if (feil.length === f0) ok.push(`Testoppsettet er ikke endret for spill som finnes på main${nye.length ? `. Nye spill registrert automatisk: ${nye.join(', ')}` : ''}.`);
+}
+if (ci) {
+  const f0 = feil.length;
+  if (!Array.isArray(ci.spill)) feil.push('Testresultatet fra Actions oppgir ikke hvilke spill som ble testet.');
+  else {
+    for (const id of spillHer) if (!ci.spill.includes(id)) feil.push(`Actions: spillet ${id} finnes på ${kort(HEAD)}, men ble ikke testet.`);
+    for (const id of ci.spill) if (!spillHer.includes(id)) feil.push(`Actions: testresultatet oppgir spillet ${id}, som ikke finnes på ${kort(HEAD)}.`);
+  }
+  if (!Array.isArray(ci.tester)) feil.push('Testresultatet fra Actions mangler listen over kontroller.');
+  const rader = Array.isArray(ci.tester) ? ci.tester.filter(t => t && typeof t === 'object') : [];
+  const godtatt = new Set(['ok', 'kjent', 'rettet']);
+  // «kjent» og «rettet» godtas bare for funn som står i KJENTE i test/index.html på main
+  const kjenteMain = new Set([...((/var KJENTE = \{([\s\S]*?)\n  \};/.exec(vis(mb, 'test/index.html') || '') || [])[1] || '').matchAll(/^\s*'([^'\n]+)':/gm)].map(m => m[1]));
+  for (const t of rader) if ((t.status === 'kjent' || t.status === 'rettet') && !kjenteMain.has(t.spill + '/' + t.id))
+    feil.push(`Actions: kontrollen ${t.suite}/${t.id} for ${t.spill} er «${t.status}», men funnet står ikke i KJENTE på main.`);
+  for (const id of spillHer) for (const [suite, kontroller] of Object.entries(PAKREVDE_KONTROLLER)) for (const k of kontroller) {
+    const r = rader.filter(t => t.suite === suite && t.spill === id && t.id === k);
+    if (!r.length) feil.push(`Actions: kontrollen ${suite}/${k} mangler for ${id}.`);
+    else if (r.some(t => !godtatt.has(t.status))) feil.push(`Actions: kontrollen ${suite}/${k} for ${id} er ${r.map(t => t.status).join(', ')}.`);
+  }
+  if (feil.length === f0) ok.push(`Actions testet alle ${spillHer.length} spill med alle påkrevde kontroller: ${spillHer.join(', ')}.`);
 }
 
 function kontrollerKvittering(navn, r) {
