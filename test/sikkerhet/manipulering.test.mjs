@@ -14,7 +14,7 @@
  *   Manipulerte scenarier endrer commiten eller testresultatet.
  * - Publiseringssjekken kjøres slik den ligger på disk, med --base basis og --ref <scenario>, og meldingene leses.
  */
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -74,26 +74,38 @@ function sjekk(sha, ci) {
   const fil = path.join(TMP, `resultat-${++nr}.json`);
   fs.writeFileSync(fil, JSON.stringify(ci));
   const env = { ...process.env }; delete env.GITHUB_ACTIONS; delete env.GITHUB_STEP_SUMMARY;
-  const r = spawnSync(process.execPath, [path.join(TMP, 'test', 'publiseringssjekk.mjs'), '--base', 'basis', '--ref', sha, '--ci-resultat', fil], { cwd: TMP, encoding: 'utf8', env, maxBuffer: 16 << 20 });
-  const linjer = (r.stdout || '').split('\n');
-  return { kode: r.status, feil: linjer.filter(l => l.startsWith('- FEIL: ')).map(l => l.slice(8)), varsler: linjer.filter(l => l.startsWith('- VARSEL: ')).map(l => l.slice(10)),
-    ok: linjer.filter(l => l.startsWith('- OK: ')).map(l => l.slice(6)), stderr: r.stderr || '' };
+  return new Promise(ferdig => {
+    const p = spawn(process.execPath, [path.join(TMP, 'test', 'publiseringssjekk.mjs'), '--base', 'basis', '--ref', sha, '--ci-resultat', fil], { cwd: TMP, env });
+    let stdout = '', stderr = '';
+    p.stdout.on('data', d => { stdout += d; });
+    p.stderr.on('data', d => { stderr += d; });
+    p.on('close', kode => {
+      const linjer = stdout.split('\n').map(l => l.replace(/\r$/, ''));
+      ferdig({ kode, feil: linjer.filter(l => l.startsWith('- FEIL: ')).map(l => l.slice(8)), varsler: linjer.filter(l => l.startsWith('- VARSEL: ')).map(l => l.slice(10)),
+        ok: linjer.filter(l => l.startsWith('- OK: ')).map(l => l.slice(6)), stderr });
+    });
+  });
 }
 
-// ---- Scenarier ----
-const tester = [];
+// ---- Scenarier: commitene lages én etter én, kontrollene kjøres parallelt etterpå ----
+const tester = [], jobber = [];
 const TAG = '[testoppsett]';
 const nyttSpill = (id, html = '') => `<!doctype html><html lang="no"><head><meta charset="utf-8"><title>${id}</title></head><body><div class="evn-ver">Versjon 0.1.0</div><button id="startBtn">Start</button>${html}</body></html>`;
-function forvent(id, navn, sha, ci, { feil = null, varsel = null, ingenFeil = false }) {
+function forvent(id, navn, sha, ci, forventning) { const plass = tester.push(null) - 1; jobber.push(() => vurder(id, navn, sha, ci, forventning).then(t => { tester[plass] = t; })); }
+async function vurder(id, navn, sha, ci, { feil = null, varsel = null, ingenFeil = false }) {
   let r, ok, info = '';
   try {
-    r = sjekk(sha, ci);
+    r = await sjekk(sha, ci);
     if (r.kode === 2 || (!r.feil.length && !r.varsler.length && !r.ok.length)) { ok = false; info = 'publiseringssjekken kjørte ikke: ' + r.stderr.slice(0, 200); }
     else if (feil) { const t = r.feil.find(x => feil.test(x)); ok = !!t && r.kode === 1; info = t ? 'Avvist: ' + t.slice(0, 220) : 'Ble IKKE avvist. Feil som kom: ' + r.feil.join(' | ').slice(0, 300); }
     else if (varsel) { const t = r.varsler.find(x => varsel.test(x)); ok = !!t; info = t ? 'Varsel: ' + t.slice(0, 220) : 'Mangler varsel'; }
     if (ingenFeil) { const t = r.feil.filter(x => x.startsWith(TAG)); ok = (ok ?? true) && !t.length; info = (info ? info + '. ' : '') + (t.length ? 'Uventet: ' + t.join(' | ').slice(0, 300) : 'Ingen feil i testoppsettet'); }
   } catch (e) { ok = false; info = String(e && e.message || e).slice(0, 300); }
-  tester.push({ id, navn, ok: !!ok, info });
+  return { id, navn, ok: !!ok, info };
+}
+async function kjorJobber(antall) {
+  const ko = [...jobber];
+  await Promise.all(Array.from({ length: antall }, async () => { while (ko.length) await ko.shift()(); }));
 }
 
 try {
@@ -185,6 +197,7 @@ try {
   if (f1) { sha = commit({ '.claude/evn-game-standard.md': standard.replace(f1 + '\n', '') });
     forvent('N34', 'Standard der F1 er fjernet, gir varsel, og F1 kreves fortsatt', sha, arligResultat(sha), { varsel: /fjerner gjeldende krav \(F1/ }); }
   else tester.push({ id: 'N34', navn: 'Standard der F1 er fjernet', ok: false, info: 'fant ikke F1 i standarden' });
+  await kjorJobber(Math.max(2, Math.min(8, os.cpus().length)));
 } finally {
   try { fs.rmSync(TMP, { recursive: true, force: true }); } catch {}
 }

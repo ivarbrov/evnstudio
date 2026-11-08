@@ -44,6 +44,25 @@ const REF = arg('ref', 'HEAD');
 const I_ACTIONS = process.env.GITHUB_ACTIONS === 'true';
 const git = (...a) => { try { return execFileSync('git', ['-c', 'core.quotePath=false', ...a], { cwd: ROT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20 }).trim(); } catch { return null; } };
 const vis = (rev, fil) => git('show', rev + ':' + fil);
+// Leser mange filer i ett git-kall (git cat-file --batch). Gir { sti: tekst }; filer som mangler, er utelatt.
+function visMange(rev, filer) {
+  if (!filer.length) return {};
+  let ut;
+  try { ut = execFileSync('git', ['cat-file', '--batch'], { cwd: ROT, input: filer.map(f => `${rev}:${f}`).join('\n') + '\n', stdio: ['pipe', 'pipe', 'ignore'], maxBuffer: 256 << 20 }); } catch { return {}; }
+  const svar = {};
+  let i = 0;
+  for (const f of filer) {
+    const nl = ut.indexOf(10, i);
+    if (nl < 0) break;
+    const hode = ut.toString('utf8', i, nl).split(' ');
+    i = nl + 1;
+    if (hode[1] !== 'blob') continue;
+    const n = Number(hode[2]);
+    svar[f] = ut.toString('utf8', i, i + n);
+    i += n + 1;
+  }
+  return svar;
+}
 const kort = sha => (sha || '–').slice(0, 7);
 
 const feil = [], varsler = [], ok = [];
@@ -188,8 +207,10 @@ function kontrollerKvittering(navn, r) {
 }
 
 // ---- QA-rapportene som er committet ----
-const rapporter = (git('ls-tree', '-r', '--name-only', REF, 'qa/rapporter/') || '').split('\n').filter(f => f.endsWith('.md')).map(fil => {
-  const t = vis(REF, fil) || '';
+const rapportfiler = (git('ls-tree', '-r', '--name-only', REF, 'qa/rapporter/') || '').split('\n').filter(f => f.endsWith('.md'));
+const rapporttekst = visMange(REF, rapportfiler);
+const rapporter = rapportfiler.map(fil => {
+  const t = rapporttekst[fil] || '';
   const g = /^Grunnlag: agent (\d+(?:\.\d+)*)[^,]*,\s*standard (.+?)\s*\(([0-9a-f]{40})\),\s*commit ([0-9a-f]{40})\b/m.exec(t);
   const k = /## Klar for testing hos Even\?\s*\n\s*(JA MED FORBEHOLD|JA|NEI)/.exec(t);
   return { fil, tekst: t, tittel: (/^# EVN Game QA: (.+)$/m.exec(t) || [])[1] || '', grunnlag: g && { agent: g[1], standard: g[2], hash: g[3], commit: g[4] },
@@ -216,7 +237,8 @@ const riktigGrunnlag = r => r.grunnlag.hash === standardHash && r.grunnlag.agent
 // ---- Hvilke spill er endret ----
 const alleSpill = (git('ls-tree', '--name-only', REF, 'spill/') || '').split('\n').filter(Boolean).map(f => f.replace(/^spill\//, ''));
 const felles = endrede.some(f => f === 'statistikk.js' || f.startsWith('vendor/') || f.startsWith('fonter/'));
-const spill = felles ? alleSpill : [...new Set(endrede.map(f => (/^spill\/([^/]+)\//.exec(f) || [])[1]).filter(Boolean))];
+// Registreringsfilen (evn-test.json) er testdata, ikke en del av spillet, og krever ikke ny spillversjon. Den kontrolleres under «Testoppsettet».
+const spill = felles ? alleSpill : [...new Set(endrede.filter(f => !f.endsWith('/' + FILNAVN)).map(f => (/^spill\/([^/]+)\//.exec(f) || [])[1]).filter(Boolean))];
 
 console.log(`HEAD: ${HEAD}\nSiste kodeendring: ${kode}\nStandard på den commiten: ${standardHash}\nAgentversjon: ${agentVersjon}\nEndrede spill: ${spill.join(', ') || 'ingen'}${felles ? ' (felles kode er endret)' : ''}\n`);
 
