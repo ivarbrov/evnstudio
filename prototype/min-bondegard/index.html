@@ -44,6 +44,7 @@
 <div class="topp">
   <button id="menyKnapp" aria-expanded="false" aria-controls="meny">Meny</button>
   <button id="bench">Mål ytelse</button>
+  <button id="langtest">Langtest</button>
   <div id="fpsChip" aria-live="off">…</div>
 </div>
 <div class="panel" id="meny">
@@ -54,16 +55,16 @@
   <div class="grp" role="group" aria-label="Kvalitet"><b>Kvalitet</b>
     <button data-kval="hoy">Høy</button><button data-kval="mobil">Mobil</button></div>
   <div class="grp" role="group" aria-label="Oppløsning"><b>Oppløsning</b>
-    <button data-pr="auto" title="Forsøk: prøver oppløsninger og velger én">Auto</button></div>
+    <span id="prKnapper"></span></div>
 </div>
-<div id="info">Testscene 0.4.4 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
+<div id="info">Testscene 0.4.5 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
 <div id="maal"><div id="maalTekst">…</div><div class="maalKnapper"><button id="kopier">Kopier</button><button id="lukkMaal">Lukk</button></div></div>
 
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.4.4';
+const VERSJON = 'testscene 0.4.5';
 const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
@@ -1017,7 +1018,7 @@ function lagRev() {
 }
 
 /* ======================= Input ======================= */
-const pek = new Map(); let dra = null, flyttet = 0, knip0 = 0, dist0 = 0; const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let sistHjul = 0; const pek = new Map(); let dra = null, flyttet = 0, knip0 = 0, dist0 = 0; const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 const el = renderer.domElement;
 el.addEventListener('pointerdown', e => { el.setPointerCapture(e.pointerId); pek.set(e.pointerId, {x: e.clientX, y: e.clientY}); flyttet = 0; if (pek.size === 1) dra = {x: e.clientX, y: e.clientY, t: cam.target.clone()}; if (pek.size === 2) { const [a, b] = [...pek.values()]; knip0 = Math.hypot(a.x - b.x, a.y - b.y); dist0 = cam.dist; } });
 el.addEventListener('pointermove', e => { if (!pek.has(e.pointerId)) return; pek.set(e.pointerId, {x: e.clientX, y: e.clientY});
@@ -1027,7 +1028,7 @@ el.addEventListener('pointermove', e => { if (!pek.has(e.pointerId)) return; pek
     cam.target.copy(dra.t).addScaledVector(fx, -dx * k).addScaledVector(fz, -dy * k * 1.35); cam.target.x = THREE.MathUtils.clamp(cam.target.x, -28, 28); cam.target.z = THREE.MathUtils.clamp(cam.target.z, -24, 24); plasserKamera(); } });
 el.addEventListener('pointerup', e => { if (pek.size === 1 && flyttet < 8) trykk(e.clientX, e.clientY); pek.delete(e.pointerId); if (!pek.size) dra = null; });
 el.addEventListener('pointercancel', e => { pek.delete(e.pointerId); dra = null; });
-el.addEventListener('wheel', e => { e.preventDefault(); cam.dist = THREE.MathUtils.clamp(cam.dist * (1 + Math.sign(e.deltaY) * 0.1), 18, 95); plasserKamera(); }, {passive: false});
+el.addEventListener('wheel', e => { e.preventDefault(); sistHjul = performance.now(); cam.dist = THREE.MathUtils.clamp(cam.dist * (1 + Math.sign(e.deltaY) * 0.1), 18, 95); plasserKamera(); }, {passive: false});
 function trykk(x, y) { ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
   const t = ray.intersectObjects(klikkbare, true)[0]; if (!t) return; const o = t.object.userData.eier || t.object;
   if (o.userData.omrade) { visOmrade(o.userData.omrade); if (o.isGroup) sprett.push({o, t: 0}); } else if (o.userData.art) { o.userData.hopp = o.userData.art === 'kylling' ? 0.4 : 0.5; visHjerte(o.position.clone().add(new THREE.Vector3(0, o.userData.art === 'kylling' ? 0.9 : 1.8, 0))); } else sprett.push({o, t: 0});
@@ -1059,10 +1060,10 @@ const DPR = devicePixelRatio || 1;
 const PR_TRINN = [0.75, 1, 1.25, 1.5, 2, 3].filter(v => v <= Math.max(1, DPR) + 0.01);
 // Standard er en FAST oppløsning (Mobil 1,0×, Høy min(dpr, 2)), til målinger på ekte enheter avgjør noe annet. Auto er et frivillig forsøk.
 const PR_STANDARD = String(KVAL === 'mobil' ? 1 : PR_TRINN.filter(v => v <= Math.min(DPR, 2) + 0.01).pop());
-let PR_VALG = (() => { try { const v = localStorage.getItem('mb-pr2'); return v && (v === 'auto' || PR_TRINN.includes(+v)) ? v : PR_STANDARD; } catch (e) { return PR_STANDARD; } })();
-const prGrp = document.querySelector('[data-pr="auto"]').parentNode;
+let PR_VALG = (() => { try { const v = localStorage.getItem('mb-pr2'); return v && PR_TRINN.includes(+v) ? v : PR_STANDARD; } catch (e) { return PR_STANDARD; } })(); // bare fast oppløsning (Auto er fjernet i 0.4.5)
+const prGrp = document.getElementById('prKnapper');
 PR_TRINN.forEach(v => { const kn = document.createElement('button'); kn.dataset.pr = String(v); kn.textContent = String(v).replace('.', ',') + '×'; prGrp.appendChild(kn); });
-let autoInfo = '', stoppTegning = false;
+let stoppTegning = false;
 function settPR(v) { renderer.setPixelRatio(v); }
 const nesteBilde = () => new Promise(r => requestAnimationFrame(r));
 const vent = ms => new Promise(r => setTimeout(r, ms));
@@ -1097,23 +1098,12 @@ async function maalRaf(sek) { await vent(400); nullstill(); await vent(sek * 100
 const k = (x, d = 0) => x.toFixed(d).replace('.', ',');
 const flate = pr => `${Math.round(innerWidth * pr)}×${Math.round(innerHeight * pr)}`;
 const skalaTekst = pr => `${k(pr, 2)}× → tegneflate ${flate(pr)} px, skjermen har ${flate(DPR)} px, ${k(Math.min(1, (pr / DPR) ** 2) * 100)} % av skjermpikslene` + (pr < DPR ? `, skaleres opp ${k(DPR / pr, 2)}×` : '');
-// Auto (forsøk): bruker ikke synkron tegnetid alene. Kandidaten må også gi minst 90 % av vist bildefrekvens ved 1,0×.
-async function kalibrer() {
-  if (maaler) return; maaler = true; maalBoks.classList.add('vis'); maalTekst.textContent = 'Auto prøver oppløsninger … ikke rør skjermen';
-  const kand = PR_TRINN.filter(v => v >= 1 && v <= Math.min(DPR, 2) + 0.01).reverse(), logg = [];
-  settPR(1); const base = await maalRaf(2); logg.push(`1,00×: vist ${k(base.fps)} b/s`); let valgt = 1;
-  for (const v of kand) { if (v === 1) break; const st = synkTid(v, 4), gt = await gpuTid(v, 6); const grense = gt !== null ? gt <= 12 : st <= 16;
-    if (!grense) { logg.push(`${k(v, 2)}×: synkron ${k(st, 1)} ms${gt !== null ? ', GPU ' + k(gt, 1) + ' ms' : ''} → for høy`); continue; }
-    settPR(v); const r = await maalRaf(2); logg.push(`${k(v, 2)}×: synkron ${k(st, 1)} ms${gt !== null ? ', GPU ' + k(gt, 1) + ' ms' : ''}, vist ${k(r.fps)} b/s`);
-    if (r.fps >= base.fps * 0.9) { valgt = v; break; } }
-  settPR(valgt); autoInfo = 'Auto valgte ' + k(valgt, 2) + '× (' + logg.join('; ') + ')'; maalTekst.textContent = autoInfo; maaler = false; nullstill();
-}
-function velgPR(v) { if (maaler) return; PR_VALG = v; try { localStorage.setItem('mb-pr2', v); } catch (e) {} velg('pr', v); if (v === 'auto') { if (robot) kalibrer(); } else { autoInfo = ''; settPR(+v); } nullstill(); }
+function velgPR(v) { if (maaler || lang.paa) return; PR_VALG = v; try { localStorage.setItem('mb-pr2', v); } catch (e) {} velg('pr', v); settPR(+v); nullstill(); }
 document.querySelectorAll('[data-pr]').forEach(b => b.onclick = () => velgPR(b.dataset.pr));
-velg('pr', PR_VALG); if (PR_VALG !== 'auto') settPR(+PR_VALG);
+velg('pr', PR_VALG); settPR(+PR_VALG);
 
 document.getElementById('bench').onclick = async () => {
-  if (maaler) return; maaler = true; maalBoks.classList.add('vis'); maalTekst.textContent = 'Måler … ikke rør skjermen (ca. 25 s)';
+  if (maaler || lang.paa) return; maaler = true; maalBoks.classList.add('vis'); maalTekst.textContent = 'Måler … ikke rør skjermen (ca. 25 s)';
   const info = Object.assign({}, renderer.info.render), prNaa = renderer.getPixelRatio(), linjer = [];
   const vist = await maalRaf(4);
   const synlig = scene.children.filter(c => c.visible); synlig.forEach(c => c.visible = false); const tom = await maalRaf(3); synlig.forEach(c => c.visible = true);
@@ -1126,23 +1116,50 @@ document.getElementById('bench').onclick = async () => {
     else if (tom.fps > vist.fps * 1.3) ind = `Indikasjon: tom scene gir ${k(tom.fps)} b/s og full scene ${k(vist.fps)} b/s. Innholdet påvirker bildefrekvensen under disse forholdene, men testen viser ikke om flaskehalsen er CPU, GPU, skygger eller oppløsning.`;
     else ind = 'Indikasjon: ingen tydelig forskjell mellom tom og full scene.';
   linjer.push(`Måling ${VERSJON} · ${KVAL} · ${TID} · ${innerWidth}×${innerHeight} CSS-px · dpr ${k(DPR, 2)}`,
-    `Oppløsning nå: ${PR_VALG === 'auto' ? 'Auto' : 'fast'} ${skalaTekst(prNaa)}`,
+    `Oppløsning nå: fast ${skalaTekst(prNaa)}`,
     `Vist (rAF):  ${k(vist.fps)} b/s · 1 % lav ${k(vist.lav)} · median ${k(vist.med, 1)} ms`, `Tom scene:   ${k(tom.fps)} b/s · median ${k(tom.med, 1)} ms`, ind,
     'Per oppløsning (samme kamera):', '  skala   tegneflate   vist b/s   synkron ms   GPU ms',
     ...rader.map(({v, r, st, gt}) => `  ${k(v, 2).padEnd(6)} ${flate(v).padEnd(12)} ${k(r.fps).padStart(5)}      ${k(st, 1).padStart(6)}      ${gt === null ? '–' : k(gt, 1)}`),
     `Skygge hvert 2. bilde ved ${k(prNaa, 2)}× (synkron): ${k(halv, 1)} ms mot ${k(hel, 1)} ms${gtHel !== null ? ' · GPU hel: ' + k(gtHel, 1) + ' ms' : ''}`,
     `Skyggekart i drift: ${SKYGGE_HALV ? 'hvert 2. bilde' : 'hvert bilde'} · tegnekall ${info.calls} · trekanter ${k(info.triangles / 1000)}k`,
     `GPU-tidsmåling: ${TQ ? 'tilgjengelig' : 'ikke tilgjengelig i denne nettleseren'} · GPU: ${gpu}`,
-    'Synkron = render() + readPixels: CPU + GPU + ventetid, ikke ren GPU-tid. Bruk som indikasjon.');
-  if (autoInfo) linjer.push(autoInfo);
+    'Synkron = render() + readPixels: CPU + GPU + ventetid. Ikke ren GPU-tid, og ikke egnet til å rangere oppløsninger (kan synke med høyere oppløsning).');
   window.__benchmark = {vist, tom, rader, hel, halv, gtHel, gpu, prNaa}; maalTekst.textContent = linjer.join('\n'); maaler = false; nullstill();
 };
+/* Langtest (0.4.5): registrerer hvert rAF-intervall over lang tid med fast oppløsning, og skiller bilder under panorering/zoom fra bilder i ro.
+   Et «hakk» er et intervall over 1,5 × median (et tapt skjermbilde). Stopper selv etter 10 minutter, eller hvis siden skjules. */
+const lang = {paa: false, t0: 0, iv: new Float32Array(150000), aktiv: new Uint8Array(150000), ts: new Float64Array(150000), n: 0, skjult: 0};
+const langKnapp = document.getElementById('langtest');
+function langStart() { if (maaler) return; Object.assign(lang, {paa: true, t0: performance.now(), n: 0, skjult: 0, pr: renderer.getPixelRatio()}); maalBoks.classList.remove('vis'); langKnapp.classList.add('on'); }
+function persentil(a, p) { const s = Array.from(a).sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(s.length * p))]; }
+function oppsummer(iv, med) { if (!iv.length) return null; const sum = iv.reduce((x, y) => x + y, 0); const hakk = iv.filter(v => v > med * 1.5).length;
+  return {n: iv.length, fps: 1000 * iv.length / sum, lav1: 1000 / persentil(iv, 0.99), lav01: 1000 / persentil(iv, 0.999), hakk, over33: iv.filter(v => v > 33.4).length, over50: iv.filter(v => v > 50).length, maks: Math.max(...iv)}; }
+function langStopp(grunn) {
+  if (!lang.paa) return; lang.paa = false; langKnapp.classList.remove('on'); langKnapp.textContent = 'Langtest';
+  const n = lang.n, iv = lang.iv.subarray(0, n), ak = lang.aktiv.subarray(0, n), ts = lang.ts.subarray(0, n), varighet = (performance.now() - lang.t0) / 1000;
+  if (n < 30) { maalBoks.classList.add('vis'); maalTekst.textContent = 'Langtesten var for kort.'; return; }
+  const med = persentil(iv, 0.5), alle = oppsummer(Array.from(iv), med);
+  const iBev = [], iRo = []; for (let i = 0; i < n; i++) (ak[i] ? iBev : iRo).push(iv[i]);
+  const bev = oppsummer(iBev, med), ro = oppsummer(iRo, med);
+  const rad = (navn, o) => o ? `${navn}: ${o.n} bilder · ${k(o.fps, 1)} b/s · 1 % lav ${k(o.lav1)} · 0,1 % lav ${k(o.lav01)} · hakk ${o.hakk} (${k(o.hakk / o.n * 100, 2)} %) · >50 ms ${o.over50} · maks ${k(o.maks)} ms` : `${navn}: –`;
+  const min = []; for (let m = 0; m * 60 < varighet; m++) { const del = []; for (let i = 0; i < n; i++) if (ts[i] >= m * 60000 && ts[i] < (m + 1) * 60000) del.push(iv[i]); const o = oppsummer(del, med); if (o) min.push(rad(`minutt ${m + 1}`, o)); }
+  const linjer = [`Langtest ${VERSJON} · ${KVAL} · ${TID} · ${innerWidth}×${innerHeight} CSS-px · dpr ${k(DPR, 2)}`,
+    `Oppløsning: fast ${skalaTekst(lang.pr)}`, `Varighet ${Math.floor(varighet / 60)} min ${k(varighet % 60)} s · ${grunn}${lang.skjult ? ' · siden var skjult ' + lang.skjult + ' gang(er)' : ''}`,
+    `Median bildeintervall ${k(med, 1)} ms (≈ ${k(1000 / med)} Hz). Hakk = intervall over ${k(med * 1.5, 1)} ms.`,
+    rad('alle', alle), rad('panorer/zoom', bev), rad('i ro', ro), 'Per minutt:', ...min,
+    'b/s er snitt. «1 % lav» og «0,1 % lav» er bildefrekvensen ved de tregeste 1 % og 0,1 % av bildene.'];
+  window.__langtest = {alle, bev, ro, med, varighet}; maalBoks.classList.add('vis'); maalTekst.textContent = linjer.join('\n');
+}
+langKnapp.onclick = () => lang.paa ? langStopp('stoppet manuelt') : langStart();
+document.addEventListener('visibilitychange', () => { if (document.hidden && lang.paa) lang.skjult++; });
+function langRegistrer(intervall, naa) { if (!lang.paa) return; if (document.hidden) return; if (lang.n < lang.iv.length) { lang.iv[lang.n] = intervall; lang.aktiv[lang.n] = pek.size > 0 || naa - sistHjul < 400 ? 1 : 0; lang.ts[lang.n] = naa - lang.t0; lang.n++; }
+  if (naa - lang.t0 > 600000) langStopp('stoppet automatisk etter 10 min'); }
 document.getElementById('lukkMaal').onclick = () => maalBoks.classList.remove('vis');
 document.getElementById('kopier').onclick = async () => { const t = maalTekst.textContent; try { await navigator.clipboard.writeText(t); document.getElementById('kopier').textContent = 'Kopiert'; } catch (e) { const r = document.createRange(); r.selectNodeContents(maalTekst); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); document.getElementById('kopier').textContent = 'Merket – kopier selv'; } setTimeout(() => document.getElementById('kopier').textContent = 'Kopier', 2500); };
 
 /* ======================= Bygg alt ======================= */
 function bygg() {
-  renderer.setPixelRatio(PR_VALG === 'auto' ? 1 : +PR_VALG); sol.shadow.mapSize.set(KV[KVAL].skygge, KV[KVAL].skygge); if (KVAL === 'mobil') renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.setPixelRatio(+PR_VALG); sol.shadow.mapSize.set(KV[KVAL].skygge, KV[KVAL].skygge); if (KVAL === 'mobil') renderer.shadowMap.type = THREE.PCFShadowMap;
   const kat = (navn, fn) => { const for_ = new Set(scene.children); fn(); scene.children.forEach(c => { if (!for_.has(c)) c.userData.kat = navn; }); };
   kat('terreng', lagTerreng); kat('omrader', lagOmrader); kat('vegetasjon', lagVegetasjon); kat('gjerde', lagGjerde); kat('laave', lagLave); kat('honsehus', lagHonsehus); kat('akre', lagAkre); kat('markedsbod', lagMarkedsbod); kat('detaljer', lagDetaljer); kat('vaer', lagVaer); settTid('dag'); lagRev();
   new THREE.GLTFLoader().load(ROBOT_URL, gl => {
@@ -1154,17 +1171,16 @@ function bygg() {
       hatt.position.set(hp.x, hp.y + hattOffset, hp.z); hatt.rotation.set(0, robot.rotation.y, 0); hatt.updateMatrixWorld(true); hode.attach(hatt); }
     robot.position.y = 0;
     document.getElementById('last').style.display = 'none';
-    if (PR_VALG === 'auto' && !new URLSearchParams(location.search).has('fast')) setTimeout(kalibrer, 1500); // bare hvis Auto er valgt; kjøres én gang
   }, undefined, () => { document.getElementById('last').textContent = 'Fant ikke roboten'; });
 }
 
 /* ======================= Løkke ======================= */
-const SKYGGE_HALV = KVAL === 'mobil' && !new URLSearchParams(location.search).has('helskygge'); if (SKYGGE_HALV) renderer.shadowMap.autoUpdate = false;
+const SKYGGE_HALV = new URLSearchParams(location.search).has('halvskygge'); // 0.4.5: av som standard, ingen dokumentert gevinst på mobil if (SKYGGE_HALV) renderer.shadowMap.autoUpdate = false;
 const klokke = new THREE.Clock(), tmp = new THREE.Vector3(), m4 = new THREE.Matrix4();
 let bildeNr = 0; const sisteSkyggeMaal = new THREE.Vector3(1e9, 0, 0);
 function loop(ts) {
   requestAnimationFrame(loop);
-  if (sistTs) { ramme.push(ts - sistTs); if (ramme.length > 600) ramme.shift(); } sistTs = ts; // rå intervaller, ikke avkappet (1 % lav kan nå bli lavere enn 20)
+  if (sistTs) { ramme.push(ts - sistTs); if (ramme.length > 600) ramme.shift(); langRegistrer(ts - sistTs, ts); } sistTs = ts; // rå intervaller, ikke avkappet (1 % lav kan nå bli lavere enn 20)
   const dt = Math.min(klokke.getDelta(), 0.05), t = klokke.elapsedTime; // dt er avkappet bare for animasjonene
   if (mixer) mixer.update(dt); if (revMixer) revMixer.update(dt);
   if (bobleTid > 0 && rev) { bobleTid -= dt; tmp.copy(rev.position); tmp.y += 2.6; tmp.project(camera); boble.style.left = ((tmp.x + 1) / 2 * innerWidth) + 'px'; boble.style.top = ((1 - tmp.y) / 2 * innerHeight) + 'px'; if (bobleTid <= 0) boble.style.display = 'none'; }
@@ -1185,8 +1201,9 @@ function loop(ts) {
   // Mobil: skyggekartet tegnes hvert 2. bilde (og alltid når kameraet flyttes). Skyggene til roboten og dyrene oppdateres da 30 ganger i sekundet.
   if (SKYGGE_HALV) { bildeNr++; renderer.shadowMap.needsUpdate = bildeNr % 2 === 0 || !sisteSkyggeMaal.equals(cam.target); if (renderer.shadowMap.needsUpdate) sisteSkyggeMaal.copy(cam.target); }
   if (!stoppTegning) renderer.render(scene, camera);
+  if (lang.paa && t - sisteVis > 0.5) { const sek = (ts - lang.t0) / 1000; langKnapp.textContent = `Stopp ${Math.floor(sek / 60)}:${String(Math.floor(sek % 60)).padStart(2, '0')}`; }
   if (t - sisteVis > 0.5 && !maaler) { sisteVis = t; const s = stat(ramme.slice(-120)); const i = renderer.info.render;
-    fpsChip.textContent = `${s.fps.toFixed(0)} b/s · ${PR_VALG === 'auto' ? 'auto ' : 'fast '}${renderer.getPixelRatio().toFixed(2).replace('.', ',')}× · ${i.calls} kall`; }
+    fpsChip.textContent = `${s.fps.toFixed(0)} b/s · ${renderer.getPixelRatio().toFixed(2).replace('.', ',')}×` + (innerWidth > 480 ? ` · ${i.calls} kall` : ''); }
 }
 
 /* Kostnadsanalyse: tegner scenen mange ganger og måler tid per kategori */

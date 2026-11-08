@@ -56,3 +56,10 @@ Status: prototype, ikke spill. Ingen spillogikk, lagring, statistikk eller musik
   - Auto bruker ikke synkron tegnetid alene. En høyere oppløsning må også gi minst 90 % av den viste bildefrekvensen ved 1,0×.
   - «Mål ytelse» måler vist b/s, synkron tid og GPU-tid ved 1,0×, 1,5× og 2× med samme kamera, og viser tegneflate og skala mot dpr. Testen med tom scene omtales som en indikasjon.
 - 0.4.4: to trær stod i veien. Trær og busker holder nå avstand til veien, slik at heller ikke kronene henger over den.
+- 0.4.5: langtest, og to forsøk er tatt bort. Ingen grafiske endringer.
+  - Langtest: knappen «Langtest» registrerer hvert rAF-intervall med fast oppløsning til den stoppes, eller i høyst 10 minutter.
+    - Rapporten deler bildene i «panorer/zoom» og «i ro», og viser hvert minutt for seg.
+    - Den viser snitt, 1 % lav og 0,1 % lav, hakk (intervall over 1,5 × median), antall intervaller over 50 ms og lengste intervall.
+    - Den registrerer om siden har vært skjult.
+  - Auto er fjernet. Vi bruker bare fast oppløsning, fordi synkron tid ikke kan rangere oppløsninger (målingen på mobil viste lavere tid ved høyere oppløsning).
+  - Skyggekartet tegnes igjen i hvert bilde. Å tegne det hvert annet bilde ga ingen dokumentert gevinst på mobil. `?halvskygge` slår det på for test.
