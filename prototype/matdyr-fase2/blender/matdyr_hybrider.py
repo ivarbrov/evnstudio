@@ -502,76 +502,147 @@ def shakeand():
     eksporter(rot, 'shakeand')
 
 # ---------------------------------------------------------------- 5 Spagettipingvin
+def pasta_tekstur(navn, B=1024, H=1024, mage=True):
+    """Spagetti som er viklet rundt kroppen, malt i én tekstur med normalkart (relieff), i stedet for løse rør.
+    u går rundt kroppen (sømmen bak), v nedenfra og opp. Magen foran er lys spagetti, ryggen svart blekksprutpasta."""
+    import numpy as np
+    u = (np.arange(B) + 0.5) / B; v = (np.arange(H) + 0.5) / H
+    U, V = np.meshgrid(u, v)
+    a = U * 2 * math.pi + math.pi / 2          # vinkel rundt kroppen; foran (-Y) er a = -pi/2 + 2pi
+    # Nudlene går nesten vannrett rundt, med myke bølger og litt skrått, slik at de ser viklet ut
+    fase = V * 30 + 0.55 * np.sin(a * 2 + V * 4) + 0.25 * np.sin(a * 5 + 1.3) + 0.12 * np.sin(a * 11 + V * 20) + 0.9 * U
+    f = fase - np.floor(fase)
+    s = np.abs(f - 0.5) * 2                     # 0 midt på nudelen, 1 i fugen
+    hoyde = np.sqrt(np.clip(1 - s ** 2, 0, 1))  # rund nudel
+    # Noen nudler krysser over de andre (gir liv, men flaten er fortsatt sammenhengende)
+    kryss_f = V * 9 - 1.4 * np.sin(a * 1 + 0.7) - U * 3
+    kf = kryss_f - np.floor(kryss_f); ks = np.abs(kf - 0.5) * 2
+    kryss = np.clip((0.3 - ks) / 0.08, 0, 1) * np.clip((np.sin(a * 2 + 0.4) - 0.8) / 0.1, 0, 1) * (1 - np.clip((-np.sin(a) - 0.2) / 0.2, 0, 1))
+    hoyde = np.maximum(hoyde * 0.85, kryss * 1.0)
+    if mage:
+        foran = -np.sin(a)                                   # 1 rett foran
+        m = np.clip((foran - 0.4) / 0.07, 0, 1) * np.clip((0.72 - V) / 0.04, 0, 1)
+    else:
+        m = np.zeros_like(V)
+    lys_p = np.array([1.0, 0.88, 0.58]); mork_p = np.array([0.36, 0.4, 0.52])
+    base = lys_p[None, None, :] * m[..., None] + mork_p[None, None, :] * (1 - m[..., None])
+    skygge = 0.78 + 0.22 * hoyde                             # mørkere i fugene mellom nudlene
+    glans = np.clip(hoyde - 0.82, 0, 1) * 1.1                # lys stripe på toppen av hver nudel
+    farge = np.clip(base * skygge[..., None] + glans[..., None] * np.array([0.25, 0.22, 0.18]), 0, 1)
+    # Normalkart fra høyden
+    gy, gx = np.gradient(hoyde)
+    st = 2.2
+    nx, ny, nz = -gx * st, -gy * st, np.ones_like(hoyde)
+    l = np.sqrt(nx * nx + ny * ny + nz * nz); nx, ny, nz = nx / l, ny / l, nz / l
+    def bilde(navn2, rgb, farge_rom):
+        img = bpy.data.images.new(navn2, B, H, alpha=False)
+        if farge_rom: rgb = np.where(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
+        else: img.colorspace_settings.name = 'Non-Color'
+        px = np.concatenate([rgb, np.ones((H, B, 1))], axis=2).astype(np.float32)
+        img.pixels.foreach_set(px.ravel()); img.file_format = 'PNG'; img.pack(); return img
+    fimg = bilde(navn + '_farge', farge, True)
+    nimg = bilde(navn + '_normal', np.stack([nx * 0.5 + 0.5, ny * 0.5 + 0.5, nz * 0.5 + 0.5], axis=2), False)
+    mt = bpy.data.materials.new(navn); mt.use_nodes = True
+    nt = mt.node_tree; b = nt.nodes.get('Principled BSDF')
+    t = nt.nodes.new('ShaderNodeTexImage'); t.image = fimg; nt.links.new(t.outputs['Color'], b.inputs['Base Color'])
+    tn = nt.nodes.new('ShaderNodeTexImage'); tn.image = nimg
+    nm = nt.nodes.new('ShaderNodeNormalMap'); nm.inputs['Strength'].default_value = 1.0
+    nt.links.new(tn.outputs['Color'], nm.inputs['Color']); nt.links.new(nm.outputs['Normal'], b.inputs['Normal'])
+    b.inputs['Roughness'].default_value = 0.42
+    return mt, (lambda uu, vv: float(np.interp(0, [0], [0])))
+
+def sylinder_uv(o, senter, z0, z1, u0=0.0, ub=1.0):
+    """UV rundt en loddrett akse: u = vinkel (søm bak, +Y), v = høyde."""
+    me = o.data
+    if not me.uv_layers: me.uv_layers.new()
+    uvl = me.uv_layers.active.data
+    for p in me.polygons:
+        us = []
+        for li in p.loop_indices:
+            co = me.vertices[me.loops[li].vertex_index].co
+            a = math.atan2(co.y - senter[1], co.x - senter[0])
+            uu = ((a - math.pi / 2) % (2 * math.pi)) / (2 * math.pi)
+            us.append([li, uu, (co.z - z0) / (z1 - z0)])
+        if max(x[1] for x in us) - min(x[1] for x in us) > 0.5:
+            for x in us:
+                if x[1] < 0.5: x[1] += 1.0
+        for li, uu, vv in us: uvl[li].uv = (u0 + uu * ub, vv)
+
 def spagettipingvin():
-    """Hele kroppen er viklet av spagetti: svart blekksprutpasta på ryggen og vanlig spagetti på magen.
-    Løse nudler henger ned i kanten, vingene er bunter av nudler, og sausen renner fra hodet."""
+    """Én sammenhengende eggformet kropp der spagettien er viklet rundt og ligger som relieff i overflaten:
+    lys spagetti på magen, svart blekksprutpasta på ryggen. Myke, avrundede vinger av samme pasta.
+    Sausen med kjøttbolle ligger som en lue på toppen."""
     nullstill(); MATS.clear()
-    svart = mat('blekksprutpasta', '#232838', 0.45); pasta = mat('spagetti', '#f6d77a', 0.45); saus = mat('tomatsaus', '#d8432f', 0.35)
+    saus = mat('tomatsaus', '#d8432f', 0.35)
     kjott = mat('kjottbolle', '#7a3d25', 0.75); nebb = mat('nebb', '#ff9a2e', 0.4); parm = mat('parmesan', '#fff6dc', 0.6); basil = mat('basilikum', '#3fa34d', 0.5)
-    C, AX = Vector((0, 0.02, 0.62)), Vector((0.42, 0.38, 0.6))
-    def flate(a, z):   # punkt på eggformen (vinkel a rundt, høyde z i [-1, 1])
-        r = math.sqrt(max(0.0, 1 - z * z)) * (1 + 0.12 * (1 - z) * 0.5)   # litt tyngre nederst
-        return C + Vector((math.cos(a) * r * AX.x, math.sin(a) * r * AX.y, z * AX.z))
-    kjerne_s = prim('kule', 'kjerne_bak', svart, tuple(C), tuple(AX * 0.97), segments=40, ring_count=24)
-    kjerne_p = prim('kule', 'kjerne_foran', pasta, tuple(C + Vector((0, -0.04, -0.04))), (AX.x * 0.92, AX.y * 0.9, AX.z * 0.86), segments=40, ring_count=24)
-    nudler = []
+    pasta, _ = pasta_tekstur('spagettikropp')
+    vingepasta, _ = pasta_tekstur('spagettivinge', 512, 512, mage=False)
+    C, AX = Vector((0, 0.02, 0.62)), Vector((0.43, 0.39, 0.6))
+    z0, z1 = C.z - AX.z * 1.02, C.z + AX.z * 1.02
+    # Kroppen: eggform, litt tyngre nederst og litt smalere ved «nakken», og nudlene løftes som et svakt relieff
+    kropp = prim('kule', 'kropp_kjerne', pasta, tuple(C), tuple(AX), segments=128, ring_count=72)
+    for vt in kropp.data.vertices:
+        d = vt.co - C; zt = d.z / AX.z
+        bred = 1 + 0.13 * (1 - zt) * 0.5 - 0.05 * math.exp(-((zt - 0.42) / 0.18) ** 2)
+        vt.co.x = C.x + d.x * bred; vt.co.y = C.y + d.y * bred
+        if zt < -0.86: vt.co.z = C.z + max(d.z, -AX.z * 0.9)          # flat underside så den står støtt
+    sylinder_uv(kropp, C, z0, z1)
+    # Relieff: løft geometrien litt etter samme nudelmønster som teksturen (synlig i silhuetten)
+    me = kropp.data; uvl = me.uv_layers.active.data; vuv = {}
+    for li, lp in enumerate(me.loops): vuv[lp.vertex_index] = uvl[li].uv[:]
+    for vt in me.vertices:
+        uu, vv = vuv[vt.index]; a = uu * 2 * math.pi + math.pi / 2
+        fase = vv * 30 + 0.55 * math.sin(a * 2 + vv * 4) + 0.25 * math.sin(a * 5 + 1.3) + 0.12 * math.sin(a * 11 + vv * 20) + 0.9 * uu
+        f = fase - math.floor(fase); s = abs(f - 0.5) * 2
+        n = (vt.co - C); n.z *= 0.6; n.normalize()
+        if -0.85 < (vt.co.z - C.z) / AX.z < 0.8: vt.co += n * 0.009 * (math.sqrt(max(0, 1 - s * s)) - 0.5)
+    glatt(kropp)
+    # Sausen som en myk lue med drypp, kjøttbolle, parmesan og basilikum
     r = random.Random(17)
-    for k in range(46):
-        z0 = -0.85 + 1.62 * k / 45 + r.uniform(-0.03, 0.03); a0 = r.uniform(0, 2 * math.pi); spenn = r.uniform(1.4, 2.2); dz = r.uniform(-0.08, 0.08)
-        pts = []
-        for i in range(16):
-            t = i / 15; a = a0 + spenn * t; z = max(-0.95, min(0.92, z0 + dz * t + 0.04 * math.sin(t * 9 + k)))
-            pts.append(tuple(C + (flate(a, z) - C) * (1.04 + 0.015 * math.sin(t * 13 + k))))
-        # Del nudelen der den krysser fra mage til rygg, så magen blir en tydelig lys flate foran
-        mage = lambda a, z: math.sin(a) < -0.45 and z < 0.5
-        bit, forrige = [], None
-        for i, pt in enumerate(pts):
-            a = a0 + spenn * i / 15; f = mage(a, z0)
-            if forrige is not None and f != forrige and len(bit) >= 2:
-                nudler.append(kurve('n%d_%d' % (k, i), bit, 0.026, pasta if forrige else svart, rund=6, opp=3)); bit = [bit[-1]]
-            bit.append(pt); forrige = f
-        if len(bit) >= 2: nudler.append(kurve('n%d_s' % k, bit, 0.026, pasta if forrige else svart, rund=6, opp=3))
-    # Løse nudler henger ned rundt kanten nederst og gir en levende silhuett
-    for k in range(6):
-        a = [0.2, 0.6, 2.5, 2.95, 1.2, 1.95][k]; p0 = flate(a, -0.45); ut = Vector((math.cos(a), math.sin(a), 0))
-        pts = [tuple(p0), tuple(p0 + ut * 0.06 + Vector((0, 0, -0.06))), tuple(p0 + ut * 0.05 + Vector((0.02 * math.sin(k), 0, -0.12))), tuple(p0 + ut * 0.02 + Vector((0, 0, -0.1)))]
-        nudler.append(kurve('heng%d' % k, pts, 0.022, pasta if math.sin(a) < -0.3 else svart, rund=6, opp=3))
-    pasta_n = slaa_sammen('nudler', nudler)
-    # Saus som renner fra toppen, med kjøttbolle, parmesan og basilikum
-    sau = prim('kule', 'saus', saus, (0, 0.02, 1.13), (0.3, 0.28, 0.12), segments=40, ring_count=20)
+    sau = prim('kule', 'saus', saus, (0, 0.02, 1.13), (0.31, 0.29, 0.12), segments=48, ring_count=24)
     bm = bmesh.new(); bm.from_mesh(sau.data)
-    for v in bm.verts:
-        a = math.atan2(v.co.y - 0.02, v.co.x)
-        if v.co.z < 1.1:
-            for a0, d in [(0.3, 0.12), (1.3, 0.08), (2.2, 0.15), (3.4, 0.1), (4.4, 0.13), (5.4, 0.09)]:
-                da = math.atan2(math.sin(a - a0), math.cos(a - a0)); v.co.z -= d * math.exp(-(da * 4) ** 2)
-    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.z < 0.86], context='VERTS'); bm.to_mesh(sau.data); bm.free()
+    for vb in bm.verts:
+        a = math.atan2(vb.co.y - 0.02, vb.co.x)
+        if vb.co.z < 1.1:
+            for a0, d in [(0.3, 0.1), (1.3, 0.07), (2.2, 0.13), (3.4, 0.09), (4.4, 0.11), (5.4, 0.08)]:
+                da = math.atan2(math.sin(a - a0), math.cos(a - a0)); vb.co.z -= d * math.exp(-(da * 4) ** 2)
+    bmesh.ops.delete(bm, geom=[vb for vb in bm.verts if vb.co.z < 0.9], context='VERTS'); bm.to_mesh(sau.data); bm.free()
+    sau = subsurf(sau, 1); glatt(sau)
     kb = prim('kule', 'kjottbolle', kjott, (0.02, 0.06, 1.27), (0.12, 0.12, 0.11), segments=28, ring_count=16)
-    for v in kb.data.vertices: v.co += (v.co - Vector((0.02, 0.06, 1.27))).normalized() * 0.008 * math.sin(v.co.x * 90) * math.sin(v.co.z * 80)
-    ost = [prim('kule', 'parm%d' % i, parm, (r.uniform(-0.2, 0.2), r.uniform(-0.18, 0.22), 1.21 + r.uniform(-0.01, 0.03)), (0.02, 0.018, 0.01), segments=8, ring_count=5) for i in range(14)]
+    for vt in kb.data.vertices: vt.co += (vt.co - Vector((0.02, 0.06, 1.27))).normalized() * 0.008 * math.sin(vt.co.x * 90) * math.sin(vt.co.z * 80)
+    ost = [prim('kule', 'parm%d' % i, parm, (r.uniform(-0.2, 0.2), r.uniform(-0.18, 0.22), 1.22 + r.uniform(-0.01, 0.03)), (0.02, 0.018, 0.01), segments=8, ring_count=5) for i in range(10)]
     bb = prim('kule', 'basilblad', basil, (0.1, 0.04, 1.38), (0.07, 0.035, 0.012), (0.3, 0.2, 0.6), segments=16, ring_count=8)
-    kropp = slaa_sammen('kropp', [kjerne_s, kjerne_p, pasta_n, sau, kb, bb] + ost)
-    # Ansiktet: hvit maske, oransje nebb og store øyne
-    hx, hy, hz = 0, -0.33, 0.98
-    hd = [prim('kule', 'ansikt', mat('ansikt', '#f4f1ea', 0.55), (hx, hy + 0.04, hz), (0.28, 0.11, 0.18), segments=36, ring_count=20)]
-    hd.append(prim('kjegle', 'nebb', nebb, (hx, hy - 0.08, hz - 0.03), (0.07, 0.05, 0.12), (math.pi / 2 + 0.15, 0, 0), vertices=20, ss=1))
+    kropp = slaa_sammen('kropp', [kropp, sau, kb, bb] + ost)
+    # Ansiktet: hvit maske som ligger tett inntil kroppen, oransje nebb og store øyne
+    hx, hy, hz = 0, -0.335, 0.98
+    maske = prim('kule', 'ansikt', mat('ansikt', '#f4f1ea', 0.55), (hx, hy + 0.06, hz), (0.27, 0.09, 0.18), segments=40, ring_count=24)
+    hd = [maske]
+    hd.append(prim('kjegle', 'nebb', nebb, (hx, hy - 0.06, hz - 0.03), (0.07, 0.05, 0.12), (math.pi / 2 + 0.15, 0, 0), vertices=20, ss=1))
     for s in (-1, 1):
-        hd += oye('oye%d' % s, (hx + s * 0.1, hy - 0.04, hz + 0.05), 0.052)
-        hd.append(kinn('kinn%d' % s, (hx + s * 0.17, hy - 0.02, hz - 0.05), 0.035))
+        hd += oye('oye%d' % s, (hx + s * 0.1, hy - 0.02, hz + 0.05), 0.052)
+        hd.append(kinn('kinn%d' % s, (hx + s * 0.17, hy, hz - 0.05), 0.035))
     hode = pivot(slaa_sammen('hode', hd), (hx, hy + 0.15, hz - 0.1))
-    # Vinger: tette bunter av spagetti med saus på tuppen, formet som pingvinvinger
+    # Vinger: myke, flate og avrundede luffer som vokser ut fra sidene, med samme viklede pasta
     vinger = []
     for s, navn in [(-1, 'vinge_v'), (1, 'vinge_h')]:
-        v = []
-        for k in range(8):
-            o = (k - 3.5) * 0.022
-            pts = [(s * 0.4, o, 0.86), (s * (0.5 + 0.01 * k), -0.01 + o, 0.72), (s * (0.53 + 0.015 * math.sin(k)), 0.02 + o, 0.55), (s * (0.5 + 0.02 * math.cos(k)), 0.04 + o * 1.3, 0.38 + 0.012 * k)]
-            v.append(kurve('vingenudel%d%d' % (s, k), pts, 0.024, svart if k < 3 else pasta, rund=6, opp=3))
-        v.append(prim('kule', 'sausdrape%d' % s, saus, (s * 0.5, 0.03, 0.4), (0.05, 0.07, 0.04), segments=14, ring_count=8))
-        vinger.append(pivot(slaa_sammen(navn, v), (s * 0.4, 0.0, 0.86)))
+        w = prim('kule', navn + '_flate', vingepasta, (0, 0, 0), (0.075, 0.13, 0.27), segments=40, ring_count=24)
+        for vt in w.data.vertices:
+            t = (vt.co.z + 0.27) / 0.54                                   # 0 tupp, 1 rot
+            vt.co.y *= 0.75 + 0.35 * t                                   # bredere ved roten
+            vt.co.x *= 0.7 + 0.3 * t                                     # tynnere mot tuppen
+            vt.co.x += s * 0.05 * (1 - t) ** 2                           # tuppen bøyer seg litt ut
+        if not w.data.uv_layers: w.data.uv_layers.new()
+        uvl = w.data.uv_layers.active.data
+        for li, lp in enumerate(w.data.loops):
+            co = w.data.vertices[lp.vertex_index].co; uvl[li].uv = (0.5 + co.y * 1.6, 0.5 + co.z * 1.4)
+        w.data.transform(Matrix.Rotation(-s * 0.3, 4, 'Y'))
+        w.data.transform(Matrix.Rotation(-0.12, 4, 'X'))
+        w.data.transform(Matrix.Translation((s * 0.46, 0.03, 0.63)))
+        glatt(w)
+        vinger.append(pivot(slaa_sammen(navn, [w]), (s * 0.4, 0.03, 0.86)))
     bein = []
     for i, s in enumerate((-1, 1)):
-        f = prim('kule', 'fot%d' % i, nebb, (s * 0.15, -0.14, 0.03), (0.1, 0.14, 0.03), (0, 0, s * 0.25), segments=24, ring_count=10)
+        f = prim('kule', 'fot%d' % i, nebb, (s * 0.15, -0.14, 0.05), (0.1, 0.14, 0.035), (0, 0, s * 0.25), segments=24, ring_count=12)
         bein.append(pivot(slaa_sammen(['bein_vf', 'bein_hf'][i], [f]), (s * 0.15, 0, 0.1)))
     rot = rot_node('Spagettipingvin'); forelder([kropp, hode] + vinger + bein, rot)
     eksporter(rot, 'spagettipingvin')

@@ -6,10 +6,17 @@
   const r = new T.WebGLRenderer({ antialias: true }); r.setPixelRatio(Math.min(2, devicePixelRatio)); r.outputEncoding = T.sRGBEncoding; r.toneMapping = T.ACESFilmicToneMapping; r.shadowMap.enabled = true; r.shadowMap.type = T.PCFSoftShadowMap;
   document.getElementById('v').appendChild(r.domElement);
   const s = new T.Scene(); s.background = new T.Color('#bfe3f7').convertSRGBToLinear();
+  const MB = EVNMiljo.PROFIL === 'mb';
+  if (MB) {
+    // Min Bondegård-profilen: samme lys som spillscenen med ?profil=mb, solen fra samme kant
+    const L = EVNMiljo.lys(s, r, 'hoy'); s.background = new T.Color('#cfe6f2').convertSRGBToLinear(); s.fog = null;
+    L.sol.position.set(-26, 40, 22).normalize().multiplyScalar(10); Object.assign(L.sol.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8, near: 0.5, far: 40 });
+  } else {
   s.add(new T.HemisphereLight(new T.Color('#eaf6ff').convertSRGBToLinear(), new T.Color('#86b866').convertSRGBToLinear(), 0.8));
   const sol = new T.DirectionalLight(0xfff1dc, 1.3); sol.position.set(4, 8, 6); sol.castShadow = true; sol.shadow.mapSize.set(2048, 2048); Object.assign(sol.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8 }); sol.shadow.bias = -0.0004; s.add(sol);
   const fyll = new T.DirectionalLight(0xcfe4ff, 0.4); fyll.position.set(-5, 3, -4); s.add(fyll);
-  const bakke = new T.Mesh(new T.CircleGeometry(30, 48), new T.MeshStandardMaterial({ color: new T.Color('#8fd16c').convertSRGBToLinear(), roughness: 1 })); bakke.rotation.x = -Math.PI / 2; bakke.receiveShadow = true; s.add(bakke);
+  }
+  const bakke = new T.Mesh(new T.CircleGeometry(30, 48), new T.MeshStandardMaterial({ color: new T.Color(MB ? '#5eaa2f' : '#8fd16c').convertSRGBToLinear(), roughness: 1 })); bakke.rotation.x = -Math.PI / 2; bakke.receiveShadow = true; s.add(bakke);
   const cam = new T.PerspectiveCamera(30, 1, 0.1, 100);
   const loader = new T.GLTFLoader(), figurer = [];
   const avstand = 2.3;

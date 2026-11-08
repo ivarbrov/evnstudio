@@ -18,7 +18,7 @@
   const camera = new T.PerspectiveCamera(42, 1, 0.05, 500);
   let sol, bakke, LYS = null;
   // Delt skjerm for å sammenligne tonemapping på samme skjerm: venstre ACES, høyre uten (?tonemap=sammenlign)
-  const SAMMENLIGN = NY && new URLSearchParams(location.search).get('tonemap') === 'sammenlign';
+  const SAMMENLIGN = NY && new URLSearchParams(location.search).get('tonemap') === 'sammenlign' && EVNMiljo.PROFIL !== 'mb';
   if (NY) {
     LYS = EVNMiljo.lys(scene, renderer, KV); sol = LYS.sol;
   } else {
@@ -236,6 +236,21 @@
   const DX = 4.2, DZ = 4.4, EH = 5.6;                       // avstand mellom plasser, etasjehøyde
   const BX = 4 * DX + 1.2, BZ = 3 * DZ + 1.2;               // gulvflate per etasje (4 × 3 plasser)
   function planker() {
+    if (NY && EVNMiljo.PROFIL === 'mb') {
+      // Samme planketekstur som Min Bondegård 0.4 (brune bord: årer, kvister, lys kant, mørk fuge)
+      const cv = document.createElement('canvas'); cv.width = cv.height = 512; const x = cv.getContext('2d'); let fr = 7; const rnd = () => (fr = (fr * 16807) % 2147483647) / 2147483647, rr = (a, b) => a + rnd() * (b - a);
+      const n = 8, bw = 512 / n;
+      for (let i = 0; i < n; i++) {
+        const c = new T.Color('#a7774a'); c.offsetHSL((rnd() - 0.5) * 0.015, (rnd() - 0.5) * 0.06, (rnd() - 0.5) * 0.07); x.fillStyle = '#' + c.getHexString(); x.fillRect(i * bw, 0, bw, 512);
+        x.globalAlpha = 0.13; x.strokeStyle = '#000';
+        for (let k = 0; k < 9; k++) { x.lineWidth = rr(0.6, 1.6); x.beginPath(); const x0 = i * bw + rr(4, bw - 4); x.moveTo(x0, 0); for (let y = 0; y <= 512; y += 16) x.lineTo(x0 + Math.sin(y * 0.02 + k) * 2.5, y); x.stroke(); }
+        x.globalAlpha = 0.18; x.fillStyle = '#fff'; x.fillRect(i * bw + 2, 0, 3, 512);
+        x.globalAlpha = 0.5; x.fillStyle = '#000'; [24, 488].forEach(y => { x.beginPath(); x.arc(i * bw + bw / 2, y, 2.2, 0, 7); x.fill(); });
+        if (rnd() < 0.4) { x.globalAlpha = 0.22; x.beginPath(); x.ellipse(i * bw + rr(12, bw - 12), rr(60, 452), 5, 9, 0, 0, 7); x.fill(); }
+        x.globalAlpha = 1; x.fillStyle = '#4a3020'; x.fillRect(i * bw, 0, 3, 512);
+      }
+      const t = new T.CanvasTexture(cv); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(8, 6); t.encoding = T.sRGBEncoding; t.anisotropy = 4; return t;
+    }
     if (NY) {
       const cv = document.createElement('canvas'); cv.width = 512; cv.height = 512; const x = cv.getContext('2d'), F = ['#c08a52', '#b7804a', '#c8945c', '#ad7743'];
       for (let i = 0; i < 8; i++) {
@@ -251,7 +266,8 @@
     for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? '#b07a45' : '#a46d3b'; x.fillRect(0, i * 32, 256, 32); x.fillStyle = 'rgba(70,40,15,.35)'; x.fillRect(0, i * 32, 256, 2); x.fillRect((i * 97) % 256, i * 32, 2, 32); }
     const t = new T.CanvasTexture(cv); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(4, 3); t.encoding = T.sRGBEncoding; return t;
   }
-  const plankeMat = new T.MeshStandardMaterial({ map: planker(), roughness: 0.85 });
+  const plankeMat = (() => { const t = planker(); if (!(NY && EVNMiljo.PROFIL === 'mb')) return new T.MeshStandardMaterial({ map: t, roughness: 0.85 });
+    const b = t.clone(); b.encoding = T.LinearEncoding; b.needsUpdate = true; return new T.MeshStandardMaterial({ map: t, bumpMap: b, bumpScale: 0.025, roughness: 0.85 }); })();
   const ROD = '#b8382f', HVIT = '#f6f1e6';
   // Stolpe med avrundede kanter (deles av alle stolper; skaleres til riktig mål)
   const rundStolpeGeo = (() => { const sh = new T.Shape(), r = 0.18, a = 0.5; sh.moveTo(-a + r, -a); sh.lineTo(a - r, -a); sh.quadraticCurveTo(a, -a, a, -a + r); sh.lineTo(a, a - r); sh.quadraticCurveTo(a, a, a - r, a); sh.lineTo(-a + r, a); sh.quadraticCurveTo(-a, a, -a, a - r); sh.lineTo(-a, -a + r); sh.quadraticCurveTo(-a, -a, -a + r, -a);
@@ -571,9 +587,12 @@
     // Matdyr-regns bakke: rolig gress, grus på tunet, jordstier, skogbunn under trærne. Store flater får lite støy,
     // så matdyrene er det som trekker blikket.
     const S = EVNMiljo.stoy, LCc = EVNMiljo.LC, glatt = (a, b, v) => Math.max(0, Math.min(1, (v - a) / (b - a)));
-    const GR = LCc('#7bc457'), GR_L = LCc('#88cc62'), GR_M = LCc('#6eb54e'), GRUS = LCc('#cdb993'), GRUS_M = LCc('#a8977a'), JORD = LCc('#b58a5c'), SKOG = LCc('#5f9442'), SKOG_B = LCc('#7d7148');
+    const MB = EVNMiljo.PROFIL === 'mb';
+    // Min Bondegård-profilen: samme gressgrønne som 0.4 (kalibrert mot skjermbilde) og et mindre grustun, så gresset dominerer rundt gården
+    const GR = LCc(MB ? '#5eaa2f' : '#7bc457'), GR_L = LCc(MB ? '#66b235' : '#88cc62'), GR_M = LCc(MB ? '#56a02b' : '#6eb54e'), GRUS = LCc('#cdb993'), GRUS_M = LCc('#a8977a'), JORD = LCc('#b58a5c'), SKOG = LCc('#5f9442'), SKOG_B = LCc('#7d7148');
     const grus = (x, z) => { const kant = 0.06 * S(x * 0.9, z * 0.9);
-      return Math.max(1 - glatt(0.9, 1.0, ell(x, z, 19, 16) + kant), 1 - glatt(0.85, 1.0, ell(x + 19, z - 0.5, 7, 10) + kant)); };
+      return Math.max(MB ? 0 : 1 - glatt(0.9, 1.0, ell(x, z, 19, 16) + kant),   // Min Bondegård-profilen: gress helt inn til gården, steinhellene er stien
+       1 - glatt(0.85, 1.0, ell(x + 19, z - 0.5, 7, 10) + kant)); };
     const seg = (x, z, x0, z0, x1, z1, b) => { const dx = x1 - x0, dz = z1 - z0, t = Math.max(0, Math.min(1, ((x - x0) * dx + (z - z0) * dz) / (dx * dx + dz * dz))); return Math.hypot(x - x0 - dx * t, z - z0 - dz * t) < b ? 1 : 0; };
     const jord = (x, z) => Math.max(sti(x, z), seg(x, z, -10, -6, -16, -6, 1.6), seg(x, z, -10, 2, -15, 6.5, 1.4), seg(x, z, 0, 9, 10.9, 12, 1.4) * 0.9, seg(x, z, 10, 8, 14, 9.2, 1.3) * 0.8);
     const skog = (x, z) => glatt(1.0, 1.35, ell(x, z, 40, 32)) * (iAker(x, z, 4) ? 0 : 1);
@@ -601,6 +620,8 @@
     vis('blomst_rod', blomster.filter((_, i) => i % 3 === 0), { skygge: false }); vis('blomst_gul', blomster.filter((_, i) => i % 3 === 1), { skygge: false }); vis('blomst_hvit', blomster.filter((_, i) => i % 3 === 2), { skygge: false });
     // Gresstuster overalt der det ikke står noe
     vis('gress', EVNMiljo.spred(Math.round(1100 * q.gress), { fra: [-75, -60], til: [75, 75], frø: 13, skala: [1.0, 2.0], lov: (x, z) => sti(x, z) === 0 && !iAker(x, z, 0.8) && grus(x, z) < 0.1 && ell(x, z, 75, 65, 8) < 1 && (Math.abs(Math.sqrt(ell(x, z, 30, 22)) - 1) < 0.05 || (iAker(x, z, 2) && !iAker(x, z, 0.8))) && EVNMiljo.stoy(x * 1.6, z * 1.6) > 0.1 }), { skygge: false });   // bare langs gjerdet og åkerkanten
+    // Min Bondegård-profilen: spredte gresstuster i grupper over hele gressflaten (som i 0.4), men ikke under gården og på stiene
+    if (MB) vis('gress', EVNMiljo.spred(Math.round(900 * q.gress), { fra: [-70, -60], til: [70, 70], frø: 17, skala: [1.6, 2.6], lov: (x, z) => sti(x, z) === 0 && jord(x, z) === 0 && !iAker(x, z, 1) && ell(x, z, 15.5, 13) > 1 && ell(x, z, 70, 60, 8) < 1 && EVNMiljo.stoy(x * 0.9 + 3, z * 0.9) > 0.25 }), { skygge: false });
     // Pynt på tunet og enga
     vis('hoyball', [{ x: -14, z: 14, ry: 0.4 }, { x: -12.4, z: 15.2, ry: 1.1 }, { x: 14, z: -13, ry: 2 }, { x: 35, z: 30, ry: 0.3 }, { x: 34.5, z: 32, ry: 1.3 }]);
     vis('kasse', [{ x: 5.2, z: 18, ry: 0.2 }, { x: -35, z: 40, ry: 0.9 }]);
@@ -868,24 +889,26 @@
     const i = renderer.info.render, nv = NY ? EVNMiljo.NIVAER[KV] : null;
     d.innerHTML = '<h2>⚙️ Grafikk og ytelse</h2>' + (NY ? '<div class="rad">' + Object.keys(EVNMiljo.NIVAER).map(k => '<button type="button" data-k="' + k + '" aria-pressed="' + (k === KV) + '">' + EVNMiljo.NIVAER[k].navn + '</button>').join('') + '</div>' : '<p>Gammel grafikk (sammenligning).</p>') +
       '<p class="liten">' + (maaler ? maaler.gpu : '') + '<br>Skjerm ' + innerWidth + '×' + innerHeight + ' · piksler ×' + renderer.getPixelRatio() + ' · ' + i.calls + ' tegnekall · ' + Math.round(i.triangles / 1000) + 'k trekanter</p>' +
-      (NY ? '<div class="rad"><button type="button" id="tmBytt">' + (SAMMENLIGN ? '◻ Vanlig visning' : '◧ Sammenlign tonemapping (delt skjerm)') + '</button></div>' : '') + '<p id="maalRes" class="liten">Trykk «Mål» og la spillet stå i 10 sekunder.</p><div class="rad"><button type="button" id="maalStart">📊 Mål i 10 s</button><button type="button" id="maalBytt">' + (NY ? '↔ Vis gammel grafikk' : '↔ Vis ny grafikk') + '</button><button type="button" id="maalLukk">Lukk</button></div>';
+      (NY ? '<div class="rad"><button type="button" id="profilBytt">' + (EVNMiljo.PROFIL === 'mb' ? '↩ Vanlig grafikkprofil' : '🎨 Prøv Min Bondegård-profilen') + '</button></div>' : '') + (NY && EVNMiljo.PROFIL !== 'mb' ? '<div class="rad"><button type="button" id="tmBytt">' + (SAMMENLIGN ? '◻ Vanlig visning' : '◧ Sammenlign tonemapping (delt skjerm)') + '</button></div>' : '') + '<p id="maalRes" class="liten">Trykk «Mål» og la spillet stå i 10 sekunder.</p><div class="rad"><button type="button" id="maalStart">📊 Mål i 10 s</button><button type="button" id="maalBytt">' + (NY ? '↔ Vis gammel grafikk' : '↔ Vis ny grafikk') + '</button><button type="button" id="maalLukk">Lukk</button></div>';
     d.hidden = false;
     d.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { EVNMiljo.lagreKvalitet(b.dataset.k); const u = new URL(location.href); u.searchParams.set('kvalitet', b.dataset.k); location.href = u; });
     $('maalLukk').onclick = () => { d.hidden = true; };
+    if ($('profilBytt')) $('profilBytt').onclick = () => { const u = new URL(location.href); if (EVNMiljo.PROFIL === 'mb') u.searchParams.delete('profil'); else { u.searchParams.set('profil', 'mb'); u.searchParams.delete('tonemap'); } location.href = u; };
     if ($('tmBytt')) $('tmBytt').onclick = () => { const u = new URL(location.href); if (SAMMENLIGN) u.searchParams.delete('tonemap'); else u.searchParams.set('tonemap', 'sammenlign'); location.href = u; };
     $('maalBytt').onclick = () => { const u = new URL(location.href); if (NY) u.searchParams.set('grafikk', 'gammel'); else u.searchParams.delete('grafikk'); location.href = u; };
     $('maalStart').onclick = () => { $('maalRes').textContent = 'Måler …'; const t0 = performance.now(); setTimeout(() => {
       const r = maaler ? maaler.rapport(10) : { fps, ms: +(1000 / Math.max(1, fps)).toFixed(1), p95: '?' }, ii = renderer.info.render;
-      const tekst = 'Matdyr-regn prototype · ' + (NY ? 'ny grafikk, ' + nv.navn : 'gammel grafikk') + ' · ' + r.fps + ' FPS (snitt ' + r.ms + ' ms, 95 % under ' + r.p95 + ' ms) · ' + ii.calls + ' tegnekall · ' + Math.round(ii.triangles / 1000) + 'k trekanter · ' + innerWidth + '×' + innerHeight + '@' + renderer.getPixelRatio() + ' · ' + (maaler ? maaler.gpu : '');
+      const tekst = 'Matdyr-regn prototype · ' + (NY ? 'ny grafikk' + (EVNMiljo.PROFIL === 'mb' ? ' (profil mb)' : '') + ', ' + nv.navn : 'gammel grafikk') + ' · ' + r.fps + ' FPS (snitt ' + r.ms + ' ms, 95 % under ' + r.p95 + ' ms) · ' + ii.calls + ' tegnekall · ' + Math.round(ii.triangles / 1000) + 'k trekanter · ' + innerWidth + '×' + innerHeight + '@' + renderer.getPixelRatio() + ' · ' + (maaler ? maaler.gpu : '');
       $('maalRes').innerHTML = '<b>' + r.fps + ' FPS</b><br><span style="user-select:all">' + tekst + '</span>'; window.EVNMaaling = tekst; }, 10000); };
   }
+  const SOLRET = EVNMiljo.PROFIL === 'mb' ? [-18.2, 28, 15.4] : [12, 22, 10];
   function loop(na) {
     const ekteDt = (na - sist) / 1000, dt = Math.min(0.05, ekteDt); sist = na; const t = na / 1000;
     if (bane.auto && !REDUSERT) bane.teta += dt * 0.35;
     oppdaterKamera();
     if (fane === 'matdyr') md.alle.forEach(f => f.ny ? (!REDUSERT && animerNy(f, t, md.gaar)) : H.animer(f, t, md.gaar && !REDUSERT));
-    if (fane === 'spill') { steg(dt); if (krok.steg) krok.steg(dt, t); if (gd.robot) { const p = gd.robot.position; sol.position.set(p.x + 12, p.y + 22, p.z + 10); sol.target.position.set(p.x, p.y, p.z); } }
-    else if (sol.target.position.lengthSq()) { sol.position.set(12, 22, 10); sol.target.position.set(0, 0, 0); }
+    if (fane === 'spill') { steg(dt); if (krok.steg) krok.steg(dt, t); if (gd.robot) { const p = gd.robot.position; sol.position.set(p.x + SOLRET[0], p.y + SOLRET[1], p.z + SOLRET[2]); sol.target.position.set(p.x, p.y, p.z); } }
+    else if (sol.target.position.lengthSq()) { sol.position.set(...SOLRET); sol.target.position.set(0, 0, 0); }
     if (robotMixer) robotMixer.update(dt);
     if (maaler) maaler.ramme();
     if (adaptivSteg && !/adaptiv=0/.test(location.search)) adaptivSteg();

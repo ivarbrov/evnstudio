@@ -118,3 +118,15 @@ Bygg modellene på nytt: `python3 blender/matdyr_hybrider.py modeller` og `pytho
 - **Rampa:** Stolpene står loddrett. Bare håndløper og mellomlist følger helningen.
 - **Bakgrunn:** Det er færre steiner, blomster og gresstuster, og de står bare i klynger ved gjerdet og åkerkanten. Detaljteksturen har svakere kontrast.
 - **Optimalisering:** Enkle fargematerialer slås sammen til ett materiale med vertexfarger (`EVNMiljo.deler(..., { vf: true })`). Gården på nivå 9 på Høy har nå 189 tegnekall, mot 336 før denne endringen og 190 i forrige versjon.
+
+## Min Bondegård-profilen (8. november 2026, prøve)
+
+`?profil=mb` (eller ⚙️ → «🎨 Prøv Min Bondegård-profilen») gir Matdyr samme grafiske profil som Min Bondegård testscene 0.4. Uten parameteren er alt som før. Spillfunksjoner, ID-er, økonomi og lagring er uendret.
+
+- Lys som dagsoppsettet i 0.4: ingen tonemapping, eksponering 0,93, himmel #d6ecff/bakke 0x41602a 0,55, sol #ffe8c4 1,55 fra samme kant, fyll 0,22, gradert himmel og tåke mot horisontfargen.
+- Materialer etter navn fra Blender: planker, maling, stein, tak og høy får 0.4-teksturene som triplanar detalj i verdensrommet med svakt relieff. Fargen kommer fortsatt fra vertexfargene. Dekket bruker 0.4-plankene med bump.
+- Gress i 0.4-grønt (kalibrert mot skjermbilde), korte gresstrå i teksturen, ingen grustun rundt gården, spredte gresstuster i grupper.
+- Spagettipingvin er bygd om: én sammenhengende eggformet kropp med viklet spagetti som tekstur, normalkart og svakt relieff, og myke avrundede vinger. Animasjonsnodene er de samme.
+- Ikke gjort ennå: trekroner som én flate (som 0.4), låve og bygninger på tunet, de tre andre figurene.
+
+`sammenligning-mb-profil.png` viser Min Bondegård og Matdyr med samme kamera. Ytelse er ikke målt på ekte enheter (headless: 172 tegnekall på gårdsnivå 3 i oversikten, mot 171 før).
