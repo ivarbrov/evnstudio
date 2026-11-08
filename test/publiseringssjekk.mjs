@@ -13,14 +13,16 @@
  *      kontrolleres med reglene i test/spillregister.mjs fra main.
  *    - Registreringen til et spill som finnes på main, kan ikke endres i samme PR uten særskilt kontroll.
  *    - Testresultatet fra Actions må ha alle påkrevde kontroller for hvert spill, også nye spill.
- *    - Ny kode utenfor test/ kan ikke lese eller skrive testsiden (parent, top, frameElement, EVN…Resultat).
+ *    - Suiten «sikkerhet» (de negative testene) er kjørt og grønn når den finnes på main.
+ *    - Ny kode som peker mot en forelder eller testresultatet (parent, top, frameElement, EVN…Resultat), gir varsel.
+ *      Sperren er isolasjonen i test/kjor.mjs: hvert spill kjøres i egen fane med eget opphav.
  *    - Krav som er gjeldende på main, kreves selv om standarden på grenen fjerner dem.
  *
  * 1. Testene i Actions: --ci-resultat er resultatet av Actions sin egen kjøring av test/kjor.mjs.
  *    Den må gjelde HEAD, være kjørt på et rent arbeidstre, ha kjørt alle suiter og ikke ha feil.
  *    Rådgivende suiter (krav som ikke er gjeldende ennå) gir bare varsel. I Actions er --ci-resultat påkrevd.
  * 2. QA etter siste kodeendring: en rapport i qa/rapporter/ der «Grunnlag» viser full SHA for siste commit
- *    som endrer noe utenfor qa/, standardfilens hash og agentversjonen på den commiten.
+ *    som endrer noe annet enn QA-rapportene (qa/rapporter/*.md), standardfilens hash og agentversjonen på den commiten.
  * 3. Full QA for endrede spill: «Nivå: full», alle gjeldende krav-ID-er for spillet gjort rede for,
  *    konklusjon som ikke er NEI, og en testkvittering fra test/kjor.mjs for samme commit.
  *    Felles kode (statistikk.js, vendor/, fonter/) regnes som endring i alle spill.
@@ -71,7 +73,8 @@ if (!HEAD) { console.error('Fant ikke commiten ' + REF + '.'); process.exit(2); 
 const mb = git('merge-base', BASE, REF);
 if (!mb) { console.error('Fant ikke felles commit med ' + BASE + '.'); process.exit(2); }
 const endrede = (git('diff', '--name-only', mb, REF) || '').split('\n').filter(Boolean);
-const kode = git('log', '-1', '--format=%H', REF, '--', '.', ':(exclude)qa');
+// Bare QA-rapportene (qa/rapporter/*.md) er ikke kode. Andre filer i qa/ serveres som resten av nettstedet og regnes som kode.
+const kode = git('log', '-1', '--format=%H', REF, '--', '.', ':(exclude,glob)qa/rapporter/*.md');
 // Testene og arbeidsflyten skal være de samme som på main, ellers er testresultatet ikke betrodd.
 const betrodd = endrede.filter(f => f.startsWith('test/') || f.startsWith('.github/'));
 if (betrodd.length) feil.push(`[testoppsett] PR-en endrer testene eller arbeidsflyten (${betrodd.slice(0, 5).join(', ')}${betrodd.length > 5 ? ' …' : ''}). Testresultatet er da ikke betrodd. Eieren må gå gjennom endringen og eventuelt slå sammen med unntak.`);
@@ -169,7 +172,9 @@ const registrering = (rev, id) => lesRegistrering(git('cat-file', '-e', `${rev}:
     }
   }
   // Ny kode utenfor test/ som når testsiden fra et spill i rammen. Gjelder bare linjer PR-en legger til.
-  const tillagt = (git('diff', '-U0', '--no-color', '--no-ext-diff', mb, REF, '--', '.', ':(exclude)test', ':(exclude)qa', ':(exclude).github', ':(exclude).claude', ':(exclude)*.md') || '').split('\n');
+  // Bare et varsel til den som går gjennom PR-en: søket kan omgås. Sperren er at test/kjor.mjs kjører hvert spill
+  // i egen fane med eget opphav og måler fra en isolert JS-verden (se suiten «sikkerhet»).
+  const tillagt = (git('diff', '-U0', '--no-color', '--no-ext-diff', mb, REF, '--', '.', ':(exclude)test', ':(exclude,glob)qa/rapporter/*.md', ':(exclude).github') || '').split('\n');
   const TILGANG = [/\b(?:window|self|globalThis)\s*(?:\.\s*|\[\s*['"`])(?:parent|top|frameElement|opener)\b/,
     /(?:^|[^\w$.])(?:parent|top)\s*(?:\.|\[)\s*['"`]?(?:document|window|EVN|eval|Function|Object|JSON|Array|Promise|setTimeout|setInterval|fetch|location)\b/,
     /\bEVN(?:Test|Statistikk|Ecoins)Resultat\b/, /\bframeElement\b/];
@@ -179,7 +184,7 @@ const registrering = (rev, id) => lesRegistrering(git('cat-file', '-e', `${rev}:
     if (l.startsWith('+++ ')) fil = l.replace(/^\+\+\+ (b\/)?/, '');
     else if (l.startsWith('+') && TILGANG.some(re => re.test(l))) treff.push(fil);
   }
-  if (treff.length) feil.push(`[testoppsett] Ny kode kan nå testsiden fra et spill (parent, top, frameElement eller EVN…Resultat) i ${[...new Set(treff)].slice(0, 5).join(', ')}. Det krever særskilt kontroll.`);
+  if (treff.length) varsler.push(`[testoppsett] Ny kode prøver å nå en forelder, et toppvindu eller testresultatet (parent, top, frameElement eller EVN…Resultat) i ${[...new Set(treff)].slice(0, 5).join(', ')}. Testene er isolert fra spillet, men se gjennom koden.`);
   if (feil.length === f0) ok.push(`Testoppsettet: ${spillHer.length} spill testes automatisk${nye.length ? ` (nye: ${nye.join(', ')})` : ''}, registreringene er gyldige og testresultatet dekker alle.`);
 }
 
@@ -238,7 +243,7 @@ const riktigGrunnlag = r => r.grunnlag.hash === standardHash && r.grunnlag.agent
 const alleSpill = (git('ls-tree', '--name-only', REF, 'spill/') || '').split('\n').filter(Boolean).map(f => f.replace(/^spill\//, ''));
 const felles = endrede.some(f => f === 'statistikk.js' || f.startsWith('vendor/') || f.startsWith('fonter/'));
 // Registreringsfilen (evn-test.json) er testdata, ikke en del av spillet, og krever ikke ny spillversjon. Den kontrolleres under «Testoppsettet».
-const spill = felles ? alleSpill : [...new Set(endrede.filter(f => !f.endsWith('/' + FILNAVN)).map(f => (/^spill\/([^/]+)\//.exec(f) || [])[1]).filter(Boolean))];
+const spill = felles ? alleSpill : [...new Set(endrede.filter(f => !(f.startsWith('spill/') && f.split('/').length === 3 && f.endsWith('/' + FILNAVN))).map(f => (/^spill\/([^/]+)\//.exec(f) || [])[1]).filter(Boolean))];
 
 console.log(`HEAD: ${HEAD}\nSiste kodeendring: ${kode}\nStandard på den commiten: ${standardHash}\nAgentversjon: ${agentVersjon}\nEndrede spill: ${spill.join(', ') || 'ingen'}${felles ? ' (felles kode er endret)' : ''}\n`);
 
