@@ -13,3 +13,16 @@ Privat forhåndsvisning for Even: https://claude.ai/artifact/Apz1vbzisZvHr9qTHBw
 - Én figur: 42–103 tegnekall og 11–36k trekanter.
 - Gården på maks nivå med 40 matdyr: 396 tegnekall og 340k trekanter. Figurene er slått sammen per materiale og instansert, med halvt detaljnivå.
 - Budsjettet for mobil (fra Mørkeskogen-planen) er høyst 400 tegnekall og 600k trekanter. FPS må måles på Evens telefon.
+
+## Trinn 3, del 1: «🎮 Spill»-fanen
+
+Roboten kan gå, hoppe og ta spiralrampa opp til takterrassen.
+
+- PC: WASD eller piltaster for å gå, mellomrom for å hoppe, dra med musa for å snu kameraet.
+- Mobil: styrespak nede til venstre, hoppknapp nede til høyre.
+- Kollisjon: rekkverket på etasjene og langs rampa stopper roboten, også når den hopper. Rampa er åpen inn mot låven på hver repos, der den gule porten står. Roboten kan ikke gå inn under de lave delene av rampa.
+- Etasjene over roboten blir gjennomsiktige.
+
+`rutetest.mjs` lar roboten gå hele ruta automatisk. Testen sjekker høydene (6,05, 11,65 og 17,25), at roboten kommer inn i hver etasje, og at den ikke kommer ut over rekkverket.
+
+Ingen lagring, E-coins eller statistikk ennå.

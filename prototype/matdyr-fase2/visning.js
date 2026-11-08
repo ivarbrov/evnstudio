@@ -69,7 +69,8 @@
   el.addEventListener('wheel', e => { e.preventDefault(); bane.r *= 1 + Math.sign(e.deltaY) * 0.1; }, { passive: false });
 
   // ---------- EVN-roboten v2 (samme som i spillet, 3,0 høy) ----------
-  let robotMal = null, robotMixer = null;
+  let robotMal = null, robotMixer = null, robotAktNa = null; const robotAkt = {};
+  function spillAnim(navn) { if (robotAktNa === navn || !robotAkt[navn]) return; const ny = robotAkt[navn], gml = robotAkt[robotAktNa]; ny.reset().play(); if (navn === 'Jump') { ny.setLoop(T.LoopOnce); ny.clampWhenFinished = true; } if (gml) ny.crossFadeFrom(gml, 0.15, false); robotAktNa = navn; }
   const robotKlar = new Promise(ok => {
     try {
       const bin = atob(window.EVN_ROBOT_GLB), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
@@ -77,7 +78,7 @@
         const m = gl.scene; m.traverse(o => { if (o.isMesh) { o.castShadow = true; if (o.material && o.material.name === 'Main') o.material.color.setHex(0xffcc00).convertSRGBToLinear(); } });
         const b = new T.Box3().setFromObject(m), k = 3.0 / (b.max.y - b.min.y); m.scale.setScalar(k); m.position.y = -b.min.y * k;
         robotMal = { m, anim: gl.animations };
-        robotMixer = new T.AnimationMixer(m); const idle = gl.animations.find(a => a.name === 'Idle'); if (idle) robotMixer.clipAction(idle).play();
+        robotMixer = new T.AnimationMixer(m); gl.animations.forEach(a => robotAkt[a.name] = robotMixer.clipAction(a)); if (robotAkt.Idle) { robotAkt.Idle.play(); robotAktNa = 'Idle'; }
         ok();
       }, () => ok());
     } catch (e) { ok(); }
@@ -298,7 +299,7 @@
   function spiral(g, nr) {
     const { rr, kant } = rampedel(g, nr), k0 = kant[0], [r0, r1] = SPOR.repos[nr], km = kant.find(k => k.q[3] >= (r0 + r1) / 2);
     const vend = k => Math.atan2(k.t.x, k.t.y) + Math.PI;
-    if (nr === 1) skilt(rr, ['⬆ Start', 'Rampe 1: bakke → 2. etasje'], k0.ox - k0.n.x * -0.9 + 1.2, 0, k0.oz + 0.5, vend(k0) + Math.PI, '#5fcf6b', '#123a17');
+    if (nr === 1) skilt(rr, ['⬆ Start', 'Rampe 1: bakke → 2. etasje'], k0.ox - k0.n.x * -0.9 + 1.2, 0, k0.oz + 0.5, vend(k0), '#5fcf6b', '#123a17');
     if (nr === 1) skilt(rr, ['📍 Repos 1', 'Inn til 2. etasje'], km.ox - km.n.x * 1.2, km.q[4], km.oz - km.n.y * 1.2, -Math.PI / 2, '#ffe9a8');
     if (nr === 2) { const kk = kant[6]; skilt(rr, ['↗ Rampe 2', '2. → 3. etasje'], kk.ox - kk.n.x * 1.1, kk.q[4] - 0.2, kk.oz - kk.n.y * 1.1, -Math.PI / 2 + 0.6); skilt(rr, ['📍 Repos 2', 'Inn til 3. etasje'], km.ox - km.n.x * 1.2, km.q[4], km.oz - km.n.y * 1.2, Math.PI / 2, '#ffe9a8'); }
     if (nr === 3) { const kk = kant[6]; skilt(rr, ['↗ Rampe 3', '3. etasje → topp'], kk.ox - kk.n.x * 1.1, kk.q[4] - 0.2, kk.oz - kk.n.y * 1.1, Math.PI / 2 - 0.4); }
@@ -373,7 +374,7 @@
       }
     });
     // Roboten på bakkeplanet ved rampa
-    const r = lagRobot(); r.g.userData.ikkeFlett = true; r.g.position.set(A - 2.4, 0, HZ + 6.6); r.g.rotation.y = Math.PI * 0.85; g.add(r.g);   // ved foten av rampe 1
+    const r = lagRobot(); r.g.userData.ikkeFlett = true; r.g.position.set(A - 2.4, 0, HZ + 6.6); r.g.rotation.y = Math.PI * 0.85; g.add(r.g); gd.robot = r.g;   // ved foten av rampe 1
     // Etasjer over roboten gjøres gjennomsiktige
     if (gd.gjennom) g.traverse(o => { if (!o.isMesh) return; let p = o; while (p && p.userData.etasje === undefined) p = p.parent; const e = p ? p.userData.etasje : 0; if (e >= 1 && !(o.material.opacity < 0.3)) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.45; o.material.depthWrite = false; } });
     visKortGard(aapne, plasser.length);
@@ -416,11 +417,121 @@
     r2.appendChild(knapp('🔄 Snurr', bane.auto, () => { bane.auto = !bane.auto; byggPanelGard(); }));
     p.append(r1, r2);
   }
-  function velgFane(f) {
-    fane = f; $('fMatdyr').setAttribute('aria-pressed', String(f === 'matdyr')); $('fGard').setAttribute('aria-pressed', String(f === 'gard'));
-    md.gruppe.visible = f === 'matdyr'; gd.gruppe.visible = f === 'gard';
-    if (f === 'matdyr') { scene.fog.near = 80; visMatdyr(); byggPanelMatdyr(); } else { holder.classList.remove('ramme'); storrelse(); scene.fog.near = 120; byggGard(); settKameraGard(); byggPanelGard(); }
+  // =====================================================================
+  // ======================  FANE 3: SPILL (styring)  =====================
+  // =====================================================================
+  // Gå, hopp, spiralrampe og etasjer med kollisjon. Ingen lagring.
+  const sp = { niva: 9, vy: 0, paaBakken: true, inn: { x: 0, z: 0 }, taster: {}, hopp: false, etasje: -1, joy: null };
+  const HOPP_V = 10.5, TYNGDE = 28, FART = 8.5, STEG = 0.75;
+  const bygdeEtasjer = () => sp.niva >= 9 ? 3 : sp.niva >= 6 ? 2 : sp.niva >= 3 ? 1 : 0;
+  // Høyeste gangbare flate under (eller litt over) roboten
+  function flateVed(x, z, y) {
+    let best = 0; const kand = h => { if (h <= y + STEG && h > best) best = h; };
+    if (Math.abs(x) <= HX && Math.abs(z) <= HZ) for (let e = 0; e <= bygdeEtasjer(); e++) kand(e * EH + DEKKE);
+    const h = rampeHoyde(x, z); if (h !== null) kand(h);
+    return best;
   }
+  // Høyden på rampa rett over/under punktet, eller null utenfor rampa
+  function rampeHoyde(x, z) {
+    const maxD = SPOR.del[bygdeEtasjer()] ? SPOR.del[bygdeEtasjer()][1] : -1; if (maxD <= 0) return null;
+    let bd = 1e9, bq = null; for (const q of SPOR.p) { if (q[3] > maxD + 0.01) break; const d2 = (q[0] - x) ** 2 + (q[1] - z) ** 2; if (d2 < bd) { bd = d2; bq = q; } }
+    return bq && bd <= (W / 2) ** 2 ? bq[4] : null;
+  }
+  // Vegger: rekkverk på etasjene (med åpninger) og på begge sider av rampa (innsiden er åpen på reposene)
+  let vegger = [];
+  function byggVegger() {
+    vegger = []; const leg = (x0, z0, x1, z1, y) => vegger.push({ x0, z0, x1, z1, y0: y - 0.2, y1: y + 3.2 })   // høyere enn et hopp, så man ikke hopper over rekkverket;
+    for (let e = 1; e <= bygdeEtasjer(); e++) {
+      const y = e * EH + DEKKE, ap = VEI.apning[e];
+      for (const side of ['f', 'b', 'v', 'h']) {
+        const [x0, z0, x1, z1, ak] = { f: [-HX, HZ, HX, HZ, 'x'], b: [-HX, -HZ, HX, -HZ, 'x'], v: [-HX, -HZ, -HX, HZ, 'z'], h: [HX, -HZ, HX, HZ, 'z'] }[side];
+        if (!ap || ap.side !== side) leg(x0, z0, x1, z1, y);
+        else if (ak === 'x') { leg(x0, z0, ap.fra, z0, y); leg(ap.til, z0, x1, z1, y); } else { leg(x0, z0, x0, ap.fra, y); leg(x0, ap.til, x1, z1, y); }
+      }
+    }
+    const maxD = SPOR.del[bygdeEtasjer()] ? SPOR.del[bygdeEtasjer()][1] : -1; let forrige = null;
+    for (const q of SPOR.p) {
+      if (q[3] > maxD + 0.01) break;
+      if (forrige) {
+        const tx = q[0] - forrige[0], tz = q[1] - forrige[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l, y = Math.min(q[4], forrige[4]);
+        leg(forrige[0] - nx * W / 2, forrige[1] - nz * W / 2, q[0] - nx * W / 2, q[1] - nz * W / 2, y);        // ytterkant
+        const paaRepos = Object.values(SPOR.repos).some(([a, b]) => q[3] >= a - 0.3 && q[3] <= b + 0.3);
+        if (!paaRepos && y > 0.6) leg(forrige[0] + nx * W / 2, forrige[1] + nz * W / 2, q[0] + nx * W / 2, q[1] + nz * W / 2, y);   // innerkant
+      }
+      forrige = q;
+    }
+  }
+  const krysser = (ax, az, bx, bz, cx, cz, dx, dz) => { const d = (bx - ax) * (dz - cz) - (bz - az) * (dx - cx); if (Math.abs(d) < 1e-9) return false; const t = ((cx - ax) * (dz - cz) - (cz - az) * (dx - cx)) / d, u = ((cx - ax) * (bz - az) - (cz - az) * (bx - ax)) / d; return t >= 0 && t <= 1 && u >= 0 && u <= 1; };
+  function blokkert(x0, z0, x1, z1, y) {
+    const l = Math.hypot(x1 - x0, z1 - z0) || 1, ex = x1 + (x1 - x0) / l * 0.45, ez = z1 + (z1 - z0) / l * 0.45;   // robotens radius
+    return vegger.some(v => y >= v.y0 && y < v.y1 && krysser(x0, z0, ex, ez, v.x0, v.z0, v.x1, v.z1));
+  }
+  function etasjeNavn(y) { return y < EH * 0.6 ? '1. etasje (bakken)' : y < EH * 1.6 ? '2. etasje' : y < EH * 2.6 ? '3. etasje' : 'Takterrassen 🏁'; }
+  function steg(dt) {
+    const r = gd.robot; if (!r) return;
+    let ix = (sp.taster.d || sp.taster.arrowright ? 1 : 0) - (sp.taster.a || sp.taster.arrowleft ? 1 : 0) + sp.inn.x;
+    let iz = (sp.taster.w || sp.taster.arrowup ? 1 : 0) - (sp.taster.s || sp.taster.arrowdown ? 1 : 0) + sp.inn.z;
+    const m = Math.hypot(ix, iz); if (m > 1) { ix /= m; iz /= m; }
+    const fx = -Math.sin(bane.teta), fz = -Math.cos(bane.teta), rx = Math.cos(bane.teta), rz = -Math.sin(bane.teta);
+    const vx = (fx * iz + rx * ix) * FART, vz = (fz * iz + rz * ix) * FART, p = r.position;
+    const gaar = m > 0.1;
+    if (gaar) {
+      const nx = p.x + vx * dt, nz = p.z + vz * dt, y = p.y;
+      const ok = (x, z) => { const rh = rampeHoyde(x, z); return !(rh !== null && rh > y + STEG && rh < y + 2.6) && !blokkert(p.x, p.z, x, z, y) && flateVed(x, z, y) <= y + STEG && (x / 31) ** 2 + (z / 23) ** 2 < 1; };
+      if (ok(nx, nz)) { p.x = nx; p.z = nz; } else if (ok(nx, p.z)) p.x = nx; else if (ok(p.x, nz)) p.z = nz;
+      const mal = Math.atan2(vx, vz); let d = mal - r.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); r.rotation.y += d * Math.min(1, dt * 12);
+    }
+    const bunn = flateVed(p.x, p.z, p.y);
+    if (sp.hopp && sp.paaBakken) { sp.vy = HOPP_V; sp.paaBakken = false; spillAnim('Jump'); }
+    sp.hopp = false;
+    if (!sp.paaBakken || p.y > bunn + 0.02) { sp.vy -= TYNGDE * dt; p.y += sp.vy * dt; sp.paaBakken = false; if (p.y <= bunn) { p.y = bunn; sp.vy = 0; sp.paaBakken = true; } }
+    else p.y = bunn;   // følg rampa og trapp opp små kanter
+    if (sp.paaBakken) spillAnim(gaar ? 'Running' : 'Idle');
+    // Kamera følger roboten
+    bane.mal.set(p.x, p.y + 2.2, p.z);
+    // Etasjer over roboten blir gjennomsiktige
+    const e = p.y < EH * 0.6 ? 0 : p.y < EH * 1.6 ? 1 : p.y < EH * 2.6 ? 2 : 3;
+    if (e !== sp.etasje) { sp.etasje = e; settGjennom(e); $('spillStatus').textContent = '📍 ' + etasjeNavn(p.y); }
+  }
+  let etasjeMesher = [];
+  function forberedGjennom() {
+    etasjeMesher = [];
+    gd.gruppe.traverse(o => { if (!o.isMesh || o.isInstancedMesh && false) return; let q = o; while (q && q.userData.etasje === undefined) q = q.parent; if (!q || !q.userData.etasje) return; o.userData.orig = o.material; o.userData.glass = (() => { const m = o.material.clone(); m.transparent = true; m.opacity = 0.3; m.depthWrite = false; return m; })(); etasjeMesher.push([o, q.userData.etasje]); });
+  }
+  function settGjennom(e) { etasjeMesher.forEach(([o, et]) => { o.material = et > e ? o.userData.glass : o.userData.orig; }); }
+  function startSpill() {
+    gd.niva = sp.niva; gd.neste = false; gd.gjennom = false; byggGard(); byggVegger(); forberedGjennom();
+    const r = gd.robot; r.position.set(A, 0, HZ + 7); r.rotation.y = Math.PI; sp.vy = 0; sp.paaBakken = true; sp.etasje = -1;
+    Object.assign(bane, { teta: 0, fi: 1.12, r: innerWidth < 640 ? 18 : 15, rMin: 6, rMax: 40, auto: false });
+    $('kort').innerHTML = '<h1>Prøv rampa</h1><div>Gå opp spiralrampa og inn i etasjene. Prøv å hoppe.</div><div class="liten">' + (TOUCH ? 'Styrespak nede til venstre, hopp nede til høyre. Dra på skjermen for å snu kameraet.' : 'WASD eller piltaster: gå · Mellomrom: hopp · Dra med musa: kamera · Hjul: zoom') + '</div><div id="spillStatus" class="rute">📍 1. etasje (bakken)</div>';
+  }
+  function byggPanelSpill() {
+    const p = $('panel'); p.textContent = ''; const r1 = document.createElement('div'); r1.className = 'rad';
+    const smal = innerWidth < 640; [3, 6, 9].forEach(n => { const t = (smal ? 'Nivå ' : 'Gårdsnivå ') + n; r1.appendChild(knapp(t, sp.niva === n, () => { sp.niva = n; startSpill(); byggPanelSpill(); })); });
+    r1.appendChild(knapp(smal ? '↺ Start' : '↺ Til start', false, () => { startSpill(); }));
+    p.append(r1);
+  }
+  addEventListener('keydown', e => { if (fane !== 'spill') return; const k = e.key.toLowerCase(); if (k === ' ') { sp.hopp = true; e.preventDefault(); } sp.taster[k] = true; if (k.startsWith('arrow')) e.preventDefault(); });
+  addEventListener('keyup', e => { sp.taster[e.key.toLowerCase()] = false; });
+  addEventListener('blur', () => { sp.taster = {}; sp.inn = { x: 0, z: 0 }; });
+  // Mobil: styrespak og hoppknapp
+  const joy = $('joy'), knott = $('knott');
+  joy.addEventListener('pointerdown', e => { e.stopPropagation(); sp.joy = e.pointerId; joy.setPointerCapture(e.pointerId); flyttJoy(e); });
+  joy.addEventListener('pointermove', e => { if (e.pointerId === sp.joy) flyttJoy(e); });
+  const slippJoy = e => { if (e.pointerId === sp.joy) { sp.joy = null; sp.inn = { x: 0, z: 0 }; knott.style.transform = ''; } };
+  joy.addEventListener('pointerup', slippJoy); joy.addEventListener('pointercancel', slippJoy);
+  function flyttJoy(e) { const b = joy.getBoundingClientRect(), cx = b.left + b.width / 2, cy = b.top + b.height / 2; let dx = e.clientX - cx, dy = e.clientY - cy; const m = Math.hypot(dx, dy), R = b.width / 2 - 20; if (m > R) { dx *= R / m; dy *= R / m; } knott.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; sp.inn = { x: dx / R, z: -dy / R }; }
+  $('hopp').addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); sp.hopp = true; });
+
+  function velgFane(f) {
+    fane = f; $('fMatdyr').setAttribute('aria-pressed', String(f === 'matdyr')); $('fGard').setAttribute('aria-pressed', String(f === 'gard')); $('fSpill').setAttribute('aria-pressed', String(f === 'spill'));
+    md.gruppe.visible = f === 'matdyr'; gd.gruppe.visible = f !== 'matdyr';
+    document.body.classList.toggle('spiller', f === 'spill');
+    if (f === 'matdyr') { scene.fog.near = 80; visMatdyr(); byggPanelMatdyr(); }
+    else if (f === 'gard') { holder.classList.remove('ramme'); storrelse(); scene.fog.near = 120; byggGard(); settKameraGard(); byggPanelGard(); }
+    else { holder.classList.remove('ramme'); storrelse(); scene.fog.near = 120; startSpill(); byggPanelSpill(); }
+  }
+  $('fSpill').addEventListener('click', () => velgFane('spill'));
   $('fMatdyr').addEventListener('click', () => velgFane('matdyr'));
   $('fGard').addEventListener('click', () => velgFane('gard'));
 
@@ -433,6 +544,7 @@
     if (bane.auto && !REDUSERT) bane.teta += dt * 0.35;
     oppdaterKamera();
     if (fane === 'matdyr') md.alle.forEach(f => H.animer(f, t, md.gaar && !REDUSERT));
+    if (fane === 'spill') steg(dt);
     if (robotMixer) robotMixer.update(dt);
     if (gd.molle && gd.molle.userData.vinge && !REDUSERT) gd.molle.userData.vinge.rotation.z += dt * 0.8;
     renderer.render(scene, camera);
@@ -442,5 +554,6 @@
   storrelse();
   robotKlar.then(() => { velgFane('matdyr'); requestAnimationFrame(loop); window.EVNKlar = true; });
   // For automatiske skjermbilder: ?fane=gard&niva=6 eller ?figur=burgersau&vis=spill
-  window.EVNVis = (o) => { if (o.fane === 'gard') { if (o.niva) gd.niva = o.niva; if (o.neste !== undefined) gd.neste = o.neste; velgFane('gard'); if (o.teta !== undefined) { bane.teta = o.teta; oppdaterKamera(); } } else { if (o.figur) md.valgt = o.figur; if (o.vis) md.visning = o.vis; if (o.mobil) holder.classList.add('ramme'); storrelse(); velgFane('matdyr'); if (o.teta !== undefined) bane.teta = o.teta; } };
+  window.EVNSpill = sp; window.EVNRobot = () => gd.robot; window.EVNSteg = steg; window.EVNSpor = SPOR; window.EVNGeo = { HX, HZ, EH, DEKKE, W, KX, KZ, A, B, LREP }; window.EVNBane = bane; window.EVNVegger = () => vegger;
+  window.EVNVis = (o) => { if (o.fane === 'spill') { if (o.niva) sp.niva = o.niva; velgFane('spill'); return; } if (o.fane === 'gard') { if (o.niva) gd.niva = o.niva; if (o.neste !== undefined) gd.neste = o.neste; velgFane('gard'); if (o.teta !== undefined) { bane.teta = o.teta; oppdaterKamera(); } } else { if (o.figur) md.valgt = o.figur; if (o.vis) md.visning = o.vis; if (o.mobil) holder.classList.add('ramme'); storrelse(); velgFane('matdyr'); if (o.teta !== undefined) bane.teta = o.teta; } };
 })();
