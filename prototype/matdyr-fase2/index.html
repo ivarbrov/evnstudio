@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'">
+<link rel="icon" href="data:,">
+<title>Matdyr-regn – nye matdyr og gården (prototype)</title>
+<style>
+  :root { --gull:#ffd23f; --mork:rgba(29,36,64,.86); }
+  html,body { margin:0; height:100%; overflow:hidden; background:#a8d8f0; font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; color:#fff; }
+  canvas { display:block; touch-action:none; }
+  #scene { position:fixed; inset:0; }
+  #scene.ramme { inset:auto; left:50%; top:50%; transform:translate(-50%,-50%); width:390px; height:min(844px,calc(100vh - 20px)); border:10px solid #1d2440; border-radius:36px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,.4); }
+  .topp { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); display:flex; gap:8px; z-index:5; }
+  button { font:inherit; font-weight:800; color:#fff; background:var(--mork); border:2px solid rgba(255,255,255,.3); border-radius:14px; min-height:44px; min-width:44px; padding:6px 12px; cursor:pointer; }
+  button[aria-pressed="true"] { background:linear-gradient(#ffd75e,#f0a91c); color:#3a2300; border-color:#fff; }
+  button:focus-visible { outline:3px solid #fff; outline-offset:2px; }
+  .panel { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(10px + env(safe-area-inset-bottom)); z-index:5; display:flex; flex-direction:column; gap:8px; align-items:center; max-width:calc(100vw - 16px); }
+  .rad { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+  .kort { position:fixed; top:calc(64px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); z-index:5; background:var(--mork); border:2px solid rgba(255,255,255,.25); border-radius:16px; padding:10px 14px; max-width:min(320px,calc(100vw - 20px)); font-size:15px; line-height:1.35; }
+  .kort h1 { margin:0 0 4px; font-size:22px; }
+  .sj { font-weight:900; }
+  .liten { font-size:13px; opacity:.85; }
+  #maal { position:fixed; right:calc(10px + env(safe-area-inset-right)); top:calc(64px + env(safe-area-inset-top)); z-index:5; background:rgba(0,0,0,.45); border-radius:10px; padding:4px 8px; font:12px ui-monospace,monospace; }
+  @media (max-width:640px) { .kort { top:calc(64px + env(safe-area-inset-top)); font-size:13px; padding:8px 10px; max-width:calc(100vw - 20px); } .kort h1 { font-size:18px; } .kort .liten { display:none; } #maal { top:auto; bottom:4px; right:4px; font-size:10px; } button { padding:4px 8px; font-size:14px; min-height:44px; } .rad { gap:4px; } }
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+<nav class="topp" aria-label="Velg visning">
+  <button type="button" id="fMatdyr" aria-pressed="true">🐮 Matdyr</button>
+  <button type="button" id="fGard" aria-pressed="false">🏡 Gården</button>
+</nav>
+<div class="kort" id="kort" aria-live="polite"></div>
+<div id="maal" aria-hidden="true"></div>
+<div class="panel" id="panel"></div>
+
+<script src="three-r128.min.js"></script>
+<script src="gltfloader-r128.js"></script>
+<script src="helt-robot.js"></script>
+<script src="figurer.js"></script>
+<script src="visning.js"></script>
+</body>
+</html>
