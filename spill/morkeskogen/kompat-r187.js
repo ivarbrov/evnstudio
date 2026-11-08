@@ -1,13 +1,6 @@
 /* Mørkeskogen 2.0 – overgangslag r128 -> r187 for grafikk som ikke er byttet ennå (fase 1–5). Gjør at gammel grafikk ser ut som i 5.6.2:
    - Ingen fargehåndtering og lineær utdata (som r128).
    - «Legacy»-lys: irradians x PI og gammel avstandsdemping (fjernet i r155/r165). */
-// 2.0.8: .at() finnes ikke i Safari før 15.4 (iPad med iPadOS 15.0–15.3). Brukes av three.js og spill.js.
-(function () {
-  function at(n) { n = Math.trunc(n) || 0; if (n < 0) n += this.length; return n < 0 || n >= this.length ? undefined : this[n]; }
-  [Array, String, Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array, Int32Array, Uint32Array, Float32Array, Float64Array].forEach(function (K) {
-    if (K && !K.prototype.at) Object.defineProperty(K.prototype, 'at', { value: at, writable: true, configurable: true });
-  });
-})();
 (function () {
   THREE.ColorManagement.enabled = false;
   const C = THREE.ShaderChunk, rep = (k, a, b) => { if (!C[k].includes(a)) console.warn('EVN 2.0: fant ikke', k, a); C[k] = C[k].replace(a, b); };

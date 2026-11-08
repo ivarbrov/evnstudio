@@ -6498,7 +6498,7 @@ $('againBtn').addEventListener('click', start);
 var harWebGL = (() => { try { const c = document.createElement('canvas'); const x = window.WebGL2RenderingContext && c.getContext('webgl2'); if (x) { const l = x.getExtension('WEBGL_lose_context'); if (l) l.loseContext(); } return !!x; } catch (e) { return false; } })();   // prøvekonteksten frigis med en gang
 if (!window.THREE || !harWebGL) {
   $('no3d').hidden = false; $('startBtn').hidden = true;
-  if (window.THREE) $('no3d').textContent = 'Denne nettleseren kan ikke vise 3D-grafikken. På iPad og iPhone: oppdater til iPadOS/iOS 15 eller nyere. På PC: prøv en annen nettleser, eller slå på maskinvareakselerasjon.';
+  if (window.THREE) $('no3d').textContent = 'Denne maskinen kan ikke vise 3D-grafikken. Spør en voksen om iPaden eller telefonen kan oppdateres, eller prøv en annen maskin.';
 }
 cv.addEventListener('webglcontextlost', e => { e.preventDefault(); if (state === 'play') visFeil('WebGL-konteksten ble borte', false); });
 // «Start helt på nytt» på startskjermen (felles for alle EVN-spill). Grafikkvalget (mork3d.q) beholdes.
