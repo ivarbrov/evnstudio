@@ -7,7 +7,8 @@ const D=require("./data.js");const {R,COMBOS,POOLS,PRICE,INC,ANIMALS,FOODS}=D;
 // Plasspris: som i dag til 24 plasser (nivå 0–9). Etter det dobles prisen per steg fra 10 mill.
 const upCost=l=>l<10?D.upCost(l):1e7*Math.pow(2,l-10);
 function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-const ART=n=>ANIMALS.findIndex(a=>a[1]===n);
+const ART=n=>n===null?-1:ANIMALS.findIndex(a=>a[1]===n);
+const artOk=(n,c)=>n===null||Math.floor(c/FOODS.length)===ART(n);
 // krav: [art, antall, minste sjeldenhet (0 Common … 5 Food God)]; tak = antall plasser på dette nivået
 const NIVA=[
   {tak:8},
@@ -15,11 +16,11 @@ const NIVA=[
   {tak:16, krav:[["sau",2,1],["skilpadde",1,0]], penger:10000},
   {tak:20, krav:[["katt",1,2],["høne",2,1]], penger:60000},
   {tak:24, krav:[["rev",2,2],["hest",1,1]], penger:250000},
-  {tak:28, krav:[["elefant",1,3],["panda",2,2]], penger:2e6},
-  {tak:32, krav:[["løve",1,3],["sjiraff",2,3]], penger:10e6},
-  {tak:36, krav:[["enhjørning",1,4],["pingvin",2,3]], penger:50e6},
-  {tak:40, krav:[["blekksprut",1,4],["krokodille",1,4],["tiger",1,4]], penger:300e6},
-  {tak:40, krav:[["hval",1,5],["dinosaur",1,4]], penger:1e9}
+  {tak:28, krav:[["hund",1,3],["panda",2,2]], penger:2e6},
+  {tak:32, krav:[["papegøye",2,3],["neshorn",1,3]], penger:10e6},
+  {tak:36, krav:[["frosk",1,4],["pingvin",2,3]], penger:50e6},
+  {tak:40, krav:[[null,2,4],["hest",1,4]], penger:150e6},
+  {tak:40, krav:[["hval",1,5],[null,2,4]], penger:500e6}
 ];
 const BOOST=+(process.env.BOOST||0.15);
 const plassTak=g=>NIVA[g].tak, plasserFor=l=>4+2*l;
@@ -35,12 +36,13 @@ function kjor(p,seed,min){
   const ai=c=>Math.floor(c/FOODS.length);
   // Hvilke dyr i basen kan leveres for neste nivå (de svakeste som oppfyller kravet)
   function leveranse(){const n=NIVA[g+1];if(!n)return null;const brukt=new Set(),valgt=[];
-    for(const [art,ant,min] of n.krav){const kand=base.map((c,i)=>[c,i]).filter(([c,i])=>c>=0&&!brukt.has(i)&&ai(c)===ART(art)&&COMBOS[c].r>=min).sort((a,b)=>INC(a[0])-INC(b[0]));
+    // Bestemte arter fordeles først, «valgfri art» til slutt, så et matdyr ikke brukes på feil krav
+    for(const [art,ant,min] of [...n.krav].sort((x,y)=>(x[0]===null)-(y[0]===null))){const kand=base.map((c,i)=>[c,i]).filter(([c,i])=>c>=0&&!brukt.has(i)&&artOk(art,c)&&COMBOS[c].r>=min).sort((a,b)=>INC(a[0])-INC(b[0]));
       if(kand.length<ant)return null;kand.slice(0,ant).forEach(([c,i])=>{brukt.add(i);valgt.push(i)})}
     return valgt}
   const mangler=c=>{const n=NIVA[g+1];if(!n)return false;const a=ai(c);
-    return n.krav.some(([art,ant,min])=>ART(art)===a&&COMBOS[c].r>=min&&base.filter(b=>b>=0&&ai(b)===a&&COMBOS[b].r>=min).length<ant)};
-  const reservert=i=>{const n=NIVA[g+1];if(!n)return false;const c=base[i];return c>=0&&n.krav.some(([art,ant,min])=>ART(art)===ai(c)&&COMBOS[c].r>=min)};
+    return n.krav.some(([art,ant,min])=>artOk(art,c)&&COMBOS[c].r>=min&&base.filter(b=>b>=0&&artOk(art,b)&&COMBOS[b].r>=min).length<ant)};
+  const reservert=i=>{const n=NIVA[g+1];if(!n)return false;const c=base[i];return c>=0&&n.krav.some(([art,ant,min])=>artOk(art,c)&&COMBOS[c].r>=min)};
   while(t<min*60){
     t+=1;money+=inc();
     if(base.every(c=>c<0)&&money<R[0].price)money=R[0].price;
@@ -54,7 +56,7 @@ function kjor(p,seed,min){
     while(base.length<Math.min(plasserFor(level),plassTak(g)))base.push(-1);
     // Se matdyr på enga og kjøp
     // Bestillingsregn: sjeldenheten trekkes som før. Med sannsynlighet BOOST trekkes arten blant dem det er bestilling på.
-    const arter=NIVA[g+1]?NIVA[g+1].krav.map(k=>ART(k[0])):[];
+    const arter=NIVA[g+1]?NIVA[g+1].krav.filter(k=>k[0]!==null).map(k=>ART(k[0])):[];
     const syn=[];for(let i=0;i<p.syn;i++){const k=pick(),pool=POOLS[k];let ut=pool;
       if(arter.length&&r()<BOOST){const b=pool.filter(c=>arter.includes(ai(c)));if(b.length)ut=b}
       syn.push(ut[Math.floor(r()*ut.length)])}
@@ -73,7 +75,8 @@ const N=300,q=(a,f)=>{a=a.slice().sort((x,y)=>x-y);return a[Math.min(a.length-1,
 const MIN=+(process.env.MIN||480);
 let md="| Gårdsnivå | Krav | "+Object.keys(PROFILER).map(n=>n+" (median, andel innen "+MIN/60+" t)").join(" | ")+" |\n|---|---|"+Object.keys(PROFILER).map(()=>"---").join("|")+"|\n";
 const res={};for(const [navn,p] of Object.entries(PROFILER)){res[navn]=[];for(let s=1;s<=N;s++)res[navn].push(kjor(p,s*7919,MIN))}
-const kort=k=>k.map(([a,n,m])=>`${n} ${ANIMALS[ART(a)][0]} ${a} (${R[m].n}+)`).join(", ");
+const pulje=(a,m)=>COMBOS.filter((c,i)=>(a===null||Math.floor(i/FOODS.length)===ART(a))&&c.r>=m).length;
+const kort=k=>k.map(([a,n,m])=>a===null?`${n} valgfri art (${R[m].n}+) [${pulje(a,m)}]`:`${n} ${ANIMALS[ART(a)][0]} ${a} (${R[m].n}+) [${pulje(a,m)}]`).join(", ");
 const fmtI=n=>n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"k":String(n);
 const fmt=n=>n>=1e6?(n/1e6)+" mill":n>=1e3?(n/1e3)+"k":String(n);
 for(let g=1;g<NIVA.length;g++){
