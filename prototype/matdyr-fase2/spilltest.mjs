@@ -68,5 +68,15 @@ const c = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-prot
   return ut; })()
 `);
 ok('gårdsnivå 1 → 10 i rekkefølge', c.length === 9 && c.every((r, i) => r[1] === true && r[2] === i + 2));
+// Minne: gjentatte salg skal ikke øke antall geometrier (plassfigurene slås sammen og må frigjøres)
+const d = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-proto'); EVNVis({ fane: 'spill' }); await new Promise(r => setTimeout(r, 200));
+  const P = EVNProto, I = EVNIntern, D = EVNMatdyrData, base = []; for (let i = 0; i < 24; i++) base.push([127, 508, 700, 599, 179][i % 5]);
+  P.sett({ v: 1, penger: 1e9, gard: { niva: 5 }, plassNiva: 10, base, disc: [] });
+  const g = () => { I.renderer.render(I.scene, I.camera); return I.renderer.info.memory.geometries; }; const ut = [g()];
+  for (let k = 0; k < 10; k++) { const i = 1 + k, p = I.plassPos(i), R = EVNRobot(); R.position.set(p.x, p.y + 0.45, p.z); EVNSpill.paaBakken = true; EVNSteg(1/30); I.krok.steg(1/30, 0);
+    const h = P.finnHandling(); if (!h || h.t !== 'selg') return 'ingen selg ved ' + i; P.gjorHandling(); document.getElementById('dJa').click(); ut.push(g()); }
+  return ut; })()
+`);
+ok('salg lekker ikke geometrier', Array.isArray(d) && d[d.length - 1] - d[1] <= 1);
 console.log(feil.length ? feil : 'ingen feil i konsollen'); if (feil.length) process.exitCode = 1;
 ws.close(); p.kill();

@@ -70,7 +70,9 @@
   const etasjeAv = i => Math.min(3, Math.floor(i / 12));
   let dyrG = null, plasserNa = [], aapneNa = 0;
   function fyllDyr() {
-    if (!dyrG) return; dyrG.clear();
+    if (!dyrG) return;
+    // Sammenslåtte geometrier eies av plassvisningen og må frigjøres før de bygges på nytt (ellers lekker minne ved hvert salg)
+    dyrG.traverse(o => { if (o.userData.egenGeo) o.geometry.dispose(); }); dyrG.clear();
     const deler = I.gamleFigurDeler(), m4 = new T.Matrix4(), V = T.Vector3, grupper = {}, enkle = [];
     for (let i = 0; i < Math.min(aapneNa, S.base.length); i++) { const ci = S.base[i]; if (ci < 0) continue; const nn = I.nyNavnFor && I.nyNavnFor(ci), fi = nn ? 'n:' + nn : FIGUR[ci]; if (fi === undefined) enkle.push(i); else (grupper[etasjeAv(i) + '|' + fi] = grupper[etasjeAv(i) + '|' + fi] || []).push(i); }
     // Plassene viser alltid lav detalj. Delene uten tekstur (felles vertexfarge-materialer) slås sammen per etasje til én mesh per materiale,
@@ -90,7 +92,7 @@
     }
     for (const { e, mat, geos } of Object.values(felles)) {
       const eg = new T.Group(); eg.userData.etasje = e; dyrG.add(eg);
-      const m = new T.Mesh(EVNMiljo.flett(geos), mat); m.castShadow = true; eg.add(m);
+      const m = new T.Mesh(EVNMiljo.flett(geos), mat); m.castShadow = true; m.userData.egenGeo = true; eg.add(m); geos.forEach(g => g.dispose());
     }
     // Ledige plasser får en lysegrønn ramme med pluss, så de skiller seg tydelig fra opptatte og låste plasser
     const ledige = []; for (let i = 0; i < Math.min(aapneNa, S.base.length); i++) if (S.base[i] < 0) ledige.push(i);

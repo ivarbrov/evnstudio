@@ -35,7 +35,7 @@
       const V = { '34': [0.75, 0.32], fram: [0, 0.12], side: [Math.PI / 2, 0.1], topp: [0.3, 1.2], bak: [Math.PI + 0.6, 0.3], spill: [0.3, 0.75] }[vk] || [0.75, 0.32];
       const k = new T.PerspectiveCamera(vk === 'spill' ? 40 : 28, 1, 0.05, 200), d = st * (vk === 'spill' ? 4.5 : 1.75);
       k.position.set(c.x + Math.sin(V[0]) * Math.cos(V[1]) * d, c.y + Math.sin(V[1]) * d, c.z + Math.cos(V[0]) * Math.cos(V[1]) * d); k.lookAt(c);
-      cams.push(figurer.length === 1 ? { k, i: rad, rad: 0 } : rutenett ? { k, i: i % 4, rad: Math.floor(i / 4) } : { k, i, rad });
+      cams.push(Object.assign(figurer.length === 1 ? { k, i: rad, rad: 0 } : rutenett ? { k, i: i % 4, rad: Math.floor(i / 4) } : { k, i, rad }, { fi: i }));
     }));
     // Mange figurer i én vinkel: rutenett med fire kolonner og navn i hver rute
     const en = figurer.length === 1, kol = en ? vinkler.length : rutenett ? 4 : figurer.length, rader = en ? 1 : rutenett ? Math.ceil(figurer.length / 4) : vinkler.length;
@@ -45,7 +45,7 @@
     r.setScissorTest(true);
     const loop = t => {
       const W = innerWidth, H = innerHeight, cw = W / kol, ch = H / rader;
-      for (const { k, i, rad } of cams) { k.aspect = cw / ch; k.updateProjectionMatrix(); r.setViewport(i * cw, H - (rad + 1) * ch, cw, ch); r.setScissor(i * cw, H - (rad + 1) * ch, cw, ch); r.render(s, k); }
+      for (const { k, i, rad, fi } of cams) { figurer.forEach((f, j) => { f.visible = j === fi; }); k.aspect = cw / ch; k.updateProjectionMatrix(); r.setViewport(i * cw, H - (rad + 1) * ch, cw, ch); r.setScissor(i * cw, H - (rad + 1) * ch, cw, ch); r.render(s, k); }
       requestAnimationFrame(loop);
     }; requestAnimationFrame(loop);
     window.KLAR = true;

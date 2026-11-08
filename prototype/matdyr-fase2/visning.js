@@ -218,7 +218,7 @@
   function visKortMatdyr() {
     if (md.visning === 'alle') { $('kort').innerHTML = '<h1>Alle fem</h1>I spillstørrelse ved siden av EVN-roboten. Størrelsen følger sjeldenheten, som i spillet.<div class="liten">Dra for å snu. Hjul eller to fingre for å zoome.</div>'; return; }
     const f = md.fig, [rn, rc] = RAR[f.sj];
-    $('kort').innerHTML = '<h1>' + f.navn + '</h1><div><span class="sj" style="color:' + rc + '">' + rn + '</span> · ' + f.mat + ' + ' + f.dyr + (f.ci != null ? ' · ID ' + f.ci : '') + '</div><div>' + (NY_INFO[f.nokkel] || INFO[f.nokkel]) + '</div><div class="liten">Dra for å snu. Hjul eller to fingre for å zoome.</div>';
+    $('kort').innerHTML = '<h1>' + f.navn + '</h1><div><span class="sj" style="color:' + rc + '">' + rn + '</span> · ' + f.mat + ' + ' + f.dyr + (f.ci != null ? ' · ID ' + f.ci : '') + '</div><div>' + (NY_INFO[f.nokkel] || INFO[f.nokkel] || (PILOT_ID[f.nokkel] ? 'Figurpilot: laget med det modulære systemet (dyresett + matkropp).' : '')) + '</div><div class="liten">Dra for å snu. Hjul eller to fingre for å zoome.</div>';
   }
 
   // =====================================================================
@@ -837,9 +837,12 @@
     if (e !== sp.etasje) { sp.etasje = e; settGjennom(e); $('spillStatus').textContent = '📍 ' + etasjeNavn(p.y); }
   }
   let etasjeMesher = [];
+  // Ett glassmateriale per originalmateriale (gjenbrukes, så det ikke lages nye kopier ved hver oppdatering)
+  const glassCache = new WeakMap();
+  function glassFor(m0) { let m = glassCache.get(m0); if (!m) { m = m0.clone(); m.transparent = true; m.opacity = 0.3; m.depthWrite = false; glassCache.set(m0, m); } return m; }
   function forberedGjennom() {
     etasjeMesher = [];
-    gd.gruppe.traverse(o => { if (!o.isMesh || o.isInstancedMesh && false) return; let q = o; while (q && q.userData.etasje === undefined) q = q.parent; if (!q || !q.userData.etasje) return; o.userData.orig = o.material; o.userData.glass = (() => { const m = o.material.clone(); m.transparent = true; m.opacity = 0.3; m.depthWrite = false; return m; })(); etasjeMesher.push([o, q.userData.etasje]); });
+    gd.gruppe.traverse(o => { if (!o.isMesh || o.isInstancedMesh && false) return; let q = o; while (q && q.userData.etasje === undefined) q = q.parent; if (!q || !q.userData.etasje) return; o.userData.orig = o.material; o.userData.glass = glassFor(o.material); etasjeMesher.push([o, q.userData.etasje]); });
   }
   function settGjennom(e) { etasjeMesher.forEach(([o, et]) => { o.material = et > e ? o.userData.glass : o.userData.orig; }); }
   function startSpill() {
