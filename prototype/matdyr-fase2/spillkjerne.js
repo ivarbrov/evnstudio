@@ -72,7 +72,7 @@
   function fyllDyr() {
     if (!dyrG) return;
     // Sammenslåtte geometrier eies av plassvisningen og må frigjøres før de bygges på nytt (ellers lekker minne ved hvert salg)
-    dyrG.traverse(o => { if (o.userData.egenGeo) o.geometry.dispose(); }); dyrG.clear();
+    dyrG.traverse(o => { if (o.userData.egenGeo) o.geometry.dispose(); if (o.isInstancedMesh) o.dispose(); }); dyrG.clear();
     const deler = I.gamleFigurDeler(), m4 = new T.Matrix4(), V = T.Vector3, grupper = {}, enkle = [];
     for (let i = 0; i < Math.min(aapneNa, S.base.length); i++) { const ci = S.base[i]; if (ci < 0) continue; const nn = I.nyNavnFor && I.nyNavnFor(ci), fi = nn ? 'n:' + nn : FIGUR[ci]; if (fi === undefined) enkle.push(i); else (grupper[etasjeAv(i) + '|' + fi] = grupper[etasjeAv(i) + '|' + fi] || []).push(i); }
     // Plassene viser alltid lav detalj. Delene uten tekstur (felles vertexfarge-materialer) slås sammen per etasje til én mesh per materiale,
