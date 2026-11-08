@@ -16,7 +16,7 @@
   const sol = new T.DirectionalLight(0xfff1dc, 1.3); sol.position.set(4, 8, 6); sol.castShadow = true; sol.shadow.mapSize.set(2048, 2048); Object.assign(sol.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8 }); sol.shadow.bias = -0.0004; s.add(sol);
   const fyll = new T.DirectionalLight(0xcfe4ff, 0.4); fyll.position.set(-5, 3, -4); s.add(fyll);
   }
-  const bakke = new T.Mesh(new T.CircleGeometry(30, 48), new T.MeshStandardMaterial({ color: new T.Color(MB ? '#5eaa2f' : '#8fd16c').convertSRGBToLinear(), roughness: 1 })); bakke.rotation.x = -Math.PI / 2; bakke.receiveShadow = true; s.add(bakke);
+  const bakke = new T.Mesh(new T.CircleGeometry(400, 64), new T.MeshStandardMaterial({ color: new T.Color(MB ? '#5eaa2f' : '#8fd16c').convertSRGBToLinear(), roughness: 1 })); bakke.rotation.x = -Math.PI / 2; bakke.receiveShadow = true; s.add(bakke);
   const cam = new T.PerspectiveCamera(30, 1, 0.1, 100);
   const loader = new T.GLTFLoader(), figurer = [];
   const avstand = 2.3;
@@ -29,16 +29,18 @@
     // Én visning per figur: hver figur står for seg selv og får sitt eget kamera (rutenett: kolonner = figurer, rader = vinkler)
     const vinkler = (q.get('vinkler') || vinkel).split(',');
     figurer.forEach((f, i) => { f.position.set(i * 12, 0, 0); });
-    const cams = [];
+    const cams = [], rutenett = figurer.length > 6 && vinkler.length === 1;
     vinkler.forEach((vk, rad) => figurer.forEach((f, i) => {
       const b = new T.Box3().setFromObject(f), c = b.getCenter(new T.Vector3()), st = b.getSize(new T.Vector3()).length();
       const V = { '34': [0.75, 0.32], fram: [0, 0.12], side: [Math.PI / 2, 0.1], topp: [0.3, 1.2], bak: [Math.PI + 0.6, 0.3], spill: [0.3, 0.75] }[vk] || [0.75, 0.32];
       const k = new T.PerspectiveCamera(vk === 'spill' ? 40 : 28, 1, 0.05, 200), d = st * (vk === 'spill' ? 4.5 : 1.75);
       k.position.set(c.x + Math.sin(V[0]) * Math.cos(V[1]) * d, c.y + Math.sin(V[1]) * d, c.z + Math.cos(V[0]) * Math.cos(V[1]) * d); k.lookAt(c);
-      cams.push(figurer.length === 1 ? { k, i: rad, rad: 0 } : { k, i, rad });
+      cams.push(figurer.length === 1 ? { k, i: rad, rad: 0 } : rutenett ? { k, i: i % 4, rad: Math.floor(i / 4) } : { k, i, rad });
     }));
-    const en = figurer.length === 1, kol = en ? vinkler.length : figurer.length, rader = en ? 1 : vinkler.length;
+    // Mange figurer i én vinkel: rutenett med fire kolonner og navn i hver rute
+    const en = figurer.length === 1, kol = en ? vinkler.length : rutenett ? 4 : figurer.length, rader = en ? 1 : rutenett ? Math.ceil(figurer.length / 4) : vinkler.length;
     document.getElementById('etikett').style.display = (rader > 1 || en) ? 'none' : '';
+    if (rutenett) valgt.forEach((n, i) => { const e = document.createElement('div'); e.textContent = VIS[n] || n.replace('pilot_', '').replace('_', ' + '); Object.assign(e.style, { position: 'fixed', left: (i % 4) * 25 + '%', width: '25%', top: ((Math.floor(i / 4) + 1) * 100 / rader) + '%', transform: 'translateY(-1.6em)', textAlign: 'center', font: '600 15px system-ui', color: '#fff', textShadow: '0 1px 3px #0008' }); document.body.append(e); });
     const res = () => { r.setSize(innerWidth, innerHeight); }; res(); addEventListener('resize', res);
     r.setScissorTest(true);
     const loop = t => {
