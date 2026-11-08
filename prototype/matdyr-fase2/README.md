@@ -108,3 +108,13 @@ Bygg modellene på nytt: `python3 blender/matdyr_hybrider.py modeller` og `pytho
 - **Plassene:** åpne plasser er høysenger med hvit kant. Låste plasser er dempet tredekke med hengelås.
 - **Tunet** har steinheller mellom porten, fjøset, rampa, låven, siloen, hønsehuset og mølla. Det er også grus, jord, en kjerre med gulrøtter, høyballer, tønner og en værhane på låven. Siloen har fått steinfot, og i det fjerne er det fjell og en innsjø.
 - **Kostnad på Høy** (gården på nivå 9, headless): 336 tegnekall og 1,06 mill. trekanter, inkludert skyggepasset. Før var det 190 tegnekall og 0,84 mill. trekanter. Kan reduseres med felles materialer og vertexfarger hvis målingene på mobil krever det.
+
+### Justering etter Ivars vurdering (8.11.2026, 15:03)
+- **Øverste nivåer:** De har et roligere rekkverk uten sprosser. Lykter og blomsterkasser finnes bare i nederste åpne etasje.
+- **Plassene:**
+  - Ledige plasser har lysegrønn ramme med pluss.
+  - Opptatte plasser er lyse høysenger med hvit kant.
+  - Låste plasser er mørk skifer med striper og hengelås.
+- **Rampa:** Stolpene står loddrett. Bare håndløper og mellomlist følger helningen.
+- **Bakgrunn:** Det er færre steiner, blomster og gresstuster, og de står bare i klynger ved gjerdet og åkerkanten. Detaljteksturen har svakere kontrast.
+- **Optimalisering:** Enkle fargematerialer slås sammen til ett materiale med vertexfarger (`EVNMiljo.deler(..., { vf: true })`). Gården på nivå 9 på Høy har nå 189 tegnekall, mot 336 før denne endringen og 190 i forrige versjon.

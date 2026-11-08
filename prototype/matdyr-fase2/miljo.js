@@ -69,17 +69,24 @@
     m.envMapIntensity = 0; if (m.transparent) m.depthWrite = false;
     m.roughness = Math.max(0.25, m.roughness); return (matCache[n] = m);
   }
-  function deler(node, skala = 1) {
+  // vf = true: alle enkle fargematerialer (uten tekstur, gjennomsiktighet eller glød) slås sammen til ett felles
+  // materiale med vertexfarger. Det gir langt færre tegnekall (samme grep som i Min Bondegård 0.3).
+  let vfMat = null;
+  const fellesVF = () => vfMat || (vfMat = new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.68, metalness: 0 }));
+  function deler(node, skala = 1, { vf = false } = {}) {
     node.updateMatrixWorld(true);
     const inv = new T.Matrix4().copy(node.matrixWorld).invert(), per = new Map();
     node.traverse(o => {
       if (!o.isMesh) return;
-      const m = delMat(o.material), g = o.geometry.clone();
+      const m0 = o.material, enkel = vf && !m0.map && !m0.transparent && !(m0.emissive && m0.emissive.getHex() && m0.emissiveIntensity > 0);
+      const m = enkel ? fellesVF() : delMat(m0), g = o.geometry.clone();
       g.applyMatrix4(new T.Matrix4().multiplyMatrices(inv, o.matrixWorld));
       if (skala !== 1) g.scale(skala, skala, skala);
       for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(k)) g.deleteAttribute(k);
       if (!g.attributes.uv) g.setAttribute('uv', new T.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
-      if (!per.has(m)) per.set(m, []); per.get(m).push(g.index ? g.toNonIndexed() : g);
+      const ng = g.index ? g.toNonIndexed() : g;
+      if (enkel) { const n = ng.attributes.position.count, c = new Float32Array(n * 3); for (let i = 0; i < n; i++) { c[i * 3] = m0.color.r; c[i * 3 + 1] = m0.color.g; c[i * 3 + 2] = m0.color.b; } ng.setAttribute('color', new T.BufferAttribute(c, 3)); }
+      if (!per.has(m)) per.set(m, []); per.get(m).push(ng);
     });
     const ut = [];
     for (const [mat, geos] of per) ut.push({ geo: flett(geos), mat });
@@ -87,9 +94,10 @@
   }
   function flett(geos) {
     let n = 0; geos.forEach(g => n += g.attributes.position.count);
-    const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), uv = new Float32Array(n * 2); let o = 0;
-    geos.forEach(g => { pos.set(g.attributes.position.array, o * 3); nor.set(g.attributes.normal.array, o * 3); uv.set(g.attributes.uv.array, o * 2); o += g.attributes.position.count; });
-    const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(pos, 3)); g.setAttribute('normal', new T.BufferAttribute(nor, 3)); g.setAttribute('uv', new T.BufferAttribute(uv, 2));
+    const farge = geos.every(g => g.attributes.color);
+    const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), uv = new Float32Array(n * 2), col = farge ? new Float32Array(n * 3) : null; let o = 0;
+    geos.forEach(g => { pos.set(g.attributes.position.array, o * 3); nor.set(g.attributes.normal.array, o * 3); uv.set(g.attributes.uv.array, o * 2); if (col) col.set(g.attributes.color.array, o * 3); o += g.attributes.position.count; });
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(pos, 3)); g.setAttribute('normal', new T.BufferAttribute(nor, 3)); g.setAttribute('uv', new T.BufferAttribute(uv, 2)); if (col) g.setAttribute('color', new T.BufferAttribute(col, 3));
     g.computeBoundingSphere(); return g;
   }
   // Instanserer delene på en liste med plasseringer [{x, y, z, ry, s}] (én InstancedMesh per materiale)
@@ -129,13 +137,13 @@
     const cv = document.createElement('canvas'); cv.width = cv.height = 512; const x = cv.getContext('2d'), r = tilfeldig(4);
     x.fillStyle = '#e6e6e6'; x.fillRect(0, 0, 512, 512);
     for (let i = 0; i < 260; i++) {
-      const px = r() * 512, py = r() * 512, rad = 10 + r() * 60, lys = r() > 0.5, a = 0.025 + r() * 0.04;
+      const px = r() * 512, py = r() * 512, rad = 30 + r() * 90, lys = r() > 0.5, a = 0.02 + r() * 0.025;
       for (const [dx, dy] of [[0, 0], [512, 0], [-512, 0], [0, 512], [0, -512]]) {
         const gg = x.createRadialGradient(px + dx, py + dy, 0, px + dx, py + dy, rad); gg.addColorStop(0, lys ? 'rgba(255,255,255,' + a + ')' : 'rgba(40,50,30,' + a + ')'); gg.addColorStop(1, 'rgba(0,0,0,0)');
         x.fillStyle = gg; x.fillRect(px + dx - rad, py + dy - rad, rad * 2, rad * 2);
       }
     }
-    for (let i = 0; i < 9000; i++) { x.fillStyle = r() > 0.5 ? 'rgba(255,255,255,0.07)' : 'rgba(30,40,20,0.07)'; x.fillRect(r() * 512, r() * 512, 1.5, 1.5); }
+    for (let i = 0; i < 9000; i++) { x.fillStyle = r() > 0.5 ? 'rgba(255,255,255,0.03)' : 'rgba(30,40,20,0.03)'; x.fillRect(r() * 512, r() * 512, 1.5, 1.5); }
     const tx = new T.CanvasTexture(cv); tx.wrapS = tx.wrapT = T.RepeatWrapping; tx.repeat.set(storrelse / 14, storrelse / 14); tx.encoding = T.sRGBEncoding; tx.anisotropy = 4;
     const m = new T.Mesh(g, new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, map: tx, color: new T.Color(1.08, 1.08, 1.08) })); m.receiveShadow = true;
     return m;

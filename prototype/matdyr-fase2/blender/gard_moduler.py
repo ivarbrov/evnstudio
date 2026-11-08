@@ -71,6 +71,16 @@ def rekkverk():
     for x in (0.5, 1.0, 1.5): d.append(kasse('sprosse', hvit, (x, 0, 0.62), (0.06, 0.06, 0.86), 0.0))
     return slaa('rekkverk', d)
 
+def rekk_list():
+    """Bare håndløper og mellomlist (lengde 2 langs X), uten stolper. Brukes langs rampa, der stolpene står loddrett for seg."""
+    hvit = mat('hvit_maling', HVIT, 0.55)
+    return slaa('rekk_list', [kasse('rl_topp', hvit, (1.0, 0, 1.05), (2.0, 0.2, 0.09), 0.03), kasse('rl_midt', hvit, (1.0, 0, 0.6), (2.0, 0.08, 0.1), 0.0)])
+
+def rekkverk_enkel():
+    """Roligere rekkverk for de øverste nivåene: stolpe, håndløper og én mellomlist."""
+    hvit = mat('hvit_maling', HVIT, 0.55)
+    return slaa('rekkverk_enkel', [kasse('re_s', hvit, (0, 0, 0.55), (0.14, 0.14, 1.1), 0.02), kasse('re_t', hvit, (1.0, 0, 1.05), (2.0, 0.16, 0.08), 0.02), kasse('re_m', hvit, (1.0, 0, 0.6), (2.0, 0.07, 0.08), 0.0)])
+
 def rekk_stolpe():
     hvit = mat('hvit_maling', HVIT, 0.55)
     return slaa('rekk_stolpe', [kasse('rs2', hvit, (0, 0, 0.55), (0.16, 0.16, 1.1), 0.03), prim('kule', 'rsk2', hvit, (0, 0, 1.16), (0.11, 0.11, 0.07), segments=10, ring_count=6)])
@@ -195,7 +205,7 @@ def vaerhane():
 
 if __name__ == '__main__':
     H.nullstill(); H.MATS.clear()
-    alle = [stolpe_fot(), stolpe_skaft(), knebaand(), bjelke(), rekkverk(), rekk_stolpe(), bue(), lykt(), blomsterkasse(), portbue(), heller(), kjerre(), tonne(), hoyball_firk(), vaerhane()]
+    alle = [stolpe_fot(), stolpe_skaft(), knebaand(), bjelke(), rekkverk(), rekk_list(), rekkverk_enkel(), rekk_stolpe(), bue(), lykt(), blomsterkasse(), portbue(), heller(), kjerre(), tonne(), hoyball_firk(), vaerhane()]
     sti = os.path.join(UT, 'gard.glb')
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.export_scene.gltf(filepath=sti, export_format='GLB', use_selection=True, export_apply=True, export_yup=True, export_texcoords=False, export_normals=True, export_materials='EXPORT', export_animations=False)

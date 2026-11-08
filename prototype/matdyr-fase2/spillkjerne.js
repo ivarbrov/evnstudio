@@ -82,8 +82,24 @@
         inst.castShadow = true; eg.add(inst);
       }
     }
+    // Ledige plasser får en lysegrønn ramme med pluss, så de skiller seg tydelig fra opptatte og låste plasser
+    const ledige = []; for (let i = 0; i < Math.min(aapneNa, S.base.length); i++) if (S.base[i] < 0) ledige.push(i);
+    const perE = {}; ledige.forEach(i => (perE[etasjeAv(i)] = perE[etasjeAv(i)] || []).push(i));
+    for (const [e, ids] of Object.entries(perE)) {
+      const eg = new T.Group(); eg.userData.etasje = +e; dyrG.add(eg); const im = new T.InstancedMesh(ledigGeo(), ledigMat(), ids.length);
+      ids.forEach((pi, j) => { const p = plasserNa[pi]; m4.makeTranslation(p.x, p.y + 0.21, p.z); im.setMatrixAt(j, m4); }); eg.add(im);
+    }
     for (const i of enkle) { const eg = new T.Group(); eg.userData.etasje = etasjeAv(i); const ph = plassholder(S.base[i]), p = plasserNa[i]; ph.position.set(p.x, p.y + 0.2, p.z); eg.add(ph); dyrG.add(eg); }
   }
+  let lgeo = null, lmat = null;
+  function ledigGeo() {
+    if (lgeo) return lgeo; const deler = [], b = (w, d, x, z) => { const g = new T.BoxGeometry(w, 0.06, d); g.translate(x, 0, z); deler.push(g.toNonIndexed()); };
+    b(3.0, 0.2, 0, 1.4); b(3.0, 0.2, 0, -1.4); b(0.2, 2.6, 1.4, 0); b(0.2, 2.6, -1.4, 0); b(0.9, 0.22, 0, 0); b(0.22, 0.9, 0, 0);
+    let n = 0; deler.forEach(g => n += g.attributes.position.count); const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3); let o = 0;
+    deler.forEach(g => { pos.set(g.attributes.position.array, o * 3); nor.set(g.attributes.normal.array, o * 3); o += g.attributes.position.count; });
+    lgeo = new T.BufferGeometry(); lgeo.setAttribute('position', new T.BufferAttribute(pos, 3)); lgeo.setAttribute('normal', new T.BufferAttribute(nor, 3)); return lgeo;
+  }
+  const ledigMat = () => lmat || (lmat = new T.MeshStandardMaterial({ color: new T.Color('#62e08c').convertSRGBToLinear(), emissive: new T.Color('#2fae5c').convertSRGBToLinear(), emissiveIntensity: 0.55, roughness: 0.5 }));
   // Bare matdyrene tegnes på nytt når noe settes inn eller selges
   function oppdaterDyr() { I.settGjennom(99); fyllDyr(); I.forberedGjennom(); I.settGjennom(Math.max(0, I.sp.etasje)); }
   function byggSpillGard(beholdRobot) {

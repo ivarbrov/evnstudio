@@ -28,10 +28,10 @@
       const V = { '34': [0.75, 0.32], fram: [0, 0.12], side: [Math.PI / 2, 0.1], topp: [0.3, 1.2], bak: [Math.PI + 0.6, 0.3], spill: [0.3, 0.75] }[vk] || [0.75, 0.32];
       const k = new T.PerspectiveCamera(vk === 'spill' ? 40 : 28, 1, 0.05, 200), d = st * (vk === 'spill' ? 4.5 : 1.75);
       k.position.set(c.x + Math.sin(V[0]) * Math.cos(V[1]) * d, c.y + Math.sin(V[1]) * d, c.z + Math.cos(V[0]) * Math.cos(V[1]) * d); k.lookAt(c);
-      cams.push({ k, i, rad });
+      cams.push(figurer.length === 1 ? { k, i: rad, rad: 0 } : { k, i, rad });
     }));
-    const kol = figurer.length, rader = vinkler.length;
-    document.getElementById('etikett').style.display = rader > 1 ? 'none' : '';
+    const en = figurer.length === 1, kol = en ? vinkler.length : figurer.length, rader = en ? 1 : vinkler.length;
+    document.getElementById('etikett').style.display = (rader > 1 || en) ? 'none' : '';
     const res = () => { r.setSize(innerWidth, innerHeight); }; res(); addEventListener('resize', res);
     r.setScissorTest(true);
     const loop = t => {

@@ -59,10 +59,10 @@
     });
     const ut = [];
     for (const [mat, geos] of grupper) {
-      const n = geos.reduce((s, g) => s + g.attributes.position.count, 0), harUv = geos.every(g => g.attributes.uv);
-      const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), uv = harUv ? new Float32Array(n * 2) : null; let k = 0;
-      for (const g of geos) { pos.set(g.attributes.position.array, k * 3); nor.set(g.attributes.normal.array, k * 3); if (uv) uv.set(g.attributes.uv.array, k * 2); k += g.attributes.position.count; }
-      const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.BufferAttribute(pos, 3)); geo.setAttribute('normal', new T.BufferAttribute(nor, 3)); if (uv) geo.setAttribute('uv', new T.BufferAttribute(uv, 2));
+      const n = geos.reduce((s, g) => s + g.attributes.position.count, 0), harUv = geos.every(g => g.attributes.uv), harF = geos.every(g => g.attributes.color);
+      const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), uv = harUv ? new Float32Array(n * 2) : null, col = harF ? new Float32Array(n * 3) : null; let k = 0;
+      for (const g of geos) { pos.set(g.attributes.position.array, k * 3); nor.set(g.attributes.normal.array, k * 3); if (uv) uv.set(g.attributes.uv.array, k * 2); if (col) col.set(g.attributes.color.array, k * 3); k += g.attributes.position.count; }
+      const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.BufferAttribute(pos, 3)); geo.setAttribute('normal', new T.BufferAttribute(nor, 3)); if (uv) geo.setAttribute('uv', new T.BufferAttribute(uv, 2)); if (col) geo.setAttribute('color', new T.BufferAttribute(col, 3));
       geo.computeBoundingSphere(); ut.push({ geo, mat });
     }
     return ut;
@@ -293,7 +293,7 @@
   // Modulene følger den faste geometrien, så etasjer, plasser, ramper og kollisjon er uendret.
   const gmCache = {};
   const NYGARD = () => NY && !!res.gard;
-  function gm(navn) { if (gmCache[navn] !== undefined) return gmCache[navn]; const n = res.gard && res.gard.scene.getObjectByName(navn); return (gmCache[navn] = n ? EVNMiljo.deler(n) : null); }
+  function gm(navn) { if (gmCache[navn] !== undefined) return gmCache[navn]; const n = res.gard && res.gard.scene.getObjectByName(navn); return (gmCache[navn] = n ? EVNMiljo.deler(n, 1, { vf: true }) : null); }
   function modul(g, navn, x, y, z, ry = 0, sx = 1, sy = 1, sz = 1, rz = 0) {
     const d = gm(navn); if (!d) return null;
     const o = new T.Group(); o.position.set(x, y, z); o.rotation.set(0, ry, rz, 'YZX'); o.scale.set(sx, sy, sz);
@@ -313,10 +313,11 @@
     if (fot) modul(e, 'stolpe_fot', x, bunn, z);
     const b0 = fot ? bunn + 0.5 : bunn; modul(e, 'stolpe_skaft', x, b0, z, 0, 1, topp - b0, 1);
   }
+  let rekkNiva = 1;   // de øverste etasjene får et roligere rekkverk
   function rekkverk(e, x0, z0, x1, z1, y = 0) {
-    if (NYGARD()) {
+    if (NYGARD()) { const rv = rekkNiva >= 2 ? 'rekkverk_enkel' : 'rekkverk';
       const L = Math.hypot(x1 - x0, z1 - z0); if (L < 0.3) return; const n = Math.max(1, Math.round(L / 2)), ry = -Math.atan2(z1 - z0, x1 - x0);
-      for (let i = 0; i < n; i++) modul(e, 'rekkverk', x0 + (x1 - x0) * i / n, y + DEKKE - 0.05, z0 + (z1 - z0) * i / n, ry, L / n / 2);
+      for (let i = 0; i < n; i++) modul(e, rv, x0 + (x1 - x0) * i / n, y + DEKKE - 0.05, z0 + (z1 - z0) * i / n, ry, L / n / 2);
       modul(e, 'rekk_stolpe', x1, y + DEKKE - 0.05, z1); return;
     }
     const L = Math.hypot(x1 - x0, z1 - z0); if (L < 0.3) return; const n = Math.max(1, Math.round(L / 1.6));
@@ -360,10 +361,11 @@
           // Høyballer og tønner i hjørnene inne i fjøset, der det ikke står plasser
           modul(e, 'hoyball_firk', -HX + 1.0, bunn, -HZ + 0.9, 0.2); modul(e, 'tonne', HX - 0.9, bunn, HZ - 0.9); modul(e, 'tonne', HX - 0.9, bunn, -HZ + 0.9);
         }
-        // Lykter på hjørnestolpene, vendt utover
-        for (const [x, z] of [[xs[0], zs[1]], [xs[3], zs[1]], [xs[0], zs[0]], [xs[3], zs[0]]]) modul(e, 'lykt', x, topp - 1.15, z + Math.sign(z) * 0.27, z > 0 ? 0 : Math.PI);
+        // Lykter på hjørnestolpene og blomsterkasser: bare i nederste åpne etasje, så de øverste nivåene er rolige
+        if (nr === 1) for (const [x, z] of [[xs[0], zs[1]], [xs[3], zs[1]], [xs[0], zs[0]], [xs[3], zs[0]]]) modul(e, 'lykt', x, topp - 1.15, z + Math.sign(z) * 0.27, z > 0 ? 0 : Math.PI);
         // Blomsterkasser utenpå rekkverket foran og bak
-        for (const x of [-HX * 0.55, HX * 0.55]) { modul(e, 'blomsterkasse', x, DEKKE + 0.25, HZ + 0.32, 0); modul(e, 'blomsterkasse', -x, DEKKE + 0.25, -HZ - 0.32, Math.PI); }
+        if (nr === 1) for (const x of [-HX * 0.55, HX * 0.55]) { modul(e, 'blomsterkasse', x, DEKKE + 0.25, HZ + 0.32, 0); modul(e, 'blomsterkasse', -x, DEKKE + 0.25, -HZ - 0.32, Math.PI); }
+        rekkNiva = nr;
         const ap = VEI.apning[nr];
         for (const side of ['f', 'b', 'v', 'h']) sideMedApning(e, side, ap);
       }
@@ -421,8 +423,9 @@
       // Hvitt rekkverk hver ~2 m på yttersiden, og på innersiden unntatt reposen
       for (let i = 0; i + 8 < kant.length; i += 8) {
         const a = kant[i], b = kant[i + 8];
-        langs(rr, 'rekkverk', V3(a.ix, a.q[4], a.iz), V3(b.ix, b.q[4], b.iz), 2, 0, ut(a));
-        if (!erRepos(a.q[3]) && !erRepos(b.q[3])) langs(rr, 'rekkverk', V3(a.ox, a.q[4], a.oz), V3(b.ox, b.q[4], b.oz), 2, 0, { x: -a.n.x, z: -a.n.y });
+        // Stolpene står loddrett; bare håndløperen følger helningen
+        langs(rr, 'rekk_list', V3(a.ix, a.q[4], a.iz), V3(b.ix, b.q[4], b.iz), 2, 0, ut(a)); modul(rr, 'rekk_stolpe', a.ix, a.q[4], a.iz);
+        if (!erRepos(a.q[3]) && !erRepos(b.q[3])) { langs(rr, 'rekk_list', V3(a.ox, a.q[4], a.oz), V3(b.ox, b.q[4], b.oz), 2, 0, { x: -a.n.x, z: -a.n.y }); modul(rr, 'rekk_stolpe', a.ox, a.q[4], a.oz); if (erRepos(kant[Math.min(kant.length - 1, i + 16)].q[3])) modul(rr, 'rekk_stolpe', b.ox, b.q[4], b.oz); }
       }
       const sist = kant[kant.length - 1]; modul(rr, 'rekk_stolpe', sist.ix, sist.q[4], sist.iz);
       // Bærestolper med steinfot
@@ -500,14 +503,15 @@
     const k = aapen ? 'a' : 'l'; if (plassMatC[k]) return plassMatC[k];
     const cv = document.createElement('canvas'); cv.width = cv.height = 256; const x = cv.getContext('2d');
     if (aapen) {
-      x.fillStyle = '#e9c66e'; x.fillRect(0, 0, 256, 256);
-      for (let i = 0; i < 900; i++) { const px = Math.random() * 256, py = Math.random() * 256, a = Math.random() * 6.28, l = 6 + Math.random() * 14; x.strokeStyle = ['#f6db8d', '#d9ae52', '#c89a40', '#fbe7a6'][i % 4]; x.lineWidth = 1.6; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a) * l, py + Math.sin(a) * l); x.stroke(); }
-      x.strokeStyle = '#fbf6ec'; x.lineWidth = 14; x.strokeRect(7, 7, 242, 242); x.strokeStyle = 'rgba(120,80,30,.35)'; x.lineWidth = 3; x.strokeRect(15, 15, 226, 226);
+      x.fillStyle = '#f6da84'; x.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 1100; i++) { const px = Math.random() * 256, py = Math.random() * 256, a = Math.random() * 6.28, l = 6 + Math.random() * 14; x.strokeStyle = ['#fff0b8', '#e2b452', '#cf9a35', '#fde59a'][i % 4]; x.lineWidth = 1.6; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a) * l, py + Math.sin(a) * l); x.stroke(); }
+      x.strokeStyle = '#ffffff'; x.lineWidth = 18; x.strokeRect(9, 9, 238, 238); x.strokeStyle = 'rgba(150,90,30,.5)'; x.lineWidth = 3; x.strokeRect(19, 19, 218, 218);
     } else {
-      for (let i = 0; i < 6; i++) { x.fillStyle = i % 2 ? '#8f7a62' : '#9a846b'; x.fillRect(0, i * 43, 256, 43); x.fillStyle = 'rgba(40,30,20,.35)'; x.fillRect(0, i * 43, 256, 2); }
-      x.fillStyle = 'rgba(60,70,50,.25)'; x.fillRect(0, 0, 256, 256);
-      x.strokeStyle = '#6d5c4a'; x.lineWidth = 12; x.strokeRect(6, 6, 244, 244);
-      x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(108, 122, 40, 32); x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 6; x.beginPath(); x.arc(128, 120, 13, Math.PI, 0); x.stroke();
+      // Låst: mørk, kald skifer med diagonale striper og stor hengelås
+      x.fillStyle = '#5d6670'; x.fillRect(0, 0, 256, 256);
+      x.strokeStyle = 'rgba(255,255,255,.08)'; x.lineWidth = 10; for (let i = -256; i < 512; i += 34) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 256, 256); x.stroke(); }
+      x.strokeStyle = '#47505a'; x.lineWidth = 12; x.strokeRect(6, 6, 244, 244);
+      x.fillStyle = 'rgba(255,255,255,.8)'; x.fillRect(98, 118, 60, 46); x.strokeStyle = 'rgba(255,255,255,.8)'; x.lineWidth = 9; x.beginPath(); x.arc(128, 116, 19, Math.PI, 0); x.stroke();
     }
     const t = new T.CanvasTexture(cv); t.encoding = T.sRGBEncoding; t.anisotropy = 4;
     return (plassMatC[k] = new T.MeshStandardMaterial({ map: t, roughness: 0.9 }));
@@ -517,7 +521,7 @@
   function mdel(navn) {
     if (miljoCache[navn] !== undefined) return miljoCache[navn];
     const n = res.miljo && res.miljo.scene.getObjectByName(navn);
-    return (miljoCache[navn] = n ? EVNMiljo.deler(n) : null);
+    return (miljoCache[navn] = n ? EVNMiljo.deler(n, 1, { vf: true }) : null);
   }
   // Bygg på tunet: nye modeller når de finnes, ellers de gamle
   function byggPaaTun(navn, g, x, z, ry = 0, s = 1) { const d = mdel(navn); if (!d) return false; g.add(EVNMiljo.kopi(d, x, 0, z, ry, s)); return true; }
@@ -525,7 +529,7 @@
     const kropp = mdel('molle_kropp'), vn = res.miljo && res.miljo.scene.getObjectByName('vinge'); if (!kropp || !vn) return false;
     const m = new T.Group(); m.position.set(x, 0, z); m.rotation.y = -0.5; m.userData.ikkeFlett = true; g.add(m);
     m.add(EVNMiljo.kopi(kropp, 0, 0, 0));
-    const v = EVNMiljo.kopi(miljoCache.vinge || (miljoCache.vinge = EVNMiljo.deler(vn)), vn.position.x, vn.position.y, vn.position.z); m.add(v); m.userData.vinge = v;
+    const v = EVNMiljo.kopi(miljoCache.vinge || (miljoCache.vinge = EVNMiljo.deler(vn, 1, { vf: true })), vn.position.x, vn.position.y, vn.position.z); m.add(v); m.userData.vinge = v;
     gd.molle = m; return true;
   }
   // Åker: brun jord med furer og små grønne spirer i rader
@@ -588,15 +592,15 @@
     vis('tre_eik', traer.filter((_, i) => i % 3 === 0)); vis('tre_gran', traer.filter((_, i) => i % 3 === 1)); vis('tre_eple', traer.filter((_, i) => i % 3 === 2));
     vis('tre_gran', EVNMiljo.spred(Math.round(70 * q.traer), { fra: [-170, -170], til: [170, 170], avstand: 7, frø: 9, skala: [1.2, 2.0], lov: (x, z) => { const d = ell(x, z, 110, 95, 8); return d > 1 && d < 2.4; } }).map(p => ({ ...p, y: (Math.sqrt(ell(p.x, p.z, 95, 80, 8)) - 1) * 38 * (0.7 + 0.3 * EVNMiljo.stoy(p.x, p.z)) - 0.3 })));
     // Busker langs utsiden av gjerdet og enga
-    const busker = EVNMiljo.spred(Math.round(46 * q.traer), { fra: [-45, -35], til: [45, 60], avstand: 2.6, frø: 5, skala: [0.8, 1.5], lov: (x, z) => fri(x, z) && (ell(x, z, 37, 28) < 1 || iAker(x, z, 4.5)) });
+    const busker = EVNMiljo.spred(Math.round(26 * q.traer), { fra: [-45, -35], til: [45, 60], avstand: 2.6, frø: 5, skala: [0.8, 1.5], lov: (x, z) => fri(x, z) && (ell(x, z, 37, 28) < 1 || iAker(x, z, 4.5)) });
     vis('busk_1', busker.filter((_, i) => i % 2)); vis('busk_2', busker.filter((_, i) => !(i % 2)));
-    const steiner = EVNMiljo.spred(Math.round(30 * q.traer), { fra: [-80, -70], til: [80, 85], avstand: 3, frø: 7, skala: [0.6, 1.8], lov: fri });
+    const steiner = EVNMiljo.spred(Math.round(10 * q.traer), { fra: [-80, -70], til: [80, 85], avstand: 6, frø: 7, skala: [1.2, 2.2], lov: (x, z) => fri(x, z) && ell(x, z, 42, 34) > 1 });   // få, store steiner i skogkanten
     vis('stein_1', steiner.filter((_, i) => i % 2)); vis('stein_2', steiner.filter((_, i) => !(i % 2)));
     // Blomster i klynger på enga og i gresset
-    const blomster = EVNMiljo.spred(Math.round(320 * q.blomst), { fra: [-60, -45], til: [60, 70], frø: 11, skala: [0.9, 1.4], lov: (x, z) => grus(x, z) < 0.05 && !iAker(x, z, 1) && jord(x, z) === 0 && (Math.abs(Math.sqrt(ell(x, z, 30, 22)) - 1) < 0.12 || skog(x, z) > 0.2) && EVNMiljo.stoy(x * 3, z * 3) > 0.15 });
+    const blomster = EVNMiljo.spred(Math.round(110 * q.blomst), { fra: [-60, -45], til: [60, 70], frø: 11, skala: [0.9, 1.4], lov: (x, z) => grus(x, z) < 0.05 && !iAker(x, z, 1) && jord(x, z) === 0 && Math.abs(Math.sqrt(ell(x, z, 30, 22)) - 1) < 0.08 && EVNMiljo.stoy(x * 1.5, z * 1.5) > 0.35 });   // klynger ved gjerdet
     vis('blomst_rod', blomster.filter((_, i) => i % 3 === 0), { skygge: false }); vis('blomst_gul', blomster.filter((_, i) => i % 3 === 1), { skygge: false }); vis('blomst_hvit', blomster.filter((_, i) => i % 3 === 2), { skygge: false });
     // Gresstuster overalt der det ikke står noe
-    vis('gress', EVNMiljo.spred(Math.round(2400 * q.gress), { fra: [-75, -60], til: [75, 75], frø: 13, skala: [1.0, 2.0], lov: (x, z) => sti(x, z) === 0 && !iAker(x, z, 0.8) && grus(x, z) < 0.1 && ell(x, z, 75, 65, 8) < 1 && (Math.abs(Math.sqrt(ell(x, z, 30, 22)) - 1) < 0.07 || (iAker(x, z, 3.5) && !iAker(x, z, 0.8)) || skog(x, z) > 0.3 || Math.abs(Math.sqrt(ell(x, z, 19, 16)) - 1) < 0.06) && EVNMiljo.stoy(x * 2.2, z * 2.2) > -0.2 }), { skygge: false });   // i flekker, ikke jevnt over alt
+    vis('gress', EVNMiljo.spred(Math.round(1100 * q.gress), { fra: [-75, -60], til: [75, 75], frø: 13, skala: [1.0, 2.0], lov: (x, z) => sti(x, z) === 0 && !iAker(x, z, 0.8) && grus(x, z) < 0.1 && ell(x, z, 75, 65, 8) < 1 && (Math.abs(Math.sqrt(ell(x, z, 30, 22)) - 1) < 0.05 || (iAker(x, z, 2) && !iAker(x, z, 0.8))) && EVNMiljo.stoy(x * 1.6, z * 1.6) > 0.1 }), { skygge: false });   // bare langs gjerdet og åkerkanten
     // Pynt på tunet og enga
     vis('hoyball', [{ x: -14, z: 14, ry: 0.4 }, { x: -12.4, z: 15.2, ry: 1.1 }, { x: 14, z: -13, ry: 2 }, { x: 35, z: 30, ry: 0.3 }, { x: 34.5, z: 32, ry: 1.3 }]);
     vis('kasse', [{ x: 5.2, z: 18, ry: 0.2 }, { x: -35, z: 40, ry: 0.9 }]);
