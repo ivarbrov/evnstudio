@@ -94,3 +94,4 @@ Status: prototype, ikke spill. Ingen spillogikk, lagring, statistikk eller musik
   - Skjermlås hindres under testen med Wake Lock der nettleseren støtter det. Batteri og lading registreres ved start og slutt der det er tilgjengelig.
   - Rapporten oppgir retning (stående/liggende), CSS-størrelse og alle testvalg.
 - 0.5.4: etter tilbakemelding fra Even. Beitet er delt i tre binger (ku | gris | sau), og sølepytten ligger nå inne i grisebingen. Full gård plasserer kopiene automatisk der det ikke står trær, og hver dyreart har sin egen binge.
+- 0.5.5: etter tilbakemelding fra Even. Bingene er større (8,5 × 5,4 m), lukket hele veien rundt og har hver sin grind. Dyrene er litt mindre (ku 0,8, gris og sau 0,85), slik at de får bedre plass. Stilen er den samme.

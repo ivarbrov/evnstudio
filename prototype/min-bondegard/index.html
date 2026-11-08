@@ -59,14 +59,14 @@
   <div class="grp" role="group" aria-label="Ytelsestest"><b>Test</b>
     <button data-test="forhand">Forhåndslast</button><button data-test="full">Full gård</button><button data-test="rute">Auto-kamera</button></div>
 </div>
-<div id="info">Testscene 0.5.4 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
+<div id="info">Testscene 0.5.5 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
 <div id="maal"><div id="maalTekst">…</div><div class="maalKnapper"><button id="kopier">Kopier</button><button id="lukkMaal">Lukk</button></div></div>
 
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.5.4';
+const VERSJON = 'testscene 0.5.5';
 const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
@@ -1027,7 +1027,7 @@ function lagRev() {
 
 /* ======================= Ku, gris og sau (0.5): samme stil som hønene – myke former, store øyne med lokk, rosa kinn ======================= */
 // Beitet er bare en visning av stilen. Dyrene låses opp på nivå 6 (ku), 10 (gris) og 16 (sau) i spillet.
-const BEITE = {x0: -15.4, x1: -7.6, z0: 0.3, z1: 5.2};
+const BEITE = {x0: -15.7, x1: -7.2, z0: -0.2, z1: 5.2}; // 0.5.5: større binger (Even 8.11)
 const dyr = [];
 function lagOyne(hode, x, y, z, r, lokkMat) { const hvitO = fm(0xffffff, 0.3), pupill = fm(0x1d1612, 0.2), glimt = new THREE.MeshBasicMaterial({color: 0xffffff}), oyne = [];
   [z, -z].forEach(s => { const o = new THREE.Group(); o.position.set(x, y, s); hode.add(o);
@@ -1039,10 +1039,11 @@ function lagOyne(hode, x, y, z, r, lokkMat) { const hvitO = fm(0xffffff, 0.3), p
 function bein(g, mat, hovMat, pos, h, r) { pos.forEach(([x, z]) => { mesh(new THREE.CylinderGeometry(r * 0.9, r, h, 8), mat, x, h / 2 + 0.08, z, g); mesh(new THREE.CylinderGeometry(r * 1.05, r * 1.1, 0.16, 8), hovMat, x, 0.08, z, g); }); }
 function dyrGruppe(x, z, rot, art, ekstra) { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g); const kropp = new THREE.Group(); g.add(kropp);
   g.userData = Object.assign({art, kropp, mal: new THREE.Vector3(x, 0, z), venter: rr(1, 4), blunk: rr(1, 4), ore: rr(2, 6), hopp: 0, beite: 0, fase: rr(0, 6)}, ekstra); return g; }
-function ferdigDyr(g) { bakeDirekte(g.userData.kropp); bakeDirekte(g); const u = g.userData; [...u.orer, u.hale].forEach(d => d.traverse(o => { if (o.isMesh) o.castShadow = false; })); /* små deler kaster ikke skygge (færre tegnekall i skyggepasset) */ g.traverse(o => { if (o.isMesh) o.userData.eier = g; }); klikkbar(g); dyr.push(g); return g; }
+const DYR_SKALA = {ku: 0.8, gris: 0.85, sau: 0.85};
+function ferdigDyr(g, type) { if (type) { g.scale.setScalar(DYR_SKALA[type]); g.userData.hjerteY *= DYR_SKALA[type]; } bakeDirekte(g.userData.kropp); bakeDirekte(g); const u = g.userData; [...u.orer, u.hale].forEach(d => d.traverse(o => { if (o.isMesh) o.castShadow = false; })); /* små deler kaster ikke skygge (færre tegnekall i skyggepasset) */ g.traverse(o => { if (o.isMesh) o.userData.eier = g; }); klikkbar(g); dyr.push(g); return g; }
 
 function lagKu(x, z) {
-  const g = dyrGruppe(x, z, 0.4, 'dyr', {fart: 0.45, sone: [-14.6, -12.8], hjerteY: 2.7, hodeY: 1.62}); const u = g.userData, K = u.kropp;
+  const g = dyrGruppe(x, z, 0.4, 'dyr', {fart: 0.45, sone: [-15.0, -13.3], hjerteY: 2.7, hodeY: 1.62}); const u = g.userData, K = u.kropp;
   const hvit = fm(0xfbf7f0, 0.8), flekk = fm(0x2b2622, 0.8), rosa = fm(0xf3a7a6, 0.6), hov = fm(0x4a3a30, 0.6), horn = fm(0xf1e4c4, 0.5), kinn = fm(0xffa3a3, 0.6);
   mesh(new THREE.SphereGeometry(0.75, 22, 16), hvit, 0, 1.15, 0, K).scale.set(1.45, 0.92, 0.92);
   // flekker: mørke kuler som stikker litt ut av kroppen, så de ser ut som myke flekker
@@ -1063,10 +1064,10 @@ function lagKu(x, z) {
   u.oyne = lagOyne(hode, 0.3, 0.1, 0.24, 0.1, hvit);
   u.hale = new THREE.Group(); u.hale.position.set(-1.05, 1.4, 0); K.add(u.hale);
   mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.7, 6), hvit, 0, -0.35, 0, u.hale); mesh(new THREE.SphereGeometry(0.09, 8, 6), flekk, 0, -0.72, 0, u.hale).scale.set(1, 1.5, 1); bakeDirekte(u.hale);
-  u.hode = hode; return ferdigDyr(g);
+  u.hode = hode; return ferdigDyr(g, 'ku');
 }
 function lagGris(x, z) {
-  const g = dyrGruppe(x, z, -0.6, 'dyr', {fart: 0.7, sone: [-11.5, -10.5], hjerteY: 1.6, hodeY: 0.8}); const u = g.userData, K = u.kropp;
+  const g = dyrGruppe(x, z, -0.6, 'dyr', {fart: 0.7, sone: [-12.0, -10.5], hjerteY: 1.6, hodeY: 0.8}); const u = g.userData, K = u.kropp;
   const rosa = fm(0xf6b3b8, 0.65), mork = fm(0xe48f98, 0.65), hov = fm(0x8b5a5a, 0.6), kinn = fm(0xff8f9a, 0.6);
   mesh(new THREE.SphereGeometry(0.55, 22, 16), rosa, 0, 0.62, 0, K).scale.set(1.3, 0.92, 0.95);
   bein(K, rosa, hov, [[0.4, 0.26], [0.4, -0.26], [-0.4, 0.26], [-0.4, -0.26]], 0.22, 0.09);
@@ -1080,10 +1081,10 @@ function lagGris(x, z) {
   u.oyne = lagOyne(hode, 0.27, 0.1, 0.2, 0.085, rosa);
   u.hale = new THREE.Group(); u.hale.position.set(-0.7, 0.75, 0); K.add(u.hale);
   const krolle = mesh(new THREE.TorusGeometry(0.08, 0.022, 6, 14, Math.PI * 1.7), rosa, -0.06, 0, 0, u.hale); krolle.rotation.y = Math.PI / 2; bakeDirekte(u.hale);
-  u.hode = hode; return ferdigDyr(g);
+  u.hode = hode; return ferdigDyr(g, 'gris');
 }
 function lagSau(x, z) {
-  const g = dyrGruppe(x, z, 2.6, 'dyr', {fart: 0.6, sone: [-9.4, -8.3], hjerteY: 1.9, hodeY: 1.0}); const u = g.userData, K = u.kropp;
+  const g = dyrGruppe(x, z, 2.6, 'dyr', {fart: 0.6, sone: [-9.2, -7.9], hjerteY: 1.9, hodeY: 1.0}); const u = g.userData, K = u.kropp;
   const ansikt = fm(0x4a4443, 0.7), hov = fm(0x2e2a29, 0.6), kinn = fm(0xff9fa6, 0.6), ullM = MAT.vertex;
   const ull = new THREE.Mesh(krone('ull', 0, true), ullM); ull.position.set(0, 0.95, 0); ull.scale.set(0.55, 0.56, 0.5); ull.castShadow = true; ull.receiveShadow = true; K.add(ull);
   bein(K, ansikt, hov, [[0.32, 0.2], [0.32, -0.2], [-0.32, 0.2], [-0.32, -0.2]], 0.42, 0.07);
@@ -1095,7 +1096,7 @@ function lagSau(x, z) {
   u.orer = [1, -1].map(s => { const o = new THREE.Group(); o.position.set(-0.04, 0.08, s * 0.24); hode.add(o); const m = mesh(new THREE.SphereGeometry(0.11, 10, 8), ansikt, 0, 0, s * 0.08, o); m.scale.set(0.5, 0.3, 1.2); bakeDirekte(o); o.rotation.x = s * 0.3; return o; });
   u.oyne = lagOyne(hode, 0.22, 0.06, 0.16, 0.075, ansikt);
   u.hale = new THREE.Group(); u.hale.position.set(-0.68, 0.95, 0); K.add(u.hale); const hu = new THREE.Mesh(krone('ull', 2, false), ullM); hu.scale.setScalar(0.14); u.hale.add(hu);
-  u.hode = hode; return ferdigDyr(g);
+  u.hode = hode; return ferdigDyr(g, 'sau');
 }
 function lagBeite() {
   const G = new THREE.Group(); scene.add(G); const {x0, x1, z0, z1} = BEITE; const stolper = [], lekter = [];
@@ -1103,19 +1104,24 @@ function lagBeite() {
     for (let i = 0; i <= n; i++) { const t = i / n, x = ax + (bx - ax) * t, z = az + (bz - az) * t; stolper.push({geo: avrundetBoks(0.16, 1.05, 0.16, 0.04, 1), m: M4(x, hoyde(x, z) + 0.5, z)}); }
     for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n, tm = (t0 + t1) / 2; if (apning && Math.abs(tm - 0.5) < 0.5 / n) continue; const x = ax + (bx - ax) * tm, z = az + (bz - az) * tm;
       [0.42, 0.82].forEach(y => lekter.push({geo: avrundetBoks(L / n + 0.1, 0.1, 0.06, 0.02, 1), m: M4(x, hoyde(x, z) + y, z, 0, rot, 0)})); } };
-  side(x0, z0, x1, z0); side(x1, z0, x1, z1); side(x1, z1, x0, z1, true); side(x0, z1, x0, z0);
-  side(-12.1, z0, -12.1, z1); side(-9.95, z0, -9.95, z1); // tre binger: ku | gris | sau
+  side(x0, z0, x1, z0); side(x1, z0, x1, z1); side(x1, z1, x0, z1); side(x0, z1, x0, z0);
+  side(-12.6, z0, -12.6, z1); side(-9.9, z0, -9.9, z1); // tre lukkede binger: ku | gris | sau
+  // en lukket grind i hver binge, mot gangen
+  const grind = []; [-14.15, -11.25, -8.55].forEach(gx => { const y = hoyde(gx, z1);
+    [0.32, 0.62, 0.92].forEach(h => grind.push({geo: avrundetBoks(1.1, 0.09, 0.07, 0.02, 1), m: M4(gx, y + h, z1 + 0.06)}));
+    grind.push({geo: avrundetBoks(1.25, 0.08, 0.06, 0.02, 1), m: M4(gx, y + 0.62, z1 + 0.1, 0, 0, 0.5)}); grind.push({geo: avrundetBoks(0.12, 1.1, 0.12, 0.03, 1), m: M4(gx - 0.6, y + 0.55, z1 + 0.06)}, {geo: avrundetBoks(0.12, 1.1, 0.12, 0.03, 1), m: M4(gx + 0.6, y + 0.55, z1 + 0.06)}); });
+  mesh(samle(grind.map(d => ({geo: d.geo, m: d.m, farge: 0xd9b27a}))), MAT.vertex, 0, 0, 0, G);
   mesh(samle(stolper.map(d => ({geo: teksturUV(d.geo, 0.3, 1), m: d.m}))), MAT.brunPlank, 0, 0, 0, G); mesh(samle(lekter.map(d => ({geo: teksturUV(d.geo, 1, 0.2), m: d.m}))), MAT.lysPlank, 0, 0, 0, G);
   // høykrybbe, vannkar og en liten sølepytt til grisen
-  const kr = new THREE.Group(); kr.position.set(-13.2, 0, 0.8); G.add(kr);
+  const kr = new THREE.Group(); kr.position.set(-14.4, 0, 0.6); G.add(kr);
   mesh(teksturUV(avrundetBoks(1.6, 0.5, 0.6, 0.05, 1), 1, 0.3), MAT.brunPlank, 0, 0.35, 0, kr); mesh(teksturUV(avrundetBoks(1.45, 0.14, 0.45, 0.05, 1), 1, 0.3), MAT.hoy, 0, 0.62, 0, kr);
   const kar = new THREE.Group(); kar.position.set(-8.6, 0, 4.4); G.add(kar);
   mesh(new THREE.CylinderGeometry(0.5, 0.42, 0.42, 18, 1, true), std({color: SRGB(0x9aa3a8), roughness: 0.4, metalness: 0.3, side: THREE.DoubleSide}), 0, 0.21, 0, kar); mesh(new THREE.TorusGeometry(0.5, 0.035, 6, 24), fm(0x7d868c, 0.4), 0, 0.42, 0, kar).rotation.x = Math.PI / 2;
   mesh(new THREE.CircleGeometry(0.47, 18), std({color: SRGB(0x5bb6e0), roughness: 0.12}), 0, 0.34, 0, kar, false).rotation.x = -Math.PI / 2;
   // sølepytt: lys kant, mørk og blank midt, med to vannblanke flekker
-  [[0.72, 0x9b7a55, 0.9, 0.03], [0.56, 0x7a5a3c, 0.4, 0.035], [0.24, 0x6a4c33, 0.15, 0.04]].forEach(([r, f, ru, y], i) => { const m = mesh(new THREE.CircleGeometry(r, 22), std({color: SRGB(f), roughness: ru}), -11.0 + i * 0.08, hoyde(-11.0, 3.9) + y, 3.9 - i * 0.08, G, false); m.rotation.x = -Math.PI / 2; m.scale.set(1.15, 1.1, 1); }); // innenfor grisebingen
+  [[0.72, 0x9b7a55, 0.9, 0.03], [0.56, 0x7a5a3c, 0.4, 0.035], [0.24, 0x6a4c33, 0.15, 0.04]].forEach(([r, f, ru, y], i) => { const m = mesh(new THREE.CircleGeometry(r, 22), std({color: SRGB(f), roughness: ru}), -11.25 + i * 0.08, hoyde(-11.25, 3.6) + y, 3.6 - i * 0.08, G, false); m.rotation.x = -Math.PI / 2; m.scale.set(1.15, 1.1, 1); }); // innenfor grisebingen
   bake(G);
-  lagKu(-13.4, 3.0); lagGris(-11.0, 2.4); lagSau(-8.9, 2.2);
+  lagKu(-14.0, 3.0); lagGris(-11.2, 2.0); lagSau(-8.5, 2.2);
 }
 function oppdaterDyr(dt, t) {
   for (const g of dyr) { const u = g.userData;
@@ -1267,7 +1273,7 @@ function fullGard() {
     deler.forEach(c => { const lager = []; c.traverse(o => { lager.push([o, o.userData]); o.userData = {}; }); const k = c.clone(); lager.forEach(([o, u]) => o.userData = u); /* userData har sirkulære referanser */ k.position.x += off[0]; k.position.z += off[1]; k.userData = {kat: 'full'}; scene.add(k); });
     return off; };
   kopi('laave'); kopi('honsehus'); kopi('akre'); const b = kopi('dyr', true);
-  if (b) [[lagKu, -13.4, 3.0, [-14.6, -12.8]], [lagKu, -13.8, 1.6, [-14.6, -12.8]], [lagGris, -11.0, 2.4, [-11.5, -10.5]], [lagGris, -11.1, 4.0, [-11.5, -10.5]], [lagSau, -8.9, 2.2, [-9.4, -8.3]], [lagSau, -8.8, 3.8, [-9.4, -8.3]]]
+  if (b) [[lagKu, -14.0, 3.4, [-15.0, -13.3]], [lagKu, -13.9, 1.5, [-15.0, -13.3]], [lagGris, -11.2, 2.0, [-12.0, -10.5]], [lagGris, -11.0, 4.0, [-12.0, -10.5]], [lagSau, -8.5, 1.8, [-9.2, -7.9]], [lagSau, -8.6, 3.9, [-9.2, -7.9]]]
     .forEach(([f, x, z, sone]) => { const g = f(x + b[0], z + b[1]); g.userData.sone = [sone[0] + b[0], sone[1] + b[0]]; g.userData.zs = [BEITE.z0 + 1 + b[1], BEITE.z1 - 1 + b[1]]; });
 }
 let fullInfo = '', forhandMs = null, klarMs = null, antLastet = 0;
