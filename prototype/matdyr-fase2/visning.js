@@ -563,10 +563,10 @@
     const t = new T.CanvasTexture(cv); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(w / 8, d / 8); t.encoding = T.sRGBEncoding; t.anisotropy = 4; return t;
   }
   // Rektangulært gjerde med port midt på siden nærmest gården
-  function rektGjerde(g, x0, x1, z0, z1) {
+  function rektGjerde(g, x0, x1, z0, z1, ostPort = 0) {
     const st = NY && mdel('gjerde_stolpe'), le = NY && mdel('gjerde_ledd'), stolper = [], ledd = [];
     const side = (ax, az, bx, bz) => { const L = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(L / 2.4)); for (let i = 0; i < n; i++) { const p = { x: ax + (bx - ax) * i / n, z: az + (bz - az) * i / n }, q = { x: ax + (bx - ax) * (i + 1) / n, z: az + (bz - az) * (i + 1) / n }; stolper.push(p); ledd.push({ x: p.x, z: p.z, ry: -Math.atan2(q.z - p.z, q.x - p.x), sx: Math.hypot(q.x - p.x, q.z - p.z) / 2.4 }); } };
-    side(x0, z0, -3.6, z0); side(3.6, z0, x1, z0); side(x1, z0, x1, z1); side(x1, z1, x0, z1); side(x0, z1, x0, z0); stolper.push({ x: -3.6, z: z0 });
+    side(x0, z0, -3.6, z0); side(3.6, z0, x1, z0); if (ostPort) { const pz = (z0 + z1) / 2; side(x1, z0, x1, pz - ostPort); side(x1, pz + ostPort, x1, z1); stolper.push({ x: x1, z: pz - ostPort }); } else side(x1, z0, x1, z1); side(x1, z1, x0, z1); side(x0, z1, x0, z0); stolper.push({ x: -3.6, z: z0 });
     if (st && le) { const gs = EVNMiljo.instanser(st, stolper), gl = EVNMiljo.instanser(le, ledd); gs.userData.ikkeFlett = gl.userData.ikkeFlett = true; g.add(gs, gl); }
     else { stolper.forEach(p => boks(g, 0.2, 1.1, 0.2, p.x, 0.55, p.z, HVIT)); ledd.forEach(l => { const b = boks(g, l.sx * 2.4, 0.12, 0.08, l.x + Math.cos(-l.ry) * l.sx * 1.2, 0.95, l.z + Math.sin(-l.ry) * l.sx * 1.2, HVIT); b.rotation.y = l.ry; }); }
     for (const sx of [-1, 1]) boks(g, 0.35, 2.0, 0.35, sx * 3.6, 1.0, z0, GUL);
@@ -655,7 +655,15 @@
       const e = gd.eng, eg = new T.Group(); eg.userData.ikkeFlett = true; g.add(eg);
       const w = e.x1 - e.x0, d = e.z1 - e.z0, cx = (e.x0 + e.x1) / 2, cz = (e.z0 + e.z1) / 2;
       const jord = new T.Mesh(new T.PlaneGeometry(w, d), new T.MeshStandardMaterial({ map: aakerTekstur(w, d), roughness: 0.97 })); jord.rotation.x = -Math.PI / 2; jord.position.set(cx, 0.03, cz); jord.receiveShadow = true; eg.add(jord);
-      rektGjerde(eg, e.x0 - 0.6, e.x1 + 0.6, e.z0 - 0.6, e.z1 + 0.6);
+      rektGjerde(eg, e.x0 - 0.6, e.x1 + 0.6, e.z0 - 0.6, e.z1 + 0.6, 2.4);
+      // Porten ut av åkeren i øst: to gule stolper, en sti ut og en hekk der matdyrene går videre ut i verden
+      const pz = (e.z0 + e.z1) / 2, px = e.x1 + 0.6;
+      for (const s2 of [-1, 1]) boks(eg, 0.35, 2.0, 0.35, px, 1.0, pz + s2 * 2.4, GUL);
+      const utsti = new T.Mesh(new T.PlaneGeometry(11, 4.2), M('#c9a06a', 0.95)); utsti.rotation.x = -Math.PI / 2; utsti.position.set(px + 5.3, 0.04, pz); utsti.receiveShadow = true; eg.add(utsti);
+      skilt(eg, ['👋 Ut av åkeren'], px + 1.2, 0, pz - 3.6, -Math.PI / 2, '#ffe9a8');
+      const hekk = []; for (let i = 0; i < 9; i++) hekk.push({ x: px + 10.5 + (i % 2) * 1.2, z: pz - 6 + i * 1.5, ry: i * 1.3, s: 1.5 + (i % 3) * 0.25 });
+      if (NY && mdel('busk')) { const hg = EVNMiljo.instanser(mdel('busk'), hekk); hg.userData.ikkeFlett = true; eg.add(hg); }
+      else hekk.forEach(h => { const b = new T.Mesh(new T.SphereGeometry(1.1 * h.s, 12, 8), M('#4f9a3a', 0.9)); b.position.set(h.x, 0.8, h.z); eg.add(b); });
       const fra = n >= 2 ? 21.5 : 15.5, til = e.z0 - 0.4; const sti = new T.Mesh(new T.PlaneGeometry(6, til - fra + 1), M('#c9a06a', 0.95)); sti.rotation.x = -Math.PI / 2; sti.position.set(0, 0.04, (fra + til) / 2); sti.receiveShadow = true; eg.add(sti);
       skilt(eg, ['🌧️ Åkeren', 'Her regner matdyrene'], 5.4, 0, e.z0 - 1.6, Math.PI, '#ffe9a8');
     }

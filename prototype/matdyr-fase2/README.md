@@ -153,3 +153,11 @@ Kroppen kan ligge, stå eller være en kuppel. Piloten har 4 arter (ku, pingvin,
 - Plassene i spillet: alt uten tekstur slås nå sammen til to felles materialer (matt og blankt) og til én mesh per etasje. Med 16 ulike figurer på 16 plasser ble det 98 tegnekall, mot 321 før sammenslåingen. Målt headless, ikke på ekte enhet.
 - Trekanter: full 13–33 k, lav ≤ 7 k. Filstørrelse: lav 205 kB per figur, full 650 kB. Bilde: `figurpilot-kontaktark.png`.
 - Ingen masseproduksjon før Even har godkjent piloten (MS5).
+
+## Matdyrene går over åkeren (Ivar, 8.11.2026 kveld)
+Før forsvant matdyrene etter 70 sekunder, uansett hvor de var. Nå skjer dette:
+- De lander i starten av åkeren (vest).
+- De vandrer østover over åkeren.
+- Til slutt går de ut gjennom en port i østgjerdet og følger en sti bak en hekk, der de blir borte.
+
+Et matdyr som har satt seg fast, fjernes etter 4 minutter. Roboten kan ikke gå ut gjennom porten.

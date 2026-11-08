@@ -129,7 +129,10 @@
   // Åkeren ligger rett foran gården, fast plass og størrelse (60 × 32 m)
   const eng = () => ({ x0: -31, x1: 31, z0: 24, z1: 56 });
   function iFeltet(x, z) { const e = eng(); return x > e.x0 + 1.2 && x < e.x1 - 1.2 && z > e.z0 + 1.2 && z < e.z1 - 1.2; }
-  function tilfeldigPunkt() { const e = eng(); return [e.x0 + 1.5 + Math.random() * (e.x1 - e.x0 - 3), e.z0 + 1.5 + Math.random() * (e.z1 - e.z0 - 3)]; }
+  // Matdyrene lander i starten av åkeren (vest), vandrer østover over åkeren og går ut gjennom porten i østgjerdet.
+  // Utenfor porten følger de stien inn bak hekken og blir borte der, i stedet for å forsvinne midt på åkeren.
+  const port = () => { const e = eng(); return { x: e.x1, z: (e.z0 + e.z1) / 2, halv: 2.2 }; };
+  function tilfeldigPunkt() { const e = eng(); return [e.x0 + 1.5 + Math.random() * 11, e.z0 + 2 + Math.random() * (e.z1 - e.z0 - 4)]; }
   // Sjeldenheten trekkes med de vanlige vektene. Med bestillingsregn trekkes matdyret deretter blant artene neste gårdsnivå krever.
   function trekk() {
     const tot = R.reduce((s, r) => s + r.w, 0); let x = Math.random() * tot, r = 0;
@@ -141,7 +144,7 @@
   function slippNed(ci, xz) {
     const [x, z] = xz || tilfeldigPunkt(), g = new T.Group(); g.position.set(x, xz ? 0 : 26, z);
     const m = modell(ci), lab = navneskilt(ci); lab.position.y = 3.9 + COMBOS[ci].r * 0.15; g.add(m, lab); feltG.add(g);
-    felt.push({ ci, g, m, tilstand: xz ? 'gaa' : 'fall', retning: Math.random() * Math.PI * 2, fart: 1.2 + Math.random() * 0.8, snu: 2 + Math.random() * 3, alder: 0 });
+    felt.push({ ci, g, m, tilstand: xz ? 'gaa' : 'fall', retning: Math.PI / 2 + (Math.random() - 0.5) * 1.2, fart: 1.2 + Math.random() * 0.8, snu: 2 + Math.random() * 3, alder: 0 });
   }
   function fjern(a) { feltG.remove(a.g); felt.splice(felt.indexOf(a), 1); }
   function oppdaterFelt(dt, t) {
@@ -149,10 +152,22 @@
     for (const a of [...felt]) {
       a.alder += dt; const p = a.g.position;
       if (a.tilstand === 'fall') { p.y -= dt * 16; if (p.y <= 0) { p.y = 0; a.tilstand = 'gaa'; } continue; }
-      if (a.alder > 70) { fjern(a); continue; }
-      if ((a.snu -= dt) <= 0) { a.retning += (Math.random() - 0.5) * 2.4; a.snu = 2 + Math.random() * 3; }
+      if (a.alder > 240) { fjern(a); continue; }   // sikkerhetsnett: et dyr som har satt seg fast
+      const e = eng(), po = port();
+      if (a.tilstand === 'borte') { a.krymp = (a.krymp || 1) - dt * 1.6; if (a.krymp <= 0) { fjern(a); continue; } a.g.scale.setScalar(a.krymp); }
+      // Ønsket retning: østover med litt vandring, mot porten den siste biten, og langs stien ut til hekken
+      if ((a.snu -= dt) <= 0) { a.vandre = (Math.random() - 0.5) * 1.6; a.snu = 2 + Math.random() * 3; }
+      let maal;
+      if (a.tilstand === 'ut' || a.tilstand === 'borte') maal = Math.PI / 2 + (po.z - p.z) * 0.15;
+      else if (p.x > e.x1 - 12) maal = Math.atan2(po.x + 2 - p.x, po.z - p.z);
+      else maal = Math.PI / 2 + (a.vandre || 0);
+      const diff = Math.atan2(Math.sin(maal - a.retning), Math.cos(maal - a.retning)); a.retning += diff * Math.min(1, dt * 1.5);
       const nx = p.x + Math.sin(a.retning) * a.fart * dt, nz = p.z + Math.cos(a.retning) * a.fart * dt;
-      if (iFeltet(nx, nz)) { p.x = nx; p.z = nz; } else a.retning += Math.PI * (0.7 + Math.random() * 0.6);
+      const iPorten = Math.abs(nz - po.z) < po.halv - 0.6 && nx > e.x1 - 3;
+      if (a.tilstand === 'ut' || a.tilstand === 'borte' || iFeltet(nx, nz) || iPorten) { p.x = nx; p.z = nz; }
+      else { p.z = Math.min(e.z1 - 1.3, Math.max(e.z0 + 1.3, nz)); p.x = Math.min(Math.max(nx, e.x0 + 1.3), e.x1 - 1.3); }   // glir langs gjerdet mot porten
+      if (a.tilstand === 'gaa' && p.x > e.x1 + 0.5) a.tilstand = 'ut';
+      if (a.tilstand === 'ut' && p.x > e.x1 + 9) a.tilstand = 'borte';
       a.m.rotation.y = a.retning;
       if (a.m.userData.fig) { if (!I.REDUSERT) I.animerNy(a.m.userData.fig, t + a.alder, true); } else a.m.position.y = I.REDUSERT ? 0 : Math.abs(Math.sin(t * 7 + a.alder)) * 0.12;
     }
