@@ -229,8 +229,9 @@
     if (ak === 'x') { rekkverk(e, x0, z0, ap.fra, z0); rekkverk(e, ap.til, z0, x1, z1); } else { rekkverk(e, x0, z0, x0, ap.fra); rekkverk(e, x0, ap.til, x1, z1); }
     // Gul port rundt åpningen
     const [px0, pz0, px1, pz1] = ak === 'x' ? [ap.fra, z0, ap.til, z0] : [x0, ap.fra, x0, ap.til];
-    for (const [x, z] of [[px0, pz0], [px1, pz1]]) boks(e, 0.25, 2.6, 0.25, x, 1.3, z, GUL);
-    const l = boks(e, Math.hypot(px1 - px0, pz1 - pz0) + 0.25, 0.25, 0.25, (px0 + px1) / 2, 2.6, (pz0 + pz1) / 2, GUL); l.rotation.y = ak === 'x' ? 0 : Math.PI / 2;
+    const PH = 4.0;   // fri høyde over dekket; roboten er ca. 3,0
+    for (const [x, z] of [[px0, pz0], [px1, pz1]]) boks(e, 0.25, PH, 0.25, x, DEKKE + PH / 2, z, GUL);
+    const l = boks(e, Math.hypot(px1 - px0, pz1 - pz0) + 0.25, 0.25, 0.25, (px0 + px1) / 2, DEKKE + PH + 0.12, (pz0 + pz1) / 2, GUL); l.rotation.y = ak === 'x' ? 0 : Math.PI / 2;
   }
   function etasje(g, nr) {
     const y = nr * EH, e = new T.Group(); e.position.y = y; e.userData.etasje = nr; g.add(e);
@@ -254,8 +255,8 @@
     if (linjer[1]) { c.font = 'bold 28px system-ui, sans-serif'; c.fillText(linjer[1], 160, 100); }
     const t = new T.CanvasTexture(cv); t.encoding = T.sRGBEncoding;
     const s = new T.Group(); s.position.set(x, y, z); s.rotation.y = roty; g.add(s);
-    for (const dx of [-0.8, 0.8]) s.add(mesh(new T.CylinderGeometry(0.08, 0.08, 2.4, 8), M('#7a4a22', 0.8), dx, 1.2, 0));
-    const tavle = new T.Mesh(new T.PlaneGeometry(2.3, 1.0), new T.MeshStandardMaterial({ map: t, roughness: 0.8, side: T.DoubleSide })); tavle.position.y = 2.3; s.add(tavle);
+    for (const dx of [-0.8, 0.8]) s.add(mesh(new T.CylinderGeometry(0.08, 0.08, 4.4, 8), M('#7a4a22', 0.8), dx, 2.2, 0));
+    const tavle = new T.Mesh(new T.PlaneGeometry(2.3, 1.0), new T.MeshStandardMaterial({ map: t, roughness: 0.8, side: T.DoubleSide })); tavle.position.y = 3.9; s.add(tavle);
     return s;
   }
   const pilGeo = (() => { const sh = new T.Shape(); sh.moveTo(0, 0.6); sh.lineTo(0.5, 0); sh.lineTo(0.18, 0); sh.lineTo(0.18, -0.6); sh.lineTo(-0.18, -0.6); sh.lineTo(-0.18, 0); sh.lineTo(-0.5, 0); sh.closePath(); const gg = new T.ShapeGeometry(sh); gg.scale(1.6, 1.6, 1); gg.rotateX(-Math.PI / 2); return gg; })();
@@ -299,9 +300,10 @@
   function spiral(g, nr) {
     const { rr, kant } = rampedel(g, nr), k0 = kant[0], [r0, r1] = SPOR.repos[nr], km = kant.find(k => k.q[3] >= (r0 + r1) / 2);
     const vend = k => Math.atan2(k.t.x, k.t.y) + Math.PI;
-    if (nr === 1) skilt(rr, ['📍 Repos 1', 'Inn til 2. etasje'], km.ox - km.n.x * 1.2, km.q[4], km.oz - km.n.y * 1.2, -Math.PI / 2, '#ffe9a8');
-    if (nr === 2) { const kk = kant[6]; skilt(rr, ['↗ Rampe 2', '2. → 3. etasje'], kk.ox - kk.n.x * 1.1, kk.q[4] - 0.2, kk.oz - kk.n.y * 1.1, -Math.PI / 2 + 0.6); skilt(rr, ['📍 Repos 2', 'Inn til 3. etasje'], km.ox - km.n.x * 1.2, km.q[4], km.oz - km.n.y * 1.2, Math.PI / 2, '#ffe9a8'); }
-    if (nr === 3) { const kk = kant[6]; skilt(rr, ['↗ Rampe 3', '3. etasje → topp'], kk.ox - kk.n.x * 1.1, kk.q[4] - 0.2, kk.oz - kk.n.y * 1.1, Math.PI / 2 - 0.4); }
+    // Reposskiltene står inne på etasjen, ved siden av porten, og vender mot den som kommer opp rampa
+    if (nr === 1) skilt(rr, ['📍 Repos 1', 'Inn til 2. etasje'], HX - 0.6, km.q[4], -KZ + LREP + 1.4, Math.PI / 2, '#ffe9a8');
+    if (nr === 2) { const kk = kant[6]; skilt(rr, ['↗ Rampe 2', '2. → 3. etasje'], kk.ox - kk.n.x * 1.1, kk.q[4] - 0.2, kk.oz - kk.n.y * 1.1, -Math.PI / 2 + 0.6 + Math.PI); skilt(rr, ['📍 Repos 2', 'Inn til 3. etasje'], -HX + 0.6, km.q[4], -KZ - 1.4, -Math.PI / 2, '#ffe9a8'); }
+    if (nr === 3) { const kk = kant[6]; skilt(rr, ['↗ Rampe 3', '3. etasje → topp'], kk.ox - kk.n.x * 1.1, kk.q[4] - 0.2, kk.oz - kk.n.y * 1.1, Math.PI / 2 - 0.4 + Math.PI); }
     return rr;
   }
   // Bygg på tunet
