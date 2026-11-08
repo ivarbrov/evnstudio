@@ -92,7 +92,7 @@ Filen er bare data. Reglene står i `test/spillregister.mjs`:
 
 En registreringsfil er testdata, ikke en del av spillet, og krever ikke ny versjon av spillet.
 
-**Kjente funn:** Funn som står under «Kjente funn» i standarden, gir «kjent» i stedet for «feil». Når de er rettet, gir de «rettet», som et tegn på at standarden bør oppdateres. Listen står øverst i `test/index.html`.
+**Kjente funn:** Funn som står under «Kjente funn» i standarden, gir «kjent» i stedet for «feil». Når de er rettet, gir de «rettet», som et tegn på at standarden bør oppdateres. Listen står øverst i `test/index.html` og gjelder suitene på testsiden. Kjente funn i røyktesten må legges inn i `test/kjor.mjs` (i dag ingen).
 
 **Tester som mangler:** En suite som mangler filen den tester, får status «ikke innført» bare hvis filen heller ikke finnes på `main` (`--base`). Finnes filen på `main`, er testen obligatorisk, og kjøringen feiler: «Obligatorisk test mangler». Ingen liste må vedlikeholdes. En test blir obligatorisk når den er slått sammen til `main`.
 
@@ -132,7 +132,7 @@ To arbeidsflyter gir to separate kontroller. Begge skal kreves i regelen for `ma
    - Registreringen til et spill som finnes på `main`, er uendret. En endring krever særskilt kontroll, fordi den endrer hva testene trykker på.
    - Resultatfilen fra Actions oppgir hvilke spill som ble testet. Den har alle påkrevde kontroller for hvert spill, også nye, med status `ok`, `kjent` eller `rettet`.
    - Suiten `sikkerhet` (de negative testene i `test/sikkerhet/`) er kjørt og grønn, når den finnes på `main`.
-   - Linjer som PR-en legger til og som prøver å nå en forelder, et toppvindu eller testresultatet (`parent`, `top`, `frameElement` eller `EVN…Resultat`), gir et varsel til den som går gjennom PR-en. Søket kan omgås, så det er ikke sperren. Sperren er isolasjonen under.
+   - Linjer som PR-en legger til og som prøver å nå en forelder, et toppvindu eller testresultatet (`parent`, `top`, `frameElement` eller `EVN…Resultat`) i `.js`- og `.html`-filer, gir et varsel til den som går gjennom PR-en. Søket kan omgås, så det er ikke sperren. Sperren er isolasjonen under.
    - Krav som er gjeldende i standarden på `main`, kreves fortsatt, også om standarden på grenen fjerner dem. Sjekken gir da et varsel.
    - Bare QA-rapportene (`qa/rapporter/*.md`) er unntatt fra «siste kodeendring». Andre filer i `qa/` regnes som kode.
    - Bare `spill/<id>/evn-test.json` regnes som testdata. En fil med samme navn i en undermappe regnes som en endring i spillet.
@@ -141,24 +141,26 @@ To arbeidsflyter gir to separate kontroller. Begge skal kreves i regelen for `ma
 - Hvert spill røyktestes i en egen fane med eget opphav: `http://<id>.localhost:<port>/spill/<id>/`. Spillet deler ikke opphav med testsiden (`127.0.0.1`) eller med andre spill.
 - Målingene gjøres fra en isolert JS-verden (`Page.createIsolatedWorld`). Spillet kan ikke bytte ut funksjonene som måler, for eksempel `getElementById`, `getComputedStyle` eller `JSON`.
 - Feil, manglende filer og navigasjon registreres av nettleseren (CDP), ikke av spillet. Et spill som navigerer bort under testen, får feil.
-- Suitene på testsiden (`statisk`, `statistikk`, `ui`, `ecoins`) kjører hver i sin egen fane. Navigeres fanen bort fra testsiden, avvises resultatet.
+- Hver fane har sin egen nettleserkontekst (som et eget, tomt profil). Fanene deler ikke lagring, informasjonskapsler, service workers eller buffer.
+- Suitene på testsiden (`statisk`, `statistikk`, `ui`, `ecoins`) kjører hver i sin egen fane. Navigeres fanen bort fra testsiden, eller åpnes et nytt vindu, avvises resultatet. Et spill som åpner et nytt vindu under røyktesten, får feil.
 - `statisk` leser spillsidene bare som tekst, så spillkoden kjører ikke der.
 
 Røyktesten kjøres derfor bare av `node test/kjor.mjs`, ikke når testsiden åpnes i en vanlig nettleser.
 
-**Negative tester:** `node test/sikkerhet/manipulering.test.mjs` lager et midlertidig git-repo som deler objektene med dette, og prøver 42 scenarier mot publiseringssjekken:
+**Negative tester:** `node test/sikkerhet/manipulering.test.mjs` lager et midlertidig git-repo som deler objektene med dette, og prøver 43 scenarier mot publiseringssjekken:
 - 6 som skal godtas:
   - nytt spill med og uten registreringsfil
   - registrering som er lik standarden, og som ikke krever ny spillversjon
   - et fjernet spill (bare varsel)
   - en ny QA-rapport, som ikke er en kodeendring
-- 36 manipuleringer som skal avvises eller gi varsel:
+- 37 manipuleringer som skal avvises eller gi varsel:
   - endringer i testsiden, testkjøreren, publiseringssjekken, spillregisteret og arbeidsflyten, og sletting av de negative testene
   - ugyldige registreringsfiler og mappenavn
   - endret registrering for eksisterende spill
   - resultatfiler som utelater et spill, en kontroll eller sikkerhetssuiten, har feil commit eller testversjon, eller har feil i røyktesten
   - spillkode som peker mot testsiden (varsel)
   - skript i `qa/` og `evn-test.json` i en undermappe
+  - endring i `ecoins/` uten full QA av alle spill
   - en standard der F1 er fjernet (kreves fortsatt, med varsel)
 
 Deretter kjører den `test/kjor.mjs` mot tre spill i `test/sikkerhet/juksespill/` (B1–B4):
@@ -170,7 +172,7 @@ Begge juksespillene skal gi feil og gjøre hele kjøringen rød. Testene kjøres
 
 **Hvorfor resultatfilen kan brukes:** Punkt 1 sikrer at testskriptene og arbeidsflyten er de samme som på `main`, og resultatfilen må oppgi samme testversjon som `test/` på commiten. Hvilke suiter som er rådgivende, leses fra `main`, ikke fra filen. Spillene kjøres isolert fra testsiden (se over).
 
-**Restrisiko:** Felles kode som testes inne i testsiden (`ecoins/`, `statistikk.js`, `prototype/ui/`), kjører i fanen til sin egen suite. Den kan i prinsippet påvirke resultatet for den suiten, men ikke for spillene eller andre suiter. Slike endringer regnes som felles kode og krever full QA av alle spill. Et spill kan heller ikke bevise at det er morsomt eller virker over tid. Det er EVN Game QA, Even og eieren sine lag.
+**Restrisiko:** Felles kode som testes inne i testsiden (`ecoins/`, `statistikk.js`), kjører i fanen til sin egen suite. Den kan i prinsippet påvirke resultatet for den suiten, men ikke for spillene eller andre suiter. Endringer i `ecoins/`, `statistikk.js`, `vendor/` og `fonter/` regnes som felles kode og krever full QA av alle spill. `prototype/ui/` brukes ikke av spillene, og suiten `ui` er rådgivende. Hvis `test/statistikk/` senere laster spill i rammer på testsidens opphav, gjelder det samme for statistikk-radene. Et spill kan heller ikke bevise at det er morsomt eller virker over tid. Det er lagene EVN Game QA, Even og eieren.
 Resultatfilen behandles bare som data. Stemmer den ikke med QA-rapportens kvittering, stopper PR-en.
 
 **Ulikt resultat i Actions og lokalt:** Kravene senkes ikke automatisk. PR-en stopper, og forskjellen undersøkes.

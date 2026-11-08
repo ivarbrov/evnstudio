@@ -104,20 +104,32 @@ async function startNettleser(bin) {
     try { p.kill(); } catch {}
     for (let i = 0; i < 20; i++) { try { fs.rmSync(profil, { recursive: true, force: true }); return; } catch { await vent(250); } }
   };
-  // Ny fane med egen økt. lytt(fn) får bare hendelser fra denne fanen.
+  // Nye vinduer og faner meldes, så et spill som åpner et vindu, kan oppdages.
+  await send('Target.setDiscoverTargets', { discover: true });
+  // Ny fane i sin egen nettleserkontekst (som et eget, tomt profil): ingen delt lagring, informasjonskapsler,
+  // service workers eller buffer med andre faner. lytt(fn) får bare hendelser fra denne fanen.
   const fane = async () => {
-    const { targetId } = await send('Target.createTarget', { url: 'about:blank' });
+    const { browserContextId } = await send('Target.createBrowserContext', { disposeOnDetach: true });
+    const { targetId } = await send('Target.createTarget', { url: 'about:blank', browserContextId });
     const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
     const s = (m, p) => send(m, p, sessionId);
-    const egne = [];
-    lyttere.push(d => { if (d.sessionId === sessionId) egne.forEach(l => l(d.method, d.params)); });
+    const egne = [], andre = [];
+    lyttere.push(d => {
+      if (d.sessionId === sessionId) egne.forEach(l => l(d.method, d.params));
+      const t = d.params && d.params.targetInfo;
+      if (d.method === 'Target.targetCreated' && t && t.browserContextId === browserContextId && t.targetId !== targetId && (t.type === 'page' || t.type === 'tab')) andre.push(t.url || 'nytt vindu');
+    });
     await Promise.all(['Page.enable', 'Runtime.enable', 'Log.enable', 'Network.enable'].map(m => s(m)));
-    return { s, lytt: l => egne.push(l), lukk: () => send('Target.closeTarget', { targetId }).catch(() => {}) };
+    return { s, lytt: l => egne.push(l), andreVinduer: () => [...andre],
+      lukk: async () => { await send('Target.closeTarget', { targetId }).catch(() => {}); await send('Target.disposeBrowserContext', { browserContextId }).catch(() => {}); } };
   };
   return { fane, lukk };
 }
 
 const kortUrl = u => (u || '').replace(/^https?:\/\/[^/]+/, '');
+// Tekst som spillet styrer (feilmeldinger og adresser), uten linjeskift, kontrolltegn og «::», så den ikke kan lage
+// egne arbeidsflytkommandoer i GitHub Actions.
+const ren = x => String(x ?? '').replace(/[\x00-\x1f\x7f]+/g, ' ').split(String.fromCharCode(0x2028)).join(' ').split(String.fromCharCode(0x2029)).join(' ').replace(/::/g, ': :');
 // Et spill som henger (for eksempel en uendelig løkke), skal gi feil, ikke stoppe hele kjøringen.
 const medFrist = (p, ms, tekst) => Promise.race([p, new Promise((_, a) => setTimeout(() => a(new Error(tekst)), ms))]);
 
@@ -147,6 +159,9 @@ async function kjorTestside(nl, port, suite, spill) {
     // Verdien hentes direkte av nettleseren (returnByValue), ikke via sidens egen JSON.
     try { const v = await f.s('Runtime.evaluate', { expression: 'location.pathname === "/test/" ? window.EVNTestResultat : null', returnByValue: true }); res = v.result.value || null; } catch {}
   }
+  // Et nytt vindu fra siden eller noe den laster, avvises på samme måte som navigasjon bort.
+  const vinduer = f.andreVinduer();
+  if (!bort && vinduer.length) bort = 'nytt vindu ' + vinduer[0];
   if (bort) res = null;
   await f.lukk();
   return { res, bort, tidsavbrudd: !res && !bort, prototypefeil };
@@ -220,6 +235,8 @@ async function royk(nl, port, spillId, konfig) {
   } catch (e) {
     legg('F1-royk', 'F1', 'Røyktesten kunne fullføres', false, String(e && e.message || e));
   }
+  const vinduer = f.andreVinduer();
+  if (vinduer.length) legg('F1-vindu', 'F1', 'Spillet åpner ikke nye vinduer under testen', false, vinduer.slice(0, 3).map(kortUrl).join(', '));
   await f.lukk();
   legg('K1-404', 'K1', 'Ingen filer mangler (status 400 eller høyere)', mangler.length === 0, [...new Set(mangler)].slice(0, 5).join(', '));
   legg('K1-feil', 'K1', 'Ingen ufangede feil etter innlasting og under start og pause', unntak.length === 0, [...new Set(unntak)].slice(0, 5).join(' | '));
@@ -326,13 +343,13 @@ async function main() {
     `Testkvittering: ${kvittering}`, ...(delvis.length ? [`(Delkjøring uten ${delvis.join(', ')}. Gjelder ikke for QA.)`] : []), '',
     `Resultat: ${telle('ok')} ok, ${feil} feil, ${telle('varsel')} varsel, ${telle('kjent')} kjent, ${telle('rettet')} rettet, ${telle('ikke innført')} ikke innført`, '',
     '| Suite | Spill | Krav | Kontroll | Resultat | Detaljer |', '|---|---|---|---|---|---|',
-    ...tester.map(t => `| ${t.suite} | ${t.spill} | ${t.krav} | ${t.navn} | ${t.status.toUpperCase()} | ${String(t.info).replace(/\|/g, '/').replace(/\n/g, ' ')} |`)];
+    ...tester.map(t => `| ${t.suite} | ${t.spill} | ${t.krav} | ${t.navn} | ${t.status.toUpperCase()} | ${ren(t.info).replace(/\|/g, '/')} |`)];
   console.log(ut.join('\n'));
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, ut.join('\n') + '\n');
   // Merknader som vises på kontrollen i GitHub
   if (process.env.GITHUB_ACTIONS === 'true') {
     for (const t of tester.filter(t => t.status === 'feil' || t.status === 'varsel'))
-      console.log(`::${t.status === 'feil' ? 'error' : 'warning'} title=${t.suite}/${t.spill}::${t.navn}${t.info ? ' – ' + String(t.info).replace(/\n/g, ' ') : ''}`);
+      console.log(`::${t.status === 'feil' ? 'error' : 'warning'} title=${ren(t.suite + '/' + t.spill)}::${ren(t.navn)}${t.info ? ' – ' + ren(t.info) : ''}`);
     console.log(`::notice title=Testkvittering::${kvittering}`);
   }
   const json = arg('json');

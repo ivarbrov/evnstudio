@@ -208,6 +208,10 @@ try {
   forvent('N35', 'Skript i qa/ (utenom rapportene) regnes som kode og krever ny QA', sha, arligResultat(sha), { sisteKode: 'denne' });
   sha = commit({ [`spill/${etSpill}/data/evn-test.json`]: '{ "nivaa": 99 }\n' });
   forvent('N36', `Fil som heter evn-test.json i en undermappe (${etSpill}/data/) regnes som endring i spillet`, sha, arligResultat(sha), { feil: /mangler QA-rapport på fullt nivå|versjonen er fortsatt/ });
+  const ecoinsFil = filerI('basis', 'ecoins/').find(f => f.endsWith('.js'));
+  if (ecoinsFil) { sha = commit({ [ecoinsFil]: (vis('basis', ecoinsFil) || '') + '\n// endret\n' });
+    forvent('N37', `Endring i felles kode (${ecoinsFil}) krever full QA av alle spill`, sha, arligResultat(sha), { feil: /mangler QA-rapport på fullt nivå/ }); }
+  else tester.push({ id: 'N37', navn: 'Endring i ecoins/ krever full QA', ok: false, info: 'fant ingen .js-fil i ecoins/ på basis' });
   if (utenReg) { sha = commit({ [regFil(utenReg)]: '{ "start": "startBtn" }\n' });
     forvent('P6', 'Registreringsfil i spillmappen krever ikke ny spillversjon eller ny spill-QA', sha, arligResultat(sha), { ikkeFeil: /mangler QA-rapport på fullt nivå|versjonen er fortsatt/ }); }
 

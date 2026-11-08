@@ -182,7 +182,8 @@ const registrering = (rev, id) => lesRegistrering(git('cat-file', '-e', `${rev}:
   const treff = [];
   for (const l of tillagt) {
     if (l.startsWith('+++ ')) fil = l.replace(/^\+\+\+ (b\/)?/, '');
-    else if (l.startsWith('+') && TILGANG.some(re => re.test(l))) treff.push(fil);
+    // Bare kode (js, mjs, html), ikke dokumentasjon som omtaler ordene.
+    else if (l.startsWith('+') && /\.(m?js|html?)$/i.test(fil) && TILGANG.some(re => re.test(l))) treff.push(fil);
   }
   if (treff.length) varsler.push(`[testoppsett] Ny kode prøver å nå en forelder, et toppvindu eller testresultatet (parent, top, frameElement eller EVN…Resultat) i ${[...new Set(treff)].slice(0, 5).join(', ')}. Testene er isolert fra spillet, men se gjennom koden.`);
   if (feil.length === f0) ok.push(`Testoppsettet: ${spillHer.length} spill testes automatisk${nye.length ? ` (nye: ${nye.join(', ')})` : ''}, registreringene er gyldige og testresultatet dekker alle.`);
@@ -241,7 +242,8 @@ const riktigGrunnlag = r => r.grunnlag.hash === standardHash && r.grunnlag.agent
 
 // ---- Hvilke spill er endret ----
 const alleSpill = (git('ls-tree', '--name-only', REF, 'spill/') || '').split('\n').filter(Boolean).map(f => f.replace(/^spill\//, ''));
-const felles = endrede.some(f => f === 'statistikk.js' || f.startsWith('vendor/') || f.startsWith('fonter/'));
+// ecoins/ (lommebok, E-shop og figurer) brukes av flere spill og regnes derfor som felles kode.
+const felles = endrede.some(f => f === 'statistikk.js' || f.startsWith('vendor/') || f.startsWith('fonter/') || f.startsWith('ecoins/'));
 // Registreringsfilen (evn-test.json) er testdata, ikke en del av spillet, og krever ikke ny spillversjon. Den kontrolleres under «Testoppsettet».
 const spill = felles ? alleSpill : [...new Set(endrede.filter(f => !(f.startsWith('spill/') && f.split('/').length === 3 && f.endsWith('/' + FILNAVN))).map(f => (/^spill\/([^/]+)\//.exec(f) || [])[1]).filter(Boolean))];
 
@@ -281,5 +283,7 @@ const ut = ['# EVN Publiseringssjekk', '', ...feil.map(x => '- FEIL: ' + x), ...
 console.log(ut.join('\n'));
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, ut.join('\n') + '\n');
 // Merknader som vises på kontrollen i GitHub
-if (I_ACTIONS) { feil.forEach(x => console.log('::error title=Publiseringssjekk::' + x)); varsler.forEach(x => console.log('::warning title=Publiseringssjekk::' + x)); }
+// Meldingene kan inneholde filnavn og tekst fra PR-en. Linjeskift, kontrolltegn og «::» fjernes, så de ikke blir egne kommandoer.
+const ren = x => String(x).replace(/[\x00-\x1f\x7f]+/g, ' ').split(String.fromCharCode(0x2028)).join(' ').split(String.fromCharCode(0x2029)).join(' ').replace(/::/g, ': :');
+if (I_ACTIONS) { feil.forEach(x => console.log('::error title=Publiseringssjekk::' + ren(x))); varsler.forEach(x => console.log('::warning title=Publiseringssjekk::' + ren(x))); }
 process.exit(feil.length ? 1 : 0);
