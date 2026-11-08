@@ -93,3 +93,4 @@ Status: prototype, ikke spill. Ingen spillogikk, lagring, statistikk eller musik
   - **Meny → Test → Auto-kamera:** fast kamerarute med 7 stopp à 10 s (6 s bevegelse, 4 s stille) som gjentas. Den gir like forhold mellom A/B-tester.
   - Skjermlås hindres under testen med Wake Lock der nettleseren støtter det. Batteri og lading registreres ved start og slutt der det er tilgjengelig.
   - Rapporten oppgir retning (stående/liggende), CSS-størrelse og alle testvalg.
+- 0.5.4: etter tilbakemelding fra Even. Beitet er delt i tre binger (ku | gris | sau), og sølepytten ligger nå inne i grisebingen. Full gård plasserer kopiene automatisk der det ikke står trær, og hver dyreart har sin egen binge.
