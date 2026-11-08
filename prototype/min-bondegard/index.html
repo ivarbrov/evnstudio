@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Min Bondegård – grafisk testscene 0.3</title>
 <style>
+#boble { position: fixed; display: none; transform: translate(-50%, -100%); background: #fffdf5; color: #2b2b2b; font: 600 16px/1.3 system-ui, sans-serif; padding: 10px 14px; border-radius: 16px; max-width: 220px; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,.25); pointer-events: none; z-index: 5; }
+#boble::after { content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -9px; border: 9px solid transparent; border-bottom: 0; border-top-color: #fffdf5; }
   html,body{margin:0;height:100%;overflow:hidden;background:#a9d8f2;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
   canvas{display:block}
   .panel{position:fixed;left:8px;right:8px;top:8px;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none}
@@ -20,6 +22,7 @@
 </style>
 </head>
 <body>
+<div id="boble"></div>
 <div id="last">Bygger gården …</div>
 <div class="panel">
   <div class="grp" role="group" aria-label="Tid og vær"><b>Vær</b>
@@ -37,8 +40,8 @@
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.3.0';
-const ROBOT_URL = '../../ecoins/helt-robot-v2.glb';
+const VERSJON = 'testscene 0.3.1';
+const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
 /* ======================= Kvalitet ======================= */
@@ -286,7 +289,9 @@ function lagTerreng() {
 }
 
 /* ======================= Vegetasjon 0.3 (ruter for utsnittskontroll, LOD, klynger) ======================= */
+const revPlass = (x, z) => Math.hypot(x + 17.6, z - 4) < 2.4; // revens plass i skogkanten holdes fri
 function plassLedig(x, z) {
+  if (revPlass(x, z)) return false;
   if (paVei(x, z)) return false;
   if (x > -16.5 && x < 14.5 && z > -12.5 && z < 11) return false;
   if (Math.abs(z - elvZ(x)) < 4.5) return false;
@@ -299,7 +304,7 @@ function lagVegetasjon() {
   const nærMidt = (x, z) => Math.hypot(x, z) < 38;
   const kl = (r, f, o, x, z) => lineariser(klump(r, f, Object.assign({seg: nærMidt(x, z) ? 11 : 7}, o)));
   const tre = (x, z, k, type) => {
-    const y = hoyde(x, z), s = rr(0.85, 1.3), d = [];
+    if (revPlass(x, z)) return; const y = hoyde(x, z), s = rr(0.85, 1.3), d = [];
     if (type === 'gran') {
       d.push({geo: new THREE.CylinderGeometry(0.16 * s, 0.28 * s, 1.6 * s, 6), m: M4(x, y + 0.8 * s, z), farge: 0x6b4529});
       for (let j = 0; j < 4; j++) d.push({geo: kl(1.0, 0x2f6b37, {topp: 0x5d9f4c, bunn: 0x1e4527, amp: 0.12, sx: k + j}, x, z), m: M4(x, y + (1.7 + j * 0.9) * s, z, 0, k, 0, (1.7 - j * 0.34) * s, 0.72 * s, (1.7 - j * 0.34) * s)});
@@ -326,7 +331,7 @@ function lagVegetasjon() {
   holt.forEach(([cx, cz, r, ant], h) => { for (let i = 0; i < ant * 2 && ant > 0; i++) { const a = rnd() * 6.28, d = Math.sqrt(rnd()) * r; const x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d; if (!plassLedig(x, z)) continue; tre(x, z, k++, h % 4 === 1 ? 'gran' : typer[(i + h) % typer.length]); ant--; } });
   [[-18.5, -9.5, 'eple'], [17.2, -1.5, 'eple'], [-18.8, 7.5, 'bjork'], [17, 8.5, 'bjork']].forEach(([x, z, t]) => tre(x, z, k++, t));
   // busker: runde, blomstrende og hekker langs gjerdet
-  const busk = (x, z, s, type, j) => { const y = hoyde(x, z), d = [];
+  const busk = (x, z, s, type, j) => { if (revPlass(x, z)) return; const y = hoyde(x, z), d = [];
     const f = type === 'blomst' ? [0x5a9a40, 0x92cf5c, 0x315f28] : type === 'mork' ? [0x3f7d38, 0x6ba84a, 0x234a22] : [0x5c9f42, 0x9ad763, 0x346b2b];
     d.push({geo: kl(0.9 * s, f[0], {topp: f[1], bunn: f[2], amp: 0.22, flat: 0.78, sx: j * 7}, x, z), m: M4(x, y + 0.42 * s, z)});
     d.push({geo: kl(0.62 * s, f[0], {topp: f[1], bunn: f[2], amp: 0.22, flat: 0.8, sx: j * 7 + 2}, x, z), m: M4(x + 0.68 * s, y + 0.3 * s, z + 0.32 * s)});
@@ -634,8 +639,9 @@ function lagMarkedsbod() {
   const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; const sk = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.62), std({map: t, roughness: 0.8})); sk.position.set(0, 3.28, 0.86); sk.rotation.x = -0.12; B.add(sk);
   B.traverse(o => { if (o.isMesh) o.castShadow = true; }); bake(B); klikkbar(B);
   const benk = new THREE.Group(); benk.position.set(-3.2, 0, 6.6); scene.add(benk);
-  mesh(teksturUV(avrundetBoks(2.2, 0.1, 0.62, 0.03, 1), 1, 0.3), MAT.lysPlank, 0, 0.58, 0, benk); mesh(teksturUV(avrundetBoks(2.2, 0.45, 0.08, 0.03, 1), 1, 0.25), MAT.lysPlank, 0, 0.95, -0.3, benk);
-  [-0.9, 0.9].forEach(x => mesh(avrundetBoks(0.12, 0.6, 0.55, 0.03, 1), MAT.brunPlank, x, 0.3, 0, benk)); bake(benk);
+  // Setet er tilpasset robotens Sitting-klipp: hoften ender 0,32 m over bakken og 0,26 m bak føttene
+  mesh(teksturUV(avrundetBoks(2.0, 0.08, 0.46, 0.03, 1), 1, 0.3), MAT.lysPlank, 0, 0.2, 0, benk); mesh(teksturUV(avrundetBoks(2.0, 0.34, 0.07, 0.03, 1), 1, 0.25), MAT.lysPlank, 0, 0.55, -0.27, benk);
+  [-0.82, 0.82].forEach(x => { mesh(avrundetBoks(0.1, 0.18, 0.4, 0.02, 1), MAT.brunPlank, x, 0.08, 0, benk); mesh(avrundetBoks(0.08, 0.6, 0.08, 0.02, 1), MAT.brunPlank, x, 0.4, -0.27, benk); }); bake(benk);
   const pk = new THREE.Group(); pk.position.set(-3.4, 0, 11.0); scene.add(pk); mesh(new THREE.BoxGeometry(0.12, 1.1, 0.12), MAT.brunPlank, 0, 0.55, 0, pk);
   mesh(avrundetBoks(0.4, 0.38, 0.65, 0.15, 3), fm(0xd23b2f, 0.5), 0, 1.25, 0, pk); mesh(new THREE.BoxGeometry(0.04, 0.25, 0.08), fm(0xf2c23b), 0.22, 1.35, -0.15, pk);
 }
@@ -652,7 +658,7 @@ function lagDetaljer() {
   const pot = (x, z, f) => { mesh(new THREE.CylinderGeometry(0.26, 0.19, 0.38, 12), fm(0xc4643c, 0.8), x, 0.19, z, G); mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.06, 12), fm(0xb35634, 0.8), x, 0.38, z, G);
     mesh(lineariser(klump(0.26, 0x4f9a3c, {topp: 0x8fcf58, bunn: 0x346d2b, amp: 0.2, seg: 8})), MAT.vertex, x, 0.55, z, G);
     for (let i = 0; i < 6; i++) mesh(new THREE.SphereGeometry(0.06, 6, 4), fm(f, 0.6), x + Math.cos(i) * 0.18, 0.66 + (i % 2) * 0.06, z + Math.sin(i) * 0.18, G); };
-  pot(-12.5, 9.2, 0xff6f9a); pot(-8.4, 9.6, 0xffd84a); pot(-3.9, 7.2, 0xb48cff);
+  pot(-12.5, 9.2, 0xff6f9a); pot(-8.4, 9.6, 0xffd84a); pot(-4.75, 6.75, 0xb48cff); // ved enden av benken, utenfor robotens sitteplass
   const tavle = document.createElement('canvas'); tavle.width = 256; tavle.height = 320; { const x = tavle.getContext('2d'); x.fillStyle = '#2b3a33'; x.fillRect(0, 0, 256, 320); x.strokeStyle = '#a8794a'; x.lineWidth = 16; x.strokeRect(8, 8, 240, 304);
     x.fillStyle = '#fbf6e8'; x.font = 'bold 40px system-ui'; x.textAlign = 'left'; ['Egg   8', 'Brød 12', 'Mais   4', 'Hvete 2'].forEach((l, i) => x.fillText(l, 30, 80 + i * 62)); }
   const tt = new THREE.CanvasTexture(tavle); tt.encoding = THREE.sRGBEncoding;
@@ -724,23 +730,48 @@ function lagHatt() {
   mesh(new THREE.CylinderGeometry(0.365, 0.365, 0.09, 24), fm(0xc0392b), 0, 0.06, 0, g); return g;
 }
 function spill(navn, loop = true, fade = 0.25) { if (!klipp[navn]) navn = 'Idle'; const a = mixer.clipAction(klipp[navn]); a.reset(); a.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce); a.clampWhenFinished = !loop; if (aktiv && aktiv !== a) aktiv.fadeOut(fade); a.fadeIn(fade).play(); aktiv = a; }
+const V3 = (x, z) => new THREE.Vector3(x, 0, z);
 const VENT = [
-  {pos: () => new THREE.Vector3(6.2, 0, 0.7), anim: 'Yes', tid: 3.5, se: () => hoener[1].position},
-  {pos: () => new THREE.Vector3(-3.2, 0, 6.6), anim: 'Sitting', tid: 5, benk: true},
-  {pos: () => new THREE.Vector3(2.4, 0, 0.6), anim: 'ThumbsUp', tid: 2.5, se: () => new THREE.Vector3(2.4, 0, 3)},
+  {vei: () => [V3(6.2, 0.7)], anim: 'Yes', tid: 3.5, se: () => hoener[1].position},
+  // Benken: gå rundt foran benken, snu ryggen til den og sett deg (roten 0,3 m foran setets midte)
+  {vei: () => [V3(-1.2, 8.3), V3(-3.2, 8.3), V3(-3.2, 6.9)], anim: 'Sitting', tid: 5, retning: 0, enGang: true, ut: [V3(-3.2, 8.2)]},
+  {vei: () => [V3(-14.4, 4.2)], anim: 'Wave', tid: 2.6, se: () => rev ? rev.position : V3(-17.6, 4), hilsRev: true},
+  {vei: () => [V3(2.4, 0.6)], anim: 'ThumbsUp', tid: 2.5, se: () => V3(2.4, 3)},
 ];
-function gaaTil(p, ferdig) { mal = {p, ferdig}; spill('Walking'); }
-function nesteVent() { const v = VENT[ventI++ % VENT.length]; gaaTil(v.pos(), () => {
-  if (v.benk) { robot.rotation.y = 0; robot.position.set(-3.2, 0.05, 6.75); } else if (v.se) { const s = v.se(); robot.rotation.y = Math.atan2(s.x - robot.position.x, s.z - robot.position.z); }
-  spill(v.anim); ventTimer = v.tid; ventSteg = 2;
+let utVei = null, snuTil = null;
+function gaaTil(vei, ferdig) { mal = {vei: vei.slice(), ferdig}; spill('Walking'); }
+function nesteVent() { const v = VENT[ventI++ % VENT.length]; const vei = (utVei || []).concat(v.vei()); utVei = null; gaaTil(vei, () => {
+  const start = () => { spill(v.anim, !v.enGang); ventTimer = v.tid; ventSteg = 2; if (v.hilsRev) hilsRev(); if (v.ut) utVei = v.ut; };
+  const r = v.retning !== undefined ? v.retning : v.se ? (s => Math.atan2(s.x - robot.position.x, s.z - robot.position.z))(v.se()) : robot.rotation.y;
+  snuTil = {r, ferdig: start}; spill('Idle', true, 0.15);
   if (v.anim === 'Yes') { const hn = hoener.reduce((a, b) => a.position.distanceTo(robot.position) < b.position.distanceTo(robot.position) ? a : b); setTimeout(() => { hn.userData.hopp = 0.5; visHjerte(hn.position.clone().add(new THREE.Vector3(0, 1.8, 0))); }, 700); } }); ventSteg = 1; }
 const konfetti = (() => { const n = 300, im = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.16, 0.09), new THREE.MeshBasicMaterial({side: THREE.DoubleSide}), n); const c = new THREE.Color(); const data = [];
   for (let i = 0; i < n; i++) { c.set([0xff4d6d, 0xffd23f, 0x3bceac, 0x4d96ff, 0xff8c42][i % 5]); im.setColorAt(i, c); data.push({p: new THREE.Vector3(), v: new THREE.Vector3(), r: new THREE.Euler(), w: Math.random() * 7}); }
   im.visible = false; im.frustumCulled = false; scene.add(im); return {im, data, t: 0}; })();
-function nyttNivaa() { if (!robot) return; modus = 'dans'; mal = null; robot.rotation.y = Math.atan2(camera.position.x - robot.position.x, camera.position.z - robot.position.z); robot.position.y = 0;
+function nyttNivaa() { if (!robot) return; modus = 'dans'; mal = null; snuTil = null; if (utVei) { robot.position.copy(utVei[0]); utVei = null; } robot.rotation.y = Math.atan2(camera.position.x - robot.position.x, camera.position.z - robot.position.z); robot.position.y = 0;
   spill('Dance'); konfetti.im.visible = true; konfetti.t = 0; konfetti.data.forEach(d => { d.p.set(robot.position.x + (Math.random() - 0.5), 3, robot.position.z + (Math.random() - 0.5)); d.v.set((Math.random() - 0.5) * 6, 4 + Math.random() * 5, (Math.random() - 0.5) * 6); });
   setTimeout(() => { if (modus === 'dans') { spill('Idle'); modus = 'vent'; ventTimer = 2; ventSteg = 0; velg('robot', 'vent'); } }, 4200); }
 const sprett = [];
+
+const vinkelDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
+const snuMot = (a, b, maks) => { const d = vinkelDiff(a, b); return a + Math.sign(d) * Math.min(Math.abs(d), maks); };
+
+/* ======================= Reven Nysgjerrig (gjenbrukt rev.glb, bare vennen på gården – ikke spillbar) ======================= */
+let rev = null, revMixer = null, revKlipp = {}, revAktiv = null;
+const boble = document.getElementById('boble');
+let bobleTid = 0;
+function revSpill(n, loop = true) { if (!revMixer || !revKlipp[n]) return; const a = revMixer.clipAction(revKlipp[n]); a.reset(); a.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce); a.clampWhenFinished = !loop; if (revAktiv && revAktiv !== a) revAktiv.fadeOut(0.25); a.fadeIn(0.25).play(); revAktiv = a; }
+const HILSNER = ['Hei, nabo! Jeg er Nysgjerrig.', 'Skal vi gjøre gården til den fineste i Elvedal?', 'Hønene dine ser glade ut!'];
+let hilsI = 0;
+function hilsRev(vis) { if (!rev) return; if (robot) rev.rotation.y = Math.atan2(robot.position.x - rev.position.x, robot.position.z - rev.position.z); revSpill('Wave', false); setTimeout(() => revSpill('Idle'), 2200);
+  if (vis !== false) { boble.textContent = HILSNER[hilsI++ % HILSNER.length]; boble.style.display = 'block'; bobleTid = 3.2; } }
+function lagRev() {
+  new THREE.GLTFLoader().load(REV_URL, gl => { rev = gl.scene; const b = new THREE.Box3().setFromObject(rev); rev.scale.setScalar(2.05 / (b.max.y - b.min.y)); const b2 = new THREE.Box3().setFromObject(rev);
+    rev.position.set(-17.6, hoyde(-17.6, 4.0) - b2.min.y, 4.0); rev.rotation.y = Math.PI / 2 + 0.35; // i skogkanten utenfor gjerdet rev.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.userData.eier = rev; } });
+    rev.userData.kat = 'rev'; scene.add(rev);
+    // Usynlig trykkflate: skinnet modell treffes ikke presist av raycast i r128
+    const flate = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 2.2, 10), new THREE.MeshBasicMaterial({visible: false})); flate.position.set(rev.position.x, rev.position.y + 1.1, rev.position.z); flate.userData.eier = rev; scene.add(flate); klikkbar(flate); revMixer = new THREE.AnimationMixer(rev); gl.animations.forEach(a => revKlipp[a.name] = a); revSpill('Idle'); }, undefined, () => {});
+}
 
 /* ======================= Input ======================= */
 const pek = new Map(); let dra = null, flyttet = 0, knip0 = 0, dist0 = 0; const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
@@ -757,7 +788,8 @@ el.addEventListener('wheel', e => { e.preventDefault(); cam.dist = THREE.MathUti
 function trykk(x, y) { ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
   const t = ray.intersectObjects(klikkbare, true)[0]; if (!t) return; const o = t.object.userData.eier || t.object;
   if (o.userData.art) { o.userData.hopp = o.userData.art === 'kylling' ? 0.4 : 0.5; visHjerte(o.position.clone().add(new THREE.Vector3(0, o.userData.art === 'kylling' ? 0.9 : 1.8, 0))); } else sprett.push({o, t: 0});
-  if (robot && modus === 'vent') { const p = o.getWorldPosition(new THREE.Vector3()); robot.rotation.y = Math.atan2(p.x - robot.position.x, p.z - robot.position.z); robot.position.y = 0; mal = null; spill('Wave', false); ventSteg = 2; ventTimer = 1.6; } }
+  if (robot && modus === 'vent') { const p = o.getWorldPosition(new THREE.Vector3()); robot.rotation.y = Math.atan2(p.x - robot.position.x, p.z - robot.position.z); robot.position.y = 0; mal = null; snuTil = null; if (utVei) { robot.position.copy(utVei[0]); utVei = null; } spill('Wave', false); ventSteg = 2; ventTimer = 1.6; }
+  if (o === rev) hilsRev(true); }
 
 /* ======================= Knapper og måling ======================= */
 function velg(a, v) { document.querySelectorAll('[data-' + a + ']').forEach(b => b.classList.toggle('on', b.dataset[a] === v)); }
@@ -775,12 +807,14 @@ document.getElementById('bench').onclick = () => { const ko = ['dag', 'kveld', '
 function bygg() {
   renderer.setPixelRatio(KV[KVAL].pr); sol.shadow.mapSize.set(KV[KVAL].skygge, KV[KVAL].skygge); if (KVAL === 'mobil') renderer.shadowMap.type = THREE.PCFShadowMap;
   const kat = (navn, fn) => { const for_ = new Set(scene.children); fn(); scene.children.forEach(c => { if (!for_.has(c)) c.userData.kat = navn; }); };
-  kat('terreng', lagTerreng); kat('vegetasjon', lagVegetasjon); kat('gjerde', lagGjerde); kat('laave', lagLave); kat('honsehus', lagHonsehus); kat('akre', lagAkre); kat('markedsbod', lagMarkedsbod); kat('detaljer', lagDetaljer); kat('vaer', lagVaer); settTid('dag');
+  kat('terreng', lagTerreng); kat('vegetasjon', lagVegetasjon); kat('gjerde', lagGjerde); kat('laave', lagLave); kat('honsehus', lagHonsehus); kat('akre', lagAkre); kat('markedsbod', lagMarkedsbod); kat('detaljer', lagDetaljer); kat('vaer', lagVaer); settTid('dag'); lagRev();
   new THREE.GLTFLoader().load(ROBOT_URL, gl => {
     robot = gl.scene; const b = new THREE.Box3().setFromObject(robot); robot.scale.setScalar(1.9 / (b.max.y - b.min.y)); const b2 = new THREE.Box3().setFromObject(robot); robot.position.set(-1, -b2.min.y, 4.2);
     robot.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } if (o.isBone && /^Head(_\d+)?$/.test(o.name) && !hode) hode = o; });
     scene.add(robot); mixer = new THREE.AnimationMixer(robot); gl.animations.forEach(a => klipp[a.name] = a); spill('Idle');
-    hatt = lagHatt(); scene.add(hatt); robot.updateMatrixWorld(true); if (hode) { const hp = hode.getWorldPosition(new THREE.Vector3()); const bb = new THREE.Box3().setFromObject(robot); hattOffset = bb.max.y - hp.y - 0.12; hatt.scale.setScalar(0.8); }
+    hatt = lagHatt(); scene.add(hatt); robot.updateMatrixWorld(true); if (hode) { const hp = hode.getWorldPosition(new THREE.Vector3()); const bb = new THREE.Box3().setFromObject(robot); hattOffset = bb.max.y - hp.y - 0.12; hatt.scale.setScalar(0.8);
+      // Hatten festes til hodeleddet, så den følger alle hodebevegelser (nikk, dans, sitting)
+      hatt.position.set(hp.x, hp.y + hattOffset, hp.z); hatt.rotation.set(0, robot.rotation.y, 0); hatt.updateMatrixWorld(true); hode.attach(hatt); }
     robot.position.y = 0;
     document.getElementById('last').style.display = 'none';
   }, undefined, () => { document.getElementById('last').textContent = 'Fant ikke roboten'; });
@@ -792,11 +826,14 @@ const klokke = new THREE.Clock(), tmp = new THREE.Vector3(), m4 = new THREE.Matr
 function loop() {
   requestAnimationFrame(loop);
   const dt = Math.min(klokke.getDelta(), 0.05), t = klokke.elapsedTime; ramme.push(dt * 1000); if (ramme.length > 300) ramme.shift();
-  if (mixer) mixer.update(dt);
+  if (mixer) mixer.update(dt); if (revMixer) revMixer.update(dt);
+  if (bobleTid > 0 && rev) { bobleTid -= dt; tmp.copy(rev.position); tmp.y += 2.6; tmp.project(camera); boble.style.left = ((tmp.x + 1) / 2 * innerWidth) + 'px'; boble.style.top = ((1 - tmp.y) / 2 * innerHeight) + 'px'; if (bobleTid <= 0) boble.style.display = 'none'; }
   if (robot) {
-    if (mal) { tmp.copy(mal.p).sub(robot.position); tmp.y = 0; const d = tmp.length(); if (d < 0.12) { const f = mal.ferdig; mal = null; f && f(); } else { robot.rotation.y = Math.atan2(tmp.x, tmp.z); robot.position.y = 0; robot.position.addScaledVector(tmp.normalize(), Math.min(d, dt * 2.3)); } }
+    if (mal) { tmp.copy(mal.vei[0]).sub(robot.position); tmp.y = 0; const d = tmp.length();
+      if (d < 0.08) { mal.vei.shift(); if (!mal.vei.length) { const f = mal.ferdig; mal = null; f && f(); } }
+      else { robot.rotation.y = snuMot(robot.rotation.y, Math.atan2(tmp.x, tmp.z), dt * 9); robot.position.y = 0; robot.position.addScaledVector(tmp.normalize(), Math.min(d, dt * 2.3)); } }
+    else if (snuTil) { robot.rotation.y = snuMot(robot.rotation.y, snuTil.r, dt * 7); if (Math.abs(vinkelDiff(robot.rotation.y, snuTil.r)) < 0.02) { const f = snuTil.ferdig; snuTil = null; f(); } }
     else if (modus === 'vent') { ventTimer -= dt; if (ventTimer <= 0) { if (ventSteg === 2) { spill('Idle'); robot.position.y = 0; ventSteg = 0; ventTimer = 1.5; } else nesteVent(); } }
-    if (hode && hatt) { hode.getWorldPosition(tmp); hatt.position.set(tmp.x, tmp.y + hattOffset, tmp.z); hatt.rotation.set(0, robot.rotation.y, 0); }
   }
   oppdaterHoner(dt, t);
   for (let i = sprett.length - 1; i >= 0; i--) { const s = sprett[i]; s.t += dt; const k = Math.sin(Math.min(s.t / 0.35, 1) * Math.PI); if (s.o.userData.skala0 === undefined) s.o.userData.skala0 = s.o.scale.x; const base = s.o.userData.skala0; s.o.scale.setScalar(base * (1 + k * 0.08)); if (s.t > 0.35) { s.o.scale.setScalar(base); sprett.splice(i, 1); } }
@@ -825,7 +862,7 @@ function profil(n = 12) {
   return res;
 }
 addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
-window.__testscene = {profil, settTid, nyttNivaa, kamera: (x, z, d) => { cam.target.set(x, 0, z); if (d) cam.dist = d; plasserKamera(); }, info: () => Object.assign({}, renderer.info.render), get robot() { return robot; }};
+window.__testscene = {profil, settTid, nyttNivaa, kamera: (x, z, d) => { cam.target.set(x, 0, z); if (d) cam.dist = d; plasserKamera(); }, info: () => Object.assign({}, renderer.info.render), get robot() { return robot; }, spill: (n, l) => spill(n, l), klipp, get rev() { return rev; }, kameraObj: camera, hilsRev, get modus() { return modus; }, set modus(v) { modus = v; }};
 bygg(); loop();
 </script>
 </body>

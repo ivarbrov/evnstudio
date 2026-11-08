@@ -32,3 +32,7 @@ Status: prototype, ikke spill. Ingen spillogikk, lagring, statistikk eller musik
     - Mobil bruker enklere skyggefiltrering.
     - Oppløsningen tilpasser seg automatisk: den går ned i trinn når bildefrekvensen faller under 50, og opp igjen over 58. `?fast` slår dette av.
   - `__testscene.profil()` måler kostnad per kategori.
+- 0.3.1: rettinger etter Evens test.
+  - Stråhatten er festet til robotens hodeledd og følger nå alle hodebevegelser.
+  - Benken har fått robotens størrelse. `Sitting`-klippet ender med hoften 0,32 m over bakken, så det gamle setet på 0,58 m var for høyt. Roboten går rundt foran benken, snur seg, setter seg (klippet spilles én gang og blir sittende) og går ut foran benken igjen.
+  - Reven Nysgjerrig står i skogkanten utenfor gjerdet. Modellen er gjenbrukt (`prototype/figurer/rev/rev.glb`), og han er ikke spillbar. Trykk på ham, så vinker han og sier hei. Roboten går også bort og vinker til ham.
