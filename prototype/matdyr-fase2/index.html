@@ -21,9 +21,10 @@
   .kort { position:fixed; top:calc(64px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); z-index:5; background:var(--mork); border:2px solid rgba(255,255,255,.25); border-radius:16px; padding:10px 14px; max-width:min(320px,calc(100vw - 20px)); font-size:15px; line-height:1.35; }
   .kort h1 { margin:0 0 4px; font-size:22px; }
   .sj { font-weight:900; }
+  .rute { margin-top:6px; padding:6px 8px; background:rgba(255,255,255,.12); border-radius:10px; font-size:13px; line-height:1.45; }
   .liten { font-size:13px; opacity:.85; }
   #maal { position:fixed; right:calc(10px + env(safe-area-inset-right)); top:calc(64px + env(safe-area-inset-top)); z-index:5; background:rgba(0,0,0,.45); border-radius:10px; padding:4px 8px; font:12px ui-monospace,monospace; }
-  @media (max-width:640px) { .kort { top:calc(64px + env(safe-area-inset-top)); font-size:13px; padding:8px 10px; max-width:calc(100vw - 20px); } .kort h1 { font-size:18px; } .kort .liten { display:none; } #maal { top:auto; bottom:4px; right:4px; font-size:10px; } button { padding:4px 8px; font-size:14px; min-height:44px; } .rad { gap:4px; } }
+  @media (max-width:640px) { .kort { top:calc(64px + env(safe-area-inset-top)); font-size:13px; padding:8px 10px; max-width:calc(100vw - 20px); } .kort h1 { font-size:18px; } .kort .liten, .kort .rute { display:none; } #maal { top:auto; bottom:4px; right:4px; font-size:10px; } button { padding:4px 8px; font-size:14px; min-height:44px; } .rad { gap:4px; } }
   @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
 </style>
 </head>
