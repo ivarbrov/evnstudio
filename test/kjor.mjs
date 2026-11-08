@@ -113,14 +113,16 @@ async function startNettleser(bin) {
     const { targetId } = await send('Target.createTarget', { url: 'about:blank', browserContextId });
     const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
     const s = (m, p) => send(m, p, sessionId);
-    const egne = [], andre = [];
+    const egne = [], andre = new Map();
     lyttere.push(d => {
       if (d.sessionId === sessionId) egne.forEach(l => l(d.method, d.params));
       const t = d.params && d.params.targetInfo;
-      if (d.method === 'Target.targetCreated' && t && t.browserContextId === browserContextId && t.targetId !== targetId && (t.type === 'page' || t.type === 'tab')) andre.push(t.url || 'nytt vindu');
+      if (!t || t.browserContextId !== browserContextId || t.targetId === targetId || !(t.type === 'page' || t.type === 'tab')) return;
+      // Adressen er ofte tom når vinduet lages, og kommer i targetInfoChanged.
+      if (d.method === 'Target.targetCreated' || (d.method === 'Target.targetInfoChanged' && andre.has(t.targetId))) andre.set(t.targetId, t.url || andre.get(t.targetId) || '');
     });
     await Promise.all(['Page.enable', 'Runtime.enable', 'Log.enable', 'Network.enable'].map(m => s(m)));
-    return { s, lytt: l => egne.push(l), andreVinduer: () => [...andre],
+    return { s, lytt: l => egne.push(l), andreVinduer: () => [...andre.values()].map(u => u || 'nytt vindu'),
       lukk: async () => { await send('Target.closeTarget', { targetId }).catch(() => {}); await send('Target.disposeBrowserContext', { browserContextId }).catch(() => {}); } };
   };
   return { fane, lukk };
