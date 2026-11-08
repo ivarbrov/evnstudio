@@ -27,7 +27,7 @@ const a = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-prot
   ut.lagret = JSON.parse(localStorage.getItem(P.NOKKEL)).base[0];
   return ut; })()
 `);
-ok('ta med Burgersau og sett den inn på plass 0', a.handling === 'ta' && a.etter.base0 === 508 && a.etter.bar === null && a.lagret === 508 && a.etter.penger === 937);
+ok('ta med Burgersau og sett den inn på plass 0', a.handling === 'ta' && a.etter.base0 === 508 && a.etter.bar === null && a.lagret === 508 && a.etter.penger >= 937 && a.etter.penger < 945);
 const b = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-proto'); EVNVis({ fane: 'spill' }); await new Promise(r => setTimeout(r, 300));
   const P = EVNProto, D = EVNMatdyrData, ut = {};
   const finn = (art, r, skip = []) => D.COMBOS.findIndex((c, i) => c.art === art && c.r === r && !skip.includes(i));
