@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.8.1 – EVN Studio</title>
+<title>Min Bondegård 0.8.2 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -203,6 +203,7 @@
   <div class="pille" id="pMynter" title="Myntene dine"><span class="ikon" aria-hidden="true">🪙</span><span id="mynter">50</span><span class="vh"> mynter</span></div>
 </div>
 <div id="hoyre" hidden>
+  <button class="rund" id="byggKnapp" type="button" title="Bygg (B)" aria-label="Bygg">🔨</button>
   <button class="rund" id="lagerKnapp" type="button" title="Lageret (L)" aria-label="Lageret">📦</button>
   <a class="rund" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none">🚪</a>
 </div>
@@ -220,6 +221,14 @@
     <div class="maaler" id="lagerMaaler"></div>
     <div class="liste" id="lagerListe"></div>
     <div class="knapper"><button class="knapp" type="button" id="lagerTilMarked">🏪 Til markedsbua</button></div>
+  </div>
+</div>
+<!-- Byggemenyen: hva du kan bygge nå, og hva som kommer på neste nivåer (Even 9.11) -->
+<div class="lag" id="byggMeny" role="dialog" aria-modal="true" aria-labelledby="byggTittel">
+  <div class="kort"><button class="kryss" type="button" data-lukk="byggMeny" aria-label="Lukk byggemenyen">✕</button>
+    <h2 id="byggTittel">🔨 Bygg</h2>
+    <p id="byggNeste" style="margin:0 0 8px"></p>
+    <div class="liste" id="byggListe"></div>
   </div>
 </div>
 <!-- Markedsbua: selg til folk fra Elvedal (F3) -->
@@ -241,12 +250,12 @@
       <p>Plant og høst, stell hønene og bak brød. Selg i markedsbua og gjør den lille gården til den fineste i Elvedal! 🌾🐔</p>
     </div>
     <div class="styring">
-      <div class="bare-pc">Klikk på åkre, dyr og hus for å bruke dem. Dra for å flytte deg, rull for å zoome.<br>Piltaster: velg ting · Enter: bruk · L: lageret · P eller Esc: pause</div>
+      <div class="bare-pc">Klikk på åkre, dyr og hus for å bruke dem. Dra for å flytte deg, rull for å zoome.<br>Piltaster: velg ting · Enter: bruk · B: bygg · L: lageret · P eller Esc: pause</div>
       <div class="bare-touch">Trykk på åkre, dyr og hus for å bruke dem.<br>Dra med én finger for å flytte deg. Knip med to fingre for å zoome.</div>
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.8.1</div>
+    <div class="evn-ver" id="versjon">Versjon 0.8.2</div>
   </div>
 </div>
 
@@ -517,7 +526,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.8.1';</script>
+<script>window.MB_VERSJON = '0.8.2'; window.MB_UTEN_BEITE = true;</script>
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="data.js"></script>
 <script src="logikk.js"></script>
@@ -2179,7 +2188,7 @@ document.getElementById('kopier').onclick = async () => { const t = maalTekst.te
 function bygg() {
   renderer.setPixelRatio(+PR_VALG); sol.shadow.mapSize.set(KV[KVAL].skygge, KV[KVAL].skygge); if (KVAL === 'mobil') renderer.shadowMap.type = THREE.PCFShadowMap;
   const kat = (navn, fn) => { const for_ = new Set(scene.children); fn(); scene.children.forEach(c => { if (!for_.has(c)) c.userData.kat = navn; }); };
-  kat('terreng', lagTerreng); kat('omrader', lagOmrader); { const t0 = performance.now(); kat('vegetasjon', lagVegetasjon); window.__byggTid = performance.now() - t0; } /* byggetid for vegetasjonen, vises i testene */ kat('gjerde', lagGjerde); kat('laave', lagLave); kat('honsehus', lagHonsehus); kat('dyr', lagBeite); kat('akre', lagAkre); kat('markedsbod', lagMarkedsbod); kat('detaljer', lagDetaljer); kat('vaer', lagVaer); settTid('dag'); lagRev(); if (TEST.full) fullGard(); kuttInstanser();
+  kat('terreng', lagTerreng); kat('omrader', lagOmrader); { const t0 = performance.now(); kat('vegetasjon', lagVegetasjon); window.__byggTid = performance.now() - t0; } /* byggetid for vegetasjonen, vises i testene */ kat('gjerde', lagGjerde); kat('laave', lagLave); kat('honsehus', lagHonsehus); if (!window.MB_UTEN_BEITE) kat('dyr', lagBeite); /* 0.8.2 (Ivar 9.11): bingene bygges av spilleren senere */ kat('akre', lagAkre); kat('markedsbod', lagMarkedsbod); kat('detaljer', lagDetaljer); kat('vaer', lagVaer); settTid('dag'); lagRev(); if (TEST.full) fullGard(); kuttInstanser();
   new THREE.GLTFLoader().load(ROBOT_URL, gl => {
     robot = gl.scene; const b = new THREE.Box3().setFromObject(robot); robot.scale.setScalar(1.9 / (b.max.y - b.min.y)); const b2 = new THREE.Box3().setFromObject(robot); robot.position.set(-0.8, -b2.min.y, 0.2);
     robot.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } if (o.isBone && /^Head(_\d+)?$/.test(o.name) && !hode) hode = o; });

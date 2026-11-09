@@ -33,6 +33,7 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 
 ## Versjoner
 
+- **0.8.2** (ikke publisert): Bingene for ku, gris og sau er ikke ferdig bygd fra start (Ivar 9.11). De kommer som større dyrehus som spilleren bygger: fjøs og beite på nivå 6, grisebinge på nivå 10. Ny byggemeny (🔨, tast B) viser hva som er bygd, hva som kan bygges, og hva som kommer på neste nivå (Even 9.11).
 - **0.8.1** (ikke publisert): Roboten finner veien rundt bygg, gjerder og binger og går ikke lenger gjennom gjerdet ved hønsegården (Even 9.11). Den kan gå over åkrene og gårdsveien. Mobil i høykant starter med hele tunet i bildet.
 - **0.8.0** (fase 1, ikke publisert):
   - Spillbar kjernesløyfe for nivå 1–3: hvete og mais, høner og egg, fôrkvern, bakeri (kjøpes for 50), silo og låve, markedsbu, mynter, XP og nivåer.
@@ -42,5 +43,5 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
   - Felles pause (EVN-PAUSE v2) og statistikk (`evn-start`).
   - Kjente begrensninger:
     - Bestillinger og lastebil kommer i 0.9.0.
-    - Låven, hønsehuset, beitet og markedsbua kan ikke flyttes ennå.
+    - Låven, hønsehuset og markedsbua kan ikke flyttes ennå.
     - Ytelse på iPhone er ikke målt for spillversjonen.

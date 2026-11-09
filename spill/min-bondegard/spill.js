@@ -488,7 +488,7 @@ $('handlingInnhold').addEventListener('click', e => {
 });
 
 /* ======================= Lager og markedsbu ======================= */
-const dialoger = ['lager', 'marked'];
+const dialoger = ['lager', 'marked', 'byggMeny'];
 let forrigeFokus = null;
 function aapneDialog(id) { lukkHandling(); forrigeFokus = document.activeElement; $(id).classList.add('vis'); if (window.EVNPauseInert) EVNPauseInert($(id)); const b = $(id).querySelector('.kryss'); if (b) b.focus({preventScroll: true}); }
 function lukkDialog(id) { $(id).classList.remove('vis'); if (window.EVNPauseInert) EVNPauseInert(null); try { if (forrigeFokus && forrigeFokus.focus) forrigeFokus.focus({preventScroll: true}); } catch (e) {} }
@@ -515,6 +515,41 @@ function visMarked() {
 }
 $('markedListe').addEventListener('click', e => { const k = e.target.closest('[data-selg]'); if (!k) return; const v = k.dataset.selg, r = L.selg(s, v, +k.dataset.n);
   if (r.ok) { const m = ting.get('marked'); if (m) flyt('+' + r.mynter + ' 🪙', midtAv(m, 3.5)); lagre(); synk(); fremOppl('solgt'); const fokus = v; visMarked(); const b = $('markedListe').querySelector(`[data-selg="${fokus}"]`) || $('markedListe').querySelector('button') || $('marked').querySelector('.kryss'); b.focus({preventScroll: true}); } });
+
+/* ======================= Byggemenyen ======================= */
+// Viser alle bygg og dyrehus for nivå 1–10: bygd, kan bygges nå, eller hvilket nivå de kommer på. Øverst står det som kommer på neste nivå.
+// Bingene for kyr og griser er ikke ferdig bygd fra start (Ivar 9.11). De kommer som egne bygg, større enn i testscenen.
+const DYREHUS = [
+  {navn: 'Hønsehuset', ikon: '🐔', nivaa: 1, bygd: () => true},
+  {navn: 'Fjøs og beite til kyrne', ikon: '🐄', nivaa: 6},
+  {navn: 'Grisebinge', ikon: '🐖', nivaa: 10, pris: 800}
+];
+function nesteNivaaTekst() {
+  if (s.nivaa >= D.maksNivaa) return 'Du er på høyeste nivå i denne versjonen. 🎉';
+  const n = s.nivaa + 1, ting2 = [];
+  for (const a in D.avlinger) if (D.avlinger[a].nivaa === n) ting2.push(D.avlinger[a].ikon + ' ' + D.avlinger[a].navn);
+  for (const b in D.bygg) if (D.bygg[b].nivaa === n) ting2.push(D.bygg[b].ikon + ' ' + D.bygg[b].navn);
+  DYREHUS.forEach(h => { if (h.nivaa === n) ting2.push(h.ikon + ' ' + h.navn); });
+  if (D.ved(D.akre, n) > D.ved(D.akre, s.nivaa)) ting2.push('🟫 ' + (D.ved(D.akre, n) - D.ved(D.akre, s.nivaa)) + ' nye åkre');
+  if (n === 4) ting2.push('📋 Bestillinger og lastebil');
+  return `<b>Nivå ${n}:</b> ` + (ting2.length ? ting2.join(', ') : 'mynter og XP') + ` · ${Math.max(0, D.xpNeste[s.nivaa] - Math.floor(s.xp))} XP igjen`;
+}
+function visByggMeny() {
+  $('byggNeste').innerHTML = nesteNivaaTekst();
+  const rad = (ikonT, navnT, under, knapp) => `<div class="rad"><span class="stort">${ikonT}</span><span class="midt">${navnT}<small>${under}</small></span>${knapp}</div>`;
+  const rader = Object.keys(D.bygg).map(b => { const B = D.bygg[b], sb = s.bygg[b];
+    if (sb && sb.eid) return rad(B.ikon, B.navn, 'Bygd ✅', `<button class="knapp lys" data-vis="${b}">Vis</button>`);
+    if (B.nivaa > s.nivaa) return rad(B.ikon, B.navn, `🔒 Nivå ${B.nivaa} · ${B.pris} 🪙`, '');
+    if (!I_SPILLET.bygg.includes(b)) return rad(B.ikon, B.navn, `${B.pris} 🪙 · kommer i en senere versjon`, '');
+    return rad(B.ikon, B.navn, `${B.pris} 🪙${s.mynter < B.pris ? ' · du har ' + s.mynter : ''}`, `<button class="knapp gronn" data-vis="${b}">Bygg</button>`); });
+  DYREHUS.forEach(h => rader.push(h.bygd && h.bygd() ? rad(h.ikon, h.navn, 'Bygd ✅', '<button class="knapp lys" data-vis="honsehus">Vis</button>')
+    : rad(h.ikon, h.navn, `🔒 Nivå ${h.nivaa}${h.pris ? ' · ' + h.pris + ' 🪙' : ''}`, '')));
+  $('byggListe').innerHTML = rader.join('');
+  if (!$('byggMeny').classList.contains('vis')) aapneDialog('byggMeny');
+}
+$('byggKnapp').addEventListener('click', visByggMeny);
+$('byggListe').addEventListener('click', e => { const k = e.target.closest('[data-vis]'); if (!k) return; const u = ting.get(k.dataset.vis); lukkDialog('byggMeny'); if (!u) return;
+  kameraMaal = u.gruppe.position.clone(); sprett.push({o: u.gruppe, t: 0}); bruk(u); });
 
 /* ======================= Flytting (B3) ======================= */
 let flytt = null, fotMesh = null;
@@ -590,6 +625,7 @@ addEventListener('keydown', e => {
     return; }
   if (e.key === 'Escape' && $('handling').classList.contains('vis')) { e.preventDefault(); e.stopImmediatePropagation(); lukkHandling(); return; }
   if (e.key === 'l' || e.key === 'L') { e.preventDefault(); visLager(); return; }
+  if (e.key === 'b' || e.key === 'B') { e.preventDefault(); visByggMeny(); return; }
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { if ($('handling').contains(document.activeElement) && document.activeElement.tagName === 'BUTTON' && false) return;
     e.preventDefault(); const v = velgbare(); valgtI = (valgtI + (e.key === 'ArrowRight' ? 1 : v.length - 1)) % v.length; const u = v[valgtI]; kameraMaal = u.gruppe.position.clone(); sprett.push({o: u.gruppe, t: 0}); bruk(u); }
 });
@@ -672,7 +708,7 @@ window.__evnP = EVNPause({
   lagre,
   styring: () => document.documentElement.classList.contains('touch')
     ? '👆 Trykk på en åker, et dyr eller et hus<br>✋ Dra med én finger for å flytte deg<br>🤏 Knip med to fingre for å zoome<br>📦 Lageret: knappen øverst til høyre<br>🦊 Trykk på Nysgjerrig for et tips'
-    : '🖱️ Klikk på en åker, et dyr eller et hus<br>Dra for å flytte deg, rull for å zoome<br>⬅️➡️ Velg ting · Enter: bruk<br>L: lageret · P eller Esc: pause<br>🦊 Klikk på Nysgjerrig for et tips'
+    : '🖱️ Klikk på en åker, et dyr eller et hus<br>Dra for å flytte deg, rull for å zoome<br>⬅️➡️ Velg ting · Enter: bruk<br>B: bygg · L: lageret · P eller Esc: pause<br>🦊 Klikk på Nysgjerrig for et tips'
 });
 EVNNullstill({
   nokler: [LAGRING, LAGRING + '-kopi'],
