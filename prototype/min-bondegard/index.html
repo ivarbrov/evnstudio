@@ -62,14 +62,14 @@
   <div class="grp" role="group" aria-label="Trestil"><b>Trær</b>
     <button data-trestil="ny">Ny stil</button><button data-trestil="gammel">Før</button><button id="visTraer">Vis trær</button><button id="maalTraer">Mål trær</button></div>
 </div>
-<div id="info">Testscene 0.8.4 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
+<div id="info">Testscene 0.8.5 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
 <div id="maal"><div id="maalTekst">…</div><div class="maalKnapper"><button id="kopier">Kopier</button><button id="lukkMaal">Lukk</button></div></div>
 
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.8.4';
+const VERSJON = 'testscene 0.8.5';
 const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
@@ -1026,7 +1026,7 @@ function lagMarkedsbod() {
 }
 
 /* ======================= 0.8.0: Blomsterkatten – kunde som kommer til Gårdsbua ======================= */
-// Etter Evens tegning: bredt, mykt hode med spisse ører, prikkøyne, «w»-munn og blomster mellom ørene. Kroppen (0.8.4) følger Evens
+// Etter Evens tegning: bredt, mykt hode med spisse ører, prikkøyne, «w»-munn og blomster mellom ørene. Kroppen (0.8.5) følger Evens
 // figurtegning: lilla kjole med brede folder, pufferme og blå hjerter på skjørtekanten, korte bein og lang krøllhale. Faste deler slås sammen per materiale. Alt er laget av enkle former i koden (ingen modellfil).
 // Kunden går langs veien, inn gjennom åpningen i gjerdet, sier hva hun vil kjøpe, blir glad og går videre. Ingen handel ennå (bare visning).
 const KATT_VARIANTER = [
@@ -1058,41 +1058,53 @@ function lagKatt() {
   // (to til venstre og tre til høyre forfra). Alle buede deler er dreide profiler, så overgangene blir myke uten mange små detaljer.
   const V2 = (r, y) => new THREE.Vector2(r, y), dreid = (pkt, n, seg) => new THREE.LatheGeometry(new THREE.SplineCurve(pkt.map(([r, y]) => V2(r, y))).getPoints(n), seg, Math.PI); /* sømmen havner bak */
   const kjole = std({color: kjoleFarge(KATT_VARIANTER[0].pels), roughness: 0.85, side: THREE.DoubleSide});
-  // Profil fra skjørtekanten (innsiden av den rullede kanten) opp til halsen
-  const prof = [[0.462, 0.245], [0.476, 0.228], [0.497, 0.224], [0.508, 0.238], [0.502, 0.255], [0.478, 0.3], [0.435, 0.375], [0.383, 0.46], [0.33, 0.56], [0.29, 0.66], [0.262, 0.76], [0.248, 0.86], [0.242, 0.95], [0.226, 1.025], [0.185, 1.075], [0.12, 1.1]];
+  // Profil fra skjørtekanten (innsiden av den rullede kanten) opp til en jevn, avrundet halsåpning
+  const prof = [[0.462, 0.245], [0.476, 0.228], [0.497, 0.224], [0.508, 0.238], [0.502, 0.255], [0.478, 0.3], [0.435, 0.375], [0.383, 0.46], [0.33, 0.56], [0.29, 0.66], [0.262, 0.76], [0.248, 0.86], [0.242, 0.93], [0.222, 0.975], [0.185, 0.998], [0.15, 1.0], [0.135, 0.99], [0.132, 0.975]];
   const ytre = new THREE.SplineCurve(prof.slice(4).map(([r, y]) => V2(r, y))).getPoints(40);
   const rAt = y => { for (let i = 1; i < ytre.length; i++) if (ytre[i].y >= y) { const p = ytre[i - 1], q = ytre[i]; return p.x + (q.x - p.x) * (y - p.y) / (q.y - p.y); } return ytre[ytre.length - 1].x; };
-  // Seks brede folder som blir dypere nedover, og en kant som faller litt lavere der folden går ut
-  const kjoleP = (v, y, r) => { const fb = Math.sin(v * 6 + 0.3), w = Math.min(1, Math.max(0, (0.8 - y) / 0.55)) ** 1.5, k = 1 + 0.05 * w * fb, d = Math.min(1, Math.max(0, (0.42 - y) / 0.16)) * 0.022 * Math.max(0, fb);
+  // Seks brede, svake folder som starter på overkroppen og blir dypere nedover, og en kant som faller mykt litt lavere der folden går ut
+  const kjoleP = (v, y, r) => { const fb = Math.sin(v * 6 + 0.3), w = Math.min(1, Math.max(0, (0.95 - y) / 0.68)) ** 1.25, k = 1 + 0.045 * w * fb, d = Math.min(1, Math.max(0, (0.45 - y) / 0.2)) * 0.02 * ((1 + fb) / 2) ** 2;
     return new THREE.Vector3(Math.sin(v) * r * k, y - d, Math.cos(v) * r * k * 0.9); };
   const kjoleGeo = dreid(prof, 64, 48);
   { const p = kjoleGeo.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), q = kjoleP(Math.atan2(x, z), p.getY(i), Math.hypot(x, z)); p.setXYZ(i, q.x, q.y, q.z); } kjoleGeo.computeVertexNormals(); glattSoem(kjoleGeo); }
   mesh(kjoleGeo, kjole, 0, 0, 0, kropp);
+  mesh(new THREE.CylinderGeometry(0.122, 0.128, 0.24, 18), pels, 0, 1.0, 0, kropp); // kort hals innenfor halsåpningen
   // Hjertene ligger på stoffet: posisjon og retning regnes fra den samme flaten som kjolen
   const hjKant = fm(0x3f8fe6, 0.6), gFyll = hjerteGeo(0.037), gKant = hjerteGeo(0.05), hy = 0.335, e = 0.01;
-  [-0.76, -0.57, 0.47, 0.66, 0.85].forEach(v => { const p = kjoleP(v, hy, rAt(hy)), n = kjoleP(v + e, hy, rAt(hy)).sub(p).cross(kjoleP(v, hy + e, rAt(hy + e)).sub(p)).normalize();
+  [-0.77, -0.56, 0.45, 0.66, 0.87].forEach(v => { const p = kjoleP(v, hy, rAt(hy)), n = kjoleP(v + e, hy, rAt(hy)).sub(p).cross(kjoleP(v, hy + e, rAt(hy + e)).sub(p)).normalize();
     [[gKant, hjKant, 0.008], [gFyll, kjole, 0.013]].forEach(([geo, mat, ut]) => { const h = mesh(geo, mat, 0, 0, 0, kropp, false); h.position.copy(p).addScaledVector(n, ut); h.lookAt(h.position.clone().add(n)); }); });
   bakeDirekte(kropp);
-  // Korte bein med føtter som er flate under og har en forsiktig antydning til tre tær
-  const fot = new THREE.SphereGeometry(1, 18, 12); { const p = fot.attributes.position; for (let i = 0; i < p.count; i++) if (p.getY(i) < 0) p.setY(i, p.getY(i) * 0.45); fot.computeVertexNormals(); glattSoem(fot); }
+  // Korte bein med føtter som er flate under og har tre tær antydet i formen
+  // Pote: én avrundet form med to grunne skiller foran, så tre tær anes uten egne deler. Føttene er i tillegg flate under.
+  const pote = (flat, ty) => { const geo = new THREE.SphereGeometry(1, 44, 22).rotateY(-Math.PI / 2), p = geo.attributes.position; /* teksturens søm havner bak */
+    for (let i = 0; i < p.count; i++) { let x = p.getX(i), y = p.getY(i), z = p.getZ(i); const foran = Math.min(1, Math.max(0, (z - 0.25) / 0.5)) * Math.min(1, Math.max(0, (ty - y) / 0.6));
+      const skille = 1 - 0.13 * foran * (Math.exp(-(((x - 0.3) / 0.085) ** 2)) + Math.exp(-(((x + 0.3) / 0.085) ** 2))), bred = 1 + 0.06 * foran;
+      x *= skille * bred; z *= skille; if (flat && y < 0) y *= 0.45; p.setXYZ(i, x, y, z); }
+    geo.computeVertexNormals(); return glattSoem(geo); };
+  const fot = pote(true, 0.9), haand = pote(false, 0.35);
   const beina = [-1, 1].map(s => { const bg = new THREE.Group(); bg.position.set(s * 0.15, 0.44, 0); g.add(bg);
     mesh(new THREE.CylinderGeometry(0.115, 0.11, 0.36, 14), pels, 0, -0.18, 0, bg);
     mesh(fot, pels, 0, -0.4, 0.05, bg).scale.set(0.135, 0.09, 0.18);
-    [-0.06, 0, 0.06].forEach(x => mesh(fot, pels, x, -0.4, 0.19, bg).scale.set(0.048, 0.042, 0.05)); bakeDirekte(bg); return bg; });
-  // Armer: én myk, dreid form fra skulderen til håndleddet, en pote med tre små tær og et kort, avrundet pufferme med rullet kant
+    bakeDirekte(bg); return bg; });
+  // Armer: én myk, dreid form fra skulderen til håndleddet, en pote med tre tær antydet i formen og et kort, avrundet pufferme med rullet kant
   const armer = [-1, 1].map(s => { const ag = new THREE.Group(); ag.position.set(s * 0.22, 0.97, 0.02); ag.rotation.z = s * 0.5; kropp.add(ag);
     mesh(dreid([[0.001, -0.29], [0.056, -0.27], [0.063, -0.18], [0.068, -0.06], [0.062, 0.02], [0.001, 0.05]], 16, 14), pels, 0, 0, 0, ag);
-    mesh(new THREE.SphereGeometry(1, 14, 10), pels, 0, -0.32, 0.012, ag).scale.set(0.082, 0.078, 0.088);
-    [-0.035, 0, 0.035].forEach(x => mesh(new THREE.SphereGeometry(1, 8, 6), pels, x, -0.362, 0.058, ag).scale.set(0.031, 0.027, 0.031));
+    mesh(haand, pels, 0, -0.32, 0.012, ag).scale.set(0.082, 0.08, 0.09);
     mesh(dreid([[0.069, -0.128], [0.08, -0.15], [0.098, -0.153], [0.108, -0.138], [0.118, -0.09], [0.114, -0.02], [0.094, 0.035], [0.055, 0.07], [0.001, 0.08]], 20, 16), kjole, 0, 0, 0, ag);
     bakeDirekte(ag); return ag; });
-  // Lang hale som kommer ut under kjolen bak, svinger ut til siden, krøller seg i toppen og smalner jevnt mot tuppen
-  const hale = new THREE.Group(); hale.position.set(0, 0.66, -0.25); kropp.add(hale);
-  const hk = new THREE.CatmullRomCurve3([[0, 0, 0], [-0.06, -0.05, -0.12], [-0.2, -0.04, -0.2], [-0.36, 0.08, -0.2], [-0.46, 0.28, -0.16], [-0.48, 0.46, -0.1], [-0.42, 0.56, -0.04], [-0.34, 0.52, -0.02], [-0.33, 0.43, -0.04]].map(([x, y, z]) => new THREE.Vector3(x, y, z)));
-  const hs = 40, hr = 10, tg = new THREE.TubeGeometry(hk, hs, 0.058, hr), tupp = 1.2 - 0.62;
+  // Lang hale festet nederst på ryggen (ved hoftene). Den kommer ut gjennom en liten åpning i kjolen, svinger litt ut til siden,
+  // buer opp bak kroppen og ender i en myk, avrundet tupp. Krøllen holdes godt bak og under hodet.
+  const hale = new THREE.Group(); hale.position.set(0, 0.48, -0.3); kropp.add(hale);
+  const hk = new THREE.CatmullRomCurve3([[0, 0, 0], [-0.03, -0.03, -0.12], [-0.1, -0.02, -0.25], [-0.2, 0.08, -0.36], [-0.28, 0.24, -0.42], [-0.31, 0.4, -0.42], [-0.29, 0.5, -0.34], [-0.24, 0.52, -0.26], [-0.21, 0.45, -0.25], [-0.22, 0.39, -0.3]].map(([x, y, z]) => new THREE.Vector3(x, y, z)));
+  const hs = 40, hr = 10, tg = new THREE.TubeGeometry(hk, hs, 0.058, hr), tupp = 1.2 - 0.5;
   { const p = tg.attributes.position, c = new THREE.Vector3(), q = new THREE.Vector3();
-    for (let i = 0; i <= hs; i++) { hk.getPointAt(i / hs, c); const f = 1.2 - 0.62 * (i / hs) ** 1.2; for (let j = 0; j <= hr; j++) { const k = i * (hr + 1) + j; q.fromBufferAttribute(p, k).sub(c).multiplyScalar(f).add(c); p.setXYZ(k, q.x, q.y, q.z); } } tg.computeVertexNormals(); glattSoem(tg); }
-  mesh(tg, pels, 0, 0, 0, hale); mesh(new THREE.SphereGeometry(0.058 * tupp, 10, 8), pels, -0.33, 0.43, -0.04, hale); bakeDirekte(hale);
+    for (let i = 0; i <= hs; i++) { hk.getPointAt(i / hs, c); const f = 1.2 - 0.5 * (i / hs) ** 1.2; for (let j = 0; j <= hr; j++) { const k = i * (hr + 1) + j; q.fromBufferAttribute(p, k).sub(c).multiplyScalar(f).add(c); p.setXYZ(k, q.x, q.y, q.z); } } tg.computeVertexNormals(); glattSoem(tg); }
+  mesh(tg, pels, 0, 0, 0, hale); mesh(new THREE.SphereGeometry(0.058 * tupp, 12, 10), pels, -0.22, 0.39, -0.3, hale);
+  { // Åpningen: en liten, rullet stoffkant rundt halen der den går ut av kjolen
+    const q = new THREE.Vector3(), ut = t => { hk.getPointAt(t, q); q.add(hale.position); const sp = kjoleP(Math.atan2(q.x, q.z / 0.9), q.y, rAt(q.y)); return Math.hypot(q.x, q.z) > Math.hypot(sp.x, sp.z); };
+    let t0 = 0; while (t0 < 0.5 && !ut(t0)) t0 += 0.01; hk.getPointAt(t0, q);
+    mesh(new THREE.TorusGeometry(0.084, 0.018, 8, 20), kjole, q.x, q.y, q.z, hale).quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), hk.getTangentAt(t0)); }
+  bakeDirekte(hale);
   // Hode: stort og rundt, med myke kinn, litt mer dybde i ansiktet og store spisse ører
   const hode = new THREE.Group(); hode.position.y = 1.4; kropp.add(hode);
   // Den nedre delen av hodet er litt fyldigere, så kinnene blir myke og ansiktet får mer dybde, uten skarpe overganger
