@@ -243,3 +243,11 @@ Donutku, Burgersau, Pizzaskilpadde, Shakeand og Spagettipingvin er rettet i `ble
 4. **Meldingen** ved fangst er kortere (3 s) og skjules når merkene vises. Merker under statuspanel og knapper på små skjermer er ikke løst. «Første ledige» og å gå bort til plassen virker alltid.
 5. **Knappeteksten** er «🏠 Første ledige plass», så knappen blir smalere.
 6. **Tilbudet av matdyr** er tilbake på ca. 16 per minutt når åkeren er i gang (målt 14,7 per minutt over 600 s, oppvarmingen medregnet). Den frie vandringen er kortet til 6–14 s. Median fra landing til porten er 44–45 s.
+
+### Leveringsfelt (Ivar, 9.11.2026 kl. 01.02)
+- Et gult felt, «🏠 Lever her», ligger i passasjen mellom gården og åkeren (|x| < 2,9, 3,4–0,3 m før åkergjerdet). Roboten går gjennom passasjen hver gang den bærer et matdyr hjem.
+- Går roboten inn på feltet med et matdyr, flyr matdyret til første ledige plass, 1. etasje først. Spilleren trykker ikke på noe.
+- Feltet reagerer bare idet roboten går inn på det, ikke hvert bilde. Uten ledig plass kommer en melding, og matdyret blir båret videre.
+- Betalingen skjer ved innflytting, som før. Å velge plass selv med ＋ og «Første ledige plass» virker fortsatt.
+- Flyturen varer lenger når avstanden er lang: 0,6 s + avstand/30.
+- Spilltest-sjekk 11 dekker feltet.

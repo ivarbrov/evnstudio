@@ -352,7 +352,7 @@
       if (S.penger < pr) return melding('💰 Du mangler ' + fmt(pr - S.penger) + ' for å ta med ' + navn(ci) + '.');
       if (!harLedig()) return melding('🏠 Alle plassene er fulle. Selg et matdyr, eller kjøp flere plasser.');
       fjern(h.a); bar = { ci, m: modell(ci) }; bar.m.scale.setScalar(0.7); I.scene.add(bar.m);
-      melding('Bær ' + navn(ci) + ' inn på gården og trykk på en grønn ＋.', 3);
+      melding('Gå til det gule feltet «Lever her», eller trykk på en grønn ＋ på gården.', 3);
     } else if (h.t === 'sett') settInn(h.i);
     else if (h.t === 'forste') velgPlass(h.i);
     else if (h.t === 'slipp') { const ci = bar.ci; slippBar(); slippNed(ci); melding('⬇️ ' + navn(ci) + ' løp tilbake til enga.'); }
@@ -403,14 +403,45 @@
       sp.scale.set(h * 0.8, h, 1); sp.material.opacity = egen ? 1 : 0.8;
     }
   }
+  // ---------- Leveringsfeltet ----------
+  // Et gult felt i passasjen mellom gården og åkeren. Går roboten inn på feltet med et matdyr, flyr matdyret til første ledige plass
+  // (1. etasje først), uten at spilleren trykker på noe. Å velge plass selv med en ＋ virker fortsatt.
+  const levG = new T.Group(); I.scene.add(levG); let levNokkel = '', paaLev = false;
+  function levOmr() { const e = eng(); return e ? { x0: -2.9, x1: 2.9, z0: e.z0 - 3.4, z1: e.z0 - 0.3 } : null; }
+  function byggLevFelt() {
+    const o = levOmr(), n = o ? o.z0 + ':' + o.z1 : ''; if (n === levNokkel) return; levNokkel = n;
+    levG.children.slice().forEach(c => { levG.remove(c); c.geometry && c.geometry.dispose(); c.material && c.material.dispose(); });
+    if (!o) return;
+    const w = o.x1 - o.x0, d = o.z1 - o.z0, tex = tekstur('levfelt', 256, 128, x => {
+      x.fillStyle = 'rgba(255,214,64,.92)'; x.beginPath(); x.roundRect ? x.roundRect(6, 6, 244, 116, 28) : x.rect(6, 6, 244, 116); x.fill();
+      x.strokeStyle = '#fff'; x.lineWidth = 8; x.setLineDash([18, 12]); x.stroke();
+      x.fillStyle = '#5a3b12'; x.font = 'bold 44px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('🏠 Lever her', 128, 66);
+    });
+    const m = new T.Mesh(new T.PlaneGeometry(w, d), new T.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+    m.rotation.x = -Math.PI / 2; m.position.set((o.x0 + o.x1) / 2, 0.24, (o.z0 + o.z1) / 2); m.renderOrder = 2; levG.add(m);
+  }
+  const iLevFelt = p => { const o = levOmr(); return !!o && p.y < 1.5 && p.x > o.x0 && p.x < o.x1 && p.z > o.z0 && p.z < o.z1; };
+  function sjekkLevFelt(t) {
+    byggLevFelt(); const r = I.robot(); if (!r || !levG.children[0]) return;
+    const inne = iLevFelt(r.position), m = levG.children[0];
+    m.material.opacity = bar && !bar.flyr ? 0.85 + Math.sin(t * 5) * 0.15 : 0.75;
+    if (inne && !paaLev && bar && !bar.flyr) {   // reagerer bare når roboten går inn på feltet, ikke hvert bilde
+      const i = forsteLedige();
+      if (i < 0) melding('Ingen ledige plasser. Utvid gården eller selg et matdyr.');
+      else velgPlass(i);
+    }
+    paaLev = inne;
+  }
+
   function velgPlass(i) {
     if (!bar || bar.flyr || S.base[i] !== -1 || !(i < aapneNa)) return false;
     const pr = PRICE(bar.ci); if (S.penger < pr) { melding('💰 Du mangler ' + fmt(pr - S.penger) + '.'); return false; }
-    const q = plassPos(i); bar.flyr = { i, t: 0, fra: bar.m.position.clone(), til: new T.Vector3(q.x, q.y + 0.2, q.z) }; visMerker(); return true;
+    const q = plassPos(i), til = new T.Vector3(q.x, q.y + 0.2, q.z), fra = bar.m.position.clone(), L = fra.distanceTo(til);
+    bar.flyr = { i, t: 0, fra, til, tid: 0.6 + L / 30, bue: 2.2 + L * 0.12 }; visMerker(); return true;
   }
   function flyBar(dt) {
-    const f = bar.flyr; f.t = Math.min(1, f.t + dt / 0.7); const u = f.t * f.t * (3 - 2 * f.t);
-    bar.m.position.lerpVectors(f.fra, f.til, u); bar.m.position.y += Math.sin(Math.PI * f.t) * 2.2;
+    const f = bar.flyr; f.t = Math.min(1, f.t + dt / (f.tid || 0.7)); const u = f.t * f.t * (3 - 2 * f.t);
+    bar.m.position.lerpVectors(f.fra, f.til, u); bar.m.position.y += Math.sin(Math.PI * f.t) * (f.bue || 2.2);
     bar.m.scale.setScalar(0.7 + 0.3 * u); bar.m.rotation.y += dt * 4;
     if (f.t >= 1) { const i = f.i; bar.flyr = null; if (S.base[i] === -1) settInn(i); else { melding('Plassen ble tatt. Velg en annen.'); } }
   }
@@ -586,7 +617,7 @@
   let lagreTid = 0, kortTid = 0;
   I.krok.start = startSpill;
   I.krok.panel = byggPanel;
-  I.krok.fane = f => { feltG.visible = f === 'spill'; if (f !== 'spill') { slippBar(); $('handling').hidden = true; handlingTekst = ''; $('melding').hidden = true; lagre(); if (!$('dialog').hidden) lukkDialog(); } };
+  I.krok.fane = f => { feltG.visible = levG.visible = f === 'spill'; if (f !== 'spill') { slippBar(); $('handling').hidden = true; handlingTekst = ''; $('melding').hidden = true; lagre(); if (!$('dialog').hidden) lukkDialog(); } };
   I.krok.steg = (dt, t) => {
     if (I.sp.pause) return;
     oppdaterFelt(dt, t);
@@ -594,7 +625,7 @@
     const r = I.robot();
     if (bar && bar.flyr) flyBar(dt);
     else if (bar && r) { bar.m.position.set(r.position.x, r.position.y + 3.3, r.position.z); bar.m.rotation.y = r.rotation.y; if (bar.m.userData.fig && !I.REDUSERT) I.animerNy(bar.m.userData.fig, t, false); const i = naerPlass(r.position, true, 1.4); if (i >= 0) settInn(i); }
-    handling = r ? finnHandling() : null; visHandling(); if (r) oppdaterMerker(t);
+    handling = r ? finnHandling() : null; visHandling(); if (r) { oppdaterMerker(t); sjekkLevFelt(t); }
     if ((kortTid -= dt) <= 0) { kortTid = 0.25; oppdaterKort(); oppdaterPanel(); }
     if ((lagreTid -= dt) <= 0) { lagreTid = 5; lagre(); }
     if (meldingTid > 0 && (meldingTid -= dt) <= 0) $('melding').hidden = true;
@@ -605,5 +636,5 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden) lagre(); });
 
   // For automatiske tester (lagring, oppgradering, dobbelttrykk og flere faner)
-  window.EVNProto = { velgPlass, ledige, forsteLedige, merker: () => merkG.children.map(c => c.userData.plass), iBasen, NOKKEL, S: () => S, sett: s => { S = rens(s) || ny(); fyllBase(); byggSpillGard(true); oppdaterKort(); oppdaterPanel(); }, lagre, lesLagret, kontroller, apneGardsniva, oppgrader, autoVelg, valg: () => valg, felt: () => felt, slippNed, bar: () => bar, finnHandling, gjorHandling, rens, plasserApne };
+  window.EVNProto = { iLevFelt, levOmr, velgPlass, ledige, forsteLedige, merker: () => merkG.children.map(c => c.userData.plass), iBasen, NOKKEL, S: () => S, sett: s => { S = rens(s) || ny(); fyllBase(); byggSpillGard(true); oppdaterKort(); oppdaterPanel(); }, lagre, lesLagret, kontroller, apneGardsniva, oppgrader, autoVelg, valg: () => valg, felt: () => felt, slippNed, bar: () => bar, finnHandling, gjorHandling, rens, plasserApne };
 })();

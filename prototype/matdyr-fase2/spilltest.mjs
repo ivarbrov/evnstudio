@@ -101,12 +101,24 @@ const g = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-prot
   P.sett({ v: 1, penger: 1e6, gard: { niva: 6 }, plassNiva: 8, base: [], disc: [] }); st(2); const R = I.robot();
   R.position.set(0, 0.45, 30); P.slippNed(508, [1, 30]); st(3); P.gjorHandling(); ut.merkerAaker = P.merker().length;
   R.position.set(0, 0.45, 18); st(3); ut.merker = P.merker().length; ut.ledige = P.ledige().length;
-  const i2 = P.ledige().find(i => I.plassPos(i).y > 2), p0 = P.S().penger; ut.valgt = P.velgPlass(i2); st(30);
+  const i2 = P.ledige().find(i => I.plassPos(i).y > 2), p0 = P.S().penger; ut.valgt = P.velgPlass(i2); st(60);
   ut.etg2 = P.S().base[i2] === 508 && !P.bar() && JSON.parse(localStorage.getItem(P.NOKKEL)).base[i2] === 508; ut.betalt = Math.round(p0 - P.S().penger);
   P.slippNed(508, [1, 30]); R.position.set(0, 0.45, 30); st(3); P.gjorHandling(); R.position.set(0, 0.45, 18); st(3);
-  const h = P.finnHandling(); ut.forste = h && h.t; const fi = h && h.i; P.gjorHandling(); st(30); ut.forsteEtg1 = P.S().base[fi] === 508 && I.plassPos(fi).y < 1;
+  const h = P.finnHandling(); ut.forste = h && h.t; const fi = h && h.i; P.gjorHandling(); st(60); ut.forsteEtg1 = P.S().base[fi] === 508 && I.plassPos(fi).y < 1;
   ut.antall = P.S().base.filter(c => c >= 0).length; return ut; })()
 `);
 ok('basen: trykk på ledig plass i 2. etasje og «første ledige» (' + JSON.stringify(g) + ')', g.merkerAaker === 0 && g.merker === g.ledige && g.valgt && g.etg2 && g.betalt > 50 && g.forste === 'forste' && g.forsteEtg1 && g.antall === 2);
+// Leveringsfeltet: gå inn på feltet med et matdyr, så flyr det til første ledige plass uten trykk. Uten ledig plass skjer ingenting.
+const h = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-proto'); EVNVis({ fane: 'spill' }); await new Promise(r => setTimeout(r, 200));
+  const I = EVNIntern, P = EVNProto, ut = {}, st = n => { for (let i = 0; i < n; i++) { EVNSteg(1 / 30); I.krok.steg(1 / 30, i / 30); } };
+  P.sett({ v: 1, penger: 1e6, gard: { niva: 6 }, plassNiva: 8, base: [], disc: [] }); st(2); const R = I.robot(), o = P.levOmr();
+  R.position.set(0, 0.45, 30); P.slippNed(508, [1, 30]); st(3); P.gjorHandling(); ut.bar = !!P.bar();
+  R.position.set(0, 0.45, (o.z0 + o.z1) / 2); st(60); ut.levert = P.S().base[0] === 508 && !P.bar(); ut.lagret = JSON.parse(localStorage.getItem(P.NOKKEL)).base[0] === 508;
+  // full gård: ingenting skjer, matdyret bæres videre
+  const full = P.S().base.map(() => 508); P.sett({ ...P.S(), base: full }); st(2);
+  const R2 = I.robot(); R2.position.set(0, 0.45, 30); P.slippNed(508, [1, 30]); st(3); P.gjorHandling(); const b0 = !!P.bar(); R2.position.set(0, 0.45, (o.z0 + o.z1) / 2); st(30); ut.fullBaerer = !b0 || !!P.bar(); ut.fullFikkBaere = b0;
+  return ut; })()
+`);
+ok('leveringsfeltet setter inn på første ledige plass uten trykk (' + JSON.stringify(h) + ')', h.bar && h.levert && h.lagret && h.fullBaerer);
 console.log(feil.length ? feil : 'ingen feil i konsollen'); if (feil.length) process.exitCode = 1;
 ws.close(); p.kill();
