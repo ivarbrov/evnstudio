@@ -27,16 +27,9 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
 // Resultatet ligger i window.EVNTestResultat (leses av test/kjor.mjs og EVN Game QA).
 (function () {
   'use strict';
-  var SPILL = [
-    { id: 'eventyrspill', start: 'menyStart' },
-    { id: 'morkeskogen', start: 'startBtn' },
-    { id: 'dyrepatruljen', start: 'startBtn', etterStart: function (d) {
-        var v = d.querySelector('.verden.aapen');   // Start viser verdensvalget; velg første åpne verden
-        if (v) v.click();
-      } },
-    { id: 'fiskespillet', start: 'startBtn' },
-    { id: 'magiske-egg', start: 'startBtn' }
-  ];
+  // Spillene finnes automatisk: test/kjor.mjs sender mappene i spill/ som har index.html (?spill=a,b).
+  // Registreringen (spill/<id>/evn-test.json) leses og kontrolleres av test/kjor.mjs, se test/spillregister.mjs.
+  var SPILL = [], SPILLROT = 'spill';
   // Funn som står under «Kjente funn» i standarden. De gir «kjent» i stedet for «feil», og «rettet» når de er borte.
   var KJENTE = {
     // Fossil Zoo (T3-zoom) er tatt av nettsiden 5.11.2026. Magiske egg er tilbake 6.11.2026.
@@ -48,12 +41,17 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
   var STORRELSER = [[1280, 800], [375, 812], [740, 360], [320, 568], [568, 320]];
   var SUITER = [
     { navn: 'statisk', fil: null, kjor: statisk },
-    { navn: 'royk', fil: null, kjor: function () { return rekke(SPILL, royk); } },
+    // Røyktesten kjøres av test/kjor.mjs: hvert spill i egen fane med eget opphav, målt fra en isolert JS-verden.
+    { navn: 'royk', fil: null, kjor: function () { info('royk', '–', 'royk-side', 'Røyktesten', 'kjøres av node test/kjor.mjs, ikke på denne siden'); } },
     { navn: 'statistikk', fil: 'test/statistikk/index.html', kjor: statistikk },
     { navn: 'ui', fil: 'prototype/ui/index.html', kjor: ui },
     { navn: 'ecoins', fil: 'test/ecoins/index.html', kjor: ecoins }
   ];
   var tester = [], suiter = {};
+  // Resultatet kan bare settes av denne siden. Spill i rammen kan ikke legge inn et ferdig resultat før testene er ferdige.
+  var RESULTAT = null;
+  Object.defineProperty(window, 'EVNTestResultat', { get: function () { return RESULTAT; }, enumerable: true, configurable: false });
+  function frys(o) { if (o && typeof o === 'object' && !Object.isFrozen(o)) { Object.freeze(o); Object.keys(o).forEach(function (k) { frys(o[k]); }); } return o; }
 
   function vent(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   function rekke(liste, fn) { return liste.reduce(function (p, x) { return p.then(function () { return fn(x); }); }, Promise.resolve()); }
@@ -85,7 +83,7 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
   // ---- Statisk kontroll av spillsidene: S1 og T3 ----
   function statisk() {
     return rekke(SPILL, function (s) {
-      return fetch('/spill/' + s.id + '/', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
+      return fetch('/' + SPILLROT + '/' + s.id + '/', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
         var d = new DOMParser().parseFromString(t, 'text/html');
         var meta = d.querySelector('meta[http-equiv="Content-Security-Policy" i]'), c = meta ? meta.getAttribute('content') : '';
         legg('statisk', s.id, 'S1-csp', 'S1', 'CSP finnes, uten unsafe-eval og med object-src none', meta && c.indexOf("'unsafe-eval'") < 0 && /object-src 'none'/.test(c), meta ? '' : 'mangler CSP');
@@ -101,50 +99,6 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
         legg('statisk', s.id, 'T3-zoom', 'T3', 'Zoom er ikke sperret i viewport', vp && !/user-scalable\s*=\s*(no|0)\b|maximum-scale\s*=\s*1(\.0*)?\b/i.test(v), v);
       });
     });
-  }
-
-  // ---- Røyktest: start, pause, fortsett, manglende filer og feil (F1, K1, U1) ----
-  function royk(s) {
-    var feil = [], f, w, d;
-    return last('/spill/' + s.id + '/', 1024, 700).then(function (fr) {
-      f = fr; w = f.contentWindow; d = f.contentDocument;
-      w.addEventListener('error', function (e) { feil.push((e.message || 'feil') + (e.filename ? ' (' + e.filename.replace(location.origin, '') + ':' + e.lineno + ')' : '')); });
-      w.addEventListener('unhandledrejection', function (e) { feil.push('Uhåndtert promise: ' + String(e.reason)); });
-      return vent(1000);
-    }).then(function () {
-      var v = d.querySelector('.evn-ver'), m = v && /Versjon\s+(\d+(?:\.\d+){1,3})/.exec(v.textContent);
-      legg('royk', s.id, 'U1-versjon', 'U1, K3', 'Startkortet viser «Versjon x.y.z»', !!m, m ? m[1] : 'fant ikke .evn-ver med versjon');
-      var knapp = d.getElementById(s.start);
-      s.fantes = !!knapp;
-      legg('royk', s.id, 'F1-startknapp', 'F1', 'Startknappen finnes og er synlig', synlig(knapp), knapp ? '' : 'fant ikke #' + s.start);
-      if (knapp) knapp.click();
-      return vent(500).then(function () { if (s.etterStart) s.etterStart(d); return vent(1500); });
-    }).then(function () {
-      legg('royk', s.id, 'F1-start', 'F1', 'Spillet starter: startknappen forsvinner', s.fantes && !synlig(d.getElementById(s.start)), s.fantes ? '' : 'startknappen fantes ikke');
-      var p = d.getElementById('evnPauseKnapp'), kort = d.getElementById('evnPause');
-      if (!p || !kort) { legg('royk', s.id, 'F1-pause', 'F1', 'Pause åpner pausekortet', false, 'fant ikke felles pause (#evnPauseKnapp)'); return; }
-      if (kort.classList.contains('vis')) d.getElementById('evnPauseFortsett').click();   // spillet kan ha pauset seg selv fordi vinduet mangler fokus
-      return vent(300).then(function () {
-        p.click();
-        return vent(400);
-      }).then(function () {
-        s.pauset = kort.classList.contains('vis');
-        legg('royk', s.id, 'F1-pause', 'F1', 'Pause åpner pausekortet', s.pauset);
-        var fo = d.getElementById('evnPauseFortsett');
-        if (fo) fo.click();
-        return vent(400);
-      }).then(function () {
-        legg('royk', s.id, 'F1-fortsett', 'F1', 'Fortsett lukker pausekortet', s.pauset && !kort.classList.contains('vis'), s.pauset ? '' : 'pausekortet åpnet seg ikke');
-      });
-    }).then(function () {
-      var alle = w.performance.getEntriesByType('navigation').concat(w.performance.getEntriesByType('resource'));
-      if (alle.length && typeof alle[0].responseStatus === 'undefined') { info('royk', s.id, 'K1-404', 'Manglende filer', 'nettleseren oppgir ikke statuskode; se K1-nettleser fra kjor.mjs'); }
-      else {
-        var mangler = alle.filter(function (e) { return e.responseStatus >= 400; }).map(function (e) { return e.responseStatus + ' ' + e.name.replace(location.origin, ''); });
-        legg('royk', s.id, 'K1-404', 'K1', 'Ingen filer mangler (status 400 eller høyere)', mangler.length === 0, mangler.join(', '));
-      }
-      legg('royk', s.id, 'K1-feil', 'K1', 'Ingen ufangede feil etter innlasting og under start og pause', feil.length === 0, feil.slice(0, 5).join(' | '));
-    }).catch(function (e) { legg('royk', s.id, 'F1-royk', 'F1', 'Røyktesten kunne fullføres', false, String(e && e.message || e)); });
   }
 
   // ---- Statistikk: kjører den eksisterende testsiden (ST1–ST5) ----
@@ -204,23 +158,32 @@ iframe{border:1px solid #999;display:block;margin:8px 0;max-width:none}
     document.getElementById('status').textContent = feil ? feil + ' kontroller feilet.' : 'Ingen kontroller feilet.';
   }
 
+  // ---- Spillene som skal testes: liste fra ?spill= (test/kjor.mjs finner mappene og kontrollerer registreringen) ----
+  function lastSpill() {
+    var q = new URLSearchParams(location.search);
+    var rot = q.get('spillrot') || 'spill';
+    if (!/^[a-z0-9_-]+(\/[a-z0-9_-]+)*$/.test(rot)) rot = 'spill';
+    SPILLROT = rot;
+    SPILL = (q.get('spill') || '').split(',').filter(function (id) { return /^[a-z0-9][a-z0-9-]{0,39}$/.test(id); }).map(function (id) { return { id: id }; });
+    return Promise.resolve();
+  }
   function kjor() {
     if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) { document.getElementById('status').textContent = 'Testene virker bare lokalt.'; return; }
     var valgt = (new URLSearchParams(location.search).get('suiter') || '').split(',').filter(Boolean);
     var st = document.getElementById('status');
-    tester = []; suiter = {};
-    rekke(SUITER.filter(function (s) { return !valgt.length || valgt.indexOf(s.navn) >= 0; }), function (s) {
+    tester = []; suiter = {}; RESULTAT = null;
+    lastSpill().then(function () { return rekke(SUITER.filter(function (s) { return !valgt.length || valgt.indexOf(s.navn) >= 0; }), function (s) {
       st.textContent = 'Kjører ' + s.navn + ' …';
       return (s.fil ? finnes(s.fil) : Promise.resolve(true)).then(function (ja) {
         if (!ja) { suiter[s.navn] = { status: 'mangler', fil: s.fil }; return; }
         suiter[s.navn] = { status: 'kjort', fil: s.fil };
         return Promise.resolve().then(s.kjor).catch(function (e) { legg(s.navn, '–', s.navn + '-kjoring', '', 'Suiten ble ferdig uten å krasje', false, String(e && e.message || e)); }).then(tom);
       });
-    }).then(function () {
+    }); }).then(function () {
       document.getElementById('ramme').src = 'about:blank';
       var feil = tester.filter(function (x) { return x.status === 'feil'; }).length;
       vis(feil);
-      window.EVNTestResultat = { ferdig: true, feil: feil, suiter: suiter, tester: tester, ikkeGjeldende: IKKE_GJELDENDE, spill: SPILL.map(function (s) { return s.id; }), alleSuiter: SUITER.map(function (s) { return s.navn; }) };
+      RESULTAT = frys(JSON.parse(JSON.stringify({ ferdig: true, feil: feil, suiter: suiter, tester: tester, ikkeGjeldende: IKKE_GJELDENDE, spill: SPILL.map(function (s) { return s.id; }), alleSuiter: SUITER.map(function (s) { return s.navn; }) })));
     });
   }
   document.getElementById('kjor').addEventListener('click', kjor);

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; object-src 'none'">
+<title>Juksespill: endrer målingene</title>
+</head>
+<body>
+<!-- Juksespill for suiten «sikkerhet» (funn 2 i QA av 1711cbb). Start virker ikke, men spillet prøver å få
+     målingene til å tro det: det bytter ut DOM-funksjoner og globale objekter og prøver å nå en forelder.
+     Med isolert måling skal F1-start feile. -->
+<div class="evn-ver">Versjon 1.0.0</div>
+<button id="startBtn" type="button">Start</button>
+<button id="evnPauseKnapp" type="button">Pause</button>
+<div id="evnPause"><button id="evnPauseFortsett" type="button">Fortsett</button></div>
+<script src="spill.js"></script>
+</body>
+</html>

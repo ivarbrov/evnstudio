@@ -8,11 +8,21 @@
  * Endrer PR-en test/ eller .github/, feiler sjekken: da har testene i PR-en ikke samme innhold som på main,
  * og eieren må gå gjennom endringen og eventuelt slå den sammen med unntak (bypass).
  *
+ * 0. Testoppsettet (meldinger merket [testoppsett]). Nye spill trenger ikke endringer i test/:
+ *    - Alle mapper i spill/ med index.html skal testes. Registreringen spill/<id>/evn-test.json er bare data og
+ *      kontrolleres med reglene i test/spillregister.mjs fra main.
+ *    - Registreringen til et spill som finnes på main, kan ikke endres i samme PR uten særskilt kontroll.
+ *    - Testresultatet fra Actions må ha alle påkrevde kontroller for hvert spill, også nye spill.
+ *    - Suiten «sikkerhet» (de negative testene) er kjørt og grønn når den finnes på main.
+ *    - Ny kode som peker mot en forelder eller testresultatet (parent, top, frameElement, EVN…Resultat), gir varsel.
+ *      Sperren er isolasjonen i test/kjor.mjs: hvert spill kjøres i egen fane med eget opphav.
+ *    - Krav som er gjeldende på main, kreves selv om standarden på grenen fjerner dem.
+ *
  * 1. Testene i Actions: --ci-resultat er resultatet av Actions sin egen kjøring av test/kjor.mjs.
  *    Den må gjelde HEAD, være kjørt på et rent arbeidstre, ha kjørt alle suiter og ikke ha feil.
  *    Rådgivende suiter (krav som ikke er gjeldende ennå) gir bare varsel. I Actions er --ci-resultat påkrevd.
  * 2. QA etter siste kodeendring: en rapport i qa/rapporter/ der «Grunnlag» viser full SHA for siste commit
- *    som endrer noe utenfor qa/, standardfilens hash og agentversjonen på den commiten.
+ *    som endrer noe annet enn QA-rapportene (qa/rapporter/*.md), standardfilens hash og agentversjonen på den commiten.
  * 3. Full QA for endrede spill: «Nivå: full», alle gjeldende krav-ID-er for spillet gjort rede for,
  *    konklusjon som ikke er NEI, og en testkvittering fra test/kjor.mjs for samme commit.
  *    Felles kode (statistikk.js, vendor/, fonter/) regnes som endring i alle spill.
@@ -24,6 +34,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { lesRegistrering, likKonfig, FILNAVN, SPILL_ID, PAKREVDE_KONTROLLER, GODKJENT_STATUS } from './spillregister.mjs';
 
 const ROT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -35,6 +46,25 @@ const REF = arg('ref', 'HEAD');
 const I_ACTIONS = process.env.GITHUB_ACTIONS === 'true';
 const git = (...a) => { try { return execFileSync('git', ['-c', 'core.quotePath=false', ...a], { cwd: ROT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20 }).trim(); } catch { return null; } };
 const vis = (rev, fil) => git('show', rev + ':' + fil);
+// Leser mange filer i ett git-kall (git cat-file --batch). Gir { sti: tekst }; filer som mangler, er utelatt.
+function visMange(rev, filer) {
+  if (!filer.length) return {};
+  let ut;
+  try { ut = execFileSync('git', ['cat-file', '--batch'], { cwd: ROT, input: filer.map(f => `${rev}:${f}`).join('\n') + '\n', stdio: ['pipe', 'pipe', 'ignore'], maxBuffer: 256 << 20 }); } catch { return {}; }
+  const svar = {};
+  let i = 0;
+  for (const f of filer) {
+    const nl = ut.indexOf(10, i);
+    if (nl < 0) break;
+    const hode = ut.toString('utf8', i, nl).split(' ');
+    i = nl + 1;
+    if (hode[1] !== 'blob') continue;
+    const n = Number(hode[2]);
+    svar[f] = ut.toString('utf8', i, i + n);
+    i += n + 1;
+  }
+  return svar;
+}
 const kort = sha => (sha || '–').slice(0, 7);
 
 const feil = [], varsler = [], ok = [];
@@ -43,10 +73,11 @@ if (!HEAD) { console.error('Fant ikke commiten ' + REF + '.'); process.exit(2); 
 const mb = git('merge-base', BASE, REF);
 if (!mb) { console.error('Fant ikke felles commit med ' + BASE + '.'); process.exit(2); }
 const endrede = (git('diff', '--name-only', mb, REF) || '').split('\n').filter(Boolean);
-const kode = git('log', '-1', '--format=%H', REF, '--', '.', ':(exclude)qa');
+// Bare QA-rapportene (qa/rapporter/*.md) er ikke kode. Andre filer i qa/ serveres som resten av nettstedet og regnes som kode.
+const kode = git('log', '-1', '--format=%H', REF, '--', '.', ':(exclude,glob)qa/rapporter/*.md');
 // Testene og arbeidsflyten skal være de samme som på main, ellers er testresultatet ikke betrodd.
 const betrodd = endrede.filter(f => f.startsWith('test/') || f.startsWith('.github/'));
-if (betrodd.length) feil.push(`PR-en endrer testene eller arbeidsflyten (${betrodd.slice(0, 5).join(', ')}${betrodd.length > 5 ? ' …' : ''}). Testresultatet er da ikke betrodd. Eieren må gå gjennom endringen og eventuelt slå sammen med unntak.`);
+if (betrodd.length) feil.push(`[testoppsett] PR-en endrer testene eller arbeidsflyten (${betrodd.slice(0, 5).join(', ')}${betrodd.length > 5 ? ' …' : ''}). Testresultatet er da ikke betrodd. Eieren må gå gjennom endringen og eventuelt slå sammen med unntak.`);
 
 // ---- Kravene som gjelder, lest fra standarden på den kontrollerte commiten ----
 function krav(standard) {
@@ -87,7 +118,8 @@ const radgivendeI = rev => { const m = /IKKE_GJELDENDE = \{([^}]*)\}/.exec(vis(r
 const RADGIVENDE = new Set(radgivendeI(BASE) || ['ui']);
 // Suitene som må finnes: alle som står i test/index.html på main eller på denne grenen.
 const suiterI = rev => [...(vis(rev, 'test/index.html') || '').matchAll(/\{ navn: '([a-z]+)', fil: (?:null|'([^']+)')/g)].map(m => [m[1], m[2] || null]);
-const SUITEFIL = Object.fromEntries([...suiterI(mb), ...suiterI(REF)]);
+const SIKKERHET = 'test/sikkerhet/manipulering.test.mjs';
+const SUITEFIL = Object.fromEntries([...suiterI(mb), ...suiterI(REF), ...(git('cat-file', '-e', mb + ':' + SIKKERHET) !== null ? [['sikkerhet', SIKKERHET]] : [])]);
 const KREVDE = Object.keys(SUITEFIL);
 // «Ikke innført» er bare lov for en suite med testfil, når filen mangler både her og på main.
 const kanMangle = n => SUITEFIL[n] && git('cat-file', '-e', REF + ':' + SUITEFIL[n]) === null && git('cat-file', '-e', mb + ':' + SUITEFIL[n]) === null;
@@ -109,6 +141,52 @@ if (ci) {
     else if (v === 'ikke-innfort') varsler.push(`Actions: suiten ${n} er ikke innført ennå (filen den tester, finnes verken her eller på main).`);
   }
   if (feil.length === f0) ok.push(`Actions kjørte testene på ${kort(HEAD)}: ${Object.entries(ci.suiter).map(([n, v]) => n + '=' + v).join(', ')}.`);
+}
+
+// ---- 0. Testoppsettet: spillregistrering, dekning og tilgang til testsiden ----
+const spillI = rev => (git('ls-tree', '-d', '--name-only', rev, 'spill/') || '').split('\n').filter(Boolean).map(f => f.replace(/^spill\//, ''))
+  .filter(id => git('cat-file', '-e', `${rev}:spill/${id}/index.html`) !== null).sort();
+const spillHer = spillI(REF), spillPaMain = spillI(mb);
+const registrering = (rev, id) => lesRegistrering(git('cat-file', '-e', `${rev}:spill/${id}/${FILNAVN}`) === null ? null : (vis(rev, `spill/${id}/${FILNAVN}`) ?? ''));
+{
+  const f0 = feil.length;
+  for (const id of spillHer) {
+    if (!SPILL_ID.test(id)) { feil.push(`[testoppsett] spill/${id}/: ugyldig mappenavn (små bokstaver, tall og -). Spillet kan ikke testes.`); continue; }
+    const r = registrering(REF, id);
+    if (!r.ok) { feil.push(`[testoppsett] spill/${id}/${FILNAVN}: ${r.feil.join('; ')}.`); continue; }
+    if (spillPaMain.includes(id)) {
+      const gml = registrering(mb, id);
+      if (gml.ok && !likKonfig(gml.konfig, r.konfig)) feil.push(`[testoppsett] spill/${id}/${FILNAVN}: registreringen til et spill som finnes på main, er endret. Det krever særskilt kontroll, fordi det endrer hva testene trykker på.`);
+    }
+  }
+  for (const id of spillPaMain.filter(id => !spillHer.includes(id))) varsler.push(`[testoppsett] spill/${id}/ er fjernet, og testene for spillet kjøres ikke lenger.`);
+  const nye = spillHer.filter(id => !spillPaMain.includes(id));
+  if (ci) {
+    const testet = Array.isArray(ci.spill) ? ci.spill : null;
+    if (!testet) feil.push('[testoppsett] Testresultatet fra Actions oppgir ikke hvilke spill som ble testet.');
+    else for (const id of spillHer.filter(id => !testet.includes(id))) feil.push(`[testoppsett] spill/${id}/ ble ikke testet i Actions.`);
+    const rader = Array.isArray(ci.tester) ? ci.tester : [];
+    for (const id of spillHer) for (const [suite, ider] of Object.entries(PAKREVDE_KONTROLLER)) {
+      const mangler = ider.filter(k => !rader.some(x => x && x.suite === suite && x.spill === id && x.id === k && GODKJENT_STATUS.includes(x.status)));
+      if (mangler.length) feil.push(`[testoppsett] spill/${id}/: kontrollene ${mangler.join(', ')} (${suite}) mangler eller er ikke godkjent i testresultatet fra Actions.`);
+    }
+  }
+  // Ny kode utenfor test/ som når testsiden fra et spill i rammen. Gjelder bare linjer PR-en legger til.
+  // Bare et varsel til den som går gjennom PR-en: søket kan omgås. Sperren er at test/kjor.mjs kjører hvert spill
+  // i egen fane med eget opphav og måler fra en isolert JS-verden (se suiten «sikkerhet»).
+  const tillagt = (git('diff', '-U0', '--no-color', '--no-ext-diff', mb, REF, '--', '.', ':(exclude)test', ':(exclude,glob)qa/rapporter/*.md', ':(exclude).github') || '').split('\n');
+  const TILGANG = [/\b(?:window|self|globalThis)\s*(?:\.\s*|\[\s*['"`])(?:parent|top|frameElement|opener)\b/,
+    /(?:^|[^\w$.])(?:parent|top)\s*(?:\.|\[)\s*['"`]?(?:document|window|EVN|eval|Function|Object|JSON|Array|Promise|setTimeout|setInterval|fetch|location)\b/,
+    /\bEVN(?:Test|Statistikk|Ecoins)Resultat\b/, /\bframeElement\b/];
+  let fil = '';
+  const treff = [];
+  for (const l of tillagt) {
+    if (l.startsWith('+++ ')) fil = l.replace(/^\+\+\+ (b\/)?/, '');
+    // Bare kode (js, mjs, html), ikke dokumentasjon som omtaler ordene.
+    else if (l.startsWith('+') && /\.(m?js|html?)$/i.test(fil) && TILGANG.some(re => re.test(l))) treff.push(fil);
+  }
+  if (treff.length) varsler.push(`[testoppsett] Ny kode prøver å nå en forelder, et toppvindu eller testresultatet (parent, top, frameElement eller EVN…Resultat) i ${[...new Set(treff)].slice(0, 5).join(', ')}. Testene er isolert fra spillet, men se gjennom koden.`);
+  if (feil.length === f0) ok.push(`Testoppsettet: ${spillHer.length} spill testes automatisk${nye.length ? ` (nye: ${nye.join(', ')})` : ''}, registreringene er gyldige og testresultatet dekker alle.`);
 }
 
 function kontrollerKvittering(navn, r) {
@@ -135,8 +213,10 @@ function kontrollerKvittering(navn, r) {
 }
 
 // ---- QA-rapportene som er committet ----
-const rapporter = (git('ls-tree', '-r', '--name-only', REF, 'qa/rapporter/') || '').split('\n').filter(f => f.endsWith('.md')).map(fil => {
-  const t = vis(REF, fil) || '';
+const rapportfiler = (git('ls-tree', '-r', '--name-only', REF, 'qa/rapporter/') || '').split('\n').filter(f => f.endsWith('.md'));
+const rapporttekst = visMange(REF, rapportfiler);
+const rapporter = rapportfiler.map(fil => {
+  const t = rapporttekst[fil] || '';
   const g = /^Grunnlag: agent (\d+(?:\.\d+)*)[^,]*,\s*standard (.+?)\s*\(([0-9a-f]{40})\),\s*commit ([0-9a-f]{40})\b/m.exec(t);
   const k = /## Klar for testing hos Even\?\s*\n\s*(JA MED FORBEHOLD|JA|NEI)/.exec(t);
   return { fil, tekst: t, tittel: (/^# EVN Game QA: (.+)$/m.exec(t) || [])[1] || '', grunnlag: g && { agent: g[1], standard: g[2], hash: g[3], commit: g[4] },
@@ -147,14 +227,25 @@ for (const r of rapporter.filter(r => r.kortSha)) varsler.push(`${r.fil}: «Grun
 
 const standardHash = git('rev-parse', kode + ':.claude/evn-game-standard.md');
 const agentVersjon = ((/Agentdefinisjon versjon ([\d.]+)/.exec(vis(kode, '.claude/agents/evn-game-qa.md') || '') || [])[1]) || null;
-const kravsett = krav(vis(kode, '.claude/evn-game-standard.md') || '');
+// Krav som er gjeldende på main, kreves også om standarden på grenen fjerner dem (ingen svekkelse i samme PR).
+const kravsett = (() => {
+  const her = krav(vis(kode, '.claude/evn-game-standard.md') || ''), main = krav(vis(mb, '.claude/evn-game-standard.md') || '');
+  const fjernet = main.obligatorisk.filter(id => !her.obligatorisk.includes(id));
+  const perSpill = { ...main.perSpill };
+  for (const [s, ider] of Object.entries(her.perSpill)) perSpill[s] = [...new Set([...(main.perSpill[s] || []), ...ider])];
+  for (const [s, ider] of Object.entries(main.perSpill)) { const f = ider.filter(id => !(her.perSpill[s] || []).includes(id)); if (her.perSpill[s] && f.length) fjernet.push(...f.map(id => `${id} (${s})`)); }
+  if (fjernet.length) varsler.push(`[testoppsett] Standarden på grenen fjerner gjeldende krav (${[...new Set(fjernet)].join(', ')}). De kreves likevel til endringen er godkjent og på main.`);
+  return { obligatorisk: [...new Set([...main.obligatorisk, ...her.obligatorisk])], perSpill, mapper: { ...main.mapper, ...her.mapper } };
+})();
 const forKode = rapporter.filter(r => r.grunnlag && r.grunnlag.commit === kode);
 const riktigGrunnlag = r => r.grunnlag.hash === standardHash && r.grunnlag.agent === agentVersjon;
 
 // ---- Hvilke spill er endret ----
 const alleSpill = (git('ls-tree', '--name-only', REF, 'spill/') || '').split('\n').filter(Boolean).map(f => f.replace(/^spill\//, ''));
-const felles = endrede.some(f => f === 'statistikk.js' || f.startsWith('vendor/') || f.startsWith('fonter/'));
-const spill = felles ? alleSpill : [...new Set(endrede.map(f => (/^spill\/([^/]+)\//.exec(f) || [])[1]).filter(Boolean))];
+// ecoins/ (lommebok, E-shop og figurer) brukes av flere spill og regnes derfor som felles kode.
+const felles = endrede.some(f => f === 'statistikk.js' || f.startsWith('vendor/') || f.startsWith('fonter/') || f.startsWith('ecoins/'));
+// Registreringsfilen (evn-test.json) er testdata, ikke en del av spillet, og krever ikke ny spillversjon. Den kontrolleres under «Testoppsettet».
+const spill = felles ? alleSpill : [...new Set(endrede.filter(f => !(f.startsWith('spill/') && f.split('/').length === 3 && f.endsWith('/' + FILNAVN))).map(f => (/^spill\/([^/]+)\//.exec(f) || [])[1]).filter(Boolean))];
 
 console.log(`HEAD: ${HEAD}\nSiste kodeendring: ${kode}\nStandard på den commiten: ${standardHash}\nAgentversjon: ${agentVersjon}\nEndrede spill: ${spill.join(', ') || 'ingen'}${felles ? ' (felles kode er endret)' : ''}\n`);
 
@@ -192,5 +283,7 @@ const ut = ['# EVN Publiseringssjekk', '', ...feil.map(x => '- FEIL: ' + x), ...
 console.log(ut.join('\n'));
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, ut.join('\n') + '\n');
 // Merknader som vises på kontrollen i GitHub
-if (I_ACTIONS) { feil.forEach(x => console.log('::error title=Publiseringssjekk::' + x)); varsler.forEach(x => console.log('::warning title=Publiseringssjekk::' + x)); }
+// Meldingene kan inneholde filnavn og tekst fra PR-en. Linjeskift, kontrolltegn og «::» fjernes, så de ikke blir egne kommandoer.
+const ren = x => String(x).replace(/[\x00-\x1f\x7f]+/g, ' ').split(String.fromCharCode(0x2028)).join(' ').split(String.fromCharCode(0x2029)).join(' ').replace(/::/g, ': :');
+if (I_ACTIONS) { feil.forEach(x => console.log('::error title=Publiseringssjekk::' + ren(x))); varsler.forEach(x => console.log('::warning title=Publiseringssjekk::' + ren(x))); }
 process.exit(feil.length ? 1 : 0);

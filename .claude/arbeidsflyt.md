@@ -67,7 +67,7 @@ Laget i trinn 3 på grenen `kvalitet/tester`. Det trengs ingen nye verktøy elle
 
 | Fil | Hva den gjør |
 |---|---|
-| `test/index.html` | Testsiden. Kjører alle suitene i en ramme og legger resultatet i `window.EVNTestResultat`. Kan åpnes i en vanlig nettleser med `?auto`. |
+| `test/index.html` | Testsiden. Kjører suitene `statisk`, `statistikk`, `ui` og `ecoins` og legger resultatet i `window.EVNTestResultat`. Kan åpnes i en vanlig nettleser med `?auto&spill=id1,id2`. |
 | `test/kjor.mjs` | Starter en liten lokal server og Chrome eller Edge uten skjerm, kjører testsiden, fanger feil som bare nettleseren ser, og skriver tabell og testkvittering. Avslutter med kode 1 ved feil. |
 | `test/publiseringssjekk.mjs` | Kontrollerer testkjøringen i Actions, QA-rapporten og versjonen ved PR til `main` (se under). |
 | `.github/workflows/kvalitet.yml` og `publisering.yml` | De to kontrollene i GitHub Actions (se under). |
@@ -79,7 +79,20 @@ Laget i trinn 3 på grenen `kvalitet/tester`. Det trengs ingen nye verktøy elle
 | `statistikk` | ST1–ST5 | De 45 kontrollene i `test/statistikk/` (fra `feature/statistikk`) | Ja |
 | `ui` | UI7, T1 | `EVNUIMaal()` i fem størrelser: `under44`, `avstandUnder8`, `overlapp` og `panelOverlapp`. Dekket andel vises som informasjon | Bare varsel, til UI-kravene er gjeldende |
 
-**Kjente funn:** Funn som står under «Kjente funn» i standarden, gir «kjent» i stedet for «feil». Når de er rettet, gir de «rettet», som et tegn på at standarden bør oppdateres. Listen står øverst i `test/index.html`.
+**Nye spill (utkast, grenen `kvalitet/automatisk-spillregistrering`):** Spillene finnes automatisk. Alle mapper i `spill/` med `index.html` får `statisk` og `royk`, uten endring i `test/`. Spill som ikke har en knapp med id `startBtn`, eller som trenger klikk etter Start, legger reglene i `spill/<id>/evn-test.json`:
+
+```json
+{ "start": "menyStart", "etterStart": [ { "klikk": ".verden.aapen" } ] }
+```
+
+Filen er bare data. Reglene står i `test/spillregister.mjs`:
+- Bare feltene `start` (element-id) og `etterStart` (inntil 3 klikk med enkle CSS-velgere) er lov.
+- Filen kan ikke slå av, hoppe over eller svekke noen kontroll.
+- Kontrollene som kreves for hvert spill (`PAKREVDE_KONTROLLER`), står i `test/` og endres bare med særskilt kontroll.
+
+En registreringsfil er testdata, ikke en del av spillet, og krever ikke ny versjon av spillet.
+
+**Kjente funn:** Funn som står under «Kjente funn» i standarden, gir «kjent» i stedet for «feil». Når de er rettet, gir de «rettet», som et tegn på at standarden bør oppdateres. Listen står øverst i `test/index.html` og gjelder suitene på testsiden. Kjente funn i røyktesten må legges inn i `test/kjor.mjs` (i dag ingen).
 
 **Tester som mangler:** En suite som mangler filen den tester, får status «ikke innført» bare hvis filen heller ikke finnes på `main` (`--base`). Finnes filen på `main`, er testen obligatorisk, og kjøringen feiler: «Obligatorisk test mangler». Ingen liste må vedlikeholdes. En test blir obligatorisk når den er slått sammen til `main`.
 
@@ -114,8 +127,53 @@ To arbeidsflyter gir to separate kontroller. Begge skal kreves i regelen for `ma
 4. **Full QA for hvert endret spill:** «Nivå: full», hver gjeldende krav-ID gjort rede for, og konklusjon som ikke er NEI. Felles kode regnes som endring i alle spill.
 5. **Testkvitteringen i rapporten:** gjelder samme commit, er laget på rent arbeidstre og har samme resultat som Actions i de obligatoriske suitene.
 6. **K3:** endrede spill har nytt versjonsnummer på startkortet, og det står i `ENDRINGSLOGG.md`.
+7. **Testoppsettet (utkast):** Disse meldingene er merket `[testoppsett]`. Et nytt spill trenger ikke endringer i `test/`, og ikke unntak. Sjekken (fra `main`) krever:
+   - Hvert spill på grenen har gyldig mappenavn og gyldig `evn-test.json`, kontrollert med reglene i `test/spillregister.mjs` fra `main`.
+   - Registreringen til et spill som finnes på `main`, er uendret. En endring krever særskilt kontroll, fordi den endrer hva testene trykker på.
+   - Resultatfilen fra Actions oppgir hvilke spill som ble testet. Den har alle påkrevde kontroller for hvert spill, også nye, med status `ok`, `kjent` eller `rettet`.
+   - Suiten `sikkerhet` (de negative testene i `test/sikkerhet/`) er kjørt og grønn, når den finnes på `main`.
+   - Linjer som PR-en legger til og som prøver å nå en forelder, et toppvindu eller testresultatet (`parent`, `top`, `frameElement` eller `EVN…Resultat`) i `.js`- og `.html`-filer, gir et varsel til den som går gjennom PR-en. Søket kan omgås, så det er ikke sperren. Sperren er isolasjonen under.
+   - Krav som er gjeldende i standarden på `main`, kreves fortsatt, også om standarden på grenen fjerner dem. Sjekken gir da et varsel.
+   - Bare QA-rapportene (`qa/rapporter/*.md`) er unntatt fra «siste kodeendring». Andre filer i `qa/` regnes som kode.
+   - Bare `spill/<id>/evn-test.json` regnes som testdata. En fil med samme navn i en undermappe regnes som en endring i spillet.
 
-**Hvorfor resultatfilen kan brukes:** Punkt 1 sikrer at testskriptene og arbeidsflyten er de samme som på `main`, og resultatfilen må oppgi samme testversjon som `test/` på commiten. Hvilke suiter som er rådgivende, leses fra `main`, ikke fra filen. Testene kjører likevel PR-ens spillkode i samme nettleser. Spillkode som med vilje skrev til testresultatet, kunne i prinsippet påvirke det. Det er en restrisiko så lenge bare eieren og Claude kan pushe grener. Resultatfilen behandles bare som data. Stemmer den ikke med QA-rapportens kvittering, stopper PR-en.
+**Isolasjon i nettleseren (utkast):** `test/kjor.mjs` kjører spillene slik at de ikke kan påvirke testresultatet:
+- Hvert spill røyktestes i en egen fane med eget opphav: `http://<id>.localhost:<port>/spill/<id>/`. Spillet deler ikke opphav med testsiden (`127.0.0.1`) eller med andre spill.
+- Målingene gjøres fra en isolert JS-verden (`Page.createIsolatedWorld`). Spillet kan ikke bytte ut funksjonene som måler, for eksempel `getElementById`, `getComputedStyle` eller `JSON`.
+- Feil, manglende filer og navigasjon registreres av nettleseren (CDP), ikke av spillet. Et spill som navigerer bort under testen, får feil.
+- Hver fane har sin egen nettleserkontekst (som et eget, tomt profil). Fanene deler ikke lagring, informasjonskapsler, service workers eller buffer.
+- Suitene på testsiden (`statisk`, `statistikk`, `ui`, `ecoins`) kjører hver i sin egen fane. Navigeres fanen bort fra testsiden, eller åpnes et nytt vindu, avvises resultatet. Et spill som åpner et nytt vindu under røyktesten, får feil.
+- `statisk` leser spillsidene bare som tekst, så spillkoden kjører ikke der.
+
+Røyktesten kjøres derfor bare av `node test/kjor.mjs`, ikke når testsiden åpnes i en vanlig nettleser.
+
+**Negative tester:** `node test/sikkerhet/manipulering.test.mjs` lager et midlertidig git-repo som deler objektene med dette, og prøver 43 scenarier mot publiseringssjekken:
+- 6 som skal godtas:
+  - nytt spill med og uten registreringsfil
+  - registrering som er lik standarden, og som ikke krever ny spillversjon
+  - et fjernet spill (bare varsel)
+  - en ny QA-rapport, som ikke er en kodeendring
+- 37 manipuleringer som skal avvises eller gi varsel:
+  - endringer i testsiden, testkjøreren, publiseringssjekken, spillregisteret og arbeidsflyten, og sletting av de negative testene
+  - ugyldige registreringsfiler og mappenavn
+  - endret registrering for eksisterende spill
+  - resultatfiler som utelater et spill, en kontroll eller sikkerhetssuiten, har feil commit eller testversjon, eller har feil i røyktesten
+  - spillkode som peker mot testsiden (varsel)
+  - skript i `qa/` og `evn-test.json` i en undermappe
+  - endring i `ecoins/` uten full QA av alle spill
+  - en standard der F1 er fjernet (kreves fortsatt, med varsel)
+
+Deretter kjører den `test/kjor.mjs` mot tre spill i `test/sikkerhet/juksespill/` (B1–B4):
+- `aerlig` skal bestå alle 13 kontrollene. Det viser at testene virker.
+- `toppnav` navigerer bort til en side med et falskt, grønt resultat (funn 1 i QA av 1711cbb).
+- `forelder` bytter ut DOM-funksjoner og globale objekter og prøver å nå en forelder (funn 2).
+
+Begge juksespillene skal gi feil og gjøre hele kjøringen rød. Testene kjøres som suiten `sikkerhet` av `test/kjor.mjs`, også i Actions.
+
+**Hvorfor resultatfilen kan brukes:** Punkt 1 sikrer at testskriptene og arbeidsflyten er de samme som på `main`, og resultatfilen må oppgi samme testversjon som `test/` på commiten. Hvilke suiter som er rådgivende, leses fra `main`, ikke fra filen. Spillene kjøres isolert fra testsiden (se over).
+
+**Restrisiko:** Felles kode som testes inne i testsiden (`ecoins/`, `statistikk.js`), kjører i fanen til sin egen suite. Den kan i prinsippet påvirke resultatet for den suiten, men ikke for spillene eller andre suiter. Endringer i `ecoins/`, `statistikk.js`, `vendor/` og `fonter/` regnes som felles kode og krever full QA av alle spill. `prototype/ui/` brukes ikke av spillene, og suiten `ui` er rådgivende. Felles bilder (`bilder/`, `favicon.png`) regnes ikke som felles kode: en fil som mangler, fanges av K1 i røyktesten, men et bilde som byttes ut, gir ikke QA av spillene (som på `main`). Hvis `test/statistikk/` senere laster spill i rammer på testsidens opphav, gjelder det samme for statistikk-radene. Et spill kan heller ikke bevise at det er morsomt eller virker over tid. Det er lagene EVN Game QA, Even og eieren.
+Resultatfilen behandles bare som data. Stemmer den ikke med QA-rapportens kvittering, stopper PR-en.
 
 **Ulikt resultat i Actions og lokalt:** Kravene senkes ikke automatisk. PR-en stopper, og forskjellen undersøkes.
 
@@ -162,7 +220,7 @@ Ingen av kjøringene startet publisering. Alle de 32 publiseringene til `github-
 
 **Begrensninger og manuell kontroll:**
 - Den første PR-en som legger arbeidsflytene på `main`, får ikke «QA før publisering», fordi `workflow_run` bare kjører fra `main`. Den må eieren gå gjennom manuelt og slå sammen med unntak.
-- PR-er som endrer `test/` eller `.github/`, krever alltid manuell gjennomgang.
+- PR-er som endrer `test/` eller `.github/`, krever alltid manuell gjennomgang. Et nytt spill gjør ikke lenger det (utkast, punkt 7). Det gjør heller ikke en ny registreringsfil for et nytt spill.
 - En PR kan i prinsippet endre `kvalitet.yml` og selv sette en falsk status med samme navn. Den blir likevel rød i «QA før publisering», fordi `.github/` er endret, men statusen som settes sist, gjelder. Derfor må eieren alltid sjekke at en PR ikke endrer `.github/`, før den slås sammen.
 - Sjekken viser at testene er kjørt på riktig commit, og at QA-rapporten gjelder samme commit og standard. Den kan ikke bevise at vurderingene i rapporten er riktige. Derfor er Evens test og eierens godkjenning egne lag.
 - Krav merket Q, E og V kan ikke testes automatisk.
