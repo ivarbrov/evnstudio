@@ -278,3 +278,18 @@ Donutku, Burgersau, Pizzaskilpadde, Shakeand og Spagettipingvin er rettet i `ble
   - **Ingen melding over merkene.** I velg-modus viser handlingsknappen «👉 Trykk på en 🔁 · Avbryt», og E avbryter. Det gir ingen egen melding som kan dekke merkene.
   - **Strengere spilltest-sjekk 12.** Den sjekker nå hver for seg at halv pris kommer inn og at prisen trekkes ved innflytting. Den sjekker også fokusfellen og at «Avbryt» nullstiller.
 - **Kjent:** Lukkes siden mens matdyret flyr (ca. 0,7 s), beholdes det gamle matdyret. Det nye forsvinner uten at noe er betalt. Ingen fremgang går tapt.
+
+## Figurbolk 1: ku og gris × 10 matsorter (Ivar, 9.11.2026 kl. 20.24: «Én bolk først»)
+- 20 figurer i pilotstilen, vist med `?pilot=1`. Uten flagget er spillet uendret.
+- 16 er nye: ku med burger, spagetti, taco, sjoko, jordbær og milkshake, og gris med alle 10 matsortene. 4 er eldre ku-figurer fra piloten.
+- ID-ene er hentet fra `COMBOS`. Ingen nye ID-er er laget, og sjeldenhet, pris og inntekt er uendret.
+- Lav versjon har ca. 7 000 trekanter og 197–244 kB per figur.
+- `blender/matdyr_modul.py` har fått matbyggere for burger, spagetti, taco, sjoko, jordbær og milkshake, og et dyresett for gris.
+- Sammenligning: `figurbolk1-kontaktark.png`. Bolken venter på Evens vurdering. Resten lages art for art først når han har godkjent den.
+- Kjente svakheter:
+  - Forfra dekker hodet mye av maten.
+  - Tacoskallet har kantete flekker.
+  - Sjokoen er et hardt rektangel.
+  - Spagettien ser ut som løkker fra siden.
+  - Skallflikene på bananen henger flatt.
+  - Grisesnuten står litt løst.

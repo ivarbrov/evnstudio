@@ -40,7 +40,11 @@
   const NYE_FIGURER = ['donutku', 'burgersau', 'pizzaskilpadde', 'shakeand', 'spagettipingvin'];
   // ?pilot=1: figurpiloten (MS5) – 16 modulære figurer, 4 arter × 4 matvarer. De går foran de håndlagde med samme ID.
   const PILOT_ID = { pilot_ku_pizza: 125, pilot_ku_smultring: 127, pilot_ku_banan: 130, pilot_ku_is: 134, pilot_pingvin_pizza: 175, pilot_pingvin_smultring: 177, pilot_pingvin_banan: 180, pilot_pingvin_is: 184,
-    pilot_hval_pizza: 225, pilot_hval_smultring: 227, pilot_hval_banan: 230, pilot_hval_is: 234, pilot_skilpadde_pizza: 700, pilot_skilpadde_smultring: 702, pilot_skilpadde_banan: 705, pilot_skilpadde_is: 709 };
+    pilot_hval_pizza: 225, pilot_hval_smultring: 227, pilot_hval_banan: 230, pilot_hval_is: 234, pilot_skilpadde_pizza: 700, pilot_skilpadde_smultring: 702, pilot_skilpadde_banan: 705, pilot_skilpadde_is: 709,
+    // Figurbolk 1 (9.11.2026): ku og gris med lanseringssettets 10 matsorter. ID-ene er hentet fra COMBOS (navn = mat + art).
+    pilot_ku_burger: 133, pilot_ku_spagetti: 129, pilot_ku_taco: 126, pilot_ku_sjoko: 135, pilot_ku_jordbaer: 142, pilot_ku_milkshake: 149,
+    pilot_gris_pizza: 0, pilot_gris_smultring: 2, pilot_gris_burger: 8, pilot_gris_is: 9, pilot_gris_spagetti: 4, pilot_gris_banan: 5,
+    pilot_gris_taco: 1, pilot_gris_sjoko: 10, pilot_gris_jordbaer: 17, pilot_gris_milkshake: 24 };
   const PILOT = new URLSearchParams(location.search).get('pilot') === '1' ? Object.keys(PILOT_ID) : [];
   const NY_ID = { ...Object.fromEntries(PILOT.map(n => [n, PILOT_ID[n]])), donutku: 127, burgersau: 508, pizzaskilpadde: 700, shakeand: 599, spagettipingvin: 179 };
   // ?laave=a|b|c: tre låvevarianter til vurdering (Ivar 8.11.2026). Uten flagget brukes den vanlige låven.
