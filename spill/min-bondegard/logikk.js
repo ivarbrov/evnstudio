@@ -1,7 +1,7 @@
 /* Min Bondegård – spillregler uten grafikk.
    Rene funksjoner over én tilstand. Ingen three.js og ingen DOM, så reglene kan testes i Node (test/min-bondegard/logikk.test.mjs).
    Tid: alle jobber har en fast slutt-tid i millisekunder (Date.now()). En jobb er ferdig når klokka har passert slutt-tiden,
-   også mens spillet er lukket (B1). Ferdige ting ligger og venter til spilleren henter dem, og forsvinner fra tilstanden når de hentes.
+   også mens spillet er lukket (planens beslutning B1). Ferdige ting ligger og venter til spilleren henter dem, og forsvinner fra tilstanden når de hentes.
    Derfor kan ingenting bli ferdig eller hentet to ganger, uansett hvor ofte spillet lastes på nytt.
    Går klokka bakover, kortes ventetiden ned til jobbens egen lengde (normaliserTid), så ingenting blir stående fast. */
 (function (rot) {
@@ -69,7 +69,7 @@
     if (A.nivaa > s.nivaa) return 'laast';
     if ((s.lager[avling] || 0) > 0) return null;
     if (A.gratis) return null;
-    if (!s.akre.some(function (a) { return a.avling === avling; })) return null;   // F2: 0 i silo og ingen på åkrene gir gratis frø
+    if (!s.akre.some(function (a) { return a.avling === avling; })) return null;   // Progresjonsregel F2: 0 i silo og ingen på åkrene gir gratis frø
     return 'ingen-fro';
   }
   function plant(s, i, avling, naa) {
@@ -151,7 +151,7 @@
     return { ok: true };
   }
 
-  // ---------- Markedsbua (F3) ----------
+  // ---------- Markedsbua (progresjonsregel F3) ----------
   function kanSelge(v) { return !D.erFor(v); }
   function selg(s, v, n) {
     if (!kanSelge(v)) return { ok: false, grunn: 'for' };
@@ -186,7 +186,7 @@
     s.xp = Math.max(0, tall(r.xp, 0)); s.mynter = Math.max(0, Math.floor(tall(r.mynter, D.startMynter)));
     s.seq = Math.max(0, Math.floor(tall(r.seq, 0))); s.opprettet = tall(r.opprettet, naa); s.sist = tall(r.sist, naa);
     s.lager = {};
-    if (r.lager && typeof r.lager === 'object') for (var v in r.lager) if ((D.avlinger[v] || D.varer[v]) && tall(r.lager[v], 0) > 0) s.lager[v] = Math.floor(r.lager[v]);
+    if (r.lager && typeof r.lager === 'object') for (var v in r.lager) if ((D.avlinger[v] || D.varer[v]) && tall(r.lager[v], 0) > 0) s.lager[v] = Math.min(9999, Math.floor(r.lager[v]));   // urimelige tall kuttes (QA 9.11)
     if (Array.isArray(r.akre)) r.akre.forEach(function (f, i) {
       if (!f || i >= s.akre.length) return; var a = s.akre[i];
       a.x = typeof f.x === 'number' && isFinite(f.x) ? f.x : null; a.z = typeof f.z === 'number' && isFinite(f.z) ? f.z : null;

@@ -17,14 +17,14 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 
 ## Tester
 
-- `node test/min-bondegard/logikk.test.mjs`: spillreglene, tallene, lagring og tid (B1).
+- `node test/min-bondegard/logikk.test.mjs`: spillreglene, tallene, lagring og tid (planens beslutning B1).
 - `node test/min-bondegard/sim.mjs`: simulering på de ekte reglene. Måler tid til nivå 2–4, fastlåsing og venting.
 - `node test/kjor.mjs`: felles røyktest (start, pause, versjon, CSP, ingen feil).
 
 ## Lagring
 
 `evn-min-bondegard-v1` i `localStorage`, format `{v: 1, seq, sist, nivaa, xp, mynter, lager, akre, dyr, bygg, plasser, oppl, stat}`.
-- Alle jobber har en fast slutt-tid. De blir ferdige mens spillet er lukket (B1), og venter til spilleren henter dem.
+- Alle jobber har en fast slutt-tid. De blir ferdige mens spillet er lukket (planens beslutning B1), og venter til spilleren henter dem.
 - Ting som hentes, fjernes fra tilstanden. Derfor kan ingenting hentes to ganger, uansett omlasting.
 - Går klokka bakover, blir ingen ventetid lengre enn jobben selv.
 - `seq` øker ved hver lagring. Har en annen fane lagret nyere fremgang, tas den i bruk.
@@ -33,12 +33,20 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 
 ## Versjoner
 
+- **0.8.3** (ikke publisert): Rettinger etter EVN Game QA av 0.8.0 (`qa/rapporter/2026-11-09-min-bondegard-d582ecd.md`):
+  - F3: ødelagt lagring tas alltid vare på i kopien.
+  - K2: feilkortet vises også før Start og ved avviste løfter.
+  - B3: uten WebGL sier startkortet at 3D ikke virker.
+  - T2: Esc lukker kort og dialoger før pausen.
+  - «Mens du var borte»-meldingen virker, urimelige lagertall kuttes, og revetipset havner ikke over HUD på smale skjermer.
+  - XP vises i handlingskortene, og trykk på XP-stjerna viser hva som gir XP (Even 9.11).
+  - Siloen står ved låven der rundballene sto (Ivar 9.11). Rundballene er tatt ut av spillet.
 - **0.8.2** (ikke publisert): Bingene for ku, gris og sau er ikke ferdig bygd fra start (Ivar 9.11). De kommer som større dyrehus som spilleren bygger: fjøs og beite på nivå 6, grisebinge på nivå 10. Ny byggemeny (🔨, tast B) viser hva som er bygd, hva som kan bygges, og hva som kommer på neste nivå (Even 9.11).
 - **0.8.1** (ikke publisert): Roboten finner veien rundt bygg, gjerder og binger og går ikke lenger gjennom gjerdet ved hønsegården (Even 9.11). Den kan gå over åkrene og gårdsveien. Mobil i høykant starter med hele tunet i bildet.
 - **0.8.0** (fase 1, ikke publisert):
   - Spillbar kjernesløyfe for nivå 1–3: hvete og mais, høner og egg, fôrkvern, bakeri (kjøpes for 50), silo og låve, markedsbu, mynter, XP og nivåer.
   - Produksjonen fortsetter mens spillet er lukket.
-  - Åkre, fôrkvern, bakeri og silo kan flyttes innenfor gården (B3).
+  - Åkre, fôrkvern, bakeri og silo kan flyttes innenfor gården (planens beslutning B3).
   - Opplæring i fem steg med Nysgjerrig.
   - Felles pause (EVN-PAUSE v2) og statistikk (`evn-start`).
   - Kjente begrensninger:

@@ -4,7 +4,7 @@
 (function (rot) {
   'use strict';
   var D = {
-    // Avlinger: plant 1, høst 2. «gratis»: kan alltid plantes selv om siloen er tom (F2).
+    // Avlinger: plant 1, høst 2. «gratis»: kan alltid plantes selv om siloen er tom (progresjonsregel F2).
     avlinger: {
       hvete:     { navn: 'Hvete',     ikon: '🌾', nivaa: 1, tid: 30,  verdi: 2, xp: 1, gratis: true },
       mais:      { navn: 'Mais',      ikon: '🌽', nivaa: 2, tid: 60,  verdi: 4, xp: 1, gratis: true },
@@ -12,7 +12,7 @@
       sukkerror: { navn: 'Sukkerrør', ikon: '🎋', nivaa: 7, tid: 180, verdi: 8, xp: 2 },
       gulrot:    { navn: 'Gulrot',    ikon: '🥕', nivaa: 9, tid: 90,  verdi: 5, xp: 2 }
     },
-    // Dyr: ett fôr gir ett produkt etter «tid» sekunder. Et dyr uten fôr slutter bare å produsere (F6).
+    // Dyr: ett fôr gir ett produkt etter «tid» sekunder. Et dyr uten fôr slutter bare å produsere (progresjonsregel F6).
     dyr: {
       hone: { navn: 'Høne', flertall: 'Høner', ikon: '🐔', nivaa: 1,  spiser: 'honsefor', produkt: 'egg',    tid: 60,  xp: 1, start: 3 },
       ku:   { navn: 'Ku',   flertall: 'Kyr',   ikon: '🐄', nivaa: 6,  spiser: 'kufor',    produkt: 'melk',   tid: 120, xp: 2, start: 2 },
@@ -67,7 +67,7 @@
     startMynter: 50,
     startLager: { honsefor: 6, hvete: 4 },
     nyAvlingFro: 3,                     // en ny avling gir 3 frø når den låses opp
-    maksVentetid: 240                   // ingen jobb tar mer enn 4 minutter (B1, kap. 3)
+    maksVentetid: 240                   // ingen jobb tar mer enn 4 minutter (planens beslutning B1, progresjonsplanen kap. 3)
   };
   D.nivaaMynter = function (n) { return 20 + 15 * n; };
 

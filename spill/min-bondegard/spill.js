@@ -25,8 +25,8 @@ function lesLagring() {
   if (raw === null) return {s: L.ny(naa()), ny: true};
   let obj = null; try { obj = JSON.parse(raw); } catch (e) {}
   const v = L.valider(obj, naa());
-  if (v) return {s: v, ny: false};
-  try { if (localStorage.getItem(LAGRING + '-kopi') === null) localStorage.setItem(LAGRING + '-kopi', raw); } catch (e) {}   // ødelagt eller for ny lagring tas vare på
+  if (v) return {s: v, ny: false, sist: obj && typeof obj.sist === 'number' ? obj.sist : v.sist};
+  try { localStorage.setItem(LAGRING + '-kopi', raw); } catch (e) {}   // ødelagt eller for ny lagring tas vare på, også når det finnes en eldre kopi (QA 9.11, F3)
   return {s: L.ny(naa()), ny: true, reddet: true};
 }
 function lagre() {
@@ -40,7 +40,7 @@ function sjekkAnnenFane() {
 }
 addEventListener('storage', e => { if (e.key === LAGRING) sjekkAnnenFane(); });
 const forste = lesLagring(); s = forste.s;
-const sistSett = s.sist;
+const sistSett = forste.sist || s.sist;
 
 /* ======================= Hjelpere for 3D ======================= */
 const ikonTex = new Map();
@@ -60,7 +60,7 @@ let pil = null;
 function eierAv(g) { g.traverse(o => { if (o.isMesh) o.userData.eier = g; }); }
 
 /* ======================= Åkre i spillet ======================= */
-// Én gruppe per åker, så åkrene kan flyttes (B3). Plantene er ferdige geometrier per avling og stadium, delt mellom alle åkrene.
+// Én gruppe per åker, så åkrene kan flyttes (planens beslutning B3). Plantene er ferdige geometrier per avling og stadium, delt mellom alle åkrene.
 const STR = 3.05, AKER_FOT = 3.4;
 const PROTO = {};
 let MAT_PLANTE = null, JORD_GEO = null, RAMME_GEO = null;
@@ -185,7 +185,7 @@ const ting = new Map();
 const FOT = {forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], silo: [3.0, 3.0]};
 const STANDARD = {
   akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45]],
-  forkvern: [1.0, -9.7], bakeri: [0.7, -5.4], silo: [11.95, -2.4]
+  forkvern: [1.0, -9.7], bakeri: [0.7, -5.4], silo: [-13.6, -1.75]   /* ved låven, der rundballene sto (Ivar 9.11) */
 };
 const GARD = {x0: -15.55, x1: 13.6, z0: -11.55, z1: 10.2};
 let hinder = [];   // faste hindringer: [x0, x1, z0, z1]
@@ -229,6 +229,7 @@ function plasserAlt() {
     plasser(t, sb.x, sb.z, sb.r);
   }
   let si = ting.get('silo'); if (!si) { const g = lagSilo(); scene.add(g); eierAv(g); klikkbar(g); si = {type: 'silo', id: 'silo', gruppe: g, fot: FOT.silo, hoyde: 6.6}; si.ikon = lagIkon(si.hoyde); g.add(si.ikon); ting.set('silo', si); }
+  if (s.plasser.silo && s.plasser.silo.x === 11.95 && s.plasser.silo.z === -2.4) delete s.plasser.silo;   /* gammel standardplass (0.8.0–0.8.2) flyttes til låven */
   const ps = s.plasser.silo || (() => { const p = finnLedigPlass(si, ...STANDARD.silo) || STANDARD.silo; return (s.plasser.silo = {x: p[0], z: p[1], r: 0}); })();
   plasser(si, ps.x, ps.z, ps.r);
 }
@@ -437,7 +438,7 @@ function visAker(u) {
     return '<p>Hva vil du plante? Du planter 1 og høster 2.</p>' + I_SPILLET.avlinger.map(a => { const A = D.avlinger[a];
       if (A.nivaa > s.nivaa) return `<div class="rad"><span class="stort">${A.ikon}</span><span class="midt">${A.navn}<small>Låses opp på nivå ${A.nivaa}</small></span><button class="knapp" disabled>🔒</button></div>`;
       const har = s.lager[a] || 0;
-      return `<div class="rad"><span class="stort">${A.ikon}</span><span class="midt">${A.navn}<small>${fmtTid(A.tid * 1000)} · du har ${har}${har ? '' : ' (gratis frø)'}</small></span><button class="knapp gronn" data-g="plant" data-a="${a}">Plant</button>${tomme > 1 ? `<button class="knapp lys" data-g="plantAlle" data-a="${a}" title="Plant på alle tomme åkre">Alle (${tomme})</button>` : ''}</div>`; }).join('') +
+      return `<div class="rad"><span class="stort">${A.ikon}</span><span class="midt">${A.navn}<small>${fmtTid(A.tid * 1000)} · +${A.xp} XP · du har ${har}${har ? '' : ' (gratis frø)'}</small></span><button class="knapp gronn" data-g="plant" data-a="${a}">Plant</button>${tomme > 1 ? `<button class="knapp lys" data-g="plantAlle" data-a="${a}" title="Plant på alle tomme åkre">Alle (${tomme})</button>` : ''}</div>`; }).join('') +
       '<div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt åkeren</button></div>';
   });
 }
@@ -448,7 +449,7 @@ function visHus(u) {
     const spiser = h.filter(d => L.dyrStatus(d, t) === 'spiser').map(d => d.slutt).sort((a, b) => a - b);
     let p = `<p>${h.length} høner. ${sultne ? `${sultne} er sultne.` : 'Alle har fått mat.'}${spiser.length ? ` Neste egg om <b data-slutt="${spiser[0]}">${fmtTid(spiser[0] - t)}</b>.` : ''}</p>`;
     if (klare) p += `<div class="knapper"><button class="knapp" data-g="egg">🥚 Hent ${klare} egg</button></div>`;
-    p += `<div class="rad"><span class="stort">🟡</span><span class="midt">Hønsefôr<small class="${fr ? '' : 'mangler'}">Du har ${fr}. Én høne spiser 1 og legger 1 egg.</small></span><button class="knapp gronn" data-g="mat" ${sultne && fr ? '' : 'disabled'}>Gi mat</button></div>`;
+    p += `<div class="rad"><span class="stort">🟡</span><span class="midt">Hønsefôr<small class="${fr ? '' : 'mangler'}">Du har ${fr}. Én høne spiser 1 og legger 1 egg (+${D.dyr.hone.xp} XP).</small></span><button class="knapp gronn" data-g="mat" ${sultne && fr ? '' : 'disabled'}>Gi mat</button></div>`;
     if (!fr) p += '<p style="font-size:15px">Lag hønsefôr av hvete i fôrkverna. ⚙️</p>';
     return p;
   });
@@ -466,7 +467,7 @@ function visBygg(u) {
     if (klare.length) p += `<div class="knapper"><button class="knapp" data-g="hent">Hent ${klare.map(j => ikon(j.vare)).join(' ')}</button></div>`;
     p += opp.map(v => { const o = D.oppskrifter[v], g = L.kanProdusere(s, b, v, t);
       const inn = Object.keys(o.inn).map(k => `${o.inn[k]} ${ikon(k)}`).join(' + '), mangler = Object.keys(o.inn).filter(k => (s.lager[k] || 0) < o.inn[k]);
-      return `<div class="rad"><span class="stort">${ikon(v)}</span><span class="midt">${o.ut > 1 ? o.ut + ' ' : ''}${navn(v)} · ${fmtTid(o.tid * 1000)}<small class="${mangler.length ? 'mangler' : ''}">${inn}${mangler.length ? ' · du mangler ' + mangler.map(k => (o.inn[k] - (s.lager[k] || 0)) + ' ' + navn(k).toLowerCase()).join(', ') : ''}</small></span><button class="knapp gronn" data-g="lag" data-v="${v}" ${g ? 'disabled' : ''}>Lag</button></div>`; }).join('');
+      return `<div class="rad"><span class="stort">${ikon(v)}</span><span class="midt">${o.ut > 1 ? o.ut + ' ' : ''}${navn(v)} · ${fmtTid(o.tid * 1000)}${D.produktXP(v) ? ' · +' + D.produktXP(v) + ' XP' : ''}<small class="${mangler.length ? 'mangler' : ''}">${inn}${mangler.length ? ' · du mangler ' + mangler.map(k => (o.inn[k] - (s.lager[k] || 0)) + ' ' + navn(k).toLowerCase()).join(', ') : ''}</small></span><button class="knapp gronn" data-g="lag" data-v="${v}" ${g ? 'disabled' : ''}>Lag</button></div>`; }).join('');
     if (L.uferdige(sb, t).length >= D.koPlasser) p += '<p style="font-size:15px">Køen er full. Vent til en jobb er ferdig.</p>';
     return p + '<div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt</button></div>';
   });
@@ -516,6 +517,22 @@ function visMarked() {
 $('markedListe').addEventListener('click', e => { const k = e.target.closest('[data-selg]'); if (!k) return; const v = k.dataset.selg, r = L.selg(s, v, +k.dataset.n);
   if (r.ok) { const m = ting.get('marked'); if (m) flyt('+' + r.mynter + ' 🪙', midtAv(m, 3.5)); lagre(); synk(); fremOppl('solgt'); const fokus = v; visMarked(); const b = $('markedListe').querySelector(`[data-selg="${fokus}"]`) || $('markedListe').querySelector('button') || $('marked').querySelector('.kryss'); b.focus({preventScroll: true}); } });
 
+/* ======================= Slik får du XP (Even 9.11) ======================= */
+function visXP() {
+  aapneHandling(null, '⭐ Slik får du XP', () => {
+    const r = [];
+    for (const a of I_SPILLET.avlinger) { const A = D.avlinger[a]; r.push([A.ikon, 'Høst ' + A.navn.toLowerCase(), A.xp + ' XP per åker', A.nivaa]); }
+    r.push(['🥚', 'Hent egg', D.dyr.hone.xp + ' XP per egg', 1]);
+    for (const v in D.oppskrifter) { const o = D.oppskrifter[v]; if (!I_SPILLET.bygg.includes(o.bygg) || D.erFor(v)) continue; r.push([ikon(v), 'Hent ' + navn(v).toLowerCase(), D.produktXP(v) + ' XP', o.nivaa]); }
+    r.push(['📋', 'Lever bestillinger', 'mest XP av alt', 4]);
+    const rader = r.map(([i, h, x, n]) => `<div class="rad"><span class="stort">${i}</span><span class="midt">${h}<small>${n > s.nivaa ? '🔒 Nivå ' + n : x}</small></span><b>${n > s.nivaa ? '' : '+' + x.split(' ')[0]}</b></div>`).join('');
+    const neste = s.nivaa >= D.maksNivaa ? '' : `<p>Du har <b>${Math.floor(s.xp)} av ${D.xpNeste[s.nivaa]} XP</b>. Når streken er full, kommer du til nivå ${s.nivaa + 1}.</p>`;
+    return neste + rader + '<p style="font-size:15px">Hønsefôr og salg i markedsbua gir ikke XP, men du trenger dem for å få mer.</p>';
+  });
+}
+$('pNivaa').addEventListener('click', visXP);
+$('pNivaa').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); visXP(); } });
+
 /* ======================= Byggemenyen ======================= */
 // Viser alle bygg og dyrehus for nivå 1–10: bygd, kan bygges nå, eller hvilket nivå de kommer på. Øverst står det som kommer på neste nivå.
 // Bingene for kyr og griser er ikke ferdig bygd fra start (Ivar 9.11). De kommer som egne bygg, større enn i testscenen.
@@ -551,7 +568,7 @@ $('byggKnapp').addEventListener('click', visByggMeny);
 $('byggListe').addEventListener('click', e => { const k = e.target.closest('[data-vis]'); if (!k) return; const u = ting.get(k.dataset.vis); lukkDialog('byggMeny'); if (!u) return;
   kameraMaal = u.gruppe.position.clone(); sprett.push({o: u.gruppe, t: 0}); bruk(u); });
 
-/* ======================= Flytting (B3) ======================= */
+/* ======================= Flytting (planens beslutning B3) ======================= */
 let flytt = null, fotMesh = null;
 function startFlytt(u) {
   lukkHandling(); if (!u.fot) return;
@@ -695,6 +712,13 @@ $('startBtn').addEventListener('click', () => {
 });
 
 /* ======================= Felles pause, nullstilling og feilkort ======================= */
+addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || !startet) return;
+  const d = dialoger.find(id => $(id).classList.contains('vis'));
+  if (d) { e.preventDefault(); e.stopImmediatePropagation(); lukkDialog(d); return; }
+  if (flytt) { e.preventDefault(); e.stopImmediatePropagation(); sluttFlytt(false); return; }
+  if ($('handling').classList.contains('vis')) { e.preventDefault(); e.stopImmediatePropagation(); lukkHandling(); }
+}, true);   /* QA 9.11 (T2): Esc lukker det som er åpent i stedet for å åpne pausen over det */
 window.__evnP = EVNPause({
   mappe: TESTMODUS ? 'min-bondegard-test' : 'min-bondegard', avsluttId: 'evnAvslutt',
   tema: {panel: 'rgba(31,74,28,.97)', ink: '#fff', hi: '#ffd23f', btn: '#ffd23f', btnInk: '#3b2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400},
@@ -719,7 +743,9 @@ EVNNullstill({
   vis: () => $('start').classList.contains('vis')
 });
 let feilVist = false;
-addEventListener('error', e => { if (feilVist || !e.error || !startet) return; feilVist = true; try { lagre(); } catch (er) {} try { if (window.EVNPauseInert) EVNPauseInert($('feil')); } catch (er) {} $('feil').classList.add('vis'); $('feilLast').focus(); });
+function visFeil() { if (feilVist || window.MB_INGEN_WEBGL) return; feilVist = true; try { if (startet) lagre(); } catch (er) {} try { if (window.EVNPauseInert) EVNPauseInert($('feil')); } catch (er) {} $('feil').classList.add('vis'); $('feilLast').focus(); }
+addEventListener('error', e => { if (e.error) visFeil(); });
+addEventListener('unhandledrejection', visFeil);
 $('feilLast').addEventListener('click', () => location.reload());
 document.addEventListener('focusin', e => { if ($('feil').classList.contains('vis') && !$('feil').contains(e.target)) $('feilLast').focus(); }, true);
 // Trykk på grensesnittet skal ikke flytte kameraet eller trykke på gården bak
