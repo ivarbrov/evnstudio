@@ -119,10 +119,11 @@ const h = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-prot
   R.position.set(0, 0.45, 30); P.slippNed(508, [1, 30]); st(3); P.gjorHandling(); ut.fullFikkBaere = !!P.bar();
   for (let i = 0; i < P.S().base.length; i++) if (P.S().base[i] === -1) P.S().base[i] = 508;
   R.position.set(2.0, 0.45, (o.z0 + o.z1) / 2); st(30); ut.fullBaerer = !!P.bar();
-  // står allerede på feltet når matdyret tas med: leveres likevel (her: ingen plass, så bare én melding)
-  ut.kantFri = true;
+  // står allerede på feltet når matdyret tas med: leveres likevel uten å gå av og på
+  P.sett({ v: 1, penger: 1e6, gard: { niva: 6 }, plassNiva: 8, base: [], disc: [] }); st(2); const R3 = I.robot(), mz = (o.z0 + o.z1) / 2;
+  R3.position.set(0, 0.45, mz); st(5); P.slippNed(508, [1.2, mz]); st(3); P.gjorHandling(); st(90); ut.staarPaaFeltet = P.S().base[0] === 508 && !P.bar();
   return ut; })()
 `);
-ok('leveringsfeltet setter inn på første ledige plass uten trykk (' + JSON.stringify(h) + ')', h.bar && h.levert && h.lagret && h.fullFikkBaere && h.fullBaerer);
+ok('leveringsfeltet setter inn på første ledige plass uten trykk (' + JSON.stringify(h) + ')', h.bar && h.levert && h.lagret && h.fullFikkBaere && h.fullBaerer && h.staarPaaFeltet);
 console.log(feil.length ? feil : 'ingen feil i konsollen'); if (feil.length) process.exitCode = 1;
 ws.close(); p.kill();
