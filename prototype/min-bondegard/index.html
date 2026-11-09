@@ -62,14 +62,14 @@
   <div class="grp" role="group" aria-label="Trestil"><b>Trær</b>
     <button data-trestil="ny">Ny stil</button><button data-trestil="gammel">Før</button><button id="visTraer">Vis trær</button><button id="maalTraer">Mål trær</button></div>
 </div>
-<div id="info">Testscene 0.8.5 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
+<div id="info">Testscene 0.8.6 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
 <div id="maal"><div id="maalTekst">…</div><div class="maalKnapper"><button id="kopier">Kopier</button><button id="lukkMaal">Lukk</button></div></div>
 
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.8.5';
+const VERSJON = 'testscene 0.8.6';
 const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
@@ -167,7 +167,7 @@ function samle(deler) { // 0.7.0: skriver rett i typede tabeller (samme resultat
   return g;
 }
 
-function baKey(o) { const m = o.material; if (m.isMeshStandardMaterial && !m.map && !m.transparent && !m.vertexColors && m.side === THREE.FrontSide && m.emissiveIntensity === 1 && m.emissive.getHex() === 0) return 'vc' + (m.roughness < 0.55 ? 'b' : 'm') + (o.castShadow ? 's' : 'n'); return m.uuid + (o.castShadow ? 's' : 'n'); }
+function baKey(o) { const m = o.material; if (m.isMeshStandardMaterial && !m.userData.egen && !m.map && !m.transparent && !m.vertexColors && m.side === THREE.FrontSide && m.emissiveIntensity === 1 && m.emissive.getHex() === 0) return 'vc' + (m.roughness < 0.55 ? 'b' : 'm') + (o.castShadow ? 's' : 'n'); return m.uuid + (o.castShadow ? 's' : 'n'); }
 function baDel(o, m) { const mt = o.material; if (baKey(o).startsWith('vc')) return {geo: o.geometry, m, lin: mt.color}; return o.geometry.attributes.color ? {geo: o.geometry, m} : {geo: o.geometry, m, farge: 0xffffff}; }
 function baMat(k, mat) { return k.startsWith('vc') ? (k[2] === 'b' ? MAT.vcBlank : MAT.vcMatt) : mat; }
 /* Slå sammen faste deler av en gruppe per materiale (færre tegnekall) */
@@ -1026,7 +1026,7 @@ function lagMarkedsbod() {
 }
 
 /* ======================= 0.8.0: Blomsterkatten – kunde som kommer til Gårdsbua ======================= */
-// Etter Evens tegning: bredt, mykt hode med spisse ører, prikkøyne, «w»-munn og blomster mellom ørene. Kroppen (0.8.5) følger Evens
+// Etter Evens tegning: bredt, mykt hode med spisse ører, prikkøyne, «w»-munn og blomster mellom ørene. Kroppen (0.8.6) følger Evens
 // figurtegning: lilla kjole med brede folder, pufferme og blå hjerter på skjørtekanten, korte bein og lang krøllhale. Faste deler slås sammen per materiale. Alt er laget av enkle former i koden (ingen modellfil).
 // Kunden går langs veien, inn gjennom åpningen i gjerdet, sier hva hun vil kjøpe, blir glad og går videre. Ingen handel ennå (bare visning).
 const KATT_VARIANTER = [
@@ -1052,14 +1052,14 @@ function glattSoem(geo) { const p = geo.attributes.position, n = geo.attributes.
 const kjoleFarge = hex => SRGB(hex).lerp(SRGB(0xe6d0fa), 0.1); // kjolen er litt lysere enn pelsen
 function lagKatt() {
   const g = new THREE.Group(), kropp = new THREE.Group(); g.add(kropp); g.visible = false; scene.add(g);
-  const pels = std({color: SRGB(KATT_VARIANTER[0].pels), roughness: 0.95, bumpMap: filtTekstur(), bumpScale: 0.03});
+  const pels = std({color: SRGB(KATT_VARIANTER[0].pels), roughness: 0.95, bumpMap: filtTekstur(), bumpScale: 0.014}); pels.userData.egen = true; // egen farge per katt
   const rosa = fm(0xf3a9c3, 0.9), lilla = fm(0x55307a, 0.4), gronn = fm(0x86b84e, 0.8);
   // Kropp (0.8.4, etter Evens figurtegning): kjole av mykt stoff med noen brede folder, en avrundet, tykk skjørtekant og blå hjerter
   // (to til venstre og tre til høyre forfra). Alle buede deler er dreide profiler, så overgangene blir myke uten mange små detaljer.
   const V2 = (r, y) => new THREE.Vector2(r, y), dreid = (pkt, n, seg) => new THREE.LatheGeometry(new THREE.SplineCurve(pkt.map(([r, y]) => V2(r, y))).getPoints(n), seg, Math.PI); /* sømmen havner bak */
   const kjole = std({color: kjoleFarge(KATT_VARIANTER[0].pels), roughness: 0.85, side: THREE.DoubleSide});
   // Profil fra skjørtekanten (innsiden av den rullede kanten) opp til en jevn, avrundet halsåpning
-  const prof = [[0.462, 0.245], [0.476, 0.228], [0.497, 0.224], [0.508, 0.238], [0.502, 0.255], [0.478, 0.3], [0.435, 0.375], [0.383, 0.46], [0.33, 0.56], [0.29, 0.66], [0.262, 0.76], [0.248, 0.86], [0.242, 0.93], [0.222, 0.975], [0.185, 0.998], [0.15, 1.0], [0.135, 0.99], [0.132, 0.975]];
+  const prof = [[0.462, 0.245], [0.476, 0.228], [0.497, 0.224], [0.508, 0.238], [0.502, 0.255], [0.478, 0.3], [0.435, 0.375], [0.383, 0.46], [0.33, 0.56], [0.29, 0.66], [0.262, 0.76], [0.248, 0.86], [0.241, 0.94], [0.222, 0.995], [0.185, 1.024], [0.15, 1.032], [0.13, 1.026], [0.124, 1.01]];
   const ytre = new THREE.SplineCurve(prof.slice(4).map(([r, y]) => V2(r, y))).getPoints(40);
   const rAt = y => { for (let i = 1; i < ytre.length; i++) if (ytre[i].y >= y) { const p = ytre[i - 1], q = ytre[i]; return p.x + (q.x - p.x) * (y - p.y) / (q.y - p.y); } return ytre[ytre.length - 1].x; };
   // Seks brede, svake folder som starter på overkroppen og blir dypere nedover, og en kant som faller mykt litt lavere der folden går ut
@@ -1067,16 +1067,16 @@ function lagKatt() {
     return new THREE.Vector3(Math.sin(v) * r * k, y - d, Math.cos(v) * r * k * 0.9); };
   const kjoleGeo = dreid(prof, 64, 48);
   { const p = kjoleGeo.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), q = kjoleP(Math.atan2(x, z), p.getY(i), Math.hypot(x, z)); p.setXYZ(i, q.x, q.y, q.z); } kjoleGeo.computeVertexNormals(); glattSoem(kjoleGeo); }
-  mesh(kjoleGeo, kjole, 0, 0, 0, kropp);
-  mesh(new THREE.CylinderGeometry(0.122, 0.128, 0.24, 18), pels, 0, 1.0, 0, kropp); // kort hals innenfor halsåpningen
+  const skjorte = new THREE.Group(); skjorte.position.y = 1.0; kropp.add(skjorte);
+  mesh(kjoleGeo, kjole, 0, -1.0, 0, skjorte);
   // Hjertene ligger på stoffet: posisjon og retning regnes fra den samme flaten som kjolen
   const hjKant = fm(0x3f8fe6, 0.6), gFyll = hjerteGeo(0.037), gKant = hjerteGeo(0.05), hy = 0.335, e = 0.01;
   [-0.77, -0.56, 0.45, 0.66, 0.87].forEach(v => { const p = kjoleP(v, hy, rAt(hy)), n = kjoleP(v + e, hy, rAt(hy)).sub(p).cross(kjoleP(v, hy + e, rAt(hy + e)).sub(p)).normalize();
-    [[gKant, hjKant, 0.008], [gFyll, kjole, 0.013]].forEach(([geo, mat, ut]) => { const h = mesh(geo, mat, 0, 0, 0, kropp, false); h.position.copy(p).addScaledVector(n, ut); h.lookAt(h.position.clone().add(n)); }); });
-  bakeDirekte(kropp);
+    [[gKant, hjKant, 0.008], [gFyll, kjole, 0.013]].forEach(([geo, mat, ut]) => { const h = mesh(geo, mat, 0, 0, 0, skjorte, false); h.position.copy(p).addScaledVector(n, ut); h.position.y -= 1.0; h.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n); }); });
+  bakeDirekte(skjorte);
   // Korte bein med føtter som er flate under og har tre tær antydet i formen
   // Pote: én avrundet form med to grunne skiller foran, så tre tær anes uten egne deler. Føttene er i tillegg flate under.
-  const pote = (flat, ty) => { const geo = new THREE.SphereGeometry(1, 44, 22).rotateY(-Math.PI / 2), p = geo.attributes.position; /* teksturens søm havner bak */
+  const pote = (flat, ty) => { const geo = new THREE.SphereGeometry(1, 36, 18).rotateY(-Math.PI / 2), p = geo.attributes.position; /* teksturens søm havner bak */
     for (let i = 0; i < p.count; i++) { let x = p.getX(i), y = p.getY(i), z = p.getZ(i); const foran = Math.min(1, Math.max(0, (z - 0.25) / 0.5)) * Math.min(1, Math.max(0, (ty - y) / 0.6));
       const skille = 1 - 0.13 * foran * (Math.exp(-(((x - 0.3) / 0.085) ** 2)) + Math.exp(-(((x + 0.3) / 0.085) ** 2))), bred = 1 + 0.06 * foran;
       x *= skille * bred; z *= skille; if (flat && y < 0) y *= 0.45; p.setXYZ(i, x, y, z); }
@@ -1086,11 +1086,11 @@ function lagKatt() {
     mesh(new THREE.CylinderGeometry(0.115, 0.11, 0.36, 14), pels, 0, -0.18, 0, bg);
     mesh(fot, pels, 0, -0.4, 0.05, bg).scale.set(0.135, 0.09, 0.18);
     bakeDirekte(bg); return bg; });
-  // Armer: én myk, dreid form fra skulderen til håndleddet, en pote med tre tær antydet i formen og et kort, avrundet pufferme med rullet kant
-  const armer = [-1, 1].map(s => { const ag = new THREE.Group(); ag.position.set(s * 0.22, 0.97, 0.02); ag.rotation.z = s * 0.5; kropp.add(ag);
+  // Armer: én myk, dreid form fra skulderen til håndleddet, en pote med tre tær antydet i formen og et kort, avrundet pufferme som smalner inn mot armen
+  const armer = [-1, 1].map(s => { const ag = new THREE.Group(); ag.position.set(s * 0.235, 0.97, 0.02); ag.rotation.z = s * 0.62; kropp.add(ag);
     mesh(dreid([[0.001, -0.29], [0.056, -0.27], [0.063, -0.18], [0.068, -0.06], [0.062, 0.02], [0.001, 0.05]], 16, 14), pels, 0, 0, 0, ag);
     mesh(haand, pels, 0, -0.32, 0.012, ag).scale.set(0.082, 0.08, 0.09);
-    mesh(dreid([[0.069, -0.128], [0.08, -0.15], [0.098, -0.153], [0.108, -0.138], [0.118, -0.09], [0.114, -0.02], [0.094, 0.035], [0.055, 0.07], [0.001, 0.08]], 20, 16), kjole, 0, 0, 0, ag);
+    mesh(dreid([[0.064, -0.12], [0.07, -0.138], [0.082, -0.143], [0.092, -0.132], [0.108, -0.1], [0.116, -0.05], [0.112, 0.0], [0.094, 0.04], [0.055, 0.072], [0.001, 0.08]], 20, 16), kjole, 0, 0, 0, ag);
     bakeDirekte(ag); return ag; });
   // Lang hale festet nederst på ryggen (ved hoftene). Den kommer ut gjennom en liten åpning i kjolen, svinger litt ut til siden,
   // buer opp bak kroppen og ender i en myk, avrundet tupp. Krøllen holdes godt bak og under hodet.
@@ -1136,32 +1136,45 @@ function lagKatt() {
   [[-0.14, 0.18, 0.6], [0.11, 0.25, -0.6], [-0.18, 0.36, -0.5]].forEach(([x, y, r]) => { const l = mesh(new THREE.SphereGeometry(1, 8, 6), gronn, x, y, 0.01, blomst, false); l.scale.set(0.065, 0.02, 0.025); l.rotation.z = r; }); bakeDirekte(blomst); bakeDirekte(hode);
   // Usynlig trykkflate som følger katten
   const treff = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 2.4, 10), new THREE.MeshBasicMaterial({visible: false})); treff.position.y = 1.2; g.add(treff); treff.userData.eier = g; klikkbar(treff);
-  g.scale.setScalar(0.92); g.userData = {katt: true, hjerteY: 2.45, kropp, hode, oyne, blomst, pels, kjole, beina, armer, hale, tilst: 'borte', tid: 1.5, vei: [], etter: null, hopp: 0, fase: 0, blunk: 2};
+  g.scale.setScalar(0.92); g.userData = {katt: true, hjerteY: 2.45, kropp, skjorte, hode, oyne, blomst, pels, kjole, gangV: 0, lopV: 0, lop: false, beina, armer, hale, tilst: 'borte', tid: 1.5, vei: [], etter: null, hopp: 0, fase: 0, blunk: 2};
   katt = g;
 }
 function kattSi(tekst, tid = 3) { kattBoble.textContent = tekst; kattBoble.style.display = 'block'; kattBobleTid = tid; }
-function kattTrykk() { const u = katt.userData; u.hopp = 0.5; visHjerte(_v1.copy(katt.position).add(_v2.set(0, u.hjerteY, 0)));
+const KATT_HOPP = 0.75; // sekunder: sats, svev og landing
+function kattTrykk() { const u = katt.userData; u.hopp = KATT_HOPP; visHjerte(_v1.copy(katt.position).add(_v2.set(0, u.hjerteY, 0)));
   const v = KATT_VARIANTER[kattVariant]; kattSi(u.tilst === 'onsker' ? `${v.navn}: ${KATT_ONSKER[kattOnske]}` : `Mjau! Jeg er ${v.navn}.`, 2.6); }
-function oppdaterKatt(dt, t) { if (!katt) return; const u = katt.userData, fart = 1.5;
+function oppdaterKatt(dt, t) { if (!katt) return; const u = katt.userData, fart = u.lop ? 3.4 : 1.5;
   if (u.tilst === 'borte') { u.tid -= dt; if (u.tid <= 0) { if (u.vart) kattVariant = (kattVariant + 1) % KATT_VARIANTER.length; u.vart = true; u.pels.color.copy(SRGB(KATT_VARIANTER[kattVariant].pels)); u.kjole.color.copy(kjoleFarge(KATT_VARIANTER[kattVariant].pels));
-      katt.position.set(-32, 0, VEI_INN.z); katt.rotation.y = Math.PI / 2; u.vei = [VEI_INN.clone(), BOD_FORAN.clone()]; u.etter = 'ankomst'; u.tilst = 'gaar'; katt.visible = true; } return; }
+      katt.position.set(-32, 0, VEI_INN.z); katt.rotation.y = Math.PI / 2; u.vei = [VEI_INN.clone(), BOD_FORAN.clone()]; u.etter = 'ankomst'; u.tilst = 'gaar'; u.lop = false; katt.visible = true; } return; }
   let gaar = false;
   if (u.tilst === 'gaar') { tmp.copy(u.vei[0]).sub(katt.position); tmp.y = 0; const d = tmp.length();
     if (d < 0.06) { u.vei.shift(); if (!u.vei.length) { if (u.etter === 'ankomst') { u.tilst = 'onsker'; u.tid = 4.5; kattOnske = (kattOnske + 1) % KATT_ONSKER.length; kattSi(`${KATT_VARIANTER[kattVariant].navn}: ${KATT_ONSKER[kattOnske]}`, 4.2); } else { u.tilst = 'borte'; u.tid = rr(4, 8); katt.visible = false; } } }
     else { katt.rotation.y = snuMot(katt.rotation.y, Math.atan2(tmp.x, tmp.z), dt * 6); katt.position.addScaledVector(tmp.normalize(), Math.min(d, dt * fart)); gaar = true; } }
   else if (u.tilst === 'onsker') { katt.rotation.y = snuMot(katt.rotation.y, Math.atan2(-10.5 - katt.position.x, 8.0 - katt.position.z), dt * 5); u.tid -= dt;
-    if (u.tid <= 0) { u.tilst = 'glad'; u.tid = 2.2; u.hopp = 0.5; visHjerte(_v1.copy(katt.position).add(_v2.set(0, u.hjerteY, 0))); kattSi('Takk! 💜', 2); } }
-  else if (u.tilst === 'glad') { u.tid -= dt; if (u.tid <= 0) { u.vei = [VEI_INN.clone(), V3(32, VEI_INN.z)]; u.etter = 'ut'; u.tilst = 'gaar'; } }
-  // Gange: vugging fra side til side, små hopp og potene på skift
-  u.fase += dt * (gaar ? 11 : 0); const s = Math.sin(u.fase), sv = gaar ? s : 0, jubel = u.tilst === 'glad' || u.hopp > 0;
-  u.kropp.rotation.z = mot(u.kropp.rotation.z, sv * 0.04, 8, dt);
-  u.beina.forEach((b, i) => b.rotation.x = mot(b.rotation.x, (i ? -sv : sv) * 0.45, 14, dt));
-  u.kropp.rotation.y = mot(u.kropp.rotation.y, sv * 0.06, 10, dt); // skjørtet svinger litt
-  u.armer.forEach((a, i) => { const sd = i ? 1 : -1; a.rotation.x = mot(a.rotation.x, jubel ? -0.6 : (i ? sv : -sv) * 0.6, 12, dt); a.rotation.z = mot(a.rotation.z, sd * (jubel ? 1.55 + Math.sin(t * 14) * 0.25 : 0.5), 10, dt); });
-  u.hale.rotation.z = Math.sin(t * 2.4) * 0.25; u.hale.rotation.y = Math.sin(t * 1.3) * 0.15;
-  let y = gaar ? Math.abs(s) * 0.035 : 0; if (u.hopp > 0) { u.hopp -= dt; y += Math.sin(Math.max(0, 0.5 - u.hopp) / 0.5 * Math.PI) * 0.35; }
-  katt.position.y = Math.max(0, hoyde(katt.position.x, katt.position.z)) + y;
-  u.kropp.scale.y = 1 + Math.sin(t * 2.2) * 0.012; u.blomst.rotation.z = Math.sin(t * 1.7) * 0.06 + (gaar ? s * 0.05 : 0); u.hode.rotation.z = gaar ? 0 : Math.sin(t * 0.9) * 0.05;
+    if (u.tid <= 0) { u.tilst = 'glad'; u.tid = 2.2; u.hopp = KATT_HOPP; visHjerte(_v1.copy(katt.position).add(_v2.set(0, u.hjerteY, 0))); kattSi('Takk! 💜', 2); } }
+  else if (u.tilst === 'glad') { u.tid -= dt; if (u.tid <= 0) { u.vei = [VEI_INN.clone(), V3(32, VEI_INN.z)]; u.etter = 'ut'; u.tilst = 'gaar'; u.lop = true; } }
+  else if (u.tilst === 'demo') { gaar = u.demo === 'gaa' || u.demo === 'lope'; u.lop = u.demo === 'lope'; if (u.demo === 'hoppe' && u.hopp <= 0) { u.demoPause = (u.demoPause || 0) - dt; if (u.demoPause <= 0) { u.hopp = KATT_HOPP; u.demoPause = 0.45; } } }
+  // Bevegelse (0.8.6). Stå, gå og løp glir over i hverandre. Beina svinger fra hoftene og løftes litt når de føres frem, uten å nå
+  // skjørtet. Kjolen vrir seg og løfter kanten litt i fart og i svev. Halen svaier og strekker seg bakover i løp. Blomstene svaier forsiktig.
+  u.gangV = mot(u.gangV, gaar && !u.lop ? 1 : 0, 6, dt); u.lopV = mot(u.lopV, gaar && u.lop ? 1 : 0, 6, dt); const fartV = u.gangV + u.lopV;
+  u.fase += dt * (9 * u.gangV + 15 * u.lopV); const s = Math.sin(u.fase), c = Math.cos(u.fase), jubel = u.tilst === 'glad' || u.hopp > 0;
+  // Hopp: 0-0,18 sats (synker sammen), 0,18-0,82 svev, 0,82-1 landing (myk fjæring)
+  let hy = 0, klem = 0, svev = 0; if (u.hopp > 0) { u.hopp = Math.max(0, u.hopp - dt); const p = 1 - u.hopp / KATT_HOPP;
+    if (p < 0.18) klem = Math.sin(p / 0.18 * Math.PI / 2) * 0.08; else if (p < 0.82) { const q = (p - 0.18) / 0.64; hy = Math.sin(q * Math.PI) * 0.5; svev = Math.sin(q * Math.PI); klem = -0.05 * Math.sin(q * Math.PI); } else klem = Math.sin((p - 0.82) / 0.18 * Math.PI) * 0.1; }
+  const benAmp = 0.42 * u.gangV + 0.5 * u.lopV;
+  u.beina.forEach((b, i) => { const sg = i ? -1 : 1; b.rotation.x = mot(b.rotation.x, svev > 0.05 ? -0.3 * svev : sg * s * benAmp, 16, dt); b.position.y = 0.44 + Math.max(0, sg * c) * 0.03 * fartV; });
+  u.kropp.rotation.x = mot(u.kropp.rotation.x, 0.04 * u.gangV + 0.13 * u.lopV, 6, dt); // lener seg litt frem i fart
+  u.kropp.rotation.z = mot(u.kropp.rotation.z, s * (0.04 * u.gangV + 0.03 * u.lopV) + (fartV < 0.1 ? Math.sin(t * 0.6) * 0.015 : 0), 8, dt);
+  u.kropp.rotation.y = mot(u.kropp.rotation.y, s * (0.06 * u.gangV + 0.08 * u.lopV), 10, dt);
+  u.kropp.scale.y = (1 + Math.sin(t * 2.2) * 0.012 * (1 - Math.min(1, fartV))) * (1 - klem);
+  const flar = 0.025 * u.lopV + 0.07 * svev + Math.abs(s) * 0.01 * fartV; u.skjorte.scale.set(1 + flar, 1 - flar * 0.6, 1 + flar);
+  u.armer.forEach((a, i) => { const sd = i ? 1 : -1, sg = i ? 1 : -1; a.rotation.x = mot(a.rotation.x, jubel ? -0.6 : sg * s * (0.5 * u.gangV + 0.85 * u.lopV), 12, dt);
+    a.rotation.z = mot(a.rotation.z, sd * (jubel ? 1.55 + Math.sin(t * 14) * 0.25 * (1 - svev) : 0.62 + 0.1 * u.lopV), 10, dt); });
+  u.hale.rotation.z = Math.sin(t * 2.4) * 0.22 * (1 - u.lopV * 0.5) + s * 0.12 * fartV; u.hale.rotation.y = Math.sin(t * 1.3) * 0.15;
+  u.hale.rotation.x = mot(u.hale.rotation.x, -0.3 * u.lopV - 0.35 * svev + 0.15 * klem, 8, dt);
+  katt.position.y = Math.max(0, hoyde(katt.position.x, katt.position.z)) + Math.abs(s) * (0.03 * u.gangV + 0.07 * u.lopV) + hy;
+  u.blomst.rotation.z = Math.sin(t * 1.7) * 0.05 + s * 0.06 * fartV; u.blomst.rotation.x = mot(u.blomst.rotation.x, -0.12 * u.gangV - 0.28 * u.lopV + 0.25 * klem - 0.15 * svev + Math.sin(t * 1.1) * 0.03, 5, dt);
+  u.hode.rotation.z = mot(u.hode.rotation.z, fartV > 0.1 ? 0 : Math.sin(t * 0.9) * 0.05, 4, dt);
   u.blunk -= dt; const lukk = u.blunk < 0.12; u.oyne.scale.y = lukk ? 0.12 : 1; if (u.blunk < 0) u.blunk = rr(2, 5);
   if (kattBobleTid > 0) { kattBobleTid -= dt; tmp.copy(katt.position); tmp.y += 2.5; tmp.project(camera); kattBoble.style.left = Math.min(innerWidth - 118, Math.max(118, (tmp.x + 1) / 2 * innerWidth)) + 'px'; /* holdes inne på skjermen */ kattBoble.style.top = ((1 - tmp.y) / 2 * innerHeight) + 'px'; if (kattBobleTid <= 0 || !katt.visible) { kattBoble.style.display = 'none'; kattBobleTid = 0; } }
 }
@@ -1927,7 +1940,7 @@ function profil(n = 12) {
   return res;
 }
 addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
-window.__testscene = {vinkel: (yaw, pitch) => { cam.yaw = yaw; if (pitch !== undefined) cam.pitch = pitch; plasserKamera(); }, profil, settTid, nyttNivaa, kamera: (x, z, d) => { cam.target.set(x, 0, z); if (d) cam.dist = d; plasserKamera(); }, info: () => Object.assign({}, renderer.info.render), get robot() { return robot; }, spill: (n, l) => spill(n, l), klipp, get rev() { return rev; }, kameraObj: camera, hilsRev, get modus() { return modus; }, set modus(v) { modus = v; }};
+window.__testscene = {kattDemo: m => { const u = katt.userData; katt.visible = true; u.tilst = m ? 'demo' : 'borte'; u.demo = m; u.tid = 1; u.hopp = 0; u.demoPause = 0.2; },vinkel: (yaw, pitch) => { cam.yaw = yaw; if (pitch !== undefined) cam.pitch = pitch; plasserKamera(); }, profil, settTid, nyttNivaa, kamera: (x, z, d) => { cam.target.set(x, 0, z); if (d) cam.dist = d; plasserKamera(); }, info: () => Object.assign({}, renderer.info.render), get robot() { return robot; }, spill: (n, l) => spill(n, l), klipp, get rev() { return rev; }, kameraObj: camera, hilsRev, get modus() { return modus; }, set modus(v) { modus = v; }};
 bygg(); loop();
 </script>
 </body>
