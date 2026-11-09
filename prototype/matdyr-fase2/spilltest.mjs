@@ -139,16 +139,21 @@ const byt = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-pr
   // bedre: tas med, feltet åpner spørsmålet, «Bytt med svakeste»
   R.position.set(0, 0.45, 30); P.slippNed(sterk, [1, 30]); st(3); P.gjorHandling(); ut.sterkTatt = !!P.bar();
   const p0 = P.S().penger; R.position.set(0, 0.45, (o.z0 + o.z1) / 2); st(3); ut.dialog = !document.getElementById('dialog').hidden && !!document.getElementById('dJa');
-  document.getElementById('dJa').click(); st(90);
+  const pS = P.S().penger; document.getElementById('dJa').click(); ut.halvInn = P.S().penger - pS === Math.floor(P.PRICE(svak) / 2);
+  let pFor = P.S().penger, n0 = 0; for (; n0 < 120 && P.bar(); n0++) { pFor = P.S().penger; st(1); } ut.trukket = Math.round(pFor - P.S().penger) >= P.PRICE(sterk) - 1 && Math.round(pFor - P.S().penger) <= P.PRICE(sterk) + Math.ceil(P.INC(midt) * (P.S().base.length) / 30) + 1;
   ut.byttet = P.S().base[0] === sterk && !P.bar(); ut.netto = Math.round(P.S().penger - p0); ut.forventet = Math.floor(P.PRICE(svak) / 2) - P.PRICE(sterk);
   ut.andreUrort = P.S().base.slice(1).every(c => c === midt);
   // «Velg en annen»: 🔁 over alle opptatte plasser, trykk på én bytter akkurat den
   R.position.set(0, 0.45, 30); P.slippNed(sterk, [1, 30]); st(3); P.gjorHandling(); R.position.set(0, 0.45, 18); st(3);
   P.apneBytte(); document.getElementById('dVelg').click(); st(3); ut.byttMerker = P.merker().length === n;
+  P.apneBytte(); const knapper = [...document.querySelectorAll('#dialog button')]; let utenfor = false;
+  for (let k = 0; k < knapper.length + 2; k++) { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true })); window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true })); if (!document.getElementById('dialog').contains(document.activeElement)) utenfor = true; }
+  ut.fokusfelle = !utenfor; document.getElementById('dNei').click(); st(2); ut.avbrytNullstiller = P.merker().length === 0 && !P.bar().velgBytt;
+  P.apneBytte(); document.getElementById('dVelg').click(); st(3);
   P.byttMed(3); st(90); ut.valgtByttet = P.S().base[3] === sterk && P.S().base[0] === sterk && P.S().base.filter(c => c === midt).length === n - 2;
   ut.lagret = JSON.parse(localStorage.getItem(P.NOKKEL)).base[3] === sterk;
   return ut; })()
 `);
-ok('full gård: bytte med svakeste etter spørsmål, aldri automatisk (' + JSON.stringify(byt) + ')', byt.svakAvvist && byt.sterkTatt && byt.dialog && byt.byttet && Math.abs(byt.netto - byt.forventet) < Math.abs(byt.forventet) * 0.02 && byt.andreUrort && byt.byttMerker && byt.valgtByttet && byt.lagret);
+ok('full gård: bytte med svakeste etter spørsmål, aldri automatisk (' + JSON.stringify(byt) + ')', byt.svakAvvist && byt.sterkTatt && byt.dialog && byt.byttet && byt.halvInn && byt.trukket && byt.andreUrort && byt.byttMerker && byt.fokusfelle && byt.avbrytNullstiller && byt.valgtByttet && byt.lagret);
 console.log(feil.length ? feil : 'ingen feil i konsollen'); if (feil.length) process.exitCode = 1;
 ws.close(); p.kill();

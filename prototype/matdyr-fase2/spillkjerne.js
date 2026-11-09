@@ -336,7 +336,7 @@
     const p = I.robot().position;
     if (bar) {
       if (bar.flyr) return null; const i = naerPlass(p, true); if (i >= 0) return { t: 'sett', i };
-      if (bar.velgBytt) { const j = naerPlass(p, false, 2.6); if (j >= 0) return { t: 'bytt', i: j }; }
+      if (bar.velgBytt) { const j = naerPlass(p, false, 2.6); if (j >= 0) return { t: 'bytt', i: j }; if (iBasen()) return { t: 'velgHjelp' }; }
       if (iBasen()) { const f = forsteLedige(); if (f >= 0) return { t: 'forste', i: f }; if (svakeste() >= 0) return { t: 'bytteValg' }; }
       return { t: 'slipp' };
     }
@@ -350,6 +350,7 @@
     else if (h && h.t === 'sett') t = '🏠 Sett inn ' + navn(bar.ci);
     else if (h && h.t === 'forste') t = '🏠 Første ledige plass';
     else if (h && h.t === 'bytteValg') t = '🔁 Bytt ut et matdyr';
+    else if (h && h.t === 'velgHjelp') t = '👉 Trykk på en 🔁 · Avbryt';
     else if (h && h.t === 'bytt') t = '🔁 Bytt med ' + navn(S.base[h.i]);
     else if (h && h.t === 'slipp') t = '⬇️ Slipp ' + navn(bar.ci);
     else if (h && h.t === 'selg') t = '💸 Selg ' + navn(S.base[h.i]);
@@ -368,6 +369,7 @@
     } else if (h.t === 'sett') settInn(h.i);
     else if (h.t === 'forste') velgPlass(h.i);
     else if (h.t === 'bytteValg') apneBytte();
+    else if (h.t === 'velgHjelp') { bar.velgBytt = false; visMerker(); melding('Greit! Valget er avbrutt. Du har ikke betalt noe.'); }
     else if (h.t === 'bytt') byttMed(h.i);
     else if (h.t === 'slipp') { const ci = bar.ci; slippBar(); slippNed(ci); melding('⬇️ ' + navn(ci) + ' løp tilbake til enga.'); }
     else if (h.t === 'selg') apneSalg(h.i);
@@ -456,8 +458,8 @@
     const lin = (ikon, ci, ord) => '<p class="byttlinje">' + ikon + ' ' + ord + ': <b>' + esc(navn(ci)) + '</b> (' + R[COMBOS[ci].r].n + ') · 💵 +' + fmt(INC(ci)) + '/s</p>';
     const info = 'Du betaler 💰 ' + fmt(PRICE(nc)) + ' for det nye. ' + (diff > 0 ? 'Bytter du, tjener gården 💵 +' + fmt(diff) + ' mer per sekund. ' : diff === 0 ? 'De tjener like mye. ' : '⚠️ Det nye tjener mindre enn det svakeste. ') + 'Du får 💰 ' + fmt(halv) + ' for det gamle.';
     apneDialog('<h2>🏠 Gården er full</h2>' + lin('🆕', nc, 'Nytt') + lin('⬇️', oc, 'Svakest på gården') + '<p class="byttinfo">' + esc(info) + '</p><div class="knapper"><button type="button" id="dNei">Avbryt</button><button type="button" id="dVelg">👉 Velg en annen</button><button type="button" id="dJa">🔁 Bytt med svakeste</button></div>', 'dJa');
-    $('dNei').onclick = () => { lukkDialog(); melding('Greit! Du kan slippe matdyret på åkeren. Du har ikke betalt noe.'); };
-    $('dVelg').onclick = () => { lukkDialog(); if (bar) { bar.velgBytt = true; visMerker(); melding('👉 Trykk på 🔁 over matdyret du vil bytte ut, eller gå bort til det.', 4); } };
+    $('dNei').onclick = () => { lukkDialog(); if (bar) bar.velgBytt = false; visMerker(); melding('Greit! Du kan slippe matdyret på åkeren. Du har ikke betalt noe.'); };
+    $('dVelg').onclick = () => { lukkDialog(); if (bar) { bar.velgBytt = true; visMerker(); } };   // hjelpeteksten står på handlingsknappen, ikke i en melding som kan dekke merkene
     $('dJa').onclick = () => { lukkDialog(); byttMed(svakeste()); };
   }
   function byttMed(i) {
@@ -508,7 +510,14 @@
   function lukkDialog() { $('dialog').hidden = true; document.body.classList.remove('dialog'); I.sp.pause = false; laast = false; if (dialogForrige && dialogForrige.focus) dialogForrige.focus(); dialogForrige = null; }
   addEventListener('keydown', e => {
     if (I.fane() !== 'spill') return;
-    if (!$('dialog').hidden) { if (e.key === 'Escape') { lukkDialog(); e.preventDefault(); } return; }
+    if (!$('dialog').hidden) {
+      if (e.key === 'Escape') { lukkDialog(); e.preventDefault(); }
+      else if (e.key === 'Tab') {   // fokusfelle: Tab og Shift+Tab går rundt blant knappene i dialogen
+        const k = [...$('dialog').querySelectorAll('button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')];
+        if (k.length) { const i = k.indexOf(document.activeElement), n = e.shiftKey ? (i <= 0 ? k.length - 1 : i - 1) : (i < 0 || i >= k.length - 1 ? 0 : i + 1); k[n].focus(); e.preventDefault(); }
+      }
+      return;
+    }
     if (e.key.toLowerCase() === 'e' && !e.repeat) gjorHandling();
   });
   function apneSalg(i) {

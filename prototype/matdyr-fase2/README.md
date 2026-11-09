@@ -272,3 +272,9 @@ Donutku, Burgersau, Pizzaskilpadde, Shakeand og Spagettipingvin er rettet i `ble
 - «Velg en annen» gir oransje 🔁 over alle opptatte plasser, i alle etasjer. Trykk på én, eller gå bort til matdyret og trykk «🔁 Bytt med …».
 - Det gamle matdyret selges for halv pris. Det nye betales når det flytter inn. Andre matdyr flyttes aldri, og ingenting byttes automatisk.
 - Spilltest-sjekk 12 dekker regelen. Sjekk 11 lukker nå spørsmålet som kommer på feltet når gården er full.
+- **Rettinger etter QA av 65fa16c:**
+  - **Fokusfelle i alle dialoger.** Tab og Shift+Tab går rundt blant knappene i dialogen. Escape lukker som før.
+  - **«Avbryt» avslutter velg-modus.** Knappen nullstiller velg-modus, og 🔁-merkene forsvinner.
+  - **Ingen melding over merkene.** I velg-modus viser handlingsknappen «👉 Trykk på en 🔁 · Avbryt», og E avbryter. Det gir ingen egen melding som kan dekke merkene.
+  - **Strengere spilltest-sjekk 12.** Den sjekker nå hver for seg at halv pris kommer inn og at prisen trekkes ved innflytting. Den sjekker også fokusfellen og at «Avbryt» nullstiller.
+- **Kjent:** Lukkes siden mens matdyret flyr (ca. 0,7 s), beholdes det gamle matdyret. Det nye forsvinner uten at noe er betalt. Ingen fremgang går tapt.
