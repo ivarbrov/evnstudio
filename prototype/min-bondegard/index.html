@@ -62,14 +62,14 @@
   <div class="grp" role="group" aria-label="Trestil"><b>Trær</b>
     <button data-trestil="ny">Ny stil</button><button data-trestil="gammel">Før</button><button id="visTraer">Vis trær</button><button id="maalTraer">Mål trær</button></div>
 </div>
-<div id="info">Testscene 0.8.1 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
+<div id="info">Testscene 0.8.2 uten spill. Dra for å flytte, rull eller knip for å zoome. Trykk på ting, eller på et «Til salgs»-skilt.</div>
 <div id="maal"><div id="maalTekst">…</div><div class="maalKnapper"><button id="kopier">Kopier</button><button id="lukkMaal">Lukk</button></div></div>
 
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = 'testscene 0.8.1';
+const VERSJON = 'testscene 0.8.2';
 const ROBOT_URL = '../../ecoins/helt-robot-v2.glb', REV_URL = '../figurer/rev/rev.glb';
 const SRGB = h => new THREE.Color(h).convertSRGBToLinear();
 
@@ -1026,8 +1026,8 @@ function lagMarkedsbod() {
 }
 
 /* ======================= 0.8.0: Blomsterkatten – kunde som kommer til Gårdsbua ======================= */
-// Etter Evens tegning: bredt, mykt hode med spisse ører, prikkøyne, «w»-munn og blomster mellom ørene. Kroppen (0.8.1) er en liten, rund
-// kattungekropp som står oppreist, med korte bein, korte armer, hale og blå hjerter på potene. Faste deler slås sammen per materiale. Alt er laget av enkle former i koden (ingen modellfil).
+// Etter Evens tegning: bredt, mykt hode med spisse ører, prikkøyne, «w»-munn og blomster mellom ørene. Kroppen (0.8.2) følger Evens
+// figurtegning: pæreformet overkropp med lys mage, kraftige lår, store føtter med blå hjerter og lang krøllhale. Faste deler slås sammen per materiale. Alt er laget av enkle former i koden (ingen modellfil).
 // Kunden går langs veien, inn gjennom åpningen i gjerdet, sier hva hun vil kjøpe, blir glad og går videre. Ingen handel ennå (bare visning).
 const KATT_VARIANTER = [
   {navn: 'Lavendel', pels: 0xcaa8e6},
@@ -1049,40 +1049,45 @@ function lagKatt() {
   const g = new THREE.Group(), kropp = new THREE.Group(); g.add(kropp); g.visible = false; scene.add(g);
   const pels = std({color: SRGB(KATT_VARIANTER[0].pels), roughness: 0.95, bumpMap: filtTekstur(), bumpScale: 0.03});
   const rosa = fm(0xf3a9c3, 0.9), lilla = fm(0x55307a, 0.4), gronn = fm(0x86b84e, 0.8);
-  // Kropp (0.8.1): liten, rund kattungekropp som står oppreist, med korte bein, korte armer og hale. Hodet er stort i forhold til kroppen.
-  mesh(new THREE.SphereGeometry(1, 24, 18), pels, 0, 0.55, 0, kropp).scale.set(0.3, 0.33, 0.26);                       // overkropp
-  mesh(new THREE.SphereGeometry(1, 20, 14), fm(0xf6eef8, 0.9), 0, 0.5, 0.135, kropp, false).scale.set(0.19, 0.22, 0.14);  // lys mage
+  // Kropp (0.8.2, etter Evens figurtegning): pæreformet overkropp med lys, oval mage, kraftige lår og store føtter.
+  const torso = mesh(new THREE.LatheGeometry([[0, 0.36], [0.17, 0.38], [0.25, 0.45], [0.28, 0.56], [0.27, 0.68], [0.235, 0.82], [0.2, 0.95], [0.17, 1.04], [0.1, 1.1], [0, 1.12]].map(([r, y]) => new THREE.Vector2(r, y)), 24), pels, 0, 0, 0, kropp);
+  torso.scale.z = 0.85;
+  mesh(new THREE.SphereGeometry(1, 18, 12), pels, 0, 0.52, -0.07, kropp).scale.set(0.24, 0.18, 0.18);                       // rumpe
+  mesh(new THREE.SphereGeometry(1, 20, 14), fm(0xfaf4f2, 0.9), 0, 0.73, 0.17, kropp, false).scale.set(0.16, 0.25, 0.095);   // lys mage
   bakeDirekte(kropp);
-  // Bein med runde poter. Blå hjerter på potene: to på venstre og tre på høyre, som på tegningen
-  const hjFyll = fm(0xbcdcff, 0.6), hjKant = fm(0x3f8fe6, 0.6), gFyll = hjerteGeo(0.03), gKant = hjerteGeo(0.039);
-  const beina = [-1, 1].map(s => { const bg = new THREE.Group(); bg.position.set(s * 0.14, 0.34, 0); g.add(bg);
-    mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.26, 12), pels, 0, -0.14, 0, bg);
-    const R = new THREE.Vector3(0.13, 0.08, 0.17), M = new THREE.Vector3(0, -0.27, 0.05); mesh(new THREE.SphereGeometry(1, 14, 10), pels, M.x, M.y, M.z, bg).scale.copy(R);
-    (s < 0 ? [-0.32, 0.32] : [-0.5, 0, 0.5]).forEach(x => { const u = new THREE.Vector3(x, 0.6, 0.8).normalize(), p = u.clone().multiply(R).add(M), n = u.clone().divide(R).normalize();
+  // Bein med kraftige lår og store, runde føtter. Tre blå hjerter på hver fot, som på tegningen
+  const hjFyll = fm(0xbcdcff, 0.6), hjKant = fm(0x3f8fe6, 0.6), gFyll = hjerteGeo(0.028), gKant = hjerteGeo(0.037);
+  const beina = [-1, 1].map(s => { const bg = new THREE.Group(); bg.position.set(s * 0.15, 0.44, 0); g.add(bg);
+    mesh(new THREE.SphereGeometry(1, 14, 10), pels, 0, -0.03, 0, bg).scale.set(0.14, 0.15, 0.15);                            // lår
+    mesh(new THREE.CylinderGeometry(0.12, 0.105, 0.3, 12), pels, 0, -0.18, 0, bg);
+    const R = new THREE.Vector3(0.14, 0.085, 0.19), M = new THREE.Vector3(0, -0.36, 0.05); mesh(new THREE.SphereGeometry(1, 16, 10), pels, M.x, M.y, M.z, bg).scale.copy(R);
+    [-0.5, 0, 0.5].forEach(x => { const u = new THREE.Vector3(x, 0.45, 0.85).normalize(), p = u.clone().multiply(R).add(M), n = u.clone().divide(R).normalize();
       [[gKant, hjKant, 0.002], [gFyll, hjFyll, 0.005]].forEach(([geo, mat, ut]) => { const h = mesh(geo, mat, 0, 0, 0, bg, false); h.position.copy(p).addScaledVector(n, ut); h.lookAt(h.position.clone().add(n)); }); });
     bakeDirekte(bg); return bg; });
-  // Korte armer med runde poter (henger litt ut fra kroppen og vifter ut til siden når katten blir glad)
-  const armer = [-1, 1].map(s => { const ag = new THREE.Group(); ag.position.set(s * 0.25, 0.66, 0.02); ag.rotation.z = s * 0.35; kropp.add(ag);
-    mesh(new THREE.CylinderGeometry(0.07, 0.065, 0.2, 10), pels, 0, -0.1, 0, ag); mesh(new THREE.SphereGeometry(0.085, 12, 10), pels, 0, -0.21, 0, ag); bakeDirekte(ag); return ag; });
-  // Hale som buer opp bak
-  const hale = new THREE.Group(); hale.position.set(0, 0.42, -0.22); kropp.add(hale);
-  const hk = new THREE.CatmullRomCurve3([[0, 0, 0], [0, 0.02, -0.16], [0.02, 0.2, -0.3], [0.07, 0.42, -0.26], [0.13, 0.53, -0.14]].map(([x, y, z]) => new THREE.Vector3(x, y, z)));
-  mesh(new THREE.TubeGeometry(hk, 20, 0.045, 8), pels, 0, 0, 0, hale); mesh(new THREE.SphereGeometry(0.047, 10, 8), pels, 0.13, 0.53, -0.14, hale); bakeDirekte(hale);
-  // Hode: bredt og flatt, med ørene som en del av formen
-  const hode = new THREE.Group(); hode.position.y = 1.1; kropp.add(hode);
-  const A = 0.6, B = 0.37, C = 0.45; mesh(new THREE.SphereGeometry(1, 32, 20), pels, 0, 0, 0, hode).scale.set(A, B, C);
-  [-1, 1].forEach(s => { const o = new THREE.Group(); o.position.set(s * 0.42, 0.17, -0.02); o.rotation.z = -s * 0.36; hode.add(o);
-    mesh(new THREE.ConeGeometry(0.2, 0.46, 16), pels, 0, 0.18, 0, o).scale.z = 0.62;
-    const inn = mesh(new THREE.ConeGeometry(0.13, 0.33, 12), rosa, 0, 0.15, 0.07, o, false); inn.scale.z = 0.35; o.updateMatrix(); [...o.children].forEach(m => { m.applyMatrix4(o.matrix); hode.add(m); }); hode.remove(o); });
+  // Armer som henger ned langs siden, med runde poter ved hoftene (vifter ut til siden når katten blir glad)
+  const armer = [-1, 1].map(s => { const ag = new THREE.Group(); ag.position.set(s * 0.22, 0.97, 0.02); ag.rotation.z = s * 0.2; kropp.add(ag);
+    mesh(new THREE.SphereGeometry(0.075, 10, 8), pels, 0, 0, 0, ag);
+    mesh(new THREE.CylinderGeometry(0.075, 0.068, 0.3, 10), pels, 0, -0.15, 0, ag);
+    mesh(new THREE.SphereGeometry(1, 12, 10), pels, 0, -0.32, 0.015, ag).scale.set(0.088, 0.082, 0.095); bakeDirekte(ag); return ag; });
+  // Lang hale som går ut bak og krøller seg i toppen
+  const hale = new THREE.Group(); hale.position.set(0, 0.5, -0.2); kropp.add(hale);
+  const hk = new THREE.CatmullRomCurve3([[0, 0, 0], [0.02, -0.04, -0.18], [0.06, 0.12, -0.36], [0.1, 0.4, -0.44], [0.12, 0.62, -0.38], [0.13, 0.7, -0.26], [0.13, 0.64, -0.16], [0.12, 0.54, -0.18]].map(([x, y, z]) => new THREE.Vector3(x, y, z)));
+  mesh(new THREE.TubeGeometry(hk, 32, 0.055, 8), pels, 0, 0, 0, hale); mesh(new THREE.SphereGeometry(0.056, 10, 8), pels, 0.12, 0.54, -0.18, hale); bakeDirekte(hale);
+  // Hode: stort, bredt og mykt, med store spisse ører
+  const hode = new THREE.Group(); hode.position.y = 1.4; kropp.add(hode);
+  const A = 0.55, B = 0.37, C = 0.43; mesh(new THREE.SphereGeometry(1, 32, 20), pels, 0, 0, 0, hode).scale.set(A, B, C);
+  [-1, 1].forEach(s => { const o = new THREE.Group(); o.position.set(s * 0.37, 0.19, -0.03); o.rotation.z = -s * 0.36; hode.add(o);
+    mesh(new THREE.ConeGeometry(0.2, 0.48, 16), pels, 0, 0.19, 0, o).scale.z = 0.62;
+    const inn = mesh(new THREE.ConeGeometry(0.135, 0.35, 12), rosa, 0, 0.16, 0.07, o, false); inn.scale.z = 0.35; o.updateMatrix(); [...o.children].forEach(m => { m.applyMatrix4(o.matrix); hode.add(m); }); hode.remove(o); });
   const flate = (x, y, ut = 0.004) => new THREE.Vector3(x, y, C * Math.sqrt(Math.max(0, 1 - (x / A) ** 2 - (y / B) ** 2)) + ut);
-  const oyne = new THREE.Group(); oyne.position.y = 0.05; hode.add(oyne); /* begge øynene i én gruppe, så de blunker sammen og tegnes med ett kall */
-  [-1, 1].forEach(s => { const p = flate(s * 0.12, 0.05, -0.005);
-    mesh(new THREE.SphereGeometry(1, 12, 10), lilla, p.x, 0, p.z, oyne, false).scale.set(0.028, 0.038, 0.02);
-    mesh(new THREE.SphereGeometry(0.009, 6, 4), fm(0xffffff, 0.3), p.x + 0.008, 0.014, p.z + 0.017, oyne, false); }); bakeDirekte(oyne);
+  const oyne = new THREE.Group(); oyne.position.y = 0.03; hode.add(oyne); /* begge øynene i én gruppe, så de blunker sammen og tegnes med ett kall */
+  [-1, 1].forEach(s => { const p = flate(s * 0.16, 0.03, -0.006);
+    mesh(new THREE.SphereGeometry(1, 12, 10), lilla, p.x, 0, p.z, oyne, false).scale.set(0.034, 0.046, 0.022);
+    mesh(new THREE.SphereGeometry(0.011, 6, 4), fm(0xffffff, 0.3), p.x + 0.01, 0.017, p.z + 0.019, oyne, false); }); bakeDirekte(oyne);
   // Munn: liten strek ned fra nesen og en myk «w»
-  const munn = [[0, -0.02], [0, -0.095]].map(([x, y]) => flate(x, y));
+  const munn = [[0, -0.075], [0, -0.115]].map(([x, y]) => flate(x, y));
   mesh(new THREE.TubeGeometry(new THREE.LineCurve3(munn[0], munn[1]), 2, 0.011, 6), lilla, 0, 0, 0, hode, false);
-  const w = new THREE.CatmullRomCurve3([[-0.13, -0.1], [-0.09, -0.145], [-0.04, -0.145], [0, -0.095], [0.04, -0.145], [0.09, -0.145], [0.13, -0.1]].map(([x, y]) => flate(x, y)));
+  const w = new THREE.CatmullRomCurve3([[-0.13, -0.1], [-0.1, -0.15], [-0.045, -0.165], [0, -0.115], [0.045, -0.165], [0.1, -0.15], [0.13, -0.1]].map(([x, y]) => flate(x, y)));
   mesh(new THREE.TubeGeometry(w, 24, 0.011, 6), lilla, 0, 0, 0, hode, false);
   // Blomster mellom ørene: prestekrage, rosa knopp og en kvist med blå knopper
   const blomst = new THREE.Group(); blomst.position.set(0, B * 0.75, 0); hode.add(blomst);
@@ -1095,8 +1100,8 @@ function lagKatt() {
   [[0.3, 0.42], [0.23, 0.37], [0.34, 0.36]].forEach(([x, y]) => mesh(new THREE.SphereGeometry(0.026, 8, 6), fm(0xc4dcf2, 0.6), x, y, 0.02, blomst, false));
   [[-0.14, 0.18, 0.6], [0.11, 0.25, -0.6], [-0.18, 0.36, -0.5]].forEach(([x, y, r]) => { const l = mesh(new THREE.SphereGeometry(1, 8, 6), gronn, x, y, 0.01, blomst, false); l.scale.set(0.065, 0.02, 0.025); l.rotation.z = r; }); bakeDirekte(blomst); bakeDirekte(hode);
   // Usynlig trykkflate som følger katten
-  const treff = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 2.1, 10), new THREE.MeshBasicMaterial({visible: false})); treff.position.y = 1.0; g.add(treff); treff.userData.eier = g; klikkbar(treff);
-  g.scale.setScalar(0.95); g.userData = {katt: true, hjerteY: 2.2, kropp, hode, oyne, blomst, pels, beina, armer, hale, tilst: 'borte', tid: 1.5, vei: [], etter: null, hopp: 0, fase: 0, blunk: 2};
+  const treff = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 2.4, 10), new THREE.MeshBasicMaterial({visible: false})); treff.position.y = 1.2; g.add(treff); treff.userData.eier = g; klikkbar(treff);
+  g.scale.setScalar(0.92); g.userData = {katt: true, hjerteY: 2.45, kropp, hode, oyne, blomst, pels, beina, armer, hale, tilst: 'borte', tid: 1.5, vei: [], etter: null, hopp: 0, fase: 0, blunk: 2};
   katt = g;
 }
 function kattSi(tekst, tid = 3) { kattBoble.textContent = tekst; kattBoble.style.display = 'block'; kattBobleTid = tid; }
@@ -1116,13 +1121,13 @@ function oppdaterKatt(dt, t) { if (!katt) return; const u = katt.userData, fart 
   u.fase += dt * (gaar ? 11 : 0); const s = Math.sin(u.fase), sv = gaar ? s : 0, jubel = u.tilst === 'glad' || u.hopp > 0;
   u.kropp.rotation.z = mot(u.kropp.rotation.z, sv * 0.04, 8, dt);
   u.beina.forEach((b, i) => b.rotation.x = mot(b.rotation.x, (i ? -sv : sv) * 0.55, 14, dt));
-  u.armer.forEach((a, i) => { const sd = i ? 1 : -1; a.rotation.x = mot(a.rotation.x, jubel ? -0.6 : (i ? sv : -sv) * 0.6, 12, dt); a.rotation.z = mot(a.rotation.z, sd * (jubel ? 1.55 + Math.sin(t * 14) * 0.25 : 0.35), 10, dt); });
+  u.armer.forEach((a, i) => { const sd = i ? 1 : -1; a.rotation.x = mot(a.rotation.x, jubel ? -0.6 : (i ? sv : -sv) * 0.6, 12, dt); a.rotation.z = mot(a.rotation.z, sd * (jubel ? 1.55 + Math.sin(t * 14) * 0.25 : 0.2), 10, dt); });
   u.hale.rotation.z = Math.sin(t * 2.4) * 0.25; u.hale.rotation.y = Math.sin(t * 1.3) * 0.15;
   let y = gaar ? Math.abs(s) * 0.035 : 0; if (u.hopp > 0) { u.hopp -= dt; y += Math.sin(Math.max(0, 0.5 - u.hopp) / 0.5 * Math.PI) * 0.35; }
   katt.position.y = Math.max(0, hoyde(katt.position.x, katt.position.z)) + y;
   u.kropp.scale.y = 1 + Math.sin(t * 2.2) * 0.012; u.blomst.rotation.z = Math.sin(t * 1.7) * 0.06 + (gaar ? s * 0.05 : 0); u.hode.rotation.z = gaar ? 0 : Math.sin(t * 0.9) * 0.05;
   u.blunk -= dt; const lukk = u.blunk < 0.12; u.oyne.scale.y = lukk ? 0.12 : 1; if (u.blunk < 0) u.blunk = rr(2, 5);
-  if (kattBobleTid > 0) { kattBobleTid -= dt; tmp.copy(katt.position); tmp.y += 2.25; tmp.project(camera); kattBoble.style.left = Math.min(innerWidth - 118, Math.max(118, (tmp.x + 1) / 2 * innerWidth)) + 'px'; /* holdes inne på skjermen */ kattBoble.style.top = ((1 - tmp.y) / 2 * innerHeight) + 'px'; if (kattBobleTid <= 0 || !katt.visible) { kattBoble.style.display = 'none'; kattBobleTid = 0; } }
+  if (kattBobleTid > 0) { kattBobleTid -= dt; tmp.copy(katt.position); tmp.y += 2.5; tmp.project(camera); kattBoble.style.left = Math.min(innerWidth - 118, Math.max(118, (tmp.x + 1) / 2 * innerWidth)) + 'px'; /* holdes inne på skjermen */ kattBoble.style.top = ((1 - tmp.y) / 2 * innerHeight) + 'px'; if (kattBobleTid <= 0 || !katt.visible) { kattBoble.style.display = 'none'; kattBobleTid = 0; } }
 }
 
 /* ======================= Miljødetaljer ved byggene ======================= */
