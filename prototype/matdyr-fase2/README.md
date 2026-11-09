@@ -251,3 +251,13 @@ Donutku, Burgersau, Pizzaskilpadde, Shakeand og Spagettipingvin er rettet i `ble
 - Betalingen skjer ved innflytting, som før. Å velge plass selv med ＋ og «Første ledige plass» virker fortsatt.
 - Flyturen varer lenger når avstanden er lang: 0,6 s + avstand/30.
 - Spilltest-sjekk 11 dekker feltet.
+
+### Rettinger etter QA av dd10e82 (9.11.2026)
+- **Leveringsfeltet:** Det dekker nå hele passasjen (|x| < 3,3), så roboten ikke kan gå forbi det. Hvert matdyr som bæres, prøves levert én gang per besøk på feltet. Det gjelder også når roboten tar matdyret mens den allerede står på feltet.
+- **Tilbudet av matdyr:** Taket på 14 teller bare matdyr som er på åkeren (`gaa` eller `fall`), ikke dem som er på vei bort i landskapet. Den frie vandringen er 10–19 s. Målt med samme metode (2 min oppvarming, deretter 10 min, roboten borte): 16,4 og 16,1 per minutt, mot 16,2 i a00a380.
+- **Landingspunktet:** Det prøves inntil 24 punkter, og ett godtas med en gang det er minst 3,2 m til andre matdyr.
+- **Spilltest-sjekk 11:** Gården fylles nå etter at matdyret er tatt med, så sjekken faktisk tester full gård.
+- **Ikke løst:**
+  - ＋-merker dekket av panelene på små mobilskjermer. Leveringsfeltet og «Første ledige plass» virker alltid.
+  - Overlapp mellom handlingsknapp og styrespak i 320×568.
+  - Ødelagt lagring overskrives (eldre funn).

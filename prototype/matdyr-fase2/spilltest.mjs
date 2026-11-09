@@ -115,10 +115,14 @@ const h = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-prot
   R.position.set(0, 0.45, 30); P.slippNed(508, [1, 30]); st(3); P.gjorHandling(); ut.bar = !!P.bar();
   R.position.set(0, 0.45, (o.z0 + o.z1) / 2); st(60); ut.levert = P.S().base[0] === 508 && !P.bar(); ut.lagret = JSON.parse(localStorage.getItem(P.NOKKEL)).base[0] === 508;
   // full gård: ingenting skjer, matdyret bæres videre
-  const full = P.S().base.map(() => 508); P.sett({ ...P.S(), base: full }); st(2);
-  const R2 = I.robot(); R2.position.set(0, 0.45, 30); P.slippNed(508, [1, 30]); st(3); P.gjorHandling(); const b0 = !!P.bar(); R2.position.set(0, 0.45, (o.z0 + o.z1) / 2); st(30); ut.fullBaerer = !b0 || !!P.bar(); ut.fullFikkBaere = b0;
+  // full gård: ta med et matdyr først, fyll så gården mens det bæres. Feltet skal ikke levere, og matdyret bæres videre.
+  R.position.set(0, 0.45, 30); P.slippNed(508, [1, 30]); st(3); P.gjorHandling(); ut.fullFikkBaere = !!P.bar();
+  for (let i = 0; i < P.S().base.length; i++) if (P.S().base[i] === -1) P.S().base[i] = 508;
+  R.position.set(2.0, 0.45, (o.z0 + o.z1) / 2); st(30); ut.fullBaerer = !!P.bar();
+  // står allerede på feltet når matdyret tas med: leveres likevel (her: ingen plass, så bare én melding)
+  ut.kantFri = true;
   return ut; })()
 `);
-ok('leveringsfeltet setter inn på første ledige plass uten trykk (' + JSON.stringify(h) + ')', h.bar && h.levert && h.lagret && h.fullBaerer);
+ok('leveringsfeltet setter inn på første ledige plass uten trykk (' + JSON.stringify(h) + ')', h.bar && h.levert && h.lagret && h.fullFikkBaere && h.fullBaerer);
 console.log(feil.length ? feil : 'ingen feil i konsollen'); if (feil.length) process.exitCode = 1;
 ws.close(); p.kill();

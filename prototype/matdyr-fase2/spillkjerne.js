@@ -135,10 +135,10 @@
   // Landingspunkt i vest, helst med god avstand til matdyr som allerede står der (så de ikke lander oppå hverandre)
   function tilfeldigPunkt() {
     const e = eng(); let best = null, bd = -1;
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 24; i++) {
       const x = e.x0 + 2 + Math.random() * 16, z = e.z0 + 2.5 + Math.random() * (e.z1 - e.z0 - 5);
       const d = felt.reduce((m, a) => Math.min(m, Math.hypot(a.g.position.x - x, a.g.position.z - z)), 99);
-      if (d > bd) { bd = d; best = [x, z]; } if (d > 3) break;
+      if (d > bd) { bd = d; best = [x, z]; } if (d > 3.2) break;
     }
     return best;
   }
@@ -154,7 +154,7 @@
     const [x, z] = xz || tilfeldigPunkt(), g = new T.Group(); g.position.set(x, xz ? 0 : 26, z);
     const m = modell(ci), lab = navneskilt(ci); lab.position.y = 3.9 + COMBOS[ci].r * 0.15; lab.material.transparent = true; g.add(m, lab); feltG.add(g);
     felt.push({ ci, g, m, lab, tilstand: xz ? 'gaa' : 'fall', retning: Math.random() * Math.PI * 2, fart: (1.2 + Math.random() * 0.8) * (I.GANGFART || 1),
-      tid: 6 + Math.random() * 8,            // så lenge matdyret vandrer fritt før det begynner å søke mot porten (s)
+      tid: 10 + Math.random() * 9,            // så lenge matdyret vandrer fritt før det begynner å søke mot porten (s)
       side: Math.random() < 0.5 ? -1 : 1,      // foretrukket side å gå rundt hindringer på, så to matdyr ikke speiler hverandre
       alder: 0, fase: Math.random(), v: 0, vx: 0, vz: 0, labA: 1, beite: 0, fast: 0, robotFast: 0 });
   }
@@ -206,7 +206,8 @@
   }
   let dyttMelding = 0;
   function oppdaterFelt(dt, t) {
-    if ((nesteRegn -= dt) <= 0 && felt.length < 14) { slippNed(trekk()); nesteRegn = 1.2 + Math.random() * 0.8; }
+    // Høyst 14 matdyr på åkeren. De som er på vei bort i landskapet, teller ikke.
+    if ((nesteRegn -= dt) <= 0 && felt.filter(a => a.tilstand === 'gaa' || a.tilstand === 'fall').length < 14) { slippNed(trekk()); nesteRegn = 1.2 + Math.random() * 0.8; }
     dyttMelding -= dt;
     const e = eng(), po = port(), r = I.robot && I.robot(), rp = r && r.position.y < 1 ? r.position : null, faste = fasteHindre();
     for (const a of [...felt]) {
@@ -406,8 +407,8 @@
   // ---------- Leveringsfeltet ----------
   // Et gult felt i passasjen mellom gården og åkeren. Går roboten inn på feltet med et matdyr, flyr matdyret til første ledige plass
   // (1. etasje først), uten at spilleren trykker på noe. Å velge plass selv med en ＋ virker fortsatt.
-  const levG = new T.Group(); I.scene.add(levG); let levNokkel = '', paaLev = false;
-  function levOmr() { const e = eng(); return e ? { x0: -2.9, x1: 2.9, z0: e.z0 - 3.4, z1: e.z0 - 0.3 } : null; }
+  const levG = new T.Group(); I.scene.add(levG); let levNokkel = '', paaLev = false, levBesok = 0;
+  function levOmr() { const e = eng(); return e ? { x0: -3.3, x1: 3.3, z0: e.z0 - 3.4, z1: e.z0 - 0.3 } : null; }   // hele passasjen (roboten når |x| ≈ 3,05)
   function byggLevFelt() {
     const o = levOmr(), n = o ? o.z0 + ':' + o.z1 : ''; if (n === levNokkel) return; levNokkel = n;
     levG.children.slice().forEach(c => { levG.remove(c); c.geometry && c.geometry.dispose(); c.material && c.material.dispose(); });
@@ -425,8 +426,10 @@
     byggLevFelt(); const r = I.robot(); if (!r || !levG.children[0]) return;
     const inne = iLevFelt(r.position), m = levG.children[0];
     m.material.opacity = bar && !bar.flyr ? 0.85 + Math.sin(t * 5) * 0.15 : 0.75;
-    if (inne && !paaLev && bar && !bar.flyr) {   // reagerer bare når roboten går inn på feltet, ikke hvert bilde
-      const i = forsteLedige();
+    if (inne && !paaLev) levBesok++;
+    // Hvert matdyr som bæres, prøves levert én gang per besøk på feltet (også om roboten tok det mens den sto der)
+    if (inne && bar && !bar.flyr && bar.levForsok !== levBesok) {
+      bar.levForsok = levBesok; const i = forsteLedige();
       if (i < 0) melding('Ingen ledige plasser. Utvid gården eller selg et matdyr.');
       else velgPlass(i);
     }
