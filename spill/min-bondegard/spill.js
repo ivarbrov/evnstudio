@@ -575,7 +575,7 @@ function startFlytt(u) {
   if (!fotMesh) { const g = new THREE.PlaneGeometry(1, 1); g.rotateX(-Math.PI / 2); fotMesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({color: 0x4cd137, transparent: true, opacity: 0.45, depthWrite: false})); fotMesh.renderOrder = 2; scene.add(fotMesh); }
   flytt = {u, x0: u.x, z0: u.z, r0: u.r, x: u.x, z: u.z, r: u.r};
   $('flyttSnu').hidden = u.type === 'aker' || u.type === 'silo';
-  $('flyttLinje').classList.add('vis'); $('flyttTekst').textContent = `Trykk der du vil ha ${u.type === 'aker' ? 'åkeren' : u.type === 'silo' ? 'siloen' : D.bygg[u.id].navn.toLowerCase()}. Grønt betyr ledig.`;
+  $('flyttLinje').classList.add('vis'); $('flyttTekst').textContent = `Dra, eller trykk der du vil ha ${u.type === 'aker' ? 'åkeren' : u.type === 'silo' ? 'siloen' : D.bygg[u.id].navn.toLowerCase()}. Grønt betyr ledig.`;
   oppdaterFlytt(); $('flyttOk').focus({preventScroll: true});
 }
 function oppdaterFlytt() { const {u} = flytt; u.gruppe.position.set(flytt.x, 0, flytt.z); u.gruppe.rotation.y = flytt.r * Math.PI / 2;
@@ -594,6 +594,9 @@ $('flyttOk').addEventListener('click', () => sluttFlytt(true));
 $('flyttAvbryt').addEventListener('click', () => sluttFlytt(false));
 $('flyttSnu').addEventListener('click', () => { flytt.r = (flytt.r + 1) % 4; oppdaterFlytt(); });
 const bakkePlan = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _treff = new THREE.Vector3();
+// Dra med finger eller mus flytter tingen (kameraet står stille så lenge flyttingen pågår)
+const _dra = new THREE.Raycaster(), _ndc = new THREE.Vector2();
+window.spillDra = (x, y) => { if (!flytt) return false; _ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); _dra.setFromCamera(_ndc, camera); flyttTil(_dra); return true; };
 function flyttTil(ray) { if (!ray.ray.intersectPlane(bakkePlan, _treff)) return; flytt.x = Math.round(_treff.x * 4) / 4; flytt.z = Math.round(_treff.z * 4) / 4; oppdaterFlytt(); }
 
 /* ======================= Trykk på gården ======================= */

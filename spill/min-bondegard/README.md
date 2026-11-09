@@ -33,6 +33,7 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 
 ## Versjoner
 
+- **0.8.4** (ikke publisert): Ting som flyttes, kan dras med finger eller mus. Før flyttet dra-bevegelsen kameraet, og bare trykk flyttet tingen (Even 9.11).
 - **0.8.3** (ikke publisert): Rettinger etter EVN Game QA av 0.8.0 (`qa/rapporter/2026-11-09-min-bondegard-d582ecd.md`):
   - F3: ødelagt lagring tas alltid vare på i kopien.
   - K2: feilkortet vises også før Start og ved avviste løfter.
