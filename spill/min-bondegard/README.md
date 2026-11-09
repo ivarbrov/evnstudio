@@ -33,6 +33,7 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 
 ## Versjoner
 
+- **0.8.1** (ikke publisert): Roboten finner veien rundt bygg, gjerder og binger og går ikke lenger gjennom gjerdet ved hønsegården (Even 9.11). Den kan gå over åkrene og gårdsveien. Mobil i høykant starter med hele tunet i bildet.
 - **0.8.0** (fase 1, ikke publisert):
   - Spillbar kjernesløyfe for nivå 1–3: hvete og mais, høner og egg, fôrkvern, bakeri (kjøpes for 50), silo og låve, markedsbu, mynter, XP og nivåer.
   - Produksjonen fortsetter mens spillet er lukket.
@@ -42,5 +43,4 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
   - Kjente begrensninger:
     - Bestillinger og lastebil kommer i 0.9.0.
     - Låven, hønsehuset, beitet og markedsbua kan ikke flyttes ennå.
-    - Roboten går rett fram og kan gå gjennom bygg.
     - Ytelse på iPhone er ikke målt for spillversjonen.

@@ -195,7 +195,7 @@ function finnHinder() {
   scene.children.forEach(o => { if (!['laave', 'honsehus', 'dyr', 'markedsbod'].includes(o.userData.kat) || o.userData.art2 || o.isInstancedMesh || o.isSprite) return;
     b.setFromObject(o); if (b.isEmpty() || b.max.x - b.min.x > 20) return; hinder.push([b.min.x, b.max.x, b.min.z, b.max.z]); });
   // gårdsveien, benken og småting fra testscenen
-  hinder.push([-6.95, -4.05, -1.5, 12], [-4.35, -2.05, 6.0, 7.3], [-5.1, -4.4, 6.4, 7.1], [3.0, 3.8, -6.8, -6.0], [-2.0, -0.6, -3.9, -2.5], [-2.7, -2.1, -2.3, -1.6], [-9.9, -8.9, 6.4, 7.4], [-9.3, -8.1, 8.4, 9.4], [-13.0, -8.0, 8.7, 10.2]);
+  hinder.push([-6.95, -4.05, -1.5, 12, 'vei'], [-4.35, -2.05, 6.0, 7.3], [-5.1, -4.4, 6.4, 7.1], [3.0, 3.8, -6.8, -6.0], [-2.0, -0.6, -3.9, -2.5], [-2.7, -2.1, -2.3, -1.6], [-9.9, -8.9, 6.4, 7.4], [-9.3, -8.1, 8.4, 9.4], [-13.0, -8.0, 8.7, 10.2]);
 }
 function fotRekt(t, x, z, r) { const [w, d] = t.fot; const [a, b] = (r || 0) % 2 ? [d, w] : [w, d]; return [x - a / 2, x + a / 2, z - b / 2, z + b / 2]; }
 const overlapp = (p, q) => p[0] < q[1] - 0.02 && p[1] > q[0] + 0.02 && p[2] < q[3] - 0.02 && p[3] > q[2] + 0.02;
@@ -236,7 +236,7 @@ function plasserAlt() {
 let hus = null, lave = null, bod = null;
 function finnFasteTing() {
   for (const o of klikkbare) { const k = o.userData.kat; if (k === 'honsehus' && o.isGroup && !o.userData.art && !hus) hus = o; if (k === 'laave' && o.isGroup && !lave) lave = o; if (k === 'markedsbod' && !bod) bod = o; }
-  if (hus) { const t = {type: 'honsehus', id: 'honsehus', gruppe: hus, hoyde: 5.2}; t.ikon = lagIkon(t.hoyde); hus.add(t.ikon); ting.set('honsehus', t); }
+  if (hus) { const t = {type: 'honsehus', id: 'honsehus', gruppe: hus, hoyde: 5.2, robotRekt: [BINGER.hone.x0, BINGER.hone.x1, BINGER.hone.z0, BINGER.hone.z1]};   /* roboten stiller seg ved løpegården */ t.ikon = lagIkon(t.hoyde); hus.add(t.ikon); ting.set('honsehus', t); }
   if (lave) ting.set('laave', {type: 'laave', id: 'laave', gruppe: lave, hoyde: 9});
   if (bod) { const t = {type: 'marked', id: 'marked', gruppe: bod, hoyde: 4.2}; t.ikon = lagIkon(t.hoyde); bod.add(t.ikon); ting.set('marked', t); }
 }
@@ -282,18 +282,69 @@ function midtAv(u, y = 2) { return new THREE.Vector3(u.gruppe.position.x, y, u.g
 
 /* ======================= Roboten gjør jobben ======================= */
 // Reglene venter ikke på roboten: det spilleren gjør, skjer med en gang. Roboten går dit og viser det (høyst 5 jobber i kø).
+// Veifinning (Even 9.11: «roboten går gjennom gjerde på hønsegården»): rutenett på 0,5 m over gården. Bygg, gjerder og binger er
+// stengt, åkrene kan roboten gå over. Korteste vei finnes med Dijkstra (8 retninger) og rettes ut der roboten ser fram.
+const RUTENETT = 0.5, ROBOT_R = 0.4, NX = Math.round((GARD.x1 - GARD.x0) / RUTENETT) + 1, NZ = Math.round((GARD.z1 - GARD.z0) / RUTENETT) + 1;
+const boksCache = new Map();
+function tingRekt(u) {
+  if (u.fot) return fotRekt(u, u.x, u.z, u.r);
+  if (!boksCache.has(u)) { const b = new THREE.Box3().setFromObject(u.gruppe); boksCache.set(u, [b.min.x, b.max.x, b.min.z, b.max.z]); }
+  return boksCache.get(u);
+}
+function stengtKart() {
+  const stengt = new Uint8Array(NX * NZ), rekt = hinder.filter(h => h[4] !== 'vei');
+  for (const u of ting.values()) if (u.fot && u.plassert && u.type !== 'aker') rekt.push(fotRekt(u, u.x, u.z, u.r));
+  for (const [a, b, c, d] of rekt) {
+    const i0 = Math.max(0, Math.floor((a - ROBOT_R - GARD.x0) / RUTENETT)), i1 = Math.min(NX - 1, Math.ceil((b + ROBOT_R - GARD.x0) / RUTENETT));
+    const j0 = Math.max(0, Math.floor((c - ROBOT_R - GARD.z0) / RUTENETT)), j1 = Math.min(NZ - 1, Math.ceil((d + ROBOT_R - GARD.z0) / RUTENETT));
+    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const x = GARD.x0 + i * RUTENETT, z = GARD.z0 + j * RUTENETT;
+      if (x > a - ROBOT_R && x < b + ROBOT_R && z > c - ROBOT_R && z < d + ROBOT_R) stengt[i * NZ + j] = 1; }
+  }
+  return stengt;
+}
+const avstRekt = (x, z, r) => Math.hypot(Math.max(r[0] - x, 0, x - r[1]), Math.max(r[2] - z, 0, z - r[3]));
+function finnVei(fra, maal, naer) {   // maal: [x0, x1, z0, z1]. Ferdig når roboten er nærmere enn «naer» meter
+  const stengt = stengtKart(), cx = i => GARD.x0 + i * RUTENETT, cz = j => GARD.z0 + j * RUTENETT;
+  let si = Math.round((fra.x - GARD.x0) / RUTENETT), sj = Math.round((fra.z - GARD.z0) / RUTENETT);
+  si = Math.max(0, Math.min(NX - 1, si)); sj = Math.max(0, Math.min(NZ - 1, sj));
+  if (stengt[si * NZ + sj]) { let best = -1, bd = 1e9; for (let k = 0; k < NX * NZ; k++) if (!stengt[k]) { const d = (cx(Math.floor(k / NZ)) - fra.x) ** 2 + (cz(k % NZ) - fra.z) ** 2; if (d < bd) { bd = d; best = k; } } if (best < 0) return null; si = Math.floor(best / NZ); sj = best % NZ; }
+  const kost = new Float32Array(NX * NZ).fill(1e9), forrige = new Int32Array(NX * NZ).fill(-1), ferdig = new Uint8Array(NX * NZ);
+  const start = si * NZ + sj; kost[start] = 0; const ko = [start]; let mal = -1;
+  while (ko.length) {
+    let bi = 0; for (let k = 1; k < ko.length; k++) if (kost[ko[k]] < kost[ko[bi]]) bi = k;
+    const c = ko[bi]; ko[bi] = ko[ko.length - 1]; ko.pop(); if (ferdig[c]) continue; ferdig[c] = 1;
+    const i = Math.floor(c / NZ), j = c % NZ;
+    if (avstRekt(cx(i), cz(j), maal) <= naer) { mal = c; break; }
+    for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) { if (!di && !dj) continue; const ni = i + di, nj = j + dj;
+      if (ni < 0 || nj < 0 || ni >= NX || nj >= NZ) continue; const n = ni * NZ + nj; if (stengt[n] || ferdig[n]) continue;
+      if (di && dj && (stengt[(i + di) * NZ + j] || stengt[i * NZ + j + dj])) continue;   // ikke skjær hjørner
+      const k2 = kost[c] + (di && dj ? 1.414 : 1); if (k2 < kost[n]) { kost[n] = k2; forrige[n] = c; ko.push(n); } }
+  }
+  if (mal < 0) return null;
+  const celler = []; for (let c = mal; c >= 0; c = forrige[c]) celler.unshift(c);
+  const pkt = celler.map(c => new THREE.Vector3(cx(Math.floor(c / NZ)), 0, cz(c % NZ)));
+  const fri = (a, b) => { const n = Math.ceil(a.distanceTo(b) / (RUTENETT / 3)); for (let k = 1; k < n; k++) { const x = a.x + (b.x - a.x) * k / n, z = a.z + (b.z - a.z) * k / n;
+    const i = Math.round((x - GARD.x0) / RUTENETT), j = Math.round((z - GARD.z0) / RUTENETT); if (stengt[i * NZ + j]) return false; } return true; };
+  const ut = []; let a = new THREE.Vector3(fra.x, 0, fra.z), k = 0;
+  while (k < pkt.length - 1) { let m = pkt.length - 1; while (m > k + 1 && !fri(a, pkt[m])) m--; ut.push(pkt[m]); a = pkt[m]; k = m; }
+  if (!ut.length) ut.push(pkt[pkt.length - 1]);
+  return ut;
+}
+// Brukes også av testscenens ventetur (benken, beitet osv.), så roboten aldri går gjennom gjerder på vei dit
+window.ruteTil = (fra, p) => finnVei(fra, [p.x, p.x, p.z, p.z], 0.5) || [];
 const jobber = []; let jobbTimer = 0;
-function robotJobb(pos) { if (!robot) return; jobber.push(pos.clone()); while (jobber.length > 5) jobber.shift(); if (modus !== 'jobb') nesteJobb(); }
+function robotJobb(u) { if (!robot || !u) return; jobber.push(u); while (jobber.length > 5) jobber.shift(); if (modus !== 'jobb') nesteJobb(); }
 function nesteJobb() {
   clearTimeout(jobbTimer); if (!robot) return;
   if (modus === 'dans') { jobbTimer = setTimeout(nesteJobb, 600); return; }
-  const p = jobber.shift();
-  if (!p) { if (modus === 'jobb') { modus = 'vent'; ventTimer = 2.5; ventSteg = 0; spill('Idle'); } return; }
+  const u = jobber.shift();
+  if (!u) { if (modus === 'jobb') { modus = 'vent'; ventTimer = 2.5; ventSteg = 0; spill('Idle'); } return; }
   modus = 'jobb'; snuTil = null; robot.position.y = 0;
-  const fra = robot.position, dir = new THREE.Vector3(fra.x - p.x, 0, fra.z - p.z), d = dir.length();
-  const maal = d > 2.4 ? new THREE.Vector3(p.x, 0, p.z).add(dir.normalize().multiplyScalar(2.2)) : fra.clone();
-  const vei = (utVei || []).concat([maal]); utVei = null;
-  gaaTil(vei, () => { snuTil = {r: Math.atan2(p.x - robot.position.x, p.z - robot.position.z), ferdig: () => { spill('Yes', false); jobbTimer = setTimeout(nesteJobb, 1000); }}; spill('Idle', true, 0.15); });
+  const fra = utVei && utVei.length ? utVei[utVei.length - 1] : robot.position;
+  const r = u.robotRekt || tingRekt(u), vei = (utVei || []).concat(finnVei(fra, r, u.type === 'aker' ? 0.6 : 1.0) || []); utVei = null;
+  const p = u.gruppe.position;
+  const ferdig = () => { snuTil = {r: Math.atan2(p.x - robot.position.x, p.z - robot.position.z), ferdig: () => { spill('Yes', false); jobbTimer = setTimeout(nesteJobb, 1000); }}; spill('Idle', true, 0.15); };
+  if (vei.length) gaaTil(vei, ferdig); else ferdig();
 }
 
 /* ======================= Nytt nivå ======================= */
@@ -333,29 +384,29 @@ function hostAlt(u0) {
   const t = naa(); let n = 0, xp = 0, nye = [], full = false, varer = {};
   s.akre.forEach((f, i) => { if (L.akerStatus(f, t) !== 'moden') return; const r = L.host(s, i, t);
     if (r.ok) { n++; xp += r.xp; nye.push(...r.nye); varer[r.vare] = (varer[r.vare] || 0) + 2; const u = ting.get(f.id); flyt('+2 ' + ikon(r.vare), midtAv(u, 1.6), n * 60); sprett.push({o: u.gruppe, t: 0}); } else if (r.grunn === 'silo-full') full = true; });
-  if (n) { robotJobb(u0.gruppe.position); gi({xp, nye}, midtAv(u0, 2.2)); }
+  if (n) { robotJobb(u0); gi({xp, nye}, midtAv(u0, 2.2)); }
   if (full) lagerFullt('silo');
   return n;
 }
 function plantPaa(i, avling) {
   const r = L.plant(s, i, avling, naa()); if (!r.ok) return false;
-  const u = ting.get(s.akre[i].id); sprett.push({o: u.gruppe, t: 0}); robotJobb(u.gruppe.position); return true;
+  const u = ting.get(s.akre[i].id); sprett.push({o: u.gruppe, t: 0}); robotJobb(u); return true;
 }
 function mat(u) {
   const r = L.mat(s, 'hone', naa());
-  if (r.ok) { flyt('🍽️ ×' + r.antall, midtAv(u, 3)); robotJobb(u.gruppe.position); hoener.forEach((h, i) => setTimeout(() => { h.userData.hopp = 0.5; visHjerte(h.position.clone().add(new THREE.Vector3(0, 1.8, 0))); }, 300 + i * 200)); gi(null); }
+  if (r.ok) { flyt('🍽️ ×' + r.antall, midtAv(u, 3)); robotJobb(u); hoener.forEach((h, i) => setTimeout(() => { h.userData.hopp = 0.5; visHjerte(h.position.clone().add(new THREE.Vector3(0, 1.8, 0))); }, 300 + i * 200)); gi(null); }
   else if (r.grunn === 'mangler-for') melding('Du har ikke mer hønsefôr. Lag fôr av hvete i fôrkverna. ⚙️');
   return r;
 }
 function samleEgg(u) {
   const r = L.samleDyr(s, 'hone', naa());
-  if (r.ok) { flyt('+' + r.antall + ' 🥚', midtAv(u, 3)); robotJobb(u.gruppe.position); gi(r, midtAv(u, 3)); }
+  if (r.ok) { flyt('+' + r.antall + ' 🥚', midtAv(u, 3)); robotJobb(u); gi(r, midtAv(u, 3)); }
   else if (r.grunn === 'lave-full') lagerFullt('lave');
   return r;
 }
 function hent(b) {
   const u = ting.get(b), r = L.hentProdukter(s, b, naa());
-  if (r.ok) { let k = 0; for (const v in r.varer) flyt('+' + r.varer[v] + ' ' + ikon(v), midtAv(u, 3), 120 * k++); robotJobb(u.gruppe.position); gi(r, midtAv(u, 3)); }
+  if (r.ok) { let k = 0; for (const v in r.varer) flyt('+' + r.varer[v] + ' ' + ikon(v), midtAv(u, 3), 120 * k++); robotJobb(u); gi(r, midtAv(u, 3)); }
   else if (r.grunn === 'lave-full') lagerFullt('lave');
   return r;
 }
@@ -429,8 +480,8 @@ $('handlingInnhold').addEventListener('click', e => {
   if (g === 'egg') { samleEgg(u); tegnPaaNytt(); return; }
   if (g === 'mat') { mat(u); tegnPaaNytt(); return; }
   if (g === 'hent') { hent(u.id); tegnPaaNytt(); return; }
-  if (g === 'lag') { const v = k.dataset.v; const r = L.produser(s, u.id, v, t); if (r.ok) { flyt(ikon(v) + ' ⏳', midtAv(u, 3)); robotJobb(u.gruppe.position); gi(null); } tegnPaaNytt(); return; }
-  if (g === 'kjop') { const r = L.kjopBygg(s, u.id); if (r.ok) { flyt('-' + D.bygg[u.id].pris + ' 🪙', midtAv(u, 3)); lagre(); plasserAlt(); synk(true); robotJobb(ting.get(u.id).gruppe.position); visBygg(ting.get(u.id)); fremOppl(); } return; }
+  if (g === 'lag') { const v = k.dataset.v; const r = L.produser(s, u.id, v, t); if (r.ok) { flyt(ikon(v) + ' ⏳', midtAv(u, 3)); robotJobb(u); gi(null); } tegnPaaNytt(); return; }
+  if (g === 'kjop') { const r = L.kjopBygg(s, u.id); if (r.ok) { flyt('-' + D.bygg[u.id].pris + ' 🪙', midtAv(u, 3)); lagre(); plasserAlt(); synk(true); robotJobb(ting.get(u.id)); visBygg(ting.get(u.id)); fremOppl(); } return; }
   if (g === 'flytt') { startFlytt(u); return; }
   if (g === 'marked') { lukkHandling(); visMarked(); return; }
   if (g === 'lager') { lukkHandling(); visLager(); return; }
@@ -483,7 +534,7 @@ function sluttFlytt(behold) {
   const {u} = flytt;
   if (behold && flytt.ok) { plasser(u, flytt.x, flytt.z, flytt.r);
     if (u.type === 'aker') { const f = s.akre.find(a => a.id === u.id); f.x = u.x; f.z = u.z; } else if (u.type === 'bygg') Object.assign(s.bygg[u.id], {x: u.x, z: u.z, r: u.r}); else if (u.type === 'silo') s.plasser.silo = {x: u.x, z: u.z, r: u.r};
-    lagre(); robotJobb(u.gruppe.position); melding('Flyttet! ✋'); }
+    lagre(); robotJobb(u); melding('Flyttet! ✋'); }
   else plasser(u, flytt.x0, flytt.z0, flytt.r0);
   flytt = null; fotMesh.visible = false; $('flyttLinje').classList.remove('vis');
 }
@@ -640,6 +691,7 @@ document.addEventListener('focusin', e => { if ($('feil').classList.contains('vi
 
 /* ======================= Bygg verden og start løkka ======================= */
 bygg();
+if (innerWidth < innerHeight) { cam.target.set(3.2, 0, -1.2); cam.dist = 74; plasserKamera(); }   /* høykant: hele tunet i bildet */
 lagAkerProto(); finnFasteTing(); finnHinder(); plasserAlt(); lagEgg(); synk(true);
 loop();
-window.__spill = {get s() { return s; }, L, D, ting, erLedig, finnLedigPlass, hinder: () => hinder, synk, lagre, bruk, get startet() { return startet; }, robotJobb, plasserAlt};
+window.__spill = {finnVei, tingRekt, get s() { return s; }, L, D, ting, erLedig, finnLedigPlass, hinder: () => hinder, synk, lagre, bruk, get startet() { return startet; }, robotJobb, plasserAlt};

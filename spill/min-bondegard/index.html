@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.8.0 – EVN Studio</title>
+<title>Min Bondegård 0.8.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -246,7 +246,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.8.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.8.1</div>
   </div>
 </div>
 
@@ -517,7 +517,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.8.0';</script>
+<script>window.MB_VERSJON = '0.8.1';</script>
 <script src="../../vendor/three-r128.min.js"></script>
 <script src="data.js"></script>
 <script src="logikk.js"></script>
@@ -1560,7 +1560,7 @@ const VENT = [
 ];
 let utVei = null, snuTil = null;
 function gaaTil(vei, ferdig) { mal = {vei: vei.slice(), ferdig}; spill('Walking'); }
-function nesteVent() { const v = VENT[ventI++ % VENT.length]; const vei = (utVei || []).concat(v.vei()); utVei = null; gaaTil(vei, () => {
+function nesteVent() { const v = VENT[ventI++ % VENT.length]; const v0 = v.vei(), fra = utVei && utVei.length ? utVei[utVei.length - 1] : robot.position; const vei = (utVei || []).concat(window.ruteTil ? window.ruteTil(fra, v0[0]) : [], v0); utVei = null; /* 0.8.0: rundt bygg og gjerder */ gaaTil(vei, () => {
   const start = () => { spill(v.anim, !v.enGang); ventTimer = v.tid; ventSteg = 2; if (v.hilsRev) hilsRev(); if (v.ut) utVei = v.ut; };
   const r = v.retning !== undefined ? v.retning : v.se ? (s => Math.atan2(s.x - robot.position.x, s.z - robot.position.z))(v.se()) : robot.rotation.y;
   snuTil = {r, ferdig: start}; spill('Idle', true, 0.15);
