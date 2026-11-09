@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.8.5 – EVN Studio</title>
+<title>Min Bondegård 0.8.6 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -146,6 +146,8 @@
   /* Små tekster som flyr opp fra gården */
   .flyt { position:fixed; z-index:9; pointer-events:none; transform:translate(-50%, -50%); font:900 22px 'Nunito',system-ui,sans-serif; color:#fff; text-shadow:0 2px 0 rgba(0,0,0,.45), 0 0 6px rgba(0,0,0,.35); white-space:nowrap; animation:flyt 1.4s ease-out forwards; }
   @keyframes flyt { to { transform:translate(-50%, -160%); opacity:0; } }
+  #draIkon { position:fixed; z-index:30; pointer-events:none; transform:translate(-50%, -60%); font-size:46px; filter:drop-shadow(0 3px 3px rgba(0,0,0,.35)); display:none; }
+  .fro { touch-action:none; cursor:grab; }
   #melding { position:fixed; left:50%; top:calc(68px + env(safe-area-inset-top)); transform:translateX(-50%); z-index:12; background:rgba(31,74,28,.95); color:#fff; padding:10px 16px; border-radius:16px; font:800 16px 'Nunito',system-ui,sans-serif; display:none; max-width:calc(100vw - 20px); text-align:center; }
   #melding.vis { display:block; }
 
@@ -209,6 +211,7 @@
   <a class="rund" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none">🚪</a>
 </div>
 <div id="melding" role="status" aria-live="polite"></div>
+<div id="draIkon" aria-hidden="true"></div>
 <div id="revTips" role="status" aria-live="polite"><span class="rev" aria-hidden="true">🦊</span><span class="tekst" id="revTekst"></span><button class="knapp lys" id="revLukk" type="button" aria-label="Lukk tipset">✕</button></div>
 <div id="handling" role="dialog" aria-labelledby="handlingTittel"><button class="lukk" type="button" id="handlingLukk" aria-label="Lukk">✕</button><h2 id="handlingTittel"></h2><div id="handlingInnhold"></div></div>
 <div id="flyttLinje" role="dialog" aria-label="Flytt"><p id="flyttTekst">Trykk der du vil ha den.</p>
@@ -256,7 +259,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.8.5</div>
+    <div class="evn-ver" id="versjon">Versjon 0.8.6</div>
   </div>
 </div>
 
@@ -527,7 +530,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.8.5'; window.MB_UTEN_BEITE = true; window.MB_UTEN_RUNDBALLER = true;
+<script>window.MB_VERSJON = '0.8.6'; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -1914,7 +1917,7 @@ function lagBeite() {
 /* ======================= Input ======================= */
 let sistHjul = 0; const pek = new Map(); let dra = null, flyttet = 0, knip0 = 0, dist0 = 0; const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 const el = renderer.domElement;
-el.addEventListener('pointerdown', e => { el.setPointerCapture(e.pointerId); pek.set(e.pointerId, {x: e.clientX, y: e.clientY}); flyttet = 0; if (pek.size === 1) dra = {x: e.clientX, y: e.clientY, t: cam.target.clone()}; if (pek.size === 2) { const [a, b] = [...pek.values()]; knip0 = Math.hypot(a.x - b.x, a.y - b.y); dist0 = cam.dist; } });
+el.addEventListener('pointerdown', e => { el.setPointerCapture(e.pointerId); pek.set(e.pointerId, {x: e.clientX, y: e.clientY}); flyttet = 0; if (pek.size === 1 && window.spillDraStart && window.spillDraStart(e.clientX, e.clientY)) return; /* 0.8.6: dra over åkre for å høste */ if (pek.size === 1) dra = {x: e.clientX, y: e.clientY, t: cam.target.clone()}; if (pek.size === 2) { const [a, b] = [...pek.values()]; knip0 = Math.hypot(a.x - b.x, a.y - b.y); dist0 = cam.dist; } });
 el.addEventListener('pointermove', e => { if (!pek.has(e.pointerId)) return; pek.set(e.pointerId, {x: e.clientX, y: e.clientY});
   if (pek.size === 2) { const [a, b] = [...pek.values()]; cam.dist = THREE.MathUtils.clamp(dist0 * knip0 / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), 18, 95); flyttet = 99; plasserKamera(); return; }
   if (dra && window.spillDra && window.spillDra(e.clientX, e.clientY)) { flyttet = 99; return; } /* 0.8.4: dra ting som flyttes, ikke kameraet */

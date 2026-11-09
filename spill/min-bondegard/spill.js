@@ -185,7 +185,7 @@ const ting = new Map();
 const FOT = {forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], silo: [3.0, 3.0]};
 const STANDARD = {
   akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45]],
-  forkvern: [1.0, -9.7], bakeri: [0.7, -5.4], silo: [-13.6, -1.75]   /* ved låven, der rundballene sto (Ivar 9.11) */
+  forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], silo: [1.0, -9.7]   /* siloen der fôrkverna sto, ved låven og hønsehuset (Ivar 10.11) */
 };
 const GARD = {x0: -15.55, x1: 13.6, z0: -11.55, z1: 10.2};
 let hinder = [];   // faste hindringer: [x0, x1, z0, z1]
@@ -221,6 +221,8 @@ function plasserAlt() {
     if (f.x === null) { const [sx, sz] = STANDARD.akre[i] || [0, 0]; const p = finnLedigPlass(t, sx, sz) || [sx, sz]; f.x = p[0]; f.z = p[1]; }
     plasser(t, f.x, f.z, 0);
   });
+  const GML = {forkvern: [1.0, -9.7], bakeri: [0.7, -5.4]};   /* bygg som står på gammel standardplass (0.8.0–0.8.6), får ny */
+  for (const b in GML) { const sb = s.bygg[b]; if (sb && sb.x === GML[b][0] && sb.z === GML[b][1] && !ting.has(b)) { sb.x = null; sb.z = null; } }
   for (const b of I_SPILLET.bygg) { const sb = s.bygg[b]; if (!sb) continue; let t = ting.get(b);
     const modell = sb.eid ? 'bygd' : 'plass';
     if (t && t.modell !== modell) { scene.remove(t.gruppe); const i = klikkbare.indexOf(t.gruppe); if (i >= 0) klikkbare.splice(i, 1); ting.delete(b); t = null; }
@@ -230,7 +232,7 @@ function plasserAlt() {
     plasser(t, sb.x, sb.z, sb.r);
   }
   let si = ting.get('silo'); if (!si) { const g = lagSilo(); scene.add(g); eierAv(g); klikkbar(g); si = {type: 'silo', id: 'silo', gruppe: g, fot: FOT.silo, hoyde: 6.6}; si.ikon = lagIkon(si.hoyde); g.add(si.ikon); ting.set('silo', si); }
-  if (s.plasser.silo && s.plasser.silo.x === 11.95 && s.plasser.silo.z === -2.4) delete s.plasser.silo;   /* gammel standardplass (0.8.0–0.8.2) flyttes til låven */
+  if (s.plasser.silo && ((s.plasser.silo.x === 11.95 && s.plasser.silo.z === -2.4) || (s.plasser.silo.x === -13.6 && s.plasser.silo.z === -1.75))) delete s.plasser.silo;   /* gamle standardplasser flyttes til ny */
   const ps = s.plasser.silo || (() => { const p = finnLedigPlass(si, ...STANDARD.silo) || STANDARD.silo; return (s.plasser.silo = {x: p[0], z: p[1], r: 0}); })();
   plasser(si, ps.x, ps.z, ps.r);
 }
@@ -416,6 +418,59 @@ function hent(b) {
   return r;
 }
 
+/* ======================= Dra over åkrene (Even 10.11, etter bilder fra Hay Day) ======================= */
+// Plante: dra frøet fra handlingskortet over tomme åkre. Høste: trykk på en moden åker og dra over de andre.
+// Et vanlig trykk på en moden åker høster alt som er modent, som før.
+let draModus = null, undertrykkTrykk = false;
+const _draRay = new THREE.Raycaster(), _draNdc = new THREE.Vector2(), _bakke = new THREE.Vector3();
+function akerVed(x, y) {
+  _draNdc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); _draRay.setFromCamera(_draNdc, camera);
+  if (!_draRay.ray.intersectPlane(bakkePlan, _bakke)) return -1;
+  return s.akre.findIndex(f => { const u = ting.get(f.id); if (!u) return false; const r = fotRekt(u, u.x, u.z, 0); return _bakke.x > r[0] && _bakke.x < r[1] && _bakke.z > r[2] && _bakke.z < r[3]; });
+}
+function draIkon(tegn, x, y) { const d = $('draIkon'); if (!tegn) { d.style.display = 'none'; return; } d.textContent = tegn; d.style.display = 'block'; d.style.left = x + 'px'; d.style.top = y + 'px'; }
+function draOver(x, y) {
+  const m = draModus; if (!m) return; draIkon(m.ikon, x, y);
+  const i = akerVed(x, y); if (i < 0 || m.ferdige.has(i)) return;
+  if (m.type === 'host' && i === m.start && !m.flyttet) return;
+  if (!m.flyttet && m.type === 'plant') lukkHandling();   /* kortet skal ikke dekke åkrene */
+  if (!m.flyttet && m.type === 'host') { m.flyttet = true; draHost(m, m.start); }   /* den første åkeren høstes også */
+  m.flyttet = true; m.ferdige.add(i);
+  const f = s.akre[i], u = ting.get(f.id);
+  if (m.type === 'plant') { if (!f.avling && plantPaa(i, m.avling)) { m.n++; flyt(ikon(m.avling), midtAv(u, 1.4)); } }
+  else draHost(m, i);
+  synk();
+}
+function draHost(m, i) {
+  m.ferdige.add(i); const f = s.akre[i], u = ting.get(f.id), t = naa();
+  if (L.akerStatus(f, t) === 'moden') { const r = L.host(s, i, t);
+    if (r.ok) { m.n++; m.xp += r.xp; m.nye.push(...r.nye); flyt('+2 ' + ikon(r.vare), midtAv(u, 1.6)); sprett.push({o: u.gruppe, t: 0}); if (m.n === 1) robotJobb(u); }
+    else if (r.grunn === 'silo-full') m.full = true; }
+}
+function sluttDra() {
+  const m = draModus; if (!m) return; draModus = null; draIkon(null);
+  if (!m.flyttet) { if (m.type === 'host') hostAlt(ting.get(s.akre[m.start].id)); return; }    // vanlig trykk: høst alt, eller «Plant» på knappen
+  undertrykkTrykk = true; setTimeout(() => { undertrykkTrykk = false; }, 50);
+  if (m.n) gi(m.type === 'host' ? {xp: m.xp, nye: m.nye} : null, m.n ? midtAv(ting.get(s.akre[[...m.ferdige][0]].id), 2.2) : null);
+  if (m.full) lagerFullt('silo');
+}
+addEventListener('pointermove', e => { if (draModus) { e.preventDefault(); draOver(e.clientX, e.clientY); } }, {passive: false});
+addEventListener('pointerup', sluttDra); addEventListener('pointercancel', sluttDra);
+window.spillDraStart = (x, y) => {
+  if (!startet || pauset || flytt || dialogApen()) return false;
+  const i = akerVed(x, y); if (i < 0 || L.akerStatus(s.akre[i], naa()) !== 'moden') return false;
+  draModus = {type: 'host', ikon: '🧺', start: i, ferdige: new Set(), flyttet: false, n: 0, xp: 0, nye: []};
+  return true;
+};
+// Frøet i handlingskortet kan dras ut på åkrene
+$('handlingInnhold').addEventListener('pointerdown', e => {
+  const k = e.target.closest('.fro'); if (!k || k.disabled) return; e.preventDefault();
+  try { k.releasePointerCapture(e.pointerId); } catch (er) {}
+  draModus = {type: 'plant', avling: k.dataset.a, ikon: ikon(k.dataset.a), ferdige: new Set(), flyttet: false, n: 0};
+  draIkon(draModus.ikon, e.clientX, e.clientY);
+});
+// Slippes frøet på selve knappen uten å ha vært ute på gården, er det et vanlig trykk på «Plant»
+
 /* ======================= Handlingskortet (UI4) ======================= */
 let aktivTing = null, tegnInnhold = null;
 function aapneHandling(u, tittel, tegn) {
@@ -439,10 +494,10 @@ function visAker(u) {
       : `<p>${f.avling ? 'Moden! 🎉' : 'Høstet.'}</p><div class="knapper">${f.avling ? '<button class="knapp gronn" data-g="host">Høst</button>' : ''}<button class="knapp lys" data-g="flytt">✋ Flytt åkeren</button></div>`); return; }
   aapneHandling(u, '🟫 Tom åker', () => {
     const tomme = s.akre.filter(a => !a.avling).length;
-    return '<p>Hva vil du plante? Du planter 1 og høster 2.</p>' + I_SPILLET.avlinger.map(a => { const A = D.avlinger[a];
+    return '<p>Hva vil du plante? Du planter 1 og høster 2.<br><small>✋ Tips: dra «Plant» ut over de tomme åkrene.</small></p>' + I_SPILLET.avlinger.map(a => { const A = D.avlinger[a];
       if (A.nivaa > s.nivaa) return `<div class="rad"><span class="stort">${A.ikon}</span><span class="midt">${A.navn}<small>Låses opp på nivå ${A.nivaa}</small></span><button class="knapp" disabled>🔒</button></div>`;
       const har = s.lager[a] || 0;
-      return `<div class="rad"><span class="stort">${A.ikon}</span><span class="midt">${A.navn}<small>${fmtTid(A.tid * 1000)} · +${A.xp} XP · du har ${har}${har ? '' : ' (gratis frø)'}</small></span><button class="knapp gronn" data-g="plant" data-a="${a}">Plant</button>${tomme > 1 ? `<button class="knapp lys" data-g="plantAlle" data-a="${a}" title="Plant på alle tomme åkre">Alle (${tomme})</button>` : ''}</div>`; }).join('') +
+      return `<div class="rad"><span class="stort">${A.ikon}</span><span class="midt">${A.navn}<small>${fmtTid(A.tid * 1000)} · +${A.xp} XP · du har ${har}${har ? '' : ' (gratis frø)'}</small></span><button class="knapp gronn fro" data-g="plant" data-a="${a}" title="Trykk, eller dra frøet over åkrene">${A.ikon} Plant</button>${tomme > 1 ? `<button class="knapp lys" data-g="plantAlle" data-a="${a}" title="Plant på alle tomme åkre">Alle (${tomme})</button>` : ''}</div>`; }).join('') +
       '<div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt åkeren</button></div>';
   });
 }
@@ -478,6 +533,7 @@ function visBygg(u) {
 }
 $('handlingInnhold').addEventListener('click', e => {
   const k = e.target.closest('button'); if (!k || k.disabled) return; const g = k.dataset.g, u = aktivTing; const t = naa();
+  if ((g === 'plant') && undertrykkTrykk) return;
   if (g === 'plant' || g === 'plantAlle') { const a = k.dataset.a; const i = s.akre.findIndex(f => f.id === u.id);
     let n = plantPaa(i, a) ? 1 : 0; if (g === 'plantAlle') s.akre.forEach((f, j) => { if (!f.avling && plantPaa(j, a)) n++; });
     if (n) { flyt(ikon(a) + (n > 1 ? ' ×' + n : ''), midtAv(u, 1.5)); lukkHandling(); gi(null); } else melding('Du har ikke frø til ' + navn(a).toLowerCase() + '.'); return; }
@@ -625,7 +681,7 @@ function bruk(u) {
   else if (u.type === 'marked') { visMarked(); fremOppl('marked'); }
 }
 window.spillTrykk = (o, t, ray) => {
-  if (!startet) return true;
+  if (!startet || undertrykkTrykk || draModus) return true;   /* et drag håndteres i sluttDra */
   if (flytt) { flyttTil(ray); return true; }
   if (o === rev) { hilsRev(false); visOppl(true); return true; }
   const u = tingFor(o);

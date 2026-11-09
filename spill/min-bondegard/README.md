@@ -33,6 +33,9 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 
 ## Versjoner
 
+- **0.8.6** (ikke publisert):
+  - Dra for å plante og høste (Even 10.11). Dra «Plant» fra handlingskortet ut over tomme åkre, eller trykk på en moden åker og dra over de andre. Et vanlig trykk høster fortsatt alt som er modent.
+  - Ny plassering (Ivar 10.11): siloen står der fôrkverna sto, mellom låven og hønsehuset. Fôrkverna står foran låven, og bakeriet står på den åpne plassen ved markedsbua. Rundballene ved låven er tilbake. Bygg på gammel standardplass flyttes til den nye.
 - **0.8.5** (ikke publisert): Rettinger etter EVN Game QA av 0.8.3 (`qa/rapporter/2026-11-09-min-bondegard-f385c5f.md`):
   - T2: pausen lukker åpne kort og dialoger før den åpner, og Esc rører ikke det som ligger under pausen.
   - Robotens ventetur går rundt hindringer på hver strekning, også veien ut fra benken. Turer til steder der spilleren har satt et bygg, hoppes over.
