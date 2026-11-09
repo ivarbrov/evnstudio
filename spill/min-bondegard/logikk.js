@@ -204,6 +204,11 @@
     if (r.plasser && typeof r.plasser === 'object') for (var p in r.plasser) { var q = r.plasser[p]; if (q && typeof q.x === 'number' && typeof q.z === 'number' && isFinite(q.x) && isFinite(q.z)) s.plasser[p] = { x: q.x, z: q.z, r: tall(q.r, 0) }; }
     if (r.oppl && typeof r.oppl === 'object') s.oppl.steg = Math.max(0, Math.floor(tall(r.oppl.steg, 0)));
     if (r.stat && typeof r.stat === 'object') for (var st in s.stat) s.stat[st] = Math.max(0, Math.floor(tall(r.stat[st], 0)));
+    ['silo', 'lave'].forEach(function (type) {   // mer enn plassen i lageret kuttes (QA 9.11)
+      var over = bruk(s, type) - kapasitet(s, type);
+      Object.keys(s.lager).sort(function (a, b) { return s.lager[b] - s.lager[a]; }).forEach(function (v) {
+        if (over <= 0 || lagerType(v) !== type) return; var n = Math.min(over, s.lager[v]); s.lager[v] -= n; over -= n; if (!s.lager[v]) delete s.lager[v]; });
+    });
     normaliserTid(s, naa);
     return s;
   }

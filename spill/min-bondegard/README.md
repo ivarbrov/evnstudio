@@ -33,6 +33,13 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 
 ## Versjoner
 
+- **0.8.5** (ikke publisert): Rettinger etter EVN Game QA av 0.8.3 (`qa/rapporter/2026-11-09-min-bondegard-f385c5f.md`):
+  - T2: pausen lukker åpne kort og dialoger før den åpner, og Esc rører ikke det som ligger under pausen.
+  - Robotens ventetur går rundt hindringer på hver strekning, også veien ut fra benken. Turer til steder der spilleren har satt et bygg, hoppes over.
+  - Lageret kuttes til plassen i silo og låve ved innlasting.
+  - De to siste uleselige lagringene tas vare på (`-kopi` og `-kopi2`).
+  - Feilkortet sier ikke lenger at gården er lagret før noe er lagret.
+  - Revetipset ligger under HUD på 320 px.
 - **0.8.4** (ikke publisert): Ting som flyttes, kan dras med finger eller mus. Før flyttet dra-bevegelsen kameraet, og bare trykk flyttet tingen (Even 9.11).
 - **0.8.3** (ikke publisert): Rettinger etter EVN Game QA av 0.8.0 (`qa/rapporter/2026-11-09-min-bondegard-d582ecd.md`):
   - F3: ødelagt lagring tas alltid vare på i kopien.

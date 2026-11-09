@@ -26,7 +26,7 @@ function lesLagring() {
   let obj = null; try { obj = JSON.parse(raw); } catch (e) {}
   const v = L.valider(obj, naa());
   if (v) return {s: v, ny: false, sist: obj && typeof obj.sist === 'number' ? obj.sist : v.sist};
-  try { localStorage.setItem(LAGRING + '-kopi', raw); } catch (e) {}   // ødelagt eller for ny lagring tas vare på, også når det finnes en eldre kopi (QA 9.11, F3)
+  try { const gml = localStorage.getItem(LAGRING + '-kopi'); if (gml !== null && gml !== raw) localStorage.setItem(LAGRING + '-kopi2', gml); localStorage.setItem(LAGRING + '-kopi', raw); } catch (e) {}   /* to siste uleselige lagringer tas vare på (QA 9.11) */   // ødelagt eller for ny lagring tas vare på, også når det finnes en eldre kopi (QA 9.11, F3)
   return {s: L.ny(naa()), ny: true, reddet: true};
 }
 function lagre() {
@@ -193,9 +193,10 @@ function finnHinder() {
   hinder = [];
   const b = new THREE.Box3();
   scene.children.forEach(o => { if (!['laave', 'honsehus', 'dyr', 'markedsbod'].includes(o.userData.kat) || o.userData.art2 || o.isInstancedMesh || o.isSprite) return;
-    b.setFromObject(o); if (b.isEmpty() || b.max.x - b.min.x > 20) return; hinder.push([b.min.x, b.max.x, b.min.z, b.max.z]); });
+    b.setFromObject(o); if (b.isEmpty() || b.max.x - b.min.x > 20) return; const benk = b.min.x < -3.2 && b.max.x > -3.2 && b.min.z < 6.6 && b.max.z > 6.6;   /* roboten setter seg på benken */
+    hinder.push(benk ? [b.min.x, b.max.x, b.min.z, b.max.z, 'vei'] : [b.min.x, b.max.x, b.min.z, b.max.z]); });
   // gårdsveien, benken og småting fra testscenen
-  hinder.push([-6.95, -4.05, -1.5, 12, 'vei'], [-4.35, -2.05, 6.0, 7.3], [-5.1, -4.4, 6.4, 7.1], [3.0, 3.8, -6.8, -6.0], [-2.0, -0.6, -3.9, -2.5], [-2.7, -2.1, -2.3, -1.6], [-9.9, -8.9, 6.4, 7.4], [-9.3, -8.1, 8.4, 9.4], [-13.0, -8.0, 8.7, 10.2]);
+  hinder.push([-6.95, -4.05, -1.5, 12, 'vei'], [-4.35, -2.05, 6.0, 7.3, 'vei'], [-5.1, -4.4, 6.4, 7.1], [3.0, 3.8, -6.8, -6.0], [-2.0, -0.6, -3.9, -2.5], [-2.7, -2.1, -2.3, -1.6], [-9.9, -8.9, 6.4, 7.4], [-9.3, -8.1, 8.4, 9.4], [-13.0, -8.0, 8.7, 10.2]);
 }
 function fotRekt(t, x, z, r) { const [w, d] = t.fot; const [a, b] = (r || 0) % 2 ? [d, w] : [w, d]; return [x - a / 2, x + a / 2, z - b / 2, z + b / 2]; }
 const overlapp = (p, q) => p[0] < q[1] - 0.02 && p[1] > q[0] + 0.02 && p[2] < q[3] - 0.02 && p[3] > q[2] + 0.02;
@@ -332,6 +333,8 @@ function finnVei(fra, maal, naer) {   // maal: [x0, x1, z0, z1]. Ferdig når rob
   return ut;
 }
 // Brukes også av testscenens ventetur (benken, beitet osv.), så roboten aldri går gjennom gjerder på vei dit
+window.punktFritt = p => { const rekt = hinder.filter(h => h[4] !== 'vei'); for (const u of ting.values()) if (u.fot && u.plassert && u.type !== 'aker') rekt.push(fotRekt(u, u.x, u.z, u.r));
+  return !rekt.some(h => p.x > h[0] - ROBOT_R && p.x < h[1] + ROBOT_R && p.z > h[2] - ROBOT_R && p.z < h[3] + ROBOT_R); };
 window.ruteTil = (fra, p) => finnVei(fra, [p.x, p.x, p.z, p.z], 0.5) || [];
 const jobber = []; let jobbTimer = 0;
 function robotJobb(u) { if (!robot || !u) return; jobber.push(u); while (jobber.length > 5) jobber.shift(); if (modus !== 'jobb') nesteJobb(); }
@@ -341,8 +344,9 @@ function nesteJobb() {
   const u = jobber.shift();
   if (!u) { if (modus === 'jobb') { modus = 'vent'; ventTimer = 2.5; ventSteg = 0; spill('Idle'); } return; }
   modus = 'jobb'; snuTil = null; robot.position.y = 0;
-  const fra = utVei && utVei.length ? utVei[utVei.length - 1] : robot.position;
-  const r = u.robotRekt || tingRekt(u), vei = (utVei || []).concat(finnVei(fra, r, u.type === 'aker' ? 0.6 : 1.0) || []); utVei = null;
+  let fra = robot.position; const vei = [];
+  (utVei || []).forEach(q => { vei.push(...window.ruteTil(fra, q), q); fra = q; }); utVei = null;   /* også veien ut fra benken går rundt hindringer */
+  const r = u.robotRekt || tingRekt(u); vei.push(...(finnVei(fra, r, u.type === 'aker' ? 0.6 : 1.0) || []));
   const p = u.gruppe.position;
   const ferdig = () => { snuTil = {r: Math.atan2(p.x - robot.position.x, p.z - robot.position.z), ferdig: () => { spill('Yes', false); jobbTimer = setTimeout(nesteJobb, 1000); }}; spill('Idle', true, 0.15); };
   if (vei.length) gaaTil(vei, ferdig); else ferdig();
@@ -716,7 +720,7 @@ $('startBtn').addEventListener('click', () => {
 
 /* ======================= Felles pause, nullstilling og feilkort ======================= */
 addEventListener('keydown', e => {
-  if (e.key !== 'Escape' || !startet) return;
+  if (e.key !== 'Escape' || !startet || $('evnPause').classList.contains('vis')) return;
   const d = dialoger.find(id => $(id).classList.contains('vis'));
   if (d) { e.preventDefault(); e.stopImmediatePropagation(); lukkDialog(d); return; }
   if (flytt) { e.preventDefault(); e.stopImmediatePropagation(); sluttFlytt(false); return; }
@@ -730,7 +734,7 @@ window.__evnP = EVNPause({
   kanPause: () => startet && !$('feil').classList.contains('vis'),
   // Aktiv spilletid (ST2): ikke i pause, ikke med lageret eller markedsbua åpen, ikke før spillet er startet
   aktiv: () => startet && !pauset && !dialogApen(),
-  pause: () => { pauset = true; lagre(); if (flytt) sluttFlytt(false); },
+  pause: () => { pauset = true; lagre(); if (flytt) sluttFlytt(false); dialoger.forEach(id => { if ($(id).classList.contains('vis')) { $(id).classList.remove('vis'); if (window.EVNPauseInert) EVNPauseInert(null); } }); lukkHandling(); },   /* QA 9.11 (T2): pausen legger seg ikke over en åpen dialog */
   fortsett: () => { pauset = false; L.normaliserTid(s, naa()); synk(true); },
   lagre,
   styring: () => document.documentElement.classList.contains('touch')
@@ -738,7 +742,7 @@ window.__evnP = EVNPause({
     : '🖱️ Klikk på en åker, et dyr eller et hus<br>Dra for å flytte deg, rull for å zoome<br>⬅️➡️ Velg ting · Enter: bruk<br>B: bygg · L: lageret · P eller Esc: pause<br>🦊 Klikk på Nysgjerrig for et tips'
 });
 EVNNullstill({
-  nokler: [LAGRING, LAGRING + '-kopi'],
+  nokler: [LAGRING, LAGRING + '-kopi', LAGRING + '-kopi2'],
   tema: {panel: '#2f6b2a', ink: '#fff', hi: '#ffd23f', btn: '#ffd23f', btnInk: '#3b2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400},
   tekst: 'Hele gården, myntene, nivået og alt i lageret blir borte.',
   harLagring: () => !forste.ny || s.nivaa > 1 || s.stat.hostet > 0,
