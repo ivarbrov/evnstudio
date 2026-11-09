@@ -305,3 +305,8 @@ Donutku, Burgersau, Pizzaskilpadde, Shakeand og Spagettipingvin er rettet i `ble
 - **Leveringsfeltet er flyttet nærmere basen.** Det ligger nå rett utenfor porten i gårdsgjerdet, fra gjerdet og 3,3 m ut. På gårdsnivå 2 og høyere er passasjen kortere, og der er feltet ca. 1,6 m.
 - **Bestillingsgaranti (G2, testverdi).** Har 6 matdyr i rad falt uten ett som neste gårdsnivå fortsatt trenger, blir det neste et slikt (riktig art og minst riktig sjeldenhet). Garantien slås av og på med 🧪 «🎯 Garanti». Den lagres ikke, og prisene er uendret.
   Målt på gårdsnivå 1 over 10 min: kuer gikk fra 13 til 22. Lengste opphold mellom kuer gikk fra 161 s til 57 s.
+- **«Rare-kuene teller ikke» (22.36):** De teller. Gårdsnivå-vinduet velger med vilje ikke sjeldnere matdyr automatisk, så ingen sjeldne leveres ved et uhell. Derfor sto det 0/2. Vinduet sier nå tydelig fra:
+  - «👆 Du har 2 som passer (sjeldnere enn nødvendig, derfor ikke valgt for deg). Trykk på dem for å levere.»
+  - Matdyr som er sjeldnere enn kravet, merkes med ⭐.
+  - Telleren viser «0/2 valgt».
+  Regelen om ikke å velge automatisk er beholdt.

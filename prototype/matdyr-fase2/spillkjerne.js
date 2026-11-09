@@ -591,9 +591,12 @@
     let h = '<h2>🏡 Gårdsnivå ' + n + ' → ' + (n + 1) + '</h2><p class="liten">Du får: ' + esc(I.NIVA[n + 1].nytt) + '. Plass-taket blir ' + k.tak + (k.tak > tak(S) ? ' (i dag ' + tak(S) + ')' : '') + '.</p><p class="liten">Lever inn disse matdyrene fra gården. Trykk for å bytte.</p>';
     k.krav.forEach((kr, j) => {
       const kand = passer(kr), v = valg[j], ok = v.length === kr[1];
-      h += '<div class="krav' + (ok ? ' ok' : '') + '"><div class="kravtopp"><span>' + (ok ? '✅' : '⬜') + ' ' + esc(kravTekst(kr)) + '</span><span>' + v.length + '/' + kr[1] + '</span></div><div class="brikker">';
+      h += '<div class="krav' + (ok ? ' ok' : '') + '"><div class="kravtopp"><span>' + (ok ? '✅' : '⬜') + ' ' + esc(kravTekst(kr)) + '</span><span>' + v.length + '/' + kr[1] + ' valgt</span></div><div class="brikker">';
       if (!kand.length) h += '<span class="liten">Ingen i gården ennå. Se etter dem i regnet.</span>';
-      kand.forEach(i => { const ci = S.base[i], annen = valg.some((vv, jj) => jj !== j && vv.includes(i)); h += '<button type="button" class="brikke" data-j="' + j + '" data-i="' + i + '" aria-pressed="' + v.includes(i) + '"' + (annen ? ' disabled title="Valgt til et annet krav"' : '') + '>' + esc(navn(ci)) + ' <span class="sjb" style="background:' + R[COMBOS[ci].r].c + '">' + R[COMBOS[ci].r].n + '</span> · ' + esc(I.etasjeNavn(plassPos(i).y).replace(' (bakken)', '')) + '</button>'; });
+      // Sjeldnere matdyr enn kravet teller, men velges ikke automatisk (så ingen sjeldne leveres ved et uhell). Si det tydelig.
+      const ledigeKand = kand.filter(i => !v.includes(i) && !valg.some((vv, jj) => jj !== j && vv.includes(i)));
+      if (!ok && ledigeKand.length) h += '<p class="hint">👆 Du har ' + ledigeKand.length + ' som passer' + (ledigeKand.some(i => COMBOS[S.base[i]].r > kr[2]) ? ' (sjeldnere enn nødvendig, derfor ikke valgt for deg)' : '') + '. Trykk på ' + (ledigeKand.length > 1 ? 'dem' : 'den') + ' for å levere.</p>';
+      kand.forEach(i => { const ci = S.base[i], annen = valg.some((vv, jj) => jj !== j && vv.includes(i)); h += '<button type="button" class="brikke" data-j="' + j + '" data-i="' + i + '" aria-pressed="' + v.includes(i) + '"' + (annen ? ' disabled title="Valgt til et annet krav"' : '') + '>' + esc(navn(ci)) + ' <span class="sjb" style="background:' + R[COMBOS[ci].r].c + '">' + R[COMBOS[ci].r].n + '</span>' + (COMBOS[ci].r > kr[2] ? ' ⭐' : '') + ' · ' + esc(I.etasjeNavn(plassPos(i).y).replace(' (bakken)', '')) + '</button>'; });
       h += '</div></div>';
     });
     const pengerOk = S.penger >= k.penger;
