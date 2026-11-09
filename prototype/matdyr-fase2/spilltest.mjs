@@ -118,12 +118,37 @@ const h = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-prot
   // full gård: ta med et matdyr først, fyll så gården mens det bæres. Feltet skal ikke levere, og matdyret bæres videre.
   R.position.set(0, 0.45, 30); P.slippNed(508, [1, 30]); st(3); P.gjorHandling(); ut.fullFikkBaere = !!P.bar();
   for (let i = 0; i < P.S().base.length; i++) if (P.S().base[i] === -1) P.S().base[i] = 508;
-  R.position.set(2.0, 0.45, (o.z0 + o.z1) / 2); st(30); ut.fullBaerer = !!P.bar();
+  R.position.set(2.0, 0.45, (o.z0 + o.z1) / 2); st(30); ut.fullBaerer = !!P.bar() && P.S().base.every(c => c === 508);
+  ut.fullSpor = !document.getElementById('dialog').hidden; if (document.getElementById('dNei')) document.getElementById('dNei').click(); st(2);
   // står allerede på feltet når matdyret tas med: leveres likevel uten å gå av og på
   P.sett({ v: 1, penger: 1e6, gard: { niva: 6 }, plassNiva: 8, base: [], disc: [] }); st(2); const R3 = I.robot(), mz = (o.z0 + o.z1) / 2;
   R3.position.set(0, 0.45, mz); st(5); P.slippNed(508, [1.2, mz]); st(3); P.gjorHandling(); st(90); ut.staarPaaFeltet = P.S().base[0] === 508 && !P.bar();
   return ut; })()
 `);
-ok('leveringsfeltet setter inn på første ledige plass uten trykk (' + JSON.stringify(h) + ')', h.bar && h.levert && h.lagret && h.fullFikkBaere && h.fullBaerer && h.staarPaaFeltet);
+ok('leveringsfeltet setter inn på første ledige plass uten trykk (' + JSON.stringify(h) + ')', h.bar && h.levert && h.lagret && h.fullFikkBaere && h.fullBaerer && h.fullSpor && h.staarPaaFeltet);
+// Full gård: et bedre matdyr kan tas med og byttes med det svakeste etter spørsmål; et dårligere kan ikke tas med.
+const byt = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-proto'); EVNVis({ fane: 'spill' }); await new Promise(r => setTimeout(r, 200));
+  const I = EVNIntern, P = EVNProto, ut = {}, st = n => { for (let i = 0; i < n; i++) { EVNSteg(1 / 30); I.krok.steg(1 / 30, i / 30); } };
+  P.sett({ v: 1, penger: 1e9, gard: { niva: 1 }, plassNiva: 0, base: [], disc: [] }); st(2);
+  const n = P.S().base.length, inc = ci => P.INC(ci), alle = [...Array(160).keys()].sort((a, c) => inc(a) - inc(c));
+  const svak = alle[0], sterk = alle[159], midt = alle[80];
+  const fyll = P.S().base.map((_, i) => i === 0 ? svak : midt); P.sett({ ...P.S(), base: fyll }); st(2); const R = I.robot(), o = P.levOmr();
+  // dårligere enn det svakeste: kan ikke tas med
+  R.position.set(0, 0.45, 30); P.slippNed(svak, [1, 30]); st(3); P.gjorHandling(); ut.svakAvvist = !P.bar();
+  P.felt().slice().forEach(a => a.g.position.x = 999); st(1);
+  // bedre: tas med, feltet åpner spørsmålet, «Bytt med svakeste»
+  R.position.set(0, 0.45, 30); P.slippNed(sterk, [1, 30]); st(3); P.gjorHandling(); ut.sterkTatt = !!P.bar();
+  const p0 = P.S().penger; R.position.set(0, 0.45, (o.z0 + o.z1) / 2); st(3); ut.dialog = !document.getElementById('dialog').hidden && !!document.getElementById('dJa');
+  document.getElementById('dJa').click(); st(90);
+  ut.byttet = P.S().base[0] === sterk && !P.bar(); ut.netto = Math.round(P.S().penger - p0); ut.forventet = Math.floor(P.PRICE(svak) / 2) - P.PRICE(sterk);
+  ut.andreUrort = P.S().base.slice(1).every(c => c === midt);
+  // «Velg en annen»: 🔁 over alle opptatte plasser, trykk på én bytter akkurat den
+  R.position.set(0, 0.45, 30); P.slippNed(sterk, [1, 30]); st(3); P.gjorHandling(); R.position.set(0, 0.45, 18); st(3);
+  P.apneBytte(); document.getElementById('dVelg').click(); st(3); ut.byttMerker = P.merker().length === n;
+  P.byttMed(3); st(90); ut.valgtByttet = P.S().base[3] === sterk && P.S().base[0] === sterk && P.S().base.filter(c => c === midt).length === n - 2;
+  ut.lagret = JSON.parse(localStorage.getItem(P.NOKKEL)).base[3] === sterk;
+  return ut; })()
+`);
+ok('full gård: bytte med svakeste etter spørsmål, aldri automatisk (' + JSON.stringify(byt) + ')', byt.svakAvvist && byt.sterkTatt && byt.dialog && byt.byttet && Math.abs(byt.netto - byt.forventet) < Math.abs(byt.forventet) * 0.02 && byt.andreUrort && byt.byttMerker && byt.valgtByttet && byt.lagret);
 console.log(feil.length ? feil : 'ingen feil i konsollen'); if (feil.length) process.exitCode = 1;
 ws.close(); p.kill();

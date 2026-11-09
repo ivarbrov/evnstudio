@@ -328,18 +328,29 @@
     return best;
   }
   const harLedig = () => S.base.slice(0, aapneNa).includes(-1);
+  // Bytte når gården er full (som i Matdyr-regn 0.10.3): et matdyr kan tas med hvis det tjener mer enn det svakeste i gården.
+  // Ved levering spør spillet alltid først. Det gamle selges for halv pris. Ingenting byttes automatisk.
+  function svakeste() { let w = -1; for (let i = 0; i < Math.min(aapneNa, S.base.length); i++) { const ci = S.base[i]; if (ci >= 0 && (w < 0 || INC(ci) < INC(S.base[w]))) w = i; } return w; }
+  const harPlass = ci => harLedig() || (svakeste() >= 0 && INC(ci) > INC(S.base[svakeste()]));
   function finnHandling() {
     const p = I.robot().position;
-    if (bar) { if (bar.flyr) return null; const i = naerPlass(p, true); if (i >= 0) return { t: 'sett', i }; if (iBasen()) { const f = forsteLedige(); return f >= 0 ? { t: 'forste', i: f } : { t: 'slipp' }; } return { t: 'slipp' }; }
+    if (bar) {
+      if (bar.flyr) return null; const i = naerPlass(p, true); if (i >= 0) return { t: 'sett', i };
+      if (bar.velgBytt) { const j = naerPlass(p, false, 2.6); if (j >= 0) return { t: 'bytt', i: j }; }
+      if (iBasen()) { const f = forsteLedige(); if (f >= 0) return { t: 'forste', i: f }; if (svakeste() >= 0) return { t: 'bytteValg' }; }
+      return { t: 'slipp' };
+    }
     let best = null, bd = 3.2; for (const a of felt) { if (a.tilstand !== 'gaa' || p.y > 1) continue; const d = Math.hypot(a.g.position.x - p.x, a.g.position.z - p.z); if (d < bd) { bd = d; best = a; } }
     if (best) return { t: 'ta', a: best };
     const i = naerPlass(p, false, 1.8); return i >= 0 ? { t: 'selg', i } : null;
   }
   function visHandling() {
     const b = $('handling'), h = handling; let t = '', lav = false;
-    if (h && h.t === 'ta') { const ci = h.a.ci, pr = PRICE(ci); if (S.penger < pr) { t = '🔒 Mangler 💰 ' + fmt(pr - S.penger); lav = true; } else if (!harLedig()) { t = '🔒 Ingen ledig plass'; lav = true; } else t = '🫳 Ta med ' + navn(ci) + ' (💰 ' + fmt(pr) + ')'; }
+    if (h && h.t === 'ta') { const ci = h.a.ci, pr = PRICE(ci); if (S.penger < pr) { t = '🔒 Mangler 💰 ' + fmt(pr - S.penger); lav = true; } else if (!harPlass(ci)) { t = '🔒 Ikke bedre enn det svakeste'; lav = true; } else t = '🫳 Ta med ' + navn(ci) + ' (💰 ' + fmt(pr) + ')'; }
     else if (h && h.t === 'sett') t = '🏠 Sett inn ' + navn(bar.ci);
     else if (h && h.t === 'forste') t = '🏠 Første ledige plass';
+    else if (h && h.t === 'bytteValg') t = '🔁 Bytt ut et matdyr';
+    else if (h && h.t === 'bytt') t = '🔁 Bytt med ' + navn(S.base[h.i]);
     else if (h && h.t === 'slipp') t = '⬇️ Slipp ' + navn(bar.ci);
     else if (h && h.t === 'selg') t = '💸 Selg ' + navn(S.base[h.i]);
     const full = t ? t + (I.TOUCH ? '' : ' (E)') + (lav ? '|lav' : '') : '';
@@ -351,11 +362,13 @@
     if (h.t === 'ta') {
       const ci = h.a.ci, pr = PRICE(ci);
       if (S.penger < pr) return melding('💰 Du mangler ' + fmt(pr - S.penger) + ' for å ta med ' + navn(ci) + '.');
-      if (!harLedig()) return melding('🏠 Alle plassene er fulle. Selg et matdyr, eller kjøp flere plasser.');
+      if (!harPlass(ci)) return melding('🏠 Gården er full. Selg et matdyr først, eller finn et som er bedre enn det svakeste.');
       fjern(h.a); bar = { ci, m: modell(ci) }; bar.m.scale.setScalar(0.7); I.scene.add(bar.m);
-      melding('Gå til det gule feltet «Lever her», eller trykk på en grønn ＋ på gården.', 3);
+      melding(harLedig() ? 'Gå til det gule feltet «Lever her», eller trykk på en grønn ＋ på gården.' : 'Gården er full. Bær ' + navn(ci) + ' hjem og bytt med et svakere matdyr. Du betaler når det flytter inn.', 4);
     } else if (h.t === 'sett') settInn(h.i);
     else if (h.t === 'forste') velgPlass(h.i);
+    else if (h.t === 'bytteValg') apneBytte();
+    else if (h.t === 'bytt') byttMed(h.i);
     else if (h.t === 'slipp') { const ci = bar.ci; slippBar(); slippNed(ci); melding('⬇️ ' + navn(ci) + ' løp tilbake til enga.'); }
     else if (h.t === 'selg') apneSalg(h.i);
     handlingTekst = '';
@@ -379,20 +392,21 @@
   function forsteLedige() { const l = ledige(), y = I.robot().position.y; return l.find(i => Math.abs(plassPos(i).y - y) < 1.0) ?? (l.length ? l[0] : -1); }
   const merkG = new T.Group(); merkG.renderOrder = 20; I.scene.add(merkG); let merkNokkel = '';
   const etasjeKort = i => i >= 36 ? 'T' : String(etasjeAv(i) + 1);
-  function merkeTekstur(et) {
-    return tekstur('merke' + et, 128, 160, x => {
-      x.fillStyle = 'rgba(30,140,60,.92)'; x.strokeStyle = '#fff'; x.lineWidth = 8; x.beginPath(); x.arc(64, 64, 52, 0, 7); x.fill(); x.stroke();
-      x.fillStyle = '#fff'; x.font = 'bold 76px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('+', 64, 68);
+  function merkeTekstur(et, bytt) {
+    return tekstur('merke' + et + (bytt ? 'b' : ''), 128, 160, x => {
+      x.fillStyle = bytt ? 'rgba(230,120,20,.94)' : 'rgba(30,140,60,.92)'; x.strokeStyle = '#fff'; x.lineWidth = 8; x.beginPath(); x.arc(64, 64, 52, 0, 7); x.fill(); x.stroke();
+      x.fillStyle = '#fff'; x.font = 'bold 76px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; if (bytt) { x.font = 'bold 56px system-ui,sans-serif'; x.fillText('🔁', 64, 66); } else x.fillText('+', 64, 68);
       x.fillStyle = 'rgba(20,26,48,.85)'; x.beginPath(); x.roundRect ? x.roundRect(34, 122, 60, 34, 10) : x.rect(34, 122, 60, 34); x.fill();
       x.fillStyle = '#fff'; x.font = 'bold 24px system-ui,sans-serif'; x.fillText(et === 'T' ? 'Tak' : et + '. et', 64, 140);
     });
   }
   function visMerker() {
-    const vis = !!bar && !bar.flyr && I.fane() === 'spill' && iBasen(), l = vis ? ledige() : [], n = vis + ':' + l.join(',');
+    const vis = !!bar && !bar.flyr && I.fane() === 'spill' && iBasen(), bytt = vis && !!bar.velgBytt;
+    const l = !vis ? [] : bytt ? S.base.map((ci, i) => i).filter(i => i < aapneNa && S.base[i] >= 0) : ledige(), n = vis + ':' + bytt + ':' + l.join(',');
     if (n === merkNokkel) return; merkNokkel = n;
     if (vis && l.length) { $('melding').hidden = true; meldingTid = 0; }   // meldingen skal ikke dekke merkene
     merkG.children.slice().forEach(c => { merkG.remove(c); c.material.dispose(); });
-    for (const i of l) { const q = plassPos(i), sp = new T.Sprite(new T.SpriteMaterial({ map: merkeTekstur(etasjeKort(i)), depthTest: false, depthWrite: false, transparent: true })); sp.position.set(q.x, q.y + 1.6, q.z); sp.scale.set(1.5, 1.875, 1); sp.renderOrder = 20; sp.userData.plass = i; merkG.add(sp); }
+    for (const i of l) { const q = plassPos(i), sp = new T.Sprite(new T.SpriteMaterial({ map: merkeTekstur(etasjeKort(i), bytt), depthTest: false, depthWrite: false, transparent: true })); sp.position.set(q.x, q.y + 1.6, q.z); sp.scale.set(1.5, 1.875, 1); sp.renderOrder = 20; sp.userData.plass = i; sp.userData.bytt = bytt; merkG.add(sp); }
   }
   function oppdaterMerker(t) {
     visMerker(); if (!merkG.children.length) return; const y = I.robot().position.y;
@@ -430,10 +444,28 @@
     // Hvert matdyr som bæres, prøves levert én gang per besøk på feltet (også om roboten tok det mens den sto der)
     if (inne && bar && !bar.flyr && bar.levForsok !== levBesok) {
       bar.levForsok = levBesok; const i = forsteLedige();
-      if (i < 0) melding('Ingen ledige plasser. Utvid gården eller selg et matdyr.');
+      if (i < 0 && svakeste() >= 0 && !bar.velgBytt) apneBytte();
+      else if (i < 0 && !bar.velgBytt) melding('Ingen ledige plasser. Utvid gården eller selg et matdyr.');
       else velgPlass(i);
     }
     paaLev = inne;
+  }
+
+  function apneBytte() {
+    if (!bar || bar.flyr) return; const w = svakeste(); if (w < 0) return; const nc = bar.ci, oc = S.base[w], diff = INC(nc) - INC(oc), halv = Math.floor(PRICE(oc) / 2);
+    const lin = (ikon, ci, ord) => '<p class="byttlinje">' + ikon + ' ' + ord + ': <b>' + esc(navn(ci)) + '</b> (' + R[COMBOS[ci].r].n + ') · 💵 +' + fmt(INC(ci)) + '/s</p>';
+    const info = 'Du betaler 💰 ' + fmt(PRICE(nc)) + ' for det nye. ' + (diff > 0 ? 'Bytter du, tjener gården 💵 +' + fmt(diff) + ' mer per sekund. ' : diff === 0 ? 'De tjener like mye. ' : '⚠️ Det nye tjener mindre enn det svakeste. ') + 'Du får 💰 ' + fmt(halv) + ' for det gamle.';
+    apneDialog('<h2>🏠 Gården er full</h2>' + lin('🆕', nc, 'Nytt') + lin('⬇️', oc, 'Svakest på gården') + '<p class="byttinfo">' + esc(info) + '</p><div class="knapper"><button type="button" id="dNei">Avbryt</button><button type="button" id="dVelg">👉 Velg en annen</button><button type="button" id="dJa">🔁 Bytt med svakeste</button></div>', 'dJa');
+    $('dNei').onclick = () => { lukkDialog(); melding('Greit! Du kan slippe matdyret på åkeren. Du har ikke betalt noe.'); };
+    $('dVelg').onclick = () => { lukkDialog(); if (bar) { bar.velgBytt = true; visMerker(); melding('👉 Trykk på 🔁 over matdyret du vil bytte ut, eller gå bort til det.', 4); } };
+    $('dJa').onclick = () => { lukkDialog(); byttMed(svakeste()); };
+  }
+  function byttMed(i) {
+    if (!bar || bar.flyr || !(i >= 0) || S.base[i] < 0) return false;
+    const oc = S.base[i], halv = Math.floor(PRICE(oc) / 2), pr = PRICE(bar.ci);
+    if (S.penger + halv < pr) { melding('💰 Du mangler ' + fmt(pr - S.penger - halv) + ' for å bytte.'); return false; }
+    S.penger += halv; S.base[i] = -1; oppdaterDyr(); bar.velgBytt = false;
+    melding('🔁 Du solgte ' + navn(oc) + ' for 💰 ' + fmt(halv) + '.'); return velgPlass(i);
   }
 
   function velgPlass(i) {
@@ -462,7 +494,7 @@
         const sx = b.left + (v.x + 1) / 2 * b.width, sy = b.top + (1 - v.y) / 2 * b.height, hpx = sp.scale.y / (f * cam.position.distanceTo(sp.position)) * b.height;
         const avst = Math.hypot(e.clientX - sx, e.clientY - sy); if (avst < Math.max(26, hpx / 2) && avst < bd) { bd = avst; best = sp; }
       }
-      if (best) velgPlass(best.userData.plass);
+      if (best) { if (best.userData.bytt) byttMed(best.userData.plass); else velgPlass(best.userData.plass); }
     }); }
 
   // =================== Dialoger ===================
@@ -639,5 +671,5 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden) lagre(); });
 
   // For automatiske tester (lagring, oppgradering, dobbelttrykk og flere faner)
-  window.EVNProto = { iLevFelt, levOmr, velgPlass, ledige, forsteLedige, merker: () => merkG.children.map(c => c.userData.plass), iBasen, NOKKEL, S: () => S, sett: s => { S = rens(s) || ny(); fyllBase(); byggSpillGard(true); oppdaterKort(); oppdaterPanel(); }, lagre, lesLagret, kontroller, apneGardsniva, oppgrader, autoVelg, valg: () => valg, felt: () => felt, slippNed, bar: () => bar, finnHandling, gjorHandling, rens, plasserApne };
+  window.EVNProto = { INC, PRICE, svakeste, harPlass, byttMed, apneBytte, iLevFelt, levOmr, velgPlass, ledige, forsteLedige, merker: () => merkG.children.map(c => c.userData.plass), iBasen, NOKKEL, S: () => S, sett: s => { S = rens(s) || ny(); fyllBase(); byggSpillGard(true); oppdaterKort(); oppdaterPanel(); }, lagre, lesLagret, kontroller, apneGardsniva, oppgrader, autoVelg, valg: () => valg, felt: () => felt, slippNed, bar: () => bar, finnHandling, gjorHandling, rens, plasserApne };
 })();

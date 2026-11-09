@@ -261,3 +261,14 @@ Donutku, Burgersau, Pizzaskilpadde, Shakeand og Spagettipingvin er rettet i `ble
   - ＋-merker dekket av panelene på små mobilskjermer. Leveringsfeltet og «Første ledige plass» virker alltid.
   - Overlapp mellom handlingsknapp og styrespak i 320×568.
   - Ødelagt lagring overskrives (eldre funn).
+
+### Bytte når gården er full (Ivar, 9.11.2026 kl. 17.31)
+- Prototypen hadde ikke regelen fra Matdyr-regn 0.10.3, og den er nå overført.
+  - Er gården full, kan et matdyr tas med hvis det tjener mer enn det svakeste på gården.
+  - Et dårligere matdyr kan ikke tas med. Da viser knappen «🔒 Ikke bedre enn det svakeste».
+- Ved levering spør spillet alltid før det bytter. Det skjer på leveringsfeltet, med knappen «🔁 Bytt ut et matdyr» eller med E.
+  - Spørsmålet viser det nye matdyret, det svakeste på gården, forskjellen i inntekt og pengene.
+  - Valgene er «🔁 Bytt med svakeste», «👉 Velg en annen» og «Avbryt».
+- «Velg en annen» gir oransje 🔁 over alle opptatte plasser, i alle etasjer. Trykk på én, eller gå bort til matdyret og trykk «🔁 Bytt med …».
+- Det gamle matdyret selges for halv pris. Det nye betales når det flytter inn. Andre matdyr flyttes aldri, og ingenting byttes automatisk.
+- Spilltest-sjekk 12 dekker regelen. Sjekk 11 lukker nå spørsmålet som kommer på feltet når gården er full.
