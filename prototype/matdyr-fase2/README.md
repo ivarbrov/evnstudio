@@ -293,3 +293,15 @@ Donutku, Burgersau, Pizzaskilpadde, Shakeand og Spagettipingvin er rettet i `ble
   - Spagettien ser ut som løkker fra siden.
   - Skallflikene på bananen henger flatt.
   - Grisesnuten står litt løst.
+
+### Spilltest-tilbakemeldinger (Ivar, 9.11.2026 kl. 22.05–22.08)
+- **Hoppet over roboten er mer naturlig.** Før valgte matdyret et sted å lande underveis og kunne bli hengende i lufta over roboten. Nå gjør det dette:
+  - velger et ledig landingssted bak roboten før det hopper (lovlig hele veien, med margin)
+  - setter seg ned (0,2 s)
+  - hopper i en jevn bue (2,4 m høyt, 0,55 s + 0,06 s per meter) med beina i ro, nesa først opp og så ned
+  - lander med en liten sammentrykking (0,22 s)
+  - venter hvis det ikke finnes et ledig landingssted
+  Målt: største flytting per bilde 0,21 m. Ingen gjerdebrudd eller fastlåsing, heller ikke når roboten jager matdyrene.
+- **Leveringsfeltet er flyttet nærmere basen.** Det ligger nå rett utenfor porten i gårdsgjerdet, fra gjerdet og 3,3 m ut. På gårdsnivå 2 og høyere er passasjen kortere, og der er feltet ca. 1,6 m.
+- **Bestillingsgaranti (G2, testverdi).** Har 6 matdyr i rad falt uten ett som neste gårdsnivå fortsatt trenger, blir det neste et slikt (riktig art og minst riktig sjeldenhet). Garantien slås av og på med 🧪 «🎯 Garanti». Den lagres ikke, og prisene er uendret.
+  Målt på gårdsnivå 1 over 10 min: kuer gikk fra 13 til 22. Lengste opphold mellom kuer gikk fra 161 s til 57 s.

@@ -663,6 +663,7 @@
     gd.gruppe.clear(); const g = gd.gruppe, n = gd.niva, ghost = new T.Group(); g.add(ghost);
     const skal = (nv, fn) => { if (n >= nv) fn(g); else if (gd.neste && nv === n + 1) { fn(ghost); } };
     // Tunet
+    gd.gjerdeD = n >= 2 ? 22 : 16;   // gårdsgjerdets z-radius (porten mot åkeren); brukes av leveringsfeltet
     if (!(NY && nyttGjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0))) gjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0);
     // Enga foran gården: her regner matdyrene ned (bare i spillet)
     // Tredekke: plankegang fra porten inn til gårdsbygningen

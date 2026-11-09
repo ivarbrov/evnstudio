@@ -143,12 +143,22 @@
     return best;
   }
   // Sjeldenheten trekkes med de vanlige vektene. Med bestillingsregn trekkes matdyret deretter blant artene neste gårdsnivå krever.
+  // Bestillingsgaranti (spilltest, Ivar 9.11.2026): har 6 matdyr i rad falt uten et som neste gårdsnivå fortsatt trenger,
+  // blir det neste et slikt (riktig art og minst riktig sjeldenhet). Kan slås av under 🧪. Lagres ikke.
+  let garanti = true, utenKrav = 0;
+  const trengs = () => { const k = GARDSNIVA[S.gard.niva + 1]; return k && k.krav ? k.krav.filter(kr => kr[0] && passer(kr).length < kr[1]) : []; };
+  const passerKrav = (ci, kr) => COMBOS[ci].art === kr[0] && COMBOS[ci].r >= kr[2];
   function trekk() {
     const tot = R.reduce((s, r) => s + r.w, 0); let x = Math.random() * tot, r = 0;
     for (; r < R.length - 1; r++) { x -= R[r].w; if (x <= 0) break; }
-    let pool = POOLS[r]; const k = GARDSNIVA[S.gard.niva + 1];
-    if (k && Math.random() * 100 < S.bestilling) { const arter = k.krav.filter(([a, , min]) => a && r >= min).map(kr => kr[0]); const p2 = pool.filter(ci => arter.includes(COMBOS[ci].art)); if (p2.length) pool = p2; }
-    return pool[Math.floor(Math.random() * pool.length)];
+    let pool = POOLS[r]; const k = GARDSNIVA[S.gard.niva + 1], mangler = trengs();
+    if (garanti && mangler.length && utenKrav >= 6) {
+      const kr = mangler[Math.floor(Math.random() * mangler.length)];
+      for (let rr = Math.max(r, kr[2]); rr < POOLS.length; rr++) { const p2 = POOLS[rr].filter(ci => COMBOS[ci].art === kr[0]); if (p2.length) { pool = p2; break; } }
+    } else if (k && Math.random() * 100 < S.bestilling) { const arter = k.krav.filter(([a, , min]) => a && r >= min).map(kr => kr[0]); const p2 = pool.filter(ci => arter.includes(COMBOS[ci].art)); if (p2.length) pool = p2; }
+    const ci = pool[Math.floor(Math.random() * pool.length)];
+    utenKrav = mangler.some(kr => passerKrav(ci, kr)) ? 0 : utenKrav + 1;
+    return ci;
   }
   function slippNed(ci, xz) {
     const [x, z] = xz || tilfeldigPunkt(), g = new T.Group(); g.position.set(x, xz ? 0 : 26, z);
@@ -204,6 +214,18 @@
     }
     return best;
   }
+  // Landingssted bak roboten: lovlig hele veien (gjerdet krysses aldri) og med plass til matdyret. Uten ledig sted venter matdyret.
+  function planleggHopp(a, rp, hindre) {
+    const p = a.g.position, dx = rp.x - p.x, dz = rp.z - p.z, d = Math.hypot(dx, dz) || 1, L = d + 2.3;
+    for (const v of [0, 0.35, -0.35, 0.7, -0.7]) {
+      const r = Math.atan2(dx, dz) + v * a.side, x1 = p.x + Math.sin(r) * L, z1 = p.z + Math.cos(r) * L;
+      let ok = lovlig(x1 + 0.3, z1, a.inneL) && lovlig(x1 - 0.3, z1, a.inneL) && lovlig(x1, z1 + 0.3, a.inneL) && lovlig(x1, z1 - 0.3, a.inneL);   // landingsstedet har litt margin
+      for (let k = 1; k <= 6 && ok; k++) ok = lovlig(p.x + (x1 - p.x) * k / 6, p.z + (z1 - p.z) * k / 6, a.inneL);
+      if (!ok || Math.hypot(rp.x - x1, rp.z - z1) < 2.0 || hindre.some(h => h.vx !== undefined && Math.hypot(h.x - x1, h.z - z1) < 2 * RADIUS + 0.2)) continue;
+      return { fase: 'sats', t: 0, x0: p.x, z0: p.z, x1, z1, h: 2.4, T: 0.55 + L * 0.06 };
+    }
+    return null;
+  }
   let dyttMelding = 0;
   function oppdaterFelt(dt, t) {
     // Høyst 14 matdyr på åkeren. De som er på vei bort i landskapet, teller ikke.
@@ -214,7 +236,7 @@
       a.alder += dt; const p = a.g.position;
       if (a.tilstand === 'fall') { p.y -= dt * 16; if (p.y <= 0) { p.y = 0; a.tilstand = 'gaa'; } continue; }
       // Et matdyr som er sluppet på tunet (utenfor åkeren) blir stående. Etter 4 minutter krymper det bort der.
-      if (a.tilstand === 'gaa' && !lovlig(p.x, p.z)) { a.vFaktisk = 0; if (a.alder > 240) a.tilstand = 'krymp'; else { animer(a, t, false); continue; } }
+      if (a.tilstand === 'gaa' && !a.hopp && !lovlig(p.x, p.z)) { a.vFaktisk = 0; if (a.alder > 240) a.tilstand = 'krymp'; else { animer(a, t, false); continue; } }
       if (a.tilstand === 'krymp') { a.krymp = (a.krymp ?? 1) - dt * 0.8; if (a.krymp <= 0) fjern(a); else a.g.scale.setScalar(a.krymp); continue; }
       // Tonas bort ute i landskapet: krymper rolig mens det fortsatt går
       if (a.tilstand === 'borte') { a.krymp = (a.krymp ?? 1) - dt * 0.5; if (a.krymp <= 0) { fjern(a); continue; } a.g.scale.setScalar(Math.max(0.01, a.krymp)); }
@@ -242,9 +264,16 @@
       // ---- Hindringer: andre matdyr, roboten og faste hindringer ----
       const hindre = faste.slice();
       for (const b of felt) if (b !== a && b.tilstand !== 'fall' && b.tilstand !== 'krymp') { const d = Math.abs(b.g.position.x - p.x) + Math.abs(b.g.position.z - p.z); if (d < 9) hindre.push({ x: b.g.position.x, z: b.g.position.z, vx: b.vx, vz: b.vz, r: RADIUS * (b.tilstand === 'borte' ? Math.max(0.2, b.krymp ?? 1) : 1) }); }
-      if (a.hopp) { a.hopp.t += dt / 1.5; const opptatt = (rp && Math.hypot(rp.x - p.x, rp.z - p.z) < 1.9) || hindre.some(h => h.vx !== undefined && Math.hypot(h.x - p.x, h.z - p.z) < 2 * RADIUS);
-        if (a.hopp.t >= 1 && opptatt && (a.hopp.n = (a.hopp.n || 0) + 1) < 4) a.hopp.t = 0.85;   // lander ikke oppå roboten eller et annet matdyr
-        if (a.hopp.t >= 1) { a.hopp = null; p.y = 0; } else { p.y = Math.sin(Math.PI * a.hopp.t) * 2.6; fart = a.fart * 1.6; } }
+      // Hopp over roboten i tre faser: sats (sammenkrøket), sprang i en bue til et ledig landingssted, og landing (sammentrykket).
+      if (a.hopp) {
+        const H = a.hopp; H.t += dt;
+        if (H.fase === 'sats') { const u = Math.min(1, H.t / 0.2); a.g.scale.set(1 + 0.12 * u, 1 - 0.2 * u, 1 + 0.12 * u); a.m.rotation.x = -0.08 * u; if (H.t >= 0.2) { H.fase = 'luft'; H.t = 0; } }
+        else if (H.fase === 'luft') {
+          const u = Math.min(1, H.t / H.T); p.x = H.x0 + (H.x1 - H.x0) * u; p.z = H.z0 + (H.z1 - H.z0) * u; p.y = 4 * H.h * u * (1 - u);
+          const k = 1 + 0.1 * Math.sin(Math.PI * u); a.g.scale.set(1 / Math.sqrt(k), k, 1 / Math.sqrt(k)); a.m.rotation.x = -0.35 * Math.cos(Math.PI * u);   // nesa opp, så ned
+          if (u >= 1) { H.fase = 'land'; H.t = 0; p.y = 0; }
+        } else { const u = Math.min(1, H.t / 0.22), q = Math.sin(Math.PI * u); a.g.scale.set(1 + 0.14 * q, 1 - 0.22 * q, 1 + 0.14 * q); a.m.rotation.x = 0.15 * (1 - u); if (u >= 1) { a.hopp = null; a.g.scale.set(1, 1, 1); a.m.rotation.x = 0; } }
+      }
       if (rp && a.tilstand === 'gaa' && !a.hopp) hindre.push({ x: rp.x, z: rp.z, r: 0.75, rob: true });
       let valgt = a.hopp ? a.retning : onsket;
       if (fart > 0 && !a.hopp) {
@@ -254,8 +283,11 @@
         const rob = s2.treff && s2.treff.b.rob || (a.forsteTreff && a.forsteTreff.rob && Math.abs(s2.o) > 0.7);
         a.robotFast = rob && lyst > 0.5 ? a.robotFast + dt : Math.max(0, a.robotFast - dt);
         if (a.robotFast > 1.2 && !a.hopp && rp && Math.hypot(rp.x - p.x, rp.z - p.z) < 3.2) {
-          a.hopp = { t: 0 }; a.robotFast = 0; valgt = Math.atan2(rp.x - p.x, rp.z - p.z); a.retning = valgt; fart = a.fart * 1.6;
-          if (dyttMelding <= 0) { dyttMelding = 8; melding('🐾 ' + navn(a.ci) + ' hoppet over roboten for å komme seg ut.'); }
+          const plan = planleggHopp(a, rp, hindre);
+          if (plan) {
+            a.hopp = plan; a.robotFast = 0; a.retning = valgt = Math.atan2(plan.x1 - p.x, plan.z1 - p.z); fart = 0;
+            if (dyttMelding <= 0) { dyttMelding = 8; melding('🐾 ' + navn(a.ci) + ' hoppet over roboten for å komme seg ut.'); }
+          }
         }
       }
       const diff = Math.atan2(Math.sin(valgt - a.retning), Math.cos(valgt - a.retning));
@@ -263,6 +295,7 @@
       // Myk start og stopp, og saktere i skarpe svinger
       const maalFart = fart * (Math.abs(diff) > 1.2 ? 0.35 : 1);
       a.v += (maalFart - a.v) * Math.min(1, dt * 3);
+      if (a.hopp) a.v = 0;
       let nx = p.x + Math.sin(a.retning) * a.v * dt, nz = p.z + Math.cos(a.retning) * a.v * dt;
       // Overlapp rettes ved å skyve matdyret fra naboer og roboten, men bare til lovlige steder
       // Skyvet begrenses til 3,5 m/s, så et matdyr som har landet tett inntil noe glir mykt bort i stedet for å hoppe
@@ -288,8 +321,8 @@
       if (a.fast > 2) { a.fast = 0; a.side = -a.side; if (lyst > 0) nyUtrute(a); else nyttVandremaal(a); }
       if (a.tilstand === 'gaa' && p.x > e.x1 + 1.0) a.tilstand = 'ut';
       if (a.tilstand === 'ut' && (p.x > e.x1 + 9 || Math.hypot(a.ute.x - p.x, a.ute.z - p.z) < 2)) a.tilstand = 'borte';
-      a.m.rotation.y = a.retning;
-      animer(a, t, a.vFaktisk > 0.15);
+      a.m.rotation.order = 'YXZ'; a.m.rotation.y = a.retning;
+      animer(a, t, !a.hopp && a.vFaktisk > 0.15);
     }
     ryddSkilt();
   }
@@ -424,7 +457,8 @@
   // Et gult felt i passasjen mellom gården og åkeren. Går roboten inn på feltet med et matdyr, flyr matdyret til første ledige plass
   // (1. etasje først), uten at spilleren trykker på noe. Å velge plass selv med en ＋ virker fortsatt.
   const levG = new T.Group(); I.scene.add(levG); let levNokkel = '', paaLev = false, levBesok = 0;
-  function levOmr() { const e = eng(); return e ? { x0: -3.3, x1: 3.3, z0: e.z0 - 3.4, z1: e.z0 - 0.3 } : null; }   // hele passasjen (roboten når |x| ≈ 3,05)
+  function levOmr() { const e = eng(); if (!e) return null; const d = I.gd.gjerdeD || 22, z0 = d + 0.3, z1 = Math.min(d + 3.6, e.z0 - 0.3);
+    return { x0: -3.3, x1: 3.3, z0, z1: Math.max(z1, z0 + 1.6) }; }   // rett utenfor porten i gårdsgjerdet, så nær basen som mulig   // hele passasjen (roboten når |x| ≈ 3,05)
   function byggLevFelt() {
     const o = levOmr(), n = o ? o.z0 + ':' + o.z1 : ''; if (n === levNokkel) return; levNokkel = n;
     levG.children.slice().forEach(c => { levG.remove(c); c.geometry && c.geometry.dispose(); c.material && c.material.dispose(); });
@@ -618,6 +652,7 @@
     if (visTest) {
       const r2 = document.createElement('div'); r2.className = 'rad test';
       [0, 10, 15].forEach(v => r2.append(I.knapp('Bestilling ' + v + ' %', S.bestilling === v, () => { S.bestilling = v; lagre(); byggPanel(); }, 'Bestillingsregn ' + v + ' prosent')));
+      r2.append(I.knapp(garanti ? '🎯 Garanti på' : '🎯 Garanti av', garanti, () => { garanti = !garanti; byggPanel(); }, 'Bestillingsgaranti'));
       r2.append(I.knapp('+💰 100 000', false, () => { S.penger += 1e5; lagre(); }), I.knapp('+💰 100 mill', false, () => { S.penger += 1e8; lagre(); }),
         I.knapp('🎁 Dyr til neste nivå', false, giKravdyr), I.knapp('↺ Nullstill', false, nullstill));
       p.append(r2);
