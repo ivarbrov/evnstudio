@@ -350,7 +350,7 @@
     else if (h && h.t === 'sett') t = '🏠 Sett inn ' + navn(bar.ci);
     else if (h && h.t === 'forste') t = '🏠 Første ledige plass';
     else if (h && h.t === 'bytteValg') t = '🔁 Bytt ut et matdyr';
-    else if (h && h.t === 'velgHjelp') t = '👉 Trykk på en 🔁 · Avbryt';
+    else if (h && h.t === 'velgHjelp') t = '✖ Avbryt bytte';
     else if (h && h.t === 'bytt') t = '🔁 Bytt med ' + navn(S.base[h.i]);
     else if (h && h.t === 'slipp') t = '⬇️ Slipp ' + navn(bar.ci);
     else if (h && h.t === 'selg') t = '💸 Selg ' + navn(S.base[h.i]);

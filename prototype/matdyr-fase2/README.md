@@ -275,7 +275,7 @@ Donutku, Burgersau, Pizzaskilpadde, Shakeand og Spagettipingvin er rettet i `ble
 - **Rettinger etter QA av 65fa16c:**
   - **Fokusfelle i alle dialoger.** Tab og Shift+Tab går rundt blant knappene i dialogen. Escape lukker som før.
   - **«Avbryt» avslutter velg-modus.** Knappen nullstiller velg-modus, og 🔁-merkene forsvinner.
-  - **Ingen melding over merkene.** I velg-modus viser handlingsknappen «👉 Trykk på en 🔁 · Avbryt», og E avbryter. Det gir ingen egen melding som kan dekke merkene.
+  - **Ingen melding over merkene.** I velg-modus viser handlingsknappen «✖ Avbryt bytte», og E avbryter. Teksten er kortet ned etter QA av 5e797ae, så knappen ikke går inn over styrespaken. Det gir ingen egen melding som kan dekke merkene.
   - **Strengere spilltest-sjekk 12.** Den sjekker nå hver for seg at halv pris kommer inn og at prisen trekkes ved innflytting. Den sjekker også fokusfellen og at «Avbryt» nullstiller.
 - **Kjent:** Lukkes siden mens matdyret flyr (ca. 0,7 s), beholdes det gamle matdyret. Det nye forsvinner uten at noe er betalt. Ingen fremgang går tapt.
 
