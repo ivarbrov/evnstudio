@@ -104,3 +104,4 @@ Status: prototype, ikke spill. Ingen spillogikk, lagring, statistikk eller musik
   - Trykk på katten: hun hopper, viser et hjerte og sier hvem hun er, eller gjentar ønsket sitt.
   - Ingen handel ennå. Det er bare en visning av figuren og ideen.
   - Modellen er laget av enkle former i koden, uten modellfil. Faste deler slås sammen per materiale, så katten gir 7 tegnekall.
+- 0.8.1: ny kroppsform for Blomsterkatten etter ønske fra Ivar. Hodet er uendret. Kroppen er nå en liten, rund kattunge som står oppreist, med lys mage, korte bein med runde poter, korte armer og en hale som buer opp bak. De blå hjertene sitter på potene (to på venstre og tre på høyre). Beina og armene går i takt når hun går, halen svaier, og armene vifter ut til siden når hun blir glad. Katten gir nå 14 tegnekall (før 7), fordi bein, armer og hale beveger seg hver for seg.
