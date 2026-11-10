@@ -37,6 +37,7 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 - **0.8.11** (ikke publisert): Rettinger etter QA av 0.8.9. Pause midt i et høste-drag gir ikke lenger feilkortet, og et slipp etter pausen høster ikke noe. Drar man frøet ut fra «Plant», plantes den valgte åkeren først, og åkre som lå skjult bak kortet, plantes ikke før fingeren har vært utenfor kortet.
 - **0.8.12** (ikke publisert): Nivåtallet står midt i stjernen på alle enheter (stjernen er en tegnet form, ikke tegnet ★). Forslag til ny natur ligger bak `?tre=puff` og er ikke standard: løvdotter, roligere gress, lysere gran. På mobil kaster bare hovedklasene i kronen skygge (tiltak 1 etter måling på iPhone 10.11).
 - **0.8.13** (ikke publisert): Bare testverktøy (`?test`). «Full gård» hang i evig løkke i spillet, fordi åkre og beiter ikke er bygd på forhånd. Langtesten viser treform og om kravene fra Ivar 10.11 er oppfylt (snitt ≥ 58, 1 % lav ≥ 45, hakk < 0,5 %).
+- **0.8.14** (ikke publisert): Reven heter Rebus i Min Bondegård (Even 10.11). Før het han Nysgjerrig. Bare tekst er endret.
 - **0.8.9** (ikke publisert): Rettinger etter QA av 0.8.7 (`qa/rapporter/2026-11-10-min-bondegard-7270d54.md`):
   - Et drag fra «Plant» begynner først etter 12 px, så et skjelvende trykk planter den valgte åkeren. Kortet lukkes så snart draget begynner, så ingen åker plantes i skjul bak det.
   - Pausen avbryter et drag.
@@ -69,7 +70,7 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
   - Spillbar kjernesløyfe for nivå 1–3: hvete og mais, høner og egg, fôrkvern, bakeri (kjøpes for 50), silo og låve, markedsbu, mynter, XP og nivåer.
   - Produksjonen fortsetter mens spillet er lukket.
   - Åkre, fôrkvern, bakeri og silo kan flyttes innenfor gården (planens beslutning B3).
-  - Opplæring i fem steg med Nysgjerrig.
+  - Opplæring i fem steg med Rebus.
   - Felles pause (EVN-PAUSE v2) og statistikk (`evn-start`).
   - Kjente begrensninger:
     - Bestillinger og lastebil kommer i 0.9.0.

@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.8.13 – EVN Studio</title>
+<title>Min Bondegård 0.8.14 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -135,7 +135,7 @@
   #nivaaOpp small { display:block; margin-top:8px; opacity:.7; font-weight:700; }
   @keyframes inn { from { transform:scale(.6); } }
 
-  /* Nysgjerrig gir tips (opplæring) */
+  /* Rebus gir tips (opplæring) */
   #revTips { position:fixed; left:50%; top:calc(66px + env(safe-area-inset-top)); transform:translateX(-50%); z-index:7; display:none; align-items:flex-start; gap:10px; width:min(460px, calc(100vw - 20px));
     background:#fffaf0; color:var(--blekk); border:3px solid #f0b24a; border-radius:20px; padding:10px 12px; box-shadow:0 6px 18px rgba(0,0,0,.25); font:700 16px/1.35 'Nunito',system-ui,sans-serif; }
   #revTips.vis { display:flex; }
@@ -260,7 +260,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.8.13</div>
+    <div class="evn-ver" id="versjon">Versjon 0.8.14</div>
   </div>
 </div>
 
@@ -531,7 +531,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.8.13'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.8.14'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -914,7 +914,7 @@ function lagOmrader() {
 
 /* ======================= Vegetasjon 0.4: organiske trekroner, grupper med åpne gressletter, gjengrodde områder ======================= */
 const NYSTIL = (() => { try { return (localStorage.getItem('mb-trestil') || 'ny') === 'ny'; } catch (e) { return true; } })();
-// 0.7.2: en liten sti fra hovedveien opp til en lysning der reven Nysgjerrig står, så han er lett å finne (bare ny trestil, «Før» er uendret)
+// 0.7.2: en liten sti fra hovedveien opp til en lysning der reven Rebus står, så han er lett å finne (bare ny trestil, «Før» er uendret)
 const stiX = z => -18.3 + Math.sin(z * 0.55) * 0.55;
 const paSti = (x, z, b = 0.75) => NYSTIL && z > 5 && z < VEI_Z && Math.abs(x - stiX(z)) < b;
 const revPlass = (x, z) => Math.hypot(x + 17.6, z - 4) < (NYSTIL ? 4.2 : 2.4) || paSti(x, z, 2.2); // revens plass i skogkanten holdes fri
@@ -1627,12 +1627,12 @@ const sprett = [];
 const vinkelDiff = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
 const snuMot = (a, b, maks) => { const d = vinkelDiff(a, b); return a + Math.sign(d) * Math.min(Math.abs(d), maks); };
 
-/* ======================= Reven Nysgjerrig (gjenbrukt rev.glb, bare vennen på gården – ikke spillbar) ======================= */
+/* ======================= Reven Rebus (gjenbrukt rev.glb, bare vennen på gården – ikke spillbar) ======================= */
 let rev = null, revMixer = null, revKlipp = {}, revAktiv = null;
 const boble = document.getElementById('boble');
 let bobleTid = 0;
 function revSpill(n, loop = true) { if (!revMixer || !revKlipp[n]) return; const a = revMixer.clipAction(revKlipp[n]); a.reset(); a.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce); a.clampWhenFinished = !loop; if (revAktiv && revAktiv !== a) revAktiv.fadeOut(0.25); a.fadeIn(0.25).play(); revAktiv = a; }
-const HILSNER = ['Hei, nabo! Jeg er Nysgjerrig.', 'Skal vi gjøre gården til den fineste i Elvedal?', 'Hønene dine ser glade ut!'];
+const HILSNER = ['Hei, nabo! Jeg er Rebus.', 'Skal vi gjøre gården til den fineste i Elvedal?', 'Hønene dine ser glade ut!'];
 let hilsI = 0;
 function hilsRev(vis) { if (!rev) return; if (robot) rev.rotation.y = Math.atan2(robot.position.x - rev.position.x, robot.position.z - rev.position.z); revSpill('Wave', false); setTimeout(() => revSpill('Idle'), 2200);
   if (vis !== false) { boble.textContent = HILSNER[hilsI++ % HILSNER.length]; boble.style.display = 'block'; bobleTid = 3.2; } }

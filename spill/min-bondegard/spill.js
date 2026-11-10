@@ -726,10 +726,10 @@ addEventListener('keydown', e => {
 });
 dialoger.forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); lukkDialog(id); } }));
 
-/* ======================= Opplæring med Nysgjerrig ======================= */
+/* ======================= Opplæring med Rebus ======================= */
 // Kort og frivillig: fem steg, ett om gangen. Steget går videre når spilleren har gjort det. Kan lukkes og hentes fram ved å trykke på reven.
 const OPPL = [
-  {tekst: '<b>Hei, nabo!</b> Jeg er Nysgjerrig, og jeg bor i skogkanten. Skal vi gjøre denne lille gården til den fineste i hele Elvedal? Trykk på en åker og <b>plant hvete</b>. 🌾', maal: () => ting.get(s.akre[0].id)},
+  {tekst: '<b>Hei, nabo!</b> Jeg er Rebus, og jeg bor i skogkanten. Skal vi gjøre denne lille gården til den fineste i hele Elvedal? Trykk på en åker og <b>plant hvete</b>. 🌾', maal: () => ting.get(s.akre[0].id)},
   {tekst: 'Bra! Mens hveten vokser, kan du trykke på <b>hønsehuset</b> og gi hønene mat. 🐔', maal: () => ting.get('honsehus')},
   {tekst: 'Hønene spiser og legger egg. Når hveten blir <b>gul</b>, trykker du på åkeren for å <b>høste</b>.', maal: () => { const f = s.akre.find(a => a.avling) || s.akre[0]; return ting.get(f.id); }},
   {tekst: 'Supert! Når hønsefôret tar slutt, lager du nytt av hvete i <b>fôrkverna</b>. Prøv nå! ⚙️', maal: () => ting.get('forkvern')},
@@ -809,8 +809,8 @@ window.__evnP = EVNPause({
   fortsett: () => { pauset = false; undertrykkTrykk = false; L.normaliserTid(s, naa()); synk(true); },
   lagre,
   styring: () => document.documentElement.classList.contains('touch')
-    ? '👆 Trykk på en åker, et dyr eller et hus<br>✋ Dra med én finger for å flytte deg<br>🤏 Knip med to fingre for å zoome<br>📦 Lageret: knappen øverst til høyre<br>🦊 Trykk på Nysgjerrig for et tips'
-    : '🖱️ Klikk på en åker, et dyr eller et hus<br>Dra for å flytte deg, rull for å zoome<br>⬅️➡️ Velg ting · Enter: bruk<br>B: bygg · L: lageret · P eller Esc: pause<br>🦊 Klikk på Nysgjerrig for et tips'
+    ? '👆 Trykk på en åker, et dyr eller et hus<br>✋ Dra med én finger for å flytte deg<br>🤏 Knip med to fingre for å zoome<br>📦 Lageret: knappen øverst til høyre<br>🦊 Trykk på Rebus for et tips'
+    : '🖱️ Klikk på en åker, et dyr eller et hus<br>Dra for å flytte deg, rull for å zoome<br>⬅️➡️ Velg ting · Enter: bruk<br>B: bygg · L: lageret · P eller Esc: pause<br>🦊 Klikk på Rebus for et tips'
 });
 EVNNullstill({
   nokler: [LAGRING, LAGRING + '-kopi', LAGRING + '-kopi2'],
