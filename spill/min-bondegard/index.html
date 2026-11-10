@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.8.7 – EVN Studio</title>
+<title>Min Bondegård 0.8.8 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -259,7 +259,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.8.7</div>
+    <div class="evn-ver" id="versjon">Versjon 0.8.8</div>
   </div>
 </div>
 
@@ -530,7 +530,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.8.7'; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.8.8'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -783,10 +783,10 @@ function lagTerreng() {
     const n = vstoy(x * 0.08, 5, z * 0.08);
     c.copy(gr2).lerp(gr1, n * 0.9).lerp(gr3, THREE.MathUtils.clamp(h / 9, 0, 0.7));
     const o = omradeVed(x, z); if (o) { c.lerp(vill, 0.32); c.lerp(toerr, THREE.MathUtils.smoothstep(vstoy(x * 0.3, 7, z * 0.3), 0.55, 0.8) * 0.45); }
-    if (paVei(x, z)) c.copy(sand).offsetHSL(0, 0, (n - 0.5) * 0.06);
+    if (!window.MB_MYK_VEI && paVei(x, z)) c.copy(sand).offsetHSL(0, 0, (n - 0.5) * 0.06);
     else if (paSti(x, z, 1.1)) c.lerp(sand, 0.62 * (1 - THREE.MathUtils.smoothstep(Math.abs(x - stiX(z)), 0.35, 1.1)) + 0.12);
     else if (NYSTIL && Math.hypot(x + 17.6, z - 4) < 2.6) c.lerp(sand, 0.22 * (1 - Math.hypot(x + 17.6, z - 4) / 2.6));
-    else if (Math.abs(z - VEI_Z) < 2.3 || (Math.abs(x + 5.5) < 1.9 && z > -1.5 && z < VEI_Z)) c.lerp(sand, 0.45);
+    else if (!window.MB_MYK_VEI && (Math.abs(z - VEI_Z) < 2.3 || (Math.abs(x + 5.5) < 1.9 && z > -1.5 && z < VEI_Z))) c.lerp(sand, 0.45);
     const k = elvKant(x, z);
     if (k < 0) c.copy(bunnF).lerp(vat, THREE.MathUtils.clamp(1 + k * 0.6, 0, 1)); // elvebunn, synlig gjennom vannet
     else if (k < 2.2) c.lerp(vedFiskeplass(x, z) ? sand : vat, 1 - THREE.MathUtils.smoothstep(k, 0.2, 2.2)); // fuktig strandkant som glir over i gress
@@ -798,9 +798,16 @@ function lagTerreng() {
   const vp = vg.attributes.position; for (let i = 0; i < vp.count; i++) vp.setY(i, hoyde(vp.getX(i), vp.getZ(i) + VEI_Z) + 0.03);
   vg.computeVertexNormals(); teksturUV(vg, 50, 1);
   const veiM = std({map: TEX.grus, roughness: 1, transparent: true, opacity: 0.85});
-  mesh(vg, veiM, 0, 0, VEI_Z, scene, false);
-  const ig = new THREE.PlaneGeometry(2.6, 13, 2, 20); ig.rotateX(-Math.PI / 2); teksturUV(ig, 1, 5);
-  mesh(ig, veiM, -5.5, 0.035, 5.2, scene, false);
+  if (!window.MB_MYK_VEI) { mesh(vg, veiM, 0, 0, VEI_Z, scene, false);
+    const ig = new THREE.PlaneGeometry(2.6, 13, 2, 20); ig.rotateX(-Math.PI / 2); teksturUV(ig, 1, 5);
+    mesh(ig, veiM, -5.5, 0.035, 5.2, scene, false); }
+  else { /* 0.8.8 (Ivar 10.11): veien hadde trappete kanter fra fargen i terrengnettet. Nå er veien en egen flate med rette, myke kanter */
+    const kant = (langsY) => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); const g = langsY ? x.createLinearGradient(0, 0, 0, 64) : x.createLinearGradient(0, 0, 64, 0);
+      g.addColorStop(0, '#000'); g.addColorStop(0.16, '#fff'); g.addColorStop(0.84, '#fff'); g.addColorStop(1, '#000'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; };
+    const vegM = (langsY) => std({map: TEX.grus, alphaMap: kant(langsY), roughness: 1, transparent: true, depthWrite: false});
+    const vg2 = new THREE.PlaneGeometry(160, 3.8, 160, 2); vg2.rotateX(-Math.PI / 2); const vp2 = vg2.attributes.position; for (let i = 0; i < vp2.count; i++) vp2.setY(i, hoyde(vp2.getX(i), vp2.getZ(i) + VEI_Z) + 0.04);
+    vg2.computeVertexNormals(); teksturUV(vg2, 50, 1); const hv = mesh(vg2, vegM(true), 0, 0, VEI_Z, scene, false); hv.renderOrder = 1;
+    const ig2 = new THREE.PlaneGeometry(3.1, 13.4, 2, 20); ig2.rotateX(-Math.PI / 2); teksturUV(ig2, 1, 5); const iv = mesh(ig2, vegM(false), -5.5, 0.05, 5.0, scene, false); iv.renderOrder = 1; }
   lagVann();
 }
 

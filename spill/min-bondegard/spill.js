@@ -185,7 +185,7 @@ const ting = new Map();
 const FOT = {forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], silo: [3.0, 3.0]};
 const STANDARD = {
   akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45]],
-  forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], silo: [1.0, -9.7]   /* siloen der fôrkverna sto, ved låven og hønsehuset (Ivar 10.11) */
+  forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], silo: [1.0, -8.4]   /* siloen der fôrkverna sto, ved låven og hønsehuset (Ivar 10.11) */
 };
 const GARD = {x0: -15.55, x1: 13.6, z0: -11.55, z1: 10.2};
 let hinder = [];   // faste hindringer: [x0, x1, z0, z1]
@@ -232,7 +232,7 @@ function plasserAlt() {
     plasser(t, sb.x, sb.z, sb.r);
   }
   let si = ting.get('silo'); if (!si) { const g = lagSilo(); scene.add(g); eierAv(g); klikkbar(g); si = {type: 'silo', id: 'silo', gruppe: g, fot: FOT.silo, hoyde: 6.6}; si.ikon = lagIkon(si.hoyde); g.add(si.ikon); ting.set('silo', si); }
-  if (s.plasser.silo && ((s.plasser.silo.x === 11.95 && s.plasser.silo.z === -2.4) || (s.plasser.silo.x === -13.6 && s.plasser.silo.z === -1.75))) delete s.plasser.silo;   /* gamle standardplasser flyttes til ny */
+  if (s.plasser.silo && ((s.plasser.silo.x === 11.95 && s.plasser.silo.z === -2.4) || (s.plasser.silo.x === -13.6 && s.plasser.silo.z === -1.75) || (s.plasser.silo.x === 1 && s.plasser.silo.z === -9.7))) delete s.plasser.silo;   /* gamle standardplasser flyttes til ny */
   const ps = s.plasser.silo || (() => { const p = finnLedigPlass(si, ...STANDARD.silo) || STANDARD.silo; return (s.plasser.silo = {x: p[0], z: p[1], r: 0}); })();
   plasser(si, ps.x, ps.z, ps.r);
 }

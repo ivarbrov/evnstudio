@@ -33,6 +33,7 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 
 ## Versjoner
 
+- **0.8.8** (ikke publisert): Ivar 10.11: Siloen står nærmere tunet (1,0; −8,4), og en silo på forrige standardplass flyttes dit. Gårdsveiene er egne flater med rette, myke kanter. Før var kantene trappete, fordi sandfargen lå i terrengnettet.
 - **0.8.7** (ikke publisert): Rettinger etter QA av 0.8.5 (`qa/rapporter/2026-11-09-min-bondegard-21841a2.md`). Roboten blir stående når alle venteturene er sperret av bygg. Handlingskortet holder seg innenfor skjermen i liggende format. Revetipset dekker ikke myntene på 375 px. Lagringsavsnittet nevner `-kopi2`.
 - **0.8.6** (ikke publisert):
   - Dra for å plante og høste (Even 10.11). Dra «Plant» fra handlingskortet ut over tomme åkre, eller trykk på en moden åker og dra over de andre. Et vanlig trykk høster fortsatt alt som er modent.
