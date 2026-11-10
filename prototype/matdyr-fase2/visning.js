@@ -46,7 +46,10 @@
     pilot_gris_pizza: 0, pilot_gris_smultring: 2, pilot_gris_burger: 8, pilot_gris_is: 9, pilot_gris_spagetti: 4, pilot_gris_banan: 5,
     pilot_gris_taco: 1, pilot_gris_sjoko: 10, pilot_gris_jordbaer: 17, pilot_gris_milkshake: 24 };
   const PILOT = new URLSearchParams(location.search).get('pilot') === '1' ? Object.keys(PILOT_ID) : [];
-  const NY_ID = { ...Object.fromEntries(PILOT.map(n => [n, PILOT_ID[n]])), donutku: 127, burgersau: 508, pizzaskilpadde: 700, shakeand: 599, spagettipingvin: 179 };
+  // ?tobein=1: kuer som går på to bein (Even 10.11.2026). Prøve med fire matvarer. Bare utseendet endres, ikke ID, sjeldenhet eller verdi.
+  const TOBEIN_ID = { pilot_ku2_smultring: 127, pilot_ku2_pizza: 125, pilot_ku2_is: 134, pilot_ku2_burger: 133 };
+  const TOBEIN = new URLSearchParams(location.search).get('tobein') === '1' ? Object.keys(TOBEIN_ID) : [];
+  const NY_ID = { ...Object.fromEntries(TOBEIN.map(n => [n, TOBEIN_ID[n]])), ...Object.fromEntries(PILOT.map(n => [n, PILOT_ID[n]])), donutku: 127, burgersau: 508, pizzaskilpadde: 700, shakeand: 599, spagettipingvin: 179 };
   // ?laave=a|b|c: tre låvevarianter til vurdering (Ivar 8.11.2026). Uten flagget brukes den vanlige låven.
   const LAAVE = ['a', 'b', 'c'].includes(new URLSearchParams(location.search).get('laave')) ? new URLSearchParams(location.search).get('laave') : null;
   const res = { miljo: null, gard: null, fig: {}, laaver: null };
@@ -54,7 +57,7 @@
     EVNMiljo.lastGLB('modeller/miljo.glb').then(g => { res.miljo = g; }),
     EVNMiljo.lastGLB('modeller/gard.glb').then(g => { res.gard = g; }),
     LAAVE ? EVNMiljo.lastGLB('modeller/laaver.glb').then(g => { res.laaver = g; }) : null,
-    ...NYE_FIGURER.concat(PILOT).map(n => Promise.all([EVNMiljo.lastGLB('modeller/' + n + '.glb'), EVNMiljo.lastGLB('modeller/' + n + '_lav.glb')]).then(([full, lav]) => { if (full) res.fig[n] = { full, lav: lav || full }; }))
+    ...NYE_FIGURER.concat(PILOT, TOBEIN).map(n => Promise.all([EVNMiljo.lastGLB('modeller/' + n + '.glb'), EVNMiljo.lastGLB('modeller/' + n + '_lav.glb')]).then(([full, lav]) => { if (full) res.fig[n] = { full, lav: lav || full }; }))
   ]);
 
   // ---------- Sammenslåing: én mesh per materiale (færre tegnekall på mobil) ----------
