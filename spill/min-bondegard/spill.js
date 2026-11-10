@@ -281,6 +281,7 @@ function oppdaterHud() {
 function melding(tekst, ms = 2600) { const m = $('melding'); m.textContent = tekst; m.classList.add('vis'); clearTimeout(melding.t); melding.t = setTimeout(() => m.classList.remove('vis'), ms); }
 const _p = new THREE.Vector3();
 function flyt(tekst, pos, forsink = 0) {
+  if (!pos) return;   /* QA 10.11 (K1): uten posisjon vises ingen flytetekst */
   setTimeout(() => { _p.copy(pos).project(camera); if (_p.z > 1) return; const d = document.createElement('div'); d.className = 'flyt'; d.textContent = tekst;
     d.style.left = ((_p.x + 1) / 2 * innerWidth) + 'px'; d.style.top = ((1 - _p.y) / 2 * innerHeight) + 'px'; document.body.appendChild(d); setTimeout(() => d.remove(), 1500); }, forsink);
 }
@@ -434,7 +435,9 @@ function draIkon(tegn, x, y) { const d = $('draIkon'); if (!tegn) { d.style.disp
 function draOver(x, y) {
   const m = draModus; if (!m || pauset) return;
   if (m.type === 'plant' && !m.dratt) { if (Math.hypot(x - m.x0, y - m.y0) < 12) return;   /* et lite skjelv er fortsatt et trykk (QA 10.11) */
-    m.dratt = true; lukkHandling(); m.px = x; m.py = y; }   /* kortet lukkes med en gang draget begynner, så ingen åker plantes i skjul bak det */
+    m.dratt = true; lukkHandling(); m.px = x; m.py = y;
+    if (m.valgt >= 0) draPlant(m, m.valgt); }   /* QA 10.11: den valgte åkeren plantes først */
+  if (m.type === 'plant' && !m.ute) { const k = m.kort; if (x > k[0] && x < k[1] && y > k[2] && y < k[3]) { draIkon(m.ikon, x, y); m.px = x; m.py = y; return; } m.ute = true; }   /* åkre som lå skjult bak kortet, plantes ikke før fingeren har vært utenfor */   /* kortet lukkes med en gang draget begynner, så ingen åker plantes i skjul bak det */
   draIkon(m.ikon, x, y);
   // raske sveip: sjekk også punktene mellom forrige og denne posisjonen
   if (m.px !== undefined) { const d = Math.hypot(x - m.px, y - m.py), n = Math.floor(d / 18); for (let k = 1; k < n; k++) draEn(m, m.px + (x - m.px) * k / n, m.py + (y - m.py) * k / n); }
@@ -445,10 +448,12 @@ function draEn(m, x, y) {
   if (m.type === 'host' && i === m.start && !m.flyttet) return;
   if (!m.flyttet && m.type === 'plant') lukkHandling();   /* kortet skal ikke dekke åkrene */
   if (!m.flyttet && m.type === 'host') { m.flyttet = true; draHost(m, m.start); }   /* den første åkeren høstes også */
-  m.flyttet = true; m.ferdige.add(i);
-  const f = s.akre[i], u = ting.get(f.id);
-  if (m.type === 'plant') { if (!f.avling && plantPaa(i, m.avling)) { m.n++; flyt(ikon(m.avling), midtAv(u, 1.4)); } }
-  else draHost(m, i);
+  if (m.type === 'plant') draPlant(m, i); else { m.flyttet = true; m.ferdige.add(i); draHost(m, i); }
+  synk();
+}
+function draPlant(m, i) {
+  m.flyttet = true; m.ferdige.add(i); const f = s.akre[i], u = ting.get(f.id);
+  if (!f.avling && plantPaa(i, m.avling)) { m.n++; flyt(ikon(m.avling), midtAv(u, 1.4)); }
   synk();
 }
 function draHost(m, i) {
@@ -476,7 +481,8 @@ window.spillDraStart = (x, y) => {
 $('handlingInnhold').addEventListener('pointerdown', e => {
   const k = e.target.closest('.fro'); if (!k || k.disabled) return; e.preventDefault();
   try { k.releasePointerCapture(e.pointerId); } catch (er) {}
-  draModus = {type: 'plant', avling: k.dataset.a, ikon: ikon(k.dataset.a), ferdige: new Set(), flyttet: false, n: 0, x0: e.clientX, y0: e.clientY};
+  const kort = $('handling').getBoundingClientRect(), valgt = aktivTing ? s.akre.findIndex(f => f.id === aktivTing.id) : -1;
+  draModus = {type: 'plant', avling: k.dataset.a, ikon: ikon(k.dataset.a), ferdige: new Set(), flyttet: false, n: 0, x0: e.clientX, y0: e.clientY, valgt, kort: [kort.left, kort.right, kort.top, kort.bottom], ute: false};
 });
 // Slippes frøet på selve knappen uten å ha vært ute på gården, er det et vanlig trykk på «Plant»
 
@@ -690,7 +696,7 @@ function bruk(u) {
   else if (u.type === 'marked') { visMarked(); fremOppl('marked'); }
 }
 window.spillTrykk = (o, t, ray) => {
-  if (!startet || undertrykkTrykk || draModus) return true;   /* et drag håndteres i sluttDra */
+  if (!startet || pauset || undertrykkTrykk || draModus) return true;   /* et drag håndteres i sluttDra */
   if (flytt) { flyttTil(ray); return true; }
   if (o === rev) { hilsRev(false); visOppl(true); return true; }
   const u = tingFor(o);
@@ -799,8 +805,8 @@ window.__evnP = EVNPause({
   kanPause: () => startet && !$('feil').classList.contains('vis'),
   // Aktiv spilletid (ST2): ikke i pause, ikke med lageret eller markedsbua åpen, ikke før spillet er startet
   aktiv: () => startet && !pauset && !dialogApen(),
-  pause: () => { pauset = true; if (draModus) { const m = draModus; draModus = null; draIkon(null); if (m.n) gi(m.type === 'host' ? {xp: m.xp, nye: m.nye} : null); } lagre(); if (flytt) sluttFlytt(false); dialoger.forEach(id => { if ($(id).classList.contains('vis')) { $(id).classList.remove('vis'); if (window.EVNPauseInert) EVNPauseInert(null); } }); lukkHandling(); },   /* QA 9.11 (T2): pausen legger seg ikke over en åpen dialog */
-  fortsett: () => { pauset = false; L.normaliserTid(s, naa()); synk(true); },
+  pause: () => { pauset = true; if (draModus) { const m = draModus; draModus = null; draIkon(null); undertrykkTrykk = true; if (m.n) gi(m.type === 'host' ? {xp: m.xp, nye: m.nye} : null, midtAv(ting.get(s.akre[[...m.ferdige][0]].id), 2.2)); } lagre(); if (flytt) sluttFlytt(false); dialoger.forEach(id => { if ($(id).classList.contains('vis')) { $(id).classList.remove('vis'); if (window.EVNPauseInert) EVNPauseInert(null); } }); lukkHandling(); },   /* QA 9.11 (T2): pausen legger seg ikke over en åpen dialog */
+  fortsett: () => { pauset = false; undertrykkTrykk = false; L.normaliserTid(s, naa()); synk(true); },
   lagre,
   styring: () => document.documentElement.classList.contains('touch')
     ? '👆 Trykk på en åker, et dyr eller et hus<br>✋ Dra med én finger for å flytte deg<br>🤏 Knip med to fingre for å zoome<br>📦 Lageret: knappen øverst til høyre<br>🦊 Trykk på Nysgjerrig for et tips'
