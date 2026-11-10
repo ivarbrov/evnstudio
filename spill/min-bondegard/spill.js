@@ -213,12 +213,12 @@ function lagLastebil() {
 }
 // Lastebilen kjører inn langs veien, stopper ved gårdsveien, laster og kjører videre. Bare til pynt: reglene er allerede brukt.
 function kjorLastebil() { bilKo.n++; if (!bil) bil = lagLastebil(); const redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (bilKo.fase === 0) { bil.visible = true; if (redusert) { bil.position.set(-5.5, 0, VEI_Z); bilKo.fase = 2; bilKo.t = 0; } else { bilKo.fase = 1; bil.position.set(-58, 0, VEI_Z); } } }   /* redusert bevegelse: bilen står ved gårdsveien en liten stund og kjører ikke over skjermen (QA 10.11) */
+  if (bilKo.fase === 0) { bil.visible = true; if (redusert) { bil.position.set(-5.5, 0, VEI_Z); bilKo.fase = 2; bilKo.t = 0; } else { bilKo.fase = 1; bil.position.set(-34, 0, VEI_Z); } } }   /* 0.9.2 (Ivar 11.11): bilen kjører rolig, høyst 8–9 m/s, og starter nærmere */   /* redusert bevegelse: bilen står ved gårdsveien en liten stund og kjører ikke over skjermen (QA 10.11) */
 function oppdaterBil(dt) {
   if (!bil || bilKo.fase === 0) return; const STOPP = -5.5, redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (bilKo.fase === 1) { const igjen = STOPP - bil.position.x, fart = redusert ? 60 : Math.max(3, Math.min(22, igjen * 2.2)); bil.position.x += fart * dt; if (bil.position.x >= STOPP) { bil.position.x = STOPP; bilKo.fase = 2; bilKo.t = 0; } }
+  if (bilKo.fase === 1) { const igjen = STOPP - bil.position.x, fart = redusert ? 60 : Math.max(1.5, Math.min(8, igjen * 1.2)); bil.position.x += fart * dt; if (bil.position.x >= STOPP) { bil.position.x = STOPP; bilKo.fase = 2; bilKo.t = 0; } }
   else if (bilKo.fase === 2) { bilKo.t += dt; if (bilKo.t > 1.4) { bilKo.n--; if (bilKo.n > 0) bilKo.t = 0.6; else if (redusert) { bil.visible = false; bilKo.fase = 0; bilKo.n = 0; } else bilKo.fase = 3; } }
-  else { const borte = bil.position.x - STOPP, fart = redusert ? 60 : Math.max(3, Math.min(24, 3 + borte * 2.2)); bil.position.x += fart * dt; if (bil.position.x > 62) { bil.visible = false; bilKo.fase = 0; bilKo.n = 0; } }
+  else { const borte = bil.position.x - STOPP, fart = redusert ? 60 : Math.max(1.5, Math.min(9, 1.5 + borte * 1.2)); bil.position.x += fart * dt; if (bil.position.x > 34) { bil.visible = false; bilKo.fase = 0; bilKo.n = 0; } }
   bil.position.y = hoyde(bil.position.x, VEI_Z) + (bilKo.fase === 2 ? 0 : Math.abs(Math.sin(bil.position.x * 1.7)) * 0.04);
 }
 
@@ -568,7 +568,7 @@ function visAker(u) {
       : `<p>${f.avling ? 'Moden! 🎉' : 'Høstet.'}</p><div class="knapper">${f.avling ? '<button class="knapp gronn" data-g="host">Høst</button>' : ''}<button class="knapp lys" data-g="flytt">✋ Flytt åkeren</button></div>`); return; }
   aapneHandling(u, '🟫 Tom åker', () => {
     const tomme = s.akre.filter(a => !a.avling).length;
-    return '<p>Hva vil du plante? Du planter 1 og høster 2.<br><small>✋ Tips: dra «Plant» ut over de tomme åkrene.</small></p>' + I_SPILLET.avlinger.map(a => { const A = D.avlinger[a];
+    return '<p>Hva vil du plante? Du planter 1 og høster 2.<br><small>✋ Tips: trykk «Plant» flere ganger, eller dra «Plant» ut over åkrene.</small></p>' + I_SPILLET.avlinger.map(a => { const A = D.avlinger[a];
       if (A.nivaa <= s.nivaa && L.kanPlante(s, i, a) === 'ingen-fro') return `<div class="rad"><span class="stort">${A.ikon}</span><span class="midt">${A.navn}<small class="mangler">Du har ingen frø. Høst ${A.navn.toLowerCase()} som vokser, så får du flere.</small></span><button class="knapp" disabled>Plant</button></div>`;
       if (A.nivaa > s.nivaa) return `<div class="rad"><span class="stort">${A.ikon}</span><span class="midt">${A.navn}<small>Låses opp på nivå ${A.nivaa}</small></span><button class="knapp" disabled>🔒</button></div>`;
       const har = s.lager[a] || 0;
@@ -611,7 +611,10 @@ $('handlingInnhold').addEventListener('click', e => {
   if ((g === 'plant') && undertrykkTrykk) return;
   if (g === 'plant' || g === 'plantAlle') { const a = k.dataset.a; const i = s.akre.findIndex(f => f.id === u.id);
     let n = plantPaa(i, a) ? 1 : 0; if (g === 'plantAlle') s.akre.forEach((f, j) => { if (!f.avling && plantPaa(j, a)) n++; });
-    if (n) { flyt(ikon(a) + (n > 1 ? ' ×' + n : ''), midtAv(u, 1.5)); lukkHandling(); gi(null); } else melding('Du har ikke frø til ' + navn(a).toLowerCase() + '.'); return; }
+    if (n) { flyt(ikon(a) + (n > 1 ? ' ×' + n : ''), midtAv(u, 1.5)); lukkHandling(); gi(null);
+      /* 0.9.2 (Ivar 11.11): etter ett trykk på «Plant» står kortet klart på nærmeste tomme åker, så det går fort å så litt av hvert */
+      if (g === 'plant') { let neste = null, bd = 1e9; s.akre.forEach(f => { if (f.avling) return; const t2 = ting.get(f.id); if (!t2) return; const d = (t2.x - u.x) ** 2 + (t2.z - u.z) ** 2; if (d < bd) { bd = d; neste = t2; } });
+        if (neste) { sprett.push({o: neste.gruppe, t: 0}); visAker(neste); const kn = $('handlingInnhold').querySelector(`[data-g="plant"][data-a="${a}"]`); if (kn && sisteInput === 'tast') kn.focus({preventScroll: true}); } } } else melding('Du har ikke frø til ' + navn(a).toLowerCase() + '.'); return; }
   if (g === 'host') { lukkHandling(); hostAlt(u); return; }
   if (g === 'egg') { samleEgg(u); tegnPaaNytt(); return; }
   if (g === 'mat') { mat(u); tegnPaaNytt(); return; }
