@@ -134,7 +134,7 @@ ok('Óðinn-kall er bare aktivt på vei til nivå 10 og når Óðinn mangler', !
 const j2 = await ev(`(() => { const P = EVNProto, D = EVNMatdyrData, fg = D.POOLS[5].filter(ci => ci !== P.ODIN);
   P.sett({ v: 1, fordeling: 'c', penger: 2e8, gard: { niva: 9 }, plassNiva: 18, base: new Array(40).fill(-1), disc: fg.slice(0, 2), arv: {}, bestilling: 15 }); P.garanti(true);
   let odin = 0, fgN = 0; for (let k = 0; k < 30000; k++) { const ci = P.trekk(); if (D.COMBOS[ci].r === 5) { fgN++; if (ci === P.ODIN) odin++; } } return { odin, fgN }; })()`);
-ok('garanti på + bestilling 15 %, kallet 2/3: Óðinn bare via bestillingsregnet (≈ 15 % av Food God)', j2.fgN > 200 && j2.odin / j2.fgN < 0.3, j2);
+ok('garanti på + bestilling 15 %, kallet 2/3: Óðinn bare via bestillingsregnet (≈ 15 % av Food God)', j2.fgN > 200 && j2.odin / j2.fgN < 0.25, j2);
 
 // 10. Matdyrboka for ku: 25 ruter i 7 rader, funn og eldre utgave
 const k = await ev(`(async () => { const P = EVNProto, D = EVNMatdyrData, ut = {};

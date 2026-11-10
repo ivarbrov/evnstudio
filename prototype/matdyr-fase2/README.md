@@ -321,7 +321,7 @@ Uten flagget er fordelingen, lagringen og spillet som før. B3 (uendrede sjelden
 - **Matdyrboka:** 📖-knappen. Én art om gangen, 25 ruter i stigen. Alle tidligere funn teller. Food God får gullramme, Secret er skjult (???) til den er funnet.
 - **Toppsett (`toppsett.js`):** Food God og Secret får særpreg mens spillet kjører, uten egne modeller. 3 varianter av hvert sett. Sammenligning: `toppsett.html` og `toppsett-varianter.png`. I spillet: 🧪 → «✨ Food God: A/B/C», «✨ Secret: A/B/C», «⭐ Slipp Food God», «🌌 Slipp Secret».
 - **Testknapper (🧪):** «🕰️ Gammel testlagring» lager og migrerer en typisk gammel lagring. «📥 Hent standardlagring» migrerer standardlagringen på nytt.
-- **Spilltest:** `node spilltest-c.mjs` (31 kontroller: flagg, migrering, arv, salg, Gårdsnivå med arv, bestilling 0 %, garantitak, Óðinn-kallet, Matdyrboka, ødelagt lagring). Migreringstestene for begge lagringsformatene: `node --test test/matdyr/fordeling-c/migrering.test.js` (20).
+- **Spilltest:** `node spilltest-c.mjs` (32 kontroller: flagg, migrering, arv, salg, Gårdsnivå med arv, bestilling 0 %, garantitak, Óðinn-kallet, Matdyrboka, ødelagt lagring). Migreringstestene for begge lagringsformatene: `node --test test/matdyr/fordeling-c/migrering.test.js` (20).
 - **Paninikanin, tre forslag** (`blender/paninikanin_forslag.py`, `paninikanin-forslag.png`, `nyefigurer.html?figur=paninikanin_a,paninikanin_b,paninikanin_c`): A Paninikropp, B Brødkanin, C Halvpanini. Ingen ID- eller kategoribytte før Even har valgt.
 
 ### Paninikanin: Evens valg (10.11.2026, kl. 20.31)
