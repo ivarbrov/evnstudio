@@ -46,6 +46,7 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
   - Lagringen har fått feltet `best: {nr, fro, liste[{id, varer, mynter, xp, siden}]}` og `stat.levert`. Formatet er fortsatt `v: 1`. Eldre lagringer får bestillinger når de lastes.
   - Toppfeltet tilpasser seg antall knapper. Nytt: knappen 📋 og tasten T.
   - E-coins på nivå 5 er ikke med. Beløpet er ikke godkjent (B2), og milepælen må inn i den felles regeltabellen.
+- **0.9.1** (ikke publisert): Rettinger etter QA av 0.9.0. 📋-knappen er skjult før nivå 4. Bestillingene er lesbare på smale skjermer. Meldingen etter levering vises over dialogen. To raske trykk sender ikke to bestillinger. Fokus går til neste «Send». Tilfeldige bestillinger regnes med heltall (`Math.imul`). Med redusert bevegelse kjører ikke lastebilen over skjermen.
 - **0.8.9** (ikke publisert): Rettinger etter QA av 0.8.7 (`qa/rapporter/2026-11-10-min-bondegard-7270d54.md`):
   - Et drag fra «Plant» begynner først etter 12 px, så et skjelvende trykk planter den valgte åkeren. Kortet lukkes så snart draget begynner, så ingen åker plantes i skjul bak det.
   - Pausen avbryter et drag.

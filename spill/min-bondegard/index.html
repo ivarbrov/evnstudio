@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.9.0 – EVN Studio</title>
+<title>Min Bondegård 0.9.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -136,7 +136,7 @@
   @keyframes inn { from { transform:scale(.6); } }
 
   /* Rebus gir tips (opplæring) */
-  #revTips { position:fixed; left:50%; top:calc(66px + env(safe-area-inset-top)); transform:translateX(-50%); z-index:7; display:none; align-items:flex-start; gap:10px; width:min(460px, calc(100vw - 20px));
+  #revTips { box-sizing:border-box; position:fixed; left:50%; top:calc(66px + env(safe-area-inset-top)); transform:translateX(-50%); z-index:7; display:none; align-items:flex-start; gap:10px; width:min(460px, calc(100vw - 20px));
     background:#fffaf0; color:var(--blekk); border:3px solid #f0b24a; border-radius:20px; padding:10px 12px; box-shadow:0 6px 18px rgba(0,0,0,.25); font:700 16px/1.35 'Nunito',system-ui,sans-serif; }
   #revTips.vis { display:flex; }
   #revTips .rev { font-size:34px; line-height:1; flex:none; }
@@ -150,8 +150,10 @@
   #draIkon { position:fixed; z-index:30; pointer-events:none; transform:translate(-50%, -60%); font-size:46px; filter:drop-shadow(0 3px 3px rgba(0,0,0,.35)); display:none; }
   .fro { touch-action:none; cursor:grab; }
   .rad.best .midt span { font-weight:800; } .rad.best .harnok { color:#2f7d1e; } .rad.best.klar { background:#e9f7d8; } .knapp.anbefalt { box-shadow:0 0 0 3px #f2b632 inset; }
+  #tavleKnapp[hidden] { display:none; }   /* QA 10.11: .rund har display:flex, som ellers overstyrer hidden */
+  @media (max-width:430px) { .rad.best { flex-wrap:wrap; } .rad.best .midt { flex:1 1 100%; } .rad.best .knapp { flex:1 1 40%; } #tavle h2 { margin-right:44px; font-size:24px; } }
   #tavleKnapp.klar { box-shadow:0 0 0 3px #9ef06b, 0 3px 0 rgba(0,0,0,.25); }
-  #melding { position:fixed; left:50%; top:calc(68px + env(safe-area-inset-top)); transform:translateX(-50%); z-index:12; background:rgba(31,74,28,.95); color:#fff; padding:10px 16px; border-radius:16px; font:800 16px 'Nunito',system-ui,sans-serif; display:none; max-width:calc(100vw - 20px); text-align:center; }
+  #melding { position:fixed; left:50%; top:calc(68px + env(safe-area-inset-top)); transform:translateX(-50%); z-index:26; pointer-events:none; background:rgba(31,74,28,.95); color:#fff; padding:10px 16px; border-radius:16px; font:800 16px 'Nunito',system-ui,sans-serif; display:none; max-width:calc(100vw - 20px); text-align:center; }
   #melding.vis { display:block; }
 
   /* Flytting (B3) */
@@ -271,7 +273,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.9.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.9.1</div>
   </div>
 </div>
 
@@ -542,7 +544,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.9.0'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.9.1'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';

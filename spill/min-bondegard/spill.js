@@ -212,11 +212,12 @@ function lagLastebil() {
   g.visible = false; scene.add(g); return g;
 }
 // Lastebilen kjører inn langs veien, stopper ved gårdsveien, laster og kjører videre. Bare til pynt: reglene er allerede brukt.
-function kjorLastebil() { bilKo.n++; if (!bil) bil = lagLastebil(); if (bilKo.fase === 0) { bilKo.fase = 1; bil.position.set(-58, 0, VEI_Z); bil.visible = true; } }
+function kjorLastebil() { bilKo.n++; if (!bil) bil = lagLastebil(); const redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (bilKo.fase === 0) { bil.visible = true; if (redusert) { bil.position.set(-5.5, 0, VEI_Z); bilKo.fase = 2; bilKo.t = 0; } else { bilKo.fase = 1; bil.position.set(-58, 0, VEI_Z); } } }   /* redusert bevegelse: bilen står ved gårdsveien en liten stund og kjører ikke over skjermen (QA 10.11) */
 function oppdaterBil(dt) {
   if (!bil || bilKo.fase === 0) return; const STOPP = -5.5, redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (bilKo.fase === 1) { const igjen = STOPP - bil.position.x, fart = redusert ? 60 : Math.max(3, Math.min(22, igjen * 2.2)); bil.position.x += fart * dt; if (bil.position.x >= STOPP) { bil.position.x = STOPP; bilKo.fase = 2; bilKo.t = 0; } }
-  else if (bilKo.fase === 2) { bilKo.t += dt; if (bilKo.t > 1.4) { bilKo.n--; if (bilKo.n > 0) bilKo.t = 0.6; else bilKo.fase = 3; } }
+  else if (bilKo.fase === 2) { bilKo.t += dt; if (bilKo.t > 1.4) { bilKo.n--; if (bilKo.n > 0) bilKo.t = 0.6; else if (redusert) { bil.visible = false; bilKo.fase = 0; bilKo.n = 0; } else bilKo.fase = 3; } }
   else { const borte = bil.position.x - STOPP, fart = redusert ? 60 : Math.max(3, Math.min(24, 3 + borte * 2.2)); bil.position.x += fart * dt; if (bil.position.x > 62) { bil.visible = false; bilKo.fase = 0; bilKo.n = 0; } }
   bil.position.y = hoyde(bil.position.x, VEI_Z) + (bilKo.fase === 2 ? 0 : Math.abs(Math.sin(bil.position.x * 1.7)) * 0.04);
 }
@@ -281,8 +282,9 @@ function plasserAlt() {
   // Bestillingstavla kommer på nivå 4, ved gårdsveien. Den får nærmeste ledige plass hvis noe står der.
   if (s.nivaa >= D.bestillinger.nivaa) { let tv = ting.get('tavle');
     if (!tv) { const g = lagTavle(); scene.add(g); eierAv(g); klikkbar(g); tv = {type: 'tavle', id: 'tavle', gruppe: g, fot: FOT.tavle, hoyde: 3.1}; tv.ikon = lagIkon(tv.hoyde); g.add(tv.ikon); ting.set('tavle', tv); }
+    if (s.plasser.tavle && !ting.get('tavle').plassert && !erLedig(tv, s.plasser.tavle.x, s.plasser.tavle.z, 0)) delete s.plasser.tavle;   /* en lagret plass utenfor gården eller oppå noe brukes ikke (QA 10.11) */
     const pt = s.plasser.tavle || (() => { const p = finnLedigPlass(tv, ...STANDARD.tavle) || STANDARD.tavle; return (s.plasser.tavle = {x: p[0], z: p[1], r: 0}); })();
-    plasser(tv, pt.x, pt.z, pt.r); }
+    plasser(tv, pt.x, pt.z, 0); }
   s.plasser.std = {x: 3, z: 0, r: 0};
 }
 // Faste ting fra testscenen
@@ -710,10 +712,12 @@ function visTavle() {
   if (!$('tavle').classList.contains('vis')) aapneDialog('tavle');
 }
 $('tavleKnapp').addEventListener('click', visTavle);
+let tavleSperre = 0;
 $('tavleListe').addEventListener('click', e => { const k = e.target.closest('button'); if (!k || k.disabled) return; const t = naa(), tv = ting.get('tavle');
+  if (t < tavleSperre) return; tavleSperre = t + 600;   /* to raske trykk skal ikke sende eller bytte to bestillinger (QA 10.11) */
   if (k.dataset.lever !== undefined) { const r = L.lever(s, +k.dataset.lever, t); if (!r.ok) { visTavle(); return; }
     kjorLastebil(); melding(`🚚 Lastebilen henter varene: +${r.mynter} 🪙 og +${r.xp} XP`, 3200); gi({xp: r.xp, nye: r.nye}, tv ? midtAv(tv, 3) : null); if (tv) robotJobb(tv);
-    if (r.nye && r.nye.length) lukkDialog('tavle'); else { visTavle(); const b = $('tavleListe').querySelector('button:not(:disabled)'); if (b && sisteInput === 'tast') b.focus({preventScroll: true}); } }
+    if (r.nye && r.nye.length) lukkDialog('tavle'); else { visTavle(); const b = $('tavleListe').querySelector('[data-lever]:not(:disabled)') || $('tavle').querySelector('.kryss'); if (b && sisteInput === 'tast') b.focus({preventScroll: true}); } }   /* fokus til neste «Send», aldri til «Bytt» (QA 10.11) */
   else if (k.dataset.bytt !== undefined) { if (L.byttBestilling(s, +k.dataset.bytt, t).ok) { lagre(); synk(true); visTavle(); melding('Ny bestilling! 📋'); } } });
 
 /* ======================= Flytting (planens beslutning B3) ======================= */

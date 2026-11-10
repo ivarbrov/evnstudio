@@ -165,7 +165,7 @@
 
   // ---------- Bestillinger (progresjonsregel F5) ----------
   // Tilfeldige valg bruker et frø som ligger i tilstanden. Da gir samme tilstand samme bestilling, og reglene kan testes.
-  function tilf(s) { s.best.fro = (s.best.fro * 1103515245 + 12345) % 2147483648; return s.best.fro / 2147483648; }
+  function tilf(s) { s.best.fro = (Math.imul(s.best.fro, 1103515245) + 12345) & 0x7fffffff; return s.best.fro / 2147483648; }   // Math.imul: heltall uten tap av presisjon (QA 10.11)
   // Kan spilleren lage varen nå? Avling: låst opp. Dyreprodukt: har dyret. Produkt: har bygget (eller har snart råd til det) og kan lage alle råvarene.
   function kanLage(s, v, dybde) {
     if ((dybde || 0) > 6 || D.nivaaFor(v) > s.nivaa || D.nivaaFor(v) > D.innholdTil) return false;
@@ -259,13 +259,14 @@
     if (r.plasser && typeof r.plasser === 'object') for (var p in r.plasser) { var q = r.plasser[p]; if (q && typeof q.x === 'number' && typeof q.z === 'number' && isFinite(q.x) && isFinite(q.z)) s.plasser[p] = { x: q.x, z: q.z, r: tall(q.r, 0) }; }
     // Bestillinger: bare kjente varer og rimelige antall. Mynter og XP regnes ut på nytt, så lagringen kan ikke gi mer enn reglene.
     if (r.best && typeof r.best === 'object') {
-      s.best.nr = Math.max(0, Math.floor(tall(r.best.nr, 0))); var fro = Math.floor(tall(r.best.fro, 1)); s.best.fro = fro >= 1 && fro < 2147483648 ? fro : 1;
+      s.best.nr = Math.min(1e9, Math.max(0, Math.floor(tall(r.best.nr, 0)))); var fro = Math.floor(tall(r.best.fro, 1)); s.best.fro = fro >= 1 && fro < 2147483648 ? fro : 1;
       s.best.liste = [];
       if (Array.isArray(r.best.liste)) r.best.liste.slice(0, bestPlasser(s)).forEach(function (o) {
         if (!o || typeof o.varer !== 'object' || !o.varer) return; var varer = {}, n = 0;
         for (var v in o.varer) { var q = Math.floor(tall(o.varer[v], 0)); if ((D.avlinger[v] || D.varer[v]) && !D.erFor(v) && D.nivaaFor(v) <= D.innholdTil && q >= 1 && q <= 12 && n < 3) { varer[v] = q; n++; } }
         if (!n) return; var verdi = bestVerdi(varer);
-        s.best.liste.push({ id: typeof o.id === 'string' ? o.id.slice(0, 12) : 'b' + (++s.best.nr), varer: varer, mynter: D.bestillingMynter(verdi), xp: D.bestillingXP(verdi), siden: tall(o.siden, naa) });
+        var id = typeof o.id === 'string' ? o.id.slice(0, 12) : ''; if (!id || s.best.liste.some(function (x) { return x.id === id; })) id = 'b' + (++s.best.nr);
+        s.best.liste.push({ id: id, varer: varer, mynter: D.bestillingMynter(verdi), xp: D.bestillingXP(verdi), siden: tall(o.siden, naa) });
       });
     } else s.best.liste = [];
     fyllBestillinger(s, naa);
