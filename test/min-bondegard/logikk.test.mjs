@@ -103,5 +103,36 @@ t('Rar lagring blir trygg', s2 && s2.nivaa === 1 && s2.mynter === 0 && !s2.lager
 s2 = L.valider({ v: 1, nivaa: 4, mynter: 300, lager: {}, bygg: { bakeri: { eid: true } } }, T0);
 t('Nivå 4-lagring gir 9 åkre og eid bakeri', s2.akre.length === 9 && s2.bygg.bakeri.eid && s2.mynter === 300);
 
+// --- Bestillinger (fase 2, progresjonsregel F5) ---
+s = L.ny(T0);
+t('Ingen bestillinger før nivå 4', s.best.liste.length === 0 && L.bestPlasser(s) === 0);
+let nyeN = L.giXP(s, 20 + 35 + 50, T0);
+t('Nivå 4 gir tavle og 3 bestillinger', s.nivaa === 4 && s.best.liste.length === 3 && nyeN[nyeN.length - 1].tavle === true);
+t('Bestillinger ber bare om varer spilleren kan lage', s.best.liste.every(o => Object.keys(o.varer).every(v => L.kanLage(s, v) && !D.erFor(v) && D.kjedeTid(v) <= 600)));
+t('Uten bakeri og uten råd: brød er ikke med', (() => { const x = L.ny(T0); L.giXP(x, 105, T0); x.mynter = 0; x.bygg.bakeri.eid = false; x.mynter = -400; return !L.bestPool(x).includes('brod'); })());
+t('Ingenting over innholdsnivået i denne versjonen', (() => { const x = L.ny(T0); L.giXP(x, 5000, T0); return L.bestPool(x).every(v => D.nivaaFor(v) <= D.innholdTil); })());
+{ const o = s.best.liste[0], verdi = Object.keys(o.varer).reduce((a, v) => a + D.verdi(v) * o.varer[v], 0);
+  t('Belønning følger formelen', o.mynter === Math.round(verdi * 1.6) && o.xp === Math.max(3, Math.round(0.6 * Math.pow(verdi, 0.85)))); }
+t('Kan ikke levere uten varene', (() => { s.lager = {}; return L.lever(s, 0, T0).grunn === 'mangler' && !L.kanLevere(s, 0); })());
+{ const o = s.best.liste[0]; for (const v in o.varer) s.lager[v] = o.varer[v] + 1; const m0 = s.mynter, id = o.id, lev0 = s.stat.levert;
+  r = L.lever(s, 0, T0 + S);
+  t('Levering gir mynter og XP og tar varene', r.ok && r.mynter === o.mynter && r.xp === o.xp && s.mynter >= m0 + o.mynter && Object.keys(o.varer).every(v => s.lager[v] === 1) && s.stat.levert === lev0 + 1);
+  t('En ny bestilling tar plassen, og den gamle kan ikke leveres igjen', s.best.liste.length === 3 && s.best.liste.every(x => x.id !== id)); }
+{ const før = JSON.stringify(s.best.liste[1].varer), m0 = s.mynter; r = L.byttBestilling(s, 1, T0 + 2 * S);
+  t('Bytte er gratis og gir en annen bestilling', r.ok && s.mynter === m0 && s.best.liste.length === 3 && JSON.stringify(s.best.liste[1].varer) !== før); }
+t('Forslag om bytte først etter 15 minutter', (() => { s.lager = {}; const o = s.best.liste[2]; return !L.boerByttes(s, 2, o.siden + 899 * S) && L.boerByttes(s, 2, o.siden + 900 * S); })());
+{ const kopi = L.valider(JSON.parse(JSON.stringify(s)), T0 + 3 * S);
+  t('Bestillinger overlever lagring', JSON.stringify(kopi.best.liste) === JSON.stringify(s.best.liste) && kopi.best.fro === s.best.fro && kopi.best.nr === s.best.nr); }
+{ const rar = JSON.parse(JSON.stringify(s)); rar.best.liste = [{ varer: { hvete: 2 }, mynter: 99999, xp: 99999 }, { varer: { gull: 5 } }, 'tull', { varer: { honsefor: 3 } }, { varer: { hvete: 500 } }];
+  const k = L.valider(rar, T0); t('Lagret bestilling kan ikke gi mer enn reglene', k.best.liste.length === 3 && k.best.liste[0].mynter === 6 && k.best.liste[0].xp === 3 && k.best.liste.every(o => Object.keys(o.varer).every(v => !D.erFor(v) && o.varer[v] <= 12))); }
+t('Gammel lagring uten bestillinger får dem på nivå 4', (() => { const k = L.valider({ v: 1, nivaa: 4, mynter: 100, lager: {} }, T0); return k.best.liste.length === 3; })());
+t('Samme tilstand gir samme bestilling', (() => { const a = JSON.parse(JSON.stringify(s)), b = JSON.parse(JSON.stringify(s)); return JSON.stringify(L.nyBestilling(a, T0)) === JSON.stringify(L.nyBestilling(b, T0)); })());
+// --- Erter (nivå 5) ---
+s = L.ny(T0); L.giXP(s, 20 + 35 + 50 + 70, T0);
+t('Nivå 5 gir erter med 3 frø og 12 åkre', s.nivaa === 5 && s.lager.erter === 3 && s.akre.length === 12);
+t('Erter trenger frø', (() => { L.plant(s, 0, 'erter', T0); L.plant(s, 1, 'erter', T0); L.plant(s, 2, 'erter', T0); return s.lager.erter === undefined && L.kanPlante(s, 3, 'erter') === 'ingen-fro'; })());
+t('Erter gir 2 per åker etter 2 min', (() => { const x = L.host(s, 0, T0 + 120 * S); return x.ok && x.antall === 2 && s.lager.erter === 2 && !L.host(s, 1, T0 + 119 * S).ok; })());
+t('Uten erter i silo og på åkrene: gratis frø (F2)', (() => { const x = L.ny(T0); L.giXP(x, 175, T0); x.lager = {}; return L.kanPlante(x, 0, 'erter') === null && L.plant(x, 0, 'erter', T0).gratis === true; })());
+
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);
 process.exit(feil ? 1 : 0);

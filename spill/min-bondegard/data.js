@@ -67,6 +67,9 @@
     startMynter: 50,
     startLager: { honsefor: 6, hvete: 4 },
     nyAvlingFro: 3,                     // en ny avling gir 3 frø når den låses opp
+    // Bestillinger (progresjonsplanen kap. 4 F5 og kap. 6). Tavla kommer på nivå 4. Antall bestillinger øker med nivået.
+    bestillinger: { nivaa: 4, plasser: { 4: 3, 7: 4, 10: 5 }, bytteForslag: 900, maksKjede: 600, myntFaktor: 1.6, xpFaktor: 0.6, xpPot: 0.85, minXP: 3 },
+    innholdTil: 5,                      // nivået innholdet er bygget til i denne versjonen. Bestillinger ber aldri om noe over dette
     maksVentetid: 240                   // ingen jobb tar mer enn 4 minutter (planens beslutning B1, progresjonsplanen kap. 3)
   };
   D.nivaaMynter = function (n) { return 20 + 15 * n; };
@@ -92,6 +95,16 @@
   D.erFor = function (v) { return !!(D.varer[v] && D.varer[v].erFor); };
   D.ved = function (tabell, nivaa) { var b = null; for (var k in tabell) if (+k <= nivaa && (b === null || +k > b)) b = +k; return b === null ? 0 : tabell[b]; };
   D.info = function (v) { return D.avlinger[v] || D.varer[v] || { navn: v, ikon: '❔' }; };
+  // Tiden det tar å lage én vare helt fra frø (s): avling, fôr og dyr, eller råvarer og produksjon. Brukes til å holde bestillingene korte (F5).
+  D.kjedeTid = function (v) {
+    if (D.avlinger[v]) return D.avlinger[v].tid;
+    for (var d in D.dyr) if (D.dyr[d].produkt === v) return D.dyr[d].tid + D.kjedeTid(D.dyr[d].spiser);
+    var o = D.oppskrifter[v]; if (!o) return 0;
+    var m = 0; for (var k in o.inn) m = Math.max(m, D.kjedeTid(k));
+    return m + o.tid;
+  };
+  D.bestillingMynter = function (verdi) { return Math.round(verdi * D.bestillinger.myntFaktor); };
+  D.bestillingXP = function (verdi) { return Math.max(D.bestillinger.minXP, Math.round(D.bestillinger.xpFaktor * Math.pow(verdi, D.bestillinger.xpPot))); };
   D.nivaaFor = function (v) {
     if (D.avlinger[v]) return D.avlinger[v].nivaa;
     for (var d in D.dyr) if (D.dyr[d].produkt === v) return D.dyr[d].nivaa;

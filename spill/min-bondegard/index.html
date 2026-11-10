@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.8.15 – EVN Studio</title>
+<title>Min Bondegård 0.9.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -149,6 +149,8 @@
   @keyframes flyt { to { transform:translate(-50%, -160%); opacity:0; } }
   #draIkon { position:fixed; z-index:30; pointer-events:none; transform:translate(-50%, -60%); font-size:46px; filter:drop-shadow(0 3px 3px rgba(0,0,0,.35)); display:none; }
   .fro { touch-action:none; cursor:grab; }
+  .rad.best .midt span { font-weight:800; } .rad.best .harnok { color:#2f7d1e; } .rad.best.klar { background:#e9f7d8; } .knapp.anbefalt { box-shadow:0 0 0 3px #f2b632 inset; }
+  #tavleKnapp.klar { box-shadow:0 0 0 3px #9ef06b, 0 3px 0 rgba(0,0,0,.25); }
   #melding { position:fixed; left:50%; top:calc(68px + env(safe-area-inset-top)); transform:translateX(-50%); z-index:12; background:rgba(31,74,28,.95); color:#fff; padding:10px 16px; border-radius:16px; font:800 16px 'Nunito',system-ui,sans-serif; display:none; max-width:calc(100vw - 20px); text-align:center; }
   #melding.vis { display:block; }
 
@@ -207,6 +209,7 @@
   <div class="pille" id="pMynter" title="Myntene dine"><span class="ikon" aria-hidden="true">🪙</span><span id="mynter">50</span><span class="vh"> mynter</span></div>
 </div>
 <div id="hoyre" hidden>
+  <button class="rund" id="tavleKnapp" type="button" title="Bestillinger (T)" aria-label="Bestillinger" hidden>📋</button>
   <button class="rund" id="byggKnapp" type="button" title="Bygg (B)" aria-label="Bygg">🔨</button>
   <button class="rund" id="lagerKnapp" type="button" title="Lageret (L)" aria-label="Lageret">📦</button>
   <a class="rund" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none">🚪</a>
@@ -245,6 +248,14 @@
   </div>
 </div>
 
+<div class="lag" id="tavle" role="dialog" aria-modal="true" aria-labelledby="tavleTittel">
+  <div class="kort"><button class="kryss" type="button" data-lukk="tavle" aria-label="Lukk bestillingene">✕</button>
+    <h2 id="tavleTittel">📋 Bestillinger</h2>
+    <p style="margin:0 0 8px">Folk i Elvedal vil kjøpe varene dine. Lastebilen henter dem. 🚚</p>
+    <div class="liste" id="tavleListe"></div>
+  </div>
+</div>
+
 <!-- Startkort (U1) -->
 <div class="lag vis" id="start" style="z-index:30">
   <div class="kort">
@@ -260,7 +271,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.8.15</div>
+    <div class="evn-ver" id="versjon">Versjon 0.9.0</div>
   </div>
 </div>
 
@@ -531,7 +542,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.8.15'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.9.0'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';

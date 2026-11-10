@@ -14,7 +14,8 @@
       v: VERSJON, seq: 0, opprettet: naa, sist: naa,
       nivaa: 1, xp: 0, mynter: D.startMynter,
       lager: {}, akre: [], dyr: {}, bygg: {}, plasser: {},
-      oppl: { steg: 0 }, stat: { hostet: 0, egg: 0, laget: 0, solgt: 0 }
+      oppl: { steg: 0 }, stat: { hostet: 0, egg: 0, laget: 0, solgt: 0, levert: 0 },
+      best: { nr: 0, fro: (Math.floor(naa) % 2147483646) + 1, liste: [] }
     };
     for (var k in D.startLager) s.lager[k] = D.startLager[k];
     giNivaa(s, 1, naa);
@@ -37,6 +38,7 @@
       nytt.bygg.push(b);
     }
     for (var o in D.oppskrifter) if (D.oppskrifter[o].nivaa === n) nytt.oppskrifter.push(o);
+    nytt.tavle = n === D.bestillinger.nivaa; nytt.bestillinger = fyllBestillinger(s, naa);
     return nytt;
   }
 
@@ -161,6 +163,58 @@
     return { ok: true, antall: n, mynter: m };
   }
 
+  // ---------- Bestillinger (progresjonsregel F5) ----------
+  // Tilfeldige valg bruker et frø som ligger i tilstanden. Da gir samme tilstand samme bestilling, og reglene kan testes.
+  function tilf(s) { s.best.fro = (s.best.fro * 1103515245 + 12345) % 2147483648; return s.best.fro / 2147483648; }
+  // Kan spilleren lage varen nå? Avling: låst opp. Dyreprodukt: har dyret. Produkt: har bygget (eller har snart råd til det) og kan lage alle råvarene.
+  function kanLage(s, v, dybde) {
+    if ((dybde || 0) > 6 || D.nivaaFor(v) > s.nivaa || D.nivaaFor(v) > D.innholdTil) return false;
+    if (D.avlinger[v]) return true;
+    for (var d in D.dyr) if (D.dyr[d].produkt === v) return !!s.dyr[d] && kanLage(s, D.dyr[d].spiser, (dybde || 0) + 1);
+    var o = D.oppskrifter[v]; if (!o) return false;
+    var b = s.bygg[o.bygg]; if (!b || (!b.eid && D.bygg[o.bygg].pris > s.mynter + 300)) return false;
+    for (var k in o.inn) if (!kanLage(s, k, (dybde || 0) + 1)) return false;
+    return true;
+  }
+  function bestPool(s) {
+    var alle = Object.keys(D.avlinger).concat(Object.keys(D.varer));
+    return alle.filter(function (v) { return !D.erFor(v) && kanLage(s, v) && D.kjedeTid(v) <= D.bestillinger.maksKjede; });
+  }
+  function bestVerdi(varer) { var v = 0; for (var k in varer) v += D.verdi(k) * varer[k]; return v; }
+  function nyBestilling(s, naa) {
+    var pool = bestPool(s); if (!pool.length) return null;
+    var vekt = pool.map(function (v) { return 1 + D.nivaaFor(v) / 3; }), sum = vekt.reduce(function (a, b) { return a + b; }, 0);
+    var trekk = function () { var x = tilf(s) * sum; for (var i = 0; i < pool.length; i++) { x -= vekt[i]; if (x <= 0) return pool[i]; } return pool[pool.length - 1]; };
+    var valg = s.nivaa >= 7 ? [1, 1, 2, 2, 3] : [1, 2], k = valg[Math.floor(tilf(s) * valg.length)], varer = {};
+    for (var j = 0; j < k; j++) { var v = trekk(), q = D.avlinger[v] ? 2 + Math.floor(tilf(s) * 4) : 1 + Math.floor(tilf(s) * 3); varer[v] = Math.min(12, (varer[v] || 0) + q); }
+    var verdi = bestVerdi(varer);
+    return { id: 'b' + (++s.best.nr), varer: varer, mynter: D.bestillingMynter(verdi), xp: D.bestillingXP(verdi), siden: naa };
+  }
+  function bestPlasser(s) { return s.nivaa >= D.bestillinger.nivaa ? D.ved(D.bestillinger.plasser, s.nivaa) : 0; }
+  function fyllBestillinger(s, naa) {
+    var n = 0, maks = bestPlasser(s);
+    while (s.best.liste.length < maks) { var o = nyBestilling(s, naa); if (!o) break; s.best.liste.push(o); n++; }
+    return n;
+  }
+  function kanLevere(s, i) { var o = s.best.liste[i]; return !!o && har(s, o.varer); }
+  // Leverer bestillingen: varene tas fra lageret, mynter og XP gis, og en ny bestilling tar plassen. Kan ikke leveres to ganger, for den gamle er borte.
+  function lever(s, i, naa) {
+    var o = s.best.liste[i]; if (!o) return { ok: false, grunn: 'ukjent' };
+    if (!har(s, o.varer)) return { ok: false, grunn: 'mangler' };
+    ta(s, o.varer); s.mynter += o.mynter; s.stat.levert++;
+    var ny = nyBestilling(s, naa); if (ny) s.best.liste[i] = ny; else s.best.liste.splice(i, 1);
+    return { ok: true, mynter: o.mynter, xp: o.xp, varer: o.varer, nye: giXP(s, o.xp, naa) };
+  }
+  // Bytte er alltid gratis (F5)
+  function byttBestilling(s, i, naa) {
+    if (!s.best.liste[i]) return { ok: false, grunn: 'ukjent' };
+    var gml = JSON.stringify(s.best.liste[i].varer), ny = null;
+    for (var f = 0; f < 5; f++) { ny = nyBestilling(s, naa); if (!ny || JSON.stringify(ny.varer) !== gml) break; }   // helst ikke den samme om igjen
+    if (!ny) return { ok: false, grunn: 'ingen' };
+    s.best.liste[i] = ny; return { ok: true };
+  }
+  function boerByttes(s, i, naa) { var o = s.best.liste[i]; return !!o && !har(s, o.varer) && naa - o.siden >= D.bestillinger.bytteForslag * 1000; }
+
   // ---------- Tid ----------
   // Ingen ventetid kan bli lengre enn jobben selv. Det hindrer at en klokke som har gått bakover, låser spillet.
   function normaliserTid(s, naa) {
@@ -170,6 +224,7 @@
       var forrige = naa;
       s.bygg[b].ko.forEach(function (j) { var t = D.oppskrifter[j.vare].tid * 1000; if (j.slutt - Math.max(forrige, naa) > t) { j.slutt = Math.max(forrige, naa) + t; j.start = j.slutt - t; } forrige = j.slutt; });
     }
+    s.best.liste.forEach(function (o) { if (o.siden > naa) o.siden = naa; });
     if (naa > s.sist) s.sist = naa;
   }
 
@@ -202,6 +257,18 @@
       if (Array.isArray(rb.ko)) rb.ko.slice(0, 6).forEach(function (j) { if (j && D.oppskrifter[j.vare] && D.oppskrifter[j.vare].bygg === b) sb.ko.push({ vare: j.vare, start: tall(j.start, naa), slutt: tall(j.slutt, naa) }); });
     }
     if (r.plasser && typeof r.plasser === 'object') for (var p in r.plasser) { var q = r.plasser[p]; if (q && typeof q.x === 'number' && typeof q.z === 'number' && isFinite(q.x) && isFinite(q.z)) s.plasser[p] = { x: q.x, z: q.z, r: tall(q.r, 0) }; }
+    // Bestillinger: bare kjente varer og rimelige antall. Mynter og XP regnes ut på nytt, så lagringen kan ikke gi mer enn reglene.
+    if (r.best && typeof r.best === 'object') {
+      s.best.nr = Math.max(0, Math.floor(tall(r.best.nr, 0))); var fro = Math.floor(tall(r.best.fro, 1)); s.best.fro = fro >= 1 && fro < 2147483648 ? fro : 1;
+      s.best.liste = [];
+      if (Array.isArray(r.best.liste)) r.best.liste.slice(0, bestPlasser(s)).forEach(function (o) {
+        if (!o || typeof o.varer !== 'object' || !o.varer) return; var varer = {}, n = 0;
+        for (var v in o.varer) { var q = Math.floor(tall(o.varer[v], 0)); if ((D.avlinger[v] || D.varer[v]) && !D.erFor(v) && D.nivaaFor(v) <= D.innholdTil && q >= 1 && q <= 12 && n < 3) { varer[v] = q; n++; } }
+        if (!n) return; var verdi = bestVerdi(varer);
+        s.best.liste.push({ id: typeof o.id === 'string' ? o.id.slice(0, 12) : 'b' + (++s.best.nr), varer: varer, mynter: D.bestillingMynter(verdi), xp: D.bestillingXP(verdi), siden: tall(o.siden, naa) });
+      });
+    } else s.best.liste = [];
+    fyllBestillinger(s, naa);
     if (r.oppl && typeof r.oppl === 'object') s.oppl.steg = Math.max(0, Math.floor(tall(r.oppl.steg, 0)));
     if (r.stat && typeof r.stat === 'object') for (var st in s.stat) s.stat[st] = Math.max(0, Math.floor(tall(r.stat[st], 0)));
     ['silo', 'lave'].forEach(function (type) {   // mer enn plassen i lageret kuttes (QA 9.11)
@@ -221,6 +288,7 @@
     akerStatus: akerStatus, kanPlante: kanPlante, plant: plant, host: host,
     dyrStatus: dyrStatus, mat: mat, samleDyr: samleDyr,
     uferdige: uferdige, kanProdusere: kanProdusere, produser: produser, hentProdukter: hentProdukter, kjopBygg: kjopBygg,
+    kanLage: kanLage, bestPool: bestPool, nyBestilling: nyBestilling, bestPlasser: bestPlasser, fyllBestillinger: fyllBestillinger, kanLevere: kanLevere, lever: lever, byttBestilling: byttBestilling, boerByttes: boerByttes,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;

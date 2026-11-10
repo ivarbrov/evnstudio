@@ -39,6 +39,13 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 - **0.8.13** (ikke publisert): Bare testverktøy (`?test`). «Full gård» hang i evig løkke i spillet, fordi åkre og beiter ikke er bygd på forhånd. Langtesten viser treform og om kravene fra Ivar 10.11 er oppfylt (snitt ≥ 58, 1 % lav ≥ 45, hakk < 0,5 %).
 - **0.8.14** (ikke publisert): Reven heter Rebus i Min Bondegård (Even 10.11). Før het han Nysgjerrig. Bare tekst er endret.
 - **0.8.15** (ikke publisert): Korte meldinger («Mens du var borte …») legger seg under revens tips i stedet for oppå det.
+- **0.9.0** (ikke publisert): Fase 2, nivå 3–5.
+  - Bestillingstavle på nivå 4 med 3 bestillinger. Bestillingene ber bare om varer spilleren kan lage (F5), kan byttes gratis, og spillet foreslår bytte etter 15 minutter.
+  - Lastebilen fra Elvedal kjører inn, laster og kjører ut. Mynter = 1,6 × verdi. XP = 0,6 × verdi^0,85, minst 3.
+  - Erter på nivå 5 (3 frø, 2 min). 12 åkre fra nivå 5.
+  - Lagringen har fått feltet `best: {nr, fro, liste[{id, varer, mynter, xp, siden}]}` og `stat.levert`. Formatet er fortsatt `v: 1`. Eldre lagringer får bestillinger når de lastes.
+  - Toppfeltet tilpasser seg antall knapper. Nytt: knappen 📋 og tasten T.
+  - E-coins på nivå 5 er ikke med. Beløpet er ikke godkjent (B2), og milepælen må inn i den felles regeltabellen.
 - **0.8.9** (ikke publisert): Rettinger etter QA av 0.8.7 (`qa/rapporter/2026-11-10-min-bondegard-7270d54.md`):
   - Et drag fra «Plant» begynner først etter 12 px, så et skjelvende trykk planter den valgte åkeren. Kortet lukkes så snart draget begynner, så ingen åker plantes i skjul bak det.
   - Pausen avbryter et drag.
