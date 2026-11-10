@@ -698,7 +698,7 @@ function visByggMeny() {
     if (!I_SPILLET.bygg.includes(b)) return rad(B.ikon, B.navn, `${B.pris} 🪙 · kommer i en senere versjon`, '');
     return rad(B.ikon, B.navn, `${B.pris} 🪙${s.mynter < B.pris ? ' · du har ' + s.mynter : ''}`, `<button class="knapp gronn" data-vis="${b}">Bygg</button>`); });
   DYREHUS.forEach(h => rader.push(h.bygd && h.bygd() ? rad(h.ikon, h.navn, 'Bygd ✅', '<button class="knapp lys" data-vis="honsehus">Vis</button>')
-    : rad(h.ikon, h.navn, `🔒 Nivå ${h.nivaa}${h.pris ? ' · ' + h.pris + ' 🪙' : ''}`, '')));
+    : rad(h.ikon, h.navn, h.nivaa <= s.nivaa ? 'Kommer i neste versjon av spillet' : `🔒 Nivå ${h.nivaa}${h.pris ? ' · ' + h.pris + ' 🪙' : ''}`, '')));   /* 0.9.3: ikke vis lås og nivå når nivået er nådd, men bygget ikke er laget ennå */
   $('byggListe').innerHTML = rader.join('');
   if (!$('byggMeny').classList.contains('vis')) aapneDialog('byggMeny');
 }
