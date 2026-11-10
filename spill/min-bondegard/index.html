@@ -1068,7 +1068,7 @@ function gran2Geo(v, fin) {
   const top = new THREE.ConeGeometry(0.32, 0.8, fin ? 10 : 6); top.translate(0, lag * 0.78 + 0.55, 0); deler.push({geo: top, farge: 0x3d8a3e});
   // barkvister langs kanten av hvert lag: bryter opp de glatte formene og gir granbar-struktur
   const T = {p: [], n: [], c: [], u: [], i: []}, fak = fin ? (KVAL === 'mobil' ? 0.8 : 1) : (KVAL === 'mobil' ? 0.4 : 0.55), d = new THREE.Vector3(), ri = new THREE.Vector3(), up = new THREE.Vector3(), q = new THREE.Quaternion();
-  if (fin !== 'fjern') for (let k = 0; k < lag; k++) { const R = 1.85 - k * 0.27, y0 = k * 0.78, n = Math.round((9 + R * 9) * fak);
+  if (fin !== 'fjern' && TREFORM !== 'puff') for (let k = 0; k < lag; k++) { const R = 1.85 - k * 0.27, y0 = k * 0.78, n = Math.round((9 + R * 9) * fak);
     for (let j = 0; j < n; j++) { const a = j / n * 6.283 + r5() * 0.4, rr5 = R * (0.72 + r5() * 0.24), cx = Math.cos(a) * rr5, cz = Math.sin(a) * rr5, cy = y0 + 0.02 + (1 - rr5 / R) * 0.45 + r5() * 0.08;
       d.set(Math.cos(a), 1.0 + r5() * 0.4, Math.sin(a)).add(new THREE.Vector3(r5() - 0.5, r5() - 0.5, r5() - 0.5).multiplyScalar(0.2)).normalize(); up.set(0, 1, 0); ri.crossVectors(up, d).normalize(); up.crossVectors(d, ri).normalize(); q.setFromAxisAngle(d, r5() * 6.28); ri.applyQuaternion(q); up.applyQuaternion(q);
       const w = 0.6 + R * 0.3 + r5() * 0.12, kant = rr5 / R; c.copy(mid).lerp(lys, 0.15 + kant * 0.25 + k / lag * 0.1).multiplyScalar(0.92 + r5() * 0.16); const n3 = new THREE.Vector3(cx, (cy - 2.4) * 0.3 + 0.8, cz).normalize();
@@ -1098,14 +1098,14 @@ function treModell(art, v, fin) {
   let nStore = 1e9; const segLiten = fin ? (KVAL === 'mobil' ? [7, 5] : [8, 6]) : [6, 4];
   if (PUFF) { /* løvdotter utenpå hver klase. 0.8.12 (Ivar 10.11): ulik størrelse og plassering, ujevn silhuett, og ingen trær helt like */
     klaser.forEach(k => { const j = k[3] * 0.22; k[0] += (r2() - 0.5) * j * 2; k[1] += (r2() - 0.5) * j; k[2] += (r2() - 0.5) * j * 2; k[3] *= 0.82 + r2() * 0.36; });
-    nStore = klaser.length; const store = klaser.slice(); store.forEach(([kx, ky, kz, kr]) => { const n = (fin ? 5 : 3) + Math.floor(r2() * (fin ? 4 : 2)); for (let j = 0; j < n; j++) { const th = r2() * 6.28, cy = j === 0 ? 0.8 + r2() * 0.2 : r2() * 1.5 - 0.6, sn = Math.sqrt(Math.max(0, 1 - cy * cy)), stor = r2() < 0.25, d = kr * (stor ? 0.38 + r2() * 0.15 : 0.5 + r2() * 0.22);
+    nStore = klaser.length; const store = klaser.slice(); store.forEach(([kx, ky, kz, kr]) => { const n = (fin ? 5 : 3) + Math.floor(r2() * (fin ? 4 : 2)); for (let j = 0; j < n; j++) { const th = r2() * 6.28, cy = j === 0 ? 0.8 + r2() * 0.2 : r2() * 1.5 - 0.6, sn = Math.sqrt(Math.max(0, 1 - cy * cy)), stor = r2() < 0.25, d = kr * (stor ? 0.34 + r2() * 0.14 : 0.46 + r2() * 0.2);
       klaser.push([kx + Math.cos(th) * sn * d, ky + cy * d, kz + Math.sin(th) * sn * d, kr * (stor ? 0.6 + r2() * 0.12 : 0.3 + r2() * 0.24)]); } }); }
   // klasene: bygg, farg etter høyde, topp og søkk, og skyggelegg der de møtes
   let ymin = 1e9, ymax = -1e9; klaser.forEach(([, y, , r]) => { ymin = Math.min(ymin, y - r); ymax = Math.max(ymax, y + r); });
   const sx = klaser.reduce((a, k) => a + k[0], 0) / klaser.length, sy = klaser.reduce((a, k) => a + k[1], 0) / klaser.length, sz = klaser.reduce((a, k) => a + k[2], 0) / klaser.length;
   const f0 = LINEAR(P.f[0]), f1 = LINEAR(P.f[1]), f2 = LINEAR(P.f[2]), c = new THREE.Color(), deler = [], v3 = new THREE.Vector3(), n3 = new THREE.Vector3(), k3 = new THREE.Vector3();
   /* flere grønntoner: noen dotter er varme og lyse, noen kjølige og dype */
-  const varm = f1.clone().lerp(f0, 0.35), kjolig = f2.clone().lerp(LINEAR(0x2f9a62), 0.55), toner = PUFF ? klaser.map(() => { const q = r2(); return q < 0.3 ? [varm, 0.2 + r2() * 0.25] : q < 0.58 ? [kjolig, 0.2 + r2() * 0.25] : null; }) : null, treTone = 0.94 + r2() * 0.14;
+  const varm = f1.clone().lerp(f0, 0.35), kjolig = f2.clone().lerp(LINEAR(0x2f9a62), 0.55), oliven = f0.clone().lerp(LINEAR(0x9aa83a), 0.5), toner = PUFF ? klaser.map(() => { const q = r2(); return q < 0.28 ? [varm, 0.15 + r2() * 0.35] : q < 0.54 ? [kjolig, 0.15 + r2() * 0.35] : q < 0.72 ? [oliven, 0.15 + r2() * 0.25] : null; }) : null, treTone = 0.94 + r2() * 0.14;
   const kort = art !== 'fjern' && !HD, kjerne = kort ? 0.64 : HD ? (PUFF ? 0.8 : 0.84) : 1; // med bladkort er kjernen litt mindre, og bladene stikker ut rundt den
   const farge = (x, y, z, kx, ky, kz, kr, tupp, ki) => { let ao = 1; klaser.forEach(([ox, oy, oz, or], oj) => { if (oj === ki) return; const d = Math.hypot(x - ox, y - oy, z - oz) / or; if (d < 1.35) ao = Math.min(ao, 0.5 + 0.5 * THREE.MathUtils.smoothstep(d, 0.85, 1.35)); });
     const t = (y - ymin) / (ymax - ymin + 1e-6), ly = (y - ky) / kr; c.copy(f2).lerp(f0, THREE.MathUtils.smoothstep(t * 0.6 + (ly * 0.5 + 0.5) * 0.4, 0.1, 0.6)).lerp(f1, THREE.MathUtils.smoothstep(ly, 0.2, 1.0) * 0.42 + tupp * 0.22);
@@ -1115,17 +1115,18 @@ function treModell(art, v, fin) {
     const {g, rad} = bladklase(r2, ki >= nStore && kr < 0.6 ? segLiten : seg, P.tue); const p = g.attributes.position; g.computeVertexNormals(); const nn = g.attributes.normal;
     const rmin = Math.min(...rad), rmax = Math.max(...rad), lys = 0.94 + r2() * 0.14, farger = [];
     for (let i = 0; i < p.count; i++) { v3.fromBufferAttribute(p, i); const ly = v3.y / rad[i]; v3.multiplyScalar(kr * kjerne).add(k3.set(kx, ky, kz)); p.setXYZ(i, v3.x, v3.y, v3.z);
-      let ao = 1; const aoA = PUFF ? 0.66 : HD ? 0.78 : 0.85, aoB = PUFF ? 0.98 : HD ? 1.2 : 1.35; klaser.forEach(([ox, oy, oz, or], oj) => { if (oj === ki) return; const d = Math.hypot(v3.x - ox, v3.y - oy, v3.z - oz) / or; if (d < aoB) ao = Math.min(ao, 0.5 + 0.5 * THREE.MathUtils.smoothstep(d, aoA, aoB)); });
+      let ao = 1; const aoA = PUFF ? 0.6 : HD ? 0.78 : 0.85, aoB = PUFF ? 1.05 : HD ? 1.2 : 1.35; klaser.forEach(([ox, oy, oz, or], oj) => { if (oj === ki) return; const d = Math.hypot(v3.x - ox, v3.y - oy, v3.z - oz) / or; if (d < aoB) ao = Math.min(ao, 0.5 + 0.5 * THREE.MathUtils.smoothstep(d, aoA, aoB)); });
       const t = (v3.y - ymin) / (ymax - ymin + 1e-6), tupp = (rad[i] - rmin) / (rmax - rmin + 1e-6);
       if (HD) { /* ren, myk fargeovergang: mørk under, klar grønn i midten, lys gulgrønn på toppen av hver klase og hver tue */
         c.copy(f2).lerp(f0, THREE.MathUtils.smoothstep(t * 0.45 + (ly * 0.5 + 0.5) * 0.55, 0.12, 0.55)).lerp(f1, THREE.MathUtils.smoothstep(ly, 0.1, 0.95) * 0.6 + tupp * 0.25);
         if (PUFF && toner[ki]) c.lerp(toner[ki][0], toner[ki][1]);
-        c.multiplyScalar((PUFF ? (0.84 + 0.2 * tupp) * treTone : 0.6 + 0.4 * tupp) * (0.35 + 0.65 * ao) * (0.72 + 0.28 * THREE.MathUtils.smoothstep(ly, -0.7, 0.5)) * lys * (0.97 + vstoy(v3.x * 2.5 + r2.s, v3.y * 2.5, v3.z * 2.5) * 0.06)); }
+        if (PUFF) c.multiplyScalar(0.9 + vstoy(v3.x * 0.9 + r2.s, v3.y * 0.9, v3.z * 0.9) * 0.2); /* store, myke felt av lysere og mørkere grønt */
+        c.multiplyScalar((PUFF ? (0.84 + 0.2 * tupp) * treTone : 0.6 + 0.4 * tupp) * (PUFF ? 0.62 + 0.38 * ao : 0.35 + 0.65 * ao) * (0.72 + 0.28 * THREE.MathUtils.smoothstep(ly, -0.7, 0.5)) * lys * (0.97 + vstoy(v3.x * 2.5 + r2.s, v3.y * 2.5, v3.z * 2.5) * 0.06)); }
       else { c.copy(f2).lerp(f0, THREE.MathUtils.smoothstep(t * 0.6 + (ly * 0.5 + 0.5) * 0.4, 0.1, 0.6)).lerp(f1, THREE.MathUtils.smoothstep(ly, 0.2, 1.0) * 0.55 + tupp * 0.3);
         const flekk = 0.9 + vstoy(v3.x * 5.5 + r2.s, v3.y * 5.5, v3.z * 5.5) * 0.22; c.multiplyScalar((0.66 + 0.44 * tupp) * ao * lys * flekk * (kort ? 0.62 : 1)); }
       farger.push(c.r, c.g, c.b);
       // myk belysning: blanding av flatenormal, retningen ut fra klasen og ut fra hele kronen
-      n3.fromBufferAttribute(nn, i).multiplyScalar(0.3); k3.set(v3.x - kx, v3.y - ky, v3.z - kz).normalize().multiplyScalar(0.5); n3.add(k3); k3.set(v3.x - sx, v3.y - sy + 0.3, v3.z - sz).normalize().multiplyScalar(0.2); n3.add(k3).normalize(); nn.setXYZ(i, n3.x, n3.y, n3.z); }
+      n3.fromBufferAttribute(nn, i).multiplyScalar(PUFF ? 0.18 : 0.3); k3.set(v3.x - kx, v3.y - ky, v3.z - kz).normalize().multiplyScalar(PUFF ? 0.37 : 0.5); n3.add(k3); k3.set(v3.x - sx, v3.y - sy + 0.3, v3.z - sz).normalize().multiplyScalar(PUFF ? 0.45 : 0.2); /* puff: lyset følger mer hele kronen, så dottene glir sammen */ n3.add(k3).normalize(); nn.setXYZ(i, n3.x, n3.y, n3.z); }
     g.setAttribute('color', new THREE.Float32BufferAttribute(farger, 3)); lineariser(g);
     // fjern trekanter som ligger helt inne i en annen klase (sparer trekanter uten synlig forskjell)
     const idx = g.index.array, behold = []; const inne = (i) => { const x = p.getX(i), y = p.getY(i), z = p.getZ(i); return klaser.some(([ox, oy, oz, or], oj) => oj !== ki && Math.hypot(x - ox, y - oy, z - oz) < or * 0.8 * (HD ? kjerne * 0.95 : 1)); };
