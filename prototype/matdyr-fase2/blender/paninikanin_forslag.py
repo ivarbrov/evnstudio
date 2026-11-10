@@ -40,7 +40,7 @@ def grillstriper(navn, C, A, n, m, vinkel=0.55, lengde=0.9, tykk=0.016, z_min=0.
         if len(pts) >= 3: deler.append(kurve('%s%d' % (navn, i), pts, tykk, m, rund=2, opp=4))
     return deler
 
-def kaninhode(navn, P, s, hud, ore_ut, ore_inn, ore_lengde=0.62, ore_vinkel=0.22, bred_mule=None):
+def kaninhode(navn, P, s, hud, ore_ut, ore_inn, ore_lengde=0.62, ore_vinkel=0.22, bred_mule=None, orer=True):
     """Kaninhode i EVN-stil. P = hodets senter, s = skala. Ørene får egne materialer (pels eller brød)."""
     hx, hy, hz = P; d = []
     d.append(prim('kule', navn + '_kule', hud, (hx, hy, hz), (0.27 * s, 0.25 * s, 0.25 * s), segments=40, ring_count=24))
@@ -50,6 +50,7 @@ def kaninhode(navn, P, s, hud, ore_ut, ore_inn, ore_lengde=0.62, ore_vinkel=0.22
         d += oye(navn + '_oye%d' % k, (hx + k * 0.11 * s, hy - 0.2 * s, hz + 0.06 * s), 0.06 * s)
         d.append(kinn(navn + '_kinn%d' % k, (hx + k * 0.19 * s, hy - 0.17 * s, hz - 0.04 * s), 0.045 * s))
         # Ører: lange, litt utoverbøyde, med lys innside
+        if not orer: continue
         bx, bz = hx + k * 0.1 * s, hz + 0.17 * s
         ut = prim('kule', navn + '_ore%d' % k, ore_ut, (0, 0, ore_lengde * 0.5 * s), (0.085 * s, 0.045 * s, ore_lengde * 0.5 * s), segments=24, ring_count=16)
         inn = prim('kule', navn + '_oreinn%d' % k, ore_inn, (0, -0.03 * s, ore_lengde * 0.5 * s), (0.055 * s, 0.02 * s, ore_lengde * 0.4 * s), segments=20, ring_count=12)

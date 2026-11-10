@@ -323,3 +323,15 @@ Uten flagget er fordelingen, lagringen og spillet som før. B3 (uendrede sjelden
 - **Testknapper (🧪):** «🕰️ Gammel testlagring» lager og migrerer en typisk gammel lagring. «📥 Hent standardlagring» migrerer standardlagringen på nytt.
 - **Spilltest:** `node spilltest-c.mjs` (31 kontroller: flagg, migrering, arv, salg, Gårdsnivå med arv, bestilling 0 %, garantitak, Óðinn-kallet, Matdyrboka, ødelagt lagring). Migreringstestene for begge lagringsformatene: `node --test test/matdyr/fordeling-c/migrering.test.js` (20).
 - **Paninikanin, tre forslag** (`blender/paninikanin_forslag.py`, `paninikanin-forslag.png`, `nyefigurer.html?figur=paninikanin_a,paninikanin_b,paninikanin_c`): A Paninikropp, B Brødkanin, C Halvpanini. Ingen ID- eller kategoribytte før Even har valgt.
+
+### Paninikanin: Evens valg (10.11.2026, kl. 20.31)
+- Even valgte **forslag C, Halvpanini**, som visuelt utgangspunkt. A og B er lagt bort.
+- Videreutviklet med detaljnivå C (`blender/paninikanin.py`, `modeller/paninikanin.glb`, kontaktark `paninikanin-c-kontaktark.png` med fire vinkler og spilleavstand). Mat og dyr er bakt sammen:
+  - Brødsidene buler ut som lår.
+  - Snittflaten er magen og viser lagene.
+  - Ørene er paninistrimler med ostekant.
+  - Ost har rent over panna og danner en krage.
+  - Ostetråder går fra armene, og halen er en mozzarellakule.
+- 24 728 trekanter i full versjon og 6 990 i lav versjon (budsjett 25 000 og 7 000).
+- Ørene er egne noder (`ore_v`, `ore_h`), klare for øreanimasjon. Animasjonen er ikke lagt inn ennå.
+- Ingen ID- eller kategoribytte. Det er fortsatt åpent om Paninikanin blir Food God eller Secret, og hvilket toppsett (A/B/C) de to kategoriene får.
