@@ -61,6 +61,12 @@ def lag(matkropp):
     H.nullstill(); H.MATS.clear(); M._VAFFEL.clear(); H.rnd.seed(7)
     kropp, hode, rest = ku_tobein(matkropp)
     rot = rot_node(M.MATNAVN[matkropp] + 'ku'); forelder([kropp, hode] + rest, rot)
+    # Budsjett for full versjon: ≤ 25 000 trekanter. Den oppreiste kroppen ble for tung, så den tettest maskede delen (maten) forenkles litt.
+    def tell(o): o.data.calc_loop_triangles(); return len(o.data.loop_triangles)
+    meshes = [o for o in bpy.context.scene.objects if o.type == 'MESH']; tot = sum(tell(o) for o in meshes)
+    if tot > 24500:
+        st = max(meshes, key=tell); over = tot - 24000
+        d = st.modifiers.new('budsjett', 'DECIMATE'); d.ratio = max(0.3, 1 - over / tell(st)); H.bruk_mod(st)
     H.eksporter(rot, 'pilot_ku2_%s' % matkropp)
 
 if __name__ == '__main__':

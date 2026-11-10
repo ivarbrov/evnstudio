@@ -340,4 +340,5 @@ Uten flagget er fordelingen, lagringen og spillet som før. B3 (uendrede sjelden
 - `blender/matdyr_tobein.py` bygger kua med oppreist matkropp, på samme måte som pingvinen. Hodet er det samme kuhodet. Kua har armer med klover (`vinge_v`, `vinge_h`) og to kubein (`bein_vf`, `bein_hf`), så spillets tobeinte gange virker uten ny kode.
 - Prøve med fire matvarer: Donutku (127), Pizzaku (125), Isku (134) og Burgerku (133). Kontaktark: `ku-tobein-kontaktark.png`. I spillet: `ku-tobein-spill.png`.
 - Bare utseendet endres. ID, sjeldenhet, pris og inntekt er uendret. Uten flagget er kuene som før.
-- **Kjent avvik:** Den fulle versjonen er 25 354–32 652 trekanter, og budsjettet er 25 000. Den lave versjonen er under 7 000. Dette må rettes før kuene tas i bruk (færre segmenter i hode og mat).
+- **Trekantbudsjett (rettet etter QA d859e4a):** Den fulle versjonen var 25 354–32 652 trekanter. Nå forenkler skriptet den tettest maskede delen (maten), så alle fire er 24 000 trekanter i full versjon og under 7 000 i lav. Utseendet er sammenlignet før og etter: `ku-tobein-budsjett.png`.
+- **Evens valg (10.11.2026 kl. 21.19):** «Det er mye morsommere at de går på to bein.» Kuer på to bein er Evens foretrukne retning. Det er ennå ikke bestemt om andre arter også skal gå på to bein.
