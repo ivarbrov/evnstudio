@@ -1,4 +1,4 @@
-# EVN-reven «Nysgjerrig» i Blender: skjelett, bøyelige mesher per materiale og egne animasjoner.
+# EVN-reven «Rebus» i Blender: skjelett, bøyelige mesher per materiale og egne animasjoner.
 # Formene kommer fra godkjenningsmodellen (hent-rev.cjs). Leddnavn som roboten der de finnes (Hips, Torso, Neck, Head,
 # UpperArm.*, Palm2.*, UpperLeg.*, LowerLeg.*), pluss Tail1-3 og Ear.L/R. Klippnavn som roboten (Idle, Walking, Running, Jump,
 # Punch, Wave) pluss Sneak.

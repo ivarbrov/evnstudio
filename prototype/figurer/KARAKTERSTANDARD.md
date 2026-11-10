@@ -1,6 +1,6 @@
 # Felles karakterstandard for EVN Studio (utkast)
 
-Status: **forslag, ikke godkjent** (5.11.2026). Gjelder spillbare figurer: EVN-roboten og reven «Nysgjerrig», og senere figurer.
+Status: **forslag, ikke godkjent** (5.11.2026). Gjelder spillbare figurer: EVN-roboten og reven «Rebus», og senere figurer.
 Visuelle kjennetegn (D1–D10) står i `rev/DESIGNSPESIFIKASJON.md`, punkt 2. Denne fila gjelder det tekniske.
 
 Prinsipp: **Felles der det gjør integrasjonen enkel, eget der det gir figuren uttrykk.** Ingen figur får lik geometri eller lik animasjon med en annen bare for å passe inn.

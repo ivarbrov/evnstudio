@@ -1,11 +1,11 @@
-// EVN-reven «Nysgjerrig» – godkjenningsmodell bygget av enkle former (three.js r128). Ikke spillmodellen.
+// EVN-reven «Rebus» – godkjenningsmodell bygget av enkle former (three.js r128). Ikke spillmodellen.
 // Brukes av modell.html, og av verktoy/figurer/hent-rev.cjs som henter formene til Blender. Krever THREE.
 (function () {
 'use strict';
 const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
 const mat = (hex, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: lin(hex), flatShading: true, roughness: .8, metalness: 0 }, o));
 const FARGE = { main: 0xf39a3c, lys: 0xf6eee0, mork: 0x2a1f1b, gul: 0xffcc00 };
-// ---------- Reven «Nysgjerrig» (H = robotens høyde = 1, ansiktet mot +Z) ----------
+// ---------- Reven «Rebus» (H = robotens høyde = 1, ansiktet mot +Z) ----------
 // uttrykk: glad | nysgjerrig | jubel | snike | lei
 // stilling: sta | ga | vink | hopp | hav
 function lagRev(uttrykk = 'nysgjerrig', stilling = 'sta') {

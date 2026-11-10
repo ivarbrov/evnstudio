@@ -1,4 +1,4 @@
-# Reven «Nysgjerrig» som alternativ spillbar karakter: teknisk plan
+# Reven «Rebus» som alternativ spillbar karakter: teknisk plan
 
 Status: **forslag, ikke godkjent** (4.11.2026). Ingen kode i spill, E-shop eller E-coins er endret. Ingenting er publisert.
 Grunnlag: `origin/main` (ff61022), `ecoins/ecoins.js` 1.0, `ecoins/tilbehor-3d.js`, `butikk/`, spillene på `main` og aktive grener per 4.11.2026.
@@ -6,7 +6,7 @@ Grunnlag: `origin/main` (ff61022), `ecoins/ecoins.js` 1.0, `ecoins/tilbehor-3d.j
 ## 1. Vedtak 4.11.2026 (eieren, etter Evens valg)
 
 1. Den gule EVN-roboten er fortsatt gratis standardkarakter.
-2. Reven «Nysgjerrig» kan kjøpes i E-shop for 1 000 E-coins.
+2. Reven «Rebus» kan kjøpes i E-shop for 1 000 E-coins.
 3. Reven kjøpes én gang og eies for alltid.
 4. Etter kjøp velger spilleren mellom roboten og reven i en felles karaktervelger i garderoben.
 5. Valgt karakter lagres og brukes i alle EVN-spill som støtter karakterbytte.
@@ -34,7 +34,7 @@ Even godkjenner utseendet før noe bygges inn. En voksen godkjenner publisering.
 
 | Del | Forslag | Hvorfor |
 |---|---|---|
-| Varen | Ny rad i `VARER`: `{"id": "figur.rev", "navn": "Reven Nysgjerrig", "type": "figur", "pris": 1000}`. Eksisterende varer får ingen endring (mangler `type` = tilbehør) | Samme kjøpsfunksjon `kjop(id)`, samme saldo |
+| Varen | Ny rad i `VARER`: `{"id": "figur.rev", "navn": "Reven Rebus", "type": "figur", "pris": 1000}`. Eksisterende varer får ingen endring (mangler `type` = tilbehør) | Samme kjøpsfunksjon `kjop(id)`, samme saldo |
 | Kjøpet | Lagres som vanlig i `kjopt["figur.rev"]` | Overlever eldre `ecoins.js`, fordi ukjente ID-er i `kjopt` beholdes. Saldoen blir riktig i alle versjoner |
 | Roboten | Er ingen vare. Alltid eid | Gratis standard (vedtak 1) |
 | Valgt karakter | **Egen nøkkel** `evn-figur-v1`: `{ "v": 1, "valgt": "robot" \| "rev" }` | Et nytt felt i `evn-ecoins-v1` ville blitt slettet av en eldre `ecoins.js` (Era-bufferen) neste gang den lagrer. En egen nøkkel røres ikke av gammel kode |
@@ -117,7 +117,7 @@ Ingen av varene påvirker spillmekanikken. Det finnes ingen kjøpte **skins** i 
 
 ## 6. Revemodellen til Evens godkjenning
 
-`prototype/figurer/rev/modell.html` viser reven «Nysgjerrig» etter forslag 2 og designspesifikasjonen:
+`prototype/figurer/rev/modell.html` viser reven «Rebus» etter forslag 2 og designspesifikasjonen:
 - **Rundt reven:** forfra, skrått, fra siden og bakfra, ved siden av den ekte roboten.
 - **Uttrykk:** glad, nysgjerrig, jubel (med munn, åpent spørsmål), konsentrert (snike) og litt lei seg.
 - **Stillinger:** står, går, vinker, hopper og holder håv.
