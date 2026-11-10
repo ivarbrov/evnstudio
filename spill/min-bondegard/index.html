@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.8.12 – EVN Studio</title>
+<title>Min Bondegård 0.8.13 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -260,7 +260,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.8.12</div>
+    <div class="evn-ver" id="versjon">Versjon 0.8.13</div>
   </div>
 </div>
 
@@ -531,7 +531,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.8.12'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.8.13'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -2077,7 +2077,7 @@ document.getElementById('maalTraer').onclick = async () => {
   await ledd('Bladkort skjult', () => bladMesher.forEach(m => m.visible = false), () => bladMesher.forEach(m => m.visible = true));
   await ledd('All vegetasjon skjult', () => veg.forEach(c => c.visible = false), () => veg.forEach(c => c.visible = true));
   const a = rader[0], gl = renderer.getContext(), dbg = gl.getExtension('WEBGL_debug_renderer_info');
-  const linjer = [`Mål trær ${VERSJON} · ${KVAL} · trær ${TRESTIL === 'ny' ? 'ny stil' : 'før (0.6)'} · ${skalaTekst(pr)} · ${innerWidth}×${innerHeight} CSS-px`,
+  const linjer = [`Mål trær ${VERSJON} · ${KVAL} · trær ${TRESTIL === 'ny' ? 'ny stil' : 'før (0.6)'}, form ${TREFORM}${TREFORM === 'puff' ? (KVAL === 'mobil' && !window.MB_DOTTSKYGGE ? ', dotter uten skygge' : ', full skygge') : ''} · ${skalaTekst(pr)} · ${innerWidth}×${innerHeight} CSS-px`,
     `Kamera: mål (${k(cam.target.x, 1)}; ${k(cam.target.z, 1)}) · avstand ${k(cam.dist)} · ${TID} · full gård ${TEST.full ? 'på' : 'av'} · GPU: ${dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : 'ukjent'}`,
     '  variant                    b/s   1 % lav   GPU ms   kall   trekanter',
     ...rader.map(x => `  ${x.navn.padEnd(25)} ${k(x.r.fps).padStart(4)}   ${k(x.r.lav).padStart(5)}   ${x.g === null ? '   –' : k(x.g, 1).padStart(6)}   ${String(x.kall).padStart(4)}   ${k(x.tri / 1000)}k`),
@@ -2110,6 +2110,7 @@ function fullGard() {
       if (beste) break; }
     if (!beste) return null; const [x, z, x0, x1, z0, z1, L] = beste; brukt.push([x0, x1, z0, z1]); FLATE.push([x0, x1, z0, z1, L]); return [x - cx, z - cz, L]; };
   const kopi = (kat, utenDyr) => { const deler = scene.children.filter(c => c.userData.kat === kat && !(utenDyr && c.userData.art)); const boks = new THREE.Box3(); deler.forEach(c => boks.expandByObject(c));
+    if (!deler.length || boks.isEmpty()) return null; /* 0.8.13: i spillet finnes ikke ferdige åkre og beiter. Uten dette gikk letingen etter plass i evig løkke */
     const off = finnPlass(boks); if (!off) return null;
     deler.forEach(c => { const lager = []; c.traverse(o => { lager.push([o, o.userData]); o.userData = {}; }); const k = c.clone(); lager.forEach(([o, u]) => o.userData = u); /* userData har sirkulære referanser */ k.position.x += off[0]; k.position.z += off[1]; k.position.y += off[2]; k.userData = {kat: 'full'}; scene.add(k); });
     return off; };
@@ -2207,7 +2208,7 @@ async function langStopp(grunn) {
   const avb = lang.avbrudd.map(a => `  ${mmss(a.aktivVed)} aktiv tid: ${a.type}, ${k(((a.slutt ?? tidNaa()) - a.start) / 1000, 1)} s${a.intervall ? ' (intervall ' + k(a.intervall / 1000, 1) + ' s tatt ut)' : ''}`);
   const linjer = [`Langtest ${VERSJON} · ${KVAL} · ${TID} · ${lang.css} CSS-px (${lang.retning}) · dpr ${k(DPR, 2)}`,
     `Oppløsning: fast ${skalaTekst(lang.pr)}`,
-    `Testvalg: forhåndslast ${TEST.forhand ? 'på' : 'av'} · full gård ${TEST.full ? 'på' : 'av'} · kamera ${TEST.rute ? 'automatisk rute' : 'manuelt'} · trær ${TRESTIL === 'ny' ? 'ny stil' : 'før (0.6)'} · vegetasjon bygget på ${Math.round(window.__byggTid || 0)} ms`, oppstartTekst(),
+    `Testvalg: forhåndslast ${TEST.forhand ? 'på' : 'av'} · full gård ${TEST.full ? 'på' : 'av'} · kamera ${TEST.rute ? 'automatisk rute' : 'manuelt'} · trær ${TRESTIL === 'ny' ? 'ny stil' : 'før (0.6)'}, form ${TREFORM}${TREFORM === 'puff' ? (KVAL === 'mobil' && !window.MB_DOTTSKYGGE ? ', dotter uten skygge' : ', full skygge') : ''} · vegetasjon bygget på ${Math.round(window.__byggTid || 0)} ms`, oppstartTekst(),
     `Aktiv tid ${Math.floor(aktiv / 60)} min ${k(aktiv % 60)} s av totalt ${Math.floor(total / 60)} min ${k(total % 60)} s · ${grunn}`,
     `Avbrudd (tatt ut av statistikken): ${lang.avbrudd.length}${lang.resize ? ' · størrelse/retning endret ' + lang.resize + ' gang(er)' : ''}`, ...avb,
     `Skjermlås hindret: ${lang.wakeStatus || '–'} · batteri ${lang.batteri[0]} → ${lang.batteri[1]} · GPU-tid per bilde: ${TQ ? 'målt' : 'ikke tilgjengelig i denne nettleseren'}`,
@@ -2217,6 +2218,7 @@ async function langStopp(grunn) {
   const H = hendelser, ant = f => H.filter(f).length;
   const opp = h => h.dGeo > 0 || h.dTex > 0, js = h => h.upd + h.ren > 12, ingen = h => !opp(h) && h.dProg <= 0 && !js(h) && !h.pan && !h.trykk;
   const M = lang.mk;
+  if (alle) { const ok = [alle.fps >= 58, alle.lav1 >= 45, alle.hakk / alle.n * 100 < 0.5]; linjer.splice(1, 0, `KRAV (Ivar 10.11): snitt ≥ 58: ${ok[0] ? 'JA' : 'NEI'} (${k(alle.fps, 1)}) · 1 % lav ≥ 45: ${ok[1] ? 'JA' : 'NEI'} (${k(alle.lav1)}) · hakk < 0,5 %: ${ok[2] ? 'JA' : 'NEI'} (${k(alle.hakk / alle.n * 100, 2)} %) → ${ok.every(Boolean) && aktiv >= 594 ? 'OPPFYLT' : ok.every(Boolean) ? 'oppfylt så langt, men testen var kortere enn 10 min' : 'IKKE OPPFYLT'}`); }
   linjer.push(`Hakk-analyse, alle intervaller over 25 ms: ${M.n} (detaljer lagret for de første ${H.length})`,
     `  ny shader: ${M.prog} · opplasting av geometri/tekstur: ${M.opp} · bevegelse: ${M.pan} · trykk: ${M.trykk} · vår JS over 12 ms: ${M.js}`,
     `  uten markør: ${M.ingen}. Årsaken er ikke identifisert. Lav JS-tid utelukker ikke at scenen belaster GPU-en (GPU-tid måles bare der det støttes), minnerydding, nettleseren eller systemet.`,
