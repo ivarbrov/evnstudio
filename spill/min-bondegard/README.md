@@ -35,6 +35,7 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 
 - **0.8.10** (ikke publisert): Benken står inntil låven, til venstre for gårdsveien, og ikke alene mellom veien og åkrene (Ivar 10.11). Robotens tur til benken er endret tilsvarende.
 - **0.8.11** (ikke publisert): Rettinger etter QA av 0.8.9. Pause midt i et høste-drag gir ikke lenger feilkortet, og et slipp etter pausen høster ikke noe. Drar man frøet ut fra «Plant», plantes den valgte åkeren først, og åkre som lå skjult bak kortet, plantes ikke før fingeren har vært utenfor kortet.
+- **0.8.12** (ikke publisert): Nivåtallet står midt i stjernen på alle enheter (stjernen er en tegnet form, ikke tegnet ★). Forslag til ny natur ligger bak `?tre=puff` og er ikke standard: løvdotter, roligere gress, lysere gran. På mobil kaster bare hovedklasene i kronen skygge (tiltak 1 etter måling på iPhone 10.11).
 - **0.8.9** (ikke publisert): Rettinger etter QA av 0.8.7 (`qa/rapporter/2026-11-10-min-bondegard-7270d54.md`):
   - Et drag fra «Plant» begynner først etter 12 px, så et skjelvende trykk planter den valgte åkeren. Kortet lukkes så snart draget begynner, så ingen åker plantes i skjul bak det.
   - Pausen avbryter et drag.

@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.8.11 – EVN Studio</title>
+<title>Min Bondegård 0.8.12 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -60,8 +60,9 @@
   @keyframes bump { 50% { transform:scale(1.12); } }
   #pNivaa { padding-right:10px; }
   #pNivaa .stjerne { position:relative; width:38px; height:38px; display:grid; place-items:center; }
-  #pNivaa .stjerne b { position:relative; margin-top:5px; font:400 19px 'Lilita One',sans-serif; color:#5a3b00; }
-  #pNivaa .stjerne::before { content:'★'; position:absolute; inset:-6px 0 0; text-align:center; font-size:44px; line-height:44px; color:var(--gull); text-shadow:0 1px 0 #b8860b; }
+  #pNivaa .stjerne b { position:relative; margin-top:4px; line-height:1; font:400 19px 'Lilita One',sans-serif; color:#5a3b00; }
+  /* 0.8.12: stjernen er en tegnet form, ikke tegnet ★. Da står tallet midt i på alle enheter (på iPhone sto det nede til venstre) */
+  #pNivaa .stjerne::before { content:''; position:absolute; inset:-7px; background:var(--gull); clip-path:polygon(50% 2%, 62% 34%, 97% 37%, 70% 59%, 79% 93%, 50% 74%, 21% 93%, 30% 59%, 3% 37%, 38% 34%); filter:drop-shadow(0 1px 0 #b8860b); }
   .xpbar { width:96px; height:12px; border-radius:6px; background:rgba(0,0,0,.35); overflow:hidden; }
   .xpbar i { display:block; height:100%; width:0; background:linear-gradient(#9ef06b,#4fbf2a); border-radius:6px; transition:width .4s; }
   .xptekst { font-size:12px; font-weight:800; opacity:.9; line-height:1; margin-top:3px; }
@@ -162,7 +163,7 @@
     #hud { max-width:calc(100vw - 168px); gap:6px; } #hoyre { gap:6px; }
     .rund { width:44px; height:44px; min-height:44px; font-size:20px; }
     .pille { font-size:16px; padding:3px 10px 3px 4px; gap:4px; } .pille .ikon { width:30px; height:30px; font-size:17px; }
-    #pNivaa .stjerne { width:32px; height:32px; } #pNivaa .stjerne::before { font-size:38px; line-height:38px; inset:-5px 0 0; }
+    #pNivaa .stjerne { width:32px; height:32px; } #pNivaa .stjerne::before { inset:-6px; }
     .xpbar { width:54px; } .xptekst { font-size:11px; }
     #revTips { top:calc(66px + env(safe-area-inset-top)); font-size:15px; }
   }
@@ -259,7 +260,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.8.11</div>
+    <div class="evn-ver" id="versjon">Versjon 0.8.12</div>
   </div>
 </div>
 
@@ -530,7 +531,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.8.11'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.8.12'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -928,6 +929,8 @@ function plassLedig(x, z) {
 const RUTE = 18; const ruter = new Map();
 const ruterBlad = new Map(), bladMesher = [];
 function iRuteBlad(x, z, del) { const k = Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterBlad.has(k)) ruterBlad.set(k, []); ruterBlad.get(k).push(...del); }
+const ruterLett = new Map(); /* 0.8.12 tiltak 1: løvdotter som ikke kaster skygge på mobil */
+function iRuteLett(x, z, del) { const k = Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterLett.has(k)) ruterLett.set(k, []); ruterLett.get(k).push(...del); }
 function iRute(x, z, del) { const k = Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruter.has(k)) ruter.set(k, []); ruter.get(k).push(...del); }
 const skyggeBlob = [];
 // sveiser like hjørner (sømmen i kule- og dreiegeometri), slik at normalene blir myke uten synlige skjøter
@@ -1099,7 +1102,7 @@ function treModell(art, v, fin) {
   for (let i = 0; i < P.topp; i++) { const th = i / Math.max(1, P.topp) * 6.28 + r2(), midt = i === 0 && !P.soyle, rr2 = midt ? 0 : P.toppR * (0.6 + r2() * 0.5);
     const y = P.soyle ? h + 0.4 + i * (P.toppY - 0.4) / P.topp : (P.busk ? P.toppY + (midt ? 0.3 : 0) : h + P.toppY * (0.85 + r2() * 0.3) + (midt ? 0.25 : 0)); const rk = L(P.k) * (P.soyle ? 1 - i * 0.06 : 1);
     klaser.push([Math.cos(th) * rr2 + (P.soyle ? (r2() - 0.5) * 0.3 : 0), y, Math.sin(th) * rr2, rk]); }
-  let nStore = 1e9; const segLiten = fin ? (KVAL === 'mobil' ? [7, 5] : [8, 6]) : [6, 4];
+  const smaa = []; let nStore = 1e9; const segLiten = fin ? (KVAL === 'mobil' ? [7, 5] : [8, 6]) : [6, 4];
   if (PUFF) { /* løvdotter utenpå hver klase. 0.8.12 (Ivar 10.11): ulik størrelse og plassering, ujevn silhuett, og ingen trær helt like */
     const ujevn = art === 'lonn' ? 1.6 : 1; klaser.forEach(k => { const j = k[3] * 0.22 * ujevn; k[0] += (r2() - 0.5) * j * 2; k[1] += (r2() - 0.5) * j; k[2] += (r2() - 0.5) * j * 2; k[3] *= 1 - 0.18 * ujevn + r2() * 0.36 * ujevn; });
     nStore = klaser.length; const store = klaser.slice(); store.forEach(([kx, ky, kz, kr]) => { const n = (fin ? 5 : 3) + Math.floor(r2() * (fin ? 4 : 2)); for (let j = 0; j < n; j++) { const th = r2() * 6.28, cy = j === 0 ? 0.8 + r2() * 0.2 : r2() * 1.5 - 0.6, sn = Math.sqrt(Math.max(0, 1 - cy * cy)), stor = r2() < 0.25, d = kr * (stor ? 0.34 + r2() * 0.14 : 0.46 + r2() * 0.2);
@@ -1137,7 +1140,7 @@ function treModell(art, v, fin) {
     const idx = g.index.array, behold = []; const inne = (i) => { const x = p.getX(i), y = p.getY(i), z = p.getZ(i); return klaser.some(([ox, oy, oz, or], oj) => oj !== ki && Math.hypot(x - ox, y - oy, z - oz) < or * 0.8 * (HD ? kjerne * 0.95 : 1)); };
     const inneA = new Uint8Array(p.count); for (let i = 0; i < p.count; i++) inneA[i] = inne(i) ? 1 : 0;
     for (let i = 0; i < idx.length; i += 3) if (!(inneA[idx[i]] && inneA[idx[i + 1]] && inneA[idx[i + 2]])) behold.push(idx[i], idx[i + 1], idx[i + 2]);
-    g.setIndex(behold); deler.push({geo: g});
+    g.setIndex(behold); (ki >= nStore ? smaa : deler).push({geo: g});
     // bladkort: små rosetter av blader rundt klasen. De gir en frodig, takkete silhuett med få trekanter
     if (kort) { const n = Math.round((18 + kr * kr * 30) * (fin ? (KVAL === 'mobil' ? 0.8 : 1) : (KVAL === 'mobil' ? 0.4 : 0.55))), up = new THREE.Vector3(), ri = new THREE.Vector3(), d = new THREE.Vector3(), q = new THREE.Quaternion();
       for (let j = 0; j < n; j++) { const th = r2() * 6.28, cy = Math.min(1, (j + 0.5) / n * 1.7 - 0.6) * 0.98 + (r2() - 0.5) * 0.15, sn = Math.sqrt(Math.max(0, 1 - cy * cy)); d.set(Math.cos(th) * sn, cy, Math.sin(th) * sn).normalize();
@@ -1151,7 +1154,8 @@ function treModell(art, v, fin) {
   for (let i = 0; i < (P.epler || 0); i++) { const [kx, ky, kz, kr] = klaser[Math.floor(r2() * klaser.length)], th = r2() * 6.28, cy = r2() * 0.9 - 0.3, s = Math.sqrt(1 - cy * cy);
     deler.push({geo: new THREE.SphereGeometry(0.12, 7, 5), m: M4(kx + Math.cos(th) * s * kr * 0.95, ky + cy * kr * 0.95, kz + Math.sin(th) * s * kr * 0.95), farge: 0xdc2f2a}); }
   const blad = kortGeo(T);
-  const ut = {blad, krone: samle(deler), ved: ved.length ? samle(ved.map(d => d.farge !== undefined ? d : {geo: d.geo, m: d.m})) : null, klaser, bredde: Math.max(...klaser.map(([x, , z, r]) => Math.hypot(x, z) + r))};
+  const LETT = PUFF && KVAL === 'mobil' && !window.MB_DOTTSKYGGE; if (!LETT) deler.push(...smaa);
+  const ut = {dotter: LETT && smaa.length ? samle(smaa) : null, blad, krone: samle(deler), ved: ved.length ? samle(ved.map(d => d.farge !== undefined ? d : {geo: d.geo, m: d.m})) : null, klaser, bredde: Math.max(...klaser.map(([x, , z, r]) => Math.hypot(x, z) + r))};
   ut.krone.computeBoundingSphere(); treCache.set(nokkel, ut); return ut;
 }
 // punkter på overflaten av en busk eller krone (til blomster og bær)
@@ -1162,7 +1166,7 @@ function tre(x, z, type, v, skala = 1, ut = null) {
   if (revPlass(x, z)) return false; const rr0 = TRE_R[type] * skala;
   if (Math.abs(z - VEI_Z) < 1.7 + rr0 * 0.75 || (Math.abs(x + 5.5) < 1.4 + rr0 * 0.75 && z > -1 && z < VEI_Z)) return false; // ingen trær (eller kroner) over veien
   if (trePlass.some(([a, b, r]) => Math.hypot(a - x, b - z) < (r + rr0) * 0.8)) return false; trePlass.push([x, z, rr0]); const y = hoyde(x, z), fin = naer(x, z), s = skala * rr(0.85, 1.25), rot = rr(0, 6.28), d = [];
-  if (TRESTIL === 'ny' && type !== 'gran') { const M = treModell(type === 'ung' ? 'rund' : type, fin ? v % 6 : v % 3, fin), /* færre varianter langt unna: kortere byggetid */ k = (type === 'ung' ? 0.45 : 1) * s, hf = (a) => { const q = Math.sin(x * 12.9898 + z * 78.233 + a) * 43758.5453; return q - Math.floor(q); }, PF = TREFORM === 'puff', kb = k * (PF ? 0.9 + hf(1) * 0.2 : 1), kh = k * (PF ? 0.9 + hf(2) * 0.22 : 1); /* puff: hvert tre er litt bredere, smalere, høyere eller lavere */ if (M.ved) d.push({geo: M.ved, m: M4(x, y, z, 0, rot, 0, k)}); d.push({geo: M.krone, m: M4(x, y - (kh - k) * 1.6, z, 0, rot, 0, kb, kh, kb)}); if (M.blad) iRuteBlad(x, z, [{geo: M.blad, m: M4(x, y, z, 0, rot, 0, k)}]); }
+  if (TRESTIL === 'ny' && type !== 'gran') { const M = treModell(type === 'ung' ? 'rund' : type, fin ? v % 6 : v % 3, fin), /* færre varianter langt unna: kortere byggetid */ k = (type === 'ung' ? 0.45 : 1) * s, hf = (a) => { const q = Math.sin(x * 12.9898 + z * 78.233 + a) * 43758.5453; return q - Math.floor(q); }, PF = TREFORM === 'puff', kb = k * (PF ? 0.9 + hf(1) * 0.2 : 1), kh = k * (PF ? 0.9 + hf(2) * 0.22 : 1); /* puff: hvert tre er litt bredere, smalere, høyere eller lavere */ if (M.ved) d.push({geo: M.ved, m: M4(x, y, z, 0, rot, 0, k)}); d.push({geo: M.krone, m: M4(x, y - (kh - k) * 1.6, z, 0, rot, 0, kb, kh, kb)}); if (M.dotter) (ut ? d.push.bind(d) : (e) => iRuteLett(x, z, [e]))({geo: M.dotter, m: M4(x, y - (kh - k) * 1.6, z, 0, rot, 0, kb, kh, kb)}); if (M.blad) iRuteBlad(x, z, [{geo: M.blad, m: M4(x, y, z, 0, rot, 0, k)}]); }
   else if (type === 'gran' && TRESTIL === 'ny') { d.push({geo: stammeGeo(1.3 * s, 0.25 * s, fin), m: M4(x, y, z)}); const G = gran2Geo(v % 5, fin), gm = M4(x, y + 0.75 * s, z, 0, rot, 0, 0.95 * s, 1.08 * s, 0.95 * s); d.push({geo: G.krone, m: gm}); if (G.blad) iRuteBlad(x, z, [{geo: G.blad, m: gm}]); }
   else if (type === 'gran') { d.push({geo: stammeGeo(1.2 * s, 0.24 * s, fin), m: M4(x, y, z)}); d.push({geo: granGeo(v % 5, fin), m: M4(x, y + 0.85 * s, z, 0, rot, 0, 0.92 * s, 1.1 * s, 0.92 * s)}); }
   else if (type === 'bjork') { const h = 3.4 * s; d.push({geo: stammeGeo(h, 0.17 * s, fin, true), m: M4(x, y, z)}); d.push({geo: krone('bjork', v % 6, fin), m: M4(x, y + h * 0.82, z, 0, rot, 0, 1.25 * s)}); }
@@ -1174,7 +1178,7 @@ function tre(x, z, type, v, skala = 1, ut = null) {
   if (ut) ut.push(...d); else iRute(x, z, d); return true; skyggeBlob.push([x, z, (type === 'ung' ? 0.9 : type === 'bjork' ? 1.8 : 2.4) * s]);
 }
 function busk(x, z, s, type, j) { if (revPlass(x, z) || Math.abs(z - VEI_Z) < 1.7 + s * 1.1 || trePlass.some(([a, b]) => Math.hypot(a - x, b - z) < 1.1)) return; const y = hoyde(x, z), d = [], rot = rr(0, 6.28);
-  if (TRESTIL === 'ny') { const M = treModell('busk', j % 6, naer(x, z)); d.push({geo: M.krone, m: M4(x, y + 0.1 * s, z, 0, rot, 0, 1.05 * s)}); if (M.blad) iRuteBlad(x, z, [{geo: M.blad, m: M4(x, y + 0.1 * s, z, 0, rot, 0, 1.05 * s)}]); let f4 = 500 + j * 37; const r4 = () => (f4 = (f4 * 16807) % 2147483647) / 2147483647, m4 = M4(x, y + 0.1 * s, z, 0, rot, 0, 1.05 * s), q = new THREE.Vector3();
+  if (TRESTIL === 'ny') { const M = treModell('busk', j % 6, naer(x, z)); d.push({geo: M.krone, m: M4(x, y + 0.1 * s, z, 0, rot, 0, 1.05 * s)}); if (M.dotter) iRuteLett(x, z, [{geo: M.dotter, m: M4(x, y + 0.1 * s, z, 0, rot, 0, 1.05 * s)}]); if (M.blad) iRuteBlad(x, z, [{geo: M.blad, m: M4(x, y + 0.1 * s, z, 0, rot, 0, 1.05 * s)}]); let f4 = 500 + j * 37; const r4 = () => (f4 = (f4 * 16807) % 2147483647) / 2147483647, m4 = M4(x, y + 0.1 * s, z, 0, rot, 0, 1.05 * s), q = new THREE.Vector3();
     if (type === 'blomst') { const bf = [0xff8fb8, 0xffffff, 0xf7e05a][j % 3]; for (let b = 0; b < 14; b++) { q.set(...paKlase(M, r4)).applyMatrix4(m4); d.push({geo: new THREE.SphereGeometry(0.075, 6, 4), m: M4(q.x, q.y, q.z), farge: bf}); } }
     if (type === 'baer') for (let b = 0; b < 10; b++) { q.set(...paKlase(M, r4)).applyMatrix4(m4); d.push({geo: new THREE.SphereGeometry(0.065, 6, 4), m: M4(q.x, q.y, q.z), farge: 0xd92f46}); }
     iRute(x, z, d); skyggeBlob.push([x, z, 1.3 * s]); return; }
@@ -1221,6 +1225,7 @@ function lagVegetasjon() {
   lagGjengroing();
   lagElvebredd();
   ruterBlad.forEach((del) => { const me = mesh(samleIndeksert(del), bladMat()); bladMesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = KVAL !== 'mobil' && Math.hypot(bs.x, bs.z) < 34; }); // 0.7.4: på mobil kaster bladkortene ikke skygge; kronenes kjerner gjør det fortsatt
+  ruterLett.forEach((del) => { const me = mesh(samle(del), MAT.vertex); me.castShadow = false; });
   ruter.forEach((del) => { const me = mesh(samle(del), MAT.vertex); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = Math.hypot(bs.x, bs.z) < 34; }); // bare ruter nær gården kaster skygge
   lagFjernskog();
   [[-7, -6, 7.5], [6.5, -8, 3.2], [-10.5, 8, 2.6], [-12.9, -1.8, 2.2]].forEach(b => skyggeBlob.push(b));
