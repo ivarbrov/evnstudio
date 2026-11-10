@@ -785,7 +785,7 @@ function lagTerreng() {
     c.copy(gr2).lerp(gr1, n * 0.9).lerp(gr3, THREE.MathUtils.clamp(h / 9, 0, 0.7));
     if (TREFORM === 'puff') { /* forslag 10.11 (Ivar): roligere gress. Store, myke felt av tørrere og dypere grønt i stedet for én sterk farge, og ingen nye smådetaljer */
       const n2 = vstoy(x * 0.035 + 40, 11, z * 0.035), n3 = vstoy(x * 0.02, 23, z * 0.02 + 17);
-      c.lerp(engT, THREE.MathUtils.smoothstep(n2, 0.5, 0.85) * 0.4).lerp(dypT, THREE.MathUtils.smoothstep(n3, 0.5, 0.85) * 0.3); c.offsetHSL(0, -0.1, -0.012); }
+      c.lerp(engT, THREE.MathUtils.smoothstep(n2, 0.5, 0.85) * 0.4).lerp(dypT, THREE.MathUtils.smoothstep(n3, 0.5, 0.85) * 0.3); c.offsetHSL(0.012, -0.2, -0.02); } /* 10.11: enda litt mindre intens, og en tanke varmere */
     const o = omradeVed(x, z); if (o) { c.lerp(vill, 0.32); c.lerp(toerr, THREE.MathUtils.smoothstep(vstoy(x * 0.3, 7, z * 0.3), 0.55, 0.8) * 0.45); }
     if (!window.MB_MYK_VEI && paVei(x, z)) c.copy(sand).offsetHSL(0, 0, (n - 0.5) * 0.06);
     else if (paSti(x, z, 1.1)) c.lerp(sand, 0.62 * (1 - THREE.MathUtils.smoothstep(Math.abs(x - stiX(z)), 0.35, 1.1)) + 0.12);
