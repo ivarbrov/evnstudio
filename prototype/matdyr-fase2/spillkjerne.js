@@ -5,8 +5,10 @@
 (function () {
   'use strict';
   const I = window.EVNIntern, D = window.EVNMatdyrData, T = THREE, $ = id => document.getElementById(id);
-  const { R, COMBOS, POOLS, PRICE, INC, GARDSNIVA, plassPris, ARTEMOJI } = D;
-  const NOKKEL = 'evn-matdyr-gard-proto', MAKS = 10;
+  const { R, COMBOS, POOLS, PRICE, INC, GARDSNIVA, plassPris, ARTEMOJI, FORDELING, GML_R, PRICEr, INCr, ANIMALS, FOODS } = D;
+  // ?fordeling=c (alternativ C): egen testlagring. Standardlagringen leses bare én gang for å migreres, og skrives aldri.
+  const ERC = FORDELING === 'c', NOKKEL_STD = 'evn-matdyr-gard-proto';
+  const NOKKEL = ERC ? 'evn-matdyr-gard-proto-c' : NOKKEL_STD, MAKS = 10;
   // Matdyr som har ferdig 3D-figur (ID → indeks i I.NOKLER). Croissantrev er bare en stiltest uten ID.
   const FIGUR = { 127: 0, 508: 1, 700: 2, 259: 4 };
   const fmt = n => { n = Math.floor(n); return n >= 1e9 ? +(n / 1e9).toFixed(1) + ' mrd' : n >= 1e6 ? +(n / 1e6).toFixed(1) + ' mill' : n.toLocaleString('nb-NO'); };
@@ -14,7 +16,7 @@
   const navn = ci => COMBOS[ci].navn;
 
   // =================== Tilstand og lagring ===================
-  const ny = () => ({ v: 1, penger: 60, gard: { niva: 1 }, plassNiva: 0, base: [], disc: [], bestilling: 15 });
+  const ny = () => Object.assign({ v: 1, penger: 60, gard: { niva: 1 }, plassNiva: 0, base: [], disc: [], bestilling: 15 }, ERC ? { fordeling: 'c', arv: {} } : {});
   let S = ny();
   const tak = s => GARDSNIVA[s.gard.niva].tak;
   const plasserApne = (s = S) => Math.min(4 + 2 * s.plassNiva, tak(s));
@@ -27,12 +29,39 @@
     o.base = (Array.isArray(s.base) ? s.base : []).slice(0, plasserApne(o)).map(v => Number.isInteger(v) && v >= 0 && v < COMBOS.length ? v : -1);
     o.disc = (Array.isArray(s.disc) ? s.disc : []).filter(v => Number.isInteger(v) && v >= 0 && v < COMBOS.length);
     o.bestilling = [0, 10, 15].includes(s.bestilling) ? s.bestilling : 15;
+    if (ERC) {   // arvet kategori per plass (streng bestefarsregel). Bare gyldige avvik fra den nye tabellen beholdes.
+      const a = s.arv && typeof s.arv === 'object' && !Array.isArray(s.arv) ? s.arv : {};
+      for (const [k, r] of Object.entries(a)) { const i = +k, ci = o.base[i]; if (/^\d+$/.test(k) && ci >= 0 && Number.isInteger(r) && r >= 0 && r < R.length && r !== COMBOS[ci].r) o.arv[i] = r; }
+      if (typeof s.migrert === 'string') o.migrert = s.migrert;
+    }
     return o;
   }
-  function lesLagret() { try { return rens(JSON.parse(localStorage.getItem(NOKKEL) || 'null')); } catch (e) { return null; } }
+  // Migrering fra standardlagringen (gammel fordeling) til alternativ C. Eide dyr beholder gammel kategori, pris og inntekt.
+  // Penger, gårdsnivå, plasser og alle funn (disc) beholdes uendret. Kilden endres ikke.
+  function migrerStd(s) {
+    if (!s || s.fordeling === 'c') return null;
+    const o = rens(Object.assign({}, s, { arv: {} })); if (!o) return null;
+    o.base.forEach((ci, i) => { if (ci >= 0 && GML_R[ci] !== COMBOS[ci].r) o.arv[i] = GML_R[ci]; });
+    o.migrert = 'standard ' + new Date().toISOString().slice(0, 10); return o;
+  }
+  function lesLagret() {
+    let raw = null; try { raw = localStorage.getItem(NOKKEL); } catch (e) { return null; }
+    let o = null; try { o = rens(JSON.parse(raw || 'null')); } catch (e) {}
+    // Fordeling C: en ødelagt testlagring tas vare på før den kan bli overskrevet
+    if (ERC && raw && !o) try { localStorage.setItem(NOKKEL + '-ugyldig', raw); } catch (e) {}
+    return o;
+  }
   function lagre(s = S) { try { const t = JSON.stringify(s); localStorage.setItem(NOKKEL, t); return localStorage.getItem(NOKKEL) === t; } catch (e) { return false; } }
   function fyllBase(s = S) { while (s.base.length < plasserApne(s)) s.base.push(-1); }
-  { const l = lesLagret(); if (l) S = l; fyllBase(); }
+  function hentStandard() { try { return migrerStd(JSON.parse(localStorage.getItem(NOKKEL_STD) || 'null')); } catch (e) { return null; } }
+  { let l = lesLagret(); if (!l && ERC) { l = hentStandard(); if (l) lagre(l); } if (l) S = l; fyllBase(); }
+  // Effektiv kategori, inntekt og pris for dyret på plass i (arvet kategori går foran den nye tabellen)
+  const arvet = i => ERC && S.arv && Number.isInteger(S.arv[i]);
+  const rB = i => { const ci = S.base[i]; return ci >= 0 ? (arvet(i) ? S.arv[i] : COMBOS[ci].r) : -1; };
+  const incB = i => { const ci = S.base[i]; return ci >= 0 ? INCr(ci, rB(i)) : 0; };
+  const prisB = i => { const ci = S.base[i]; return ci >= 0 ? PRICEr(ci, rB(i)) : 0; };
+  const ryddArv = (i, s = S) => { if (s.arv) delete s.arv[i]; };
+  const eldre = i => arvet(i) ? ' ⏳ eldre utgave' : '';
 
   // =================== Figurer ===================
   const kuleGeo = new T.SphereGeometry(0.85, 20, 14), kuleMat = {};
@@ -41,9 +70,9 @@
   function tekstur(nokkel, b, h, tegn) { if (teksturer[nokkel]) return teksturer[nokkel]; const cv = document.createElement('canvas'); cv.width = b; cv.height = h; tegn(cv.getContext('2d')); const t = new T.CanvasTexture(cv); t.encoding = T.sRGBEncoding; return (teksturer[nokkel] = t); }
   const EMOJIFONT = 'system-ui,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
   // Matdyr uten ferdig figur vises som en kule i sjeldenhetsfargen med dyr og mat over
-  function plassholder(ci) {
+  function plassholder(ci, r) {
     const g = new T.Group(), c = COMBOS[ci];
-    const k = new T.Mesh(kuleGeo, rMat(c.r)); k.position.y = 0.85; k.castShadow = true; g.add(k);
+    const k = new T.Mesh(kuleGeo, rMat(r ?? c.r)); k.position.y = 0.85; k.castShadow = true; g.add(k);
     const s = new T.Sprite(new T.SpriteMaterial({ map: tekstur('e' + ci, 256, 128, x => { x.font = '92px ' + EMOJIFONT; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(c.a + c.f, 128, 68); }) }));
     s.scale.set(2.2, 1.1, 1); s.position.y = 2.2; g.add(s); return g;
   }
@@ -101,7 +130,7 @@
       const eg = new T.Group(); eg.userData.etasje = +e; dyrG.add(eg); const im = new T.InstancedMesh(ledigGeo(), ledigMat(), ids.length);
       ids.forEach((pi, j) => { const p = plasserNa[pi]; m4.makeTranslation(p.x, p.y + 0.21, p.z); im.setMatrixAt(j, m4); }); eg.add(im);
     }
-    for (const i of enkle) { const eg = new T.Group(); eg.userData.etasje = etasjeAv(i); const ph = plassholder(S.base[i]), p = plasserNa[i]; ph.position.set(p.x, p.y + 0.2, p.z); eg.add(ph); dyrG.add(eg); }
+    for (const i of enkle) { const eg = new T.Group(); eg.userData.etasje = etasjeAv(i); const ph = plassholder(S.base[i], rB(i)), p = plasserNa[i]; ph.position.set(p.x, p.y + 0.2, p.z); eg.add(ph); dyrG.add(eg); }
   }
   let lgeo = null, lmat = null;
   function ledigGeo() {
@@ -148,14 +177,25 @@
   let garanti = true, utenKrav = 0;
   const trengs = () => { const k = GARDSNIVA[S.gard.niva + 1]; return k && k.krav ? k.krav.filter(kr => kr[0] && passer(kr).length < kr[1]) : []; };
   const passerKrav = (ci, kr) => COMBOS[ci].art === kr[0] && COMBOS[ci].r >= kr[2];
+  // Fordeling C:
+  //  - Bestillingsregn 0 % betyr ingen styring i det hele tatt, heller ikke garanti.
+  //  - Garantien løfter aldri sjeldenheten over Legendary. Trengs et sjeldnere dyr, styres bare arten når den sjeldenheten faller av seg selv.
+  //  - Óðinn-kallet (synlig regel i Gårdsnivå-vinduet): på vei til nivå 10, med 3 ulike Food God funnet, blir neste Food God som faller, Óðinn.
+  const ODIN = COMBOS.findIndex(c => c.special === 'Óðinn'), KALL = 3;
+  const kallFunnet = () => new Set(S.disc.filter(ci => COMBOS[ci].r === 5 && ci !== ODIN)).size;
+  const kallAktiv = () => ERC && S.gard.niva === MAKS - 1 && trengs().some(kr => kr[0] === COMBOS[ODIN].art && kr[2] === 5);
+  const kallKlart = () => kallAktiv() && kallFunnet() >= KALL;
   function trekk() {
     const tot = R.reduce((s, r) => s + r.w, 0); let x = Math.random() * tot, r = 0;
     for (; r < R.length - 1; r++) { x -= R[r].w; if (x <= 0) break; }
-    let pool = POOLS[r]; const k = GARDSNIVA[S.gard.niva + 1], mangler = trengs();
-    if (garanti && mangler.length && utenKrav >= 6) {
-      const kr = mangler[Math.floor(Math.random() * mangler.length)];
-      for (let rr = Math.max(r, kr[2]); rr < POOLS.length; rr++) { const p2 = POOLS[rr].filter(ci => COMBOS[ci].art === kr[0]); if (p2.length) { pool = p2; break; } }
-    } else if (k && Math.random() * 100 < S.bestilling) { const arter = k.krav.filter(([a, , min]) => a && r >= min).map(kr => kr[0]); const p2 = pool.filter(ci => arter.includes(COMBOS[ci].art)); if (p2.length) pool = p2; }
+    let pool = POOLS[r], styrt = false; const k = GARDSNIVA[S.gard.niva + 1], mangler = trengs(), styring = !ERC || S.bestilling > 0;
+    if (ERC && r === 5 && kallKlart()) { pool = [ODIN]; styrt = true; }
+    if (!styrt && garanti && styring && mangler.length && utenKrav >= 6) {
+      const kr = mangler[Math.floor(Math.random() * mangler.length)]; if (!ERC) styrt = true;   // standard: som før (garanti eller bestilling, aldri begge)
+      if (!ERC || kr[2] <= 3 || r >= kr[2])
+        for (let rr = Math.max(r, kr[2]); rr < POOLS.length; rr++) { const p2 = POOLS[rr].filter(ci => COMBOS[ci].art === kr[0]); if (p2.length) { pool = p2; styrt = true; break; } }
+    }
+    if (!styrt && k && Math.random() * 100 < S.bestilling) { const arter = k.krav.filter(([a, , min]) => a && r >= min).map(kr => kr[0]); const p2 = pool.filter(ci => arter.includes(COMBOS[ci].art)); if (p2.length) pool = p2; }
     const ci = pool[Math.floor(Math.random() * pool.length)];
     utenKrav = mangler.some(kr => passerKrav(ci, kr)) ? 0 : utenKrav + 1;
     return ci;
@@ -363,8 +403,8 @@
   const harLedig = () => S.base.slice(0, aapneNa).includes(-1);
   // Bytte når gården er full (som i Matdyr-regn 0.10.3): et matdyr kan tas med hvis det tjener mer enn det svakeste i gården.
   // Ved levering spør spillet alltid først. Det gamle selges for halv pris. Ingenting byttes automatisk.
-  function svakeste() { let w = -1; for (let i = 0; i < Math.min(aapneNa, S.base.length); i++) { const ci = S.base[i]; if (ci >= 0 && (w < 0 || INC(ci) < INC(S.base[w]))) w = i; } return w; }
-  const harPlass = ci => harLedig() || (svakeste() >= 0 && INC(ci) > INC(S.base[svakeste()]));
+  function svakeste() { let w = -1; for (let i = 0; i < Math.min(aapneNa, S.base.length); i++) { const ci = S.base[i]; if (ci >= 0 && (w < 0 || incB(i) < incB(w))) w = i; } return w; }
+  const harPlass = ci => harLedig() || (svakeste() >= 0 && INC(ci) > incB(svakeste()));
   function finnHandling() {
     const p = I.robot().position;
     if (bar) {
@@ -412,7 +452,7 @@
   function settInn(i) {
     if (!bar || S.base[i] !== -1) return; const ci = bar.ci, pr = PRICE(ci);
     if (S.penger < pr) { slippBar(); slippNed(ci); return melding('💰 Du har ikke råd lenger, så matdyret løp tilbake til enga.'); }
-    S.penger -= pr; S.base[i] = ci; const forst = !S.disc.includes(ci); if (forst) S.disc.push(ci); slippBar();
+    S.penger -= pr; S.base[i] = ci; ryddArv(i); const forst = !S.disc.includes(ci); if (forst) S.disc.push(ci); slippBar();
     I.spillAnim('Idle'); oppdaterDyr(); lagre();
     melding((forst ? '✨ Ny i Matdyrboka: ' : '🏠 ') + navn(ci) + ' flyttet inn i ' + I.etasjeNavn(plassPos(i).y).replace(' (bakken)', '') + '. Du betalte 💰 ' + fmt(pr) + '.');
   }
@@ -488,19 +528,19 @@
   }
 
   function apneBytte() {
-    if (!bar || bar.flyr) return; const w = svakeste(); if (w < 0) return; const nc = bar.ci, oc = S.base[w], diff = INC(nc) - INC(oc), halv = Math.floor(PRICE(oc) / 2);
-    const lin = (ikon, ci, ord) => '<p class="byttlinje">' + ikon + ' ' + ord + ': <b>' + esc(navn(ci)) + '</b> (' + R[COMBOS[ci].r].n + ') · 💵 +' + fmt(INC(ci)) + '/s</p>';
+    if (!bar || bar.flyr) return; const w = svakeste(); if (w < 0) return; const nc = bar.ci, oc = S.base[w], diff = INC(nc) - incB(w), halv = Math.floor(prisB(w) / 2);
+    const lin = (ikon, ci, ord, r = COMBOS[ci].r, inn = INC(ci), ekstra = '') => '<p class="byttlinje">' + ikon + ' ' + ord + ': <b>' + esc(navn(ci)) + '</b> (' + R[r].n + esc(ekstra) + ') · 💵 +' + fmt(inn) + '/s</p>';
     const info = 'Du betaler 💰 ' + fmt(PRICE(nc)) + ' for det nye. ' + (diff > 0 ? 'Bytter du, tjener gården 💵 +' + fmt(diff) + ' mer per sekund. ' : diff === 0 ? 'De tjener like mye. ' : '⚠️ Det nye tjener mindre enn det svakeste. ') + 'Du får 💰 ' + fmt(halv) + ' for det gamle.';
-    apneDialog('<h2>🏠 Gården er full</h2>' + lin('🆕', nc, 'Nytt') + lin('⬇️', oc, 'Svakest på gården') + '<p class="byttinfo">' + esc(info) + '</p><div class="knapper"><button type="button" id="dNei">Avbryt</button><button type="button" id="dVelg">👉 Velg en annen</button><button type="button" id="dJa">🔁 Bytt med svakeste</button></div>', 'dJa');
+    apneDialog('<h2>🏠 Gården er full</h2>' + lin('🆕', nc, 'Nytt') + lin('⬇️', oc, 'Svakest på gården', rB(w), incB(w), eldre(w)) + '<p class="byttinfo">' + esc(info) + '</p><div class="knapper"><button type="button" id="dNei">Avbryt</button><button type="button" id="dVelg">👉 Velg en annen</button><button type="button" id="dJa">🔁 Bytt med svakeste</button></div>', 'dJa');
     $('dNei').onclick = () => { lukkDialog(); if (bar) bar.velgBytt = false; visMerker(); melding('Greit! Du kan slippe matdyret på åkeren. Du har ikke betalt noe.'); };
     $('dVelg').onclick = () => { lukkDialog(); if (bar) { bar.velgBytt = true; visMerker(); } };   // hjelpeteksten står på handlingsknappen, ikke i en melding som kan dekke merkene
     $('dJa').onclick = () => { lukkDialog(); byttMed(svakeste()); };
   }
   function byttMed(i) {
     if (!bar || bar.flyr || !(i >= 0) || S.base[i] < 0) return false;
-    const oc = S.base[i], halv = Math.floor(PRICE(oc) / 2), pr = PRICE(bar.ci);
+    const oc = S.base[i], halv = Math.floor(prisB(i) / 2), pr = PRICE(bar.ci);
     if (S.penger + halv < pr) { melding('💰 Du mangler ' + fmt(pr - S.penger - halv) + ' for å bytte.'); return false; }
-    S.penger += halv; S.base[i] = -1; oppdaterDyr(); bar.velgBytt = false;
+    S.penger += halv; S.base[i] = -1; ryddArv(i); oppdaterDyr(); bar.velgBytt = false;
     melding('🔁 Du solgte ' + navn(oc) + ' for 💰 ' + fmt(halv) + '.'); return velgPlass(i);
   }
 
@@ -556,20 +596,21 @@
   });
   function apneSalg(i) {
     const ci = S.base[i]; if (ci < 0) return;
-    apneDialog('<h2>Selge ' + esc(navn(ci)) + '?</h2><p>' + esc(navn(ci)) + ' (' + R[COMBOS[ci].r].n + ') tjener 💵 ' + fmt(INC(ci)) + ' per sekund.</p><p>Du får 💰 ' + fmt(PRICE(ci) / 2) + '.</p><div class="knapper"><button type="button" id="dNei">Nei, behold</button><button type="button" id="dJa" class="fare">💸 Selg</button></div>', 'dNei');
+    const halv = Math.floor(prisB(i) / 2);
+    apneDialog('<h2>Selge ' + esc(navn(ci)) + '?</h2><p>' + esc(navn(ci)) + ' (' + R[rB(i)].n + esc(eldre(i)) + ') tjener 💵 ' + fmt(incB(i)) + ' per sekund.</p><p>Du får 💰 ' + fmt(halv) + '.</p><div class="knapper"><button type="button" id="dNei">Nei, behold</button><button type="button" id="dJa" class="fare">💸 Selg</button></div>', 'dNei');
     $('dNei').onclick = lukkDialog;
-    $('dJa').onclick = () => { if (S.base[i] === ci) { S.penger += Math.floor(PRICE(ci) / 2); S.base[i] = -1; oppdaterDyr(); lagre(); melding('💸 Du solgte ' + navn(ci) + '.'); } lukkDialog(); };
+    $('dJa').onclick = () => { if (S.base[i] === ci) { S.penger += halv; S.base[i] = -1; ryddArv(i); oppdaterDyr(); lagre(); melding('💸 Du solgte ' + navn(ci) + '.'); } lukkDialog(); };
   }
 
   // =================== Gårdsnivå ===================
   let valg = [], laast = false, gnStatus = '';
-  const passer = kr => S.base.map((ci, i) => i).filter(i => { const ci = S.base[i]; return i < aapneNa && ci >= 0 && COMBOS[ci].r >= kr[2] && (kr[0] === null || COMBOS[ci].art === kr[0]); }).sort((a, b) => INC(S.base[a]) - INC(S.base[b]));
+  const passer = kr => S.base.map((ci, i) => i).filter(i => { const ci = S.base[i]; return i < aapneNa && ci >= 0 && rB(i) >= kr[2] && (kr[0] === null || COMBOS[ci].art === kr[0]); }).sort((a, b) => incB(a) - incB(b));
   const kravTekst = ([art, n, min]) => n + ' ' + (art ? ARTEMOJI[art] + ' ' + art : 'matdyr av valgfri art') + ' (' + R[min].n + (min >= 5 ? ')' : ' eller bedre)');
   // Forslag: de svakeste som passer. Bestemte arter fordeles før «valgfri art». Et matdyr som er sjeldnere enn kravet, velges aldri automatisk.
   function autoVelg() {
     const k = GARDSNIVA[S.gard.niva + 1]; valg = k.krav.map(() => []); const brukt = new Set();
     const ordre = k.krav.map((_, j) => j).sort((a, b) => (k.krav[a][0] === null) - (k.krav[b][0] === null));
-    for (const j of ordre) { const kr = k.krav[j]; for (const i of passer(kr)) { if (valg[j].length >= kr[1]) break; if (!brukt.has(i) && COMBOS[S.base[i]].r === kr[2]) { valg[j].push(i); brukt.add(i); } } }
+    for (const j of ordre) { const kr = k.krav[j]; for (const i of passer(kr)) { if (valg[j].length >= kr[1]) break; if (!brukt.has(i) && rB(i) === kr[2]) { valg[j].push(i); brukt.add(i); } } }
   }
   // Kontroll rett før oppgraderingen. Returnerer en feilmelding, eller null når alt stemmer.
   function kontroller(mal) {
@@ -578,7 +619,7 @@
     const brukt = new Set();
     for (let j = 0; j < k.krav.length; j++) {
       const kr = k.krav[j], v = valg[j] || []; if (v.length !== kr[1]) return 'Velg ' + kravTekst(kr) + '.';
-      for (const i of v) { const ci = S.base[i]; if (brukt.has(i) || !(i < aapneNa) || !(ci >= 0) || COMBOS[ci].r < kr[2] || (kr[0] && COMBOS[ci].art !== kr[0])) return 'Et valgt matdyr passer ikke lenger. Velg på nytt.'; brukt.add(i); }
+      for (const i of v) { const ci = S.base[i]; if (brukt.has(i) || !(i < aapneNa) || !(ci >= 0) || rB(i) < kr[2] || (kr[0] && COMBOS[ci].art !== kr[0])) return 'Et valgt matdyr passer ikke lenger. Velg på nytt.'; brukt.add(i); }
     }
     if (S.penger < k.penger) return 'Du mangler 💰 ' + fmt(k.penger - S.penger) + '.';
     return null;
@@ -595,10 +636,11 @@
       if (!kand.length) h += '<span class="liten">Ingen i gården ennå. Se etter dem i regnet.</span>';
       // Sjeldnere matdyr enn kravet teller, men velges ikke automatisk (så ingen sjeldne leveres ved et uhell). Si det tydelig.
       const ledigeKand = kand.filter(i => !v.includes(i) && !valg.some((vv, jj) => jj !== j && vv.includes(i)));
-      if (!ok && ledigeKand.length) h += '<p class="hint">👆 Du har ' + ledigeKand.length + ' som passer' + (ledigeKand.some(i => COMBOS[S.base[i]].r > kr[2]) ? ' (sjeldnere enn nødvendig, derfor ikke valgt for deg)' : '') + '. Trykk på ' + (ledigeKand.length > 1 ? 'dem' : 'den') + ' for å levere.</p>';
-      kand.forEach(i => { const ci = S.base[i], annen = valg.some((vv, jj) => jj !== j && vv.includes(i)); h += '<button type="button" class="brikke" data-j="' + j + '" data-i="' + i + '" aria-pressed="' + v.includes(i) + '"' + (annen ? ' disabled title="Valgt til et annet krav"' : '') + '>' + esc(navn(ci)) + ' <span class="sjb" style="background:' + R[COMBOS[ci].r].c + '">' + R[COMBOS[ci].r].n + '</span>' + (COMBOS[ci].r > kr[2] ? ' ⭐' : '') + ' · ' + esc(I.etasjeNavn(plassPos(i).y).replace(' (bakken)', '')) + '</button>'; });
+      if (!ok && ledigeKand.length) h += '<p class="hint">👆 Du har ' + ledigeKand.length + ' som passer' + (ledigeKand.some(i => rB(i) > kr[2]) ? ' (sjeldnere enn nødvendig, derfor ikke valgt for deg)' : '') + '. Trykk på ' + (ledigeKand.length > 1 ? 'dem' : 'den') + ' for å levere.</p>';
+      kand.forEach(i => { const ci = S.base[i], annen = valg.some((vv, jj) => jj !== j && vv.includes(i)); h += '<button type="button" class="brikke" data-j="' + j + '" data-i="' + i + '" aria-pressed="' + v.includes(i) + '"' + (annen ? ' disabled title="Valgt til et annet krav"' : '') + '>' + esc(navn(ci)) + ' <span class="sjb" style="background:' + R[rB(i)].c + '">' + R[rB(i)].n + '</span>' + (rB(i) > kr[2] ? ' ⭐' : '') + (arvet(i) ? ' ⏳' : '') + ' · ' + esc(I.etasjeNavn(plassPos(i).y).replace(' (bakken)', '')) + '</button>'; });
       h += '</div></div>';
     });
+    if (kallAktiv()) { const f = Math.min(KALL, kallFunnet()); h += '<div class="kall"><b>🔔 Óðinn-kallet: ' + f + '/' + KALL + ' ulike Food God funnet</b><p class="liten">' + (f >= KALL ? 'Óðinn har hørt kallet! Neste Food God som faller fra himmelen, er Óðinn.' : 'Finn ' + (KALL - f) + ' ' + (KALL - f > 1 ? 'Food God til' : 'Food God til') + '. Da blir neste Food God som faller, Óðinn.') + '</p></div>'; }
     const pengerOk = S.penger >= k.penger;
     h += '<div class="krav' + (pengerOk ? ' ok' : '') + '"><div class="kravtopp"><span>' + (pengerOk ? '✅' : '⬜') + ' 💰 ' + fmt(k.penger) + '</span><span>Du har 💰 ' + fmt(S.penger) + '</span></div></div>';
     if (gnStatus) h += '<p class="status" role="alert">' + esc(gnStatus) + '</p>';
@@ -613,7 +655,7 @@
   }
   function visBekreft() {
     const n = S.gard.niva, k = GARDSNIVA[n + 1], inn = valg.flat(), igjen = S.base.slice(0, aapneNa).filter((ci, i) => ci >= 0 && !inn.includes(i)).length;
-    let h = '<h2>Oppgrader gården?</h2><div class="del"><b>Du leverer inn</b><ul>' + inn.map(i => '<li>' + esc(navn(S.base[i])) + ' (' + R[COMBOS[S.base[i]].r].n + ')</li>').join('') + '<li>💰 ' + fmt(k.penger) + '</li></ul></div>';
+    let h = '<h2>Oppgrader gården?</h2><div class="del"><b>Du leverer inn</b><ul>' + inn.map(i => '<li>' + esc(navn(S.base[i])) + ' (' + R[rB(i)].n + esc(eldre(i)) + ')</li>').join('') + '<li>💰 ' + fmt(k.penger) + '</li></ul></div>';
     h += '<div class="del"><b>Du får</b><ul><li>Gårdsnivå ' + (n + 1) + '</li><li>' + esc(I.NIVA[n + 1].nytt) + '</li><li>Plass-tak ' + k.tak + '</li></ul></div>';
     h += '<div class="del"><b>Du beholder</b><ul><li>' + igjen + ' matdyr i gården</li><li>💰 ' + fmt(S.penger - k.penger) + '</li></ul></div>';
     h += '<div class="knapper"><button type="button" id="dTilbake">Tilbake</button><button type="button" id="dJa" class="hoved">✅ Oppgrader gården</button></div>';
@@ -625,17 +667,62 @@
     const mal = S.gard.niva + 1, feil = kontroller(mal);
     if (feil) { laast = false; gnStatus = feil; visGardsniva(); return false; }
     const k = GARDSNIVA[mal], ny2 = JSON.parse(JSON.stringify(S));
-    valg.flat().forEach(i => { ny2.base[i] = -1; }); ny2.penger -= k.penger; ny2.gard.niva = mal;
+    valg.flat().forEach(i => { ny2.base[i] = -1; ryddArv(i, ny2); }); ny2.penger -= k.penger; ny2.gard.niva = mal;
     if (!lagre(ny2)) { laast = false; gnStatus = 'Spillet kunne ikke lagres, så ingenting er endret. Prøv igjen.'; visGardsniva(); return false; }
     S = ny2; fyllBase(); lukkDialog(); laast = true; byggSpillGard(true); oppdaterPanel(); laast = false;
     melding('🎉 Gårdsnivå ' + mal + '! ' + I.NIVA[mal].nytt + '.', 6); I.spillAnim('Idle');
     return true;
   }
 
+  // =================== Matdyrboka (fordeling C, prototype for én art om gangen) ===================
+  // Alle tidligere funn teller som funnet. ⏳ viser at du eier en eldre utgave med lavere kategori.
+  let bokArt = 'ku';
+  function apneBok(art = bokArt) {
+    bokArt = art; const ai = ANIMALS.findIndex(a => a[1] === art); if (ai < 0) return;
+    const ids = FOODS.map((_, fi) => ai * FOODS.length + fi), funnet = ci => S.disc.includes(ci);
+    const eldreEid = ci => [...new Set(S.base.map((c, i) => c === ci && arvet(i) ? S.arv[i] : -1).filter(r => r >= 0))];
+    const totalt = ids.filter(funnet).length;
+    let h = '<div class="bokhode"><h2>📖 Matdyrboka: ' + ANIMALS[ai][0] + ' ' + esc(art) + '</h2><label class="liten">Art <select id="bokArt">' + ANIMALS.map(a => '<option value="' + esc(a[1]) + '"' + (a[1] === art ? ' selected' : '') + '>' + a[0] + ' ' + esc(a[1]) + '</option>').join('') + '</select></label></div>';
+    h += '<p class="liten">' + totalt + ' av 25 funnet' + (totalt === 25 ? ' · 🏆 Hele arten!' : '') + '</p>';
+    for (let r = 0; r < R.length; r++) {
+      const rad = ids.filter(ci => COMBOS[ci].r === r); if (!rad.length) continue; const f = rad.filter(funnet).length;
+      h += '<div class="bokrad"><span class="sjb" style="background:' + R[r].c + '">' + R[r].n + '</span><span>' + f + '/' + rad.length + '</span>' + (f === rad.length ? '<span class="merke">🏅</span>' : '') + '</div><div class="bokruter">';
+      for (const ci of rad) {
+        const c = COMBOS[ci], fu = funnet(ci), el = eldreEid(ci);
+        const kl = 'bokrute' + (fu ? (r === 5 ? ' gud' : r === 6 ? ' hemmelig' : '') : r === 6 ? ' ukjent skjult' : ' ukjent');
+        const innhold = fu ? '<span class="emo">' + c.f + c.a + '</span><span class="bn">' + esc(c.navn) + '</span>'
+          : r === 6 ? '<span class="emo">❓</span><span class="bn">???</span>' : '<span class="emo">' + c.f + '❔</span><span class="bn">' + esc(c.mat) + '-' + esc(art) + '?</span>';
+        h += '<div class="' + kl + '" style="border-color:' + (fu ? R[r].c : '') + '" title="' + (fu ? esc(c.navn + ' · ' + R[r].n) : 'Ikke funnet ennå') + '">' + innhold + el.map(er => '<span class="arvmerke">⏳ Din: ' + R[er].n + '</span>').join('') + '</div>';
+      }
+      h += '</div>';
+    }
+    const fg = COMBOS.filter((c, i) => c.r === 5 && funnet(i)).length, se = COMBOS.filter((c, i) => c.r === 6 && funnet(i)).length;
+    h += '<p class="liten">Hele samlingen: ⭐ Food God ' + fg + '/' + POOLS[5].length + ' · 🌌 Secret ' + se + '/' + POOLS[6].length + ' · totalt ' + S.disc.length + '/' + COMBOS.length + '</p>';
+    h += '<p class="liten">Alle matdyr du har funnet før, teller med. ⏳ betyr at du eier en eldre utgave med lavere kategori.</p>';
+    h += '<div class="knapper"><button type="button" id="dLukk">Lukk</button></div>';
+    apneDialog(h, 'dLukk'); $('dLukk').onclick = lukkDialog; $('bokArt').onchange = e => { apneBok(e.target.value); $('bokArt').focus(); };
+  }
+  // Test: lager en typisk gammel lagring (gammel fordeling) og migrerer den slik spillet gjør ved første start med ?fordeling=c.
+  // Standardlagringen røres ikke.
+  function gammelTestlagring() {
+    const kuId = f => ANIMALS.findIndex(a => a[1] === 'ku') * FOODS.length + FOODS.findIndex(x => x[1] === f);
+    const opp = COMBOS.map((c, i) => i).filter(i => GML_R[i] < COMBOS[i].r), ned = COMBOS.map((c, i) => i).filter(i => GML_R[i] > COMBOS[i].r);
+    const hval = COMBOS.map((c, i) => i).filter(i => COMBOS[i].art === 'hval' && GML_R[i] < 4 && COMBOS[i].r >= 4);
+    const base = [opp[0], opp[1], ned[0], kuId('Pizza'), kuId('Pizza'), hval[0], opp[40], opp[200], ...opp.slice(300, 304)];
+    const gml = { v: 1, penger: 2.5e6, gard: { niva: 6 }, plassNiva: 12, base, disc: [...new Set([...base, ...COMBOS.map((c, i) => i).filter(i => COMBOS[i].art === 'ku' && i % 2 === 0), ...POOLS[5].slice(0, 2)])], bestilling: 15 };
+    const m = migrerStd(gml); if (!m) return melding('Kunne ikke lage testlagring.');
+    S = m; fyllBase(); lagre(); byggSpillGard(true); oppdaterKort(); oppdaterPanel();
+    melding('🕰️ Gammel testlagring migrert: ' + Object.keys(S.arv).length + ' dyr har arvet kategori.', 6);
+  }
+  function hentStandardPaaNytt() {
+    const m = hentStandard(); if (!m) return melding('Fant ingen standardlagring å hente.');
+    S = m; fyllBase(); lagre(); byggSpillGard(true); oppdaterKort(); oppdaterPanel(); melding('📥 Standardlagringen er hentet og migrert. ' + Object.keys(S.arv).length + ' dyr har arvet kategori.', 6);
+  }
+
   // =================== Skjerm: kort, panel og meldinger ===================
   let meldingTid = 0;
   function melding(t, sek = 4) { const m = $('melding'); m.textContent = t; m.hidden = false; meldingTid = sek; }
-  const inntekt = () => S.base.slice(0, aapneNa).reduce((s, ci) => s + (ci >= 0 ? INC(ci) : 0), 0);
+  const inntekt = () => { let s = 0; for (let i = 0; i < Math.min(aapneNa, S.base.length); i++) s += incB(i); return s; };
   function visKort() {
     $('kort').innerHTML = '<div class="hud"><b id="hPenger"></b> <span id="hInnt" class="liten2"></span></div><div class="hud2"><span id="hNiva"></span> · <span id="hPlass"></span></div>' +
       '<div class="liten">' + (I.TOUCH ? 'Styrespak: gå · Hopp nede til høyre · Handling ved siden av · Dra for kamera.' : 'WASD: gå · Mellomrom: hopp · E: handling · Dra med musa: kamera · Hjul: zoom') + '</div><div id="spillStatus" class="rute">📍 1. etasje (bakken)</div>';
@@ -644,18 +731,20 @@
   function oppdaterKort() {
     if (!$('hPenger')) return;
     $('hPenger').textContent = '💰 ' + fmt(S.penger); $('hInnt').textContent = '+' + fmt(inntekt()) + '/s';
-    $('hNiva').textContent = '🏡 Gårdsnivå ' + S.gard.niva + (I.sp.testNiva ? ' (viser ' + I.sp.testNiva + ')' : '');
+    $('hNiva').textContent = '🏡 Gårdsnivå ' + S.gard.niva + (I.sp.testNiva ? ' (viser ' + I.sp.testNiva + ')' : '') + (ERC ? ' · 🧪 Fordeling C' : '');
     $('hPlass').textContent = '🐮 ' + S.base.slice(0, aapneNa).filter(c => c >= 0).length + '/' + plasserApne() + ' plasser';
   }
   let visTest = false;
   function byggPanel() {
     const p = $('panel'); p.textContent = ''; const r1 = document.createElement('div'); r1.className = 'rad';
     const smal = innerWidth < 640; r1.append(I.knapp(smal ? '🏡 Nivå' : '🏡 Gårdsnivå', false, apneGardsniva, 'Gårdsnivå'), Object.assign(I.knapp('', false, kjopPlass), { id: 'bPlass' }), I.knapp('🧪', visTest, () => { visTest = !visTest; byggPanel(); }, 'Testvalg for prototypen'));
+    if (ERC) r1.insertBefore(I.knapp(smal ? '📖' : '📖 Matdyrboka', false, () => apneBok(), 'Matdyrboka'), r1.lastChild);
     p.append(r1);
     if (visTest) {
       const r2 = document.createElement('div'); r2.className = 'rad test';
       [0, 10, 15].forEach(v => r2.append(I.knapp('Bestilling ' + v + ' %', S.bestilling === v, () => { S.bestilling = v; lagre(); byggPanel(); }, 'Bestillingsregn ' + v + ' prosent')));
-      r2.append(I.knapp(garanti ? '🎯 Garanti på' : '🎯 Garanti av', garanti, () => { garanti = !garanti; byggPanel(); }, 'Bestillingsgaranti'));
+      r2.append(I.knapp(ERC && S.bestilling === 0 ? '🎯 Garanti (av ved 0 %)' : garanti ? '🎯 Garanti på' : '🎯 Garanti av', garanti, () => { garanti = !garanti; byggPanel(); }, 'Bestillingsgaranti'));
+      if (ERC) r2.append(I.knapp('🕰️ Gammel testlagring', false, gammelTestlagring), I.knapp('📥 Hent standardlagring', false, hentStandardPaaNytt));
       r2.append(I.knapp('+💰 100 000', false, () => { S.penger += 1e5; lagre(); }), I.knapp('+💰 100 mill', false, () => { S.penger += 1e8; lagre(); }),
         I.knapp('🎁 Dyr til neste nivå', false, giKravdyr), I.knapp('↺ Nullstill', false, nullstill));
       p.append(r2);
@@ -679,7 +768,7 @@
     let lagt = 0;
     for (const [art, n, min] of k.krav) for (let m = 0; m < n; m++) {
       const i = S.base.indexOf(-1); if (i < 0) break;
-      const ci = COMBOS.findIndex((c, x) => c.r === min && (!art || c.art === art) && !S.base.includes(x)); if (ci >= 0) { S.base[i] = ci; lagt++; }
+      const ci = COMBOS.findIndex((c, x) => c.r === min && (!art || c.art === art) && !S.base.includes(x)); if (ci >= 0) { S.base[i] = ci; ryddArv(i); lagt++; }
     }
     oppdaterDyr(); lagre(); melding(lagt ? '🎁 La inn ' + lagt + ' testdyr.' : 'Ingen ledige plasser. Kjøp flere plasser eller selg et matdyr.');
   }
@@ -718,5 +807,5 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden) lagre(); });
 
   // For automatiske tester (lagring, oppgradering, dobbelttrykk og flere faner)
-  window.EVNProto = { INC, PRICE, svakeste, harPlass, byttMed, apneBytte, iLevFelt, levOmr, velgPlass, ledige, forsteLedige, merker: () => merkG.children.map(c => c.userData.plass), iBasen, NOKKEL, S: () => S, sett: s => { S = rens(s) || ny(); fyllBase(); byggSpillGard(true); oppdaterKort(); oppdaterPanel(); }, lagre, lesLagret, kontroller, apneGardsniva, oppgrader, autoVelg, valg: () => valg, felt: () => felt, slippNed, bar: () => bar, finnHandling, gjorHandling, rens, plasserApne };
+  window.EVNProto = { ERC, rB, incB, prisB, arvet, migrerStd, hentStandard, apneBok, gammelTestlagring, kallAktiv, kallKlart, kallFunnet, trekk, ODIN, garanti: v => (v !== undefined ? (garanti = v) : garanti), INC, PRICE, svakeste, harPlass, byttMed, apneBytte, iLevFelt, levOmr, velgPlass, ledige, forsteLedige, merker: () => merkG.children.map(c => c.userData.plass), iBasen, NOKKEL, S: () => S, sett: s => { S = rens(s) || ny(); fyllBase(); byggSpillGard(true); oppdaterKort(); oppdaterPanel(); }, lagre, lesLagret, kontroller, apneGardsniva, oppgrader, autoVelg, valg: () => valg, felt: () => felt, slippNed, bar: () => bar, finnHandling, gjorHandling, rens, plasserApne };
 })();

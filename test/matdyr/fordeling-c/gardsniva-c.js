@@ -16,6 +16,7 @@ const artOk = (n, c) => n === null || Math.floor(c / FOODS.length) === ART(n);
 const KRAV10 = {
   hval:    [['hval', 1, 5], [null, 2, 4]],                    // dagens: hvalens Food God (Óðinn) eller bedre
   valgfri: [[null, 1, 5], ['hval', 1, 4], [null, 1, 4]],      // én Food God av hvilken som helst art + hval Mythic+
+  kall:    [['hval', 1, 5], [null, 2, 4]],                    // som hval, med Óðinn-kall (se trekk)
 };
 const NIVA = [
   {tak:8},
@@ -28,7 +29,8 @@ const NIVA = [
   {tak:36, krav:[["frosk",1,4],["pingvin",2,3]], penger:50e6},
   {tak:40, krav:[[null,2,4],["hest",1,4]], penger:150e6},
   {tak:40, krav:KRAV10[K10], penger:500e6}];
-const BOOST = +(process.env.BOOST || 0.15);
+const BOOST = +(process.env.BOOST ?? 0.15), KALL = +(process.env.KALL || 3);
+const ODIN = ANIMALS.findIndex(a => a[1] === 'hval') * FOODS.length + FOODS.findIndex(f => f[1] === 'Burger');
 const plasserFor = l => 4 + 2 * l;
 const PROFILER = {
   "Ny spiller":       {tur:45,syn:4, velg:"tilfeldig",opp:.5,bytt:.4,krav:.6},
@@ -64,6 +66,9 @@ function kjor(p, seed, min) {
       else if (GAR === 'tak') { // løfter høyst til Legendary; over det styres bare arten når kategorien allerede er høy nok
         if (kr[2] <= 3 || k >= kr[2]) { for (let rr = Math.max(k, kr[2]); rr < POOLS.length; rr++) { const p2 = POOLS[rr].filter(ci => ai(ci) === ART(kr[0])); if (p2.length) { pool = p2; tvunget = true; break } } } }
     }
+    // Óðinn-kall (forslag): når spilleren jobber mot nivå 10 og har 3 ulike Food God i gården, blir neste Food God Óðinn.
+    // Synlig spillregel, uavhengig av bestillingsregnet.
+    if (K10 === 'kall' && g === 8 && k === 5 && !tvunget) { const fg = new Set(base.filter(b => b >= 0 && COMBOS[b].r === 5 && b !== ODIN)); if (fg.size >= KALL) { pool = [ODIN]; tvunget = true } }
     if (!tvunget && n && r() < BOOST) { const arter = n.krav.filter(([a, , min]) => a && k >= min).map(kr => ART(kr[0])); const p2 = pool.filter(ci => arter.includes(ai(ci))); if (p2.length) pool = p2 }
     const ci = pool[Math.floor(r() * pool.length)];
     uten = m.some(([a, , min]) => ai(ci) === ART(a) && COMBOS[ci].r >= min) ? 0 : uten + 1;

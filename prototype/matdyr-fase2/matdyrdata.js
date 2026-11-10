@@ -36,6 +36,28 @@ ANIMALS.forEach((a,ai)=>FOODS.forEach((f,fi)=>COMBOS.push({a:a[0],f:f[0],name:f[
   COMBOS.forEach(c=>{if(c.r>=5)c.m=1});
   COMBOS.forEach(c => { if (c.r >= 5) c.m = 1; });
 })();
+// ---- Alternativ C bak flagget ?fordeling=c (godkjent som prototype 10.11.2026; B3 gjelder fortsatt produksjonsspillet) ----
+// Lik stige per art: 6 Common, 5 Rare, 5 Epic, 4 Legendary, 3 Mythic, 1 Food God, 1 Secret. Vektene er uendret.
+// Samme regel som test/matdyr/fordeling-c/stige.js: faste figurer beholder kategorien, resten av arten får stigen i rekkefølge
+// etter dagens kategori, multiplikator og mat-indeks. Uten flagget er alt som før.
+const FORDELING=(typeof location!=='undefined'&&/[?&]fordeling=c(&|$)/.test(location.search))?'c':'standard';
+const GML_R=COMBOS.map(c=>c.r), M0=COMBOS.map(c=>c.m);
+const STIGE=[0,0,0,0,0,0,1,1,1,1,1,2,2,2,2,2,3,3,3,3,4,4,4,5,6];
+const FASTE=[['gris','Smultring',0],['mus','Oste',0],['frosk','Pizza',1],['ape','Banan',1],['ku','Melke',1],['pingvin','Pølse',2],['frosk','Kakao',2],['hai','Taco',3],['blekksprut','Spagetti',4],['hval','Burger',5],['dinosaur','Sjoko',6]];
+function byggStige(){
+  const fast=new Map(FASTE.map(([a,m,r])=>[ANIMALS.findIndex(x=>x[1]===a)*FOODS.length+FOODS.findIndex(x=>x[1]===m),r])), ny=new Array(COMBOS.length);
+  for(let ai=0;ai<ANIMALS.length;ai++){
+    const ids=FOODS.map((_,fi)=>ai*FOODS.length+fi), rest=STIGE.slice();
+    for(const ci of ids)if(fast.has(ci)){const r=fast.get(ci);rest.splice(rest.indexOf(r),1);ny[ci]=r}
+    ids.filter(ci=>!fast.has(ci)).sort((a,b)=>GML_R[a]-GML_R[b]||M0[a]-M0[b]||a-b).forEach((ci,k)=>{ny[ci]=rest[k]});
+  }
+  return ny;
+}
+const NY_R=byggStige();
+if(FORDELING==='c')COMBOS.forEach((c,i)=>{c.r=NY_R[i];if(c.r>=5)c.m=1});
+// Verdi for en bestemt kategori (brukes for eide dyr med arvet kategori, streng bestefarsregel)
+const PRICEr=(ci,r)=>Math.round(R[r].price*(r>=5?1:M0[ci]));
+const INCr=(ci,r)=>Math.round(R[r].inc*(r>=5?1:M0[ci]));
 const POOLS=R.map((_,r)=>COMBOS.map((c,i)=>c.r===r?i:-1).filter(i=>i>=0));
 const PRICE=ci=>Math.round(R[COMBOS[ci].r].price*COMBOS[ci].m);
 const INC=ci=>Math.round(R[COMBOS[ci].r].inc*COMBOS[ci].m);
@@ -63,5 +85,5 @@ const GARDSNIVA = [null,
 // «Flere plasser»: som i dag til 24 plasser, deretter dobling per steg fra 10 mill.
 const plassPris = l => l < 10 ? upCost(l) : 1e7 * Math.pow(2, l - 10);
 const ARTEMOJI = Object.fromEntries(ANIMALS.map(a => [a[1], a[0]]));
-window.EVNMatdyrData = { R, COMBOS, POOLS, PRICE, INC, plotsFor, plassPris, GARDSNIVA, ANIMALS, FOODS, ARTEMOJI };
+window.EVNMatdyrData = { R, COMBOS, POOLS, PRICE, INC, plotsFor, plassPris, GARDSNIVA, ANIMALS, FOODS, ARTEMOJI, FORDELING, GML_R, NY_R, PRICEr, INCr, STIGE };
 })();

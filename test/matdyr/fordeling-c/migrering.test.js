@@ -118,13 +118,13 @@ test('økonomi ved migrering av typiske lagringer: streng = uendret, beste = ald
   }
 });
 
-test('Matdyrboka: toppfigur funnet før overgangen gir «eldre utgave», ikke gullramme', () => {
+test('Matdyrboka: toppfigur funnet før overgangen får gullramme med en gang (ingen ny jakt)', () => {
   const ci = NY.findIndex((r, i) => r === 5 && GML[i] < 5);
   const s = M.migrer(proto([-1], { disc: [ci] }), GML, NY, 'streng').lagring;
-  let b = M.bokVisning(s, ci, NY); assert.equal(b.funnet, true); assert.equal(b.gullramme, false); assert.equal(b.eldreUtgave, true);
-  s.discC.push(ci); b = M.bokVisning(s, ci, NY); assert.equal(b.gullramme, true); assert.equal(b.eldreUtgave, false);
+  const b = M.bokVisning(s, ci, NY); assert.equal(b.funnet, true); assert.equal(b.gullramme, true);
 });
-test('migrering legger til tom discC, og ugyldige verdier i discC ryddes', () => {
-  const s = M.migrer(prod([1]), GML, NY).lagring; assert.deepEqual(s.discC, []);
-  const r = M.migrer({ ...s, discC: [3, -1, 'x', 2000, 7] }, GML, NY).lagring; assert.deepEqual(r.discC, [3, 7]);
+test('Matdyrboka: eid eldre utgave av en toppfigur vises med arvet kategori, men boka viser ny', () => {
+  const ci = NY.findIndex((r, i) => r === 5 && GML[i] < 5);
+  const s = M.migrer(proto([ci], { disc: [ci] }), GML, NY, 'streng').lagring;
+  const b = M.bokVisning(s, ci, NY); assert.equal(b.kategori, 5); assert.deepEqual(b.arvet, [GML[ci]]); assert.equal(b.gullramme, true);
 });

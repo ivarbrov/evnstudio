@@ -30,7 +30,6 @@ function migrer(s, GML, NY, modus = 'beste') {
   base.forEach((ci, i) => { if (gyldigCi(ci)) { const a = arvFor(ci, GML, NY, modus); if (a !== null) arv[i] = a; } });
   if (gyldigCi(o.carry)) { const a = arvFor(o.carry, GML, NY, modus); if (a !== null) arv.bar = a; }
   o.fordeling = 'c'; o.arvModus = modus; o.arv = arv;
-  o.discC = [];   // funn gjort etter overgangen. Gullramme på Food God/Secret i boka krever funn her.
   return { lagring: o, endret: true, feil: null };
 }
 function normaliserArv(s) {
@@ -42,9 +41,7 @@ function normaliserArv(s) {
     if (k === 'bar' && gyldigCi(o.carry)) arv.bar = r;
     else if (/^\d+$/.test(k) && gyldigCi(base[+k])) arv[k] = r;
   }
-  o.arv = arv;
-  o.discC = (Array.isArray(o.discC) ? o.discC : []).filter(gyldigCi);
-  return o;
+  o.arv = arv; return o;
 }
 // Effektiv kategori for et dyr i en plass ('bar' = dyret roboten bærer)
 function effR(s, plass, NY) {
@@ -62,8 +59,7 @@ function passerKrav(s, plass, kr, NY, ART_AV) { const ci = s.base[plass]; return
 function bokVisning(s, ci, NY) {
   const funnet = Array.isArray(s.disc) && s.disc.includes(ci);
   const eide = []; (s.base || []).forEach((c, i) => { if (c === ci) eide.push(effR(s, i, NY)); }); if (s.carry === ci) eide.push(effR(s, 'bar', NY));
-  const nyttFunn = Array.isArray(s.discC) && s.discC.includes(ci);
-  // Food God og Secret får gullramme bare når figuren er funnet i ny utgave. Ellers vises «eldre utgave funnet».
-  return { funnet, kategori: NY[ci], arvet: [...new Set(eide.filter(r => r !== NY[ci]))], gullramme: NY[ci] >= 5 ? nyttFunn : funnet, eldreUtgave: funnet && NY[ci] >= 5 && !nyttFunn };
+  // Ivar 10.11.2026: tidligere funn teller fullt. Gullramme og fullføringsmerker krever ikke at figuren finnes på nytt.
+  return { funnet, kategori: NY[ci], arvet: [...new Set(eide.filter(r => r !== NY[ci]))], gullramme: NY[ci] >= 5 && funnet };
 }
 module.exports = { migrer, effR, flytt, fjern, passerKrav, bokVisning, arvFor };
