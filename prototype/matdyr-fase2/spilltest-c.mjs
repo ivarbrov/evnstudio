@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process'; import fs from 'node:fs';
 const BASE = process.argv[2] || 'http://127.0.0.1:8790/index.html';
 const prof = fs.mkdtempSync('/tmp/rute-c-'); const p = spawn('/usr/bin/google-chrome', ['--headless=new', '--remote-debugging-port=0', '--user-data-dir=' + prof, '--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', 'about:blank'], { stdio: 'ignore' });
 for (const sg of ['SIGTERM', 'SIGINT']) process.on(sg, () => { try { p.kill('SIGKILL'); } catch {} process.exit(1); });
+process.on('exit', () => { try { p.kill('SIGKILL'); } catch {} });   // også ved feil og tidsavbrudd i skriptet
 while (!fs.existsSync(prof + '/DevToolsActivePort')) await new Promise(r => setTimeout(r, 100));
 const [port, sti] = fs.readFileSync(prof + '/DevToolsActivePort', 'utf8').split('\n'); const ws = new WebSocket('ws://127.0.0.1:' + port + sti); await new Promise(r => ws.onopen = r);
 let id = 0; const v = new Map(), feil = []; ws.onmessage = m => { const d = JSON.parse(m.data); if (d.id && v.has(d.id)) { v.get(d.id)(d); v.delete(d.id); } else if (d.method === 'Runtime.exceptionThrown') feil.push(d.params.exceptionDetails.exception?.description); };
@@ -130,6 +131,10 @@ ok('Óðinn-kall: med 2 Food God funnet er kallet ikke klart, og Óðinn er sjel
 ok('Óðinn-kall: med 3 Food God funnet blir hver Food God som faller, Óðinn', j.klart3 && j.odin3 === j.fg3 && j.fg3 > 100, j);
 ok('Óðinn-kall vises i Gårdsnivå-vinduet', /Óðinn-kallet: 3\/3/.test(j.tekst), j.tekst.slice(0, 300));
 ok('Óðinn-kall er bare aktivt på vei til nivå 10 og når Óðinn mangler', !j.aktivMedOdin && !j.aktivNiva8, j);
+const j2 = await ev(`(() => { const P = EVNProto, D = EVNMatdyrData, fg = D.POOLS[5].filter(ci => ci !== P.ODIN);
+  P.sett({ v: 1, fordeling: 'c', penger: 2e8, gard: { niva: 9 }, plassNiva: 18, base: new Array(40).fill(-1), disc: fg.slice(0, 2), arv: {}, bestilling: 15 }); P.garanti(true);
+  let odin = 0, fgN = 0; for (let k = 0; k < 30000; k++) { const ci = P.trekk(); if (D.COMBOS[ci].r === 5) { fgN++; if (ci === P.ODIN) odin++; } } return { odin, fgN }; })()`);
+ok('garanti på + bestilling 15 %, kallet 2/3: Óðinn bare via bestillingsregnet (≈ 15 % av Food God)', j2.fgN > 200 && j2.odin / j2.fgN < 0.3, j2);
 
 // 10. Matdyrboka for ku: 25 ruter i 7 rader, funn og eldre utgave
 const k = await ev(`(async () => { const P = EVNProto, D = EVNMatdyrData, ut = {};

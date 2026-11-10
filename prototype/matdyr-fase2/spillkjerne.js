@@ -186,7 +186,8 @@
   const passerKrav = (ci, kr) => COMBOS[ci].art === kr[0] && COMBOS[ci].r >= kr[2];
   // Fordeling C:
   //  - Bestillingsregn 0 % betyr ingen styring i det hele tatt, heller ikke garanti.
-  //  - Garantien løfter aldri sjeldenheten over Legendary. Trengs et sjeldnere dyr, styres bare arten når den sjeldenheten faller av seg selv.
+  //  - Garantien gjelder bare krav opp til Legendary, og løfter aldri over det. Krav om Mythic, Food God eller Secret får ingen garanti
+  //    (ellers ble hver Food God på vei til nivå 10 styrt til Óðinn, og Óðinn-kallet ville vært uten betydning; QA 5045c62 funn 1).
   //  - Óðinn-kallet (synlig regel i Gårdsnivå-vinduet): på vei til nivå 10, med 3 ulike Food God funnet, blir neste Food God som faller, Óðinn.
   const ODIN = COMBOS.findIndex(c => c.special === 'Óðinn'), KALL = 3;
   const kallFunnet = () => new Set(S.disc.filter(ci => COMBOS[ci].r === 5 && ci !== ODIN)).size;
@@ -197,9 +198,9 @@
     for (; r < R.length - 1; r++) { x -= R[r].w; if (x <= 0) break; }
     let pool = POOLS[r], styrt = false; const k = GARDSNIVA[S.gard.niva + 1], mangler = trengs(), styring = !ERC || S.bestilling > 0;
     if (ERC && r === 5 && kallKlart()) { pool = [ODIN]; styrt = true; }
-    if (!styrt && garanti && styring && mangler.length && utenKrav >= 6) {
-      const kr = mangler[Math.floor(Math.random() * mangler.length)]; if (!ERC) styrt = true;   // standard: som før (garanti eller bestilling, aldri begge)
-      if (!ERC || kr[2] <= 3 || r >= kr[2])
+    const garKrav = ERC ? mangler.filter(kr => kr[2] <= 3) : mangler;
+    if (!styrt && garanti && styring && garKrav.length && utenKrav >= 6) {
+      const kr = garKrav[Math.floor(Math.random() * garKrav.length)]; if (!ERC) styrt = true;   // standard: som før (garanti eller bestilling, aldri begge)
         for (let rr = Math.max(r, kr[2]); rr < POOLS.length; rr++) { const p2 = POOLS[rr].filter(ci => COMBOS[ci].art === kr[0]); if (p2.length) { pool = p2; styrt = true; break; } }
     }
     if (!styrt && k && Math.random() * 100 < S.bestilling) { const arter = k.krav.filter(([a, , min]) => a && r >= min).map(kr => kr[0]); const p2 = pool.filter(ci => arter.includes(COMBOS[ci].art)); if (p2.length) pool = p2; }
@@ -648,7 +649,7 @@
       kand.forEach(i => { const ci = S.base[i], annen = valg.some((vv, jj) => jj !== j && vv.includes(i)); h += '<button type="button" class="brikke" data-j="' + j + '" data-i="' + i + '" aria-pressed="' + v.includes(i) + '"' + (annen ? ' disabled title="Valgt til et annet krav"' : '') + '>' + esc(navn(ci)) + ' <span class="sjb" style="background:' + R[rB(i)].c + '">' + R[rB(i)].n + '</span>' + (rB(i) > kr[2] ? ' ⭐' : '') + (arvet(i) ? ' ⏳' : '') + ' · ' + esc(I.etasjeNavn(plassPos(i).y).replace(' (bakken)', '')) + '</button>'; });
       h += '</div></div>';
     });
-    if (kallAktiv()) { const f = Math.min(KALL, kallFunnet()); h += '<div class="kall"><b>🔔 Óðinn-kallet: ' + f + '/' + KALL + ' ulike Food God funnet</b><p class="liten">' + (f >= KALL ? 'Óðinn har hørt kallet! Neste Food God som faller fra himmelen, er Óðinn.' : 'Finn ' + (KALL - f) + ' ' + (KALL - f > 1 ? 'Food God til' : 'Food God til') + '. Da blir neste Food God som faller, Óðinn.') + '</p></div>'; }
+    if (kallAktiv()) { const f = Math.min(KALL, kallFunnet()); h += '<div class="kall"><b>🔔 Óðinn-kallet: ' + f + '/' + KALL + ' ulike Food God funnet</b><p class="liten">' + (f >= KALL ? 'Óðinn har hørt kallet! Neste Food God som faller fra himmelen, er Óðinn.' : 'Finn ' + (KALL - f) + ' Food God til. Da blir neste Food God som faller, Óðinn.' + (S.bestilling > 0 ? ' Med bestillingsregn kan Óðinn også komme før.' : '')) + '</p></div>'; }
     const pengerOk = S.penger >= k.penger;
     h += '<div class="krav' + (pengerOk ? ' ok' : '') + '"><div class="kravtopp"><span>' + (pengerOk ? '✅' : '⬜') + ' 💰 ' + fmt(k.penger) + '</span><span>Du har 💰 ' + fmt(S.penger) + '</span></div></div>';
     if (gnStatus) h += '<p class="status" role="alert">' + esc(gnStatus) + '</p>';
