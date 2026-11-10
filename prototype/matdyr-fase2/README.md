@@ -342,3 +342,10 @@ Uten flagget er fordelingen, lagringen og spillet som før. B3 (uendrede sjelden
 - Bare utseendet endres. ID, sjeldenhet, pris og inntekt er uendret. Uten flagget er kuene som før.
 - **Trekantbudsjett (rettet etter QA d859e4a):** Den fulle versjonen var 25 354–32 652 trekanter. Nå forenkler skriptet den tettest maskede delen (maten), så alle fire er 24 000 trekanter i full versjon og under 7 000 i lav. Utseendet er sammenlignet før og etter: `ku-tobein-budsjett.png`.
 - **Evens valg (10.11.2026 kl. 21.19):** «Det er mye morsommere at de går på to bein.» Kuer på to bein er Evens foretrukne retning. Det er ennå ikke bestemt om andre arter også skal gå på to bein.
+
+### Bare dyr på to bein (Even 10.11.2026 kl. 23.48: «Kun dyre med to bein»)
+- Even vil at alle matdyrene skal gå på to bein. Retningen er notert, men den gjelder ikke produksjonsspillet før den er godkjent.
+- Gris på to bein er lagt til bak `?tobein=1` (ID 2, 0, 9 og 8: Donut-, Pizza-, Is- og Burgergris), laget med `DYR=gris` i `matdyr_tobein.py`. Kontaktark: `gris-tobein-kontaktark.png`.
+- Trekanter: 21 162–24 368 i full versjon og under 7 000 i lav.
+- Pingvinen, anda og Paninikanin går allerede på to bein.
+- Ikke avklart: sjødyr som hval og hai, og skilpadda. En oppreist pizzaskilpadde ligner for mye på en kjent figur og bør få en egen løsning.
