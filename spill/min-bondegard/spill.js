@@ -278,7 +278,7 @@ function oppdaterHud() {
   if (visteMynter !== null && visteMynter !== s.mynter) { const p = $('pMynter'); p.classList.remove('bump'); void p.offsetWidth; p.classList.add('bump'); }
   visteMynter = s.mynter; $('mynter').textContent = s.mynter;
 }
-function melding(tekst, ms = 2600) { const m = $('melding'); m.textContent = tekst; m.classList.add('vis'); clearTimeout(melding.t); melding.t = setTimeout(() => m.classList.remove('vis'), ms); }
+function melding(tekst, ms = 2600) { const m = $('melding'); m.textContent = tekst; const rt = $('revTips'), rr = rt ? rt.getBoundingClientRect() : null; m.style.top = rr && rr.height > 0 && rr.top < innerHeight / 2 ? Math.round(rr.bottom + 6) + 'px' : '';   /* 0.8.15: meldingen legger seg under revens tips, ikke oppå */ m.classList.add('vis'); clearTimeout(melding.t); melding.t = setTimeout(() => m.classList.remove('vis'), ms); }
 const _p = new THREE.Vector3();
 function flyt(tekst, pos, forsink = 0) {
   if (!pos) return;   /* QA 10.11 (K1): uten posisjon vises ingen flytetekst */
