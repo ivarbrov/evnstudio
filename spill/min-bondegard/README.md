@@ -28,11 +28,12 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 - Ting som hentes, fjernes fra tilstanden. Derfor kan ingenting hentes to ganger, uansett omlasting.
 - Går klokka bakover, blir ingen ventetid lengre enn jobben selv.
 - `seq` øker ved hver lagring. Har en annen fane lagret nyere fremgang, tas den i bruk.
-- Ødelagt lagring, eller lagring fra en nyere versjon, tas vare på i `evn-min-bondegard-v1-kopi`, og spillet starter en ny gård.
+- Ødelagt lagring, eller lagring fra en nyere versjon, tas vare på i `evn-min-bondegard-v1-kopi`. Den forrige kopien flyttes til `-kopi2`. Spillet starter en ny gård.
 - `?test` i adressen gir egen lagring (`evn-min-bondegard-test`) og viser testmenyen fra testscenen.
 
 ## Versjoner
 
+- **0.8.7** (ikke publisert): Rettinger etter QA av 0.8.5 (`qa/rapporter/2026-11-09-min-bondegard-21841a2.md`). Roboten blir stående når alle venteturene er sperret av bygg. Handlingskortet holder seg innenfor skjermen i liggende format. Revetipset dekker ikke myntene på 375 px. Lagringsavsnittet nevner `-kopi2`.
 - **0.8.6** (ikke publisert):
   - Dra for å plante og høste (Even 10.11). Dra «Plant» fra handlingskortet ut over tomme åkre, eller trykk på en moden åker og dra over de andre. Et vanlig trykk høster fortsatt alt som er modent.
   - Ny plassering (Ivar 10.11): siloen står der fôrkverna sto, mellom låven og hønsehuset. Fôrkverna står foran låven, og bakeriet står på den åpne plassen ved markedsbua. Rundballene ved låven er tilbake. Bygg på gammel standardplass flyttes til den nye.
