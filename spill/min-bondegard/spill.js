@@ -222,7 +222,8 @@ function plasserAlt() {
     plasser(t, f.x, f.z, 0);
   });
   const GML = {forkvern: [1.0, -9.7], bakeri: [0.7, -5.4]};   /* bygg som står på gammel standardplass (0.8.0–0.8.6), får ny */
-  for (const b in GML) { const sb = s.bygg[b]; if (sb && sb.x === GML[b][0] && sb.z === GML[b][1] && !ting.has(b)) { sb.x = null; sb.z = null; } }
+  const stdV = s.plasser.std ? s.plasser.std.x : 0;   /* hvilken standardplassering lagringen har sett (engangsflagg, QA 10.11) */
+  for (const b in GML) { const sb = s.bygg[b]; if (stdV < 3 && sb && sb.x === GML[b][0] && sb.z === GML[b][1] && !ting.has(b)) { sb.x = null; sb.z = null; } }
   for (const b of I_SPILLET.bygg) { const sb = s.bygg[b]; if (!sb) continue; let t = ting.get(b);
     const modell = sb.eid ? 'bygd' : 'plass';
     if (t && t.modell !== modell) { scene.remove(t.gruppe); const i = klikkbare.indexOf(t.gruppe); if (i >= 0) klikkbare.splice(i, 1); ting.delete(b); t = null; }
@@ -232,9 +233,10 @@ function plasserAlt() {
     plasser(t, sb.x, sb.z, sb.r);
   }
   let si = ting.get('silo'); if (!si) { const g = lagSilo(); scene.add(g); eierAv(g); klikkbar(g); si = {type: 'silo', id: 'silo', gruppe: g, fot: FOT.silo, hoyde: 6.6}; si.ikon = lagIkon(si.hoyde); g.add(si.ikon); ting.set('silo', si); }
-  if (s.plasser.silo && ((s.plasser.silo.x === 11.95 && s.plasser.silo.z === -2.4) || (s.plasser.silo.x === -13.6 && s.plasser.silo.z === -1.75) || (s.plasser.silo.x === 1 && s.plasser.silo.z === -9.7))) delete s.plasser.silo;   /* gamle standardplasser flyttes til ny */
+  if (stdV < 3 && s.plasser.silo && ((s.plasser.silo.x === 11.95 && s.plasser.silo.z === -2.4) || (s.plasser.silo.x === -13.6 && s.plasser.silo.z === -1.75) || (s.plasser.silo.x === 1 && s.plasser.silo.z === -9.7))) delete s.plasser.silo;   /* gamle standardplasser flyttes til ny */
   const ps = s.plasser.silo || (() => { const p = finnLedigPlass(si, ...STANDARD.silo) || STANDARD.silo; return (s.plasser.silo = {x: p[0], z: p[1], r: 0}); })();
   plasser(si, ps.x, ps.z, ps.r);
+  s.plasser.std = {x: 3, z: 0, r: 0};
 }
 // Faste ting fra testscenen
 let hus = null, lave = null, bod = null;
@@ -430,7 +432,15 @@ function akerVed(x, y) {
 }
 function draIkon(tegn, x, y) { const d = $('draIkon'); if (!tegn) { d.style.display = 'none'; return; } d.textContent = tegn; d.style.display = 'block'; d.style.left = x + 'px'; d.style.top = y + 'px'; }
 function draOver(x, y) {
-  const m = draModus; if (!m) return; draIkon(m.ikon, x, y);
+  const m = draModus; if (!m || pauset) return;
+  if (m.type === 'plant' && !m.dratt) { if (Math.hypot(x - m.x0, y - m.y0) < 12) return;   /* et lite skjelv er fortsatt et trykk (QA 10.11) */
+    m.dratt = true; lukkHandling(); m.px = x; m.py = y; }   /* kortet lukkes med en gang draget begynner, så ingen åker plantes i skjul bak det */
+  draIkon(m.ikon, x, y);
+  // raske sveip: sjekk også punktene mellom forrige og denne posisjonen
+  if (m.px !== undefined) { const d = Math.hypot(x - m.px, y - m.py), n = Math.floor(d / 18); for (let k = 1; k < n; k++) draEn(m, m.px + (x - m.px) * k / n, m.py + (y - m.py) * k / n); }
+  m.px = x; m.py = y; draEn(m, x, y);
+}
+function draEn(m, x, y) {
   const i = akerVed(x, y); if (i < 0 || m.ferdige.has(i)) return;
   if (m.type === 'host' && i === m.start && !m.flyttet) return;
   if (!m.flyttet && m.type === 'plant') lukkHandling();   /* kortet skal ikke dekke åkrene */
@@ -449,7 +459,7 @@ function draHost(m, i) {
 }
 function sluttDra() {
   const m = draModus; if (!m) return; draModus = null; draIkon(null);
-  if (!m.flyttet) { if (m.type === 'host') hostAlt(ting.get(s.akre[m.start].id)); return; }    // vanlig trykk: høst alt, eller «Plant» på knappen
+  if (!m.flyttet) { if (m.type === 'host') hostAlt(ting.get(s.akre[m.start].id)); else if (m.dratt) { undertrykkTrykk = true; setTimeout(() => { undertrykkTrykk = false; }, 50); } return; }    // vanlig trykk: høst alt, eller «Plant» på knappen
   undertrykkTrykk = true; setTimeout(() => { undertrykkTrykk = false; }, 50);
   if (m.n) gi(m.type === 'host' ? {xp: m.xp, nye: m.nye} : null, m.n ? midtAv(ting.get(s.akre[[...m.ferdige][0]].id), 2.2) : null);
   if (m.full) lagerFullt('silo');
@@ -466,8 +476,7 @@ window.spillDraStart = (x, y) => {
 $('handlingInnhold').addEventListener('pointerdown', e => {
   const k = e.target.closest('.fro'); if (!k || k.disabled) return; e.preventDefault();
   try { k.releasePointerCapture(e.pointerId); } catch (er) {}
-  draModus = {type: 'plant', avling: k.dataset.a, ikon: ikon(k.dataset.a), ferdige: new Set(), flyttet: false, n: 0};
-  draIkon(draModus.ikon, e.clientX, e.clientY);
+  draModus = {type: 'plant', avling: k.dataset.a, ikon: ikon(k.dataset.a), ferdige: new Set(), flyttet: false, n: 0, x0: e.clientX, y0: e.clientY};
 });
 // Slippes frøet på selve knappen uten å ha vært ute på gården, er det et vanlig trykk på «Plant»
 
@@ -790,7 +799,7 @@ window.__evnP = EVNPause({
   kanPause: () => startet && !$('feil').classList.contains('vis'),
   // Aktiv spilletid (ST2): ikke i pause, ikke med lageret eller markedsbua åpen, ikke før spillet er startet
   aktiv: () => startet && !pauset && !dialogApen(),
-  pause: () => { pauset = true; lagre(); if (flytt) sluttFlytt(false); dialoger.forEach(id => { if ($(id).classList.contains('vis')) { $(id).classList.remove('vis'); if (window.EVNPauseInert) EVNPauseInert(null); } }); lukkHandling(); },   /* QA 9.11 (T2): pausen legger seg ikke over en åpen dialog */
+  pause: () => { pauset = true; if (draModus) { const m = draModus; draModus = null; draIkon(null); if (m.n) gi(m.type === 'host' ? {xp: m.xp, nye: m.nye} : null); } lagre(); if (flytt) sluttFlytt(false); dialoger.forEach(id => { if ($(id).classList.contains('vis')) { $(id).classList.remove('vis'); if (window.EVNPauseInert) EVNPauseInert(null); } }); lukkHandling(); },   /* QA 9.11 (T2): pausen legger seg ikke over en åpen dialog */
   fortsett: () => { pauset = false; L.normaliserTid(s, naa()); synk(true); },
   lagre,
   styring: () => document.documentElement.classList.contains('touch')

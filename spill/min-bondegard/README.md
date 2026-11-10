@@ -33,6 +33,11 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 
 ## Versjoner
 
+- **0.8.9** (ikke publisert): Rettinger etter QA av 0.8.7 (`qa/rapporter/2026-11-10-min-bondegard-7270d54.md`):
+  - Et drag fra «Plant» begynner først etter 12 px, så et skjelvende trykk planter den valgte åkeren. Kortet lukkes så snart draget begynner, så ingen åker plantes i skjul bak det.
+  - Pausen avbryter et drag.
+  - Raske sveip sjekker også punktene mellom to bevegelser.
+  - Flytting fra gamle standardplasser skjer én gang, styrt av et flagg i lagringen (`plasser.std`) i stedet for å sammenligne koordinater.
 - **0.8.8** (ikke publisert): Ivar 10.11: Siloen står nærmere tunet (1,0; −8,4), og en silo på forrige standardplass flyttes dit. Gårdsveiene er egne flater med rette, myke kanter. Før var kantene trappete, fordi sandfargen lå i terrengnettet.
 - **0.8.7** (ikke publisert): Rettinger etter QA av 0.8.5 (`qa/rapporter/2026-11-09-min-bondegard-21841a2.md`). Roboten blir stående når alle venteturene er sperret av bygg. Handlingskortet holder seg innenfor skjermen i liggende format. Revetipset dekker ikke myntene på 375 px. Lagringsavsnittet nevner `-kopi2`.
 - **0.8.6** (ikke publisert):
