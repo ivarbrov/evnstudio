@@ -310,3 +310,16 @@ Donutku, Burgersau, Pizzaskilpadde, Shakeand og Spagettipingvin er rettet i `ble
   - Matdyr som er sjeldnere enn kravet, merkes med ⭐.
   - Telleren viser «0/2 valgt».
   Regelen om ikke å velge automatisk er beholdt.
+
+### Alternativ C bak `?fordeling=c` (godkjent som isolert prototype av Ivar 10.11.2026)
+Uten flagget er fordelingen, lagringen og spillet som før. B3 (uendrede sjeldenheter) gjelder fortsatt produksjonsspillet.
+- **Fordeling:** hver art har 6 Common, 5 Rare, 5 Epic, 4 Legendary, 3 Mythic, 1 Food God og 1 Secret. Vektene er uendret, og alle 1 000 ID-er beholdes. Samme regel som `test/matdyr/fordeling-c/stige.js`.
+- **Egen testlagring:** `evn-matdyr-gard-proto-c`. Ved første start leses standardlagringen (`evn-matdyr-gard-proto`) og migreres. Den skrives aldri. En ødelagt testlagring tas vare på i `…-c-ugyldig`.
+- **Streng bestefarsregel:** eide dyr beholder gammel kategori, pris og inntekt (`arv` per plass). Arven følger dyret og forsvinner når det selges, byttes eller leveres. Gårdsnivå-kravene bruker den arvede kategorien. ⏳ viser «eldre utgave» i salg, bytte og Gårdsnivå.
+- **Bestillingsregn:** 0 % betyr ingen styring i det hele tatt, heller ikke garanti. Garantien løfter aldri over Legendary.
+- **Óðinn-kallet (forslag):** Gårdsnivå 10 krever fortsatt Óðinn. På vei til nivå 10 viser Gårdsnivå-vinduet «🔔 Óðinn-kallet: x/3». Når 3 ulike Food God er funnet, blir neste Food God som faller av seg selv, Óðinn. Regelen er synlig og uavhengig av bestillingsregnet. Simulert (bestilling 0 %, ingen garanti), median/90-persentil til nivå 10: Vanlig barn 156/191 min (uten kall 186/380), Ny spiller 626/937 (uten kall 960/over 1 440).
+- **Matdyrboka:** 📖-knappen. Én art om gangen, 25 ruter i stigen. Alle tidligere funn teller. Food God får gullramme, Secret er skjult (???) til den er funnet.
+- **Toppsett (`toppsett.js`):** Food God og Secret får særpreg mens spillet kjører, uten egne modeller. 3 varianter av hvert sett. Sammenligning: `toppsett.html` og `toppsett-varianter.png`. I spillet: 🧪 → «✨ Food God: A/B/C», «✨ Secret: A/B/C», «⭐ Slipp Food God», «🌌 Slipp Secret».
+- **Testknapper (🧪):** «🕰️ Gammel testlagring» lager og migrerer en typisk gammel lagring. «📥 Hent standardlagring» migrerer standardlagringen på nytt.
+- **Spilltest:** `node spilltest-c.mjs` (31 kontroller: flagg, migrering, arv, salg, Gårdsnivå med arv, bestilling 0 %, garantitak, Óðinn-kallet, Matdyrboka, ødelagt lagring). Migreringstestene for begge lagringsformatene: `node --test test/matdyr/fordeling-c/migrering.test.js` (20).
+- **Paninikanin, tre forslag** (`blender/paninikanin_forslag.py`, `paninikanin-forslag.png`, `nyefigurer.html?figur=paninikanin_a,paninikanin_b,paninikanin_c`): A Paninikropp, B Brødkanin, C Halvpanini. Ingen ID- eller kategoribytte før Even har valgt.

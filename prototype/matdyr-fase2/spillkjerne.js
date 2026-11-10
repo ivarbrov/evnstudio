@@ -131,7 +131,14 @@
       ids.forEach((pi, j) => { const p = plasserNa[pi]; m4.makeTranslation(p.x, p.y + 0.21, p.z); im.setMatrixAt(j, m4); }); eg.add(im);
     }
     for (const i of enkle) { const eg = new T.Group(); eg.userData.etasje = etasjeAv(i); const ph = plassholder(S.base[i], rB(i)), p = plasserNa[i]; ph.position.set(p.x, p.y + 0.2, p.z); eg.add(ph); dyrG.add(eg); }
+    // Fordeling C: Food God og Secret i gården får tilbehøret fra toppsettet (krone/glorie, ring, gnister). Figurene selv er slått sammen.
+    basePynt = [];
+    if (ERC && window.EVNToppsett) for (let i = 0; i < Math.min(aapneNa, S.base.length); i++) { const r = rB(i); if (r < 5) continue;
+      const eg = new T.Group(); eg.userData.etasje = etasjeAv(i); const pg = EVNToppsett.pynt(r, 2.6, 1.1), p = plasserNa[i]; pg.position.set(p.x, p.y + 0.2, p.z); eg.add(pg); dyrG.add(eg); basePynt.push(pg.userData.topp); }
   }
+  let basePynt = [];
+  // Fordeling C: særpreg på Food God og Secret som faller og bæres
+  const toppsett = (m, ci) => ERC && window.EVNToppsett && COMBOS[ci].r >= 5 ? EVNToppsett.bruk(m, COMBOS[ci].r) : null;
   let lgeo = null, lmat = null;
   function ledigGeo() {
     if (lgeo) return lgeo; const deler = [], b = (w, d, x, z) => { const g = new T.BoxGeometry(w, 0.06, d); g.translate(x, 0, z); deler.push(g.toNonIndexed()); };
@@ -202,8 +209,9 @@
   }
   function slippNed(ci, xz) {
     const [x, z] = xz || tilfeldigPunkt(), g = new T.Group(); g.position.set(x, xz ? 0 : 26, z);
-    const m = modell(ci), lab = navneskilt(ci); lab.position.y = 3.9 + COMBOS[ci].r * 0.15; lab.material.transparent = true; g.add(m, lab); feltG.add(g);
-    felt.push({ ci, g, m, lab, tilstand: xz ? 'gaa' : 'fall', retning: Math.random() * Math.PI * 2, fart: (1.2 + Math.random() * 0.8) * (I.GANGFART || 1),
+    const m = modell(ci), lab = navneskilt(ci), topp = toppsett(m, ci); lab.position.y = 3.9 + COMBOS[ci].r * 0.15; lab.material.transparent = true; g.add(m, lab); feltG.add(g);
+    if (topp && !xz) melding(COMBOS[ci].r === 6 ? '🌌 Noe hemmelig faller fra himmelen …' : '⭐ En Food God faller fra himmelen!', 4);
+    felt.push({ ci, g, m, lab, topp, tilstand: xz ? 'gaa' : 'fall', retning: Math.random() * Math.PI * 2, fart: (1.2 + Math.random() * 0.8) * (I.GANGFART || 1),
       tid: 10 + Math.random() * 9,            // så lenge matdyret vandrer fritt før det begynner å søke mot porten (s)
       side: Math.random() < 0.5 ? -1 : 1,      // foretrukket side å gå rundt hindringer på, så to matdyr ikke speiler hverandre
       alder: 0, fase: Math.random(), v: 0, vx: 0, vz: 0, labA: 1, beite: 0, fast: 0, robotFast: 0 });
@@ -273,7 +281,7 @@
     dyttMelding -= dt;
     const e = eng(), po = port(), r = I.robot && I.robot(), rp = r && r.position.y < 1 ? r.position : null, faste = fasteHindre();
     for (const a of [...felt]) {
-      a.alder += dt; const p = a.g.position;
+      a.alder += dt; const p = a.g.position; if (a.topp) a.topp.oppdater(t);
       if (a.tilstand === 'fall') { p.y -= dt * 16; if (p.y <= 0) { p.y = 0; a.tilstand = 'gaa'; } continue; }
       // Et matdyr som er sluppet på tunet (utenfor åkeren) blir stående. Etter 4 minutter krymper det bort der.
       if (a.tilstand === 'gaa' && !a.hopp && !lovlig(p.x, p.z)) { a.vFaktisk = 0; if (a.alder > 240) a.tilstand = 'krymp'; else { animer(a, t, false); continue; } }
@@ -437,7 +445,7 @@
       const ci = h.a.ci, pr = PRICE(ci);
       if (S.penger < pr) return melding('💰 Du mangler ' + fmt(pr - S.penger) + ' for å ta med ' + navn(ci) + '.');
       if (!harPlass(ci)) return melding('🏠 Gården er full. Selg et matdyr først, eller finn et som er bedre enn det svakeste.');
-      fjern(h.a); bar = { ci, m: modell(ci) }; bar.m.scale.setScalar(0.7); I.scene.add(bar.m);
+      fjern(h.a); bar = { ci, m: modell(ci) }; bar.topp = toppsett(bar.m, ci); bar.m.scale.setScalar(0.7); I.scene.add(bar.m);
       melding(harLedig() ? 'Gå til det gule feltet «Lever her», eller trykk på en grønn ＋ på gården.' : 'Gården er full. Bær ' + navn(ci) + ' hjem og bytt med et svakere matdyr. Du betaler når det flytter inn.', 4);
     } else if (h.t === 'sett') settInn(h.i);
     else if (h.t === 'forste') velgPlass(h.i);
@@ -745,6 +753,13 @@
       [0, 10, 15].forEach(v => r2.append(I.knapp('Bestilling ' + v + ' %', S.bestilling === v, () => { S.bestilling = v; lagre(); byggPanel(); }, 'Bestillingsregn ' + v + ' prosent')));
       r2.append(I.knapp(ERC && S.bestilling === 0 ? '🎯 Garanti (av ved 0 %)' : garanti ? '🎯 Garanti på' : '🎯 Garanti av', garanti, () => { garanti = !garanti; byggPanel(); }, 'Bestillingsgaranti'));
       if (ERC) r2.append(I.knapp('🕰️ Gammel testlagring', false, gammelTestlagring), I.knapp('📥 Hent standardlagring', false, hentStandardPaaNytt));
+      if (ERC && window.EVNToppsett) {
+        const TS = EVNToppsett, slipp = r => { const rp = I.robot().position, ci = POOLS[r][Math.floor(Math.random() * POOLS[r].length)]; slippNed(ci, null); melding((r === 6 ? '🌌 ' : '⭐ ') + navn(ci) + ' faller ned på åkeren.'); };
+        const neste = type => { const k = Object.keys(TS.VARIANTER[type]); TS.velg(type, k[(k.indexOf(TS.valgt[type]) + 1) % k.length]); byggSpillGard(true); byggPanel(); };
+        r2.append(I.knapp('⭐ Slipp Food God', false, () => slipp(5)), I.knapp('🌌 Slipp Secret', false, () => slipp(6)),
+          I.knapp('✨ Food God: ' + TS.valgt.gud, false, () => neste('gud'), 'Bytt utseende for Food God: ' + TS.VARIANTER.gud[TS.valgt.gud]),
+          I.knapp('✨ Secret: ' + TS.valgt.hemmelig, false, () => neste('hemmelig'), 'Bytt utseende for Secret: ' + TS.VARIANTER.hemmelig[TS.valgt.hemmelig]));
+      }
       r2.append(I.knapp('+💰 100 000', false, () => { S.penger += 1e5; lagre(); }), I.knapp('+💰 100 mill', false, () => { S.penger += 1e8; lagre(); }),
         I.knapp('🎁 Dyr til neste nivå', false, giKravdyr), I.knapp('↺ Nullstill', false, nullstill));
       p.append(r2);
@@ -794,6 +809,7 @@
     oppdaterFelt(dt, t);
     S.penger += inntekt() * dt;
     const r = I.robot();
+    if (bar && bar.topp) bar.topp.oppdater(t); for (const tp of basePynt) tp.oppdater(t);
     if (bar && bar.flyr) flyBar(dt);
     else if (bar && r) { bar.m.position.set(r.position.x, r.position.y + 3.3, r.position.z); bar.m.rotation.y = r.rotation.y; if (bar.m.userData.fig && !I.REDUSERT) I.animerNy(bar.m.userData.fig, t, false); const i = naerPlass(r.position, true, 1.4); if (i >= 0) settInn(i); }
     handling = r ? finnHandling() : null; visHandling(); if (r) { oppdaterMerker(t); sjekkLevFelt(t); }
