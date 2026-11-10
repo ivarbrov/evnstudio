@@ -193,10 +193,10 @@ function finnHinder() {
   hinder = [];
   const b = new THREE.Box3();
   scene.children.forEach(o => { if (!['laave', 'honsehus', 'dyr', 'markedsbod'].includes(o.userData.kat) || o.userData.art2 || o.isInstancedMesh || o.isSprite) return;
-    b.setFromObject(o); if (b.isEmpty() || b.max.x - b.min.x > 20) return; const benk = b.min.x < -3.2 && b.max.x > -3.2 && b.min.z < 6.6 && b.max.z > 6.6;   /* roboten setter seg på benken */
+    b.setFromObject(o); if (b.isEmpty() || b.max.x - b.min.x > 20) return; const benk = b.min.x < -9.6 && b.max.x > -9.6 && b.min.z < -0.55 && b.max.z > -0.55;   /* roboten setter seg på benken */
     hinder.push(benk ? [b.min.x, b.max.x, b.min.z, b.max.z, 'vei'] : [b.min.x, b.max.x, b.min.z, b.max.z]); });
   // gårdsveien, benken og småting fra testscenen
-  hinder.push([-6.95, -4.05, -1.5, 12, 'vei'], [-4.35, -2.05, 6.0, 7.3, 'vei'], [-5.1, -4.4, 6.4, 7.1], [3.0, 3.8, -6.8, -6.0], [-2.0, -0.6, -3.9, -2.5], [-2.7, -2.1, -2.3, -1.6], [-9.9, -8.9, 6.4, 7.4], [-9.3, -8.1, 8.4, 9.4], [-13.0, -8.0, 8.7, 10.2]);
+  hinder.push([-6.95, -4.05, -1.5, 12, 'vei'], [-10.75, -8.45, -1.0, 0.3, 'vei'], [-11.4, -10.7, -0.85, -0.15], [3.0, 3.8, -6.8, -6.0], [-2.0, -0.6, -3.9, -2.5], [-2.7, -2.1, -2.3, -1.6], [-9.9, -8.9, 6.4, 7.4], [-9.3, -8.1, 8.4, 9.4], [-13.0, -8.0, 8.7, 10.2]);
 }
 function fotRekt(t, x, z, r) { const [w, d] = t.fot; const [a, b] = (r || 0) % 2 ? [d, w] : [w, d]; return [x - a / 2, x + a / 2, z - b / 2, z + b / 2]; }
 const overlapp = (p, q) => p[0] < q[1] - 0.02 && p[1] > q[0] + 0.02 && p[2] < q[3] - 0.02 && p[3] > q[2] + 0.02;

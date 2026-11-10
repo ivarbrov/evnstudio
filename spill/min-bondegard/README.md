@@ -33,6 +33,7 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 
 ## Versjoner
 
+- **0.8.10** (ikke publisert): Benken står inntil låven, til venstre for gårdsveien, og ikke alene mellom veien og åkrene (Ivar 10.11). Robotens tur til benken er endret tilsvarende.
 - **0.8.9** (ikke publisert): Rettinger etter QA av 0.8.7 (`qa/rapporter/2026-11-10-min-bondegard-7270d54.md`):
   - Et drag fra «Plant» begynner først etter 12 px, så et skjelvende trykk planter den valgte åkeren. Kortet lukkes så snart draget begynner, så ingen åker plantes i skjul bak det.
   - Pausen avbryter et drag.

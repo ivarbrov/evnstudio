@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.8.9 – EVN Studio</title>
+<title>Min Bondegård 0.8.10 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -259,7 +259,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.8.9</div>
+    <div class="evn-ver" id="versjon">Versjon 0.8.10</div>
   </div>
 </div>
 
@@ -530,7 +530,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.8.9'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.8.10'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -1480,7 +1480,7 @@ function lagMarkedsbod() {
   x.fillStyle = '#fff8e8'; x.font = 'bold 74px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('Gårdsbu', 256, 104);
   const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; const sk = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.62), std({map: t, roughness: 0.8})); sk.position.set(0, 3.28, 0.86); sk.rotation.x = -0.12; B.add(sk);
   B.traverse(o => { if (o.isMesh) o.castShadow = true; }); bake(B); klikkbar(B);
-  const benk = new THREE.Group(); benk.position.set(-3.2, 0, 6.6); scene.add(benk);
+  const benk = new THREE.Group(); benk.position.set(-9.6, 0, -0.55); /* 0.8.10 (Ivar 10.11): inntil låven, til venstre for gårdsveien */ scene.add(benk);
   // Setet er tilpasset robotens Sitting-klipp: hoften ender 0,32 m over bakken og 0,26 m bak føttene
   mesh(teksturUV(avrundetBoks(2.0, 0.08, 0.46, 0.03, 1), 1, 0.3), MAT.lysPlank, 0, 0.2, 0, benk); mesh(teksturUV(avrundetBoks(2.0, 0.34, 0.07, 0.03, 1), 1, 0.25), MAT.lysPlank, 0, 0.55, -0.27, benk);
   [-0.82, 0.82].forEach(x => { mesh(avrundetBoks(0.1, 0.18, 0.4, 0.02, 1), MAT.brunPlank, x, 0.08, 0, benk); mesh(avrundetBoks(0.08, 0.6, 0.08, 0.02, 1), MAT.brunPlank, x, 0.4, -0.27, benk); }); bake(benk);
@@ -1500,7 +1500,7 @@ function lagDetaljer() {
   const pot = (x, z, f) => { mesh(new THREE.CylinderGeometry(0.26, 0.19, 0.38, 12), fm(0xc4643c, 0.8), x, 0.19, z, G); mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.06, 12), fm(0xb35634, 0.8), x, 0.38, z, G);
     mesh(lineariser(klump(0.26, 0x4f9a3c, {topp: 0x8fcf58, bunn: 0x346d2b, amp: 0.2, seg: 8})), MAT.vertex, x, 0.55, z, G);
     for (let i = 0; i < 6; i++) mesh(new THREE.SphereGeometry(0.06, 6, 4), fm(f, 0.6), x + Math.cos(i) * 0.18, 0.66 + (i % 2) * 0.06, z + Math.sin(i) * 0.18, G); };
-  pot(-12.5, 9.2, 0xff6f9a); pot(-8.4, 9.6, 0xffd84a); pot(-4.75, 6.75, 0xb48cff); // ved enden av benken, utenfor robotens sitteplass
+  pot(-12.5, 9.2, 0xff6f9a); pot(-8.4, 9.6, 0xffd84a); pot(-11.05, -0.5, 0xb48cff); // ved enden av benken, utenfor robotens sitteplass
   const tavle = document.createElement('canvas'); tavle.width = 256; tavle.height = 320; { const x = tavle.getContext('2d'); x.fillStyle = '#2b3a33'; x.fillRect(0, 0, 256, 320); x.strokeStyle = '#a8794a'; x.lineWidth = 16; x.strokeRect(8, 8, 240, 304);
     x.fillStyle = '#fbf6e8'; x.font = 'bold 40px system-ui'; x.textAlign = 'left'; ['Egg   8', 'Brød 12', 'Mais   4', 'Hvete 2'].forEach((l, i) => x.fillText(l, 30, 80 + i * 62)); }
   const tt = new THREE.CanvasTexture(tavle); tt.encoding = THREE.sRGBEncoding;
@@ -1577,7 +1577,7 @@ const V3 = (x, z) => new THREE.Vector3(x, 0, z);
 const VENT = [
   {vei: () => [V3(6.2, 0.7)], anim: 'Yes', tid: 3.5, se: () => hoener[1].position},
   // Benken: gå rundt foran benken, snu ryggen til den og sett deg (roten 0,3 m foran setets midte)
-  {vei: () => [V3(-0.6, 0.2), V3(-1.2, 8.3), V3(-3.2, 8.3), V3(-3.2, 6.9)], anim: 'Sitting', tid: 5, retning: 0, enGang: true, ut: [V3(-3.2, 8.2)]},
+  {vei: () => [V3(-9.6, 1.0), V3(-9.6, -0.25)], anim: 'Sitting', tid: 5, retning: 0, enGang: true, ut: [V3(-9.6, 1.0)]},
   // rundt beitet: gangen mellom beitet (z ≤ 5,2) og markedsbua (z ≥ 6,5)
   {vei: () => [V3(-6.8, 5.95), V3(-14.6, 5.95)], anim: 'Wave', tid: 2.6, se: () => rev ? rev.position : V3(-17.6, 4), hilsRev: true, ut: [V3(-6.8, 5.95)]},
   {vei: () => [V3(-1.0, 0.0), V3(2.4, 0.6)], anim: 'ThumbsUp', tid: 2.5, se: () => V3(2.4, 3)},
