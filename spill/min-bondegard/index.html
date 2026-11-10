@@ -1079,7 +1079,7 @@ const treCache = new Map();
 function treModell(art, v, fin) {
   const nokkel = art + v + fin + KVAL; if (treCache.has(nokkel)) return treCache.get(nokkel);
   const HD = TREFORM !== 'blad' && art !== 'fjern', PUFF = HD && TREFORM === 'puff', P = Object.assign({}, TREART[art]);
-  if (HD) { P.r *= PUFF ? 1.45 : 1.25; P.tue = PUFF ? [5, 0.1, 3] : [18, 0.3, 6]; }
+  if (HD) { P.r *= PUFF ? 1.22 : 1.25; P.tue = PUFF ? [5, 0.1, 3] : [18, 0.3, 6]; }
   let frø3 = 7 + v * 131 + art.length * 977; const r2 = () => (frø3 = (frø3 * 16807) % 2147483647) / 2147483647; r2.s = v * 3.1;
   const L = (a) => a[0] + r2() * (a[1] - a[0]);
   const seg = HD ? (PUFF ? (fin ? (KVAL === 'mobil' ? [9, 7] : [12, 9]) : [7, 5]) : (fin ? (KVAL === 'mobil' ? [14, 10] : [20, 14]) : (KVAL === 'mobil' ? [8, 6] : [10, 7]))) : art === 'fjern' ? [7, 5] : fin ? (KVAL === 'mobil' ? [8, 6] : [11, 8]) : (KVAL === 'mobil' ? [6, 4] : [7, 5]); // 0.7.3: kjernene er nesten skjult av bladkortene, så mobil bruker færre trekanter i dem
@@ -1095,27 +1095,32 @@ function treModell(art, v, fin) {
   for (let i = 0; i < P.topp; i++) { const th = i / Math.max(1, P.topp) * 6.28 + r2(), midt = i === 0 && !P.soyle, rr2 = midt ? 0 : P.toppR * (0.6 + r2() * 0.5);
     const y = P.soyle ? h + 0.4 + i * (P.toppY - 0.4) / P.topp : (P.busk ? P.toppY + (midt ? 0.3 : 0) : h + P.toppY * (0.85 + r2() * 0.3) + (midt ? 0.25 : 0)); const rk = L(P.k) * (P.soyle ? 1 - i * 0.06 : 1);
     klaser.push([Math.cos(th) * rr2 + (P.soyle ? (r2() - 0.5) * 0.3 : 0), y, Math.sin(th) * rr2, rk]); }
-  if (PUFF) { /* små, runde bladdotter utenpå hver klase gir en bølget kant, som i tegnede trær */
-    const store = klaser.slice(); store.forEach(([kx, ky, kz, kr]) => { const n = fin ? 7 : 4; for (let j = 0; j < n; j++) { const th = j / n * 6.28 + r2() * 0.6, cy = j === 0 ? 0.95 : 0.55 - (j % 3) * 0.42 + (r2() - 0.5) * 0.15, sn = Math.sqrt(Math.max(0, 1 - cy * cy)), d = kr * 0.5;
-      klaser.push([kx + Math.cos(th) * sn * d, ky + cy * d, kz + Math.sin(th) * sn * d, kr * (0.5 + r2() * 0.12)]); } }); }
+  let nStore = 1e9; const segLiten = fin ? (KVAL === 'mobil' ? [7, 5] : [8, 6]) : [6, 4];
+  if (PUFF) { /* løvdotter utenpå hver klase. 0.8.12 (Ivar 10.11): ulik størrelse og plassering, ujevn silhuett, og ingen trær helt like */
+    klaser.forEach(k => { const j = k[3] * 0.22; k[0] += (r2() - 0.5) * j * 2; k[1] += (r2() - 0.5) * j; k[2] += (r2() - 0.5) * j * 2; k[3] *= 0.82 + r2() * 0.36; });
+    nStore = klaser.length; const store = klaser.slice(); store.forEach(([kx, ky, kz, kr]) => { const n = (fin ? 5 : 3) + Math.floor(r2() * (fin ? 4 : 2)); for (let j = 0; j < n; j++) { const th = r2() * 6.28, cy = j === 0 ? 0.8 + r2() * 0.2 : r2() * 1.5 - 0.6, sn = Math.sqrt(Math.max(0, 1 - cy * cy)), stor = r2() < 0.25, d = kr * (stor ? 0.38 + r2() * 0.15 : 0.5 + r2() * 0.22);
+      klaser.push([kx + Math.cos(th) * sn * d, ky + cy * d, kz + Math.sin(th) * sn * d, kr * (stor ? 0.6 + r2() * 0.12 : 0.3 + r2() * 0.24)]); } }); }
   // klasene: bygg, farg etter høyde, topp og søkk, og skyggelegg der de møtes
   let ymin = 1e9, ymax = -1e9; klaser.forEach(([, y, , r]) => { ymin = Math.min(ymin, y - r); ymax = Math.max(ymax, y + r); });
   const sx = klaser.reduce((a, k) => a + k[0], 0) / klaser.length, sy = klaser.reduce((a, k) => a + k[1], 0) / klaser.length, sz = klaser.reduce((a, k) => a + k[2], 0) / klaser.length;
   const f0 = LINEAR(P.f[0]), f1 = LINEAR(P.f[1]), f2 = LINEAR(P.f[2]), c = new THREE.Color(), deler = [], v3 = new THREE.Vector3(), n3 = new THREE.Vector3(), k3 = new THREE.Vector3();
-  const kort = art !== 'fjern' && !HD, kjerne = kort ? 0.64 : HD ? (PUFF ? 0.74 : 0.84) : 1; // med bladkort er kjernen litt mindre, og bladene stikker ut rundt den
+  /* flere grønntoner: noen dotter er varme og lyse, noen kjølige og dype */
+  const varm = f1.clone().lerp(f0, 0.35), kjolig = f2.clone().lerp(LINEAR(0x2f9a62), 0.55), toner = PUFF ? klaser.map(() => { const q = r2(); return q < 0.3 ? [varm, 0.2 + r2() * 0.25] : q < 0.58 ? [kjolig, 0.2 + r2() * 0.25] : null; }) : null, treTone = 0.94 + r2() * 0.14;
+  const kort = art !== 'fjern' && !HD, kjerne = kort ? 0.64 : HD ? (PUFF ? 0.8 : 0.84) : 1; // med bladkort er kjernen litt mindre, og bladene stikker ut rundt den
   const farge = (x, y, z, kx, ky, kz, kr, tupp, ki) => { let ao = 1; klaser.forEach(([ox, oy, oz, or], oj) => { if (oj === ki) return; const d = Math.hypot(x - ox, y - oy, z - oz) / or; if (d < 1.35) ao = Math.min(ao, 0.5 + 0.5 * THREE.MathUtils.smoothstep(d, 0.85, 1.35)); });
     const t = (y - ymin) / (ymax - ymin + 1e-6), ly = (y - ky) / kr; c.copy(f2).lerp(f0, THREE.MathUtils.smoothstep(t * 0.6 + (ly * 0.5 + 0.5) * 0.4, 0.1, 0.6)).lerp(f1, THREE.MathUtils.smoothstep(ly, 0.2, 1.0) * 0.42 + tupp * 0.22);
     return c.multiplyScalar((0.66 + 0.44 * tupp) * ao * (0.9 + vstoy(x * 5.5 + r2.s, y * 5.5, z * 5.5) * 0.22)); };
   const T = {p: [], n: [], c: [], u: [], i: []};
   klaser.forEach(([kx, ky, kz, kr], ki) => {
-    const {g, rad} = bladklase(r2, seg, P.tue); const p = g.attributes.position; g.computeVertexNormals(); const nn = g.attributes.normal;
+    const {g, rad} = bladklase(r2, ki >= nStore && kr < 0.6 ? segLiten : seg, P.tue); const p = g.attributes.position; g.computeVertexNormals(); const nn = g.attributes.normal;
     const rmin = Math.min(...rad), rmax = Math.max(...rad), lys = 0.94 + r2() * 0.14, farger = [];
     for (let i = 0; i < p.count; i++) { v3.fromBufferAttribute(p, i); const ly = v3.y / rad[i]; v3.multiplyScalar(kr * kjerne).add(k3.set(kx, ky, kz)); p.setXYZ(i, v3.x, v3.y, v3.z);
       let ao = 1; const aoA = PUFF ? 0.66 : HD ? 0.78 : 0.85, aoB = PUFF ? 0.98 : HD ? 1.2 : 1.35; klaser.forEach(([ox, oy, oz, or], oj) => { if (oj === ki) return; const d = Math.hypot(v3.x - ox, v3.y - oy, v3.z - oz) / or; if (d < aoB) ao = Math.min(ao, 0.5 + 0.5 * THREE.MathUtils.smoothstep(d, aoA, aoB)); });
       const t = (v3.y - ymin) / (ymax - ymin + 1e-6), tupp = (rad[i] - rmin) / (rmax - rmin + 1e-6);
       if (HD) { /* ren, myk fargeovergang: mørk under, klar grønn i midten, lys gulgrønn på toppen av hver klase og hver tue */
         c.copy(f2).lerp(f0, THREE.MathUtils.smoothstep(t * 0.45 + (ly * 0.5 + 0.5) * 0.55, 0.12, 0.55)).lerp(f1, THREE.MathUtils.smoothstep(ly, 0.1, 0.95) * 0.6 + tupp * 0.25);
-        c.multiplyScalar((PUFF ? 0.72 + 0.2 * tupp : 0.6 + 0.4 * tupp) * (0.35 + 0.65 * ao) * (0.72 + 0.28 * THREE.MathUtils.smoothstep(ly, -0.7, 0.5)) * lys * (0.97 + vstoy(v3.x * 2.5 + r2.s, v3.y * 2.5, v3.z * 2.5) * 0.06)); }
+        if (PUFF && toner[ki]) c.lerp(toner[ki][0], toner[ki][1]);
+        c.multiplyScalar((PUFF ? (0.84 + 0.2 * tupp) * treTone : 0.6 + 0.4 * tupp) * (0.35 + 0.65 * ao) * (0.72 + 0.28 * THREE.MathUtils.smoothstep(ly, -0.7, 0.5)) * lys * (0.97 + vstoy(v3.x * 2.5 + r2.s, v3.y * 2.5, v3.z * 2.5) * 0.06)); }
       else { c.copy(f2).lerp(f0, THREE.MathUtils.smoothstep(t * 0.6 + (ly * 0.5 + 0.5) * 0.4, 0.1, 0.6)).lerp(f1, THREE.MathUtils.smoothstep(ly, 0.2, 1.0) * 0.55 + tupp * 0.3);
         const flekk = 0.9 + vstoy(v3.x * 5.5 + r2.s, v3.y * 5.5, v3.z * 5.5) * 0.22; c.multiplyScalar((0.66 + 0.44 * tupp) * ao * lys * flekk * (kort ? 0.62 : 1)); }
       farger.push(c.r, c.g, c.b);
@@ -1151,7 +1156,7 @@ function tre(x, z, type, v, skala = 1, ut = null) {
   if (revPlass(x, z)) return false; const rr0 = TRE_R[type] * skala;
   if (Math.abs(z - VEI_Z) < 1.7 + rr0 * 0.75 || (Math.abs(x + 5.5) < 1.4 + rr0 * 0.75 && z > -1 && z < VEI_Z)) return false; // ingen trær (eller kroner) over veien
   if (trePlass.some(([a, b, r]) => Math.hypot(a - x, b - z) < (r + rr0) * 0.8)) return false; trePlass.push([x, z, rr0]); const y = hoyde(x, z), fin = naer(x, z), s = skala * rr(0.85, 1.25), rot = rr(0, 6.28), d = [];
-  if (TRESTIL === 'ny' && type !== 'gran') { const M = treModell(type === 'ung' ? 'rund' : type, fin ? v % 6 : v % 3, fin), /* færre varianter langt unna: kortere byggetid */ k = (type === 'ung' ? 0.45 : 1) * s; if (M.ved) d.push({geo: M.ved, m: M4(x, y, z, 0, rot, 0, k)}); d.push({geo: M.krone, m: M4(x, y, z, 0, rot, 0, k)}); if (M.blad) iRuteBlad(x, z, [{geo: M.blad, m: M4(x, y, z, 0, rot, 0, k)}]); }
+  if (TRESTIL === 'ny' && type !== 'gran') { const M = treModell(type === 'ung' ? 'rund' : type, fin ? v % 6 : v % 3, fin), /* færre varianter langt unna: kortere byggetid */ k = (type === 'ung' ? 0.45 : 1) * s, hf = (a) => { const q = Math.sin(x * 12.9898 + z * 78.233 + a) * 43758.5453; return q - Math.floor(q); }, PF = TREFORM === 'puff', kb = k * (PF ? 0.9 + hf(1) * 0.2 : 1), kh = k * (PF ? 0.9 + hf(2) * 0.22 : 1); /* puff: hvert tre er litt bredere, smalere, høyere eller lavere */ if (M.ved) d.push({geo: M.ved, m: M4(x, y, z, 0, rot, 0, k)}); d.push({geo: M.krone, m: M4(x, y - (kh - k) * 1.6, z, 0, rot, 0, kb, kh, kb)}); if (M.blad) iRuteBlad(x, z, [{geo: M.blad, m: M4(x, y, z, 0, rot, 0, k)}]); }
   else if (type === 'gran' && TRESTIL === 'ny') { d.push({geo: stammeGeo(1.3 * s, 0.25 * s, fin), m: M4(x, y, z)}); const G = gran2Geo(v % 5, fin), gm = M4(x, y + 0.75 * s, z, 0, rot, 0, 0.95 * s, 1.08 * s, 0.95 * s); d.push({geo: G.krone, m: gm}); if (G.blad) iRuteBlad(x, z, [{geo: G.blad, m: gm}]); }
   else if (type === 'gran') { d.push({geo: stammeGeo(1.2 * s, 0.24 * s, fin), m: M4(x, y, z)}); d.push({geo: granGeo(v % 5, fin), m: M4(x, y + 0.85 * s, z, 0, rot, 0, 0.92 * s, 1.1 * s, 0.92 * s)}); }
   else if (type === 'bjork') { const h = 3.4 * s; d.push({geo: stammeGeo(h, 0.17 * s, fin, true), m: M4(x, y, z)}); d.push({geo: krone('bjork', v % 6, fin), m: M4(x, y + h * 0.82, z, 0, rot, 0, 1.25 * s)}); }
