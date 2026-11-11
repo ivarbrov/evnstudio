@@ -49,6 +49,11 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 - **0.9.1** (ikke publisert): Rettinger etter QA av 0.9.0. 📋-knappen er skjult før nivå 4. Bestillingene er lesbare på smale skjermer. Meldingen etter levering vises over dialogen. To raske trykk sender ikke to bestillinger. Fokus går til neste «Send». Tilfeldige bestillinger regnes med heltall (`Math.imul`). Med redusert bevegelse kjører ikke lastebilen over skjermen.
 - **0.9.2** (ikke publisert): Lastebilen kjører saktere (høyst 8–9 m/s). Etter ett trykk på «Plant» står kortet klart på nærmeste tomme åker, så det går fort å så to sorter om hverandre (Ivar 11.11).
 - **0.9.3** (ikke publisert): Byggemenyen sier «Kommer i neste versjon av spillet» for fjøs og grisebinge når nivået er nådd, i stedet for lås og nivå.
+- **0.9.4** (ikke publisert): Kunder som kjører innom («drive through», Even 11.11).
+  - Blomsterkatten kommer kjørende i en liten åpen bil, stopper på veien foran markedsbua og ber om én vare. Trykk på henne eller snakkebobla for å selge.
+  - Hun betaler 1,5 × prisen i markedsbua (forslag, ikke godkjent). Salget gir ikke XP. Har spilleren ikke varen, venter hun opptil 60 s og kjører videre uten straff.
+  - Kattemodellen er hentet uendret fra grenen `prototype/bondegard-kattekunde` (testscene 0.8.6).
+  - Lastebilen kjører i ytre felt. `stat.kunder` teller salg til kunder.
 - **0.8.9** (ikke publisert): Rettinger etter QA av 0.8.7 (`qa/rapporter/2026-11-10-min-bondegard-7270d54.md`):
   - Et drag fra «Plant» begynner først etter 12 px, så et skjelvende trykk planter den valgte åkeren. Kortet lukkes så snart draget begynner, så ingen åker plantes i skjul bak det.
   - Pausen avbryter et drag.

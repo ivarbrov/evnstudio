@@ -134,5 +134,13 @@ t('Erter trenger frø', (() => { L.plant(s, 0, 'erter', T0); L.plant(s, 1, 'erte
 t('Erter gir 2 per åker etter 2 min', (() => { const x = L.host(s, 0, T0 + 120 * S); return x.ok && x.antall === 2 && s.lager.erter === 2 && !L.host(s, 1, T0 + 119 * S).ok; })());
 t('Uten erter i silo og på åkrene: gratis frø (F2)', (() => { const x = L.ny(T0); L.giXP(x, 175, T0); x.lager = {}; return L.kanPlante(x, 0, 'erter') === null && L.plant(x, 0, 'erter', T0).gratis === true; })());
 
+// --- Kunder ved markedsbua (0.9.4) ---
+s = L.ny(T0);
+{ const k = L.nyKunde(s); t('Kunden ber om én vare spilleren kan lage', k && L.kanLage(s, k.vare) && !D.erFor(k.vare) && k.antall >= 1 && k.antall <= 4 && k.mynter === Math.round(D.pris(k.vare) * k.antall * 1.5));
+  s.lager = {}; r = L.selgTilKunde(s, k); t('Uten varen: ingen handel og ingen straff', !r.ok && r.grunn === 'mangler' && r.mangler === k.antall && s.mynter === 50 && s.xp === 0);
+  s.lager[k.vare] = k.antall + 2; r = L.selgTilKunde(s, k); t('Salg til kunde gir mynter og tar varene, ikke XP', r.ok && s.mynter === 50 + k.mynter && s.lager[k.vare] === 2 && s.xp === 0 && s.stat.kunder === 1); }
+t('Kundens pris regnes ut av reglene, ikke av ønsket', (() => { const x = L.ny(T0); x.lager.egg = 9; const q = L.selgTilKunde(x, { vare: 'egg', antall: 2, mynter: 99999 }); return q.ok && q.mynter === 24 && x.mynter === 74; })());
+t('Kunden kan ikke kjøpe fôr eller ukjente varer', !L.selgTilKunde(s, { vare: 'honsefor', antall: 1 }).ok && !L.selgTilKunde(s, { vare: 'gull', antall: 1 }).ok && !L.selgTilKunde(s, null).ok);
+
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);
 process.exit(feil ? 1 : 0);

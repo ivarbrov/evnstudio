@@ -14,7 +14,7 @@
       v: VERSJON, seq: 0, opprettet: naa, sist: naa,
       nivaa: 1, xp: 0, mynter: D.startMynter,
       lager: {}, akre: [], dyr: {}, bygg: {}, plasser: {},
-      oppl: { steg: 0 }, stat: { hostet: 0, egg: 0, laget: 0, solgt: 0, levert: 0 },
+      oppl: { steg: 0 }, stat: { hostet: 0, egg: 0, laget: 0, solgt: 0, levert: 0, kunder: 0 },
       best: { nr: 0, fro: (Math.floor(naa) % 2147483646) + 1, liste: [] }
     };
     for (var k in D.startLager) s.lager[k] = D.startLager[k];
@@ -215,6 +215,23 @@
   }
   function boerByttes(s, i, naa) { var o = s.best.liste[i]; return !!o && !har(s, o.varer) && naa - o.siden >= D.bestillinger.bytteForslag * 1000; }
 
+  // ---------- Kunder ved markedsbua (Even 11.11) ----------
+  // En kunde ber om én vare spilleren kan lage. Ønsket lagres ikke: kjører kunden videre, skjer det ingenting.
+  function kundePris(v, n) { return Math.round(D.pris(v) * n * D.kunder.faktor); }
+  function nyKunde(s) {
+    var pool = bestPool(s); if (!pool.length) return null;
+    var v = pool[Math.floor(tilf(s) * pool.length)], n = D.avlinger[v] ? 2 + Math.floor(tilf(s) * 3) : 1 + Math.floor(tilf(s) * 2);
+    return { vare: v, antall: n, mynter: kundePris(v, n) };
+  }
+  // Prisen regnes ut her, ikke fra ønsket, så den alltid følger reglene.
+  function selgTilKunde(s, k) {
+    if (!k || !(D.avlinger[k.vare] || D.varer[k.vare]) || D.erFor(k.vare)) return { ok: false, grunn: 'ukjent' };
+    var n = Math.max(1, Math.min(6, Math.floor(k.antall) || 1)), harN = s.lager[k.vare] || 0;
+    if (harN < n) return { ok: false, grunn: 'mangler', mangler: n - harN };
+    ta(s, mk(k.vare, n)); var m = kundePris(k.vare, n); s.mynter += m; s.stat.kunder++;
+    return { ok: true, antall: n, mynter: m };
+  }
+
   // ---------- Tid ----------
   // Ingen ventetid kan bli lengre enn jobben selv. Det hindrer at en klokke som har gått bakover, låser spillet.
   function normaliserTid(s, naa) {
@@ -290,6 +307,7 @@
     dyrStatus: dyrStatus, mat: mat, samleDyr: samleDyr,
     uferdige: uferdige, kanProdusere: kanProdusere, produser: produser, hentProdukter: hentProdukter, kjopBygg: kjopBygg,
     kanLage: kanLage, bestPool: bestPool, nyBestilling: nyBestilling, bestPlasser: bestPlasser, fyllBestillinger: fyllBestillinger, kanLevere: kanLevere, lever: lever, byttBestilling: byttBestilling, boerByttes: boerByttes,
+    nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;
