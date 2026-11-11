@@ -349,3 +349,11 @@ Uten flagget er fordelingen, lagringen og spillet som før. B3 (uendrede sjelden
 - Trekanter: 21 162–24 368 i full versjon og under 7 000 i lav.
 - Pingvinen, anda og Paninikanin går allerede på to bein.
 - Ikke avklart: sjødyr som hval og hai, og skilpadda. En oppreist pizzaskilpadde ligner for mye på en kjent figur og bør få en egen løsning.
+
+### Hval på flodhestbein (Evens valg B, 11.11.2026)
+- Even valgte forslag B, «flodhestbein». Forslaget bygger på urhvaler som gikk på land, og på flodhesten, som er hvalens nærmeste levende slektning. Bakgrunnen er AMNH, «A Walking Whale: Ambulocetus».
+- Hvalen har korte, tjukke bein med tre tær og lys såle, luffene er armer, og den har vannsprut og en halefinne nede bak.
+- `DYR=hval` i `matdyr_tobein.py` lager figurene. De ligger bak `?tobein=1` med ID 227, 225, 234 og 230 (Donut-, Pizza-, Is- og Bananhval). Kontaktark: `hval-tobein-kontaktark.png`.
+- Hver figur har 24 000 trekanter i full versjon og under 7 000 i lav.
+- Haien er ikke laget ennå. Even har ikke sagt om haien også skal få flodhestbein, eller om den skal få forslag A, finnebein.
+- Vi kopierer ikke meme-haien med joggesko: ingen sko og ingen tre bein.

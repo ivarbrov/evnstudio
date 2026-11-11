@@ -2,7 +2,7 @@
 Samme modulære system som matdyr_modul.py: matkroppen står oppreist (modus 'staa', som pingvinen), og kuas hode, armer og bein festes på.
 Armene heter vinge_v og vinge_h, og beina bein_vf og bein_hf, så spillets tobeinte gange (vagging, armsving) virker uten ny kode.
 Bare et utseende: art, sjeldenhet, pris, inntekt og ID-er er uendret.
-Kjør: DYR=ku|gris FIGURER=smultring,pizza,is,burger python3 matdyr_tobein.py <utmappe>   → pilot_<dyr>2_<mat>.glb
+Kjør: DYR=ku|gris|hval FIGURER=smultring,pizza,is,burger python3 matdyr_tobein.py <utmappe>   → pilot_<dyr>2_<mat>.glb
 """
 import bpy, os, sys, math
 from mathutils import Vector as V, Matrix
@@ -97,8 +97,56 @@ def gris_tobein(matkropp):
     hale = pivot(slaa_sammen('hale', [kurve('krollhale', pts, 0.025, rosa, rund=6, opp=4, avsmal=lambda u: 1 - 0.5 * u)]), tuple(bk))
     return slaa_sammen('kropp', k['deler']), hode, armer + bein + [hale]
 
-DYR = {'ku': ku_tobein, 'gris': gris_tobein}
-NAVN = {'ku': 'ku', 'gris': 'gris'}
+def hval_tobein(matkropp):
+    """Hval på to bein med flodhestbein (Evens valg B, 11.11.2026). Inspirert av urhvaler som gikk på land, og av flodhesten,
+    som er hvalens nærmeste levende slektning: korte, tjukke bein med tær. Luffene blir armer, og blåsehullet spruter."""
+    bla = mat('hval_bla', '#4f8fe0', 0.45); buk = mat('hval_buk', '#dfeeff', 0.5); vann = mat('vannsprut', '#bfe8ff', 0.15, emit=0.15)
+    morkbla = mat('hval_mork', '#3f74bf', 0.5); linje = mat('linje', '#b9d2f0', 0.6)
+    C, A = V((0, 0.02, 0.62)), V((0.42, 0.36, 0.4))
+    k = M.MAT[matkropp](C, A, 'staa')
+    t = k['topp']; hx, hy, hz = t.x, t.y - 0.04, t.z + 0.26
+    # Stort, rundt hvalhode med lys strupe og bredt smil
+    hd = [prim('kule', 'hvalhode', bla, (hx, hy, hz), (0.4, 0.34, 0.33), segments=48, ring_count=28)]
+    hd.append(prim('kule', 'hvalbuk', buk, (hx, hy - 0.1, hz - 0.12), (0.33, 0.25, 0.2), segments=40, ring_count=22))
+    for i in range(5):
+        x = hx - 0.18 + i * 0.09
+        hd.append(kurve('buklinje%d' % i, [(x, hy - 0.3, hz - 0.1), (x, hy - 0.26, hz - 0.22), (x, hy - 0.12, hz - 0.3)], 0.007, linje, rund=4, opp=4))
+    for s in (-1, 1):
+        hd += oye('oye%d' % s, (hx + s * 0.17, hy - 0.27, hz + 0.08), 0.06)
+        hd.append(kinn('kinn%d' % s, (hx + s * 0.26, hy - 0.2, hz - 0.03), 0.045))
+    hd.append(smil('smil', (hx, hy - 0.33, hz - 0.06), 0.12, tykk=0.014))
+    for j, (dx, dz, r) in enumerate([(0, 0.0, 0.05), (0, 0.12, 0.045), (-0.06, 0.2, 0.04), (0.06, 0.2, 0.04), (-0.11, 0.24, 0.035), (0.11, 0.24, 0.035)]):
+        hd.append(prim('kule', 'sprut%d' % j, vann, (hx + dx, hy + 0.06, hz + 0.34 + dz), (r,) * 3, segments=14, ring_count=8))
+    hode = pivot(slaa_sammen('hode', hd), (hx, hy, hz - 0.22))
+    # Luffer som armer
+    armer = []
+    for s, navn in [(-1, 'vinge_v'), (1, 'vinge_h')]:
+        sx = A.x + 0.02 if matkropp != 'smultring' else 0.52
+        sy, sz = C.y - 0.02, C.z + 0.18
+        w = prim('kule', navn + '_luffe', bla, (0, 0, 0), (0.08, 0.04, 0.22), (0.15, s * 0.5, 0), segments=24, ring_count=12)
+        w.data.transform(Matrix.Translation((s * (sx + 0.08), sy - 0.03, sz - 0.14)))
+        armer.append(pivot(slaa_sammen(navn, [w]), (s * sx, sy, sz)))
+    # Flodhestbein: korte, tjukke og litt utover, med tre tær og lys såle
+    under = max(0.14, k['under']); bein = []
+    for i, s in enumerate((-1, 1)):
+        bx = s * 0.19; h = under + 0.06
+        b = [prim('kule', 'legg%d' % i, morkbla, (bx, 0.0, h / 2 + 0.02), (0.13, 0.13, h / 2 + 0.03), segments=28, ring_count=16),
+             prim('kule', 'fot%d' % i, morkbla, (bx, -0.04, 0.06), (0.15, 0.16, 0.07), segments=26, ring_count=12),
+             prim('kule', 'saale%d' % i, buk, (bx, -0.04, 0.015), (0.12, 0.13, 0.02), segments=20, ring_count=8)]
+        for j in (-1, 0, 1):
+            b.append(prim('kule', 'taa%d%d' % (i, j), buk, (bx + j * 0.065, -0.19, 0.045), (0.04, 0.035, 0.035), segments=12, ring_count=8))
+        bein.append(pivot(slaa_sammen(['bein_vf', 'bein_hf'][i], b), (bx, 0, under + 0.06)))
+    # Halefinne bak, nede ved bakken
+    bk = k['bak']; rot = V((0, bk.y, max(0.25, C.z - 0.25)))
+    hv = [kurve('halerot', [tuple(rot), tuple(rot + V((0, 0.16, -0.06))), tuple(rot + V((0, 0.3, -0.04)))], 0.08, bla, rund=10, opp=4, avsmal=lambda u: 1 - 0.5 * u)]
+    for s in (-1, 1):
+        fl = prim('kule', 'flak%d' % s, bla, (0, 0, 0), (0.18, 0.08, 0.03), (0.0, s * 0.25, s * 0.35), segments=24, ring_count=12)
+        fl.data.transform(Matrix.Translation(rot + V((s * 0.14, 0.34, 0.0)))); hv.append(fl)
+    hale = pivot(slaa_sammen('hale', hv), tuple(rot))
+    return slaa_sammen('kropp', k['deler']), hode, armer + bein + [hale]
+
+DYR = {'ku': ku_tobein, 'gris': gris_tobein, 'hval': hval_tobein}
+NAVN = {'ku': 'ku', 'gris': 'gris', 'hval': 'hval'}
 
 def lag(matkropp, dyr='ku'):
     H.nullstill(); H.MATS.clear(); M._VAFFEL.clear(); H.rnd.seed(7)
