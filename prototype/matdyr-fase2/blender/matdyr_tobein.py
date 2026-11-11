@@ -165,9 +165,6 @@ def hai_tobein(matkropp):
     hd.append(kurve('smil', [(hx - 0.13, hy - 0.33, hz - 0.08), (hx, hy - 0.39, hz - 0.13), (hx + 0.13, hy - 0.33, hz - 0.08)], 0.016, munn, rund=4, opp=6))
     for j in range(-2, 3):   # små, runde tenner som ikke er skumle
         hd.append(prim('kjegle', 'tann%d' % j, tann, (hx + j * 0.045, hy - 0.37 + abs(j) * 0.012, hz - 0.115 + abs(j) * 0.012), (0.018, 0.012, 0.025), (math.pi, 0, 0), vertices=10, ss=1))
-    # Ryggfinne på toppen av hodet
-    rf = prim('kjegle', 'ryggfinne', mork, (0, 0, 0), (0.05, 0.16, 0.2), vertices=20, ss=1)
-    rf.data.transform(Matrix.Rotation(0.35, 4, 'X')); rf.data.transform(Matrix.Translation((hx, hy + 0.08, hz + 0.36))); hd.append(rf)
     hode = pivot(slaa_sammen('hode', hd), (hx, hy, hz - 0.2))
     # Brystfinner som armer
     armer = []
@@ -185,14 +182,12 @@ def hai_tobein(matkropp):
         f = prim('kule', 'finnefot%d' % i, mork, (0, 0, 0), (0.12, 0.22, 0.035), segments=28, ring_count=12)
         f.data.transform(Matrix.Rotation(s * -0.25, 4, 'Z')); f.data.transform(Matrix.Translation((bx + s * 0.03, -0.08, 0.04))); b.append(f)
         bein.append(pivot(slaa_sammen(['bein_vf', 'bein_hf'][i], b), (bx, 0, under + 0.06)))
-    # Halefinne bak: høy øvre lapp og mindre nedre lapp
-    bk = k['bak']; rot = V((0, bk.y, max(0.3, C.z - 0.2)))
-    hv = [kurve('halerot', [tuple(rot), tuple(rot + V((0, 0.15, 0.0))), tuple(rot + V((0, 0.27, 0.05)))], 0.07, gra, rund=10, opp=4, avsmal=lambda u: 1 - 0.5 * u)]
-    for nm, sc, dz, rx in (('oevre', (0.035, 0.08, 0.22), 0.17, -0.5), ('nedre', (0.03, 0.07, 0.13), -0.08, 0.6)):
-        o = prim('kule', 'hale_' + nm, mork, (0, 0, 0), sc, segments=20, ring_count=12)
-        o.data.transform(Matrix.Rotation(rx, 4, 'X')); o.data.transform(Matrix.Translation(rot + V((0, 0.33, dz)))); hv.append(o)
-    hale = pivot(slaa_sammen('hale', hv), tuple(rot))
-    return slaa_sammen('kropp', k['deler']), hode, armer + bein + [hale]
+    # Ingen hale (Even 11.11.2026: «Du må fjerne halen»). Spillet tåler at noden 'hale' mangler.
+    # Ryggfinne (Even 11.11.2026: «Det må være en haifine på ryggen»): stor, spiss og bøyd bakover, midt på ryggen
+    bk2 = k['bak']; fz = max(C.z + 0.08, bk2.z + 0.08)
+    rf = prim('kjegle', 'ryggfinne', mork, (0, 0, 0), (0.06, 0.24, 0.46), vertices=24, ss=1)
+    rf.data.transform(Matrix.Rotation(-0.32, 4, 'X')); rf.data.transform(Matrix.Translation((0, bk2.y + 0.02, fz + 0.32)))
+    return slaa_sammen('kropp', k['deler'] + [rf]), hode, armer + bein
 
 DYR = {'ku': ku_tobein, 'gris': gris_tobein, 'hval': hval_tobein, 'hai': hai_tobein}
 NAVN = {'ku': 'ku', 'gris': 'gris', 'hval': 'hval', 'hai': 'hai'}

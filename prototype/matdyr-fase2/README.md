@@ -359,7 +359,8 @@ Uten flagget er fordelingen, lagringen og spillet som før. B3 (uendrede sjelden
 
 ### Hai på finnebein (Evens valg A, 11.11.2026)
 - Bukfinnene er korte bein med brede, flate finneføtter, og brystfinnene er armer.
-- Haien har ryggfinne, gjeller, halefinne og et vennlig smil med små, runde tenner.
+- Haien har en stor ryggfinne midt på ryggen, gjeller og et vennlig smil med små, runde tenner.
+- Even 11.11.2026: «Det må være en haifine på ryggen» og «Du må fjerne halen». Finnen på hodet er flyttet til ryggen, og halefinnen er fjernet. Noden `hale` finnes ikke lenger. Det er trygt, fordi `animerNy` bare beveger noder som finnes.
 - Inspirert av epaulett-haien, som kan «gå» på finnene sine.
 - `DYR=hai` i `matdyr_tobein.py`. Bak `?tobein=1` gjelder dette ID 52, 50, 59 og 51 (Donut-, Pizza-, Is- og Tacohai).
 - Kontaktark: `hai-tobein-kontaktark.png`.
