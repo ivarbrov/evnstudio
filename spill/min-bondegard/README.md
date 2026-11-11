@@ -51,7 +51,7 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 - **0.9.3** (ikke publisert): Byggemenyen sier «Kommer i neste versjon av spillet» for fjøs og grisebinge når nivået er nådd, i stedet for lås og nivå.
 - **0.9.4** (ikke publisert): Kunder som kjører innom («drive through», Even 11.11).
   - Blomsterkatten kommer kjørende i en liten åpen bil, stopper på veien foran markedsbua og ber om én vare. Trykk på henne eller snakkebobla for å selge.
-  - Hun betaler 1,5 × prisen i markedsbua (forslag, ikke godkjent). Salget gir ikke XP. Har spilleren ikke varen, venter hun opptil 60 s og kjører videre uten straff.
+  - Hun betaler markedspris (Ivar 11.11, fra 0.9.5. I 0.9.4 var det 1,5 ×). Salget gir ikke XP. Har spilleren ikke varen, venter hun opptil 60 s og kjører videre uten straff.
   - Kattemodellen er hentet uendret fra grenen `prototype/bondegard-kattekunde` (testscene 0.8.6).
   - Lastebilen kjører i ytre felt. `stat.kunder` teller salg til kunder.
 - **0.8.9** (ikke publisert): Rettinger etter QA av 0.8.7 (`qa/rapporter/2026-11-10-min-bondegard-7270d54.md`):

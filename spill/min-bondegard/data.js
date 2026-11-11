@@ -69,8 +69,8 @@
     nyAvlingFro: 3,                     // en ny avling gir 3 frø når den låses opp
     // Bestillinger (progresjonsplanen kap. 4 F5 og kap. 6). Tavla kommer på nivå 4. Antall bestillinger øker med nivået.
     bestillinger: { nivaa: 4, plasser: { 4: 3, 7: 4, 10: 5 }, bytteForslag: 900, maksKjede: 600, myntFaktor: 1.6, xpFaktor: 0.6, xpPot: 0.85, minXP: 3 },
-    // Kunder som kjører innom markedsbua (Even 11.11): ber om én vare og betaler litt mer enn markedsbua. Ingen straff om spilleren ikke har varen.
-    kunder: { faktor: 1.5, pause: [25, 45], venter: 60 },
+    // Kunder som kjører innom markedsbua (Even 11.11): ber om én vare og betaler markedspris (Ivar 11.11). Ingen straff om spilleren ikke har varen.
+    kunder: { faktor: 1, pause: [25, 45], venter: 60 },
     innholdTil: 5,                      // nivået innholdet er bygget til i denne versjonen. Bestillinger ber aldri om noe over dette
     maksVentetid: 240                   // ingen jobb tar mer enn 4 minutter (planens beslutning B1, progresjonsplanen kap. 3)
   };
