@@ -992,7 +992,12 @@
   // Start først når alle skriptene er lastet (spillkjerne.js kobler seg på etter denne filen)
   const sideKlar = new Promise(ok => document.readyState === 'loading' ? addEventListener('DOMContentLoaded', ok) : ok());
   Promise.all([robotKlar, sideKlar, ressurserKlar]).then(() => { if (NY) byggVerden(); velgFane('matdyr'); requestAnimationFrame(loop); window.EVNKlar = true; if (NY) lastTobein(); });
-  document.addEventListener('evn-tobein-klar', () => { if (fane === 'matdyr') visMatdyr(); });
+  // Tegn Matdyr-fanen på nytt bare når Donutku vises, og behold kameraet slik spilleren har dratt det (QA 11a7594)
+  document.addEventListener('evn-tobein-klar', () => {
+    if (fane !== 'matdyr' || !(md.valgt === 'donutku' || md.visning === 'alle')) return;
+    const kam = { teta: bane.teta, fi: bane.fi, r: bane.r, mal: bane.mal.clone() };
+    visMatdyr(); Object.assign(bane, { teta: kam.teta, fi: kam.fi, r: kam.r }); bane.mal.copy(kam.mal); oppdaterKamera();
+  });
   // For automatiske skjermbilder: ?fane=gard&niva=6 eller ?figur=burgersau&vis=spill
   window.EVNIntern = { UTBUSKER, PORT_HALV, GANGFART, T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
   window.EVNSpill = sp; window.EVNRobot = () => gd.robot; window.EVNSteg = steg; window.EVNSpor = SPOR; window.EVNGeo = { HX, HZ, EH, DEKKE, W, KX, KZ, A, B, LREP }; window.EVNBane = bane; window.EVNVegger = () => vegger;

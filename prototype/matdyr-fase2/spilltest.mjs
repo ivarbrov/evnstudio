@@ -161,8 +161,13 @@ ok('full gård: bytte med svakeste etter spørsmål, aldri automatisk (' + JSON.
 const tb = await ev(`(async () => { for (let i = 0; i < 150 && !window.EVNTobeinKlar; i++) await new Promise(r => setTimeout(r, 200));
   const I = EVNIntern, ut = { klar: !!window.EVNTobeinKlar, n127: I.nyNavnFor(127), n52: I.nyNavnFor(52), n2: I.nyNavnFor(2), n227: I.nyNavnFor(227) };
   EVNVis({ fane: 'matdyr' }); await new Promise(r => setTimeout(r, 300)); ut.fane = document.getElementById('kort').textContent.includes('to bein');
+  // Kameraet skal ikke hoppe når hendelsen kommer (QA 11a7594): både med en annen figur og med Donutku
+  const b = I.bane; ut.kamera = [];
+  for (const fig of ['burgersau', 'donutku']) { EVNVis({ fane: 'matdyr', figur: fig, vis: 'bak' }); await new Promise(r => setTimeout(r, 200)); b.teta = 1.0; b.r = 9;
+    document.dispatchEvent(new Event('evn-tobein-klar')); await new Promise(r => setTimeout(r, 200)); ut.kamera.push(Math.abs(b.teta - 1) < 1e-6 && Math.abs(b.r - 9) < 1e-6); }
+  EVNVis({ fane: 'matdyr', figur: 'donutku', vis: 'forfra' });
   return ut; })()`);
 if (/[?&]tobein=0/.test(process.argv[2] || '')) ok('?tobein=0: gamle figurer i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.n127 === 'donutku' && tb.n52 === null && tb.n2 === null && tb.n227 === null && !tb.fane);
-else ok('tobeinte lastes etter start og brukes i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.klar && tb.n127 === 'pilot_ku2_smultring' && tb.n52 === 'pilot_hai2_smultring' && tb.n2 === 'pilot_gris2_smultring' && tb.n227 === 'pilot_hval2_smultring' && tb.fane);
+else ok('tobeinte lastes etter start og brukes i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.klar && tb.n127 === 'pilot_ku2_smultring' && tb.n52 === 'pilot_hai2_smultring' && tb.n2 === 'pilot_gris2_smultring' && tb.n227 === 'pilot_hval2_smultring' && tb.fane && tb.kamera.every(Boolean));
 console.log(feil.length ? feil : 'ingen feil i konsollen'); if (feil.length) process.exitCode = 1;
 ws.close(); p.kill();

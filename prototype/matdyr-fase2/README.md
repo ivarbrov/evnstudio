@@ -371,7 +371,7 @@ Uten flagget er fordelingen, lagringen og spillet som før. B3 (uendrede sjelden
 - Bare utseendet endres. ID, sjeldenhet, verdi og lagring er uendret.
 - Produksjonsspillet (`spill/matdyr`) er ikke endret. Det krever egen voksengodkjenning.
 - **Etter QA 81c2fb8 (11.11.2026):**
-  - De tobeinte modellene lastes først etter at spillet har startet. Oppstarten venter dermed på de samme 12 filene som med `?tobein=0`. Til modellene er klare, vises de gamle figurene. Så tegnes gården på nytt (`evn-tobein-klar`).
+  - De tobeinte modellene lastes først etter at spillet har startet. Oppstarten venter dermed på de samme 12 filene som med `?tobein=0`. Til modellene er klare, vises det spillet hadde før: Donutku (127) som den gamle figuren, og de 15 andre som enkle kuler med emoji, siden de ikke har noen egen figur uten flagg. Så tegnes gården på nytt (`evn-tobein-klar`). Et dyr som allerede faller eller står på tunet, beholder figuren sin til det er borte.
   - På lav og middels kvalitet hentes bare lav detalj (16 filer i stedet for 32), fordi spillet bare bruker lav detalj der.
-  - Matdyr-fanen viser Donutku på to bein, slik den ser ut i spillet.
+  - Matdyr-fanen viser Donutku på to bein, slik den ser ut i spillet. På lav og middels kvalitet vises lav detalj også der. Fanen tegnes bare på nytt hvis Donutku eller «Alle» vises, og kameraet beholdes (rettet etter QA 11a7594).
   - `spilltest.mjs` og `rutetest.mjs` lukker Chrome også når skriptet feiler eller avbrytes. `spilltest.mjs` kontrollerer innlastingen etter start.
