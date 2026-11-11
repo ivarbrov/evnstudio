@@ -365,3 +365,8 @@ Uten flagget er fordelingen, lagringen og spillet som før. B3 (uendrede sjelden
 - `DYR=hai` i `matdyr_tobein.py`. Bak `?tobein=1` gjelder dette ID 52, 50, 59 og 51 (Donut-, Pizza-, Is- og Tacohai).
 - Kontaktark: `hai-tobein-kontaktark.png`.
 - Trekanter: 23 530–24 000 i full versjon og under 7 000 i lav.
+
+### Matdyr på to bein er standard i prototypen (11.11.2026)
+- Even spurte om de nye dyrene kan legges inn i spillet. I prototypen vises de 16 tobeinte figurene (ku, gris, hval og hai) nå uten flagg. `?tobein=0` gir de gamle figurene. `?tobein=1` virker fortsatt.
+- Bare utseendet endres. ID, sjeldenhet, verdi og lagring er uendret.
+- Produksjonsspillet (`spill/matdyr`) er ikke endret. Det krever egen voksengodkjenning.
