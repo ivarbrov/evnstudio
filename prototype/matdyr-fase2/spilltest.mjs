@@ -163,8 +163,17 @@ const tb = await ev(`(async () => { for (let i = 0; i < 150 && !window.EVNTobein
   EVNVis({ fane: 'matdyr' }); await new Promise(r => setTimeout(r, 300)); ut.fane = document.getElementById('kort').textContent.includes('to bein');
   // Kameraet skal ikke hoppe når hendelsen kommer (QA 11a7594): både med en annen figur og med Donutku
   const b = I.bane; ut.kamera = [];
-  for (const fig of ['burgersau', 'donutku']) { EVNVis({ fane: 'matdyr', figur: fig, vis: 'bak' }); await new Promise(r => setTimeout(r, 200)); b.teta = 1.0; b.r = 9;
-    document.dispatchEvent(new Event('evn-tobein-klar')); await new Promise(r => setTimeout(r, 200)); ut.kamera.push(Math.abs(b.teta - 1) < 1e-6 && Math.abs(b.r - 9) < 1e-6); }
+  const lik = (x, y) => Math.abs(x - y) < 1e-6;
+  for (const fig of ['burgersau', 'donutku']) { EVNVis({ fane: 'matdyr', figur: fig, vis: 'bak' }); await new Promise(r => setTimeout(r, 200)); b.teta = 1.0; b.fi = 1.1; b.r = 9; b.mal.set(0.3, 0.7, -0.2);
+    const forste = I.md.gruppe.children[0];
+    document.dispatchEvent(new Event('evn-tobein-klar')); await new Promise(r => setTimeout(r, 200));
+    const tegnetPaaNytt = I.md.gruppe.children[0] !== forste;
+    ut.kamera.push(lik(b.teta, 1) && lik(b.fi, 1.1) && lik(b.r, 9) && lik(b.mal.x, 0.3) && lik(b.mal.y, 0.7) && lik(b.mal.z, -0.2) && tegnetPaaNytt === (fig === 'donutku')); }
+  // «Nært» med Donutku: målpunktet flyttes til hodet på figuren som vises nå, vinkel og avstand beholdes
+  EVNVis({ fane: 'matdyr', figur: 'donutku', vis: 'naert' }); await new Promise(r => setTimeout(r, 200));
+  const hodeMal = b.mal.clone(); b.teta = 0.9; b.fi = 1.2; b.r = 2.4; b.mal.set(0, 0.1, 0.6);
+  document.dispatchEvent(new Event('evn-tobein-klar')); await new Promise(r => setTimeout(r, 200));
+  ut.kamera.push(lik(b.teta, 0.9) && lik(b.fi, 1.2) && lik(b.r, 2.4) && b.mal.distanceTo(hodeMal) < 1e-6);
   EVNVis({ fane: 'matdyr', figur: 'donutku', vis: 'forfra' });
   return ut; })()`);
 if (/[?&]tobein=0/.test(process.argv[2] || '')) ok('?tobein=0: gamle figurer i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.n127 === 'donutku' && tb.n52 === null && tb.n2 === null && tb.n227 === null && !tb.fane);

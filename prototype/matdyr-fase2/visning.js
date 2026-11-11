@@ -996,10 +996,11 @@
   document.addEventListener('evn-tobein-klar', () => {
     if (fane !== 'matdyr' || !(md.valgt === 'donutku' || md.visning === 'alle')) return;
     const kam = { teta: bane.teta, fi: bane.fi, r: bane.r, mal: bane.mal.clone() };
-    visMatdyr(); Object.assign(bane, { teta: kam.teta, fi: kam.fi, r: kam.r }); bane.mal.copy(kam.mal); oppdaterKamera();
+    // I «Nært» følger målpunktet hodet til den nye figuren (QA 6d388ab); vinkel og avstand beholdes
+    visMatdyr(); Object.assign(bane, { teta: kam.teta, fi: kam.fi, r: kam.r }); if (md.visning !== 'naert') bane.mal.copy(kam.mal); oppdaterKamera();
   });
   // For automatiske skjermbilder: ?fane=gard&niva=6 eller ?figur=burgersau&vis=spill
-  window.EVNIntern = { UTBUSKER, PORT_HALV, GANGFART, T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
+  window.EVNIntern = { md, UTBUSKER, PORT_HALV, GANGFART, T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
   window.EVNSpill = sp; window.EVNRobot = () => gd.robot; window.EVNSteg = steg; window.EVNSpor = SPOR; window.EVNGeo = { HX, HZ, EH, DEKKE, W, KX, KZ, A, B, LREP }; window.EVNBane = bane; window.EVNVegger = () => vegger;
   window.EVNVis = (o) => { if (o.fane === 'spill') { if (o.niva) sp.niva = sp.testNiva = o.niva; velgFane('spill'); return; } if (o.fane === 'gard') { if (o.niva) gd.niva = o.niva; if (o.neste !== undefined) gd.neste = o.neste; velgFane('gard'); if (o.teta !== undefined) { bane.teta = o.teta; oppdaterKamera(); } } else { if (o.figur) md.valgt = o.figur; if (o.vis) md.visning = o.vis; if (o.mobil) holder.classList.add('ramme'); storrelse(); velgFane('matdyr'); if (o.teta !== undefined) bane.teta = o.teta; } };
 })();
