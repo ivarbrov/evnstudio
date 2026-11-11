@@ -2,6 +2,8 @@
 // Automatisk test: roboten følger spiralrampa fra Start til takterrassen, går inn i hver etasje, og prøver å hoppe ut over rekkverket.
 import { spawn } from 'node:child_process'; import fs from 'node:fs';
 const prof = fs.mkdtempSync('/tmp/rute-'); const p = spawn('/usr/bin/google-chrome', ['--headless=new', '--remote-debugging-port=0', '--user-data-dir=' + prof, '--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', 'about:blank'], { stdio: 'ignore' });
+for (const sg of ['SIGTERM', 'SIGINT']) process.on(sg, () => { try { p.kill('SIGKILL'); } catch {} process.exit(1); });
+process.on('exit', () => { try { p.kill('SIGKILL'); } catch {} });   // Chrome lukkes også ved feil og tidsavbrudd (QA 81c2fb8)
 while (!fs.existsSync(prof + '/DevToolsActivePort')) await new Promise(r => setTimeout(r, 100));
 const [port, sti] = fs.readFileSync(prof + '/DevToolsActivePort', 'utf8').split('\n'); const ws = new WebSocket('ws://127.0.0.1:' + port + sti); await new Promise(r => ws.onopen = r);
 let id = 0; const v = new Map(), feil = []; ws.onmessage = m => { const d = JSON.parse(m.data); if (d.id && v.has(d.id)) { v.get(d.id)(d); v.delete(d.id); } else if (d.method === 'Runtime.exceptionThrown') feil.push(d.params.exceptionDetails.exception?.description); };
@@ -155,5 +157,12 @@ const byt = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-pr
   return ut; })()
 `);
 ok('full gård: bytte med svakeste etter spørsmål, aldri automatisk (' + JSON.stringify(byt) + ')', byt.svakAvvist && byt.sterkTatt && byt.dialog && byt.byttet && byt.halvInn && byt.trukket && byt.andreUrort && byt.byttMerker && byt.fokusfelle && byt.avbrytNullstiller && byt.valgtByttet && byt.lagret);
+// Tobeinte matdyr lastes etter oppstart (QA 81c2fb8): gården og Matdyr-fanen bytter til dem når de er klare. ?tobein=0 slår dem av.
+const tb = await ev(`(async () => { for (let i = 0; i < 150 && !window.EVNTobeinKlar; i++) await new Promise(r => setTimeout(r, 200));
+  const I = EVNIntern, ut = { klar: !!window.EVNTobeinKlar, n127: I.nyNavnFor(127), n52: I.nyNavnFor(52), n2: I.nyNavnFor(2), n227: I.nyNavnFor(227) };
+  EVNVis({ fane: 'matdyr' }); await new Promise(r => setTimeout(r, 300)); ut.fane = document.getElementById('kort').textContent.includes('to bein');
+  return ut; })()`);
+if (/[?&]tobein=0/.test(process.argv[2] || '')) ok('?tobein=0: gamle figurer i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.n127 === 'donutku' && tb.n52 === null && tb.n2 === null && tb.n227 === null && !tb.fane);
+else ok('tobeinte lastes etter start og brukes i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.klar && tb.n127 === 'pilot_ku2_smultring' && tb.n52 === 'pilot_hai2_smultring' && tb.n2 === 'pilot_gris2_smultring' && tb.n227 === 'pilot_hval2_smultring' && tb.fane);
 console.log(feil.length ? feil : 'ingen feil i konsollen'); if (feil.length) process.exitCode = 1;
 ws.close(); p.kill();

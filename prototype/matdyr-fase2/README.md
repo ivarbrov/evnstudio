@@ -370,3 +370,8 @@ Uten flagget er fordelingen, lagringen og spillet som før. B3 (uendrede sjelden
 - Even spurte om de nye dyrene kan legges inn i spillet. I prototypen vises de 16 tobeinte figurene (ku, gris, hval og hai) nå uten flagg. `?tobein=0` gir de gamle figurene. `?tobein=1` virker fortsatt.
 - Bare utseendet endres. ID, sjeldenhet, verdi og lagring er uendret.
 - Produksjonsspillet (`spill/matdyr`) er ikke endret. Det krever egen voksengodkjenning.
+- **Etter QA 81c2fb8 (11.11.2026):**
+  - De tobeinte modellene lastes først etter at spillet har startet. Oppstarten venter dermed på de samme 12 filene som med `?tobein=0`. Til modellene er klare, vises de gamle figurene. Så tegnes gården på nytt (`evn-tobein-klar`).
+  - På lav og middels kvalitet hentes bare lav detalj (16 filer i stedet for 32), fordi spillet bare bruker lav detalj der.
+  - Matdyr-fanen viser Donutku på to bein, slik den ser ut i spillet.
+  - `spilltest.mjs` og `rutetest.mjs` lukker Chrome også når skriptet feiler eller avbrytes. `spilltest.mjs` kontrollerer innlastingen etter start.

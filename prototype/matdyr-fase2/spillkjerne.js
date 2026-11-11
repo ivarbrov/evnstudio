@@ -150,6 +150,8 @@
   const ledigMat = () => lmat || (lmat = new T.MeshStandardMaterial({ color: new T.Color('#62e08c').convertSRGBToLinear(), emissive: new T.Color('#2fae5c').convertSRGBToLinear(), emissiveIntensity: 0.55, roughness: 0.5 }));
   // Bare matdyrene tegnes på nytt når noe settes inn eller selges
   function oppdaterDyr() { I.settGjennom(99); fyllDyr(); I.forberedGjennom(); I.settGjennom(Math.max(0, I.sp.etasje)); }
+  // Når de tobeinte modellene er lastet etter oppstart, tegnes gården på nytt med dem.
+  document.addEventListener('evn-tobein-klar', () => { if (dyrG) oppdaterDyr(); });
   function byggSpillGard(beholdRobot) {
     const r0 = I.robot(), pos = beholdRobot && r0 ? r0.position.clone() : null, rot = r0 ? r0.rotation.y : 0, gd = I.gd;
     gd.niva = visNiva(); gd.neste = false; gd.gjennom = false; gd.aapne = plasserApne(); gd.eng = eng();

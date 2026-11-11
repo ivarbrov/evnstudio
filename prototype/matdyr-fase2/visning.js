@@ -58,8 +58,17 @@
     EVNMiljo.lastGLB('modeller/miljo.glb').then(g => { res.miljo = g; }),
     EVNMiljo.lastGLB('modeller/gard.glb').then(g => { res.gard = g; }),
     LAAVE ? EVNMiljo.lastGLB('modeller/laaver.glb').then(g => { res.laaver = g; }) : null,
-    ...NYE_FIGURER.concat(PILOT, TOBEIN).map(n => Promise.all([EVNMiljo.lastGLB('modeller/' + n + '.glb'), EVNMiljo.lastGLB('modeller/' + n + '_lav.glb')]).then(([full, lav]) => { if (full) res.fig[n] = { full, lav: lav || full }; }))
+    ...NYE_FIGURER.concat(PILOT).map(n => Promise.all([EVNMiljo.lastGLB('modeller/' + n + '.glb'), EVNMiljo.lastGLB('modeller/' + n + '_lav.glb')]).then(([full, lav]) => { if (full) res.fig[n] = { full, lav: lav || full }; }))
   ]);
+  // De tobeinte lastes først etter at spillet har startet (QA 81c2fb8, Y1), så oppstarten ikke venter på dem.
+  // Til de er klare, vises de gamle figurene. På lav og middels kvalitet hentes bare lav detalj, som er det spillet bruker der.
+  const TOBEIN_BARE_LAV = NY && EVNMiljo.NIVAER[KV].figurDetalj !== 'full';
+  function lastTobein() {
+    return Promise.all(TOBEIN.map(n => (TOBEIN_BARE_LAV ? EVNMiljo.lastGLB('modeller/' + n + '_lav.glb').then(l => [l, l])
+      : Promise.all([EVNMiljo.lastGLB('modeller/' + n + '.glb'), EVNMiljo.lastGLB('modeller/' + n + '_lav.glb')]))
+      .then(([full, lav]) => { if (full || lav) res.fig[n] = { full: full || lav, lav: lav || full }; })))
+      .then(() => { window.EVNTobeinKlar = true; document.dispatchEvent(new Event('evn-tobein-klar')); });
+  }
 
   // ---------- Sammenslåing: én mesh per materiale (færre tegnekall på mobil) ----------
   function slaSammen(rot) {
@@ -191,7 +200,10 @@
   scene.add(md.gruppe);
   let robotIMd = null, plateIMd = null;
 
+  // I Matdyr-fanen vises Donutku (ID 127) på to bein når den er lastet, slik den ser ut i spillet.
+  const fanevisning = n => n === 'donutku' && TOBEIN.length && res.fig.pilot_ku2_smultring ? 'pilot_ku2_smultring' : n;
   function byggFigur(nokkel) {
+    nokkel = fanevisning(nokkel);
     if (res.fig[nokkel]) return nyFigur(nokkel, 'full');
     const f = H.lag[nokkel](); f.nokkel = nokkel; return f;
   }
@@ -238,7 +250,7 @@
   function visKortMatdyr() {
     if (md.visning === 'alle') { $('kort').innerHTML = '<h1>Alle fem</h1>I spillstørrelse ved siden av EVN-roboten. Størrelsen følger sjeldenheten, som i spillet.<div class="liten">Dra for å snu. Hjul eller to fingre for å zoome.</div>'; return; }
     const f = md.fig, [rn, rc] = RAR[f.sj];
-    $('kort').innerHTML = '<h1>' + f.navn + '</h1><div><span class="sj" style="color:' + rc + '">' + rn + '</span> · ' + f.mat + ' + ' + f.dyr + (f.ci != null ? ' · ID ' + f.ci : '') + '</div><div>' + (NY_INFO[f.nokkel] || INFO[f.nokkel] || (PILOT_ID[f.nokkel] ? 'Figurpilot: laget med det modulære systemet (dyresett + matkropp).' : '')) + '</div><div class="liten">Dra for å snu. Hjul eller to fingre for å zoome.</div>';
+    $('kort').innerHTML = '<h1>' + f.navn + '</h1><div><span class="sj" style="color:' + rc + '">' + rn + '</span> · ' + f.mat + ' + ' + f.dyr + (f.ci != null ? ' · ID ' + f.ci : '') + '</div><div>' + (NY_INFO[f.nokkel] || INFO[f.nokkel] || (TOBEIN_ID[f.nokkel] ? 'Går på to bein (Even 10.–11.11.2026). Samme ID, sjeldenhet og verdi som før.' : PILOT_ID[f.nokkel] ? 'Figurpilot: laget med det modulære systemet (dyresett + matkropp).' : '')) + '</div><div class="liten">Dra for å snu. Hjul eller to fingre for å zoome.</div>';
   }
 
   // =====================================================================
@@ -979,7 +991,8 @@
   if (SAMMENLIGN) { const e = document.createElement('div'); e.id = 'tmEtikett'; e.innerHTML = '<span>ACES</span><span>Uten tonemapping</span>'; document.body.appendChild(e); }
   // Start først når alle skriptene er lastet (spillkjerne.js kobler seg på etter denne filen)
   const sideKlar = new Promise(ok => document.readyState === 'loading' ? addEventListener('DOMContentLoaded', ok) : ok());
-  Promise.all([robotKlar, sideKlar, ressurserKlar]).then(() => { if (NY) byggVerden(); velgFane('matdyr'); requestAnimationFrame(loop); window.EVNKlar = true; });
+  Promise.all([robotKlar, sideKlar, ressurserKlar]).then(() => { if (NY) byggVerden(); velgFane('matdyr'); requestAnimationFrame(loop); window.EVNKlar = true; if (NY) lastTobein(); });
+  document.addEventListener('evn-tobein-klar', () => { if (fane === 'matdyr') visMatdyr(); });
   // For automatiske skjermbilder: ?fane=gard&niva=6 eller ?figur=burgersau&vis=spill
   window.EVNIntern = { UTBUSKER, PORT_HALV, GANGFART, T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
   window.EVNSpill = sp; window.EVNRobot = () => gd.robot; window.EVNSteg = steg; window.EVNSpor = SPOR; window.EVNGeo = { HX, HZ, EH, DEKKE, W, KX, KZ, A, B, LREP }; window.EVNBane = bane; window.EVNVegger = () => vegger;
