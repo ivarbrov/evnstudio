@@ -46,8 +46,8 @@
     pilot_gris_pizza: 0, pilot_gris_smultring: 2, pilot_gris_burger: 8, pilot_gris_is: 9, pilot_gris_spagetti: 4, pilot_gris_banan: 5,
     pilot_gris_taco: 1, pilot_gris_sjoko: 10, pilot_gris_jordbaer: 17, pilot_gris_milkshake: 24 };
   const PILOT = new URLSearchParams(location.search).get('pilot') === '1' ? Object.keys(PILOT_ID) : [];
-  // ?tobein=1: matdyr som går på to bein (Even 10.11.2026: «Kun dyre med to bein»). Prøve: ku, gris og hval (flodhestbein) med fire matvarer. Bare utseendet endres, ikke ID, sjeldenhet eller verdi.
-  const TOBEIN_ID = { pilot_ku2_smultring: 127, pilot_ku2_pizza: 125, pilot_ku2_is: 134, pilot_ku2_burger: 133, pilot_gris2_smultring: 2, pilot_gris2_pizza: 0, pilot_gris2_is: 9, pilot_gris2_burger: 8, pilot_hval2_smultring: 227, pilot_hval2_pizza: 225, pilot_hval2_is: 234, pilot_hval2_banan: 230 };
+  // ?tobein=1: matdyr som går på to bein (Even 10.11.2026: «Kun dyre med to bein»). Prøve: ku, gris, hval (flodhestbein) og hai (finnebein) med fire matvarer. Bare utseendet endres, ikke ID, sjeldenhet eller verdi.
+  const TOBEIN_ID = { pilot_ku2_smultring: 127, pilot_ku2_pizza: 125, pilot_ku2_is: 134, pilot_ku2_burger: 133, pilot_gris2_smultring: 2, pilot_gris2_pizza: 0, pilot_gris2_is: 9, pilot_gris2_burger: 8, pilot_hval2_smultring: 227, pilot_hval2_pizza: 225, pilot_hval2_is: 234, pilot_hval2_banan: 230, pilot_hai2_smultring: 52, pilot_hai2_pizza: 50, pilot_hai2_is: 59, pilot_hai2_taco: 51 };
   const TOBEIN = new URLSearchParams(location.search).get('tobein') === '1' ? Object.keys(TOBEIN_ID) : [];
   const NY_ID = { ...Object.fromEntries(TOBEIN.map(n => [n, TOBEIN_ID[n]])), ...Object.fromEntries(PILOT.map(n => [n, PILOT_ID[n]])), donutku: 127, burgersau: 508, pizzaskilpadde: 700, shakeand: 599, spagettipingvin: 179 };
   // ?laave=a|b|c: tre låvevarianter til vurdering (Ivar 8.11.2026). Uten flagget brukes den vanlige låven.
