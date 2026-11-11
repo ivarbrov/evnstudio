@@ -374,7 +374,11 @@ function oppdaterKatt(dt, t) { if (!katt) return; const u = katt.userData, fart 
 }
 
 const KUNDE_STOPP = -10.4, KUNDE_Z = VEI_Z - 0.7, BILFARGER = [0xf4b6d2, 0xa8dcc6, 0xf5c3a4, 0xbcd6f5]; let bilFarge = 0;
-const kunde = {fase: 'borte', t: 6, onske: null, bil: null, lakk: null};
+const kunde = {fase: 'borte', t: 6, onske: null, bil: null, lakk: null, ute: 0};
+// 0.9.6 (Even 11.11): vi skal se at det er Blomsterkatten. Når bilen har stoppet, hopper hun ut og står ved siden av bilen, så kjolen og hjertene synes.
+const KATT_SETE = [-0.2, 0.92, 0, 0.68], KATT_UTE = [0.25, 0, -1.75, 0.85];
+function kattPlass(dt) { const maal = kunde.fase === 'venter' || kunde.fase === 'takk' ? 1 : 0, f = kunde.ute; kunde.ute = maal > f ? Math.min(1, f + dt / 0.55) : Math.max(0, f - dt / 0.55);
+  const p = kunde.ute, q = p * p * (3 - 2 * p), l = i => KATT_SETE[i] + (KATT_UTE[i] - KATT_SETE[i]) * q; katt.position.x = l(0); katt.position.z = l(2); katt.userData.bilY = l(1) + Math.sin(p * Math.PI) * 0.7; katt.scale.setScalar(l(3)); }
 function lagKundebil() {
   const g = new THREE.Group(), lakk = std({color: SRGB(0xf4b6d2), roughness: 0.45}), lys = fm(0xfff6e3, 0.6), mork = fm(0x3a3a40, 0.7);
   mesh(avrundetBoks(3.0, 0.62, 1.5, 0.28, 4), lakk, 0, 0.72, 0, g);                               // karosseri
@@ -388,11 +392,11 @@ function lagKundebil() {
   g.userData.katt = true; g.visible = false; scene.add(g); kunde.lakk = lakk; return g;
 }
 function kundeStart() {
-  if (!kunde.bil) { kunde.bil = lagKundebil(); lagKatt(); scene.remove(katt); kunde.bil.add(katt); katt.position.set(-0.2, 0, 0); katt.scale.setScalar(0.62); katt.visible = true; Object.assign(katt.userData, {iBil: true, bilY: 0.82, tilst: 'ibil'}); }
+  if (!kunde.bil) { kunde.bil = lagKundebil(); lagKatt(); scene.remove(katt); kunde.bil.add(katt); katt.position.set(KATT_SETE[0], 0, 0); katt.scale.setScalar(KATT_SETE[3]); katt.visible = true; Object.assign(katt.userData, {iBil: true, bilY: KATT_SETE[1], tilst: 'ibil'}); }
   kunde.onske = L.nyKunde(s); if (!kunde.onske) { kunde.t = 20; return; }
   bilFarge = (bilFarge + 1) % BILFARGER.length; kunde.lakk.color.copy(SRGB(BILFARGER[bilFarge]));   /* Blomsterkatten er alltid lilla, som på Evens tegning. Bilen skifter farge */
   const redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  kunde.bil.position.set(redusert ? KUNDE_STOPP : -34, 0, KUNDE_Z); kunde.bil.visible = true; katt.rotation.y = Math.PI / 2; kunde.fase = redusert ? 'venter' : 'inn'; kunde.t = 0; if (redusert) kundeSi();
+  kunde.bil.position.set(redusert ? KUNDE_STOPP : -34, 0, KUNDE_Z); kunde.bil.visible = true; katt.rotation.y = Math.PI / 2; kunde.fase = redusert ? 'venter' : 'inn'; kunde.t = 0; kunde.ute = 0; if (redusert) kundeSi();
 }
 function kundeSi(ekstra) { const o = kunde.onske; kattBoble.innerHTML = ekstra || `<b>Blomsterkatten:</b> ${o.antall} ${ikon(o.vare)} ${navn(o.vare).toLowerCase()}, takk!<small>Trykk for å selge · ${o.mynter} 🪙</small>`; kattBoble.style.display = 'block'; kattBobleTid = 999; }
 function kundeTrykk() {
@@ -410,10 +414,11 @@ function oppdaterKunde(dt, t) {
   const b = kunde.bil;
   if (kunde.fase === 'inn') { const igjen = KUNDE_STOPP - b.position.x; b.position.x += Math.max(1.2, Math.min(7, igjen * 1.2)) * dt; if (b.position.x >= KUNDE_STOPP) { b.position.x = KUNDE_STOPP; kunde.fase = 'venter'; kunde.t = 0; kundeSi(); } }
   else if (kunde.fase === 'venter') { kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; } }
-  else if (kunde.fase === 'takk') { kunde.t += dt; if (kunde.t > 1.8) { kunde.fase = 'ut'; kattBobleTid = 0.01; if (matchMedia('(prefers-reduced-motion: reduce)').matches) b.position.x = 99; } }
+  else if (kunde.fase === 'takk') { kunde.t += dt; if (kunde.t > 1.8) { kunde.fase = 'hjem'; kunde.t = 0; } }
+  else if (kunde.fase === 'hjem') { kunde.t += dt; if (kunde.ute <= 0) { kunde.fase = 'ut'; kattBobleTid = 0.01; if (matchMedia('(prefers-reduced-motion: reduce)').matches) b.position.x = 99; } }
   else if (kunde.fase === 'ut') { katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 2, dt * 4); const borte = b.position.x - KUNDE_STOPP; b.position.x += Math.max(1.2, Math.min(8, 1.2 + borte * 1.2)) * dt; if (b.position.x > 34) { b.visible = false; kattBoble.style.display = 'none'; kunde.fase = 'borte'; kunde.t = D.kunder.pause[0] + Math.random() * (D.kunder.pause[1] - D.kunder.pause[0]); } }
   b.position.y = hoyde(b.position.x, KUNDE_Z);
-  oppdaterKatt(dt, t);
+  kattPlass(dt); oppdaterKatt(dt, t);
 }
 
 /* ======================= Ting på gården ======================= */
