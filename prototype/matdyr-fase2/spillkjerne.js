@@ -29,6 +29,7 @@
     o.base = (Array.isArray(s.base) ? s.base : []).slice(0, plasserApne(o)).map(v => Number.isInteger(v) && v >= 0 && v < COMBOS.length ? v : -1);
     o.disc = (Array.isArray(s.disc) ? s.disc : []).filter(v => Number.isInteger(v) && v >= 0 && v < COMBOS.length);
     o.bestilling = [0, 10, 15].includes(s.bestilling) ? s.bestilling : 15;
+    if (Number.isFinite(s.kasse) && s.kasse > 0) o.kasse = s.kasse;   // penger som venter i innsamlingssonen
     if (ERC) {   // arvet kategori per plass (streng bestefarsregel). Bare gyldige avvik fra den nye tabellen beholdes.
       const a = s.arv && typeof s.arv === 'object' && !Array.isArray(s.arv) ? s.arv : {};
       for (const [k, r] of Object.entries(a)) { const i = +k, ci = o.base[i]; if (/^\d+$/.test(k) && ci >= 0 && Number.isInteger(r) && r >= 0 && r < R.length && r !== COMBOS[ci].r) o.arv[i] = r; }
@@ -504,6 +505,44 @@
       sp.scale.set(h * 0.8, h, 1); sp.material.opacity = egen ? 1 : 0.8;
     }
   }
+  // ---------- Innsamlingssonen (Even 12.11.2026: «Collect zone» foran gården) ----------
+  // Inntekten samles i en kasse. Går roboten inn i sonen til høyre for gangen foran gården, går pengene over til lommeboka.
+  // Én sone for hele gården, ikke en knapp per plass. ?samle=0 gir automatisk inntekt som før.
+  const SAMLE = new URLSearchParams(location.search).get('samle') !== '0';
+  const samleG = new T.Group(); I.scene.add(samleG); let samleNokkel = '', samleSkilt = null, samleSist = -1, paaSamle = false;
+  function samleOmr() { const g = window.EVNGeo, d = I.gd.gjerdeD || 22; if (!g) return null; const z0 = g.HZ + 1.4, z1 = Math.min(d - 1.6, g.HZ + 7.4);
+    return { x0: 2.4, x1: 7.4, z0, z1: Math.max(z1, z0 + 2.5) }; }
+  function byggSamle() {
+    const o = SAMLE ? samleOmr() : null, n = o ? [o.z0, o.z1].join(':') : ''; if (n === samleNokkel) return; samleNokkel = n;
+    samleG.children.slice().forEach(c => { samleG.remove(c); c.geometry && c.geometry.dispose(); c.material && c.material.dispose(); }); samleSkilt = null; samleSist = -1;
+    if (!o) return;
+    const w = o.x1 - o.x0, d = o.z1 - o.z0, tex = tekstur('samlefelt', 256, 256, x => {
+      x.fillStyle = 'rgba(122,214,107,.9)'; x.beginPath(); x.roundRect ? x.roundRect(8, 8, 240, 240, 30) : x.rect(8, 8, 240, 240); x.fill();
+      x.strokeStyle = '#fff'; x.lineWidth = 9; x.setLineDash([20, 12]); x.stroke();
+      x.fillStyle = '#1f4d16'; x.font = 'bold 40px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('💰 Hent', 128, 104); x.fillText('pengene', 128, 152);
+    });
+    const m = new T.Mesh(new T.PlaneGeometry(w, d), new T.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+    m.rotation.x = -Math.PI / 2; m.position.set((o.x0 + o.x1) / 2, 0.24, (o.z0 + o.z1) / 2); m.renderOrder = 2; samleG.add(m);
+    const cv = document.createElement('canvas'); cv.width = 512; cv.height = 128; const st = new T.CanvasTexture(cv); st.encoding = T.sRGBEncoding;
+    samleSkilt = new T.Sprite(new T.SpriteMaterial({ map: st, transparent: true, depthWrite: false })); samleSkilt.scale.set(4.4, 1.1, 1); samleSkilt.position.set((o.x0 + o.x1) / 2, 2.4, (o.z0 + o.z1) / 2); samleSkilt.userData.cv = cv; samleG.add(samleSkilt);
+  }
+  function tegnSamleSkilt() {
+    if (!samleSkilt) return; const v = Math.floor(S.kasse || 0); if (v === samleSist) return; samleSist = v;
+    const cv = samleSkilt.userData.cv, x = cv.getContext('2d'); x.clearRect(0, 0, 512, 128);
+    x.fillStyle = 'rgba(31,77,22,.85)'; x.beginPath(); x.roundRect ? x.roundRect(8, 8, 496, 112, 40) : x.rect(8, 8, 496, 112); x.fill();
+    x.fillStyle = '#fff'; x.font = 'bold 60px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('💰 ' + fmt(v), 256, 66);
+    samleSkilt.material.map.needsUpdate = true;
+  }
+  const iSamle = p => { const o = SAMLE ? samleOmr() : null; return !!o && p.y < 1.5 && p.x > o.x0 && p.x < o.x1 && p.z > o.z0 && p.z < o.z1; };
+  function sjekkSamle(t) {
+    byggSamle(); const r = I.robot(); if (!r || !samleG.children[0]) return;
+    samleG.children[0].material.opacity = (S.kasse || 0) >= 1 ? 0.8 + Math.sin(t * 4) * 0.2 : 0.6;
+    if (samleSkilt) samleSkilt.position.y = 2.4 + Math.sin(t * 2) * 0.12;
+    const inne = iSamle(r.position);
+    if (inne && !paaSamle && (S.kasse || 0) >= 1) { const v = Math.floor(S.kasse); S.penger += v; S.kasse -= v; melding('💰 Du hentet ' + fmt(v) + ' penger!', 3); lagre(); }
+    paaSamle = inne; tegnSamleSkilt();
+  }
+
   // ---------- Leveringsfeltet ----------
   // Et gult felt i passasjen mellom gården og åkeren. Går roboten inn på feltet med et matdyr, flyr matdyret til første ledige plass
   // (1. etasje først), uten at spilleren trykker på noe. Å velge plass selv med en ＋ virker fortsatt.
@@ -741,7 +780,7 @@
   }
   function oppdaterKort() {
     if (!$('hPenger')) return;
-    $('hPenger').textContent = '💰 ' + fmt(S.penger); $('hInnt').textContent = '+' + fmt(inntekt()) + '/s';
+    $('hPenger').textContent = '💰 ' + fmt(S.penger); $('hInnt').textContent = '+' + fmt(inntekt()) + '/s' + (SAMLE ? ' · i kassa ' + fmt(Math.floor(S.kasse || 0)) : '');
     $('hNiva').textContent = '🏡 Gårdsnivå ' + S.gard.niva + (I.sp.testNiva ? ' (viser ' + I.sp.testNiva + ')' : '') + (ERC ? ' · 🧪 Fordeling C' : '');
     $('hPlass').textContent = '🐮 ' + S.base.slice(0, aapneNa).filter(c => c >= 0).length + '/' + plasserApne() + ' plasser';
   }
@@ -806,16 +845,16 @@
   let lagreTid = 0, kortTid = 0;
   I.krok.start = startSpill;
   I.krok.panel = byggPanel;
-  I.krok.fane = f => { feltG.visible = levG.visible = f === 'spill'; if (f !== 'spill') { slippBar(); $('handling').hidden = true; handlingTekst = ''; $('melding').hidden = true; lagre(); if (!$('dialog').hidden) lukkDialog(); } };
+  I.krok.fane = f => { feltG.visible = levG.visible = samleG.visible = f === 'spill'; if (f !== 'spill') { slippBar(); $('handling').hidden = true; handlingTekst = ''; $('melding').hidden = true; lagre(); if (!$('dialog').hidden) lukkDialog(); } };
   I.krok.steg = (dt, t) => {
     if (I.sp.pause) return;
     oppdaterFelt(dt, t);
-    S.penger += inntekt() * dt;
+    if (SAMLE) S.kasse = (S.kasse || 0) + inntekt() * dt; else S.penger += inntekt() * dt;
     const r = I.robot();
     if (bar && bar.topp) bar.topp.oppdater(t); for (const tp of basePynt) tp.oppdater(t);
     if (bar && bar.flyr) flyBar(dt);
     else if (bar && r) { bar.m.position.set(r.position.x, r.position.y + 3.3, r.position.z); bar.m.rotation.y = r.rotation.y; if (bar.m.userData.fig && !I.REDUSERT) I.animerNy(bar.m.userData.fig, t, false); const i = naerPlass(r.position, true, 1.4); if (i >= 0) settInn(i); }
-    handling = r ? finnHandling() : null; visHandling(); if (r) { oppdaterMerker(t); sjekkLevFelt(t); }
+    handling = r ? finnHandling() : null; visHandling(); if (r) { oppdaterMerker(t); sjekkLevFelt(t); sjekkSamle(t); }
     if ((kortTid -= dt) <= 0) { kortTid = 0.25; oppdaterKort(); oppdaterPanel(); }
     if ((lagreTid -= dt) <= 0) { lagreTid = 5; lagre(); }
     if (meldingTid > 0 && (meldingTid -= dt) <= 0) $('melding').hidden = true;
@@ -826,5 +865,5 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden) lagre(); });
 
   // For automatiske tester (lagring, oppgradering, dobbelttrykk og flere faner)
-  window.EVNProto = { ERC, rB, incB, prisB, arvet, migrerStd, hentStandard, apneBok, gammelTestlagring, kallAktiv, kallKlart, kallFunnet, trekk, ODIN, garanti: v => (v !== undefined ? (garanti = v) : garanti), INC, PRICE, svakeste, harPlass, byttMed, apneBytte, iLevFelt, levOmr, velgPlass, ledige, forsteLedige, merker: () => merkG.children.map(c => c.userData.plass), iBasen, NOKKEL, S: () => S, sett: s => { S = rens(s) || ny(); fyllBase(); byggSpillGard(true); oppdaterKort(); oppdaterPanel(); }, lagre, lesLagret, kontroller, apneGardsniva, oppgrader, autoVelg, valg: () => valg, felt: () => felt, slippNed, bar: () => bar, finnHandling, gjorHandling, rens, plasserApne };
+  window.EVNProto = { SAMLE, samleOmr, iSamle, ERC, rB, incB, prisB, arvet, migrerStd, hentStandard, apneBok, gammelTestlagring, kallAktiv, kallKlart, kallFunnet, trekk, ODIN, garanti: v => (v !== undefined ? (garanti = v) : garanti), INC, PRICE, svakeste, harPlass, byttMed, apneBytte, iLevFelt, levOmr, velgPlass, ledige, forsteLedige, merker: () => merkG.children.map(c => c.userData.plass), iBasen, NOKKEL, S: () => S, sett: s => { S = rens(s) || ny(); fyllBase(); byggSpillGard(true); oppdaterKort(); oppdaterPanel(); }, lagre, lesLagret, kontroller, apneGardsniva, oppgrader, autoVelg, valg: () => valg, felt: () => felt, slippNed, bar: () => bar, finnHandling, gjorHandling, rens, plasserApne };
 })();

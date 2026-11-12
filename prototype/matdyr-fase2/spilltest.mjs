@@ -178,5 +178,14 @@ const tb = await ev(`(async () => { for (let i = 0; i < 150 && !window.EVNTobein
   return ut; })()`);
 if (/[?&]tobein=0/.test(process.argv[2] || '')) ok('?tobein=0: gamle figurer i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.n127 === 'donutku' && tb.n52 === null && tb.n2 === null && tb.n227 === null && !tb.fane);
 else ok('tobeinte lastes etter start og brukes i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.klar && tb.n127 === 'pilot_ku2_smultring' && tb.n52 === 'pilot_hai2_smultring' && tb.n2 === 'pilot_gris2_smultring' && tb.n227 === 'pilot_hval2_smultring' && tb.fane && tb.kamera.every(Boolean));
+// Innsamlingssonen (Even 12.11.2026): inntekten samles i kassa og går til lommeboka når roboten går inn i sonen. ?samle=0 gir automatisk inntekt.
+const sa = await ev(`(async () => { const P = EVNProto, S0 = JSON.parse(JSON.stringify(P.S())); S0.base = [127, 125]; S0.kasse = 0; P.sett(S0); EVNVis({ fane: 'spill' });
+  const R = EVNRobot(), K = EVNIntern.krok; R.position.set(0, 0, 12); const p0 = P.S().penger; for (let i = 0; i < 90; i++) { EVNSteg(1 / 30); K.steg(1 / 30, i / 30); }
+  const ut = { samle: P.SAMLE, kasse: P.S().kasse, vokst: +(P.S().penger - p0).toFixed(2) };
+  const o = P.samleOmr(); if (o && P.SAMLE) { const k = P.S().kasse; R.position.set((o.x0 + o.x1) / 2, 0, (o.z0 + o.z1) / 2); for (let i = 0; i < 3; i++) { EVNSteg(1 / 30); K.steg(1 / 30, 3 + i / 30); } ut.kasse = k; }
+  ut.etter = P.S().penger - p0; ut.kasseEtter = P.S().kasse; ut.lagret = (JSON.parse(localStorage.getItem(P.NOKKEL)) || {}).penger === P.S().penger;
+  return ut; })()`);
+if (/[?&]samle=0/.test(process.argv[2] || '')) ok('?samle=0: inntekten går rett i lommeboka (' + JSON.stringify(sa) + ')', !sa.samle && sa.vokst > 0);
+else ok('innsamlingssonen: inntekten samles i kassa og hentes i sonen (' + JSON.stringify(sa) + ')', sa.samle && sa.kasse > 0 && sa.vokst === 0 && sa.etter >= Math.floor(sa.kasse) && sa.kasseEtter < sa.kasse / 4 && sa.lagret);
 console.log(feil.length ? feil : 'ingen feil i konsollen'); if (feil.length) process.exitCode = 1;
 ws.close(); p.kill();
