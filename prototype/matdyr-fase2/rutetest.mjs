@@ -46,4 +46,22 @@ const res = await ev(`(() => {
   return ut;
 })()`);
 console.log(JSON.stringify(res, null, 1)); console.log(feil.length ? feil : 'ingen feil');
-ws.close(); p.kill(); process.exit(0);
+// Rampeenden (QA c1ff190): gå mot enden av den øverste rampa rett fram og på skrå, med og uten hopp. Roboten skal aldri falle ned.
+const evP = async x => { const r = await s('Runtime.evaluate', { expression: x, returnByValue: true, awaitPromise: true }); if (r.result.exceptionDetails) throw new Error(JSON.stringify(r.result.exceptionDetails).slice(0, 600)); return r.result.result.value; };
+const hj = await evP(`(async () => { const ut = [];
+  for (const niva of [3, 6, 9]) for (const hopp of [false, true]) for (const vink of [0, 0.3, 0.6, 1.2, -0.6]) {
+    EVNVis({ fane: 'spill', niva }); await new Promise(r => setTimeout(r, 200));
+    const S = EVNSpor, sp = EVNSpill, R = EVNRobot(), b = EVNBane, E = niva >= 9 ? 3 : niva >= 6 ? 2 : 1; b.teta = 0;
+    const pts = S.p.filter(q => q[3] <= S.del[E][1] + 0.01), q = pts[pts.length - 1], a = pts[pts.length - 6];
+    const tx = q[0] - a[0], tz = q[1] - a[1], l = Math.hypot(tx, tz), ux = tx / l, uz = tz / l;
+    R.position.set(a[0], a[4], a[1]); sp.paaBakken = true; for (let i = 0; i < 20; i++) EVNSteg(1 / 30);
+    const fx = -Math.sin(b.teta), fz = -Math.cos(b.teta), rx = Math.cos(b.teta), rz = -Math.sin(b.teta);
+    let dx = ux + uz * vink, dz = uz - ux * vink; const m = Math.hypot(dx, dz); dx /= m; dz /= m; let miny = 99;
+    for (let i = 0; i < 150; i++) { sp.inn = { x: dx * rx + dz * rz, z: dx * fx + dz * fz }; if (hopp && i % 20 === 0) sp.hopp = true; EVNSteg(1 / 30); miny = Math.min(miny, R.position.y); }
+    sp.inn = { x: 0, z: 0 }; for (let i = 0; i < 60; i++) EVNSteg(1 / 30);
+    ut.push({ niva, hopp, vink, miny: +miny.toFixed(2), fall: miny < q[4] - 1 });
+  }
+  return ut; })()`);
+const falt = hj.filter(h => h.fall);
+console.log((falt.length ? 'FEIL ' : 'OK   ') + 'rampeenden: roboten faller ikke ned (' + hj.length + ' forsøk' + (falt.length ? ', fall: ' + JSON.stringify(falt) : '') + ')'); if (falt.length) process.exitCode = 1;
+ws.close(); p.kill(); process.exit(process.exitCode || 0);

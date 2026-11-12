@@ -868,7 +868,8 @@
     // Enden av den øverste rampa er stengt med rekkverk (Even 12.11.2026)
     const s2 = SPOR.p.filter(q => q[3] <= maxD + 0.01).slice(-2);
     if (s2.length === 2) { const [a, q] = s2, tx = q[0] - a[0], tz = q[1] - a[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l;
-      leg(q[0] - nx * W / 2, q[1] - nz * W / 2, q[0] + nx * W / 2, q[1] + nz * W / 2, q[4]); }
+      // Veggen går 1,2 m forbi innerkanten, inn til husveggen, så roboten ikke glipper ned i hjørnet (QA c1ff190)
+      leg(q[0] - nx * (W / 2 + 0.3), q[1] - nz * (W / 2 + 0.3), q[0] + nx * (W / 2 + 1.2), q[1] + nz * (W / 2 + 1.2), q[4]); }
   }
   const krysser = (ax, az, bx, bz, cx, cz, dx, dz) => { const d = (bx - ax) * (dz - cz) - (bz - az) * (dx - cx); if (Math.abs(d) < 1e-9) return false; const t = ((cx - ax) * (dz - cz) - (cz - az) * (dx - cx)) / d, u = ((cx - ax) * (bz - az) - (cz - az) * (bx - ax)) / d; return t >= 0 && t <= 1 && u >= 0 && u <= 1; };
   function blokkert(x0, z0, x1, z1, y) {
