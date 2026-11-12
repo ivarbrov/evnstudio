@@ -159,12 +159,12 @@ const byt = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-pr
 ok('full gård: bytte med svakeste etter spørsmål, aldri automatisk (' + JSON.stringify(byt) + ')', byt.svakAvvist && byt.sterkTatt && byt.dialog && byt.byttet && byt.halvInn && byt.trukket && byt.andreUrort && byt.byttMerker && byt.fokusfelle && byt.avbrytNullstiller && byt.valgtByttet && byt.lagret);
 // Tobeinte matdyr lastes etter oppstart (QA 81c2fb8): gården og Matdyr-fanen bytter til dem når de er klare. ?tobein=0 slår dem av.
 const tb = await ev(`(async () => { for (let i = 0; i < 150 && !window.EVNTobeinKlar; i++) await new Promise(r => setTimeout(r, 200));
-  const I = EVNIntern, ut = { klar: !!window.EVNTobeinKlar, n127: I.nyNavnFor(127), n52: I.nyNavnFor(52), n2: I.nyNavnFor(2), n227: I.nyNavnFor(227) };
+  const I = EVNIntern, ut = { klar: !!window.EVNTobeinKlar, n508: I.nyNavnFor(508), n700: I.nyNavnFor(700), n127: I.nyNavnFor(127), n52: I.nyNavnFor(52), n2: I.nyNavnFor(2), n227: I.nyNavnFor(227) };
   EVNVis({ fane: 'matdyr' }); await new Promise(r => setTimeout(r, 300)); ut.fane = document.getElementById('kort').textContent.includes('to bein');
   // Kameraet skal ikke hoppe når hendelsen kommer (QA 11a7594): både med en annen figur og med Donutku
   const b = I.bane; ut.kamera = [];
   const lik = (x, y) => Math.abs(x - y) < 1e-6;
-  for (const fig of ['burgersau', 'donutku']) { EVNVis({ fane: 'matdyr', figur: fig, vis: 'bak' }); await new Promise(r => setTimeout(r, 200)); b.teta = 1.0; b.fi = 1.1; b.r = 9; b.mal.set(0.3, 0.7, -0.2);
+  for (const fig of ['shakeand', 'donutku']) { EVNVis({ fane: 'matdyr', figur: fig, vis: 'bak' }); await new Promise(r => setTimeout(r, 200)); b.teta = 1.0; b.fi = 1.1; b.r = 9; b.mal.set(0.3, 0.7, -0.2);
     const forste = I.md.gruppe.children[0];
     document.dispatchEvent(new Event('evn-tobein-klar')); await new Promise(r => setTimeout(r, 200));
     const tegnetPaaNytt = I.md.gruppe.children[0] !== forste;
@@ -177,7 +177,7 @@ const tb = await ev(`(async () => { for (let i = 0; i < 150 && !window.EVNTobein
   EVNVis({ fane: 'matdyr', figur: 'donutku', vis: 'forfra' });
   return ut; })()`);
 if (/[?&]tobein=0/.test(process.argv[2] || '')) ok('?tobein=0: gamle figurer i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.n127 === 'donutku' && tb.n52 === null && tb.n2 === null && tb.n227 === null && !tb.fane);
-else ok('tobeinte lastes etter start og brukes i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.klar && tb.n127 === 'pilot_ku2_smultring' && tb.n52 === 'pilot_hai2_smultring' && tb.n2 === 'pilot_gris2_smultring' && tb.n227 === 'pilot_hval2_smultring' && tb.fane && tb.kamera.every(Boolean));
+else ok('tobeinte lastes etter start og brukes i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.klar && tb.n508 === 'pilot_sau2_burger' && tb.n700 === 'pilot_skilpadde2_pizza' && tb.n127 === 'pilot_ku2_smultring' && tb.n52 === 'pilot_hai2_smultring' && tb.n2 === 'pilot_gris2_smultring' && tb.n227 === 'pilot_hval2_smultring' && tb.fane && tb.kamera.every(Boolean));
 // Innsamlingssonen (Even 12.11.2026): inntekten samles i kassa og går til lommeboka når roboten går inn i sonen. ?samle=0 gir automatisk inntekt.
 const sa = await ev(`(async () => { const P = EVNProto, S0 = JSON.parse(JSON.stringify(P.S())); S0.base = [127, 125]; S0.kasse = 0; P.sett(S0); EVNVis({ fane: 'spill' });
   const R = EVNRobot(), K = EVNIntern.krok; R.position.set(0, 0, 12); const p0 = P.S().penger; for (let i = 0; i < 90; i++) { EVNSteg(1 / 30); K.steg(1 / 30, i / 30); }
@@ -187,5 +187,15 @@ const sa = await ev(`(async () => { const P = EVNProto, S0 = JSON.parse(JSON.str
   return ut; })()`);
 if (/[?&]samle=0/.test(process.argv[2] || '')) ok('?samle=0: inntekten går rett i lommeboka (' + JSON.stringify(sa) + ')', !sa.samle && sa.vokst > 0);
 else ok('innsamlingssonen: inntekten samles i kassa og hentes i sonen (' + JSON.stringify(sa) + ')', sa.samle && sa.kasse > 0 && sa.vokst === 0 && sa.etter >= Math.floor(sa.kasse) && sa.kasseEtter < sa.kasse / 4 && sa.lagret);
+// Hulveien (Even 12.11.2026): matdyr som ikke blir tatt, går ned skråningen øst for porten, inn i tunnelen og forsvinner. ?groft=0 gir den gamle utgangen.
+const gr = await ev(`(async () => { const P = EVNProto, I = EVNIntern, K = I.krok; EVNVis({ fane: 'spill' }); const R = EVNRobot(); R.position.set(-20, 0, 12);
+  for (const ci of [127, 52, 508, 700]) P.slippNed(ci);
+  let lavest = 0, sett = 0, borteVedTunnel = 0; const kjent = new Set(P.felt());
+  for (let i = 0; i < 4000; i++) { K.steg(1 / 15, i / 15);
+    for (const a of P.felt()) { if (a.tilstand === 'ut' || a.tilstand === 'borte') { sett++; lavest = Math.min(lavest, a.g.position.y); if (a.tilstand === 'borte' && a.g.position.x > I.GROFT_X1 - 1.5) borteVedTunnel++; } }
+    if (borteVedTunnel > 0 && lavest < -3) break; }
+  return { groft: I.GROFT, sett, lavest: +lavest.toFixed(2), borteVedTunnel: borteVedTunnel > 0, bunn: +I.groft(I.GROFT_X1 - 1, I.GROFT_Z).toFixed(2) }; })()`);
+if (/[?&]groft=0/.test(process.argv[2] || '')) ok('?groft=0: den gamle utgangen uten hulvei (' + JSON.stringify(gr) + ')', !gr.groft && gr.lavest === 0 && gr.bunn === 0);
+else ok('hulveien: matdyrene går ned skråningen og forsvinner i tunnelen (' + JSON.stringify(gr) + ')', gr.groft && gr.sett > 0 && gr.lavest < -3 && gr.borteVedTunnel);
 console.log(feil.length ? feil : 'ingen feil i konsollen'); if (feil.length) process.exitCode = 1;
 ws.close(); p.kill();

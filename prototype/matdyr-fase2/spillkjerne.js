@@ -244,7 +244,7 @@
     const e = eng(), po = port(), p = a.g.position;
     a.via = p.x < e.x1 - 10 ? { x: e.x1 - 6 - Math.random() * 7, z: Math.max(e.z0 + 3, Math.min(e.z1 - 3, po.z + (Math.random() * 2 - 1) * 9)) } : null;
     a.portZ = po.z + (Math.random() * 2 - 1) * (po.halv - 1.4);
-    a.ute = { x: e.x1 + 13 + Math.random() * 7, z: po.z + (Math.random() * 2 - 1) * 10 };
+    a.ute = I.GROFT ? { x: I.GROFT_X1 + 1.2, z: I.GROFT_Z + (Math.random() * 2 - 1) * 1.6 } : { x: e.x1 + 13 + Math.random() * 7, z: po.z + (Math.random() * 2 - 1) * 10 };
   }
   // Prøvebasert styring: matdyret prøver noen få retninger rundt den ønskede og velger den som gir minst kollisjon,
   // med litt straff for å vike av. Andre matdyr regnes med der de vil være om et øyeblikk (fart × tid).
@@ -372,7 +372,8 @@
       a.fast = fart > 0 && a.vFaktisk < 0.15 ? a.fast + dt : 0;
       if (a.fast > 2) { a.fast = 0; a.side = -a.side; if (lyst > 0) nyUtrute(a); else nyttVandremaal(a); }
       if (a.tilstand === 'gaa' && p.x > e.x1 + 1.0) a.tilstand = 'ut';
-      if (a.tilstand === 'ut' && (p.x > e.x1 + 9 || Math.hypot(a.ute.x - p.x, a.ute.z - p.z) < 2)) a.tilstand = 'borte';
+      if (a.tilstand === 'ut' && (I.GROFT ? p.x > I.GROFT_X1 - 1 : (p.x > e.x1 + 9 || Math.hypot(a.ute.x - p.x, a.ute.z - p.z) < 2))) a.tilstand = 'borte';
+      if (I.GROFT && (a.tilstand === 'ut' || a.tilstand === 'borte')) a.g.position.y = I.groft(p.x, p.z);   // går ned hulveien
       a.m.rotation.order = 'YXZ'; a.m.rotation.y = a.retning;
       animer(a, t, !a.hopp && a.vFaktisk > 0.15);
     }

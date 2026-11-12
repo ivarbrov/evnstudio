@@ -2,7 +2,7 @@
 Samme modulære system som matdyr_modul.py: matkroppen står oppreist (modus 'staa', som pingvinen), og kuas hode, armer og bein festes på.
 Armene heter vinge_v og vinge_h, og beina bein_vf og bein_hf, så spillets tobeinte gange (vagging, armsving) virker uten ny kode.
 Bare et utseende: art, sjeldenhet, pris, inntekt og ID-er er uendret.
-Kjør: DYR=ku|gris|hval|hai FIGURER=smultring,pizza,is,burger python3 matdyr_tobein.py <utmappe>   → pilot_<dyr>2_<mat>.glb
+Kjør: DYR=ku|gris|hval|hai|sau|skilpadde FIGURER=smultring,pizza,is,burger python3 matdyr_tobein.py <utmappe>   → pilot_<dyr>2_<mat>.glb
 """
 import bpy, os, sys, math
 from mathutils import Vector as V, Matrix
@@ -195,8 +195,83 @@ def hai_tobein(matkropp):
     rf.data.transform(Matrix.Rotation(-0.32, 4, 'X')); rf.data.transform(Matrix.Translation((0, fy + 0.02, fz + 0.32)))
     return slaa_sammen('kropp', k['deler'] + [rf]), hode, armer + bein
 
-DYR = {'ku': ku_tobein, 'gris': gris_tobein, 'hval': hval_tobein, 'hai': hai_tobein}
-NAVN = {'ku': 'ku', 'gris': 'gris', 'hval': 'hval', 'hai': 'hai'}
+def sau_tobein(matkropp):
+    """Sau på to bein (Even 12.11.2026: «burgersau og pizzaskilpade må gå på to bein»). Burgeren står som kropp, med ull rundt hodet og på armene."""
+    ull = mat('sau_ull', '#fbf5ea', 0.85); fjes = mat('sau_fjes', '#4a3f3b', 0.55); klov = mat('sau_klov', '#2e2624', 0.5); innore = mat('sau_innore', '#f2a7b5', 0.5)
+    C, A = V((0, 0.02, 0.72)), V((0.4, 0.36, 0.42))
+    k = M.MAT[matkropp](C, A, 'staa')
+    t = k['topp']; hx, hy, hz = t.x, t.y - 0.06, t.z + 0.24
+    # Hodet: mørkt sauefjes med en ulldott på toppen og hengende ører
+    hd = [prim('kule', 'fjes', fjes, (hx, hy - 0.04, hz - 0.02), (0.2, 0.2, 0.23), segments=40, ring_count=24)]
+    hd.append(prim('kule', 'snute', fjes, (hx, hy - 0.17, hz - 0.1), (0.13, 0.1, 0.1), segments=28, ring_count=16))
+    for i in range(9):
+        a = i / 9 * 2 * math.pi
+        hd.append(prim('kule', 'ulldott%d' % i, ull, (hx + math.cos(a) * 0.15, hy + 0.02 + math.sin(a) * 0.1, hz + 0.17 + 0.03 * math.sin(a * 3)), (0.1, 0.1, 0.09), segments=20, ring_count=12))
+    hd.append(prim('kule', 'ulltopp', ull, (hx, hy, hz + 0.23), (0.12, 0.12, 0.1), segments=20, ring_count=12))
+    for s in (-1, 1):
+        hd += oye('oye%d' % s, (hx + s * 0.085, hy - 0.2, hz + 0.06), 0.055, hvitt=True)
+        hd.append(kinn('kinn%d' % s, (hx + s * 0.15, hy - 0.17, hz - 0.06), 0.035))
+        hd.append(prim('kule', 'ore%d' % s, fjes, (hx + s * 0.25, hy - 0.02, hz + 0.02), (0.12, 0.045, 0.06), (0, s * 0.25, s * -0.45), segments=20, ring_count=12))
+        hd.append(prim('kule', 'oreinn%d' % s, innore, (hx + s * 0.26, hy - 0.05, hz + 0.02), (0.08, 0.015, 0.035), (0, s * 0.25, s * -0.45), segments=16, ring_count=10))
+    hd.append(smil('smil', (hx, hy - 0.265, hz - 0.13), 0.045, m=mat('smil_lys', '#f6e7e0', 0.5)))
+    hd.append(prim('syl', 'hals', ull, (hx, hy + 0.02, hz - 0.22), (0.15, 0.15, 0.1), vertices=24, ss=1))
+    hode = pivot(slaa_sammen('hode', hd), (hx, hy, hz - 0.2))
+    # Armer: ullarmer med mørk klov
+    armer = []
+    for s, navn in [(-1, 'vinge_v'), (1, 'vinge_h')]:
+        sx, sy, sz = A.x + 0.02, C.y - 0.02, C.z + 0.16
+        a = [kurve(navn + '_arm', [(s * (sx - 0.04), sy, sz), (s * (sx + 0.07), sy - 0.04, sz - 0.16), (s * (sx + 0.05), sy - 0.1, sz - 0.32)], 0.085, ull, avsmal=lambda u: 1 - 0.2 * u),
+             prim('kule', navn + '_klov', klov, (s * (sx + 0.05), sy - 0.11, sz - 0.38), (0.07, 0.065, 0.065), segments=18, ring_count=10)]
+        armer.append(pivot(slaa_sammen(navn, a), (s * (sx - 0.04), sy, sz)))
+    # Bein: tynne, mørke sauebein med klover
+    under = max(0.16, k['under']); bein = []
+    for i, s in enumerate((-1, 1)):
+        bx = s * 0.16
+        b = [prim('kule', 'bein%d' % i, fjes, (bx, 0.0, (under + 0.08) / 2 + 0.04), (0.075, 0.075, (under + 0.08) / 2 + 0.02), segments=20, ring_count=14),
+             prim('kule', 'klov%d' % i, klov, (bx, -0.03, 0.06), (0.1, 0.13, 0.065), segments=20, ring_count=12)]
+        bein.append(pivot(slaa_sammen(['bein_vf', 'bein_hf'][i], b), (bx, 0, under + 0.06)))
+    bk = k['bak']
+    hale = pivot(slaa_sammen('hale', [prim('kule', 'halull', ull, tuple(bk + V((0, 0.06, -0.05))), (0.09, 0.08, 0.09), segments=18, ring_count=12)]), tuple(bk))
+    return slaa_sammen('kropp', k['deler']), hode, armer + bein + [hale]
+
+def skilpadde_tobein(matkropp):
+    """Skilpadde på to bein (Even 12.11.2026). Den står oppreist med maten som skjold på ryggen og en lys buk foran."""
+    hud = mat('skilpadde', '#86cf6a', 0.55); buk = mat('skilpadde_buk', '#f1e6a0', 0.6); buklinje = mat('buklinje', '#c9b96a', 0.6)
+    C, A = V((0, 0.02, 0.72)), V((0.4, 0.34, 0.44))
+    # Skjoldet: maten står oppreist og snus, så pålegget vender bakover (som et skjold på ryggen)
+    Cs = C + V((0, 0.12, 0)); k = M.MAT[matkropp](Cs, A, 'staa')
+    snu = Matrix.Translation(Cs) @ Matrix.Rotation(math.pi, 4, 'Z') @ Matrix.Translation(-Cs)
+    for o in k['deler']: o.data.transform(snu)
+    # Kroppen foran skjoldet: grønn med lys buk og buklinjer
+    kropp = [prim('kule', 'kropp', hud, (0, C.y - 0.06, C.z - 0.02), (A.x * 0.82, A.y * 0.7, A.z * 0.95), segments=40, ring_count=24)]
+    kropp.append(prim('kule', 'buk', buk, (0, C.y - 0.2, C.z - 0.03), (A.x * 0.66, A.y * 0.32, A.z * 0.82), segments=40, ring_count=24))
+    for i, dz in enumerate((-0.18, 0.0, 0.18)):
+        kropp.append(prim('kule', 'buklinje%d' % i, buklinje, (0, C.y - 0.32, C.z + dz), (A.x * 0.5 * (1 - abs(dz)), 0.012, 0.012), segments=16, ring_count=6))
+    t = V((0, C.y - 0.06, C.z + A.z * 0.95)); hx, hy, hz = t.x, t.y - 0.02, t.z + 0.2
+    hd = [prim('kule', 'hode', hud, (hx, hy, hz), (0.23, 0.22, 0.21), segments=40, ring_count=24)]
+    hd.append(prim('syl', 'hals', hud, (hx, hy + 0.02, hz - 0.18), (0.13, 0.13, 0.1), vertices=24, ss=1))
+    for s in (-1, 1):
+        hd += oye('oye%d' % s, (hx + s * 0.1, hy - 0.17, hz + 0.06), 0.06)
+        hd.append(kinn('kinn%d' % s, (hx + s * 0.16, hy - 0.15, hz - 0.05), 0.04))
+    hd.append(smil('smil', (hx, hy - 0.215, hz - 0.06), 0.07))
+    hode = pivot(slaa_sammen('hode', hd), (hx, hy, hz - 0.18))
+    armer = []
+    for s, navn in [(-1, 'vinge_v'), (1, 'vinge_h')]:
+        sx, sy, sz = A.x * 0.78, C.y - 0.06, C.z + 0.2
+        a = [kurve(navn + '_arm', [(s * (sx - 0.04), sy, sz), (s * (sx + 0.08), sy - 0.05, sz - 0.14), (s * (sx + 0.06), sy - 0.1, sz - 0.3)], 0.08, hud, avsmal=lambda u: 1 - 0.1 * u),
+             prim('kule', navn + '_hand', hud, (s * (sx + 0.06), sy - 0.11, sz - 0.36), (0.085, 0.075, 0.075), segments=18, ring_count=10)]
+        armer.append(pivot(slaa_sammen(navn, a), (s * (sx - 0.04), sy, sz)))
+    under = max(0.16, C.z - A.z * 0.95); bein = []
+    for i, s in enumerate((-1, 1)):
+        bx = s * 0.17
+        b = [prim('kule', 'bein%d' % i, hud, (bx, -0.02, (under + 0.08) / 2 + 0.04), (0.11, 0.11, (under + 0.08) / 2 + 0.02), segments=22, ring_count=14),
+             prim('kule', 'fot%d' % i, hud, (bx, -0.07, 0.06), (0.13, 0.17, 0.07), segments=22, ring_count=12)]
+        bein.append(pivot(slaa_sammen(['bein_vf', 'bein_hf'][i], b), (bx, 0, under + 0.06)))
+    hale = pivot(slaa_sammen('hale', [prim('kjegle', 'hale', hud, (0, C.y + A.y * 0.6, 0.3), (0.06, 0.06, 0.12), (-1.2, 0, 0), vertices=16, ss=1)]), (0, C.y + A.y * 0.5, 0.34))
+    return slaa_sammen('kropp', k['deler'] + kropp), hode, armer + bein + [hale]
+
+DYR = {'ku': ku_tobein, 'gris': gris_tobein, 'hval': hval_tobein, 'hai': hai_tobein, 'sau': sau_tobein, 'skilpadde': skilpadde_tobein}
+NAVN = {'ku': 'ku', 'gris': 'gris', 'hval': 'hval', 'hai': 'hai', 'sau': 'sau', 'skilpadde': 'skilpadde'}
 
 def lag(matkropp, dyr='ku'):
     H.nullstill(); H.MATS.clear(); M._VAFFEL.clear(); H.rnd.seed(7)

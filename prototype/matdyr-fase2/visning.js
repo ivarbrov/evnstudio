@@ -48,7 +48,7 @@
   const PILOT = new URLSearchParams(location.search).get('pilot') === '1' ? Object.keys(PILOT_ID) : [];
   // Matdyr på to bein er standard i prototypen fra 11.11.2026 (Even: «Kan du begynne å legge til de nye dyrene i spillet nå»). ?tobein=0 slår dem av.
   // Tidligere ?tobein=1: matdyr som går på to bein (Even 10.11.2026: «Kun dyre med to bein»). Prøve: ku, gris, hval (flodhestbein) og hai (finnebein) med fire matvarer. Bare utseendet endres, ikke ID, sjeldenhet eller verdi.
-  const TOBEIN_ID = { pilot_ku2_smultring: 127, pilot_ku2_pizza: 125, pilot_ku2_is: 134, pilot_ku2_burger: 133, pilot_gris2_smultring: 2, pilot_gris2_pizza: 0, pilot_gris2_is: 9, pilot_gris2_burger: 8, pilot_hval2_smultring: 227, pilot_hval2_pizza: 225, pilot_hval2_is: 234, pilot_hval2_banan: 230, pilot_hai2_smultring: 52, pilot_hai2_pizza: 50, pilot_hai2_is: 59, pilot_hai2_taco: 51 };
+  const TOBEIN_ID = { pilot_ku2_smultring: 127, pilot_ku2_pizza: 125, pilot_ku2_is: 134, pilot_ku2_burger: 133, pilot_gris2_smultring: 2, pilot_gris2_pizza: 0, pilot_gris2_is: 9, pilot_gris2_burger: 8, pilot_hval2_smultring: 227, pilot_hval2_pizza: 225, pilot_hval2_is: 234, pilot_hval2_banan: 230, pilot_hai2_smultring: 52, pilot_hai2_pizza: 50, pilot_hai2_is: 59, pilot_hai2_taco: 51, pilot_sau2_burger: 508, pilot_skilpadde2_pizza: 700 };   // Burgersau og Pizzaskilpadde (Even 12.11.2026)
   const TOBEIN = new URLSearchParams(location.search).get('tobein') !== '0' ? Object.keys(TOBEIN_ID) : [];
   const NY_ID = { ...Object.fromEntries(TOBEIN.map(n => [n, TOBEIN_ID[n]])), ...Object.fromEntries(PILOT.map(n => [n, PILOT_ID[n]])), donutku: 127, burgersau: 508, pizzaskilpadde: 700, shakeand: 599, spagettipingvin: 179 };
   // ?laave=a|b|c: tre låvevarianter til vurdering (Ivar 8.11.2026). Uten flagget brukes den vanlige låven.
@@ -163,7 +163,27 @@
   // Porten ut av åkeren: halv bredde (m). Bred nok til at to matdyr kan gå ut side om side.
   const PORT_HALV = 3.4;
   // Busker i landskapet øst for åkerporten (porten står ved x = 31,6, z = 40)
-  const UTBUSKER = [[41.5, 33], [42.5, 47.5], [45, 37.5], [46, 43.5], [47.5, 30.5], [48.5, 50], [50, 35.5], [51, 45], [44, 27.5], [44.5, 53], [53.5, 40], [54, 30], [55, 49]].map(([x, z], i) => ({ x, z, ry: i * 1.3, s: 1.4 + (i % 3) * 0.25 }));
+  // Utgangen (Even 12.11.2026: «Det hadde kanskje sett bedre ut om dyrene gikk ut men ned en slette og forsvant»):
+  // øst for porten går en hulvei ned i bakken og ender i en tunnel. Matdyrene som ikke blir tatt, går ned dit og forsvinner. ?groft=0 gir den gamle utgangen.
+  const GROFT = new URLSearchParams(location.search).get('groft') !== '0';
+  const GROFT_Z = 40, GROFT_X0 = 34, GROFT_X1 = 50, GROFT_DYP = 4.2, GROFT_B = 2.8, GROFT_KANT = 2.6;
+  const glatt01 = u => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
+  function groft(x, z) {
+    if (!GROFT || x < GROFT_X0 - 1 || x > GROFT_X1 + 2.5) return 0;
+    const lengs = glatt01((x - GROFT_X0) / (GROFT_X1 - GROFT_X0)) * (x > GROFT_X1 ? glatt01(1 - (x - GROFT_X1) / 2.5) : 1);
+    const tvers = 1 - glatt01((Math.abs(z - GROFT_Z) - GROFT_B) / GROFT_KANT);
+    return -GROFT_DYP * lengs * tvers;
+  }
+  let tunnelG = null;
+  function tunnel(sc) {
+    if (tunnelG) sc.remove(tunnelG); tunnelG = new T.Group();
+    const y0 = -GROFT_DYP, x = GROFT_X1 + 0.6, stein = new T.MeshStandardMaterial({ color: LC('#8f8a80'), roughness: 0.9 }), mork = new T.MeshBasicMaterial({ color: 0x0b0906 });
+    const hull = new T.Mesh(new T.CircleGeometry(2.6, 32, 0, Math.PI), mork); hull.rotation.y = -Math.PI / 2; hull.position.set(x + 0.05, y0, GROFT_Z); tunnelG.add(hull);
+    const bue = new T.Mesh(new T.TorusGeometry(2.75, 0.42, 10, 28, Math.PI), stein); bue.rotation.y = -Math.PI / 2; bue.position.set(x, y0, GROFT_Z); bue.castShadow = true; tunnelG.add(bue);
+    const vegg = new T.Mesh(new T.PlaneGeometry(10, GROFT_DYP + 1.2), new T.MeshStandardMaterial({ color: LC('#8a6b45'), roughness: 0.95 })); vegg.rotation.y = -Math.PI / 2; vegg.position.set(x + 0.2, y0 + (GROFT_DYP + 1.2) / 2 - 1.3, GROFT_Z); tunnelG.add(vegg);
+    hull.renderOrder = 1; sc.add(tunnelG);
+  }
+  const UTBUSKER = [[41.5, 33], [42.5, 47.5], [45, 37.5], [46, 43.5], [47.5, 30.5], [48.5, 50], [50, 35.5], [51, 45], [44, 27.5], [44.5, 53], [53.5, 40], [54, 30], [55, 49]].map(([x, z], i) => ({ x, z, ry: i * 1.3, s: 1.4 + (i % 3) * 0.25 })).filter(b => !GROFT || Math.abs(b.z - GROFT_Z) > GROFT_B + GROFT_KANT + 2.5 || b.x > GROFT_X1 + 5);
   // Gangfart for matdyrene på åkeren: 1 = vanlig (ca. 30–50 s over åkeren). Kan prøves som 0.7 eller 1.4 via ⚙️ i spilltest (?gangfart=).
   const GANGFART = [0.7, 1, 1.4].includes(+new URLSearchParams(location.search).get('gangfart')) ? +new URLSearchParams(location.search).get('gangfart') : 1;
   // fase (valgfri): tilbakelagt gangdistanse i meter. Da følger bein, vugging og vinger farten: ett skritt ≈ 0,9 m for firbeinte og 0,7 m for tobeinte.
@@ -208,7 +228,8 @@
   let robotIMd = null, plateIMd = null;
 
   // I Matdyr-fanen vises Donutku (ID 127) på to bein når den er lastet, slik den ser ut i spillet.
-  const fanevisning = n => n === 'donutku' && TOBEIN.length && res.fig.pilot_ku2_smultring ? 'pilot_ku2_smultring' : n;
+  const FANE_TOBEIN = { donutku: 'pilot_ku2_smultring', burgersau: 'pilot_sau2_burger', pizzaskilpadde: 'pilot_skilpadde2_pizza' };
+  const fanevisning = n => FANE_TOBEIN[n] && TOBEIN.length && res.fig[FANE_TOBEIN[n]] ? FANE_TOBEIN[n] : n;
   function byggFigur(nokkel) {
     nokkel = fanevisning(nokkel);
     if (res.fig[nokkel]) return nyFigur(nokkel, 'full');
@@ -651,8 +672,10 @@
       const sk = skog(x, z); if (sk > 0) c.lerp(SKOG, sk * 0.75).lerp(SKOG_B, sk * Math.max(0, S(x * 1.3, z * 1.3)) * 0.45);
       const gu = grus(x, z); if (gu > 0) c.lerp(GRUS, gu).lerp(GRUS_M, gu * Math.max(0, S(x * 2, z * 2)) * 0.4);
       const jo = jord(x, z); if (jo > 0) c.lerp(JORD, Math.min(1, jo));
+      const gd0 = groft(x, z); if (gd0 < -0.2) c.lerp(JORD, Math.min(0.7, -gd0 / 2.5)).lerp(GRUS, -gd0 > GROFT_DYP * 0.8 ? 0.6 : 0);   // hulveien: grus i bunnen, gress på kantene
     };
-    const t = EVNMiljo.terreng({ storrelse: 360, ruter: 180, flat: (x, z) => ell(x, z, 95, 80, 8) < 1, hoyde: (x, z) => { const d = Math.sqrt(ell(x, z, 95, 80, 8)); return (d - 1) * 38 * (0.7 + 0.3 * EVNMiljo.stoy(x, z)); }, farge });
+    const t = EVNMiljo.terreng({ storrelse: 360, ruter: 180, flat: (x, z) => ell(x, z, 95, 80, 8) < 1 && groft(x, z) === 0, hoyde: (x, z) => { if (ell(x, z, 95, 80, 8) < 1) return groft(x, z); const d = Math.sqrt(ell(x, z, 95, 80, 8)); return (d - 1) * 38 * (0.7 + 0.3 * EVNMiljo.stoy(x, z)); }, farge });
+    if (GROFT) tunnel(scene);
     scene.remove(bakke); bakke = t; scene.add(t);
     // Utgangen fra åkeren (øst for porten) holdes fri for spredte trær, busker og steiner. Der går matdyrene, og bare UTBUSKER står der.
     const utgang = (x, z) => x > 29 && x < 62 && Math.abs(z - 40) < 18;
@@ -1015,13 +1038,13 @@
   Promise.all([robotKlar, sideKlar, ressurserKlar]).then(() => { if (NY) byggVerden(); velgFane('matdyr'); requestAnimationFrame(loop); window.EVNKlar = true; if (NY) lastTobein(); });
   // Tegn Matdyr-fanen på nytt bare når Donutku vises, og behold kameraet slik spilleren har dratt det (QA 11a7594)
   document.addEventListener('evn-tobein-klar', () => {
-    if (fane !== 'matdyr' || !(md.valgt === 'donutku' || md.visning === 'alle')) return;
+    if (fane !== 'matdyr' || !(FANE_TOBEIN[md.valgt] || md.visning === 'alle')) return;
     const kam = { teta: bane.teta, fi: bane.fi, r: bane.r, mal: bane.mal.clone() };
     // I «Nært» følger målpunktet hodet til den nye figuren (QA 6d388ab); vinkel og avstand beholdes
     visMatdyr(); Object.assign(bane, { teta: kam.teta, fi: kam.fi, r: kam.r }); if (md.visning !== 'naert') bane.mal.copy(kam.mal); oppdaterKamera();
   });
   // For automatiske skjermbilder: ?fane=gard&niva=6 eller ?figur=burgersau&vis=spill
-  window.EVNIntern = { md, UTBUSKER, PORT_HALV, GANGFART, T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
+  window.EVNIntern = { md, groft, GROFT, GROFT_X1, GROFT_Z, UTBUSKER, PORT_HALV, GANGFART, T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
   window.EVNSpill = sp; window.EVNRobot = () => gd.robot; window.EVNSteg = steg; window.EVNSpor = SPOR; window.EVNVei = VEI; window.EVNGeo = { HX, HZ, EH, DEKKE, W, KX, KZ, A, B, LREP }; window.EVNBane = bane; window.EVNVegger = () => vegger;
   window.EVNVis = (o) => { if (o.fane === 'spill') { if (o.niva) sp.niva = sp.testNiva = o.niva; velgFane('spill'); return; } if (o.fane === 'gard') { if (o.niva) gd.niva = o.niva; if (o.neste !== undefined) gd.neste = o.neste; velgFane('gard'); if (o.teta !== undefined) { bane.teta = o.teta; oppdaterKamera(); } } else { if (o.figur) md.valgt = o.figur; if (o.vis) md.visning = o.vis; if (o.mobil) holder.classList.add('ramme'); storrelse(); velgFane('matdyr'); if (o.teta !== undefined) bane.teta = o.teta; } };
 })();
