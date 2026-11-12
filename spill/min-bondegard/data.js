@@ -15,7 +15,7 @@
     // Dyr: ett fôr gir ett produkt etter «tid» sekunder. Et dyr uten fôr slutter bare å produsere (progresjonsregel F6).
     dyr: {
       hone: { navn: 'Høne', flertall: 'Høner', ikon: '🐔', nivaa: 1,  spiser: 'honsefor', produkt: 'egg',    tid: 60,  xp: 1, start: 3 },
-      ku:   { navn: 'Ku',   flertall: 'Kyr',   ikon: '🐄', nivaa: 6,  spiser: 'kufor',    produkt: 'melk',   tid: 120, xp: 2, start: 2 },
+      ku:   { navn: 'Ku',   flertall: 'Kyr',   ikon: '🐄', nivaa: 6,  spiser: 'kufor',    produkt: 'melk',   tid: 120, xp: 2, start: 2, hus: 'fjos' },   // kyrne kommer når fjøset er kjøpt (Ivar 9.11 og 12.11)
       gris: { navn: 'Gris', flertall: 'Griser', ikon: '🐖', nivaa: 10, spiser: 'grisefor', produkt: 'troffel', tid: 240, xp: 3, start: 2 }
     },
     // Varer som ikke er avlinger. Verdien til produserte varer regnes ut nedenfor (formelen i progresjonsplanen kap. 6).
@@ -49,14 +49,15 @@
       popkorn:    { bygg: 'popkorn',    nivaa: 8,  inn: { mais: 2 },                      tid: 60,  ut: 1 },
       pannekaker: { bygg: 'kjokken',    nivaa: 9,  inn: { egg: 2, melk: 1, sukker: 1 },   tid: 120, ut: 1 }
     },
-    // Produksjonsbygg: nivå og pris. Hvert bygg har 2 køplasser.
+    // Bygg: nivå og pris. Produksjonsbygg har 2 køplasser. «dyr»: bygget er et dyrehus, og dyrene kommer når det er kjøpt.
     bygg: {
       forkvern:   { navn: 'Fôrkverna',      ikon: '⚙️', nivaa: 1,  pris: 0 },
       bakeri:     { navn: 'Bakeriet',       ikon: '🍞', nivaa: 2,  pris: 50 },
       meieri:     { navn: 'Meieriet',       ikon: '🥛', nivaa: 6,  pris: 600 },
       sukkerverk: { navn: 'Sukkerverket',   ikon: '🧂', nivaa: 7,  pris: 900 },
       popkorn:    { navn: 'Popkornmaskina', ikon: '🍿', nivaa: 8,  pris: 1200 },
-      kjokken:    { navn: 'Gårdskjøkkenet', ikon: '🥞', nivaa: 9,  pris: 800 }
+      kjokken:    { navn: 'Gårdskjøkkenet', ikon: '🥞', nivaa: 9,  pris: 800 },
+      fjos:       { navn: 'Fjøs og beite',  ikon: '🐄', nivaa: 6,  pris: 300, dyr: 'ku' }   // Ivar 12.11: 300 mynter, spilleren plasserer det selv
     },
     koPlasser: 2,
     xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325],
@@ -71,7 +72,12 @@
     bestillinger: { nivaa: 4, plasser: { 4: 3, 7: 4, 10: 5 }, bytteForslag: 900, maksKjede: 600, myntFaktor: 1.6, xpFaktor: 0.6, xpPot: 0.85, minXP: 3 },
     // Kunder som kjører innom markedsbua (Even 11.11): ber om én vare og betaler markedspris (Ivar 11.11). Ingen straff om spilleren ikke har varen.
     kunder: { faktor: 1, pause: [70, 120], venter: 60 },
-    innholdTil: 5,                      // nivået innholdet er bygget til i denne versjonen. Bestillinger ber aldri om noe over dette
+    // Områder spilleren kan kjøpe (Ivar 12.11: Enga på nivå 5 for 300). Skogkanten er med i fase 4.
+    omrader: {
+      enga:       { navn: 'Enga',       nivaa: 5,  pris: 300 },
+      skogkanten: { navn: 'Skogkanten', nivaa: 10, pris: 1500 }
+    },
+    innholdTil: 6,                      // nivået innholdet er bygget til i denne versjonen. Bestillinger ber aldri om noe over dette
     maksVentetid: 240                   // ingen jobb tar mer enn 4 minutter (planens beslutning B1, progresjonsplanen kap. 3)
   };
   D.nivaaMynter = function (n) { return 20 + 15 * n; };

@@ -142,5 +142,20 @@ s = L.ny(T0);
 t('Kundens pris regnes ut av reglene, ikke av ønsket', (() => { const x = L.ny(T0); x.lager.egg = 9; const q = L.selgTilKunde(x, { vare: 'egg', antall: 2, mynter: 99999 }); return q.ok && q.mynter === 16 && x.mynter === 66; })());
 t('Kunden kan ikke kjøpe fôr eller ukjente varer', !L.selgTilKunde(s, { vare: 'honsefor', antall: 1 }).ok && !L.selgTilKunde(s, { vare: 'gull', antall: 1 }).ok && !L.selgTilKunde(s, null).ok);
 
+// --- Enga, fjøs, kyr og meieri (0.9.8, Ivar 12.11) ---
+s = L.ny(T0); L.giXP(s, 20 + 35 + 50 + 70, T0); s.mynter = 1000;
+t('Nivå 5: Enga kan kjøpes, fjøset ikke ennå', L.kanKjopeOmrade(s, 'enga') === null && !s.bygg.fjos);
+r = L.kjopOmrade(s, 'enga'); t('Enga koster 300 og kan bare kjøpes én gang', r.ok && s.mynter === 700 && s.omrader.enga === true && L.kjopOmrade(s, 'enga').grunn === 'eid');
+t('Skogkanten er låst til nivå 10', L.kanKjopeOmrade(s, 'skogkanten') === 'laast');
+L.giXP(s, 95, T0);
+t('Nivå 6 gir fjøs og meieri som kan bygges, men ingen kyr før fjøset er kjøpt', s.nivaa === 6 && s.bygg.fjos && !s.bygg.fjos.eid && s.bygg.meieri && !s.dyr.ku);
+r = L.kjopBygg(s, 'fjos'); t('Fjøset koster 300 og gir 2 kyr', r.ok && r.dyr === 2 && s.mynter === 400 + D.nivaaMynter(6) && s.dyr.ku.length === 2);
+s.lager.kufor = 1; r = L.mat(s, 'ku', T0); t('En ku spiser kufôr', r.ok && r.antall === 1 && !s.lager.kufor);
+r = L.samleDyr(s, 'ku', T0 + 120 * S); t('Kua gir melk etter 2 minutter', r.ok && s.lager.melk === 1);
+{ s.mynter = 600; t('Meieriet kan kjøpes og lager fløte av melk', L.kjopBygg(s, 'meieri').ok && L.produser(s, 'meieri', 'flote', T0).ok && !s.lager.melk); }
+{ const k = L.valider(JSON.parse(JSON.stringify(s)), T0); t('Enga, fjøs og kyr overlever lagring', k.omrader.enga === true && k.bygg.fjos.eid && k.dyr.ku.length === 2); }
+{ const x = L.valider({ v: 1, nivaa: 4, mynter: 100, lager: {}, omrader: { enga: true } }, T0); t('Enga lagret under nivå 5 godtas ikke', !x.omrader.enga); }
+{ const x = L.valider({ v: 1, nivaa: 6, mynter: 100, lager: {}, dyr: { ku: [{ slutt: null }] } }, T0); t('Kyr uten fjøs fjernes', !x.dyr.ku); }
+
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);
 process.exit(feil ? 1 : 0);

@@ -15,6 +15,7 @@
       nivaa: 1, xp: 0, mynter: D.startMynter,
       lager: {}, akre: [], dyr: {}, bygg: {}, plasser: {},
       oppl: { steg: 0 }, stat: { hostet: 0, egg: 0, laget: 0, solgt: 0, levert: 0, kunder: 0 },
+      omrader: {},
       best: { nr: 0, fro: (Math.floor(naa) % 2147483646) + 1, liste: [] }
     };
     for (var k in D.startLager) s.lager[k] = D.startLager[k];
@@ -29,7 +30,7 @@
     var antall = D.ved(D.akre, n);
     while (s.akre.length < antall) { s.akre.push({ id: 'a' + (s.akre.length + 1), x: null, z: null, avling: null, start: 0, slutt: 0 }); nytt.akre++; }
     for (var a in D.avlinger) if (D.avlinger[a].nivaa === n) { nytt.avlinger.push(a); if (n > 1) s.lager[a] = (s.lager[a] || 0) + D.nyAvlingFro; }
-    for (var d in D.dyr) if (D.dyr[d].nivaa === n && !s.dyr[d]) {
+    for (var d in D.dyr) if (D.dyr[d].nivaa === n && !s.dyr[d] && !D.dyr[d].hus) {
       s.dyr[d] = []; for (var i = 0; i < D.dyr[d].start; i++) s.dyr[d].push({ slutt: null });
       nytt.dyr.push(d);
     }
@@ -38,6 +39,7 @@
       nytt.bygg.push(b);
     }
     for (var o in D.oppskrifter) if (D.oppskrifter[o].nivaa === n) nytt.oppskrifter.push(o);
+    nytt.omrader = []; for (var om in D.omrader) if (D.omrader[om].nivaa === n) nytt.omrader.push(om);
     nytt.tavle = n === D.bestillinger.nivaa; nytt.bestillinger = fyllBestillinger(s, naa);
     return nytt;
   }
@@ -150,8 +152,18 @@
     if (b.eid) return { ok: false, grunn: 'eid' };
     if (s.mynter < B.pris) return { ok: false, grunn: 'mynter' };
     s.mynter -= B.pris; b.eid = true;
-    return { ok: true };
+    var nyeDyr = B.dyr ? giDyr(s, B.dyr) : 0;
+    return { ok: true, dyr: nyeDyr };
   }
+  // Et dyrehus gir dyrene sine når det er kjøpt (kyrne kommer med fjøset)
+  function giDyr(s, art) { if (s.dyr[art]) return 0; s.dyr[art] = []; for (var i = 0; i < D.dyr[art].start; i++) s.dyr[art].push({ slutt: null }); return D.dyr[art].start; }
+  // ---------- Områder (Ivar 12.11) ----------
+  function kanKjopeOmrade(s, id) {
+    var O = D.omrader[id]; if (!O) return 'ukjent';
+    if (s.omrader[id]) return 'eid'; if (s.nivaa < O.nivaa) return 'laast'; if (s.mynter < O.pris) return 'mynter';
+    return null;
+  }
+  function kjopOmrade(s, id) { var g = kanKjopeOmrade(s, id); if (g) return { ok: false, grunn: g }; s.mynter -= D.omrader[id].pris; s.omrader[id] = true; return { ok: true }; }
 
   // ---------- Markedsbua (progresjonsregel F3) ----------
   function kanSelge(v) { return !D.erFor(v); }
@@ -264,15 +276,17 @@
       a.x = typeof f.x === 'number' && isFinite(f.x) ? f.x : null; a.z = typeof f.z === 'number' && isFinite(f.z) ? f.z : null;
       if (D.avlinger[f.avling]) { a.avling = f.avling; a.start = tall(f.start, naa); a.slutt = tall(f.slutt, naa); }
     });
-    if (r.dyr && typeof r.dyr === 'object') for (var art in s.dyr) if (Array.isArray(r.dyr[art])) r.dyr[art].forEach(function (d, i) {
-      if (i >= s.dyr[art].length) s.dyr[art].push({ slutt: null });
-      s.dyr[art][i].slutt = d && typeof d.slutt === 'number' && isFinite(d.slutt) ? d.slutt : null;
-    });
     if (r.bygg && typeof r.bygg === 'object') for (var b in s.bygg) { var rb = r.bygg[b]; if (!rb || typeof rb !== 'object') continue;
       var sb = s.bygg[b]; sb.eid = sb.eid || rb.eid === true;
       sb.x = typeof rb.x === 'number' && isFinite(rb.x) ? rb.x : null; sb.z = typeof rb.z === 'number' && isFinite(rb.z) ? rb.z : null; sb.r = tall(rb.r, 0);
       if (Array.isArray(rb.ko)) rb.ko.slice(0, 6).forEach(function (j) { if (j && D.oppskrifter[j.vare] && D.oppskrifter[j.vare].bygg === b) sb.ko.push({ vare: j.vare, start: tall(j.start, naa), slutt: tall(j.slutt, naa) }); });
     }
+    // Dyr: dyrehus som er kjøpt, gir dyrene sine. Kyr fra 0.9.x, der fjøset ikke fantes, tas ikke med.
+    for (var hb in s.bygg) if (D.bygg[hb].dyr && s.bygg[hb].eid) giDyr(s, D.bygg[hb].dyr);
+    if (r.dyr && typeof r.dyr === 'object') for (var art in s.dyr) if (Array.isArray(r.dyr[art])) r.dyr[art].slice(0, 12).forEach(function (d, i) {
+      if (i >= s.dyr[art].length) s.dyr[art].push({ slutt: null });
+      s.dyr[art][i].slutt = d && typeof d.slutt === 'number' && isFinite(d.slutt) ? d.slutt : null;
+    });
     if (r.plasser && typeof r.plasser === 'object') for (var p in r.plasser) { var q = r.plasser[p]; if (q && typeof q.x === 'number' && typeof q.z === 'number' && isFinite(q.x) && isFinite(q.z)) s.plasser[p] = { x: q.x, z: q.z, r: tall(q.r, 0) }; }
     // Bestillinger: bare kjente varer og rimelige antall. Mynter og XP regnes ut på nytt, så lagringen kan ikke gi mer enn reglene.
     if (r.best && typeof r.best === 'object') {
@@ -287,6 +301,7 @@
       });
     } else s.best.liste = [];
     fyllBestillinger(s, naa);
+    if (r.omrader && typeof r.omrader === 'object') for (var om in D.omrader) if (r.omrader[om] === true && s.nivaa >= D.omrader[om].nivaa) s.omrader[om] = true;
     if (r.oppl && typeof r.oppl === 'object') s.oppl.steg = Math.max(0, Math.floor(tall(r.oppl.steg, 0)));
     if (r.stat && typeof r.stat === 'object') for (var st in s.stat) s.stat[st] = Math.max(0, Math.floor(tall(r.stat[st], 0)));
     ['silo', 'lave'].forEach(function (type) {   // mer enn plassen i lageret kuttes (QA 9.11)
@@ -307,6 +322,7 @@
     dyrStatus: dyrStatus, mat: mat, samleDyr: samleDyr,
     uferdige: uferdige, kanProdusere: kanProdusere, produser: produser, hentProdukter: hentProdukter, kjopBygg: kjopBygg,
     kanLage: kanLage, bestPool: bestPool, nyBestilling: nyBestilling, bestPlasser: bestPlasser, fyllBestillinger: fyllBestillinger, kanLevere: kanLevere, lever: lever, byttBestilling: byttBestilling, boerByttes: boerByttes,
+    giDyr: giDyr, kanKjopeOmrade: kanKjopeOmrade, kjopOmrade: kjopOmrade,
     nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider
   };

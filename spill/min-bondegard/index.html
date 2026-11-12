@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.9.7 – EVN Studio</title>
+<title>Min Bondegård 0.9.8 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -277,7 +277,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.9.7</div>
+    <div class="evn-ver" id="versjon">Versjon 0.9.8</div>
   </div>
 </div>
 
@@ -548,7 +548,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.9.7'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.9.8'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -785,6 +785,7 @@ function hoyde(x, z) {
     if (vedFiskeplass(x, z) && k > 0) h = Math.min(h, VANN_Y + 0.18 + k * 0.08); // lav og flat strand
   }
   if (Math.abs(z - VEI_Z) < 2.2 && Math.abs(x) < 80) h = Math.min(h, 0.05) * 0.4;
+  { const e = engaFlat(x, z); if (e > 0) h *= 1 - e; }   /* 0.9.8: Enga er flat, så fjøs og meieri står på bakken */
   for (const [a, b, c, d, L] of FLATE) { const dd = Math.hypot(Math.max(a - x, 0, x - b), Math.max(c - z, 0, z - d)); if (dd < 4) h = THREE.MathUtils.lerp(L, h, THREE.MathUtils.smoothstep(dd, 0, 4)); } // flat platå under kopiene i «Full gård»
   return h;
 }
@@ -884,9 +885,15 @@ const OMRADER = [
    poly: chaikin([[-16.6, -11.4], [-20.5, -14.2], [-27, -13.2], [-31.5, -8.5], [-32.5, -1], [-30.5, 6.2], [-25.5, 9.9], [-19.5, 10.4], [-16.6, 9.8]])},
   {nr: 3, navn: 'Elvebredden', nivaa: 18, pris: 6000, tema: 'elv', skilt: [-1.5, -12.75, 0],
    poly: chaikin([[-10.5, -13.3], [-2, -13.2], [7, -13.3], [13.3, -13.4], [12.6, -15.4], [9, -16.6], [4.5, -18.4], [-1, -20.6], [-7, -22.2], [-11, -19.5]])},
+  /* 0.9.8 (Ivar 12.11): Enga øst for gården kan kjøpes fra nivå 5. Står sist, så tilfeldighetene for de andre områdene er uendret. Vegetasjonen der blir stående til den er kjøpt */
+  {nr: 1, navn: 'Enga', nivaa: 5, pris: 300, tema: 'eng', skilt: [15.2, -4.2, Math.PI / 4],
+   poly: [[14.25, -11.8], [22.2, -11.8], [22.2, 10.35], [14.25, 10.35]]},
 ];
+const ENGA = {x0: 14, x1: 22.4, z0: -12, z1: 10.6};
+const iEnga = (x, z) => x > ENGA.x0 + 0.3 && x < ENGA.x1 + 0.4 && z > ENGA.z0 - 0.4 && z < ENGA.z1 + 0.2;   /* trær og busker her samles i egne mesher som skjules når Enga er kjøpt */
+const engaFlat = (x, z) => { const dd = Math.hypot(Math.max(ENGA.x0 - x, 0, x - ENGA.x1), Math.max(ENGA.z0 - z, 0, z - ENGA.z1)); return 1 - THREE.MathUtils.smoothstep(dd, 0, 2.5); };
 function iPoly(pts, x, z) { let inn = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, zi] = pts[i], [xj, zj] = pts[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) inn = !inn; } return inn; }
-function omradeVed(x, z) { for (const o of OMRADER) if (iPoly(o.poly, x, z)) return o; return null; }
+function omradeVed(x, z) { for (const o of OMRADER) if (o.tema !== 'eng' && iPoly(o.poly, x, z)) return o; return null; }   /* Enga er vanlig gress og vegetasjon til den kjøpes */
 const omradePanel = document.getElementById('omrade');
 let omradeVist = null, omradeTid = 0;
 function visOmrade(o) {
@@ -908,7 +915,7 @@ function lagOmrader() {
     // usynlig trykkflate som følger terrenget
     const form = new THREE.Shape(o.poly.map(([x, z]) => new THREE.Vector2(x, -z)));
     const fg = new THREE.ShapeGeometry(form); fg.rotateX(-Math.PI / 2); const fp = fg.attributes.position; for (let i = 0; i < fp.count; i++) fp.setY(i, hoyde(fp.getX(i), fp.getZ(i)) + 0.2);
-    const flate = new THREE.Mesh(fg, new THREE.MeshBasicMaterial({visible: false})); flate.userData.omrade = o; scene.add(flate); klikkbar(flate);
+    const flate = new THREE.Mesh(fg, new THREE.MeshBasicMaterial({visible: false})); flate.userData.omrade = o; scene.add(flate); klikkbar(flate); o.flate = flate;
     // markering av grensen, vises bare når området er valgt
     const pos = [], idx = [], n = o.poly.length;
     o.poly.forEach(([x, z], i) => { const [ax, az] = o.poly[(i + n - 1) % n], [bx, bz] = o.poly[(i + 1) % n]; let nx = -(bz - az), nz = bx - ax; const l = Math.hypot(nx, nz); nx /= l; nz /= l;
@@ -921,11 +928,11 @@ function lagOmrader() {
     mesh(avrundetBoks(0.12, 1.2, 0.12, 0.03, 1), MAT.brunPlank, 0, 0.6, -0.12, s);
     mesh(avrundetBoks(1.25, 0.76, 0.08, 0.03, 1), MAT.brunPlank, 0, 1.12, -0.03, s);
     const front = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.67), std({map: skiltTekstur(o.nivaa), roughness: 0.85})); front.position.set(0, 1.12, 0.016); front.castShadow = true; s.add(front);
-    s.rotation.z = 0.04; s.traverse(m => { if (m.isMesh) m.userData.eier = s; }); s.userData.omrade = o; klikkbar(s);
+    s.rotation.z = 0.04; s.traverse(m => { if (m.isMesh) m.userData.eier = s; }); s.userData.omrade = o; klikkbar(s); o.skiltG = s;
     // små stikker med farget topp langs grensen, så det er lett å se hvor området går
     const stikk = []; o.poly.forEach(([x, z], i) => { if (i % 7) return; if (elvKant(x, z) < 0.6) return; const y = hoyde(x, z);
       stikk.push({geo: new THREE.CylinderGeometry(0.045, 0.06, 0.7, 5), m: M4(x, y + 0.35, z), farge: 0xa8794a}, {geo: new THREE.CylinderGeometry(0.06, 0.06, 0.14, 6), m: M4(x, y + 0.68, z), farge: 0xff8a3d}); });
-    if (stikk.length) mesh(samle(stikk), MAT.vertex);
+    if (stikk.length) o.stikk = mesh(samle(stikk), MAT.vertex);
   });
 }
 
@@ -944,11 +951,11 @@ function plassLedig(x, z) {
   return true;
 }
 const RUTE = 18; const ruter = new Map();
-const ruterBlad = new Map(), bladMesher = [];
-function iRuteBlad(x, z, del) { const k = Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterBlad.has(k)) ruterBlad.set(k, []); ruterBlad.get(k).push(...del); }
+const ruterBlad = new Map(), bladMesher = [], engaMesher = [];
+function iRuteBlad(x, z, del) { const k = iEnga(x, z) ? 'enga' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterBlad.has(k)) ruterBlad.set(k, []); ruterBlad.get(k).push(...del); }
 const ruterLett = new Map(); /* 0.8.12 tiltak 1: løvdotter som ikke kaster skygge på mobil */
-function iRuteLett(x, z, del) { const k = Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterLett.has(k)) ruterLett.set(k, []); ruterLett.get(k).push(...del); }
-function iRute(x, z, del) { const k = Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruter.has(k)) ruter.set(k, []); ruter.get(k).push(...del); }
+function iRuteLett(x, z, del) { const k = iEnga(x, z) ? 'enga' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterLett.has(k)) ruterLett.set(k, []); ruterLett.get(k).push(...del); }
+function iRute(x, z, del) { const k = iEnga(x, z) ? 'enga' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruter.has(k)) ruter.set(k, []); ruter.get(k).push(...del); }
 const skyggeBlob = [];
 // sveiser like hjørner (sømmen i kule- og dreiegeometri), slik at normalene blir myke uten synlige skjøter
 function sveis(g) { const p = g.attributes.position, kart = new Map(), ny = []; for (let i = 0; i < p.count; i++) { const k = Math.round(p.getX(i) * 1e4) + ',' + Math.round(p.getY(i) * 1e4) + ',' + Math.round(p.getZ(i) * 1e4); if (!kart.has(k)) kart.set(k, i); ny.push(kart.get(k)); }
@@ -1241,9 +1248,9 @@ function lagVegetasjon() {
   for (let z = -11; z < 10; z += rr(2.2, 4.5)) busk(15.3, z, rr(0.6, 0.95), rnd() < 0.25 ? 'baer' : 'rund', j++);
   lagGjengroing();
   lagElvebredd();
-  ruterBlad.forEach((del) => { const me = mesh(samleIndeksert(del), bladMat()); bladMesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = KVAL !== 'mobil' && Math.hypot(bs.x, bs.z) < 34; }); // 0.7.4: på mobil kaster bladkortene ikke skygge; kronenes kjerner gjør det fortsatt
-  ruterLett.forEach((del) => { const me = mesh(samle(del), MAT.vertex); me.castShadow = false; });
-  ruter.forEach((del) => { const me = mesh(samle(del), MAT.vertex); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = Math.hypot(bs.x, bs.z) < 34; }); // bare ruter nær gården kaster skygge
+  ruterBlad.forEach((del, k) => { const me = mesh(samleIndeksert(del), bladMat()); bladMesher.push(me); if (k === 'enga') engaMesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = KVAL !== 'mobil' && Math.hypot(bs.x, bs.z) < 34; }); // 0.7.4: på mobil kaster bladkortene ikke skygge; kronenes kjerner gjør det fortsatt
+  ruterLett.forEach((del, k) => { const me = mesh(samle(del), MAT.vertex); me.castShadow = false; if (k === 'enga') engaMesher.push(me); });
+  ruter.forEach((del, k) => { const me = mesh(samle(del), MAT.vertex); if (k === 'enga') engaMesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = Math.hypot(bs.x, bs.z) < 34; }); // bare ruter nær gården kaster skygge
   lagFjernskog();
   [[-7, -6, 7.5], [6.5, -8, 3.2], [-10.5, 8, 2.6], [-12.9, -1.8, 2.2]].forEach(b => skyggeBlob.push(b));
   const bg = new THREE.PlaneGeometry(1, 1); bg.rotateX(-Math.PI / 2); const blobs = new THREE.InstancedMesh(bg, MAT.blob, skyggeBlob.length); const bm = new THREE.Matrix4();
@@ -1252,7 +1259,7 @@ function lagVegetasjon() {
 }
 /* Gjengroing i utvidelsesområdene: skogkanten får trær, ungskog, busker, stubber og en veltet stokk; elvebredden er åpnere med stein, siv og noen få trær */
 function lagGjengroing() {
-  OMRADER.forEach(o => { const xs = o.poly.map(p => p[0]), zs = o.poly.map(p => p[1]); const x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs);
+  OMRADER.filter(o => o.tema !== 'eng').forEach(o => { const xs = o.poly.map(p => p[0]), zs = o.poly.map(p => p[1]); const x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs);
     const punkt = (marg = 1) => { for (let k = 0; k < 40; k++) { const x = rr(x0, x1), z = rr(z0, z1); if (!iPoly(o.poly, x, z) || revPlass(x, z) || elvKant(x, z) < 0.8 || paVei(x, z) || vedFiskeplass(x, z) && elvKant(x, z) < 4) continue;
       if (o.poly.some(([px, pz]) => Math.hypot(px - x, pz - z) < marg)) continue; return [x, z]; } return null; };
     const klynge = (n, r, fn) => { const s = punkt(2); if (!s) return; for (let i = 0; i < n; i++) { const a = rr(0, 6.28), d = Math.sqrt(rnd()) * r, x = s[0] + Math.cos(a) * d, z = s[1] + Math.sin(a) * d; if (iPoly(o.poly, x, z) && !revPlass(x, z) && elvKant(x, z) > 0.8) fn(x, z, i); } };
@@ -1313,7 +1320,7 @@ function lagGressOgBlomster() {
   for (let x = -40; x < 40; x += 3) { sentre.push([x, VEI_Z - 2.1, 0.7], [x, VEI_Z + 2.1, 0.7]); }
   for (let x = -40; x < 40; x += 2.5) { [-1, 1].forEach(sd => sentre.push([x, elvZ(x) + sd * (elvB(x, sd) + 1.2), 0.9])); }
   skyggeBlob.forEach(([x, z, r]) => sentre.push([x, z, r * 0.9]));
-  OMRADER.forEach(o => { for (let i = 0; i < 26; i++) { const [px, pz] = o.poly[(rnd() * o.poly.length) | 0], [qx, qz] = o.poly[(rnd() * o.poly.length) | 0]; const x = (px + qx) / 2, z = (pz + qz) / 2; if (iPoly(o.poly, x, z)) sentre.push([x, z, 1.6, 1]); } });
+  OMRADER.filter(o => o.tema !== 'eng').forEach(o => { for (let i = 0; i < 26; i++) { const [px, pz] = o.poly[(rnd() * o.poly.length) | 0], [qx, qz] = o.poly[(rnd() * o.poly.length) | 0]; const x = (px + qx) / 2, z = (pz + qz) / 2; if (iPoly(o.poly, x, z)) sentre.push([x, z, 1.6, 1]); } });
   for (let i = 0; i < 18; i++) sentre.push([rr(-14, 12), rr(-11, 10), rr(0.5, 1.0)]);
   for (let i = 0; i < n * 3 && t < n; i++) { const [cx, cz, r, vill] = sentre[(rnd() * sentre.length) | 0]; const a = rr(0, 6.28), d = Math.sqrt(rnd()) * r * 1.5; const x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d; if (forbudt(x, z)) continue;
     const sc = rr(0.45, 1.05) * (vill ? 1.35 : 1); m4.compose(new THREE.Vector3(x, hoyde(x, z), z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rr(0, 6), 0)), new THREE.Vector3(sc, sc * rr(0.8, 1.4), sc)); tuster.setMatrixAt(t, m4);
@@ -1331,14 +1338,23 @@ function lagGressOgBlomster() {
 }
 
 /* ======================= Gjerde ======================= */
+let gjerdeOst = null, gjerdeEnga = null; const rrStd = (a, b) => rr(a, b);
+/* 0.9.8: spillet sier fra når Enga er kjøpt. Da forsvinner vegetasjonen, skiltet og gjerdet mot gården, og det nye gjerdet kommer */
+window.mbEnga = eid => { engaMesher.forEach(m => m.visible = !eid); if (gjerdeOst) gjerdeOst.visible = !eid; if (gjerdeEnga) gjerdeEnga.visible = !!eid;
+  const o = OMRADER.find(a => a.tema === 'eng'); if (!o) return; [o.skiltG, o.stikk, o.kant].forEach(m => { if (m) m.visible = !eid; });
+  [o.flate, o.skiltG].forEach(m => { const i = klikkbare.indexOf(m); if (eid && i >= 0) klikkbare.splice(i, 1); else if (!eid && i < 0 && m) klikkbare.push(m); }); };
 function lagGjerde() {
-  const deler = []; const stolpeG = avrundetBoks(0.22, 1.25, 0.22, 0.04, 1);
-  const linje = (x1, z1, x2, z2) => { const L = Math.hypot(x2 - x1, z2 - z1), n = Math.max(1, Math.round(L / 2.2)), a = Math.atan2(z2 - z1, x2 - x1);
+  const deler = [], ost = []; const stolpeG = avrundetBoks(0.22, 1.25, 0.22, 0.04, 1);
+  const linje = (x1, z1, x2, z2, ut = deler, rr = rrStd) => { const deler = ut; const L = Math.hypot(x2 - x1, z2 - z1), n = Math.max(1, Math.round(L / 2.2)), a = Math.atan2(z2 - z1, x2 - x1);
     const planke = avrundetBoks(L / n + 0.2, 0.13, 0.08, 0.03, 1);
     for (let i = 0; i <= n; i++) { const x = x1 + (x2 - x1) * i / n, z = z1 + (z2 - z1) * i / n; deler.push({geo: stolpeG, m: M4(x, 0.62, z, 0, rr(-0.05, 0.05), rr(-0.03, 0.03)), farge: 0x8d6440});
       if (i < n) [0.45, 0.92].forEach(y => deler.push({geo: planke, m: M4(x + (x2 - x1) / n / 2, y + rr(-0.02, 0.02), z + (z2 - z1) / n / 2, 0, -a, rr(-0.02, 0.02)), farge: 0xb08558})); } };
-  linje(-16, 10.6, -13.5, 10.6); linje(-3.8, 10.6, 14, 10.6); linje(14, 10.6, 14, -12); linje(14, -12, -16, -12); linje(-16, -12, -16, 10.6);
-  mesh(samle(deler), MAT.vertex);
+  linje(-16, 10.6, -13.5, 10.6); linje(-3.8, 10.6, 14, 10.6); linje(14, 10.6, 14, -12, ost); linje(14, -12, -16, -12); linje(-16, -12, -16, 10.6);
+  mesh(samle(deler), MAT.vertex); gjerdeOst = mesh(samle(ost), MAT.vertex);
+  /* Enga: gjerdet bygges med egne tilfeldige tall, så resten av gården ser lik ut som før */
+  let f2 = 4242; const rr2 = (a, b) => a + (f2 = (f2 * 16807) % 2147483647) / 2147483647 * (b - a), eng = [];
+  linje(14, 10.6, ENGA.x1, 10.6, eng, rr2); linje(ENGA.x1, 10.6, ENGA.x1, -12, eng, rr2); linje(ENGA.x1, -12, 14, -12, eng, rr2);
+  gjerdeEnga = mesh(samle(eng), MAT.vertex); gjerdeEnga.visible = false;
 }
 
 /* ======================= Låve ======================= */
