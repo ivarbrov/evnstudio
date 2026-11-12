@@ -342,7 +342,7 @@ function oppdaterKatt(dt, t) { if (!katt) return; const u = katt.userData, fart 
       katt.position.set(-32, 0, VEI_INN.z); katt.rotation.y = Math.PI / 2; u.vei = [VEI_INN.clone(), BOD_FORAN.clone()]; u.etter = 'ankomst'; u.tilst = 'gaar'; u.lop = false; katt.visible = true; } return; }
   let gaar = false;
   if (u.tilst === 'gaar') { tmp.copy(u.vei[0]).sub(katt.position); tmp.y = 0; const d = tmp.length();
-    if (d < 0.06) { u.vei.shift(); if (!u.vei.length) { if (u.etter === 'ankomst') { u.tilst = 'onsker'; u.tid = 4.5;  } else { u.tilst = 'borte'; u.tid = rr(4, 8); katt.visible = false; } } }
+    if (d < 0.06) { u.vei.shift(); if (!u.vei.length) { if (u.etter === 'ankomst') { u.tilst = 'onsker'; u.tid = 4.5;  } else if (u.etter === 'kunde') u.tilst = 'staar'; else if (u.etter === 'kundeUt') { u.tilst = 'staar'; katt.visible = false; } else { u.tilst = 'borte'; u.tid = rr(4, 8); katt.visible = false; } } }
     else { katt.rotation.y = snuMot(katt.rotation.y, Math.atan2(tmp.x, tmp.z), dt * 6); katt.position.addScaledVector(tmp.normalize(), Math.min(d, dt * fart)); gaar = true; } }
   else if (u.tilst === 'onsker') { katt.rotation.y = snuMot(katt.rotation.y, Math.atan2(-10.5 - katt.position.x, 8.0 - katt.position.z), dt * 5); u.tid -= dt;
     if (u.tid <= 0) { u.tilst = 'glad'; u.tid = 2.2; u.hopp = KATT_HOPP; visHjerte(_v1.copy(katt.position).add(_v2.set(0, u.hjerteY, 0))); kattSi('Takk! 💜', 2); } }
@@ -351,7 +351,7 @@ function oppdaterKatt(dt, t) { if (!katt) return; const u = katt.userData, fart 
   // Bevegelse (0.8.6). Stå, gå og løp glir over i hverandre. Beina svinger fra hoftene og løftes litt når de føres frem, uten å nå
   // skjørtet. Kjolen vrir seg og løfter kanten litt i fart og i svev. Halen svaier og strekker seg bakover i løp. Blomstene svaier forsiktig.
   u.gangV = mot(u.gangV, gaar && !u.lop ? 1 : 0, 6, dt); u.lopV = mot(u.lopV, gaar && u.lop ? 1 : 0, 6, dt); const fartV = u.gangV + u.lopV;
-  u.fase += dt * (9 * u.gangV + 15 * u.lopV); const s = Math.sin(u.fase), c = Math.cos(u.fase), jubel = u.tilst === 'glad' || u.hopp > 0;
+  u.fase += dt * (9 * u.gangV + 15 * u.lopV); const s = Math.sin(u.fase), c = Math.cos(u.fase), jubel = u.tilst === 'glad' || (u.hopp > 0 && !u.stille);   /* 0.9.7: hoppet ut av bilen er rolig, uten viftende armer (Ivar 12.11: «hun rister») */
   // Hopp: 0-0,18 sats (synker sammen), 0,18-0,82 svev, 0,82-1 landing (myk fjæring)
   let hy = 0, klem = 0, svev = 0; if (u.hopp > 0) { u.hopp = Math.max(0, u.hopp - dt); const p = 1 - u.hopp / KATT_HOPP;
     if (p < 0.18) klem = Math.sin(p / 0.18 * Math.PI / 2) * 0.08; else if (p < 0.82) { const q = (p - 0.18) / 0.64; hy = Math.sin(q * Math.PI) * 0.5; svev = Math.sin(q * Math.PI); klem = -0.05 * Math.sin(q * Math.PI); } else klem = Math.sin((p - 0.82) / 0.18 * Math.PI) * 0.1; }
@@ -370,15 +370,21 @@ function oppdaterKatt(dt, t) { if (!katt) return; const u = katt.userData, fart 
   u.blomst.rotation.z = Math.sin(t * 1.7) * 0.05 + s * 0.06 * fartV; u.blomst.rotation.x = mot(u.blomst.rotation.x, -0.12 * u.gangV - 0.28 * u.lopV + 0.25 * klem - 0.15 * svev + Math.sin(t * 1.1) * 0.03, 5, dt);
   u.hode.rotation.z = mot(u.hode.rotation.z, fartV > 0.1 ? 0 : Math.sin(t * 0.9) * 0.05, 4, dt);
   u.blunk -= dt; const lukk = u.blunk < 0.12; u.oyne.scale.y = lukk ? 0.12 : 1; if (u.blunk < 0) u.blunk = rr(2, 5);
-  if (kattBobleTid > 0) { kattBobleTid -= dt; katt.getWorldPosition(tmp); tmp.y += 2.3; tmp.project(camera); kattBoble.style.left = Math.min(innerWidth - 118, Math.max(118, (tmp.x + 1) / 2 * innerWidth)) + 'px'; /* holdes inne på skjermen */ kattBoble.style.top = ((1 - tmp.y) / 2 * innerHeight) + 'px'; if (kattBobleTid <= 0 || !katt.visible || (katt.parent && !katt.parent.visible)) { kattBoble.style.display = 'none'; kattBobleTid = 0; } }
+  if (kattBobleTid > 0) { kattBobleTid -= dt; katt.getWorldPosition(tmp); tmp.y += 2.3; tmp.project(camera); kattBoble.style.transform = `translate3d(${Math.round(Math.min(innerWidth - 118, Math.max(118, (tmp.x + 1) / 2 * innerWidth)))}px, ${Math.round((1 - tmp.y) / 2 * innerHeight)}px, 0) translate(-50%, -100%)`; /* holdes inne på skjermen. 0.9.7: transform i stedet for left/top, så nettleseren slipper ny layout hver frame */ if (kattBobleTid <= 0 || !katt.visible || (katt.parent && !katt.parent.visible)) { kattBoble.style.display = 'none'; kattBobleTid = 0; } }
 }
 
 const KUNDE_STOPP = -10.4, KUNDE_Z = VEI_Z - 0.7, BILFARGER = [0xf4b6d2, 0xa8dcc6, 0xf5c3a4, 0xbcd6f5]; let bilFarge = 0;
 const kunde = {fase: 'borte', t: 6, onske: null, bil: null, lakk: null, ute: 0};
 // 0.9.6 (Even 11.11): vi skal se at det er Blomsterkatten. Når bilen har stoppet, hopper hun ut og står ved siden av bilen, så kjolen og hjertene synes.
-const KATT_SETE = [-0.2, 0.92, 0, 0.68], KATT_UTE = [0.25, 0, -1.75, 0.85];
-function kattPlass(dt) { const maal = kunde.fase === 'venter' || kunde.fase === 'takk' ? 1 : 0, f = kunde.ute; kunde.ute = maal > f ? Math.min(1, f + dt / 0.55) : Math.max(0, f - dt / 0.55);
-  const p = kunde.ute, q = p * p * (3 - 2 * p), l = i => KATT_SETE[i] + (KATT_UTE[i] - KATT_SETE[i]) * q; katt.position.x = l(0); katt.position.z = l(2); katt.userData.bilY = l(1) + Math.sin(p * Math.PI) * 0.7; katt.scale.setScalar(l(3)); }
+/* 0.9.7 (Ivar 12.11: «det hakker når hun går ut av bilen»): hun gjør nå ett ordentlig hopp ut og inn, med kattens egen hoppanimasjon
+   (sats, svev, landing). Størrelsen er den samme i bilen og ute, og snakkebobla kommer først når hun har landet. */
+const KATT_SETE = [-0.2, 0.92, 0], KATT_UTE = [-0.1, 0, -1.65], KATT_SKALA = 0.78;
+const KATT_GATE = new THREE.Vector3(KUNDE_STOPP + KATT_UTE[0], 0, KUNDE_Z + KATT_UTE[2]);   /* der hun står når hun kommer gående: samme sted som ved bilen */
+function kattPlass(dt) { const maal = kunde.fase === 'venter' || kunde.fase === 'takk' ? 1 : 0;
+  if (kunde.mal !== maal) { kunde.mal = maal; kunde.anim = 0; katt.userData.hopp = KATT_HOPP; katt.userData.stille = true; }
+  kunde.anim = Math.min(1, kunde.anim + dt / KATT_HOPP);
+  const a = Math.min(1, Math.max(0, (kunde.anim - 0.18) / 0.64)), q0 = a * a * (3 - 2 * a), q = maal ? q0 : 1 - q0, l = i => KATT_SETE[i] + (KATT_UTE[i] - KATT_SETE[i]) * q;
+  katt.position.x = l(0); katt.position.z = l(2); katt.userData.bilY = l(1) + Math.sin(a * Math.PI) * 0.25; kunde.ute = q; }
 function lagKundebil() {
   const g = new THREE.Group(), lakk = std({color: SRGB(0xf4b6d2), roughness: 0.45}), lys = fm(0xfff6e3, 0.6), mork = fm(0x3a3a40, 0.7);
   mesh(avrundetBoks(3.0, 0.62, 1.5, 0.28, 4), lakk, 0, 0.72, 0, g);                               // karosseri
@@ -392,30 +398,43 @@ function lagKundebil() {
   g.userData.katt = true; g.visible = false; scene.add(g); kunde.lakk = lakk; return g;
 }
 function kundeStart() {
-  if (!kunde.bil) { kunde.bil = lagKundebil(); lagKatt(); scene.remove(katt); kunde.bil.add(katt); katt.position.set(KATT_SETE[0], 0, 0); katt.scale.setScalar(KATT_SETE[3]); katt.visible = true; Object.assign(katt.userData, {iBil: true, bilY: KATT_SETE[1], tilst: 'ibil'}); }
+  kunde.nr = (kunde.nr || 0) + 1; kunde.gaaende = kunde.nr % 3 === 0 && !matchMedia('(prefers-reduced-motion: reduce)').matches;   /* 0.9.7 (Ivar 12.11): hver tredje gang kommer hun gående */
+  if (kunde.gaaende) { if (!kunde.bil) kunde.bil = lagKundebil(); if (!katt) lagKatt(); kunde.onske = L.nyKunde(s); if (!kunde.onske) { kunde.t = 20; kunde.gaaende = false; return; }
+    kunde.bil.visible = false; scene.add(katt); katt.scale.setScalar(KATT_SKALA); katt.position.set(-27, 0, KATT_GATE.z); katt.rotation.y = Math.PI / 2; katt.visible = true;
+    Object.assign(katt.userData, {iBil: false, tilst: 'gaar', vei: [KATT_GATE.clone()], etter: 'kunde', lop: false, hopp: 0, stille: false}); kunde.fase = 'inn'; kunde.t = 0; kunde.sagt = false; kunde.anim = 1; return; }
+  if (katt && katt.parent !== kunde.bil && kunde.bil) { kunde.bil.add(katt); katt.visible = true; Object.assign(katt.userData, {iBil: true, bilY: KATT_SETE[1], tilst: 'ibil'}); }   /* tilbake i bilen etter en gåtur */
+  if (!kunde.bil) { kunde.bil = lagKundebil(); lagKatt(); scene.remove(katt); kunde.bil.add(katt); katt.position.set(KATT_SETE[0], 0, 0); katt.scale.setScalar(KATT_SKALA); katt.visible = true; Object.assign(katt.userData, {iBil: true, bilY: KATT_SETE[1], tilst: 'ibil'}); }
   kunde.onske = L.nyKunde(s); if (!kunde.onske) { kunde.t = 20; return; }
   bilFarge = (bilFarge + 1) % BILFARGER.length; kunde.lakk.color.copy(SRGB(BILFARGER[bilFarge]));   /* Blomsterkatten er alltid lilla, som på Evens tegning. Bilen skifter farge */
   const redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  kunde.bil.position.set(redusert ? KUNDE_STOPP : -34, 0, KUNDE_Z); kunde.bil.visible = true; katt.rotation.y = Math.PI / 2; kunde.fase = redusert ? 'venter' : 'inn'; kunde.t = 0; kunde.ute = 0; if (redusert) kundeSi();
+  kunde.bil.position.set(redusert ? KUNDE_STOPP : -34, 0, KUNDE_Z); kunde.bil.visible = true; katt.rotation.y = Math.PI / 2; kunde.fase = redusert ? 'venter' : 'inn'; kunde.t = 0; kunde.ute = 0; kunde.mal = redusert ? 1 : 0; kunde.anim = 1; kunde.sagt = false;
 }
 function kundeSi(ekstra) { const o = kunde.onske; kattBoble.innerHTML = ekstra || `<b>Blomsterkatten:</b> ${o.antall} ${ikon(o.vare)} ${navn(o.vare).toLowerCase()}, takk!<small>Trykk for å selge · ${o.mynter} 🪙</small>`; kattBoble.style.display = 'block'; kattBobleTid = 999; }
 function kundeTrykk() {
-  if (kunde.fase !== 'venter') { if (kunde.bil && kunde.bil.visible) katt.userData.hopp = KATT_HOPP; return; }
+  if (kunde.fase !== 'venter' || !kunde.sagt) return;
   const r = L.selgTilKunde(s, kunde.onske), u = katt.userData;
-  if (!r.ok) { u.hopp = KATT_HOPP; kundeSi(`Du mangler ${r.mangler} ${navn(kunde.onske.vare).toLowerCase()}. Jeg venter litt! 💜`); setTimeout(() => { if (kunde.fase === 'venter') kundeSi(); }, 2600); return; }
-  u.hopp = KATT_HOPP; visHjerte(katt.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 2.2, 0)));
-  kundeSi(`Takk! 💜 +${r.mynter} 🪙`); flyt('+' + r.mynter + ' 🪙', kunde.bil.position.clone().setY(2.6)); kunde.fase = 'takk'; kunde.t = 0; gi(null); const m = ting.get('marked'); if (m) robotJobb(m);
+  if (!r.ok) { u.hopp = KATT_HOPP; u.stille = false; kundeSi(`Du mangler ${r.mangler} ${navn(kunde.onske.vare).toLowerCase()}. Jeg venter litt! 💜`); setTimeout(() => { if (kunde.fase === 'venter') kundeSi(); }, 2600); return; }
+  u.hopp = KATT_HOPP; u.stille = false; visHjerte(katt.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 2.2, 0)));
+  kundeSi(`Takk! 💜 +${r.mynter} 🪙`); flyt('+' + r.mynter + ' 🪙', katt.getWorldPosition(new THREE.Vector3()).setY(2.6)); kunde.fase = 'takk'; kunde.t = 0; gi(null); const m = ting.get('marked'); if (m) robotJobb(m);
 }
 $('kattBoble').addEventListener('click', kundeTrykk);
 $('kattBoble').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); kundeTrykk(); } });
+function kundeGaaende(dt, t) { const u = katt.userData;
+  if (kunde.fase === 'inn') { if (u.tilst === 'staar') { kunde.fase = 'venter'; kunde.t = 0; } }
+  else if (kunde.fase === 'venter') { if (!kunde.sagt) { kunde.sagt = true; kundeSi(); } kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; } }
+  else if (kunde.fase === 'takk') { kunde.t += dt; if (kunde.t > 1.8) { kunde.fase = 'hjem'; kattBobleTid = 0.01; Object.assign(u, {tilst: 'gaar', vei: [new THREE.Vector3(-27, 0, KATT_GATE.z)], etter: 'kundeUt'}); } }
+  else if (kunde.fase === 'hjem') { if (u.tilst === 'staar') { kunde.fase = 'borte'; kunde.gaaende = false; kunde.t = D.kunder.pause[0] + Math.random() * (D.kunder.pause[1] - D.kunder.pause[0]); } }
+  oppdaterKatt(dt, t);
+}
 function oppdaterKunde(dt, t) {
   if (!startet) return;
   if (kunde.fase === 'borte') { if (s.oppl.steg < 3 && s.nivaa < 2) return;   /* ikke midt i den første opplæringen */ kunde.t -= dt; if (kunde.t <= 0 && bilKo.fase === 0) kundeStart(); return; }
+  if (kunde.gaaende) { kundeGaaende(dt, t); return; }
   const b = kunde.bil;
-  if (kunde.fase === 'inn') { const igjen = KUNDE_STOPP - b.position.x; b.position.x += Math.max(1.2, Math.min(7, igjen * 1.2)) * dt; if (b.position.x >= KUNDE_STOPP) { b.position.x = KUNDE_STOPP; kunde.fase = 'venter'; kunde.t = 0; kundeSi(); } }
-  else if (kunde.fase === 'venter') { kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; } }
+  if (kunde.fase === 'inn') { const igjen = KUNDE_STOPP - b.position.x; b.position.x += Math.max(1.2, Math.min(7, igjen * 1.2)) * dt; if (b.position.x >= KUNDE_STOPP) { b.position.x = KUNDE_STOPP; kunde.fase = 'venter'; kunde.t = 0; } }
+  else if (kunde.fase === 'venter') { if (!kunde.sagt && kunde.anim >= 1) { kunde.sagt = true; kundeSi(); } kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; } }
   else if (kunde.fase === 'takk') { kunde.t += dt; if (kunde.t > 1.8) { kunde.fase = 'hjem'; kunde.t = 0; } }
-  else if (kunde.fase === 'hjem') { kunde.t += dt; if (kunde.ute <= 0) { kunde.fase = 'ut'; kattBobleTid = 0.01; if (matchMedia('(prefers-reduced-motion: reduce)').matches) b.position.x = 99; } }
+  else if (kunde.fase === 'hjem') { kunde.t += dt; if (kunde.mal === 0 && kunde.anim >= 1) { kunde.fase = 'ut'; kattBobleTid = 0.01; if (matchMedia('(prefers-reduced-motion: reduce)').matches) b.position.x = 99; } }
   else if (kunde.fase === 'ut') { katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 2, dt * 4); const borte = b.position.x - KUNDE_STOPP; b.position.x += Math.max(1.2, Math.min(8, 1.2 + borte * 1.2)) * dt; if (b.position.x > 34) { b.visible = false; kattBoble.style.display = 'none'; kunde.fase = 'borte'; kunde.t = D.kunder.pause[0] + Math.random() * (D.kunder.pause[1] - D.kunder.pause[0]); } }
   b.position.y = hoyde(b.position.x, KUNDE_Z);
   kattPlass(dt); oppdaterKatt(dt, t);
@@ -427,7 +446,7 @@ const ting = new Map();
 const FOT = {forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], silo: [3.0, 3.0], tavle: [2.2, 1.0]};
 const STANDARD = {
   akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45]],
-  forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], silo: [1.0, -8.4], tavle: [-2.4, 8.6]   /* siloen der fôrkverna sto, ved låven og hønsehuset (Ivar 10.11) */
+  forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], silo: [-0.4, -10.0], tavle: [-2.4, 8.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
 };
 const GARD = {x0: -15.55, x1: 13.6, z0: -11.55, z1: 10.2};
 let hinder = [];   // faste hindringer: [x0, x1, z0, z1]
@@ -475,7 +494,8 @@ function plasserAlt() {
     plasser(t, sb.x, sb.z, sb.r);
   }
   let si = ting.get('silo'); if (!si) { const g = lagSilo(); scene.add(g); eierAv(g); klikkbar(g); si = {type: 'silo', id: 'silo', gruppe: g, fot: FOT.silo, hoyde: 6.6}; si.ikon = lagIkon(si.hoyde); g.add(si.ikon); ting.set('silo', si); }
-  if (stdV < 3 && s.plasser.silo && ((s.plasser.silo.x === 11.95 && s.plasser.silo.z === -2.4) || (s.plasser.silo.x === -13.6 && s.plasser.silo.z === -1.75) || (s.plasser.silo.x === 1 && s.plasser.silo.z === -9.7))) delete s.plasser.silo;   /* gamle standardplasser flyttes til ny */
+  if (stdV < 3 && s.plasser.silo && ((s.plasser.silo.x === 11.95 && s.plasser.silo.z === -2.4) || (s.plasser.silo.x === -13.6 && s.plasser.silo.z === -1.75) || (s.plasser.silo.x === 1 && s.plasser.silo.z === -9.7))) delete s.plasser.silo;
+  if (stdV < 4 && s.plasser.silo && s.plasser.silo.x === 1 && s.plasser.silo.z === -8.4) delete s.plasser.silo;   /* 0.9.7: standardplassen fra 0.8.10 flyttes inntil låven. En silo spilleren har flyttet selv, står der den står */   /* gamle standardplasser flyttes til ny */
   const ps = s.plasser.silo || (() => { const p = finnLedigPlass(si, ...STANDARD.silo) || STANDARD.silo; return (s.plasser.silo = {x: p[0], z: p[1], r: 0}); })();
   plasser(si, ps.x, ps.z, ps.r);
   // Bestillingstavla kommer på nivå 4, ved gårdsveien. Den får nærmeste ledige plass hvis noe står der.
@@ -484,7 +504,7 @@ function plasserAlt() {
     if (s.plasser.tavle && !ting.get('tavle').plassert && !erLedig(tv, s.plasser.tavle.x, s.plasser.tavle.z, 0)) delete s.plasser.tavle;   /* en lagret plass utenfor gården eller oppå noe brukes ikke (QA 10.11) */
     const pt = s.plasser.tavle || (() => { const p = finnLedigPlass(tv, ...STANDARD.tavle) || STANDARD.tavle; return (s.plasser.tavle = {x: p[0], z: p[1], r: 0}); })();
     plasser(tv, pt.x, pt.z, 0); }
-  s.plasser.std = {x: 3, z: 0, r: 0};
+  s.plasser.std = {x: 4, z: 0, r: 0};
 }
 // Faste ting fra testscenen
 let hus = null, lave = null, bod = null;
