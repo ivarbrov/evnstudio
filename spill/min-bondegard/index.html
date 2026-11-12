@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.9.8 – EVN Studio</title>
+<title>Min Bondegård 0.9.9 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -277,7 +277,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.9.8</div>
+    <div class="evn-ver" id="versjon">Versjon 0.9.9</div>
   </div>
 </div>
 
@@ -548,7 +548,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.9.8'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.9.9'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -1254,7 +1254,8 @@ function lagVegetasjon() {
   lagFjernskog();
   [[-7, -6, 7.5], [6.5, -8, 3.2], [-10.5, 8, 2.6], [-12.9, -1.8, 2.2]].forEach(b => skyggeBlob.push(b));
   const bg = new THREE.PlaneGeometry(1, 1); bg.rotateX(-Math.PI / 2); const blobs = new THREE.InstancedMesh(bg, MAT.blob, skyggeBlob.length); const bm = new THREE.Matrix4();
-  skyggeBlob.forEach(([x, z, r], i) => { bm.compose(new THREE.Vector3(x, hoyde(x, z) + 0.04, z), new THREE.Quaternion(), new THREE.Vector3(r * 2.2, 1, r * 2.2)); blobs.setMatrixAt(i, bm); }); blobs.renderOrder = 1; blobs.frustumCulled = false; scene.add(blobs);
+  skyggeBlob.forEach(([x, z, r], i) => { bm.compose(new THREE.Vector3(x, hoyde(x, z) + 0.04, z), new THREE.Quaternion(), new THREE.Vector3(r * 2.2, 1, r * 2.2)); blobs.setMatrixAt(i, bm); });
+  window.mbFlyttBlob = (x0, z0, x, z) => { const i = skyggeBlob.findIndex(b => b[0] === x0 && b[1] === z0); if (i < 0) return; const r = skyggeBlob[i][2]; bm.compose(new THREE.Vector3(x, hoyde(x, z) + 0.04, z), new THREE.Quaternion(), new THREE.Vector3(r * 2.2, 1, r * 2.2)); blobs.setMatrixAt(i, bm); blobs.instanceMatrix.needsUpdate = true; };   /* 0.9.9: skyggen følger hønsehuset */ blobs.renderOrder = 1; blobs.frustumCulled = false; scene.add(blobs);
   lagGressOgBlomster();
 }
 /* Gjengroing i utvidelsesområdene: skogkanten får trær, ungskog, busker, stubber og en veltet stokk; elvebredden er åpnere med stein, siv og noen få trær */
