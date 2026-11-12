@@ -36,10 +36,16 @@ def ku_tobein(matkropp):
     # Armer: korte, runde kuarmer med mørk klov som «hånd», festet på sidene av maten
     armer = []
     for s, navn in [(-1, 'vinge_v'), (1, 'vinge_h')]:
-        sx = A.x + 0.02 if matkropp != 'smultring' else 0.52
-        sy, sz = C.y - 0.02, C.z + 0.16
-        a = [kurve(navn + '_arm', [(s * (sx - 0.04), sy, sz), (s * (sx + 0.06), sy - 0.04, sz - 0.16), (s * (sx + 0.04), sy - 0.1, sz - 0.32)], 0.07, hvit, avsmal=lambda u: 1 - 0.15 * u),
-             prim('kule', navn + '_klov', klov, (s * (sx + 0.04), sy - 0.11, sz - 0.38), (0.075, 0.07, 0.07), segments=18, ring_count=10)]
+        if matkropp == 'smultring':
+            # Even 12.11.2026: «du må fikse armene til donutkua». Armene kommer ut fra siden av ringen, er tykkere og bøyer seg fram, så de syns forfra.
+            sx, sy, sz = 0.42, C.y - 0.1, C.z + 0.12
+            a = [kurve(navn + '_arm', [(s * (sx - 0.06), sy, sz), (s * (sx + 0.1), sy - 0.06, sz - 0.08), (s * (sx + 0.13), sy - 0.16, sz - 0.26)], 0.085, hvit, avsmal=lambda u: 1 - 0.12 * u),
+                 prim('kule', navn + '_klov', klov, (s * (sx + 0.13), sy - 0.18, sz - 0.33), (0.08, 0.08, 0.075), segments=18, ring_count=10)]
+        else:
+            sx = A.x + 0.02
+            sy, sz = C.y - 0.02, C.z + 0.16
+            a = [kurve(navn + '_arm', [(s * (sx - 0.04), sy, sz), (s * (sx + 0.06), sy - 0.04, sz - 0.16), (s * (sx + 0.04), sy - 0.1, sz - 0.32)], 0.07, hvit, avsmal=lambda u: 1 - 0.15 * u),
+                 prim('kule', navn + '_klov', klov, (s * (sx + 0.04), sy - 0.11, sz - 0.38), (0.075, 0.07, 0.07), segments=18, ring_count=10)]
         if s < 0: a.append(prim('kule', navn + '_flekk', sort, (s * (sx + 0.06), sy - 0.02, sz - 0.12), (0.035, 0.05, 0.05), segments=12, ring_count=8))
         armer.append(pivot(slaa_sammen(navn, a), (s * (sx - 0.04), sy, sz)))
     # Bein: kraftige kubein med klover og en flekk, fra undersiden av maten til bakken
@@ -184,9 +190,9 @@ def hai_tobein(matkropp):
         bein.append(pivot(slaa_sammen(['bein_vf', 'bein_hf'][i], b), (bx, 0, under + 0.06)))
     # Ingen hale (Even 11.11.2026: «Du må fjerne halen»). Spillet tåler at noden 'hale' mangler.
     # Ryggfinne (Even 11.11.2026: «Det må være en haifine på ryggen»): stor, spiss og bøyd bakover, midt på ryggen
-    bk2 = k['bak']; fz = max(C.z + 0.08, bk2.z + 0.08)
+    bk2 = k['bak']; fz = max(C.z + 0.08, bk2.z + 0.08); fy = max(bk2.y, C.y + A.y * 0.85)   # donuten har halefestet nede på ringen, så finnen plasseres etter kroppsdybden
     rf = prim('kjegle', 'ryggfinne', mork, (0, 0, 0), (0.06, 0.24, 0.46), vertices=24, ss=1)
-    rf.data.transform(Matrix.Rotation(-0.32, 4, 'X')); rf.data.transform(Matrix.Translation((0, bk2.y + 0.02, fz + 0.32)))
+    rf.data.transform(Matrix.Rotation(-0.32, 4, 'X')); rf.data.transform(Matrix.Translation((0, fy + 0.02, fz + 0.32)))
     return slaa_sammen('kropp', k['deler'] + [rf]), hode, armer + bein
 
 DYR = {'ku': ku_tobein, 'gris': gris_tobein, 'hval': hval_tobein, 'hai': hai_tobein}

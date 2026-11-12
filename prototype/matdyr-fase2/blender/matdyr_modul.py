@@ -124,7 +124,8 @@ def mat_pizza(C, A, modus):
 def mat_smultring(C, A, modus):
     deig = mat('deig', '#d99a52', 0.65); deig_lys = mat('deig_lys', '#f3cf92', 0.7); glasur = mat('glasur_rosa', '#ff9cc7', 0.28)
     if modus == 'staa':      # ringen står og hullet ser fram
-        R, r = (A.x + A.z) / 2 * 0.6, A.y * 0.82; ak = 'Y'; opp = V((0, -1, 0.25)).normalized()
+        # Even 12.11.2026: «det mangler hull i donuten». Større ring og tynnere deig gir et tydelig hull; ringen gjøres dypere så den ikke blir flat.
+        R, r = (A.x + A.z) / 2 * 0.8, A.y * 0.52; ak = 'Y'; opp = V((0, -1, 0.25)).normalized()
     else:
         R, r = (A.x + A.y) / 2 * 0.95, A.z * (0.62 if modus == 'kuppel' else 0.85); ak = 'Z'; opp = V((0, 0, 1))
     Cz = C.copy()
@@ -132,7 +133,8 @@ def mat_smultring(C, A, modus):
     rotm = Matrix.Rotation(math.pi / 2, 4, 'X') if ak == 'Y' else Matrix.Identity(4)
     ky = (A.y / A.x) if ak == 'Z' else 1.0
     kropp = prim('torus', 'deig', deig, (0, 0, 0), (1, 1, 1), major_radius=R, minor_radius=r, major_segments=44, minor_segments=18, ss=1)
-    kropp.data.transform(Matrix.Diagonal((1, ky, 0.92, 1))); kropp.data.transform(rotm); kropp.data.transform(Matrix.Translation(Cz))
+    dyp = 1.4 if modus == 'staa' else 0.92
+    kropp.data.transform(Matrix.Diagonal((1, ky, dyp, 1))); kropp.data.transform(rotm); kropp.data.transform(Matrix.Translation(Cz))
     # lys stripe rundt utsiden (stekekanten)
     kropp.data.materials.append(deig_lys)
     for p in kropp.data.polygons:
@@ -141,7 +143,7 @@ def mat_smultring(C, A, modus):
     # Glasur oppå med drypp ned på utsiden
     bpy.ops.mesh.primitive_torus_add(major_radius=R, minor_radius=r + 0.028, major_segments=44, minor_segments=16)
     gl = bpy.context.active_object; gl.name = 'glasur'
-    gl.data.transform(Matrix.Diagonal((1, ky, 0.92, 1)))
+    gl.data.transform(Matrix.Diagonal((1, ky, dyp, 1)))
     rr = random.Random(int(R * 1000)); drypp = [(rr.uniform(0, 6.28), rr.uniform(0.05, 0.14), rr.uniform(0.12, 0.22)) for _ in range(12)]
     bm = bmesh.new(); bm.from_mesh(gl.data); slett = []
     for v in bm.verts:
@@ -160,7 +162,7 @@ def mat_smultring(C, A, modus):
     if ak == 'Z':
         foran = Cz + V((0, -(R + r * (0.55 if modus == 'ligg' else 0.9)) * ky, 0.18)); topp = Cz + V((0, 0, r)); bak = Cz + V((0, (R + r * 0.8) * ky, 0.05))
     else:
-        foran = Cz + V((0, -r, 0)); topp = Cz + V((0, 0, R + r * 0.85)); bak = Cz + V((0, r, 0))
+        foran = Cz + V((0, -r * dyp, 0)); topp = Cz + V((0, 0, R + r * 0.85)); bak = Cz + V((0, r * dyp * 0.9, -R * 0.85))   # halen festes nede på ringen, ikke i hullet
     return {'deler': [kropp, gl] + stro, 'foran': foran, 'topp': topp, 'bak': bak, 'under': Cz.z - (r if ak == 'Z' else R + r)}
 
 def mat_is(C, A, modus):

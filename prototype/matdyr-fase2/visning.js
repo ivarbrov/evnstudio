@@ -176,6 +176,13 @@
     else { const a = gaar ? Math.sin(w) : 0; sett('bein_vf', a * 0.5, 0, 0); sett('bein_hf', -a * 0.5, 0, 0); k.rotation.z = gaar ? a * 0.09 : Math.sin(t * 1.6) * 0.025; k.position.y = gaar ? Math.abs(a) * 0.03 : 0; }
     sett('hode', Math.sin(t * 1.3) * 0.07, Math.sin(t * 0.7) * 0.12, Math.sin(t * 0.9) * 0.05);
     sett('hale', 0, gaar ? Math.sin(w * 0.9) * 0.35 : Math.sin(t * 3) * 0.35, 0);
+    // Dyr på to bein svinger armene fram og tilbake i takt med beina, slik man går (Even 12.11.2026: «pizza kua går veldig rart»).
+    // Før ble armene løftet ut til sidene samtidig, som vinger. Ekte vinger (pingvin) flakser fortsatt.
+    if (TOBEIN_ID[f.nokkel] !== undefined && !fire) {
+      const a = gaar ? Math.sin(w) * 0.45 : 0, ro = gaar ? 0 : Math.sin(t * 1.8) * 0.04;
+      sett('vinge_v', -a, 0, -ro); sett('vinge_h', a, 0, ro);
+      return;
+    }
     const v = gaar ? Math.max(0, Math.sin(w * 0.9)) * 0.5 : (Math.sin(t * 1.8) * 0.5 + 0.5) * 0.12;
     sett('vinge_v', 0, 0, -v); sett('vinge_h', 0, 0, v);
   }
@@ -449,7 +456,7 @@
   }
   const pilGeo = (() => { const sh = new T.Shape(); sh.moveTo(0, 0.6); sh.lineTo(0.5, 0); sh.lineTo(0.18, 0); sh.lineTo(0.18, -0.6); sh.lineTo(-0.18, -0.6); sh.lineTo(-0.18, 0); sh.lineTo(-0.5, 0); sh.closePath(); const gg = new T.ShapeGeometry(sh); gg.scale(1.6, 1.6, 1); gg.rotateX(-Math.PI / 2); return gg; })();
   // Bygger én del av spiralrampa: dekke som bånd, gule kanter, hvitt rekkverk, røde stolper og piler
-  function rampedel(g, nr) {
+  function rampedel(g, nr, ende = false) {
     const [d0, d1] = SPOR.del[nr], pts = SPOR.p.filter(q => q[3] >= d0 - 0.01 && q[3] <= d1 + 0.01), rr = new T.Group(); g.add(rr);
     const [r0, r1] = SPOR.repos[nr], erRepos = d => d >= r0 - 0.01 && d <= r1 + 0.01;
     const kant = [], tan = i => { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)]; const v = new T.Vector2(b[0] - a[0], b[1] - a[1]).normalize(); return v; };
@@ -481,6 +488,11 @@
         if (!erRepos(a.q[3]) && !erRepos(b.q[3])) { langs(rr, 'rekk_list', V3(a.ox, a.q[4], a.oz), V3(b.ox, b.q[4], b.oz), 2, 0, { x: -a.n.x, z: -a.n.y }); modul(rr, 'rekk_stolpe', a.ox, a.q[4], a.oz); if (erRepos(kant[Math.min(kant.length - 1, i + 16)].q[3])) modul(rr, 'rekk_stolpe', b.ox, b.q[4], b.oz); }
       }
       const sist = kant[kant.length - 1]; modul(rr, 'rekk_stolpe', sist.ix, sist.q[4], sist.iz);
+      // Siste bit av ytterkanten (etter siste hele rekkverksfelt) fikk ikke rekkverk før
+      const jSiste = Math.floor((kant.length - 2) / 8) * 8;
+      if (jSiste < kant.length - 1) { const a = kant[jSiste]; langs(rr, 'rekk_list', V3(a.ix, a.q[4], a.iz), V3(sist.ix, sist.q[4], sist.iz), 2, 0, ut(a)); }
+      // Even 12.11.2026: «Det mangler rekkverk». Der rampa slutter (øverste repos), lukkes enden med rekkverk.
+      if (ende) { langs(rr, 'rekk_list', V3(sist.ix, sist.q[4], sist.iz), V3(sist.ox, sist.q[4], sist.oz), 2, 0, { x: sist.t.x, z: sist.t.y }); modul(rr, 'rekk_stolpe', sist.ox, sist.q[4], sist.oz); }
       // Bærestolper med steinfot
       let nesteB = 0;
       kant.forEach(k => { const d = k.q[3], y = k.q[4]; if (d >= nesteB && y > 1.2) { nesteB = d + 3.2; for (const [x, z] of [[k.ox, k.oz], [k.ix, k.iz]]) nyStolpe(rr, x, 0, y - 0.38, z, true); } });
@@ -494,6 +506,7 @@
     ror(kant.map(k => new T.Vector3(k.ox, k.q[4] - 0.05, k.oz)), 0.16, GUL);
     ror(kant.map(k => new T.Vector3(k.ix, k.q[4] - 0.05, k.iz)), 0.16, GUL);
     ror(kant.map(k => new T.Vector3(k.ix, k.q[4] + 1.35, k.iz)), 0.07, HVIT);                                   // ytterkant: sammenhengende rekkverk
+    if (ende) { const sk = kant[kant.length - 1]; ror([new T.Vector3(sk.ix, sk.q[4] + 1.35, sk.iz), new T.Vector3(sk.ox, sk.q[4] + 1.35, sk.oz)], 0.07, HVIT); boks(rr, 0.12, 1.3, 0.12, sk.ox, sk.q[4] + 0.7, sk.oz, HVIT); }
     indreUtenRepos.forEach(gr => ror(gr.map(k => new T.Vector3(k.ox, k.q[4] + 1.35, k.oz)), 0.07, HVIT));   // innerkant: åpen ved porten på reposen
     // Stolper: rekkverk hver 1,6, røde bærestolper hver 3,2
     let neste = 0, nesteB = 0;
@@ -509,8 +522,8 @@
     return { rr, kant };
   }
   const rampeMat = (() => { const m = plankeMat.clone(); m.map = plankeMat.map.clone(); m.map.needsUpdate = true; m.map.repeat.set(1, 1); m.side = T.DoubleSide; return m; })();
-  function spiral(g, nr) {
-    const { rr, kant } = rampedel(g, nr), k0 = kant[0], [r0, r1] = SPOR.repos[nr], km = kant.find(k => k.q[3] >= (r0 + r1) / 2);
+  function spiral(g, nr, ende = false) {
+    const { rr, kant } = rampedel(g, nr, ende), k0 = kant[0], [r0, r1] = SPOR.repos[nr], km = kant.find(k => k.q[3] >= (r0 + r1) / 2);
     const vend = k => Math.atan2(k.t.x, k.t.y) + Math.PI;
     // Reposskiltene står inne på etasjen, ved siden av porten, og vender mot den som kommer opp rampa
     if (nr === 1) skilt(rr, ['📍 Repos 1', 'Inn til 2. etasje'], HX - 0.6, km.q[4], -KZ + LREP + 1.4, Math.PI / 2, '#ffe9a8');
@@ -700,7 +713,7 @@
       if (NY && mdel('busk')) { const hg = EVNMiljo.instanser(mdel('busk'), UTBUSKER); hg.userData.ikkeFlett = true; eg.add(hg); }
       else UTBUSKER.forEach(h => { const b = new T.Mesh(new T.SphereGeometry(1.1 * h.s, 12, 8), M('#4f9a3a', 0.9)); b.position.set(h.x, 0.8, h.z); eg.add(b); });
       const fra = n >= 2 ? 21.5 : 15.5, til = e.z0 - 0.4; const sti = new T.Mesh(new T.PlaneGeometry(6, til - fra + 1), M('#c9a06a', 0.95)); sti.rotation.x = -Math.PI / 2; sti.position.set(0, 0.04, (fra + til) / 2); sti.receiveShadow = true; eg.add(sti);
-      skilt(eg, ['🌧️ Åkeren', 'Her regner matdyrene'], 5.4, 0, e.z0 - 1.6, Math.PI, '#ffe9a8');
+      // Åkeren-skiltet er tatt bort (Even 12.11.2026: «Åker skilte kan tas bort»)
     }
     // Låvevariantene står med fronten mot tunet (+z), slik at port, høyluke og vinduer synes fra gården og stien
     const LVX = -BX / 2 - 11.5, LVZ = -5.5;   // litt nærmere tunet enn den gamle låven, så bakhjørnet holder seg innenfor gjerdet
@@ -727,9 +740,9 @@
     skal(8, gg => { if (!(NY && byggPaaTun('taarn', gg, -BX / 2 - 15, 14, 0.3))) taarn(gg, -BX / 2 - 15, 14); });
     // Selve gårdsbygningen
     etasje(g, 0);
-    skal(3, gg => { etasje(gg, 1); spiral(gg, 1); });
-    skal(6, gg => { etasje(gg, 2); spiral(gg, 2); });
-    skal(9, gg => { etasje(gg, 3); spiral(gg, 3); skilt(gg, ['🏁 Topp', 'Takterrasse (mål)'], 0, 3 * EH + DEKKE, -HZ + 0.6, 0, '#ffd23f'); flagg(gg, HX - 0.5, 3 * EH + DEKKE, -HZ + 0.5, '#2f80ed'); });
+    skal(3, gg => { etasje(gg, 1); spiral(gg, 1, n < 6); });
+    skal(6, gg => { etasje(gg, 2); spiral(gg, 2, n < 9); });
+    skal(9, gg => { etasje(gg, 3); spiral(gg, 3, true); skilt(gg, ['🏁 Topp', 'Takterrasse (mål)'], 0, 3 * EH + DEKKE, -HZ + 0.6, 0, '#ffd23f'); flagg(gg, HX - 0.5, 3 * EH + DEKKE, -HZ + 0.5, '#2f80ed'); });
     if (n >= 10) { for (let e = 1; e <= 3; e++) boks(g, BX + 0.6, 0.25, BZ + 0.6, 0, e * EH + 0.05, 0, M('#ffd23f', 0.3, { metalness: 0.5 })); for (let i = 0; i < 8; i++) flagg(g, (i - 3.5) * 2.2, 3 * EH + 1.2, BZ / 2 + 0.3, ['#ff5e5e', '#ffd23f', '#54c7ff', '#7ad66b'][i % 4]).scale.set(0.4, 0.6, 1); }
     // Faste deler slås sammen per materiale (etasje for etasje), så hele gården koster få tegnekall
     const flett = forelder => [...forelder.children].forEach(c => {
@@ -852,6 +865,10 @@
       }
       forrige = q;
     }
+    // Enden av den øverste rampa er stengt med rekkverk (Even 12.11.2026)
+    const s2 = SPOR.p.filter(q => q[3] <= maxD + 0.01).slice(-2);
+    if (s2.length === 2) { const [a, q] = s2, tx = q[0] - a[0], tz = q[1] - a[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l;
+      leg(q[0] - nx * W / 2, q[1] - nz * W / 2, q[0] + nx * W / 2, q[1] + nz * W / 2, q[4]); }
   }
   const krysser = (ax, az, bx, bz, cx, cz, dx, dz) => { const d = (bx - ax) * (dz - cz) - (bz - az) * (dx - cx); if (Math.abs(d) < 1e-9) return false; const t = ((cx - ax) * (dz - cz) - (cz - az) * (dx - cx)) / d, u = ((cx - ax) * (bz - az) - (cz - az) * (bx - ax)) / d; return t >= 0 && t <= 1 && u >= 0 && u <= 1; };
   function blokkert(x0, z0, x1, z1, y) {

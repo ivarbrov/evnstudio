@@ -375,3 +375,10 @@ Uten flagget er fordelingen, lagringen og spillet som før. B3 (uendrede sjelden
   - På lav og middels kvalitet hentes bare lav detalj (16 filer i stedet for 32), fordi spillet bare bruker lav detalj der.
   - Matdyr-fanen viser Donutku på to bein, slik den ser ut i spillet. På lav og middels kvalitet vises lav detalj også der. Fanen tegnes bare på nytt hvis Donutku eller «Alle» vises, og kameraet beholdes (rettet etter QA 11a7594). I «Nært» flyttes målpunktet til hodet på den nye figuren, mens vinkel og avstand beholdes (QA 6d388ab).
   - `spilltest.mjs` og `rutetest.mjs` lukker Chrome også når skriptet feiler eller avbrytes. `spilltest.mjs` kontrollerer innlastingen etter start.
+
+### Ønsker fra Even 12.11.2026
+- **Donuthull:** «det mangler hull i donuten». Den stående donuten (`mat_smultring`, modus `staa`) har nå større ring, tynnere deig og et tydelig hull. Den er gjort dypere, så den ikke blir flat. Halefestet (`bak`) sitter nede på ringen, så halen ikke stikker gjennom hullet. Ku, gris, hval og hai med donut er eksportert på nytt. Haiens ryggfinne plasseres etter kroppsdybden. Den gamle firbeinte pingvinpiloten med donut er ikke eksportert på nytt.
+- **Armene til Donutkua:** «du må fikse armene til donutkua». Armene er tykkere, kommer ut fra siden av ringen og bøyer seg fram, så de syns forfra (`donut-hull-kontaktark.png`).
+- **Gange:** «pizza kua går veldig rart». Dyr på to bein svinger nå armene fram og tilbake i takt med beina. Før ble begge armene løftet ut til sidene samtidig, som vinger. Ekte vinger (pingvin) flakser som før.
+- **Rekkverk:** «Det mangler rekkverk». Enden av den øverste rampa lukkes med rekkverk, også som vegg for roboten. Den siste biten av ytterkanten, som manglet rekkverk, har fått det.
+- **Åkeren-skiltet** er tatt bort («Åker skilte kan tas bort»).
