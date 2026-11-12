@@ -15,7 +15,7 @@ if (matchMedia('(pointer:coarse)').matches) document.documentElement.classList.a
 addEventListener('pointerdown', e => document.documentElement.classList.toggle('touch', e.pointerType === 'touch'), {passive: true, capture: true});
 
 // Det som er laget i denne versjonen. Resten av nivå 1–10 ligger i data.js og kommer i fase 2–4.
-const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter'], bygg: ['forkvern', 'bakeri', 'meieri', 'fjos'], dyr: ['hone', 'ku'], omrader: ['enga']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
+const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot'], bygg: ['forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken'], dyr: ['hone', 'ku'], omrader: ['enga']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
 
 /* ======================= Lagring (F2, F3) ======================= */
 let s = null, lagringFeilet = false;
@@ -105,6 +105,20 @@ function lagAkerProto() {
       if (k % 3 === 0) d.push({geo: pinneG, m: M4(x, 0.26, z), farge: 0xb08a5a});
       if (moden) for (let b = 0; b < 3; b++) { const a = b * 2.1 + k; d.push({geo: belgG, m: M4(x + Math.cos(a) * 0.17, 0.3 + (0.2 + b * 0.1) * hh, z + Math.sin(a) * 0.17, 0, 0, 0.35), farge: 0xb9e26a}); } });
     PROTO[moden ? 'erter3' : 'erter2'] = samle(d); });
+  // sukkerrør (0.10.0): høye, leddete stilker med lange blader. Modne er høyere og gulgrønne
+  const rorG = new THREE.CylinderGeometry(0.045, 0.055, 1, 6); rorG.translate(0, 0.5, 0); const leddG = new THREE.CylinderGeometry(0.06, 0.06, 0.04, 6);
+  [false, true].forEach(moden => { const d = []; for (let r = 0; r < 4; r++) for (let k = 0; k < 5; k++) for (let st = 0; st < 2; st++) {
+    const px = -STR / 2 + 0.42 + k * 0.56 + st * 0.12 + hash(r, k, 7) * 0.08, pz = -STR / 2 + 0.42 + r * 0.72 + st * 0.1, hh = (moden ? 2.0 : 1.2) * (0.85 + hash(k, r, st) * 0.3), f = moden ? 0x9fbf45 : 0x5fae3a;
+    d.push({geo: rorG, m: M4(px, 0.26, pz, (hash(st, r, k) - 0.5) * 0.12, 0, (hash(k, st, r) - 0.5) * 0.12, 1, hh, 1), farge: f});
+    for (let l = 1; l < 4; l++) d.push({geo: leddG, m: M4(px, 0.26 + hh * l / 4, pz), farge: moden ? 0xc6c25a : 0x4f9a33});
+    for (let b = 0; b < 3; b++) d.push({geo: maisBlad, m: M4(px, 0.26 + hh * (0.55 + b * 0.15), pz, 0, b * 2.4 + k + r, -0.15 - b * 0.1, 1.1, 1, 1), farge: moden ? 0x8fb84a : MAISGR}); }
+    PROTO[moden ? 'sukkerror3' : 'sukkerror2'] = samle(d); });
+  // gulrot (0.10.0): fjærlette grønne topper. Modne viser den oransje toppen av rota i jorda
+  const toppG = new THREE.ConeGeometry(0.035, 0.42, 3); toppG.translate(0, 0.21, 0); const rotG = new THREE.ConeGeometry(0.075, 0.22, 8); rotG.rotateX(Math.PI); rotG.translate(0, 0.02, 0);
+  [false, true].forEach(moden => { const d = []; fure((x, z, r, k) => { const hh = (moden ? 1.1 : 0.75) * (0.85 + hash(x, z, 8) * 0.3);
+      for (let b = 0; b < 6; b++) { const a = b / 6 * 6.28 + k; d.push({geo: toppG, m: M4(x, 0.3, z, Math.sin(a) * 0.45, 0, Math.cos(a) * 0.45, 1, hh, 1), farge: b % 2 ? 0x5cb346 : 0x4aa23a}); }
+      if (moden) d.push({geo: rotG, m: M4(x, 0.3, z), farge: 0xf08a24}); });
+    PROTO[moden ? 'gulrot3' : 'gulrot2'] = samle(d); });
 }
 function lagAkerGruppe(f) {
   const g = new THREE.Group(); scene.add(g);
@@ -179,6 +193,47 @@ function lagMeieri() {   /* 0.9.8: hvitt meieri med blått tak, melkespann og en
   mesh(new THREE.CylinderGeometry(0.37, 0.37, 0.2, 16), blaa, 0, 0.45, 0, flaske);
   const spann = fm(0xb8c2c8, 0.35); [-1.15, -0.8].forEach((x, i) => { mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.5, 14), spann, x, 0.25, 1.65 - i * 0.12, g); mesh(new THREE.CylinderGeometry(0.11, 0.17, 0.14, 14), spann, x, 0.56, 1.65 - i * 0.12, g); });
   const sk = skiltTekst('Meieri', 1.5); sk.position.set(0, 2.45, 1.33); g.add(sk);
+  bake(g); return g;
+}
+function lagSukkerverk() {   /* 0.10.0: lyst bygg med høy pipe og en sukkersekk */
+  const g = new THREE.Group(), lys = fm(0xe9d9b6, 0.85);
+  mesh(teksturUV(new THREE.BoxGeometry(3.0, 2.1, 2.6), 1.3, 0.9), lys, 0, 1.15, 0, g);
+  mesh(avrundetBoks(3.2, 0.2, 2.8, 0.05, 1), fm(0xb9b0a2, 0.9), 0, 0.1, 0, g);
+  tak(g, 3.2, 2.6, 2.2, 1.0, MAT.tak2);
+  [[-1.5], [1.5]].forEach(([x]) => mesh(avrundetBoks(0.12, 2.1, 0.12, 0.02, 1), MAT.hvitTrim, x, 1.15, 1.33, g));
+  mesh(teksturUV(new THREE.BoxGeometry(0.8, 1.35, 0.08), 0.35, 0.5), MAT.lysPlank, -0.65, 0.8, 1.32, g);
+  mesh(new THREE.BoxGeometry(0.8, 0.65, 0.06), MAT.glass, 0.7, 1.3, 1.32, g);
+  mesh(new THREE.CylinderGeometry(0.22, 0.28, 2.0, 12), fm(0xb5553a, 0.9), -0.9, 3.4, -0.5, g); mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.16, 12), fm(0x8f3f2b, 0.9), -0.9, 4.42, -0.5, g);
+  const sekk = mesh(new THREE.SphereGeometry(0.34, 12, 10), fm(0xf7f3ea, 0.95), 1.2, 0.4, 1.7, g); sekk.scale.set(1, 1.15, 0.85);
+  [[0.9, 1.75], [1.25, 1.95]].forEach(([x, z]) => mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.1, 6), fm(0x7fb04a, 0.8), x, 0.55, z, g).rotation.z = 0.35);   /* sukkerrør lent mot veggen */
+  const sk = skiltTekst('Sukkerverk', 1.7); sk.position.set(0, 2.5, 1.33); g.add(sk);
+  bake(g); return g;
+}
+function lagPopkorn() {   /* 0.10.0: popkornvogn med rødt og hvitt tak og en glassboks full av popkorn */
+  const g = new THREE.Group(), rod = fm(0xd8402f, 0.7), hvit = fm(0xfaf6ee, 0.8);
+  mesh(avrundetBoks(2.4, 1.0, 1.6, 0.1, 2), rod, 0, 0.9, 0, g);
+  [[-0.9, 0.55], [0.9, 0.55], [-0.9, -0.55], [0.9, -0.55]].forEach(([x, z]) => { const h = mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.14, 14), fm(0x3b3b3b, 0.6), x, 0.3, z * 1.2, g); h.rotation.x = Math.PI / 2; });
+  mesh(new THREE.BoxGeometry(1.5, 1.0, 1.1), MAT.glass, 0, 1.9, 0, g);
+  for (let i = 0; i < 26; i++) mesh(new THREE.SphereGeometry(0.11, 6, 5), fm(0xfff1c2, 0.8), -0.6 + (i % 6) * 0.24, 1.5 + Math.floor(i / 6) * 0.12, -0.35 + (i % 4) * 0.22, g);
+  [[-0.78, 0.58], [0.78, 0.58], [-0.78, -0.58], [0.78, -0.58]].forEach(([x, z]) => mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.5, 6), hvit, x, 2.15, z, g));
+  for (let i = 0; i < 6; i++) { const m = mesh(new THREE.ConeGeometry(1.5, 0.7, 6, 1, false, i / 6 * Math.PI * 2, Math.PI / 3), i % 2 ? hvit : rod, 0, 3.25, 0, g); m.rotation.y = 0; }
+  const sk = skiltTekst('Popkorn', 1.4); sk.position.set(0, 1.0, 0.82); g.add(sk);
+  bake(g); return g;
+}
+function lagKjokken() {   /* 0.10.0: gårdskjøkken med gul vegg, rødt tak, pipe og et lite bord med pannekaker */
+  const g = new THREE.Group(), gul = fm(0xf2d27a, 0.85);
+  mesh(teksturUV(new THREE.BoxGeometry(3.4, 2.1, 2.8), 1.4, 0.9), gul, 0, 1.15, 0, g);
+  mesh(avrundetBoks(3.6, 0.2, 3.0, 0.05, 1), fm(0xb9b0a2, 0.9), 0, 0.1, 0, g);
+  tak(g, 3.6, 2.8, 2.2, 1.15, MAT.tak);
+  [[-1.7], [1.7]].forEach(([x]) => mesh(avrundetBoks(0.12, 2.1, 0.12, 0.02, 1), MAT.hvitTrim, x, 1.15, 1.43, g));
+  mesh(teksturUV(new THREE.BoxGeometry(0.8, 1.35, 0.08), 0.35, 0.5), MAT.rodPlank, -0.8, 0.8, 1.42, g);
+  mesh(new THREE.BoxGeometry(0.9, 0.7, 0.06), MAT.glass, 0.75, 1.3, 1.42, g);
+  for (let i = 0; i < 5; i++) { const m = mesh(new THREE.BoxGeometry(0.24, 0.05, 0.55), fm(i % 2 ? 0xffffff : 0x3f8f4a, 0.8), 0.33 + i * 0.21, 1.9, 1.65, g); m.rotation.x = 0.45; }
+  mesh(avrundetBoks(0.5, 1.4, 0.5, 0.05, 1), fm(0xb5553a, 0.9), -1.0, 3.2, -0.5, g);
+  const bord = new THREE.Group(); bord.position.set(1.2, 0, 2.0); g.add(bord); mesh(avrundetBoks(0.9, 0.08, 0.6, 0.02, 1), MAT.lysPlank, 0, 0.72, 0, bord);
+  [[-0.38, -0.24], [0.38, -0.24], [-0.38, 0.24], [0.38, 0.24]].forEach(([x, z]) => mesh(new THREE.BoxGeometry(0.06, 0.7, 0.06), MAT.brunPlank, x, 0.36, z, bord));
+  for (let i = 0; i < 4; i++) mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.04, 14), fm(0xe0a24a, 0.7), 0, 0.8 + i * 0.045, 0, bord);
+  const sk = skiltTekst('Kjøkken', 1.5); sk.position.set(0, 2.5, 1.43); g.add(sk);
   bake(g); return g;
 }
 const FJOS_BEITE = [-3.85, 3.85, -2.7, 5.45];   /* 0.9.9 (Ivar 12.11): større beite, 8 × 8,5 m */   /* beitet innenfor gjerdet, lokalt: x0, x1, z0, z1 */
@@ -486,10 +541,10 @@ function oppdaterKunde(dt, t) {
 /* ======================= Ting på gården ======================= */
 // Alt spilleren kan trykke på. Åkre, fôrkvern, bakeri og silo kan flyttes. Låven, hønsehuset, beitet og markedsbua står fast i denne versjonen.
 const ting = new Map();
-const FOT = {forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], silo: [3.0, 3.0], tavle: [2.2, 1.0]};
+const FOT = {forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], sukkerverk: [3.6, 3.4], popkorn: [3.0, 2.8], kjokken: [4.0, 3.8], silo: [3.0, 3.0], tavle: [2.2, 1.0]};
 const STANDARD = {
   akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45]],
-  forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], silo: [-0.4, -10.0], tavle: [-2.4, 8.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
+  forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], silo: [-0.4, -10.0], tavle: [-2.4, 8.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
 };
 const GARD = {x0: -15.55, x1: 13.6, z0: -11.55, z1: 10.2}, GARD_X1 = 13.6, GARD_X1_ENGA = 22.0;   /* 0.9.8: gården blir bredere når Enga er kjøpt */
 let hinder = [];   // faste hindringer: [x0, x1, z0, z1]
@@ -553,7 +608,7 @@ function plasserAlt() {
   s.plasser.std = {x: 4, z: 0, r: 0};
   synkKyr();
 }
-const MODELL = {forkvern: lagForkvern, bakeri: lagBakeri, meieri: lagMeieri, fjos: lagFjos}, HOYDE = {forkvern: 3.6, bakeri: 4.2, meieri: 4.2, fjos: 4.6};
+const MODELL = {forkvern: lagForkvern, bakeri: lagBakeri, meieri: lagMeieri, fjos: lagFjos, sukkerverk: lagSukkerverk, popkorn: lagPopkorn, kjokken: lagKjokken}, HOYDE = {forkvern: 3.6, bakeri: 4.2, meieri: 4.2, fjos: 4.6, sukkerverk: 4.8, popkorn: 4.0, kjokken: 4.4};
 // Kyrne på beitet ved fjøset (0.9.8). Beitet følger fjøset når det flyttes eller snus.
 const kyr = []; let fjosBinge = null;
 function synkKyr() {
@@ -1007,7 +1062,7 @@ function visByggMeny() {
     if (sb && sb.eid) return rad(B.ikon, B.navn, 'Bygd ✅', `<button class="knapp lys" data-vis="${b}">Vis</button>`);
     if (B.nivaa > s.nivaa) return rad(B.ikon, B.navn, `🔒 Nivå ${B.nivaa} · ${B.pris} 🪙`, '');
     if (!I_SPILLET.bygg.includes(b)) return rad(B.ikon, B.navn, `${B.pris} 🪙 · kommer i en senere versjon`, '');
-    if (!ting.get(b)) return rad(B.ikon, B.navn, `${B.pris} 🪙 · ingen ledig plass. Kjøp Enga først 🌿`, eng ? '' : '<button class="knapp lys" data-vis="enga">Enga</button>');
+    if (!ting.get(b)) return rad(B.ikon, B.navn, eng ? `${B.pris} 🪙 · ingen ledig plass. Flytt noe for å få plass ✋` : `${B.pris} 🪙 · ingen ledig plass. Kjøp Enga først 🌿`, eng ? '' : '<button class="knapp lys" data-vis="enga">Enga</button>');
     return rad(B.ikon, B.navn, `${B.pris} 🪙${s.mynter < B.pris ? ' · du har ' + s.mynter : ''}`, `<button class="knapp gronn" data-vis="${b}">Bygg</button>`); }));
   DYREHUS.forEach(h => rader.push(h.bygd && h.bygd() ? rad(h.ikon, h.navn, 'Bygd ✅', '<button class="knapp lys" data-vis="honsehus">Vis</button>')
     : rad(h.ikon, h.navn, h.nivaa <= s.nivaa ? 'Kommer i neste versjon av spillet' : `🔒 Nivå ${h.nivaa}${h.pris ? ' · ' + h.pris + ' 🪙' : ''}`, '')));   /* 0.9.3: ikke vis lås og nivå når nivået er nådd, men bygget ikke er laget ennå */

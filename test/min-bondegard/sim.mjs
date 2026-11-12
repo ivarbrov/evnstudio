@@ -32,7 +32,9 @@ function kjor(profil, frø) {
     g(L.mat(s, 'hone', naa)); g(L.mat(s, 'ku', naa));
     // 0.9.8: Enga, fjøs og meieri kjøpes så snart det er råd, kufôr lages når kyrne trenger det, meieriet lager det bestillingene vil ha
     if (s.nivaa >= 5 && !s.omrader.enga && s.mynter >= 300 + (s.nivaa >= 6 ? 0 : 100)) g(L.kjopOmrade(s, 'enga'));
-    for (const b of ['fjos', 'meieri']) if (s.omrader.enga && s.bygg[b] && !s.bygg[b].eid && s.mynter >= D.bygg[b].pris) g(L.kjopBygg(s, b));
+    for (const b of ['fjos', 'meieri', 'sukkerverk', 'popkorn', 'kjokken']) if (s.omrader.enga && s.bygg[b] && !s.bygg[b].eid && s.mynter >= D.bygg[b].pris + 50) g(L.kjopBygg(s, b));
+    // 0.10.0: lag det bestillingene vil ha i alle produksjonsbygg (først mellomvarer som sukker)
+    for (const v of ['sukker', 'maisbrod', 'popkorn', 'pannekaker', 'ost']) { const o = D.oppskrifter[v], b = s.bygg[o.bygg]; if (b && b.eid && ((vil[v] || 0) + (raa[v] || 0)) > (s.lager[v] || 0) + b.ko.filter(j => j.vare === v).length) g(L.produser(s, o.bygg, v, naa)); }
     if (s.dyr.ku && (s.lager.kufor || 0) < 2) g(L.produser(s, 'forkvern', 'kufor', naa));
     if (s.bygg.meieri && s.bygg.meieri.eid) for (const v of ['smor', 'flote']) if ((vil[v] || 0) > (s.lager[v] || 0)) g(L.produser(s, 'meieri', v, naa));
     if (s.bygg.bakeri && !s.bygg.bakeri.eid && s.mynter >= D.bygg.bakeri.pris) g(L.kjopBygg(s, 'bakeri'));
@@ -54,7 +56,7 @@ function kjor(profil, frø) {
   }
   return { nivaaTid, maksLedig, fast, lengstBest, levert, byttet };
 }
-const I = ['hvete', 'mais', 'erter'];   // avlingene som finnes i spillet
+const I = ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot'];   // avlingene som finnes i spillet
 const med = a => { a = a.slice().sort((x, y) => x - y); return a.length ? a[Math.floor(a.length / 2)] : NaN; };
 for (const profil of ['aktiv', 'barn']) {
   const res = Array.from({length: N}, (_, i) => kjor(profil, i + 1));
