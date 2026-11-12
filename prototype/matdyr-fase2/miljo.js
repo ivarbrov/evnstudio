@@ -29,8 +29,8 @@
   function lagreKvalitet(k) { try { localStorage.setItem('evn-grafikk-kvalitet', k); } catch (e) { } }
 
   // ---------- Grafisk profil ----------
-  // ?profil=mb prøver Min Bondegård 0.4 sin profil i Matdyr: lys uten tonemapping, kalibrerte farger, gradert himmel,
-  // og teksturerte materialer (planker, maling, stein, tak, høy) med svakt relieff. Ikke standard ennå.
+  // Min Bondegård 0.4 sin profil i Matdyr: lys uten tonemapping, kalibrerte farger, gradert himmel,
+  // og teksturerte materialer (planker, maling, stein, tak, høy) med svakt relieff. Standard fra 12.11.2026.
   // Even 12.11.2026: «jeg vil at grafikken i spillet skal være likt som grafikken i bondegård spillet». Min Bondegård-profilen er derfor standard i prototypen. ?profil=standard gir den gamle.
   const PROFIL = new URLSearchParams(location.search).get('profil') === 'standard' ? 'standard' : 'mb';
   function himmelTekstur(topp, hor) { const c = document.createElement('canvas'); c.width = 4; c.height = 256; const x = c.getContext('2d'); const g = x.createLinearGradient(0, 0, 0, 256); g.addColorStop(0, topp); g.addColorStop(1, hor); x.fillStyle = g; x.fillRect(0, 0, 4, 256); const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; return t; }

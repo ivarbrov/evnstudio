@@ -49,7 +49,8 @@ console.log(JSON.stringify(res, null, 1)); console.log(feil.length ? feil : 'ing
 // Rampeenden (QA c1ff190): gå mot enden av den øverste rampa rett fram og på skrå, med og uten hopp. Roboten skal aldri falle ned.
 const evP = async x => { const r = await s('Runtime.evaluate', { expression: x, returnByValue: true, awaitPromise: true }); if (r.result.exceptionDetails) throw new Error(JSON.stringify(r.result.exceptionDetails).slice(0, 600)); return r.result.result.value; };
 const hj = await evP(`(async () => { const ut = [];
-  for (const niva of [3, 6, 9]) for (const hopp of [false, true]) for (const vink of [0, 0.3, 0.6, 1.2, -0.6]) {
+  for (const niva of [3, 6, 9]) for (const [hopp, grad, fart] of [[false, 0, 1], [false, 5, 1], [false, 10, 1], [false, 17, 1], [false, 31, 1], [false, -31, 1], [true, 5, 1], [true, 17, 1], [true, 31, 1], [false, 60, 0.5], [false, 80, 0.5], [false, 60, 0.25], [false, 70, 0.25], [false, 5, 0.25]]) {
+    const vink = Math.tan(grad * Math.PI / 180);   // grader inn mot huset, også små vinkler og lav joystickfart (QA ef91746)
     EVNVis({ fane: 'spill', niva }); await new Promise(r => setTimeout(r, 200));
     const S = EVNSpor, sp = EVNSpill, R = EVNRobot(), b = EVNBane, E = niva >= 9 ? 3 : niva >= 6 ? 2 : 1; b.teta = 0;
     const pts = S.p.filter(q => q[3] <= S.del[E][1] + 0.01), q = pts[pts.length - 1], a = pts[pts.length - 6];
@@ -57,11 +58,22 @@ const hj = await evP(`(async () => { const ut = [];
     R.position.set(a[0], a[4], a[1]); sp.paaBakken = true; for (let i = 0; i < 20; i++) EVNSteg(1 / 30);
     const fx = -Math.sin(b.teta), fz = -Math.cos(b.teta), rx = Math.cos(b.teta), rz = -Math.sin(b.teta);
     let dx = ux + uz * vink, dz = uz - ux * vink; const m = Math.hypot(dx, dz); dx /= m; dz /= m; let miny = 99;
-    for (let i = 0; i < 150; i++) { sp.inn = { x: dx * rx + dz * rz, z: dx * fx + dz * fz }; if (hopp && i % 20 === 0) sp.hopp = true; EVNSteg(1 / 30); miny = Math.min(miny, R.position.y); }
+    for (let i = 0; i < 150 / fart; i++) { sp.inn = { x: (dx * rx + dz * rz) * fart, z: (dx * fx + dz * fz) * fart }; if (hopp && i % 20 === 0) sp.hopp = true; EVNSteg(1 / 30); miny = Math.min(miny, R.position.y); }
     sp.inn = { x: 0, z: 0 }; for (let i = 0; i < 60; i++) EVNSteg(1 / 30);
-    ut.push({ niva, hopp, vink, miny: +miny.toFixed(2), fall: miny < q[4] - 1 });
+    ut.push({ niva, hopp, grad, fart, miny: +miny.toFixed(2), fall: miny < q[4] - 1 });
+  }
+  // Langs husveggen innvendig forbi døråpningen øverst: ingen usynlig vegg skal stoppe roboten (QA ef91746)
+  for (const niva of [3, 6, 9]) { EVNVis({ fane: 'spill', niva }); await new Promise(r => setTimeout(r, 200));
+    const sp = EVNSpill, R = EVNRobot(), b = EVNBane, g = EVNGeo, E = niva >= 9 ? 3 : niva >= 6 ? 2 : 1, ap = EVNVei.apning[E], y = E * g.EH + g.DEKKE; b.teta = 0;
+    const langsX = ap.side === 'f' || ap.side === 'b', fast = { h: g.HX - 0.6, v: -g.HX + 0.6, f: g.HZ - 0.6, b: -g.HZ + 0.6 }[ap.side];
+    const fra = Math.min(ap.fra, ap.til) - 1.5, mal = Math.max(ap.fra, ap.til) + 1.5;
+    if (langsX) R.position.set(fra, y, fast); else R.position.set(fast, y, fra); sp.paaBakken = true; for (let i = 0; i < 20; i++) EVNSteg(1 / 30);
+    const fx = -Math.sin(b.teta), fz = -Math.cos(b.teta), rx = Math.cos(b.teta), rz = -Math.sin(b.teta), dx = langsX ? 1 : 0, dz = langsX ? 0 : 1;
+    const pos = () => langsX ? R.position.x : R.position.z;
+    for (let i = 0; i < 300 && mal - pos() > 0.3; i++) { sp.inn = { x: dx * rx + dz * rz, z: dx * fx + dz * fz }; EVNSteg(1 / 30); }
+    sp.inn = { x: 0, z: 0 }; ut.push({ niva, innvendig: ap.side, kom: mal - pos() <= 0.5, til: +pos().toFixed(2), fall: R.position.y < y - 1 });
   }
   return ut; })()`);
-const falt = hj.filter(h => h.fall);
-console.log((falt.length ? 'FEIL ' : 'OK   ') + 'rampeenden: roboten faller ikke ned (' + hj.length + ' forsøk' + (falt.length ? ', fall: ' + JSON.stringify(falt) : '') + ')'); if (falt.length) process.exitCode = 1;
+const falt = hj.filter(h => h.fall || h.kom === false);
+console.log((falt.length ? 'FEIL ' : 'OK   ') + 'rampeenden og døråpningen: roboten faller ikke ned og stoppes ikke innvendig (' + hj.length + ' forsøk' + (falt.length ? ', fall: ' + JSON.stringify(falt) : '') + ')'); if (falt.length) process.exitCode = 1;
 ws.close(); p.kill(); process.exit(process.exitCode || 0);
