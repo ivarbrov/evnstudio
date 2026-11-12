@@ -29,7 +29,7 @@
     o.base = (Array.isArray(s.base) ? s.base : []).slice(0, plasserApne(o)).map(v => Number.isInteger(v) && v >= 0 && v < COMBOS.length ? v : -1);
     o.disc = (Array.isArray(s.disc) ? s.disc : []).filter(v => Number.isInteger(v) && v >= 0 && v < COMBOS.length);
     o.bestilling = [0, 10, 15].includes(s.bestilling) ? s.bestilling : 15;
-    if (Number.isFinite(s.kasse) && s.kasse > 0) o.kasse = s.kasse;   // penger som venter i innsamlingssonen
+    if (Number.isFinite(s.kasse) && s.kasse > 0) o.kasse = Math.min(s.kasse, 1e15);   // penger som venter i innsamlingssonen
     if (ERC) {   // arvet kategori per plass (streng bestefarsregel). Bare gyldige avvik fra den nye tabellen beholdes.
       const a = s.arv && typeof s.arv === 'object' && !Array.isArray(s.arv) ? s.arv : {};
       for (const [k, r] of Object.entries(a)) { const i = +k, ci = o.base[i]; if (/^\d+$/.test(k) && ci >= 0 && Number.isInteger(r) && r >= 0 && r < R.length && r !== COMBOS[ci].r) o.arv[i] = r; }
@@ -510,7 +510,7 @@
   // Inntekten samles i en kasse. Går roboten inn i sonen til høyre for gangen foran gården, går pengene over til lommeboka.
   // Én sone for hele gården, ikke en knapp per plass. ?samle=0 gir automatisk inntekt som før.
   const SAMLE = new URLSearchParams(location.search).get('samle') !== '0';
-  const samleG = new T.Group(); I.scene.add(samleG); let samleNokkel = '', samleSkilt = null, samleSist = -1, paaSamle = false;
+  const samleG = new T.Group(); I.scene.add(samleG); let samleNokkel = '', samleSkilt = null, samleSist = -1, paaSamle = false, samleTid = -9, samleSum = 0;
   function samleOmr() { const g = window.EVNGeo, d = I.gd.gjerdeD || 22; if (!g) return null; const z0 = g.HZ + 1.4, z1 = Math.min(d - 1.6, g.HZ + 7.4);
     return { x0: 2.4, x1: 7.4, z0, z1: Math.max(z1, z0 + 2.5) }; }
   function byggSamle() {
@@ -535,13 +535,14 @@
     samleSkilt.material.map.needsUpdate = true;
   }
   const iSamle = p => { const o = SAMLE ? samleOmr() : null; return !!o && p.y < 1.5 && p.x > o.x0 && p.x < o.x1 && p.z > o.z0 && p.z < o.z1; };
-  function sjekkSamle(t) {
+  function sjekkSamle(t, dt = 0) {
     byggSamle(); const r = I.robot(); if (!r || !samleG.children[0]) return;
     samleG.children[0].material.opacity = (S.kasse || 0) >= 1 ? 0.8 + Math.sin(t * 4) * 0.2 : 0.6;
     if (samleSkilt) samleSkilt.position.y = 2.4 + Math.sin(t * 2) * 0.12;
     const inne = iSamle(r.position);
-    if (inne && !paaSamle && (S.kasse || 0) >= 1) { const v = Math.floor(S.kasse); S.penger += v; S.kasse -= v; melding('💰 Du hentet ' + fmt(v) + ' penger!', 3); lagre(); }
-    paaSamle = inne; tegnSamleSkilt();
+    // Henter når roboten kommer inn, og fortsetter å hente mens den står i sonen (QA 41034b3)
+    if (inne && (S.kasse || 0) >= 1 && (!paaSamle || samleTid <= 0)) { const v = Math.floor(S.kasse); S.penger += v; S.kasse -= v; samleSum = paaSamle ? samleSum + v : v; samleTid = 1; melding('💰 Du hentet ' + fmt(samleSum) + ' penger!', 3); if (!paaSamle) lagre(); }
+    samleTid -= dt; paaSamle = inne; tegnSamleSkilt();
   }
 
   // ---------- Leveringsfeltet ----------
@@ -850,12 +851,12 @@
   I.krok.steg = (dt, t) => {
     if (I.sp.pause) return;
     oppdaterFelt(dt, t);
-    if (SAMLE) S.kasse = (S.kasse || 0) + inntekt() * dt; else S.penger += inntekt() * dt;
+    if (SAMLE) S.kasse = (S.kasse || 0) + inntekt() * dt; else { if (S.kasse) { S.penger += S.kasse; S.kasse = 0; } S.penger += inntekt() * dt; }   // ?samle=0: penger i kassa går til lommeboka
     const r = I.robot();
     if (bar && bar.topp) bar.topp.oppdater(t); for (const tp of basePynt) tp.oppdater(t);
     if (bar && bar.flyr) flyBar(dt);
     else if (bar && r) { bar.m.position.set(r.position.x, r.position.y + 3.3, r.position.z); bar.m.rotation.y = r.rotation.y; if (bar.m.userData.fig && !I.REDUSERT) I.animerNy(bar.m.userData.fig, t, false); const i = naerPlass(r.position, true, 1.4); if (i >= 0) settInn(i); }
-    handling = r ? finnHandling() : null; visHandling(); if (r) { oppdaterMerker(t); sjekkLevFelt(t); sjekkSamle(t); }
+    handling = r ? finnHandling() : null; visHandling(); if (r) { oppdaterMerker(t); sjekkLevFelt(t); sjekkSamle(t, dt); }
     if ((kortTid -= dt) <= 0) { kortTid = 0.25; oppdaterKort(); oppdaterPanel(); }
     if ((lagreTid -= dt) <= 0) { lagreTid = 5; lagre(); }
     if (meldingTid > 0 && (meldingTid -= dt) <= 0) $('melding').hidden = true;

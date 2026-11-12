@@ -183,10 +183,12 @@ const sa = await ev(`(async () => { const P = EVNProto, S0 = JSON.parse(JSON.str
   const R = EVNRobot(), K = EVNIntern.krok; R.position.set(0, 0, 12); const p0 = P.S().penger; for (let i = 0; i < 90; i++) { EVNSteg(1 / 30); K.steg(1 / 30, i / 30); }
   const ut = { samle: P.SAMLE, kasse: P.S().kasse, vokst: +(P.S().penger - p0).toFixed(2) };
   const o = P.samleOmr(); if (o && P.SAMLE) { const k = P.S().kasse; R.position.set((o.x0 + o.x1) / 2, 0, (o.z0 + o.z1) / 2); for (let i = 0; i < 3; i++) { EVNSteg(1 / 30); K.steg(1 / 30, 3 + i / 30); } ut.kasse = k; }
-  ut.etter = P.S().penger - p0; ut.kasseEtter = P.S().kasse; ut.lagret = (JSON.parse(localStorage.getItem(P.NOKKEL)) || {}).penger === P.S().penger;
+  ut.etter = P.S().penger - p0; ut.kasseEtter = P.S().kasse;
+  ut.lagret = (JSON.parse(localStorage.getItem(P.NOKKEL)) || {}).penger === P.S().penger;
+  if (o && P.SAMLE) { for (let i = 0; i < 60; i++) { EVNSteg(1 / 30); K.steg(1 / 30, 4 + i / 15); } ut.kasseStaar = +P.S().kasse.toFixed(1); }   // står i sonen: hentes fortsatt
   return ut; })()`);
 if (/[?&]samle=0/.test(process.argv[2] || '')) ok('?samle=0: inntekten går rett i lommeboka (' + JSON.stringify(sa) + ')', !sa.samle && sa.vokst > 0);
-else ok('innsamlingssonen: inntekten samles i kassa og hentes i sonen (' + JSON.stringify(sa) + ')', sa.samle && sa.kasse > 0 && sa.vokst === 0 && sa.etter >= Math.floor(sa.kasse) && sa.kasseEtter < sa.kasse / 4 && sa.lagret);
+else ok('innsamlingssonen: inntekten samles i kassa og hentes i sonen (' + JSON.stringify(sa) + ')', sa.samle && sa.kasse > 0 && sa.vokst === 0 && sa.etter >= Math.floor(sa.kasse) && sa.kasseEtter < sa.kasse / 4 && sa.kasseStaar < sa.kasse / 4 && sa.lagret);
 // Hulveien (Even 12.11.2026): matdyr som ikke blir tatt, går ned skråningen øst for porten, inn i tunnelen og forsvinner. ?groft=0 gir den gamle utgangen.
 const gr = await ev(`(async () => { const P = EVNProto, I = EVNIntern, K = I.krok; EVNVis({ fane: 'spill' }); const R = EVNRobot(); R.position.set(-20, 0, 12);
   for (const ci of [127, 52, 508, 700]) P.slippNed(ci);

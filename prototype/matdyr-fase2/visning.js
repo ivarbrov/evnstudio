@@ -278,7 +278,7 @@
   function visKortMatdyr() {
     if (md.visning === 'alle') { $('kort').innerHTML = '<h1>Alle fem</h1>I spillstørrelse ved siden av EVN-roboten. Størrelsen følger sjeldenheten, som i spillet.<div class="liten">Dra for å snu. Hjul eller to fingre for å zoome.</div>'; return; }
     const f = md.fig, [rn, rc] = RAR[f.sj];
-    $('kort').innerHTML = '<h1>' + f.navn + '</h1><div><span class="sj" style="color:' + rc + '">' + rn + '</span> · ' + f.mat + ' + ' + f.dyr + (f.ci != null ? ' · ID ' + f.ci : '') + '</div><div>' + (NY_INFO[f.nokkel] || INFO[f.nokkel] || (TOBEIN_ID[f.nokkel] ? 'Går på to bein (Even 10.–11.11.2026). Samme ID, sjeldenhet og verdi som før.' : PILOT_ID[f.nokkel] ? 'Figurpilot: laget med det modulære systemet (dyresett + matkropp).' : '')) + '</div><div class="liten">Dra for å snu. Hjul eller to fingre for å zoome.</div>';
+    $('kort').innerHTML = '<h1>' + f.navn + '</h1><div><span class="sj" style="color:' + rc + '">' + rn + '</span> · ' + f.mat + ' + ' + f.dyr + (f.ci != null ? ' · ID ' + f.ci : '') + '</div><div>' + (NY_INFO[f.nokkel] || INFO[f.nokkel] || (TOBEIN_ID[f.nokkel] ? 'Går på to bein (Even 10.–12.11.2026). Samme ID, sjeldenhet og verdi som før.' : PILOT_ID[f.nokkel] ? 'Figurpilot: laget med det modulære systemet (dyresett + matkropp).' : '')) + '</div><div class="liten">Dra for å snu. Hjul eller to fingre for å zoome.</div>';
   }
 
   // =====================================================================
@@ -885,11 +885,19 @@
       if (q[3] > maxD + 0.01) break;
       if (forrige) {
         const tx = q[0] - forrige[0], tz = q[1] - forrige[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l, y = Math.min(q[4], forrige[4]);
-        leg(forrige[0] - nx * W / 2, forrige[1] - nz * W / 2, q[0] - nx * W / 2, q[1] - nz * W / 2, y);        // ytterkant
+        // Ytterkanten forlenges 0,2 m i hver ende, så segmentene overlapper i svingene og ikke lager glipper (QA 41034b3)
+        const ux = tx / l * 0.2, uz = tz / l * 0.2;
+        leg(forrige[0] - nx * W / 2 - ux, forrige[1] - nz * W / 2 - uz, q[0] - nx * W / 2 + ux, q[1] - nz * W / 2 + uz, y);        // ytterkant
         const paaRepos = Object.values(SPOR.repos).some(([a, b]) => q[3] >= a - 0.3 && q[3] <= b + 0.3);
         if (!paaRepos && y > 0.6) leg(forrige[0] + nx * W / 2, forrige[1] + nz * W / 2, q[0] + nx * W / 2, q[1] + nz * W / 2, y);   // innerkant
       }
       forrige = q;
+    }
+    // Tverrvegger i glipen mellom innerkanten og husveggen ved hver ende av reposene, så roboten ikke kan gå ut av gulvet i glipen (QA 41034b3)
+    for (const [ra, rb] of Object.values(SPOR.repos)) for (const d of [ra - 0.3, rb + 0.3]) {
+      if (d > maxD + 0.01 || d < 0) continue; const i = SPOR.p.findIndex(q => q[3] >= d); if (i < 1) continue;
+      const a = SPOR.p[i - 1], q = SPOR.p[i], tx = q[0] - a[0], tz = q[1] - a[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l;
+      leg(q[0] + nx * (W / 2 - 0.02), q[1] + nz * (W / 2 - 0.02), q[0] + nx * (W / 2 + 0.6), q[1] + nz * (W / 2 + 0.6), q[4]);
     }
     // Enden av den øverste rampa er stengt med rekkverk (Even 12.11.2026)
     const s2 = SPOR.p.filter(q => q[3] <= maxD + 0.01).slice(-2);

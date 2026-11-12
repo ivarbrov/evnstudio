@@ -73,6 +73,21 @@ const hj = await evP(`(async () => { const ut = [];
     for (let i = 0; i < 300 && mal - pos() > 0.3; i++) { sp.inn = { x: dx * rx + dz * rz, z: dx * fx + dz * fz }; EVNSteg(1 / 30); }
     sp.inn = { x: 0, z: 0 }; ut.push({ niva, innvendig: ap.side, kom: mal - pos() <= 0.5, til: +pos().toFixed(2), fall: R.position.y < y - 1 });
   }
+  // Vinkelrett ut mot ytterrekkverket fra sporpunkter i svingene, og nedover inne i glipen ved reposene (QA 41034b3)
+  for (const niva of [6, 9]) { EVNVis({ fane: 'spill', niva }); await new Promise(r => setTimeout(r, 200));
+    const S = EVNSpor, sp = EVNSpill, R = EVNRobot(), b = EVNBane, g = EVNGeo, E = niva >= 9 ? 3 : 2; b.teta = 0;
+    const pts = S.p.filter(q => q[3] <= S.del[E][1] + 0.01), fx = -Math.sin(b.teta), fz = -Math.cos(b.teta), rx = Math.cos(b.teta), rz = -Math.sin(b.teta);
+    const gaa = (x, y, z, dx, dz, fart, n) => { R.position.set(x, y, z); sp.paaBakken = true; let miny = 99; for (let i = 0; i < n; i++) { sp.inn = { x: (dx * rx + dz * rz) * fart, z: (dx * fx + dz * fz) * fart }; EVNSteg(1 / 30); miny = Math.min(miny, R.position.y); } sp.inn = { x: 0, z: 0 }; return miny; };
+    let fallUt = 0, n = 0;
+    for (let i = 1; i < pts.length; i += 2) { const a = pts[i - 1], q = pts[i]; if (q[4] < 1.5) continue; const tx = q[0] - a[0], tz = q[1] - a[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l;
+      for (const fart of [0.15, 1]) { n++; if (gaa(q[0], q[4], q[1], -nx, -nz, fart, fart < 0.5 ? 120 : 45) < q[4] - 1) fallUt++; } }
+    ut.push({ niva, ytterkant: n, fall: fallUt > 0, fallUt });
+    let fallGlip = 0, ng = 0;
+    for (const [ra, rb] of Object.values(S.repos)) { if (rb > S.del[E][1] + 0.01) continue;
+      const i = pts.findIndex(q => q[3] >= ra + 0.5), a = pts[i - 1], q = pts[i], tx = q[0] - a[0], tz = q[1] - a[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l;
+      for (const inn of [0.05, 0.15, 0.3]) for (const fart of [0.25, 1]) { ng++; if (gaa(q[0] + nx * (g.W / 2 + inn), q[4], q[1] + nz * (g.W / 2 + inn), -tx / l, -tz / l, fart, 90) < q[4] - 1) fallGlip++; } }
+    ut.push({ niva, glip: ng, fall: fallGlip > 0, fallGlip });
+  }
   return ut; })()`);
 const falt = hj.filter(h => h.fall || h.kom === false);
 console.log((falt.length ? 'FEIL ' : 'OK   ') + 'rampeenden og døråpningen: roboten faller ikke ned og stoppes ikke innvendig (' + hj.length + ' forsøk' + (falt.length ? ', fall: ' + JSON.stringify(falt) : '') + ')'); if (falt.length) process.exitCode = 1;
