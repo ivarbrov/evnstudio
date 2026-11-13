@@ -856,7 +856,8 @@
   function flateVed(x, z, y) {
     let best = 0; const kand = h => { if (h <= y + STEG && h > best) best = h; };
     if (Math.abs(x) <= HX && Math.abs(z) <= HZ) for (let e = 0; e <= bygdeEtasjer(); e++) kand(e * EH + DEKKE);
-    const h = rampeHoyde(x, z); if (h !== null) kand(h);
+    // Innenfor husets grunnflate kan roboten ikke trå opp på rampa fra gulvet, bare følge den (QA 8363821)
+    const h = rampeHoyde(x, z); if (h !== null && (!(Math.abs(x) <= HX && Math.abs(z) <= HZ) || h <= y + 0.45)) kand(h);
     return best;
   }
   // Høyden på rampa rett over/under punktet, eller null utenfor rampa
@@ -871,7 +872,7 @@
   // Vegger: rekkverk på etasjene (med åpninger) og på begge sider av rampa (innsiden er åpen på reposene)
   let vegger = [];
   function byggVegger() {
-    vegger = []; const leg = (x0, z0, x1, z1, y, ned = 0.2) => vegger.push({ x0, z0, x1, z1, y0: y - ned, y1: y + 3.2 })   // høyere enn et hopp, så man ikke hopper over rekkverket;
+    vegger = []; const leg = (x0, z0, x1, z1, y, ned = 0.2, opp = 3.2) => vegger.push({ x0, z0, x1, z1, y0: y - ned, y1: y + opp })   // høyere enn et hopp, så man ikke hopper over rekkverket;
     for (let e = 1; e <= bygdeEtasjer(); e++) {
       const y = e * EH + DEKKE, ap = VEI.apning[e];
       for (const side of ['f', 'b', 'v', 'h']) {
@@ -893,9 +894,12 @@
         const paaRepos = Object.values(SPOR.repos).some(([a, b]) => forrige[3] >= a - 0.3 && q[3] <= b + 0.3);
         // Men aldri lenger ned enn 0,3 m over gulvet under (bakken eller etasjegulvet når kanten ligger innenfor huset), så den ikke blir en usynlig vegg der (QA 9a3d1d1)
         const ix = (forrige[0] + q[0]) / 2 + nx * W / 2, iz = (forrige[1] + q[1]) / 2 + nz * W / 2;
-        let gulv = 0; if (Math.abs(ix) <= HX + 0.05 && Math.abs(iz) <= HZ + 0.05) for (let e = 1; e <= bygdeEtasjer(); e++) { const h = e * EH + DEKKE; if (h <= y) gulv = h; }
-        const ned = Math.max(0.2, Math.min(1.2, y - gulv - 0.3));
-        if (!paaRepos && y > 0.6) leg(forrige[0] + nx * W / 2, forrige[1] + nz * W / 2, q[0] + nx * W / 2, q[1] + nz * W / 2, y, ned);   // innerkant
+        // Innenfor huset (der rampa går rundt hjørnet) går kanten helt ned til gulvet under og opp til like under gulvet over:
+        // roboten på gulvet stopper ved rampekanten og kan ikke komme inn under rampa eller bli løftet opp på den (QA 8363821).
+        const inne = Math.abs(ix) <= HX + 0.05 && Math.abs(iz) <= HZ + 0.05;
+        let gulv = 0, over = Infinity; if (inne) for (let e = 1; e <= bygdeEtasjer(); e++) { const h = e * EH + DEKKE; if (h <= y) gulv = h; else over = Math.min(over, h); }
+        const ned = inne ? y - gulv + 0.05 : Math.max(0.2, Math.min(1.2, y - 0.3)), opp = inne ? Math.min(3.2, over - y - 0.05) : 3.2;
+        if (!paaRepos && y > 0.6) leg(forrige[0] + nx * W / 2, forrige[1] + nz * W / 2, q[0] + nx * W / 2, q[1] + nz * W / 2, y, ned, opp);   // innerkant
       }
       forrige = q;
     }

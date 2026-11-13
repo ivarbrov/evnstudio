@@ -116,13 +116,22 @@ const hj = await evP(`(async () => { const ut = [];
         for (const grad of [0, 12, 25]) for (const inn of [0.4, 0.8, 1.2]) { const v = grad * Math.PI / 180, dx = Math.cos(v) * nx + Math.sin(v) * tx / l, dz = Math.cos(v) * nz + Math.sin(v) * tz / l; ni++;
           if (gaa(q[0] + nx * (g.W / 2 - inn), q[4], q[1] + nz * (g.W / 2 - inn), dx, dz, 1, 45) < q[4] - 1) fallInner++; } } }
     ut.push({ niva, innerkant: ni, fall: fallInner > 0, fallInner });
-    // På gulvet i 2. etasje langs husveggen inn i romhjørnet ved rampa: ingen usynlig skrå vegg skal stoppe roboten før 0,5 m fra hjørnet
-    { const y2 = g.EH + g.DEKKE, hj = []; for (const [sx, sz] of [[1, -1], [-1, -1], [1, 1], [-1, 1]]) { const cx = sx * g.HX, cz = sz * g.HZ;
-        for (const [dx, dz, x0, z0] of [[0, sz, cx - sx * 0.25, 0], [sx, 0, 0, cz - sz * 0.25]]) { const st = dx ? { x: x0 || 0, z: cz - sz * 0.25 } : { x: cx - sx * 0.25, z: z0 || 0 };
-          const sx0 = dx ? cx - sx * 3 : cx - sx * 0.25, sz0 = dx ? cz - sz * 0.25 : cz - sz * 3; R.position.set(sx0, y2, sz0); sp.paaBakken = true;
-          for (let k = 0; k < 120; k++) { sp.inn = { x: dx * rx + dz * rz, z: dx * fx + dz * fz }; EVNSteg(1 / 30); } sp.inn = { x: 0, z: 0 };
-          const igjen = dx ? Math.abs(cx - R.position.x) : Math.abs(cz - R.position.z); if (Math.abs(R.position.y - y2) < 0.3) hj.push(+igjen.toFixed(2)); } }
-      ut.push({ niva, romhjorne: hj, kom: hj.every(v => v < 0.8) }); }
+    // Romhjørnene i alle etasjer: langs veggen 0,05–0,3 m fra den og diagonalt, med fart 0,3 og 1. Roboten skal aldri løftes opp på rampa
+    // eller havne under den, og den skal komme seg 2 m ut igjen (QA 8363821).
+    { const feil = []; let nr = 0;
+      for (let et = 1; et <= E; et++) { const yE = et * g.EH + g.DEKKE;
+        for (const [sx, sz] of [[1, -1], [-1, -1], [1, 1], [-1, 1]]) { const cx = sx * g.HX, cz = sz * g.HZ;
+          const forsok = [];
+          for (const a of [0.05, 0.15, 0.3]) { forsok.push([cx - sx * a, cz - sz * 3, 0, sz]); forsok.push([cx - sx * 3, cz - sz * a, sx, 0]); }
+          forsok.push([cx - sx * 2.5, cz - sz * 2.5, sx * 0.7071, sz * 0.7071]);
+          for (const [x0, z0, dx, dz] of forsok) for (const fart of [0.3, 1]) { nr++;
+            R.position.set(x0, yE, z0); sp.paaBakken = true; let maks = yE;
+            for (let k = 0; k < 150; k++) { sp.inn = { x: (dx * rx + dz * rz) * fart, z: (dx * fx + dz * fz) * fart }; EVNSteg(1 / 30); maks = Math.max(maks, R.position.y); }
+            const inne = R.position.clone();
+            for (let k = 0; k < 90; k++) { sp.inn = { x: -(dx * rx + dz * rz), z: -(dx * fx + dz * fz) }; EVNSteg(1 / 30); } sp.inn = { x: 0, z: 0 };
+            const ut2 = Math.hypot(R.position.x - inne.x, R.position.z - inne.z);
+            if (maks > yE + 0.3 || Math.abs(inne.y - yE) > 0.3 || ut2 < 2) feil.push({ et, hj: [sx, sz], x0: +x0.toFixed(2), z0: +z0.toFixed(2), fart, loft: +(maks - yE).toFixed(2), ut: +ut2.toFixed(2) }); } } }
+      ut.push({ niva, romhjorner: nr, kom: feil.length === 0, feil: feil.slice(0, 4) }); }
   }
   return ut; })()`);
 const falt = hj.filter(h => h.fall || h.kom === false);
