@@ -886,18 +886,20 @@
       if (forrige) {
         const tx = q[0] - forrige[0], tz = q[1] - forrige[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l, y = Math.min(q[4], forrige[4]);
         // Ytterkanten forlenges 0,2 m i hver ende, så segmentene overlapper i svingene og ikke lager glipper (QA 41034b3)
-        const ux = tx / l * 0.2, uz = tz / l * 0.2;
-        leg(forrige[0] - nx * W / 2 - ux, forrige[1] - nz * W / 2 - uz, q[0] - nx * W / 2 + ux, q[1] - nz * W / 2 + uz, y);        // ytterkant
+        const ux = tx / l * 0.2, uz = tz / l * 0.2, bak = forrige[4] < 0.6 ? 0 : 1;   // ikke bakover der rampa starter på bakken (QA be0615d)
+        leg(forrige[0] - nx * W / 2 - ux * bak, forrige[1] - nz * W / 2 - uz * bak, q[0] - nx * W / 2 + ux, q[1] - nz * W / 2 + uz, y);        // ytterkant
         const paaRepos = Object.values(SPOR.repos).some(([a, b]) => q[3] >= a - 0.3 && q[3] <= b + 0.3);
         if (!paaRepos && y > 0.6) leg(forrige[0] + nx * W / 2, forrige[1] + nz * W / 2, q[0] + nx * W / 2, q[1] + nz * W / 2, y);   // innerkant
       }
       forrige = q;
     }
     // Tverrvegger i glipen mellom innerkanten og husveggen ved hver ende av reposene, så roboten ikke kan gå ut av gulvet i glipen (QA 41034b3)
+    // Veggene får høyden fra reposen (lavere enn rampa rett utenfor), så roboten ikke smetter under, og slutter ved husveggen (QA be0615d)
     for (const [ra, rb] of Object.values(SPOR.repos)) for (const d of [ra - 0.3, rb + 0.3]) {
       if (d > maxD + 0.01 || d < 0) continue; const i = SPOR.p.findIndex(q => q[3] >= d); if (i < 1) continue;
       const a = SPOR.p[i - 1], q = SPOR.p[i], tx = q[0] - a[0], tz = q[1] - a[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l;
-      leg(q[0] + nx * (W / 2 - 0.02), q[1] + nz * (W / 2 - 0.02), q[0] + nx * (W / 2 + 0.6), q[1] + nz * (W / 2 + 0.6), q[4]);
+      const yRepos = SPOR.p.find(p => p[3] >= (ra + rb) / 2)[4];
+      leg(q[0] + nx * (W / 2 - 0.02), q[1] + nz * (W / 2 - 0.02), q[0] + nx * (W / 2 + 0.25), q[1] + nz * (W / 2 + 0.25), Math.min(q[4], yRepos));
     }
     // Enden av den øverste rampa er stengt med rekkverk (Even 12.11.2026)
     const s2 = SPOR.p.filter(q => q[3] <= maxD + 0.01).slice(-2);

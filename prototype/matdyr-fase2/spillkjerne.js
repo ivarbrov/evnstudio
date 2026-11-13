@@ -541,7 +541,7 @@
     if (samleSkilt) samleSkilt.position.y = 2.4 + Math.sin(t * 2) * 0.12;
     const inne = iSamle(r.position);
     // Henter når roboten kommer inn, og fortsetter å hente mens den står i sonen (QA 41034b3)
-    if (inne && (S.kasse || 0) >= 1 && (!paaSamle || samleTid <= 0)) { const v = Math.floor(S.kasse); S.penger += v; S.kasse -= v; samleSum = paaSamle ? samleSum + v : v; samleTid = 1; melding('💰 Du hentet ' + fmt(samleSum) + ' penger!', 3); if (!paaSamle) lagre(); }
+    if (inne && (S.kasse || 0) >= 1 && (!paaSamle || samleTid <= 0)) { const v = Math.floor(S.kasse); S.penger += v; S.kasse -= v; samleSum = paaSamle ? samleSum + v : v; samleTid = 1; if (!paaSamle) { melding('💰 Du hentet ' + fmt(v) + ' penger!', 3); lagre(); } }   // mens roboten står der, vises bare skiltet, så andre meldinger ikke blir skjult (QA be0615d)
     samleTid -= dt; paaSamle = inne; tegnSamleSkilt();
   }
 
