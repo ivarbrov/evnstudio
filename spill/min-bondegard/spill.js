@@ -683,11 +683,14 @@ function visGate() {
   aapneHandling(null, '🦊 Rebus\' gåte', () => {
     const t = naa(), g = L.harGate(s, t);
     if (!g) return `<p>Takk for sist, nabo! Jeg tenker på en ny gåte. Kom tilbake om <b data-slutt="${s.rebus.neste}">${fmtTid(s.rebus.neste - t)}</b>. 🦊</p><p style="font-size:15px">Du har løst ${s.rebus.loste} ${s.rebus.loste === 1 ? 'gåte' : 'gåter'}.</p>`;
-    const l = L.gateLonn(g), har = Object.keys(s.lager).filter(v => s.lager[v] > 0 && (D.avlinger[v] || D.varer[v]));
+    /* 0.11.2 (Ivar 13.11: «feil svaralternativ»): det riktige svaret er alltid med, sammen med fem andre ting spilleren kjenner, i fast tilfeldig rekkefølge */
+    const l = L.gateLonn(g); let f = [...(g + s.rebus.loste)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7); const rnd2 = () => (f = (Math.imul(f, 1103515245) + 12345) >>> 0) / 4294967296;
+    const andre = Object.keys(D.gater).filter(v => v !== g && D.nivaaFor(v) <= s.nivaa).sort((a, b) => ((s.lager[b] || 0) > 0) - ((s.lager[a] || 0) > 0) || rnd2() - 0.5).slice(0, 5);
+    const har = [g, ...andre].map(v => [v, rnd2()]).sort((a, b) => a[1] - b[1]).map(a => a[0]);
     return `<p style="font-size:19px;line-height:1.35"><b>${D.gater[g]}</b></p>
       <p style="font-size:15px">Gi meg svaret, så får du <b>${l.mynter} 🪙</b> og <b>${l.xp} XP</b>.</p>
-      ${har.length ? `<div class="knapper" style="flex-wrap:wrap">${har.map(v => `<button class="knapp lys" data-g="svar" data-v="${v}" aria-label="Gi ${navn(v)}">${ikon(v)} ${navn(v)}</button>`).join('')}</div>` : '<p>Du har ingenting på lageret ennå. Kom tilbake når du har høstet eller laget noe!</p>'}
-      <p style="font-size:15px">Har du ikke svaret ennå? Lag det, og kom tilbake. 🦊</p>
+      ${har.length ? `<div class="knapper" style="flex-wrap:wrap">${har.map(v => `<button class="knapp lys" data-g="svar" data-v="${v}" aria-label="Gi ${navn(v)}, du har ${s.lager[v] || 0}">${ikon(v)} ${navn(v)} <small>(${s.lager[v] || 0})</small></button>`).join('')}</div>` : ''}
+      <p style="font-size:15px">Tallet viser hvor mange du har. Har du ikke svaret ennå? Lag det, og kom tilbake. 🦊</p>
       <div class="knapper"><button class="knapp lys" data-g="nyGate">🔄 En annen gåte</button></div>`;
   });
 }
@@ -1017,6 +1020,7 @@ $('handlingInnhold').addEventListener('click', e => {
   if (g === 'svar') { const r = L.svarGate(s, k.dataset.v, t), p = rev ? rev.position.clone().setY(3) : null;
     if (r.ok) { lukkHandling(); flyt('+' + r.mynter + ' 🪙', p); hilsRev(false); revHjemEtter = performance.now() + 3000; melding(`Riktig! Det var ${navn(r.vare).toLowerCase()}! 🦊🎉`, 2800); gi(r, p); }
     else if (r.grunn === 'feil') { melding('Nei, det er ikke ' + navn(k.dataset.v).toLowerCase() + '. Prøv igjen! 🦊', 2600); }
+    else if (r.grunn === 'mangler') { melding(`Riktig! Men du har ingen ${navn(k.dataset.v).toLowerCase()} ennå. Lag noen og kom tilbake! 🦊`, 3400); }
     return; }
   if (g === 'nyGate') { L.byttGate(s, t); gateFor = s.rebus.gate; lagre(); tegnPaaNytt(); return; }
   if (g === 'plant' || g === 'plantAlle') { const a = k.dataset.a; const i = s.akre.findIndex(f => f.id === u.id);
