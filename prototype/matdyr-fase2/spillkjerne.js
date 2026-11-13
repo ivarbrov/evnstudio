@@ -510,7 +510,7 @@
   // Inntekten samles i en kasse. Går roboten inn i sonen til høyre for gangen foran gården, går pengene over til lommeboka.
   // Én sone for hele gården, ikke en knapp per plass. ?samle=0 gir automatisk inntekt som før.
   const SAMLE = new URLSearchParams(location.search).get('samle') !== '0';
-  const samleG = new T.Group(); I.scene.add(samleG); let samleNokkel = '', samleSkilt = null, samleSist = -1, paaSamle = false, samleTid = -9, samleSum = 0;
+  const samleG = new T.Group(); I.scene.add(samleG); let samleNokkel = '', samleSkilt = null, samleSist = -1, paaSamle = false, samleTid = -9;
   function samleOmr() { const g = window.EVNGeo, d = I.gd.gjerdeD || 22; if (!g) return null; const z0 = g.HZ + 1.4, z1 = Math.min(d - 1.6, g.HZ + 7.4);
     return { x0: 2.4, x1: 7.4, z0, z1: Math.max(z1, z0 + 2.5) }; }
   function byggSamle() {
@@ -541,7 +541,7 @@
     if (samleSkilt) samleSkilt.position.y = 2.4 + Math.sin(t * 2) * 0.12;
     const inne = iSamle(r.position);
     // Henter når roboten kommer inn, og fortsetter å hente mens den står i sonen (QA 41034b3)
-    if (inne && (S.kasse || 0) >= 1 && (!paaSamle || samleTid <= 0)) { const v = Math.floor(S.kasse); S.penger += v; S.kasse -= v; samleSum = paaSamle ? samleSum + v : v; samleTid = 1; if (!paaSamle) { melding('💰 Du hentet ' + fmt(v) + ' penger!', 3); lagre(); } }   // mens roboten står der, vises bare skiltet, så andre meldinger ikke blir skjult (QA be0615d)
+    if (inne && (S.kasse || 0) >= 1 && (!paaSamle || samleTid <= 0)) { const v = Math.floor(S.kasse); S.penger += v; S.kasse -= v; samleTid = 1; if (!paaSamle) { melding('💰 Du hentet ' + fmt(v) + ' penger!', 3); lagre(); } }   // mens roboten står der, vises bare skiltet, så andre meldinger ikke blir skjult (QA be0615d)
     samleTid -= dt; paaSamle = inne; tegnSamleSkilt();
   }
 

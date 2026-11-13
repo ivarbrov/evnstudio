@@ -95,6 +95,15 @@ const hj = await evP(`(async () => { const ut = [];
       const i = pts.findIndex(q => q[3] >= ra + 0.5), a = pts[i - 1], q = pts[i], tx = q[0] - a[0], tz = q[1] - a[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l;
       for (const inn of [0.05, 0.15, 0.3]) for (const fart of [0.25, 1]) for (const ret of [-1, 1]) for (const dt of [1 / 30, 1 / 20]) { ng++; if (gaa(q[0] + nx * (g.W / 2 + inn), q[4], q[1] + nz * (g.W / 2 + inn), ret * tx / l, ret * tz / l, fart, Math.round(3 / dt), dt) < q[4] - 1) fallGlip++; } }   // nedover og oppover i glipen, også når spillet går tregt (QA be0615d)
     ut.push({ niva, glip: ng, fall: fallGlip > 0, fallGlip });
+    // Glir langs innerkanten mot reposene, og skrått innover og oppover på den øverste rampa når spillet går tregt (QA 3a8bb8b)
+    let fallInner = 0, ni = 0;
+    for (const [ra] of Object.values(S.repos)) { if (ra > S.del[E][1]) continue;
+      const i = pts.findIndex(q => q[3] >= ra - 3); if (i < 1) continue; const a = pts[i - 1], q = pts[i], tx = q[0] - a[0], tz = q[1] - a[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l;
+      for (const grad of [20, 50]) for (const fart of [0.3, 1]) for (const dt of [1 / 30, 1 / 20]) { const v = grad * Math.PI / 180, dx = Math.cos(v) * tx / l + Math.sin(v) * nx, dz = Math.cos(v) * tz / l + Math.sin(v) * nz; ni++;
+        if (gaa(q[0], q[4], q[1], dx, dz, fart, Math.round(2.5 / dt), dt) < Math.min(q[4], pts.find(p => p[3] >= ra)[4]) - 1) fallInner++; } }
+    { const d0 = S.del[E][0]; for (let d = d0 + 2; d < Math.min(S.del[E][1], d0 + 12); d += 1.5) { const i = pts.findIndex(q => q[3] >= d); if (i < 1) continue; const a = pts[i - 1], q = pts[i], tx = q[0] - a[0], tz = q[1] - a[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l;
+      for (const grad of [30, 60]) { const v = grad * Math.PI / 180, dx = Math.sin(v) * nx + Math.cos(v) * tx / l, dz = Math.sin(v) * nz + Math.cos(v) * tz / l; ni++; if (gaa(q[0], q[4], q[1], dx, dz, 1, 40, 0.05) < q[4] - 1.5) fallInner++; } } }
+    ut.push({ niva, innerkant: ni, fall: fallInner > 0, fallInner });
   }
   return ut; })()`);
 const falt = hj.filter(h => h.fall || h.kom === false);

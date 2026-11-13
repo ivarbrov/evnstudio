@@ -871,7 +871,7 @@
   // Vegger: rekkverk på etasjene (med åpninger) og på begge sider av rampa (innsiden er åpen på reposene)
   let vegger = [];
   function byggVegger() {
-    vegger = []; const leg = (x0, z0, x1, z1, y) => vegger.push({ x0, z0, x1, z1, y0: y - 0.2, y1: y + 3.2 })   // høyere enn et hopp, så man ikke hopper over rekkverket;
+    vegger = []; const leg = (x0, z0, x1, z1, y, ned = 0.2) => vegger.push({ x0, z0, x1, z1, y0: y - ned, y1: y + 3.2 })   // høyere enn et hopp, så man ikke hopper over rekkverket;
     for (let e = 1; e <= bygdeEtasjer(); e++) {
       const y = e * EH + DEKKE, ap = VEI.apning[e];
       for (const side of ['f', 'b', 'v', 'h']) {
@@ -888,8 +888,10 @@
         // Ytterkanten forlenges 0,2 m i hver ende, så segmentene overlapper i svingene og ikke lager glipper (QA 41034b3)
         const ux = tx / l * 0.2, uz = tz / l * 0.2, bak = forrige[4] < 0.6 ? 0 : 1;   // ikke bakover der rampa starter på bakken (QA be0615d)
         leg(forrige[0] - nx * W / 2 - ux * bak, forrige[1] - nz * W / 2 - uz * bak, q[0] - nx * W / 2 + ux, q[1] - nz * W / 2 + uz, y);        // ytterkant
-        const paaRepos = Object.values(SPOR.repos).some(([a, b]) => q[3] >= a - 0.3 && q[3] <= b + 0.3);
-        if (!paaRepos && y > 0.6) leg(forrige[0] + nx * W / 2, forrige[1] + nz * W / 2, q[0] + nx * W / 2, q[1] + nz * W / 2, y);   // innerkant
+        // Innerkanten droppes bare der hele segmentet ligger på reposen, så det ikke blir hull rett før den (QA 3a8bb8b).
+        // Den rekker 1,2 m ned, så en robot som skjærer innenfor svingen og står lavere enn sporet, ikke kommer under (QA 3a8bb8b).
+        const paaRepos = Object.values(SPOR.repos).some(([a, b]) => forrige[3] >= a - 0.3 && q[3] <= b + 0.3);
+        if (!paaRepos && y > 0.6) leg(forrige[0] + nx * W / 2, forrige[1] + nz * W / 2, q[0] + nx * W / 2, q[1] + nz * W / 2, y, 1.2);   // innerkant
       }
       forrige = q;
     }
