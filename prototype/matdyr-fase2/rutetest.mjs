@@ -81,6 +81,13 @@ const hj = await evP(`(async () => { const ut = [];
     for (const bak of [0.1, 0.3]) { const sx = a[0] - tx / l * bak - nx * 4, sz = a[1] - tz / l * bak - nz * 4; R.position.set(sx, 0, sz); sp.paaBakken = true;
       for (let i = 0; i < 120; i++) { sp.inn = { x: nx * rx + nz * rz, z: nx * fx + nz * fz }; EVNSteg(1 / 30); } sp.inn = { x: 0, z: 0 };
       ut.push({ rampefot: bak, kom: Math.hypot(R.position.x - sx, R.position.z - sz) > 6 }); } }
+  // På bakken langs siden av rampe 1 mot rampa: roboten skal komme helt bort til kanten, ikke stoppe 0,5 m unna (QA 9a3d1d1)
+  { EVNVis({ fane: 'spill', niva: 9 }); await new Promise(r => setTimeout(r, 200)); const S = EVNSpor, sp = EVNSpill, R = EVNRobot(), b = EVNBane, g = EVNGeo; b.teta = 0;
+    const fx = -Math.sin(b.teta), fz = -Math.cos(b.teta), rx = Math.cos(b.teta), rz = -Math.sin(b.teta);
+    for (const d of [2, 3, 4]) { const i = S.p.findIndex(q => q[3] >= d), a = S.p[i - 1], q = S.p[i], tx = q[0] - a[0], tz = q[1] - a[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l;
+      if (q[4] > 1.6) continue; const kx = q[0] + nx * g.W / 2, kz = q[1] + nz * g.W / 2; R.position.set(kx + nx * 3, 0, kz + nz * 3); sp.paaBakken = true;
+      for (let k = 0; k < 90; k++) { sp.inn = { x: -nx * rx - nz * rz, z: -nx * fx - nz * fz }; EVNSteg(1 / 30); } sp.inn = { x: 0, z: 0 };
+      ut.push({ rampeside: d, avstand: +Math.hypot(R.position.x - kx, R.position.z - kz).toFixed(2), kom: R.position.y > 0.3 || Math.hypot(R.position.x - kx, R.position.z - kz) < 0.35 }); } }
   // Vinkelrett ut mot ytterrekkverket fra sporpunkter i svingene, og nedover inne i glipen ved reposene (QA 41034b3)
   for (const niva of [6, 9]) { EVNVis({ fane: 'spill', niva }); await new Promise(r => setTimeout(r, 200));
     const S = EVNSpor, sp = EVNSpill, R = EVNRobot(), b = EVNBane, g = EVNGeo, E = niva >= 9 ? 3 : 2; b.teta = 0;
@@ -103,7 +110,19 @@ const hj = await evP(`(async () => { const ut = [];
         if (gaa(q[0], q[4], q[1], dx, dz, fart, Math.round(2.5 / dt), dt) < Math.min(q[4], pts.find(p => p[3] >= ra)[4]) - 1) fallInner++; } }
     { const d0 = S.del[E][0]; for (let d = d0 + 2; d < Math.min(S.del[E][1], d0 + 12); d += 1.5) { const i = pts.findIndex(q => q[3] >= d); if (i < 1) continue; const a = pts[i - 1], q = pts[i], tx = q[0] - a[0], tz = q[1] - a[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l;
       for (const grad of [30, 60]) { const v = grad * Math.PI / 180, dx = Math.sin(v) * nx + Math.cos(v) * tx / l, dz = Math.sin(v) * nz + Math.cos(v) * tz / l; ni++; if (gaa(q[0], q[4], q[1], dx, dz, 1, 40, 0.05) < q[4] - 1.5) fallInner++; } } }
+    // Rett innover mot innerkanten før hver repos, 0,4–1,2 m innenfor (QA 9a3d1d1)
+    for (const [ra] of Object.values(S.repos)) { if (ra > S.del[E][1]) continue;
+      for (const foran of [0.4, 0.8, 1.2]) { const i = pts.findIndex(q => q[3] >= ra - foran); if (i < 1) continue; const a = pts[i - 1], q = pts[i], tx = q[0] - a[0], tz = q[1] - a[1], l = Math.hypot(tx, tz) || 1, nx = tz / l, nz = -tx / l;
+        for (const grad of [0, 12, 25]) for (const inn of [0.4, 0.8, 1.2]) { const v = grad * Math.PI / 180, dx = Math.cos(v) * nx + Math.sin(v) * tx / l, dz = Math.cos(v) * nz + Math.sin(v) * tz / l; ni++;
+          if (gaa(q[0] + nx * (g.W / 2 - inn), q[4], q[1] + nz * (g.W / 2 - inn), dx, dz, 1, 45) < q[4] - 1) fallInner++; } } }
     ut.push({ niva, innerkant: ni, fall: fallInner > 0, fallInner });
+    // På gulvet i 2. etasje langs husveggen inn i romhjørnet ved rampa: ingen usynlig skrå vegg skal stoppe roboten før 0,5 m fra hjørnet
+    { const y2 = g.EH + g.DEKKE, hj = []; for (const [sx, sz] of [[1, -1], [-1, -1], [1, 1], [-1, 1]]) { const cx = sx * g.HX, cz = sz * g.HZ;
+        for (const [dx, dz, x0, z0] of [[0, sz, cx - sx * 0.25, 0], [sx, 0, 0, cz - sz * 0.25]]) { const st = dx ? { x: x0 || 0, z: cz - sz * 0.25 } : { x: cx - sx * 0.25, z: z0 || 0 };
+          const sx0 = dx ? cx - sx * 3 : cx - sx * 0.25, sz0 = dx ? cz - sz * 0.25 : cz - sz * 3; R.position.set(sx0, y2, sz0); sp.paaBakken = true;
+          for (let k = 0; k < 120; k++) { sp.inn = { x: dx * rx + dz * rz, z: dx * fx + dz * fz }; EVNSteg(1 / 30); } sp.inn = { x: 0, z: 0 };
+          const igjen = dx ? Math.abs(cx - R.position.x) : Math.abs(cz - R.position.z); if (Math.abs(R.position.y - y2) < 0.3) hj.push(+igjen.toFixed(2)); } }
+      ut.push({ niva, romhjorne: hj, kom: hj.every(v => v < 0.8) }); }
   }
   return ut; })()`);
 const falt = hj.filter(h => h.fall || h.kom === false);

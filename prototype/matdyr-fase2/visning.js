@@ -891,7 +891,11 @@
         // Innerkanten droppes bare der hele segmentet ligger på reposen, så det ikke blir hull rett før den (QA 3a8bb8b).
         // Den rekker 1,2 m ned, så en robot som skjærer innenfor svingen og står lavere enn sporet, ikke kommer under (QA 3a8bb8b).
         const paaRepos = Object.values(SPOR.repos).some(([a, b]) => forrige[3] >= a - 0.3 && q[3] <= b + 0.3);
-        if (!paaRepos && y > 0.6) leg(forrige[0] + nx * W / 2, forrige[1] + nz * W / 2, q[0] + nx * W / 2, q[1] + nz * W / 2, y, 1.2);   // innerkant
+        // Men aldri lenger ned enn 0,3 m over gulvet under (bakken eller etasjegulvet når kanten ligger innenfor huset), så den ikke blir en usynlig vegg der (QA 9a3d1d1)
+        const ix = (forrige[0] + q[0]) / 2 + nx * W / 2, iz = (forrige[1] + q[1]) / 2 + nz * W / 2;
+        let gulv = 0; if (Math.abs(ix) <= HX + 0.05 && Math.abs(iz) <= HZ + 0.05) for (let e = 1; e <= bygdeEtasjer(); e++) { const h = e * EH + DEKKE; if (h <= y) gulv = h; }
+        const ned = Math.max(0.2, Math.min(1.2, y - gulv - 0.3));
+        if (!paaRepos && y > 0.6) leg(forrige[0] + nx * W / 2, forrige[1] + nz * W / 2, q[0] + nx * W / 2, q[1] + nz * W / 2, y, ned);   // innerkant
       }
       forrige = q;
     }
