@@ -77,7 +77,28 @@
       enga:       { navn: 'Enga',       nivaa: 5,  pris: 300 },
       skogkanten: { navn: 'Skogkanten', nivaa: 10, pris: 1500 }
     },
-    innholdTil: 9,                      // nivået innholdet er bygget til i denne versjonen. Bestillinger ber aldri om noe over dette
+    innholdTil: 9,
+    // Rebus' gåter (Even 13.11): svaret er varen. Spilleren gir Rebus varen. Lønn: pris × 2 + 10 mynter, 4 XP + nivået til varen. Ny gåte 3 minutter etter riktig svar
+    rebus: { nivaa: 2, pause: 180, myntFaktor: 2, myntPluss: 10, xp: 4 },
+    gater: {
+      hvete: 'Jeg er gul og står i lange rader på åkeren. Blir jeg malt, blir jeg til mel og brød. Hva er jeg?',
+      mais: 'Jeg har gule korn på en kolbe og grønne blader rundt meg. Hva er jeg?',
+      erter: 'Jeg bor i en grønn belg sammen med søsknene mine. Vi er små, runde og grønne. Hva er jeg?',
+      egg: 'Jeg har skall, men jeg er ikke en snegle. Høna legger meg i reiret. Hva er jeg?',
+      honsefor: 'Hønene blir glade når de får meg. Jeg lages av hvete i fôrkverna. Hva er jeg?',
+      brod: 'Jeg kommer varm og god ut av ovnen, og du kan smøre smør på meg. Hva er jeg?',
+      kufor: 'Kyrne spiser meg. Jeg lages av erter og mais i fôrkverna. Hva er jeg?',
+      melk: 'Jeg er hvit, kommer fra kua og er god i et glass. Hva er jeg?',
+      flote: 'Jeg er tykk og hvit og lages av melk. Pisker du meg, blir jeg til krem. Hva er jeg?',
+      smor: 'Jeg er gul og myk og lages av melk. Du smører meg på brødskiva. Hva er jeg?',
+      sukkerror: 'Jeg er høy og grønn med ledd, nesten som bambus. Inni meg er det søtt. Hva er jeg?',
+      sukker: 'Jeg er hvit og søt, og jeg lages av sukkerrør. Hva er jeg?',
+      maisbrod: 'Jeg er et brød, men jeg er gult. Jeg lages av mais. Hva er jeg?',
+      popkorn: 'Jeg spretter i varmen og sier POP! Mange spiser meg på kino. Hva er jeg?',
+      gulrot: 'Jeg er oransje og vokser med hodet ned i jorda. Kaniner elsker meg. Hva er jeg?',
+      pannekaker: 'Vi er runde og flate, og vi ligger i en høy stabel på tallerkenen. Hva er vi?',
+      ost: 'Jeg lages av melk og har noen ganger hull i meg. Du legger meg på brødskiva. Hva er jeg?'
+    },                      // nivået innholdet er bygget til i denne versjonen. Bestillinger ber aldri om noe over dette
     maksVentetid: 240                   // ingen jobb tar mer enn 4 minutter (planens beslutning B1, progresjonsplanen kap. 3)
   };
   D.nivaaMynter = function (n) { return 20 + 15 * n; };

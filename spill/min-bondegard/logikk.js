@@ -16,7 +16,8 @@
       lager: {}, akre: [], dyr: {}, bygg: {}, plasser: {},
       oppl: { steg: 0 }, stat: { hostet: 0, egg: 0, laget: 0, solgt: 0, levert: 0, kunder: 0 },
       omrader: {},
-      best: { nr: 0, fro: (Math.floor(naa) % 2147483646) + 1, liste: [] }
+      best: { nr: 0, fro: (Math.floor(naa) % 2147483646) + 1, liste: [] },
+      rebus: { gate: null, neste: naa, siste: [], loste: 0 }
     };
     for (var k in D.startLager) s.lager[k] = D.startLager[k];
     giNivaa(s, 1, naa);
@@ -179,13 +180,13 @@
   // Tilfeldige valg bruker et frø som ligger i tilstanden. Da gir samme tilstand samme bestilling, og reglene kan testes.
   function tilf(s) { s.best.fro = (Math.imul(s.best.fro, 1103515245) + 12345) & 0x7fffffff; return s.best.fro / 2147483648; }   // Math.imul: heltall uten tap av presisjon (QA 10.11)
   // Kan spilleren lage varen nå? Avling: låst opp. Dyreprodukt: har dyret. Produkt: har bygget (eller har snart råd til det) og kan lage alle råvarene.
-  function kanLage(s, v, dybde) {
+  function kanLage(s, v, dybde, naa) {   // naa = true: bare det spilleren kan lage nå, med bygg som er kjøpt (gåtene)
     if ((dybde || 0) > 6 || D.nivaaFor(v) > s.nivaa || D.nivaaFor(v) > D.innholdTil) return false;
     if (D.avlinger[v]) return true;
-    for (var d in D.dyr) if (D.dyr[d].produkt === v) return !!s.dyr[d] && kanLage(s, D.dyr[d].spiser, (dybde || 0) + 1);
+    for (var d in D.dyr) if (D.dyr[d].produkt === v) return !!s.dyr[d] && kanLage(s, D.dyr[d].spiser, (dybde || 0) + 1, naa);
     var o = D.oppskrifter[v]; if (!o) return false;
-    var b = s.bygg[o.bygg]; if (!b || (!b.eid && D.bygg[o.bygg].pris > s.mynter + 300)) return false;
-    for (var k in o.inn) if (!kanLage(s, k, (dybde || 0) + 1)) return false;
+    var b = s.bygg[o.bygg]; if (!b || (!b.eid && (naa || D.bygg[o.bygg].pris > s.mynter + 300))) return false;
+    for (var k in o.inn) if (!kanLage(s, k, (dybde || 0) + 1, naa)) return false;
     return true;
   }
   function bestPool(s) {
@@ -302,6 +303,11 @@
     } else s.best.liste = [];
     fyllBestillinger(s, naa);
     if (r.omrader && typeof r.omrader === 'object') for (var om in D.omrader) if (r.omrader[om] === true && s.nivaa >= D.omrader[om].nivaa) s.omrader[om] = true;
+    if (r.rebus && typeof r.rebus === 'object') {
+      if (typeof r.rebus.gate === 'string' && D.gater[r.rebus.gate] && D.nivaaFor(r.rebus.gate) <= s.nivaa) s.rebus.gate = r.rebus.gate;
+      s.rebus.neste = Math.min(tall(r.rebus.neste, naa), naa + D.rebus.pause * 1000); s.rebus.loste = Math.max(0, Math.floor(tall(r.rebus.loste, 0)));
+      if (Array.isArray(r.rebus.siste)) s.rebus.siste = r.rebus.siste.filter(function (v) { return typeof v === 'string' && D.gater[v]; }).slice(-4);
+    }
     if (r.oppl && typeof r.oppl === 'object') s.oppl.steg = Math.max(0, Math.floor(tall(r.oppl.steg, 0)));
     if (r.stat && typeof r.stat === 'object') for (var st in s.stat) s.stat[st] = Math.max(0, Math.floor(tall(r.stat[st], 0)));
     ['silo', 'lave'].forEach(function (type) {   // mer enn plassen i lageret kuttes (QA 9.11)
@@ -312,6 +318,25 @@
     normaliserTid(s, naa);
     return s;
   }
+
+  // ---------- Rebus' gåter (0.11.0, Even 13.11) ----------
+  // Rebus stiller en gåte om en vare. Spilleren svarer ved å gi ham varen. Riktig svar gir mynter og XP, feil svar koster ingenting.
+  function gatePool(s) { return Object.keys(D.gater).filter(function (v) { return kanLage(s, v, 0, true); }); }
+  function nyGate(s, naa) {
+    if (s.nivaa < D.rebus.nivaa) return null;
+    var pool = gatePool(s).filter(function (v) { return s.rebus.siste.indexOf(v) < 0; }); if (!pool.length) pool = gatePool(s); if (!pool.length) return null;
+    var v = pool[Math.floor(tilf(s) * pool.length)]; s.rebus.gate = v; s.rebus.siste = s.rebus.siste.concat(v).slice(-4); return v;
+  }
+  function harGate(s, naa) { if (!s.rebus.gate && naa >= s.rebus.neste) nyGate(s, naa); return s.rebus.gate; }
+  function gateLonn(v) { return { mynter: Math.round(D.pris(v) * D.rebus.myntFaktor + D.rebus.myntPluss), xp: D.rebus.xp + D.nivaaFor(v) }; }
+  function svarGate(s, v, naa) {
+    var g = s.rebus.gate; if (!g) return { ok: false, grunn: 'ingen' };
+    if (v !== g) return { ok: false, grunn: 'feil' };
+    if ((s.lager[v] || 0) < 1) return { ok: false, grunn: 'mangler' };
+    ta(s, mk(v, 1)); var l = gateLonn(v); s.mynter += l.mynter; s.rebus.gate = null; s.rebus.neste = naa + D.rebus.pause * 1000; s.rebus.loste++;
+    return { ok: true, vare: v, mynter: l.mynter, xp: l.xp, nye: giXP(s, l.xp, naa) };
+  }
+  function byttGate(s, naa) { if (!s.rebus.gate) return null; var gml = s.rebus.gate; s.rebus.gate = null; var ny2 = nyGate(s, naa); if (!ny2) s.rebus.gate = gml; return s.rebus.gate; }
 
   function mk(v, n) { var o = {}; o[v] = n; return o; }
 
@@ -324,7 +349,8 @@
     kanLage: kanLage, bestPool: bestPool, nyBestilling: nyBestilling, bestPlasser: bestPlasser, fyllBestillinger: fyllBestillinger, kanLevere: kanLevere, lever: lever, byttBestilling: byttBestilling, boerByttes: boerByttes,
     giDyr: giDyr, kanKjopeOmrade: kanKjopeOmrade, kjopOmrade: kjopOmrade,
     nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris,
-    kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider
+    kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
+    nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;
 })(typeof window !== 'undefined' ? window : globalThis);

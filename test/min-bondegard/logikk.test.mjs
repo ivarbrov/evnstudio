@@ -157,5 +157,15 @@ r = L.samleDyr(s, 'ku', T0 + 120 * S); t('Kua gir melk etter 2 minutter', r.ok &
 { const x = L.valider({ v: 1, nivaa: 4, mynter: 100, lager: {}, omrader: { enga: true } }, T0); t('Enga lagret under nivå 5 godtas ikke', !x.omrader.enga); }
 { const x = L.valider({ v: 1, nivaa: 6, mynter: 100, lager: {}, dyr: { ku: [{ slutt: null }] } }, T0); t('Kyr uten fjøs fjernes', !x.dyr.ku); }
 
+// --- Rebus' gåter (0.11.0, Even 13.11) ---
+s = L.ny(T0); t('Ingen gåte på nivå 1', L.harGate(s, T0) === null);
+L.giXP(s, 20, T0); { const g = L.harGate(s, T0); t('Nivå 2: gåten handler om noe spilleren kan lage nå', ['hvete', 'mais', 'egg', 'honsefor'].includes(g) && D.gater[g]); }
+{ const g = s.rebus.gate, feil = g === 'mais' ? 'hvete' : 'mais'; s.lager[feil] = 1; s.lager[g] = 1; const m0 = s.mynter;
+  t('Feil svar koster ingenting', L.svarGate(s, feil, T0).grunn === 'feil' && s.lager[feil] === 1 && s.mynter === m0);
+  const r2 = L.svarGate(s, g, T0); t('Riktig svar tar varen og gir mynter og XP', r2.ok && !s.lager[g] && s.mynter === m0 + r2.mynter && r2.mynter === D.pris(g) * 2 + 10 && s.rebus.loste === 1);
+  t('Ny gåte først etter 3 minutter', L.harGate(s, T0 + 179 * S) === null && !!L.harGate(s, T0 + 180 * S)); }
+{ const g = s.rebus.gate, n = L.byttGate(s, T0 + 181 * S); t('En annen gåte gir en ny', !!n && n !== g); }
+{ const k = L.valider(JSON.parse(JSON.stringify(s)), T0 + 200 * S); t('Gåten overlever lagring', k.rebus.gate === s.rebus.gate && k.rebus.loste === 1); }
+
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);
 process.exit(feil ? 1 : 0);

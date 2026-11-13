@@ -649,7 +649,30 @@ function lagEgg() { const g = new THREE.SphereGeometry(0.17, 12, 10); g.scale(1,
   [[4.6, -4.25], [5.5, -4.35], [6.4, -4.25], [7.3, -4.35], [8.2, -4.25], [4.2, -3.6], [9.6, -3.2], [3.4, -3.0], [3.4, -2.0]].forEach(([x, z]) => { const e = mesh(g, m, x - ox, 0.22, z - oz, p); e.visible = false; eggMesh.push(e); }); }
 
 /* ======================= Synk: tilstand → verden ======================= */
+/* ======================= Rebus' gåter (0.11.0, Even 13.11) ======================= */
+// Rebus står i skogkanten med et spørsmålstegn over seg når han har en gåte. Du svarer ved å gi ham det gåten handler om.
+let revIkon = null, gateFor = undefined;
+function synkGate() {
+  const t = naa(), aktiv = s.oppl.steg >= OPPL.length && s.nivaa >= D.rebus.nivaa, g = aktiv ? L.harGate(s, t) : null;
+  if (gateFor !== undefined && g && g !== gateFor) { melding('🦊 Rebus har en ny gåte! Trykk på ham i skogkanten.', 3400); lagre(); }
+  gateFor = g;
+  if (rev) { if (!revIkon) { revIkon = lagIkon(0); scene.add(revIkon); } revIkon.position.set(rev.position.x, rev.position.y + 2.9, rev.position.z); settIkon(revIkon, g ? '❓' : null); }
+}
+function visGate() {
+  hilsRev(false);
+  aapneHandling(null, '🦊 Rebus\' gåte', () => {
+    const t = naa(), g = L.harGate(s, t);
+    if (!g) return `<p>Takk for sist, nabo! Jeg tenker på en ny gåte. Kom tilbake om <b data-slutt="${s.rebus.neste}">${fmtTid(s.rebus.neste - t)}</b>. 🦊</p><p style="font-size:15px">Du har løst ${s.rebus.loste} ${s.rebus.loste === 1 ? 'gåte' : 'gåter'}.</p>`;
+    const l = L.gateLonn(g), har = Object.keys(s.lager).filter(v => s.lager[v] > 0 && (D.avlinger[v] || D.varer[v]));
+    return `<p style="font-size:19px;line-height:1.35"><b>${D.gater[g]}</b></p>
+      <p style="font-size:15px">Gi meg svaret, så får du <b>${l.mynter} 🪙</b> og <b>${l.xp} XP</b>.</p>
+      ${har.length ? `<div class="knapper" style="flex-wrap:wrap">${har.map(v => `<button class="knapp lys" data-g="svar" data-v="${v}" aria-label="Gi ${navn(v)}">${ikon(v)} ${navn(v)}</button>`).join('')}</div>` : '<p>Du har ingenting på lageret ennå. Kom tilbake når du har høstet eller laget noe!</p>'}
+      <p style="font-size:15px">Har du ikke svaret ennå? Lag det, og kom tilbake. 🦊</p>
+      <div class="knapper"><button class="knapp lys" data-g="nyGate">🔄 En annen gåte</button></div>`;
+  });
+}
 function synk(alt) {
+  synkGate();
   const t = naa();
   for (const f of s.akre) { const u = ting.get(f.id); if (!u) continue; const st = akerStadie(f, t); if (st !== u.stadie || alt) { u.stadie = st; u.plante.visible = !!st; if (st) u.plante.geometry = PROTO[st]; } }
   const honer = s.dyr.hone || []; let klare = 0, sultne = 0;
@@ -971,6 +994,11 @@ function visBygg(u) {
 $('handlingInnhold').addEventListener('click', e => {
   const k = e.target.closest('button'); if (!k || k.disabled) return; const g = k.dataset.g, u = aktivTing; const t = naa();
   if ((g === 'plant') && undertrykkTrykk) return;
+  if (g === 'svar') { const r = L.svarGate(s, k.dataset.v, t), p = rev ? rev.position.clone().setY(3) : null;
+    if (r.ok) { lukkHandling(); flyt('+' + r.mynter + ' 🪙', p); hilsRev(false); melding(`Riktig! Det var ${navn(r.vare).toLowerCase()}! 🦊🎉`, 2800); gi(r, p); }
+    else if (r.grunn === 'feil') { melding('Nei, det er ikke ' + navn(k.dataset.v).toLowerCase() + '. Prøv igjen! 🦊', 2600); }
+    return; }
+  if (g === 'nyGate') { L.byttGate(s, t); gateFor = s.rebus.gate; lagre(); tegnPaaNytt(); return; }
   if (g === 'plant' || g === 'plantAlle') { const a = k.dataset.a; const i = s.akre.findIndex(f => f.id === u.id);
     let n = plantPaa(i, a) ? 1 : 0; if (g === 'plantAlle') s.akre.forEach((f, j) => { if (!f.avling && plantPaa(j, a)) n++; });
     if (n) { flyt(ikon(a) + (n > 1 ? ' ×' + n : ''), midtAv(u, 1.5)); lukkHandling(); gi(null);
@@ -1149,7 +1177,7 @@ window.spillTrykk = (o, t, ray) => {
   if (!startet || pauset || undertrykkTrykk || draModus) return true;   /* et drag håndteres i sluttDra */
   if (flytt) { flyttTil(ray); return true; }
   if (o && o.userData.katt) { kundeTrykk(); return true; }
-  if (o === rev) { hilsRev(false); visOppl(true); return true; }
+  if (o === rev) { if (s.oppl.steg >= OPPL.length && s.nivaa >= D.rebus.nivaa) visGate(); else { hilsRev(false); visOppl(true); } return true; }
   if (o && o.userData.omrade && o.userData.omrade.tema === 'eng') { visEnga(); return true; }
   const u = tingFor(o);
   if (u) { if (o && o.userData.art) { o.userData.hopp = 0.4; } bruk(u); return true; }
