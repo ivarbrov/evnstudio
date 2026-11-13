@@ -655,11 +655,31 @@ let revIkon = null, gateFor = undefined;
 function synkGate() {
   const t = naa(), aktiv = s.oppl.steg >= OPPL.length && s.nivaa >= D.rebus.nivaa, g = aktiv ? L.harGate(s, t) : null;
   if (gateFor !== undefined && g && g !== gateFor) { melding('🦊 Rebus har en ny gåte! Trykk på ham i skogkanten.', 3400); lagre(); }
-  gateFor = g;
-  if (rev) { if (!revIkon) { revIkon = lagIkon(0); scene.add(revIkon); } revIkon.position.set(rev.position.x, rev.position.y + 2.9, rev.position.z); settIkon(revIkon, g ? '❓' : null); }
+  const forste = !revKlar; gateFor = g;
+  if (rev) { revKlar = true; if (!revIkon) { revIkon = lagIkon(0); scene.add(revIkon); } settIkon(revIkon, g ? '❓' : null);
+    const paaGard = !!g || performance.now() < revHjemEtter;   /* 0.11.1 (Even 13.11): Rebus går inn på gården når han har en gåte, og hjem igjen etterpå */
+    if (paaGard && revSted !== 'gard' && (!revGang || revGang.hjem)) revGaa(false, forste); else if (!paaGard && revSted !== 'hjem' && (!revGang || !revGang.hjem)) revGaa(true, forste); }
+}
+// Rebus går stien ned til veien, langs veien og inn porten til en plass ved markedsbua. Hjem går han samme vei tilbake.
+const REV_HJEM = [-17.6, 4.0], REV_GARD = [-6.3, 7.0];
+let revSted = 'hjem', revGang = null, revFlate = null, revY = 0.044, revKlar = false, revHjemEtter = 0;
+function revVei() { const v = [[stiX(4.6), 4.6]]; for (let z = 6; z <= VEI_Z - 1.2; z += 1.4) v.push([stiX(z), z]); v.push([stiX(VEI_Z - 1.2), VEI_Z - 1.2], [-6.3, VEI_Z - 1.2], REV_GARD); return v; }
+function revGaa(hjem, straks) {
+  if (!rev) return; const v = revVei(); if (hjem) v.reverse().push(REV_HJEM); else v.unshift(REV_HJEM);
+  if (straks || matchMedia('(prefers-reduced-motion: reduce)').matches) { revSett(...v[v.length - 1]); revSted = hjem ? 'hjem' : 'gard'; revGang = null; rev.rotation.y = hjem ? Math.PI / 2 + 0.35 : Math.PI / 4; return; }
+  const p = rev.position; let i = 0, best = 1e9; v.forEach((q, j) => { const d = Math.hypot(q[0] - p.x, q[1] - p.z); if (d < best) { best = d; i = j; } });   /* fra nærmeste punkt, også om han snur midt i */
+  revGang = {vei: v, i: Math.min(i + 1, v.length - 1), hjem}; revSted = 'gaar'; revSpill('Walking');
+}
+function revSett(x, z) { rev.position.set(x, hoyde(x, z) + revY, z); if (!revFlate) revFlate = scene.children.find(o => o.userData.eier === rev && o.geometry && o.geometry.type === 'CylinderGeometry'); if (revFlate) revFlate.position.set(x, rev.position.y + 1.1, z); }
+function oppdaterRev(dt, t) {
+  if (!rev) return;
+  if (revGang) { const m = revGang.vei[revGang.i], dx = m[0] - rev.position.x, dz = m[1] - rev.position.z, d = Math.hypot(dx, dz), steg = dt * 1.7;
+    if (d <= steg) { revSett(m[0], m[1]); if (++revGang.i >= revGang.vei.length) { revSted = revGang.hjem ? 'hjem' : 'gard'; revGang = null; rev.rotation.y = revSted === 'hjem' ? Math.PI / 2 + 0.35 : Math.PI / 4; revSpill('Idle'); if (revSted === 'gard') { revSpill('Wave', false); setTimeout(() => { if (!revGang) revSpill('Idle'); }, 2200); } } }
+    else { revSett(rev.position.x + dx / d * steg, rev.position.z + dz / d * steg); rev.rotation.y = snuMot(rev.rotation.y, Math.atan2(dx, dz), dt * 8); } }
+  if (revIkon && revIkon.visible) revIkon.position.set(rev.position.x, rev.position.y + 2.9 + Math.sin(t * 3) * 0.12, rev.position.z);
 }
 function visGate() {
-  hilsRev(false);
+  if (!revGang) { revSpill('Wave', false); setTimeout(() => { if (!revGang) revSpill('Idle'); }, 2200); }
   aapneHandling(null, '🦊 Rebus\' gåte', () => {
     const t = naa(), g = L.harGate(s, t);
     if (!g) return `<p>Takk for sist, nabo! Jeg tenker på en ny gåte. Kom tilbake om <b data-slutt="${s.rebus.neste}">${fmtTid(s.rebus.neste - t)}</b>. 🦊</p><p style="font-size:15px">Du har løst ${s.rebus.loste} ${s.rebus.loste === 1 ? 'gåte' : 'gåter'}.</p>`;
@@ -995,7 +1015,7 @@ $('handlingInnhold').addEventListener('click', e => {
   const k = e.target.closest('button'); if (!k || k.disabled) return; const g = k.dataset.g, u = aktivTing; const t = naa();
   if ((g === 'plant') && undertrykkTrykk) return;
   if (g === 'svar') { const r = L.svarGate(s, k.dataset.v, t), p = rev ? rev.position.clone().setY(3) : null;
-    if (r.ok) { lukkHandling(); flyt('+' + r.mynter + ' 🪙', p); hilsRev(false); melding(`Riktig! Det var ${navn(r.vare).toLowerCase()}! 🦊🎉`, 2800); gi(r, p); }
+    if (r.ok) { lukkHandling(); flyt('+' + r.mynter + ' 🪙', p); hilsRev(false); revHjemEtter = performance.now() + 3000; melding(`Riktig! Det var ${navn(r.vare).toLowerCase()}! 🦊🎉`, 2800); gi(r, p); }
     else if (r.grunn === 'feil') { melding('Nei, det er ikke ' + navn(k.dataset.v).toLowerCase() + '. Prøv igjen! 🦊', 2600); }
     return; }
   if (g === 'nyGate') { L.byttGate(s, t); gateFor = s.rebus.gate; lagre(); tegnPaaNytt(); return; }
@@ -1240,7 +1260,7 @@ window.spillOppdater = (dt, t) => {
   for (const u of ikonListe()) u.ikon.position.y = u.ikon.userData.y0 + Math.sin(t * 3 + u.gruppe.position.x) * 0.12;
   if (pil && pil.visible && pil.userData.u) { const p = pil.userData.u.gruppe.position, h = pil.userData.u.hoyde || 3; pil.position.set(p.x, h + 1.2 + Math.abs(Math.sin(t * 4)) * 0.6, p.z); }
   if (kameraMaal) { cam.target.lerp(_p.set(kameraMaal.x, 0, kameraMaal.z), Math.min(1, dt * 5)); plasserKamera(); if (cam.target.distanceTo(_p) < 0.05) kameraMaal = null; }
-  oppdaterBil(dt); oppdaterKunde(dt, t);
+  oppdaterBil(dt); oppdaterKunde(dt, t); oppdaterRev(dt, t);
   synkT += dt; if (synkT > 0.25) { synkT = 0; synk(); oppdaterTider(); }
   lagreT += dt; if (lagreT > 15 && startet) { lagreT = 0; lagre(); }
 };
