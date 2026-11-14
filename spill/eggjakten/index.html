@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<!-- EVN-SIKKERHET start: gjelder bare evnstudio.no (se /sikkerhet/). Tas ut i Claude-artefaktene. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://gc.zgo.at; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://evnstudio.goatcounter.com; connect-src 'self' https://evnstudio.goatcounter.com; media-src 'self' data: blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- EVN-SIKKERHET slutt -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Eggjakten 0.1.0 – EVN Studio</title>
+<link rel="stylesheet" href="../../fonter/fonter.css">
+<link rel="icon" href="../../favicon.png">
+<style>
+  :root { --gull:#ffc93c; --gress:#2f6b2a; --mork:#1f3a17; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#8fd16a; font-family:'Nunito',system-ui,sans-serif; color:#fff; overscroll-behavior:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
+  canvas#c { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+  canvas#c:focus { outline:none; }
+  button { font-family:inherit; touch-action:manipulation; cursor:pointer; }
+  .vh { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+
+  #hud { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); right:calc(220px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; flex-wrap:wrap; align-items:flex-start; }
+  #hud[hidden], #hoyre[hidden] { display:none !important; }
+  .pille { background:rgba(31,58,23,.78); border:2px solid rgba(255,255,255,.25); border-radius:999px; padding:6px 14px; font-weight:800; font-size:18px; min-height:44px; display:flex; align-items:center; gap:6px; color:#fff; }
+  .pille.full { border-color:#ff6b6b; background:rgba(120,20,30,.85); }
+  .pille.bump { animation:bump .3s; }
+  @keyframes bump { 50% { transform:scale(1.15); } }
+  #hoyre { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); display:flex; gap:8px; z-index:5; }
+  .rund { width:48px; height:48px; border-radius:50%; background:rgba(31,58,23,.78); border:2px solid rgba(255,255,255,.25); color:#fff; font-size:22px; display:flex; align-items:center; justify-content:center; padding:0; }
+  .rund:focus-visible, .pille:focus-visible, .stor:focus-visible, .kn:focus-visible, .fane:focus-visible, #kast:focus-visible, #buaKnapp:focus-visible { outline:3px solid #fff; outline-offset:2px; }
+  #evnAvslutt { width:auto; padding:0 14px; border-radius:24px; font-size:18px; font-weight:800; gap:6px; }
+  @media (max-width:600px) { #evnAvslutt { width:48px; padding:0; border-radius:50%; } #evnAvslutt .evn-avs-tekst { display:none; } }
+
+  #maal { position:fixed; top:calc(64px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); background:rgba(31,58,23,.6); border-radius:12px; padding:6px 12px; font-weight:800; font-size:15px; z-index:4; max-width:min(60vw,420px); pointer-events:none; }
+  #maal:empty, #maal[hidden] { display:none; }
+  #melding { position:fixed; top:calc(110px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); background:rgba(31,58,23,.92); border:2px solid var(--gull); border-radius:16px; padding:10px 18px; font-weight:800; font-size:18px; max-width:min(92vw,560px); text-align:center; z-index:6; opacity:0; transition:opacity .25s; pointer-events:none; }
+  #melding.vis { opacity:1; }
+  #melding small { display:block; font-size:15px; opacity:.9; margin-top:2px; }
+
+  #kast { position:fixed; right:calc(18px + env(safe-area-inset-right)); bottom:calc(18px + env(safe-area-inset-bottom)); width:96px; height:96px; border-radius:50%; border:4px solid #fff; background:linear-gradient(#ffd75e,#f0a91c); color:#4a2a00; font:800 17px 'Nunito',system-ui,sans-serif; z-index:5; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:0 5px 0 #b8770c; padding:0; }
+  #kast .ik { font-size:34px; line-height:1; }
+  #kast .tast { font-size:12px; opacity:.75; }
+  html.touch #kast .tast { display:none; }
+  #kast.vent { filter:grayscale(.6) brightness(.85); }
+  #kast[hidden], #buaKnapp[hidden] { display:none; }
+  #buaKnapp { position:fixed; right:calc(126px + env(safe-area-inset-right)); bottom:calc(30px + env(safe-area-inset-bottom)); min-height:64px; padding:0 18px; border-radius:32px; border:3px solid #fff; background:#c0392b; color:#fff; font:800 19px 'Nunito',system-ui,sans-serif; z-index:5; box-shadow:0 5px 0 #7d241b; }
+  #hjelp { position:fixed; left:calc(12px + env(safe-area-inset-left)); bottom:calc(14px + env(safe-area-inset-bottom)); background:rgba(31,58,23,.65); border-radius:12px; padding:8px 12px; font-size:15px; font-weight:700; z-index:4; max-width:55vw; pointer-events:none; transition:opacity .6s; }
+  #hjelp:empty { display:none; }
+  #joy { position:fixed; width:110px; height:110px; margin:-55px 0 0 -55px; border-radius:50%; border:3px solid rgba(255,255,255,.55); background:rgba(255,255,255,.12); pointer-events:none; display:none; z-index:4; }
+  #joy i { position:absolute; left:50%; top:50%; width:44px; height:44px; margin:-22px 0 0 -22px; border-radius:50%; background:var(--gull); }
+  #bonk { position:fixed; inset:0; background:rgba(120,0,40,.35); z-index:7; display:none; align-items:center; justify-content:center; font:400 64px 'Lilita One',system-ui,sans-serif; color:#fff; text-shadow:0 4px 0 #6b0f2a; pointer-events:none; }
+  #bonk.vis { display:flex; }
+
+  .lag { position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:10; padding:16px; background:rgba(15,35,10,.55); overflow:auto; }
+  .lag.vis { display:flex; }
+  .kort { background:linear-gradient(#3f8a34,#1f3a17); border:3px solid rgba(255,255,255,.2); border-radius:26px; padding:22px 24px; max-width:460px; width:100%; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.4); margin:auto; position:relative; }
+  .kort.bred { max-width:640px; }
+  .evn-merke { font-family:'Lilita One',sans-serif; letter-spacing:2px; font-size:14px; color:var(--gull); opacity:.9; }
+  h1 { font-family:'Lilita One',sans-serif; font-weight:400; font-size:44px; margin:4px 0 10px; color:#fff; text-shadow:0 4px 0 #1f5c17; }
+  h2 { font-family:'Lilita One',sans-serif; font-weight:400; font-size:30px; margin:4px 0 10px; }
+  .maalboks { display:flex; align-items:center; gap:12px; text-align:left; margin:8px 0 12px; }
+  .maalboks img { width:70px; height:auto; max-height:120px; flex:none; }
+  .maalboks p { margin:0; font-size:19px; font-weight:800; }
+  .styring { font-size:16px; opacity:.9; margin:6px 0 16px; }
+  .bare-touch { display:none; } html.touch .bare-touch { display:block; } html.touch .bare-pc { display:none; }
+  .stor { font-family:'Lilita One',sans-serif; font-size:28px; padding:14px 40px; border-radius:20px; border:3px solid #fff; background:linear-gradient(#ffd75e,#f0a91c); color:#4a2a00; box-shadow:0 6px 0 #b8770c; min-height:60px; }
+  .stor.lukk { font-size:22px; padding:10px 30px; margin-top:12px; min-height:52px; }
+  .evn-start { animation:puls 1.6s ease-in-out infinite; }
+  @keyframes puls { 50% { transform:scale(1.05); } }
+  @media (prefers-reduced-motion: reduce) { .evn-start, .pille.bump { animation:none; } }
+  .evn-ver { font-size:13px; opacity:.75; margin-top:12px; }
+  .evn-tilbake { display:block; color:#fff; font-weight:800; text-decoration:underline; text-underline-offset:3px; opacity:.85; padding:10px 0; min-height:44px; margin-top:6px; }
+  .evn-tilbake[hidden] { display:none; }
+  #start #evnNullstill { margin-top:4px; }
+  .kryss { position:absolute; top:10px; right:10px; width:44px; height:44px; border-radius:50%; border:2px solid rgba(255,255,255,.4); background:rgba(0,0,0,.25); color:#fff; font-size:20px; }
+
+  .faner { display:flex; gap:6px; justify-content:center; margin:0 0 10px; flex-wrap:wrap; }
+  .fane { min-height:48px; padding:6px 14px; border-radius:14px; border:2px solid rgba(255,255,255,.35); background:rgba(255,255,255,.08); color:#fff; font-weight:800; font-size:17px; }
+  .fane[aria-selected="true"] { background:#fff; color:#1f3a17; border-color:#fff; }
+  .info { font-size:15px; margin:0 0 8px; opacity:.95; }
+  .liste { max-height:min(52vh,460px); overflow:auto; text-align:left; padding-right:4px; }
+  .rad { display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center; background:rgba(255,255,255,.08); border-radius:14px; padding:8px 10px; margin:6px 0; border-left:6px solid #fff; }
+  .rad .ik { font-size:28px; line-height:1; }
+  .rad b { display:block; font-size:16px; }
+  .rad small { font-size:13px; opacity:.92; font-weight:700; }
+  .knapper { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+  .kn { min-height:48px; min-width:84px; border-radius:12px; border:2px solid #fff; background:linear-gradient(#ffd75e,#f0a91c); color:#4a2a00; font-weight:800; font-size:15px; padding:4px 10px; }
+  .kn.bla { background:linear-gradient(#b8f0a0,#5cbf3e); color:#123a0a; }
+  .kn:disabled { background:#8a8ea3; color:#2a2d3a; border-color:#c5c8d6; cursor:default; }
+  .kn small { display:block; font-size:11px; font-weight:800; opacity:.85; }
+  .kn.bred { width:100%; margin-top:6px; }
+  .r0 { border-left-color:#f4f1e8; } .r1 { border-left-color:#4fb3ff; } .r2 { border-left-color:#c77dff; } .r3 { border-left-color:#ffd23f; }
+  .tom { opacity:.85; font-weight:700; padding:14px; text-align:center; }
+  #klekket .stort { font-size:72px; line-height:1.1; margin:6px 0; }
+  #feil { position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:99999; padding:16px; background:rgba(15,35,10,.8); }
+  #feil.vis { display:flex; }
+  @media (max-width:600px) {
+    #hud { top:calc(66px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); gap:6px; }
+    #hud .pille { font-size:16px; min-height:40px; padding:4px 10px; }
+    #maal { top:calc(116px + env(safe-area-inset-top)); font-size:14px; max-width:calc(100vw - 20px); }
+    #melding { top:calc(156px + env(safe-area-inset-top)); }
+  }
+  @media (max-height:520px) { .kort { padding:14px 18px; } h1 { font-size:30px; margin:2px 0 6px; } .liste { max-height:44vh; } }
+</style>
+<script src="../../statistikk.js" data-spill="eggjakten" defer></script>
+</head>
+<body>
+<canvas id="c" tabindex="-1" aria-label="Spillverdenen: gården med dyr og et monster"></canvas>
+
+<div id="hud" hidden>
+  <div class="pille" id="pPenger" title="Myntene dine">🪙 <span id="penger">0</span></div>
+  <div class="pille" id="pKurv" title="Egg i kurven">🧺 <span id="kurv">0/5</span></div>
+  <div class="pille" id="pDyr" title="Kjæledyr du har klekket">🐣 <span id="kjaele">0</span></div>
+</div>
+<div id="maal" hidden></div>
+<div id="hoyre" hidden>
+  <button class="rund" id="lydKnapp" type="button" title="Lyd av/på (L)" aria-label="Lyd av eller på">🔊</button>
+  <a class="rund" id="evnAvslutt" href="../../" aria-label="Avslutt" style="display:none;text-decoration:none">🚪<span class="evn-avs-tekst"> Avslutt</span></a>
+</div>
+<div id="melding" role="status" aria-live="polite"></div>
+<button id="buaKnapp" type="button" hidden>🏠 Eggbua</button>
+<button id="kast" type="button" hidden aria-label="Kast mat"><span class="ik" id="kastIk">🌾</span>Kast<span class="tast">Mellomrom</span></button>
+<div id="hjelp"></div>
+<div id="joy"><i></i></div>
+<div id="bonk" aria-hidden="true">BONK! 💥</div>
+
+<!-- Startkort -->
+<div class="lag vis" id="start">
+  <div class="kort">
+    <div class="evn-merke">EVN STUDIO</div>
+    <h1>Eggjakten</h1>
+    <div class="maalboks">
+      <img src="../../bilder/robot-start-egg-holder-130.webp" srcset="../../bilder/robot-start-egg-holder-130.webp 1x, ../../bilder/robot-start-egg-holder-260.webp 2x" width="244" height="260" alt="" decoding="async" onerror="this.remove()">
+      <p>Kast mat til dyrene, så legger de egg! 🥚 Selg eggene eller klekk dem i Eggbua. 🏠<br><span style="color:#ffc93c">Pass deg for monsteret! 👾</span></p>
+    </div>
+    <div class="styring">
+      <div class="bare-pc">⬆️⬇️⬅️➡️ eller WASD for å gå.<br>Mellomrom for å kaste mat. E for å gå inn i Eggbua.</div>
+      <div class="bare-touch">Dra fingeren dit du vil gå.<br>Trykk på den gule knappen for å kaste mat.</div>
+    </div>
+    <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
+    <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
+    <div class="evn-ver" id="versjon">Versjon 0.1.0</div>
+  </div>
+</div>
+
+<!-- Eggbua -->
+<div class="lag" id="bua" role="dialog" aria-modal="true" aria-labelledby="buaTittel">
+  <div class="kort bred">
+    <button class="kryss" type="button" data-lukk="bua" aria-label="Lukk Eggbua">✕</button>
+    <h2 id="buaTittel">🏠 Eggbua</h2>
+    <div class="faner" role="tablist">
+      <button class="fane" type="button" role="tab" data-fane="egg" aria-selected="true">🥚 Egg</button>
+      <button class="fane" type="button" role="tab" data-fane="opp" aria-selected="false">⬆️ Oppgrader</button>
+      <button class="fane" type="button" role="tab" data-fane="dyr" aria-selected="false">🐾 Dyr</button>
+    </div>
+    <div id="buaInnhold"></div>
+    <button class="stor lukk" type="button" data-lukk="bua">Lukk</button>
+  </div>
+</div>
+
+<!-- Klekket -->
+<div class="lag" id="klekket" role="dialog" aria-modal="true" aria-labelledby="klekketNavn">
+  <div class="kort">
+    <div style="font-size:20px;font-weight:800">Egget klekket! 🎉</div>
+    <div class="stort" id="klekketIk"></div>
+    <h2 id="klekketNavn"></h2>
+    <p id="klekketTekst" style="font-size:18px;margin:10px 0 16px;font-weight:700"></p>
+    <button class="stor" id="klekketOk" type="button">Så søt! 💛</button>
+  </div>
+</div>
+
+<!-- Vennlig feilmelding (K2) -->
+<div id="feil" role="alertdialog" aria-modal="true" aria-labelledby="feilTittel">
+  <div class="kort">
+    <h2 id="feilTittel">Oi, noe gikk galt 🥚</h2>
+    <p style="font-size:18px;font-weight:700">Eggene og myntene dine er lagret. Trykk på knappen for å starte spillet på nytt.</p>
+    <button class="stor" id="feilLast" type="button">🔄 Last på nytt</button>
+  </div>
+</div>
+
+<script>
+/* EVN-NULLSTILL v1: «Start helt på nytt» på startskjermen (samme kode i alle EVN-spill).
+   Vises bare når det finnes lagring. Spør først i en egen boks. Sletter bare spillets egne lagringsnøkler
+   (ikke grafikkvalg eller spilletid), og laster siden på nytt. */
+window.EVNNullstill = function (cfg) {
+  var t = cfg.tema || {};
+  var harLagring = function () { if (cfg.harLagring) try { return !!cfg.harLagring(); } catch (e) { return false; } try { return cfg.nokler.some(function (k) { return localStorage.getItem(k) !== null; }); } catch (e) { return false; } };
+  var css = document.createElement('style');
+  css.textContent =
+    '#evnNullstill{display:block;margin:-8px auto 0;min-height:44px;padding:8px 14px;background:transparent;border:0;color:inherit;opacity:.75;font:700 15px ' + (t.font || 'system-ui,sans-serif') + ';text-decoration:underline;text-underline-offset:3px;cursor:pointer;touch-action:manipulation}' +
+    '#evnNullstill:hover,#evnNullstill:focus-visible{opacity:1}#evnNullstill[hidden]{display:none!important}' +
+    '#evnNullstillBoks{position:fixed;inset:0;z-index:99995;display:none;place-items:center;padding:16px;background:rgba(0,0,0,.7);touch-action:manipulation}' +
+    '#evnNullstillBoks.vis{display:grid}' +
+    '#evnNullstillBoks .kort{background:' + (t.panel || '#1c2436') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:20px;width:min(340px,100%);text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnNullstillBoks h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:28px;line-height:1.1;margin:0 0 10px;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnNullstillBoks p{margin:0 0 6px;font-size:17px;line-height:1.4;font-weight:700}' +
+    '#evnNullstillBoks button{display:block;width:100%;min-height:52px;margin:10px 0 0;border-radius:12px;font:800 19px ' + (t.font || 'system-ui,sans-serif') + ';cursor:pointer}' +
+    '#evnNullstillNei{background:' + (t.btn || '#ffd54a') + ';color:' + (t.btnInk || '#2b1d00') + ';border:0}' +
+    '#evnNullstillJa{background:transparent;color:inherit;border:2px solid #e05252}' +
+    '#evnNullstillBoks button:focus-visible,#evnNullstill:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}';
+  document.head.appendChild(css);
+
+  var lenke = document.createElement('button');
+  lenke.type = 'button'; lenke.id = 'evnNullstill'; lenke.textContent = '🗑️ Start helt på nytt';
+  cfg.plasser(lenke);
+  var boks = document.createElement('div');
+  boks.id = 'evnNullstillBoks'; boks.setAttribute('role', 'dialog'); boks.setAttribute('aria-modal', 'true'); boks.setAttribute('aria-labelledby', 'evnNullstillTittel');
+  boks.innerHTML = '<div class="kort"><h2 id="evnNullstillTittel">Starte helt på nytt?</h2>' +
+    '<p>' + cfg.tekst + '</p><p>Det kan ikke angres.</p>' +
+    '<button type="button" id="evnNullstillNei">Nei, behold alt</button>' +
+    '<button type="button" id="evnNullstillJa">Ja, slett alt</button></div>';
+  document.body.appendChild(boks);
+  ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (ev) {
+    boks.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+    lenke.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+  });
+  var $ = function (id) { return document.getElementById(id); };
+  var apen = false, forrige = null;
+  function oppdater() { lenke.hidden = !harLagring() || (cfg.vis ? !cfg.vis() : false); }
+  function apne() { apen = true; forrige = document.activeElement; boks.classList.add('vis'); if (window.EVNPauseInert) window.EVNPauseInert(boks); $('evnNullstillNei').focus(); }
+  function lukk() { apen = false; boks.classList.remove('vis'); if (window.EVNPauseInert) window.EVNPauseInert(null); try { (forrige || lenke).focus(); } catch (e) {} }
+  lenke.addEventListener('click', apne);
+  $('evnNullstillNei').addEventListener('click', lukk);
+  $('evnNullstillJa').addEventListener('click', function () {
+    try {
+      // Spillet lagrer gjerne når siden lukkes (pagehide). Stopp skriving til disse nøklene, så lagringen ikke kommer tilbake.
+      var orig = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k, v) { if (this === window.localStorage && cfg.nokler.indexOf(k) !== -1) return; return orig.call(this, k, v); };
+      cfg.nokler.forEach(function (k) { localStorage.removeItem(k); });
+    } catch (e) {}
+    location.reload();
+  });
+  window.addEventListener('keydown', function (e) {
+    if (!apen) return;
+    e.stopImmediatePropagation();                                    // spillet får ingen taster mens boksen er åpen
+    if (e.key === 'Escape') { e.preventDefault(); lukk(); }
+  }, true);
+  oppdater(); setInterval(oppdater, 500);
+};
+</script>
+<script>
+/* EVN-PAUSE v2: felles pause med spilletid og felles kart (samme kode i alle EVN-spill).
+   Kart (v2): 🗺️-knapp ved siden av ⏸ og tasten M åpner et stort kart. Spillet står stille mens kartet er åpent.
+   Spilletid lagres i localStorage 'evn-spilletid-<mappe>' = {dag, iDag, totalt} (millisekunder).
+   Tiden telles bare når spillet er aktivt, fanen synes, pausen ikke er åpen og noen har rørt tast/mus/skjerm siste 3 min. */
+window.EVNPause = function (cfg) {
+  var NOKKEL = 'evn-spilletid-' + cfg.mappe, LEDIG = 180000, t = cfg.tema || {};
+  var idag = function () { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); };
+  var tid = { dag: idag(), iDag: 0, totalt: 0 };
+  try { var l = JSON.parse(localStorage.getItem(NOKKEL)); if (l && typeof l.totalt === 'number') tid = l; } catch (e) {}
+  function lagreTid() { try { localStorage.setItem(NOKKEL, JSON.stringify(tid)); } catch (e) {} }
+  function fmt(ms) { var m = Math.floor(ms / 60000), h = Math.floor(m / 60); return ms < 60000 ? 'under 1 min' : h ? h + ' t ' + (m % 60) + ' min' : m + ' min'; }
+
+  var css = document.createElement('style');
+  css.textContent =
+    '#evnPauseKnapp,#evnKartKnapp{min-width:48px;min-height:48px;border-radius:12px;border:2px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;font:700 20px system-ui,sans-serif;cursor:pointer;touch-action:manipulation;pointer-events:auto;padding:0 10px}' +
+    '#evnPauseKnapp[hidden],#evnKartKnapp[hidden]{display:none!important}' +
+    '#evnKart{position:fixed;inset:0;z-index:99990;display:none;place-items:center;padding:12px;background:rgba(0,0,0,.55);touch-action:manipulation}' +
+    '#evnKart.vis{display:grid}' +
+    '#evnKart .kort{background:' + (t.panel || 'rgba(16,24,15,.95)') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:12px;max-width:100%;max-height:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnKart .topp{display:flex;align-items:center;gap:10px;margin:0 0 8px}' +
+    '#evnKart h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:26px;line-height:1;margin:0;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnKart .info{flex:1;font-size:14px;font-weight:700;opacity:.85;line-height:1.3}' +
+    '#evnKart button{width:44px;height:44px;flex:none;border-radius:12px;border:0;background:rgba(127,127,127,.28);color:inherit;font:800 20px system-ui,sans-serif;cursor:pointer}' +
+    '#evnKart canvas{display:block;border-radius:10px;image-rendering:pixelated}' +
+    '#evnKart button:focus-visible,#evnKartKnapp:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}' +
+    '#evnPause{position:fixed;inset:0;z-index:99990;display:none;place-items:center;padding:16px;background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);touch-action:manipulation}' +
+    '#evnPause.vis{display:grid}' +
+    '#evnPause .kort{background:' + (t.panel || 'rgba(16,24,15,.95)') + ';color:' + (t.ink || '#fff') + ';border-radius:18px;padding:18px 20px;width:min(320px,100%);max-height:100%;overflow:auto;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);font-family:' + (t.font || 'system-ui,sans-serif') + '}' +
+    '#evnPause h2{font-family:' + (t.head || t.font || 'system-ui,sans-serif') + ';font-weight:' + (t.headW || 900) + ';font-size:38px;line-height:1;margin:0 0 6px;color:' + (t.hi || '#ffd54a') + '}' +
+    '#evnPause .tider{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 6px}' +
+    '#evnPause .tid{border-radius:12px;padding:8px 6px;background:rgba(127,127,127,.18)}' +
+    '#evnPause .tid b{display:block;font-size:22px;line-height:1.15}#evnPause .tid small{font-size:13px;font-weight:700;opacity:.85}' +
+    '#evnPause button{display:block;width:100%;min-height:48px;margin:8px 0 0;border-radius:12px;border:0;font:800 18px ' + (t.font || 'system-ui,sans-serif') + ';cursor:pointer}' +
+    '#evnPause .fortsett{background:' + (t.btn || '#ffd54a') + ';color:' + (t.btnInk || '#2b1d00') + ';font-size:22px;min-height:56px' + (t.head ? ';font-family:' + t.head + ';font-weight:' + (t.headW || 800) : '') + '}' +
+    '#evnPause .liten{background:rgba(127,127,127,.25);color:inherit}' +
+    '#evnPause .styr{text-align:left;font-size:15px;line-height:1.45;margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(127,127,127,.15)}' +
+    '#evnPause .tips{font-size:14px;opacity:.85;margin:10px 0 0}' +
+    '#evnPause button:focus-visible,#evnPauseKnapp:focus-visible{outline:3px solid ' + (t.hi || '#fff') + ';outline-offset:2px}';
+  document.head.appendChild(css);
+
+  var knapp = document.createElement('button');
+  knapp.id = 'evnPauseKnapp'; knapp.type = 'button'; knapp.textContent = '⏸'; knapp.title = 'Pause (P)'; knapp.setAttribute('aria-label', 'Pause'); knapp.hidden = true;
+  var kartKnapp = null;
+  if (cfg.kart) {
+    kartKnapp = document.createElement('button');
+    kartKnapp.id = 'evnKartKnapp'; kartKnapp.type = 'button'; kartKnapp.textContent = '🗺️'; kartKnapp.title = 'Kart (M)'; kartKnapp.setAttribute('aria-label', 'Kart'); kartKnapp.hidden = true;
+  }
+  if (cfg.knapp) cfg.knapp(knapp, kartKnapp); else { if (kartKnapp) document.body.appendChild(kartKnapp); document.body.appendChild(knapp); }
+
+  var bak = document.createElement('div');
+  bak.id = 'evnPause'; bak.setAttribute('role', 'dialog'); bak.setAttribute('aria-modal', 'true'); bak.setAttribute('aria-labelledby', 'evnPauseTittel');
+  bak.innerHTML = '<div class="kort"><h2 id="evnPauseTittel">Pause</h2>' +
+    '<div class="tider"><div class="tid"><small>I dag</small><b id="evnPauseIdag"></b></div><div class="tid"><small>Totalt</small><b id="evnPauseTot"></b></div></div>' +
+    '<button class="fortsett" id="evnPauseFortsett" type="button">▶ Fortsett</button>' +
+    '<button class="liten" id="evnPauseStyrKnapp" type="button" aria-expanded="false">🎮 Slik styrer du</button>' +
+    '<div class="styr" id="evnPauseStyr" hidden></div>' +
+    '<button class="liten" id="evnPauseAvslutt" type="button">🚪 Avslutt</button>' +
+    '<p class="tips" id="evnPauseTips"></p></div>';
+  document.body.appendChild(bak);
+  var $ = function (id) { return document.getElementById(id); };
+  var kartBak = null;
+  if (cfg.kart) {
+    kartBak = document.createElement('div');
+    kartBak.id = 'evnKart'; kartBak.setAttribute('role', 'dialog'); kartBak.setAttribute('aria-modal', 'true'); kartBak.setAttribute('aria-labelledby', 'evnKartTittel');
+    kartBak.innerHTML = '<div class="kort"><div class="topp"><h2 id="evnKartTittel">🗺️ Kart</h2><span class="info" id="evnKartInfo"></span>' +
+      '<button type="button" id="evnKartLukk" aria-label="Lukk kartet">✕</button></div><canvas id="evnKartCv" role="img" aria-label="Kart over spillverdenen"></canvas></div>';
+    document.body.appendChild(kartBak);
+  }
+  [bak, knapp, kartBak, kartKnapp].forEach(function (el) {
+    if (el) ['pointerdown', 'mousedown', 'touchstart', 'click'].forEach(function (ev) { el.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
+  });
+
+  var apen = false, apnetTid = 0, venterAvslutt = false, kartApen = false;
+  // T2: mens en dialog er åpen, kan ingenting bak den få fokus eller trykk (inert), og Tab blir i dialogen.
+  var inertListe = [], aktivDialog = null;
+  function settInert(dlg) {
+    inertListe.forEach(function (el) { el.inert = false; }); inertListe = [];
+    aktivDialog = dlg || null;
+    if (!dlg) return;
+    Array.prototype.forEach.call(document.body.children, function (el) {
+      if (el !== dlg && !el.contains(dlg) && !el.inert && el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') { el.inert = true; inertListe.push(el); }
+    });
+  }
+  window.EVNPauseInert = settInert;
+  // Tab og Shift+Tab går rundt i den åpne dialogen i stedet for ut av siden (på window, før pausens egen tastaturhåndtering)
+  window.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab' || !aktivDialog) return;
+    var f = Array.prototype.filter.call(aktivDialog.querySelectorAll('button, a[href], input, [tabindex]:not([tabindex="-1"])'), function (el) { return !el.disabled && !el.hidden && el.getClientRects().length > 0; });
+    if (!f.length) return;
+    var i = f.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
+  }, true);
+  var avsluttLenke = function () { var a = $(cfg.avsluttId); return a && getComputedStyle(a).display !== 'none' ? a : null; };
+  var sporsmal = function () { return $('evnSporsmal'); };
+  var sporsmalApent = function () { var s = sporsmal(); return !!s && s.style.display === 'grid'; };
+  function kan() { return !apen && !kartApen && !venterAvslutt && !sporsmalApent() && cfg.kanPause(); }
+
+  // ---------- Kart ----------
+  function tegnKart() {
+    if (!kartApen) return;
+    var K = cfg.kart, cv = $('evnKartCv'), f = K.forhold || 1;
+    var maksB = Math.min(innerWidth - 48, 900), maksH = innerHeight - 110;
+    var b = Math.max(120, Math.min(maksB, maksH * f)), h = b / f;
+    var d = Math.min(2, window.devicePixelRatio || 1);
+    cv.style.width = Math.round(b) + 'px'; cv.style.height = Math.round(h) + 'px';
+    cv.width = Math.round(b * d); cv.height = Math.round(h * d);
+    kartBak.querySelector('.kort').style.width = Math.round(b + 24) + 'px';   // kortet like bredt som kartet
+    var c = cv.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
+    try { K.tegn(c, cv.width, cv.height, cv); } catch (e) {}
+    $('evnKartInfo').textContent = K.info ? K.info() : '';
+  }
+  function apneKart() {
+    if (!cfg.kart || !kan()) return;
+    cfg.pause(); kartApen = true; apnetTid = performance.now();
+    kartBak.classList.add('vis'); knapp.hidden = true; kartKnapp.hidden = true; settInert(kartBak);
+    tegnKart();
+    try { $('evnKartLukk').focus({ preventScroll: true }); } catch (e) {}
+  }
+  function lukkKart(fraKlikk) {
+    if (!kartApen) return;
+    kartApen = false; kartBak.classList.remove('vis'); settInert(null);
+    cfg.fortsett(!!fraKlikk);
+  }
+  if (cfg.kart) {
+    kartKnapp.addEventListener('click', function () { apneKart(); });
+    $('evnKartLukk').addEventListener('click', function () { lukkKart(true); });
+    kartBak.addEventListener('click', function (e) { if (e.target === kartBak) lukkKart(true); });   // trykk utenfor kartet lukker
+    window.addEventListener('resize', tegnKart);
+  }
+
+  function apne(grunn) {
+    if (!kan()) return;
+    cfg.pause();
+    apen = true; apnetTid = performance.now();
+    $('evnPauseIdag').textContent = fmt(tid.iDag); $('evnPauseTot').textContent = fmt(tid.totalt);
+    $('evnPauseTips').textContent = grunn || 'Spillet står stille. Ingenting er borte.';
+    $('evnPauseStyr').hidden = true; $('evnPauseStyrKnapp').setAttribute('aria-expanded', 'false');
+    $('evnPauseAvslutt').hidden = !avsluttLenke() || !sporsmal();
+    bak.classList.add('vis'); knapp.hidden = true; lagreTid(); settInert(bak);
+    try { $('evnPauseFortsett').focus({ preventScroll: true }); } catch (e) {}
+  }
+  function lukk(fraKlikk) {
+    if (!apen) return;
+    apen = false; bak.classList.remove('vis'); settInert(null);
+    cfg.fortsett(!!fraKlikk);
+  }
+  knapp.addEventListener('click', function () { apne(); });
+  $('evnPauseFortsett').addEventListener('click', function () { lukk(true); });
+  $('evnPauseStyrKnapp').addEventListener('click', function () {
+    var s = $('evnPauseStyr'); if (s.hidden) s.innerHTML = cfg.styring(); s.hidden = !s.hidden; this.setAttribute('aria-expanded', String(!s.hidden));
+  });
+  // Avslutt fra pausen: spillet står stille mens «Vil du avslutte?» vises. «Nei, spill videre» = fortsett.
+  function visSporsmal() { venterAvslutt = true; var s = sporsmal(); s.style.display = 'grid'; settInert(s); var b = $('evnBli'); if (b) b.focus(); }
+  $('evnPauseAvslutt').addEventListener('click', function () { apen = false; bak.classList.remove('vis'); if (cfg.lagre) cfg.lagre(); visSporsmal(); });
+  // Avslutt-knappen i spillet: spillet stopper også mens spørsmålet vises
+  document.addEventListener('click', function (e) {
+    var a = avsluttLenke(); if (!a || !a.contains(e.target) || venterAvslutt || apen || !cfg.kanPause()) return;
+    cfg.pause(); venterAvslutt = true;
+  }, true);
+  function nei() { if (!venterAvslutt) return; venterAvslutt = false; var s = sporsmal(); if (s) s.style.display = 'none'; settInert(null); cfg.fortsett(false); }
+  document.addEventListener('click', function (e) { var b = $('evnBli'); if (b && b.contains(e.target)) setTimeout(nei, 0); }, true);
+
+  window.addEventListener('keydown', function (e) {
+    var k = e.code || e.key;
+    if (venterAvslutt && sporsmalApent()) { if (k === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); nei(); } return; }
+    if (kartApen) {
+      e.stopImmediatePropagation();                                  // spillet får ingen taster mens kartet er åpent
+      if ((k === 'Escape' || k === 'KeyM') && !e.repeat && performance.now() - apnetTid > 200) { e.preventDefault(); lukkKart(false); }
+      return;
+    }
+    if (k === 'KeyM' && cfg.kart && !e.repeat && kan()) { e.preventDefault(); e.stopImmediatePropagation(); apneKart(); return; }
+    if (apen) {
+      e.stopImmediatePropagation();                                  // spillet får ingen taster mens pausen er åpen
+      if ((k === 'Escape' || k === 'KeyP') && !e.repeat && performance.now() - apnetTid > 300) { e.preventDefault(); lukk(k === 'KeyP'); }
+      return;
+    }
+    if ((k === 'KeyP' || (k === 'Escape' && (typeof cfg.escPause === 'function' ? cfg.escPause() : cfg.escPause !== false))) && !e.repeat && kan()) { e.preventDefault(); e.stopImmediatePropagation(); apne(); }
+  }, true);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) { apne('Pause fordi du byttet fane eller app.'); lagreTid(); } });
+  window.addEventListener('blur', function () { apne('Pause fordi du gikk ut av spillet.'); });
+  window.addEventListener('pagehide', lagreTid);
+
+  var sistRort = performance.now(), sist = performance.now(), sistLagret = 0;
+  ['keydown', 'pointerdown', 'pointermove', 'touchstart', 'wheel'].forEach(function (ev) { window.addEventListener(ev, function () { sistRort = performance.now(); }, { passive: true, capture: true }); });
+  setInterval(function () {
+    var naa = performance.now(), dt = Math.min(2000, naa - sist); sist = naa;
+    knapp.hidden = apen || kartApen || venterAvslutt || !cfg.kanPause();
+    if (kartKnapp) kartKnapp.hidden = knapp.hidden;
+    var dag = idag(); if (tid.dag !== dag) { tid.dag = dag; tid.iDag = 0; }
+    if (!apen && !venterAvslutt && !document.hidden && naa - sistRort < LEDIG && cfg.aktiv()) { tid.iDag += dt; tid.totalt += dt; }
+    if (naa - sistLagret > 15000) { sistLagret = naa; lagreTid(); }
+  }, 250);
+  return { apne: apne, lukk: lukk, apneKart: apneKart, lukkKart: lukkKart, erApen: function () { return apen || kartApen; }, tid: function () { return tid; } };
+};
+</script>
+
+<script src="../../vendor/three-r128.min.js"></script>
+<script>
+'use strict';
+const VERSJON = '0.1.0';
+const TEST = location.hash === '#test';
+// Testmodus har egen lagring, så ekte fremgang aldri blandes med testdata
+const LAGRING = TEST ? 'evn-eggjakten-test' : 'evn-eggjakten-v1';
+const LYD_NOKKEL = TEST ? 'evn-eggjakten-test-lyd' : 'evn-eggjakten-lyd';
+const $ = id => document.getElementById(id);
+
+// ======================================================
+// Innstillinger (balanse samlet ett sted)
+// ======================================================
+const INNST = {
+  hjem: { x: 0, z: 30 }, tryggRadius: 9, buaRadius: 6,
+  matPerEgg: 3, metttid: 6,
+  spillerFart: [5, 5.7, 6.4, 7.1, 7.8, 8.6],         // speed-nivå 0–5
+  speedPris: [40, 150, 500, 1400, 3500],
+  kastRekkevidde: [8, 10, 12, 14, 17],                // kaster-nivå 0–4
+  kastVent: [0.8, 0.6, 0.45, 0.35, 0.25],
+  kasterPris: [50, 200, 700, 2000],
+  kurv: [5, 8, 12, 18, 25], kurvPris: [60, 250, 800, 2200],
+  monsterFart: 4.6, monsterFartPerDyr: 0.5, monsterSyn: 14, monsterGiOpp: 6,
+};
+const MAT = [
+  { navn: 'Korn',      ik: '🌾', farge: 0xe8c96a, pris: 0,    sjanse: [86, 12, 2, 0] },
+  { navn: 'Epler',     ik: '🍎', farge: 0xe0402a, pris: 80,   sjanse: [76, 19, 4.5, 0.5] },
+  { navn: 'Gulrøtter', ik: '🥕', farge: 0xf28c28, pris: 300,  sjanse: [64, 26, 8.5, 1.5] },
+  { navn: 'Kake',      ik: '🍰', farge: 0xffc6d9, pris: 1000, sjanse: [50, 32, 14, 4] },
+  { navn: 'Gullkake',  ik: '🎂', farge: 0xffd23f, pris: 3000, sjanse: [36, 36, 20, 8] },
+];
+const SJELDEN = [
+  { navn: 'Vanlig',      gange: 1,  farge: 0xf4f1e8, glans: 0 },
+  { navn: 'Sjelden',     gange: 3,  farge: 0x4fb3ff, glans: 0.15 },
+  { navn: 'Episk',       gange: 8,  farge: 0xc77dff, glans: 0.3 },
+  { navn: 'Legendarisk', gange: 25, farge: 0xffd23f, glans: 0.6 },
+];
+const DYR = [
+  { id: 'hone',   navn: 'Høne',   ik: '🐔', baby: '🐥', pris: 0,    verdi: 5,   x: 0,   z: 8,   kropp: 0xffffff, hode: 0xffffff, nebb: 0xf2a91c, str: 0.8 },
+  { id: 'and',    navn: 'And',    ik: '🦆', baby: '🐤', pris: 60,   verdi: 12,  x: -22, z: -4,  kropp: 0xf2efe6, hode: 0x2f8a3a, nebb: 0xf28c28, str: 0.85 },
+  { id: 'gaas',   navn: 'Gås',    ik: '🪿', baby: '🐣', pris: 250,  verdi: 30,  x: 22,  z: -4,  kropp: 0xb8b8b0, hode: 0xffffff, nebb: 0xf28c28, str: 1.05 },
+  { id: 'kalkun', navn: 'Kalkun', ik: '🦃', baby: '🐣', pris: 900,  verdi: 70,  x: -14, z: -28, kropp: 0x7a4a2a, hode: 0xd23b3b, nebb: 0xe8c96a, str: 1.2 },
+  { id: 'vaktel', navn: 'Vaktel', ik: '🐦', baby: '🐥', pris: 2500, verdi: 160, x: 14,  z: -28, kropp: 0x9c7a52, hode: 0x5a3f28, nebb: 0x333333, str: 0.6 },
+];
+const PENN_R = 7.5, VERDEN = 52;
+
+// ======================================================
+// Lagring
+// ======================================================
+function nyTilstand() {
+  return { v: 1, penger: 0, kurv: [], poser: [], kjaele: {}, niva: { mat: 0, kaster: 0, speed: 0, kurv: 0 }, dyr: ['hone'], legendarisk: 0, totaltEgg: 0 };
+}
+let tilstand = nyTilstand();
+function lesLagring() {
+  for (const k of [LAGRING, LAGRING + '-kopi']) {
+    try {
+      const l = JSON.parse(localStorage.getItem(k));
+      if (l && l.v === 1 && typeof l.penger === 'number') return Object.assign(nyTilstand(), l, { niva: Object.assign(nyTilstand().niva, l.niva || {}) });
+    } catch (e) {}
+  }
+  return nyTilstand();
+}
+tilstand = lesLagring();
+if (!Array.isArray(tilstand.dyr) || !tilstand.dyr.includes('hone')) tilstand.dyr = ['hone'];
+function lagre() {
+  try { const s = JSON.stringify(tilstand); localStorage.setItem(LAGRING, s); localStorage.setItem(LAGRING + '-kopi', s); } catch (e) {}
+}
+addEventListener('pagehide', lagre);
+document.addEventListener('visibilitychange', () => { if (document.hidden) lagre(); });
+
+// ======================================================
+// Lyd (enkle pip, ingen filer)
+// ======================================================
+let lyd = null, lydPa = true;
+try { lydPa = localStorage.getItem(LYD_NOKKEL) !== 'av'; } catch (e) {}
+function tone(f, varighet, type, vol, glid) {
+  if (!lydPa || !lyd) return;
+  try {
+    const o = lyd.createOscillator(), g = lyd.createGain(), t = lyd.currentTime;
+    o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); if (glid) o.frequency.exponentialRampToValueAtTime(glid, t + varighet);
+    g.gain.setValueAtTime(vol || 0.15, t); g.gain.exponentialRampToValueAtTime(0.001, t + varighet);
+    o.connect(g); g.connect(lyd.destination); o.start(t); o.stop(t + varighet);
+  } catch (e) {}
+}
+const LYD = {
+  kast: () => tone(500, 0.15, 'triangle', 0.1, 900),
+  treff: () => tone(700, 0.08, 'square', 0.06),
+  egg: () => { tone(880, 0.12, 'sine', 0.15); setTimeout(() => tone(1320, 0.15, 'sine', 0.12), 90); },
+  plukk: () => tone(1000, 0.08, 'sine', 0.1, 1400),
+  mynt: () => { tone(1200, 0.08, 'square', 0.06); setTimeout(() => tone(1600, 0.12, 'square', 0.06), 70); },
+  bonk: () => tone(160, 0.4, 'sawtooth', 0.2, 60),
+  fare: () => tone(220, 0.25, 'square', 0.07, 180),
+  klekk: () => [660, 880, 1100, 1320].forEach((f, i) => setTimeout(() => tone(f, 0.15, 'triangle', 0.12), i * 90)),
+};
+function oppdaterLydKnapp() { $('lydKnapp').textContent = lydPa ? '🔊' : '🔇'; $('lydKnapp').setAttribute('aria-pressed', String(!lydPa)); }
+function byttLyd() { lydPa = !lydPa; try { localStorage.setItem(LYD_NOKKEL, lydPa ? 'pa' : 'av'); } catch (e) {} oppdaterLydKnapp(); }
+$('lydKnapp').addEventListener('click', byttLyd);
+oppdaterLydKnapp();
+
+// ======================================================
+// Three.js-scene
+// ======================================================
+const canvas = $('c');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); } catch (e) { renderer = null; }
+if (!renderer) { $('feil').querySelector('p').textContent = 'Nettleseren din klarer ikke å vise 3D. Prøv en annen nettleser.'; $('feil').classList.add('vis'); throw new Error('Ingen WebGL'); }
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9fd8f5);
+scene.fog = new THREE.Fog(0x9fd8f5, 45, 95);
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x5a8a3a, 0.85));
+const sol = new THREE.DirectionalLight(0xffffff, 0.6); sol.position.set(20, 40, 15); scene.add(sol);
+function storrelse() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w < h ? 62 : 50; camera.updateProjectionMatrix(); }
+addEventListener('resize', storrelse); storrelse();
+
+const M = c => new THREE.MeshLambertMaterial({ color: c });
+const geo = { kule: new THREE.SphereGeometry(1, 16, 12), boks: new THREE.BoxGeometry(1, 1, 1), kjegle: new THREE.ConeGeometry(1, 1, 10), syl: new THREE.CylinderGeometry(1, 1, 1, 10) };
+function mesh(g, farge, sx, sy, sz, x, y, z, foreldre) {
+  const m = new THREE.Mesh(g, typeof farge === 'number' ? M(farge) : farge);
+  m.scale.set(sx, sy, sz); m.position.set(x || 0, y || 0, z || 0); if (foreldre) foreldre.add(m); return m;
+}
+const skyggeMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false });
+function skygge(foreldre, r) { const s = new THREE.Mesh(new THREE.CircleGeometry(r, 16), skyggeMat); s.rotation.x = -Math.PI / 2; s.position.y = 0.02; foreldre.add(s); return s; }
+
+const emojiCache = {};
+function emojiSprite(tekst, str, farge) {
+  const nokkel = tekst + '|' + (farge || '');
+  if (!emojiCache[nokkel]) {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 128; const x = c.getContext('2d');
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    if (farge) { x.fillStyle = 'rgba(31,58,23,.82)'; x.beginPath(); x.roundRect ? x.roundRect(8, 24, 240, 80, 40) : x.rect(8, 24, 240, 80); x.fill(); x.fillStyle = farge; x.font = '800 40px Nunito, system-ui, sans-serif'; }
+    else x.font = '92px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+    x.fillText(tekst, 128, 66);
+    const t = new THREE.CanvasTexture(c); emojiCache[nokkel] = new THREE.SpriteMaterial({ map: t, transparent: true, depthTest: false });
+  }
+  const s = new THREE.Sprite(emojiCache[nokkel]); s.scale.set(str * 2, str, 1); s.renderOrder = 10; return s;
+}
+
+// Bakke og pynt
+const bakke = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), M(0x8fd16a)); bakke.rotation.x = -Math.PI / 2; scene.add(bakke);
+const sti = new THREE.Mesh(new THREE.CircleGeometry(INNST.tryggRadius, 32), M(0xd9c08a)); sti.rotation.x = -Math.PI / 2; sti.position.set(INNST.hjem.x, 0.01, INNST.hjem.z); scene.add(sti);
+// Eggbua
+const bua = new THREE.Group(); bua.position.set(INNST.hjem.x + 6.5, 0, INNST.hjem.z + 1); bua.rotation.y = -Math.PI / 2; scene.add(bua);
+mesh(geo.boks, 0xc0392b, 6, 3.2, 4.5, 0, 1.6, 0, bua);
+const tak = mesh(geo.kjegle, 0x7d241b, 4.3, 2.2, 4.3, 0, 4.3, 0, bua); tak.rotation.y = Math.PI / 4;
+mesh(geo.boks, 0x5a2a12, 1.6, 2.2, 0.2, 0, 1.1, -2.3, bua);
+mesh(geo.boks, 0xffffff, 6.2, 0.3, 0.3, 0, 3.25, -2.3, bua);
+const skilt = emojiSprite('🏠 Eggbua', 1.4, '#ffc93c'); skilt.position.set(0, 6.6, 0); bua.add(skilt);
+// Trær rundt
+for (let i = 0; i < 46; i++) {
+  const v = i / 46 * Math.PI * 2 + Math.sin(i * 7) * 0.05, r = VERDEN + 4 + (i % 3) * 3;
+  const t = new THREE.Group(); t.position.set(Math.cos(v) * r, 0, Math.sin(v) * r); scene.add(t);
+  mesh(geo.syl, 0x7a5230, 0.4, 2, 0.4, 0, 1, 0, t); mesh(geo.kjegle, i % 2 ? 0x2f7d32 : 0x3f9a3a, 2, 4, 2, 0, 4, 0, t);
+}
+// Blomster og steiner
+for (let i = 0; i < 70; i++) {
+  const x = (Math.sin(i * 12.9898) * 43758.5453 % 1) * 90 - 45, z = (Math.sin(i * 78.233) * 12345.678 % 1) * 90 - 45;
+  if (Math.hypot(x - INNST.hjem.x, z - INNST.hjem.z) < 11) continue;
+  if (DYR.some(d => Math.hypot(x - d.x, z - d.z) < PENN_R + 1)) continue;
+  if (i % 3) mesh(geo.kule, [0xff6fa8, 0xffe14a, 0xffffff, 0xa77dff][i % 4], 0.22, 0.22, 0.22, x, 0.25, z, scene);
+  else mesh(geo.kule, 0x9a9a92, 0.6, 0.35, 0.5, x, 0.15, z, scene);
+}
+
+// ======================================================
+// Figurer: robot, dyr, monster, egg
+// ======================================================
+function lagRobot() {
+  const g = new THREE.Group();
+  const gul = 0xffcc00;
+  const kropp = new THREE.Group(); g.add(kropp);
+  mesh(geo.boks, gul, 1.1, 1.0, 0.7, 0, 1.2, 0, kropp);
+  mesh(geo.boks, 0x3a3a3a, 0.6, 0.35, 0.05, 0, 1.25, 0.36, kropp);
+  const hode = new THREE.Group(); hode.position.y = 2.1; kropp.add(hode);
+  mesh(geo.boks, gul, 0.95, 0.75, 0.8, 0, 0, 0, hode);
+  mesh(geo.boks, 0x1d2440, 0.75, 0.38, 0.05, 0, 0.02, 0.41, hode);
+  mesh(geo.kule, 0x8ff7ff, 0.09, 0.11, 0.05, -0.17, 0.04, 0.44, hode); mesh(geo.kule, 0x8ff7ff, 0.09, 0.11, 0.05, 0.17, 0.04, 0.44, hode);
+  mesh(geo.syl, 0x555555, 0.04, 0.35, 0.04, 0, 0.55, 0, hode); mesh(geo.kule, 0xff4d4d, 0.12, 0.12, 0.12, 0, 0.78, 0, hode);
+  const armV = mesh(geo.boks, gul, 0.25, 0.8, 0.25, -0.7, 1.15, 0, kropp), armH = mesh(geo.boks, gul, 0.25, 0.8, 0.25, 0.7, 1.15, 0, kropp);
+  const benV = mesh(geo.boks, 0x555555, 0.3, 0.7, 0.3, -0.28, 0.35, 0, g), benH = mesh(geo.boks, 0x555555, 0.3, 0.7, 0.3, 0.28, 0.35, 0, g);
+  skygge(g, 0.8);
+  g.userData = { kropp, armV, armH, benV, benH };
+  return g;
+}
+function lagDyr(d, baby) {
+  const g = new THREE.Group(), s = d.str * (baby ? 0.5 : 1);
+  const k = new THREE.Group(); k.scale.setScalar(s); g.add(k);
+  mesh(geo.kule, d.kropp, 0.7, 0.55, 0.85, 0, 0.75, 0, k);
+  mesh(geo.kule, d.hode, 0.35, 0.38, 0.35, 0, 1.35, 0.55, k);
+  mesh(geo.kule, 0x111111, 0.06, 0.06, 0.06, -0.15, 1.42, 0.82, k); mesh(geo.kule, 0x111111, 0.06, 0.06, 0.06, 0.15, 1.42, 0.82, k);
+  const nebb = mesh(geo.kjegle, d.nebb, 0.12, 0.3, 0.12, 0, 1.3, 0.92, k); nebb.rotation.x = Math.PI / 2;
+  if (d.id === 'hone') mesh(geo.kule, 0xd8262f, 0.08, 0.16, 0.18, 0, 1.75, 0.5, k);
+  if (d.id === 'kalkun') for (let i = -2; i <= 2; i++) { const f = mesh(geo.boks, [0x5a3418, 0xa8652e, 0x3b2410][(i + 3) % 3], 0.25, 1.1, 0.08, i * 0.22, 1.2, -0.7, k); f.rotation.z = i * 0.28; }
+  if (d.id === 'gaas') mesh(geo.syl, d.hode, 0.13, 0.5, 0.13, 0, 1.05, 0.45, k);
+  mesh(geo.syl, d.nebb, 0.05, 0.4, 0.05, -0.2, 0.2, 0, k); mesh(geo.syl, d.nebb, 0.05, 0.4, 0.05, 0.2, 0.2, 0, k);
+  skygge(g, 0.7 * s);
+  return g;
+}
+function lagMonster() {
+  const g = new THREE.Group();
+  const k = new THREE.Group(); g.add(k);
+  mesh(geo.kule, 0x7b3fbf, 1.5, 1.3, 1.3, 0, 1.4, 0, k);
+  mesh(geo.kule, 0x9a63d9, 1.1, 0.8, 1.0, 0, 1.0, 0.45, k);
+  const hornV = mesh(geo.kjegle, 0xf2e6c9, 0.25, 0.8, 0.25, -0.7, 2.6, 0, k); hornV.rotation.z = 0.4;
+  const hornH = mesh(geo.kjegle, 0xf2e6c9, 0.25, 0.8, 0.25, 0.7, 2.6, 0, k); hornH.rotation.z = -0.4;
+  const oyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  mesh(geo.kule, oyeMat, 0.3, 0.3, 0.2, -0.45, 1.85, 1.1, k); mesh(geo.kule, oyeMat, 0.3, 0.3, 0.2, 0.45, 1.85, 1.1, k);
+  const pupMat = new THREE.MeshBasicMaterial({ color: 0x1a1a1a });
+  mesh(geo.kule, pupMat, 0.13, 0.13, 0.1, -0.45, 1.85, 1.28, k); mesh(geo.kule, pupMat, 0.13, 0.13, 0.1, 0.45, 1.85, 1.28, k);
+  const munn = mesh(geo.boks, 0x2a0f3d, 0.9, 0.18, 0.1, 0, 1.2, 1.25, k);
+  for (let i = -1; i <= 1; i++) { const t = mesh(geo.kjegle, 0xffffff, 0.08, 0.18, 0.08, i * 0.28, 1.12, 1.3, k); t.rotation.x = Math.PI; }
+  mesh(geo.boks, 0x5c2d91, 0.4, 0.6, 0.4, -0.6, 0.3, 0, k); mesh(geo.boks, 0x5c2d91, 0.4, 0.6, 0.4, 0.6, 0.3, 0, k);
+  skygge(g, 1.5);
+  const varsel = emojiSprite('❗', 1.2); varsel.position.y = 3.8; varsel.visible = false; g.add(varsel);
+  g.userData = { k, pupMat, varsel };
+  return g;
+}
+const eggGeo = new THREE.SphereGeometry(0.3, 14, 10);
+const eggMat = SJELDEN.map(r => new THREE.MeshLambertMaterial({ color: r.farge, emissive: r.farge, emissiveIntensity: r.glans }));
+function lagEggMesh(r) { const m = new THREE.Mesh(eggGeo, eggMat[r]); m.scale.set(1, 1.3, 1); return m; }
+
+// ======================================================
+// Pennene og dyrene
+// ======================================================
+const penner = DYR.map(d => {
+  const g = new THREE.Group(); g.position.set(d.x, 0, d.z); scene.add(g);
+  const gulv = new THREE.Mesh(new THREE.CircleGeometry(PENN_R, 32), M(d.id === 'and' ? 0x7fc2e8 : 0xb7d98a)); gulv.rotation.x = -Math.PI / 2; gulv.position.y = 0.015; g.add(gulv);
+  for (let i = 0; i < 26; i++) {
+    const v = i / 26 * Math.PI * 2;
+    mesh(geo.boks, 0x9c6b3e, 0.25, 1.1, 0.25, Math.cos(v) * PENN_R, 0.55, Math.sin(v) * PENN_R, g);
+  }
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(PENN_R, 0.08, 6, 48), M(0xc49460)); ring.rotation.x = Math.PI / 2; ring.position.y = 0.9; g.add(ring);
+  const lapp = emojiSprite('', 1.2, '#fff'); lapp.position.y = 3.2; g.add(lapp);
+  const dyr = [];
+  for (let i = 0; i < 3; i++) {
+    const m = lagDyr(d); const v = i * 2.1;
+    m.position.set(Math.cos(v) * 3, 0, Math.sin(v) * 3); g.add(m);
+    const hjerte = emojiSprite('', 0.8); hjerte.position.y = 2.2 * d.str; m.add(hjerte);
+    dyr.push({ mesh: m, art: d, mett: 0, sovTil: 0, mal: new THREE.Vector3(m.position.x, 0, m.position.z), venteTid: Math.random() * 2, hjerte, hopp: 0 });
+  }
+  return { art: d, gruppe: g, dyr, lapp };
+});
+function pennApen(d) { return tilstand.dyr.includes(d.id); }
+function oppdaterPenner() {
+  for (const p of penner) {
+    const apen = pennApen(p.art);
+    for (const a of p.dyr) a.mesh.visible = apen;
+    const ny = apen ? p.art.ik + ' ' + p.art.navn : '🔒 ' + p.art.navn + ' · ' + p.art.pris + ' 🪙';
+    if (p.lapp.userData.t !== ny) { p.gruppe.remove(p.lapp); p.lapp = emojiSprite(ny, 1.2, apen ? '#fff' : '#ffc93c'); p.lapp.position.y = 3.2; p.lapp.userData.t = ny; p.gruppe.add(p.lapp); }
+  }
+}
+function settHjerte(a, tekst) {
+  a.mesh.remove(a.hjerte); a.hjerte = emojiSprite(tekst, 0.8); a.hjerte.position.y = 2.3 * a.art.str; a.mesh.add(a.hjerte);
+}
+oppdaterPenner();
+
+// ======================================================
+// Spiller, kjæledyr, monster
+// ======================================================
+const robot = lagRobot(); scene.add(robot);
+const spiller = { pos: new THREE.Vector3(INNST.hjem.x, 0, INNST.hjem.z), retning: Math.PI, fart: 0, sloTil: 0, kastKlar: 0 };
+robot.position.copy(spiller.pos);
+
+const monster = { mesh: lagMonster(), pos: new THREE.Vector3(0, 0, -45), mal: new THREE.Vector3(0, 0, -40), jager: false, jageTid: 0, hvileTil: 0, venteTid: 0 };
+scene.add(monster.mesh); monster.mesh.position.copy(monster.pos);
+
+const foelgere = [];
+function byggFoelgere() {
+  for (const f of foelgere) scene.remove(f.mesh);
+  foelgere.length = 0;
+  const arter = DYR.filter(d => (tilstand.kjaele[d.id] || 0) > 0).slice(-3);
+  arter.forEach((d, i) => { const m = lagDyr(d, true); m.position.copy(spiller.pos); scene.add(m); foelgere.push({ mesh: m, avstand: 1.6 + i * 1.1 }); });
+}
+function antallKjaele() { return Object.values(tilstand.kjaele).reduce((a, b) => a + b, 0); }
+function verdiBonus() { return Math.min(0.6, antallKjaele() * 0.03); }
+function plukkRadius() { return 1.6 + foelgere.length * 0.5; }
+byggFoelgere();
+
+// ======================================================
+// Egg på bakken, kastet mat, eggposer
+// ======================================================
+const bakkeEgg = [];    // { mesh, art, r, pos }
+const flygendeMat = []; // { mesh, fra, til, t, varighet, mal }
+const poseMesh = [];    // speiler tilstand.poser
+function leggEgg(a) {
+  const ms = MAT[tilstand.niva.mat].sjanse, sum = ms.reduce((x, y) => x + y, 0);
+  let t = Math.random() * sum, r = 0; for (; r < ms.length - 1; r++) { t -= ms[r]; if (t < 0) break; }
+  const m = lagEggMesh(r);
+  const wp = new THREE.Vector3(); a.mesh.getWorldPosition(wp);
+  const v = Math.random() * Math.PI * 2; wp.x += Math.cos(v) * 0.9; wp.z += Math.sin(v) * 0.9; wp.y = 0.4;
+  m.position.copy(wp); scene.add(m);
+  bakkeEgg.push({ mesh: m, art: a.art.id, r, pos: wp, t: 0 });
+  tilstand.totaltEgg = (tilstand.totaltEgg || 0) + 1;
+  LYD.egg();
+  if (r >= 2) melding((r === 3 ? '🌟 LEGENDARISK egg!' : '💜 Episk egg!') + '<small>Plukk det opp før monsteret kommer!</small>', 3);
+}
+function byggPoser() {
+  for (const m of poseMesh) scene.remove(m);
+  poseMesh.length = 0;
+  for (const p of tilstand.poser) {
+    const g = new THREE.Group(); g.position.set(p.x, 0, p.z);
+    mesh(geo.syl, 0xb5823c, 0.7, 0.45, 0.7, 0, 0.25, 0, g);
+    for (let i = 0; i < Math.min(5, p.egg.length); i++) { const e = lagEggMesh(p.egg[i].r); e.position.set(Math.cos(i * 1.3) * 0.35, 0.6, Math.sin(i * 1.3) * 0.35); e.scale.multiplyScalar(0.8); g.add(e); }
+    const s = emojiSprite('🧺 ' + p.egg.length, 1, '#ffc93c'); s.position.y = 2; g.add(s);
+    scene.add(g); poseMesh.push(g);
+  }
+}
+byggPoser();
+
+// ======================================================
+// HUD og meldinger
+// ======================================================
+let meldTimer = 0;
+function melding(html, sek) { $('melding').innerHTML = html; $('melding').classList.add('vis'); meldTimer = sek || 2.5; }
+function bump(id) { const e = $(id); e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); }
+function kurvMaks() { return INNST.kurv[tilstand.niva.kurv]; }
+function oppdaterHud() {
+  $('penger').textContent = tilstand.penger;
+  $('kurv').textContent = tilstand.kurv.length + '/' + kurvMaks();
+  $('pKurv').classList.toggle('full', tilstand.kurv.length >= kurvMaks());
+  $('kjaele').textContent = antallKjaele();
+  $('kastIk').textContent = MAT[tilstand.niva.mat].ik;
+  const neste = DYR.find(d => !pennApen(d));
+  $('maal').textContent = neste ? '🎯 Mål: lås opp ' + neste.ik + ' ' + neste.navn + ' (' + neste.pris + ' 🪙)' : (tilstand.legendarisk > 0 ? '🏆 Du har klart alt i Gården! Flere områder kommer.' : '🎯 Mål: finn et 🌟 legendarisk egg');
+}
+
+// ======================================================
+// Input
+// ======================================================
+const taster = {};
+const erTouch = matchMedia('(pointer:coarse)').matches;
+if (erTouch) document.documentElement.classList.add('touch');
+addEventListener('touchstart', () => document.documentElement.classList.add('touch'), { once: true, passive: true });
+addEventListener('keydown', () => document.documentElement.classList.remove('touch'), { passive: true });
+let spillTilstand = 'start';
+const LAG = ['bua', 'klekket'];
+function lagApent() { return LAG.some(id => $(id).classList.contains('vis')); }
+addEventListener('keydown', e => {
+  if (spillTilstand !== 'spill' || lagApent()) return;
+  taster[e.code] = true;
+  if ((e.code === 'Space' || e.code === 'KeyK') && !e.repeat) { e.preventDefault(); kast(); }
+  if (e.code === 'KeyE' && !e.repeat && iBua()) { e.preventDefault(); apneBua(); }
+  if (e.code === 'KeyL' && !e.repeat) byttLyd();
+  if (e.code.startsWith('Arrow')) e.preventDefault();
+});
+addEventListener('keyup', e => { taster[e.code] = false; });
+addEventListener('blur', () => { for (const k in taster) taster[k] = false; slippAlt(); });
+// Dra for å gå (berøring og mus)
+const joy = { aktiv: false, id: null, sx: 0, sy: 0, dx: 0, dy: 0 };
+function slippAlt() { joy.aktiv = false; joy.id = null; joy.dx = joy.dy = 0; $('joy').style.display = 'none'; }
+canvas.addEventListener('pointerdown', e => {
+  if (spillTilstand !== 'spill') return;
+  joy.aktiv = true; joy.id = e.pointerId; joy.sx = e.clientX; joy.sy = e.clientY; joy.dx = joy.dy = 0;
+  const j = $('joy'); j.style.left = e.clientX + 'px'; j.style.top = e.clientY + 'px'; j.style.display = 'block'; j.firstElementChild.style.transform = '';
+  try { canvas.setPointerCapture(e.pointerId); } catch (er) {}
+});
+canvas.addEventListener('pointermove', e => {
+  if (!joy.aktiv || e.pointerId !== joy.id) return;
+  let dx = e.clientX - joy.sx, dy = e.clientY - joy.sy; const l = Math.hypot(dx, dy), maks = 45;
+  if (l > maks) { dx *= maks / l; dy *= maks / l; }
+  joy.dx = dx / maks; joy.dy = dy / maks; $('joy').firstElementChild.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+});
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => canvas.addEventListener(ev, e => { if (e.pointerId === joy.id) slippAlt(); }));
+$('kast').addEventListener('click', e => { e.stopPropagation(); kast(); });
+$('buaKnapp').addEventListener('click', e => { e.stopPropagation(); apneBua(); });
+
+// ======================================================
+// Spillogikk
+// ======================================================
+function iBua() { return Math.hypot(spiller.pos.x - INNST.hjem.x, spiller.pos.z - INNST.hjem.z) < INNST.buaRadius; }
+function iTrygg(p) { return Math.hypot(p.x - INNST.hjem.x, p.z - INNST.hjem.z) < INNST.tryggRadius; }
+function kast() {
+  if (spillTilstand !== 'spill' || spiller.sloTil > 0) return;
+  if (spiller.kastKlar > 0) return;
+  const rekk = INNST.kastRekkevidde[tilstand.niva.kaster];
+  let best = null, bestAvst = Infinity;
+  const wp = new THREE.Vector3();
+  for (const p of penner) {
+    if (!pennApen(p.art)) continue;
+    for (const a of p.dyr) {
+      if (a.sovTil > tid) continue;
+      a.mesh.getWorldPosition(wp);
+      const avst = Math.hypot(wp.x - spiller.pos.x, wp.z - spiller.pos.z);
+      if (avst < rekk && avst < bestAvst) { best = a; bestAvst = avst; }
+    }
+  }
+  if (!best) {
+    const sulten = penner.some(p => pennApen(p.art) && p.dyr.some(a => a.sovTil <= tid));
+    melding(sulten ? 'Gå nærmere et dyr for å kaste! 🐔' : 'Dyrene er mette. Vent litt! 💤', 1.8);
+    return;
+  }
+  best.mesh.getWorldPosition(wp);
+  const mat = mesh(geo.kule, MAT[tilstand.niva.mat].farge, 0.22, 0.22, 0.22, spiller.pos.x, 1.6, spiller.pos.z, scene);
+  flygendeMat.push({ mesh: mat, fra: new THREE.Vector3(spiller.pos.x, 1.6, spiller.pos.z), mal: best, t: 0, varighet: 0.25 + bestAvst * 0.035 });
+  spiller.retning = Math.atan2(wp.x - spiller.pos.x, wp.z - spiller.pos.z);
+  spiller.kastKlar = INNST.kastVent[tilstand.niva.kaster];
+  spiller.kastAnim = 0.25;
+  LYD.kast();
+}
+function treffDyr(a) {
+  if (a.sovTil > tid) return;
+  a.mett++; a.hopp = 0.35; LYD.treff();
+  if (a.mett >= INNST.matPerEgg) {
+    a.mett = 0; a.sovTil = tid + INNST.metttid; settHjerte(a, '💤');
+    leggEgg(a);
+  } else settHjerte(a, '❤️'.repeat(a.mett));
+}
+function plukkOpp() {
+  const r = plukkRadius();
+  for (let i = bakkeEgg.length - 1; i >= 0; i--) {
+    const e = bakkeEgg[i];
+    if (Math.hypot(e.pos.x - spiller.pos.x, e.pos.z - spiller.pos.z) > r) continue;
+    if (tilstand.kurv.length >= kurvMaks()) { if (meldTimer <= 0) melding('🧺 Kurven er full!<small>Gå til Eggbua 🏠 og selg eller klekk eggene.</small>', 2.5); return; }
+    tilstand.kurv.push({ a: e.art, r: e.r }); scene.remove(e.mesh); bakkeEgg.splice(i, 1);
+    LYD.plukk(); bump('pKurv'); oppdaterHud();
+  }
+  for (let i = tilstand.poser.length - 1; i >= 0; i--) {
+    const p = tilstand.poser[i];
+    if (Math.hypot(p.x - spiller.pos.x, p.z - spiller.pos.z) > r + 0.6) continue;
+    const plass = kurvMaks() - tilstand.kurv.length;
+    if (plass <= 0) { if (meldTimer <= 0) melding('🧺 Kurven er full!<small>Gå til Eggbua og tøm den, så kan du hente resten.</small>', 2.5); continue; }
+    const tatt = p.egg.splice(0, plass); tilstand.kurv.push(...tatt);
+    if (!p.egg.length) tilstand.poser.splice(i, 1);
+    LYD.plukk(); melding('Du hentet ' + tatt.length + ' egg tilbake! 🧺', 2); byggPoser(); oppdaterHud(); lagre();
+  }
+}
+function blirTatt() {
+  LYD.bonk();
+  $('bonk').classList.add('vis'); setTimeout(() => $('bonk').classList.remove('vis'), 700);
+  if (tilstand.kurv.length) {
+    tilstand.poser.push({ x: +spiller.pos.x.toFixed(2), z: +spiller.pos.z.toFixed(2), egg: tilstand.kurv.splice(0) });
+    melding('Monsteret slo deg! 👾<small>Eggene ligger der du ble slått. Løp tilbake og hent dem!</small>', 4);
+    byggPoser();
+  } else melding('Monsteret slo deg! 👾<small>Heldigvis hadde du ingen egg i kurven.</small>', 3);
+  spiller.sloTil = 1.2;
+  monster.jager = false; monster.hvileTil = tid + 4; monster.mesh.userData.varsel.visible = false;
+  oppdaterHud(); lagre();
+}
+function monsterFart() { return INNST.monsterFart + INNST.monsterFartPerDyr * (tilstand.dyr.length - 1); }
+
+// ======================================================
+// Eggbua
+// ======================================================
+let buaFane = 'egg', forrigeFokus = null;
+function eggVerdi(e) { const d = DYR.find(x => x.id === e.a); return Math.round(d.verdi * SJELDEN[e.r].gange * (1 + verdiBonus())); }
+function apneBua() {
+  if (spillTilstand !== 'spill') return;
+  forrigeFokus = document.activeElement; slippAlt(); for (const k in taster) taster[k] = false;
+  $('bua').classList.add('vis'); if (window.EVNPauseInert) window.EVNPauseInert($('bua'));
+  tegnBua(); const f = $('bua').querySelector('.fane[aria-selected="true"]'); if (f) f.focus();
+}
+function lukkLag(id) {
+  $(id).classList.remove('vis');
+  if (window.EVNPauseInert) window.EVNPauseInert(lagApent() ? $(LAG.find(x => $(x).classList.contains('vis'))) : null);
+  if (!lagApent() && spillTilstand === 'spill') { try { (forrigeFokus && forrigeFokus.isConnected ? forrigeFokus : canvas).focus({ preventScroll: true }); } catch (e) {} }
+}
+document.querySelectorAll('[data-lukk]').forEach(b => b.addEventListener('click', () => lukkLag(b.dataset.lukk)));
+document.querySelectorAll('.fane').forEach(b => b.addEventListener('click', () => { buaFane = b.dataset.fane; tegnBua(); b.focus(); }));
+addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if ($('klekket').classList.contains('vis')) { e.preventDefault(); e.stopImmediatePropagation(); lukkLag('klekket'); }
+  else if ($('bua').classList.contains('vis')) { e.preventDefault(); e.stopImmediatePropagation(); lukkLag('bua'); }
+}, true);
+function rad(ik, tittel, under, knapper, klasse) {
+  return '<div class="rad ' + (klasse || '') + '"><span class="ik" aria-hidden="true">' + ik + '</span><div><b>' + tittel + '</b><small>' + under + '</small></div><div class="knapper">' + knapper + '</div></div>';
+}
+function tegnBua() {
+  document.querySelectorAll('.fane').forEach(b => b.setAttribute('aria-selected', String(b.dataset.fane === buaFane)));
+  const inn = $('buaInnhold'); let h = '';
+  if (buaFane === 'egg') {
+    const grupper = {};
+    for (const e of tilstand.kurv) { const k = e.a + ':' + e.r; (grupper[k] = grupper[k] || { a: e.a, r: e.r, n: 0 }).n++; }
+    const liste = Object.values(grupper).sort((x, y) => y.r - x.r || DYR.findIndex(d => d.id === y.a) - DYR.findIndex(d => d.id === x.a));
+    if (!liste.length) h = '<div class="tom">Kurven er tom. Kast mat til dyrene, så legger de egg! 🥚</div>';
+    else {
+      const sum = tilstand.kurv.reduce((s, e) => s + eggVerdi(e), 0);
+      h += '<p class="info">💰 Selg for mynter, eller 🐣 klekk et egg og få et kjæledyr. Hvert kjæledyr gjør eggene 3 % mer verdt.</p><div class="liste">';
+      for (const g of liste) {
+        const d = DYR.find(x => x.id === g.a), v = eggVerdi(g);
+        h += rad('🥚', SJELDEN[g.r].navn + ' ' + d.navn.toLowerCase() + 'egg × ' + g.n, v + ' 🪙 per egg',
+          '<button class="kn" type="button" data-selg="' + g.a + ':' + g.r + '">Selg 1<small>+' + v + ' 🪙</small></button>' +
+          '<button class="kn bla" type="button" data-klekk="' + g.a + ':' + g.r + '">🐣 Klekk</button>', 'r' + g.r);
+      }
+      h += '</div><button class="kn bred" type="button" id="selgAlle">💰 Selg alle eggene (+' + sum + ' 🪙)</button>';
+    }
+  } else if (buaFane === 'opp') {
+    const n = tilstand.niva;
+    const linje = (ik, navn, tekst, niva, maks, pris, nokkel) => rad(ik, navn + ' · nivå ' + (niva + 1) + (niva >= maks ? ' (maks)' : ''), tekst,
+      niva >= maks ? '<button class="kn" type="button" disabled>Maks ⭐</button>' : '<button class="kn" type="button" data-kjop="' + nokkel + '"' + (tilstand.penger < pris ? ' disabled' : '') + '>Kjøp<small>' + pris + ' 🪙</small></button>');
+    const nesteMat = MAT[n.mat + 1];
+    h += '<p class="info">Du har ' + tilstand.penger + ' 🪙</p><div class="liste">';
+    h += linje(MAT[n.mat].ik, 'Mat: ' + MAT[n.mat].navn, nesteMat ? 'Neste: ' + nesteMat.ik + ' ' + nesteMat.navn + ' gir sjeldnere egg' : 'Den beste maten!', n.mat, MAT.length - 1, nesteMat ? nesteMat.pris : 0, 'mat');
+    h += linje('🎯', 'Kaster', 'Kaster lenger og fortere (' + INNST.kastRekkevidde[n.kaster] + ' m)', n.kaster, INNST.kasterPris.length, INNST.kasterPris[n.kaster], 'kaster');
+    h += linje('⚡', 'Speed', 'Løp fortere fra monsteret', n.speed, INNST.speedPris.length, INNST.speedPris[n.speed], 'speed');
+    h += linje('🧺', 'Kurv', 'Bær flere egg (' + kurvMaks() + ' egg nå)', n.kurv, INNST.kurvPris.length, INNST.kurvPris[n.kurv], 'kurv');
+    h += '</div>';
+  } else {
+    h += '<p class="info">Du har ' + tilstand.penger + ' 🪙. Nye dyr legger egg som er mer verdt. Men monsteret blir litt raskere for hvert dyr! 👾</p><div class="liste">';
+    for (const d of DYR) {
+      const apen = pennApen(d), kj = tilstand.kjaele[d.id] || 0;
+      h += rad(d.ik, d.navn, (apen ? 'Låst opp · ' : '') + 'Egg fra ' + d.verdi + ' 🪙' + (kj ? ' · 🐣 ' + kj + ' kjæledyr' : ''),
+        apen ? '<button class="kn" type="button" disabled>✓ Din</button>' : '<button class="kn" type="button" data-laas="' + d.id + '"' + (tilstand.penger < d.pris ? ' disabled' : '') + '>Lås opp<small>' + d.pris + ' 🪙</small></button>');
+    }
+    h += '</div>';
+  }
+  inn.innerHTML = h;
+}
+$('buaInnhold').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  let fokus = null;
+  if (b.dataset.selg) {
+    const [a, r] = b.dataset.selg.split(':'), i = tilstand.kurv.findIndex(x => x.a === a && x.r === +r);
+    if (i >= 0) { tilstand.penger += eggVerdi(tilstand.kurv[i]); tilstand.kurv.splice(i, 1); LYD.mynt(); bump('pPenger'); fokus = '[data-selg="' + b.dataset.selg + '"]'; }
+  } else if (b.id === 'selgAlle') {
+    const sum = tilstand.kurv.reduce((s, x) => s + eggVerdi(x), 0); tilstand.penger += sum; tilstand.kurv = []; LYD.mynt(); bump('pPenger'); melding('+' + sum + ' 🪙', 1.5);
+  } else if (b.dataset.klekk) {
+    const [a, r] = b.dataset.klekk.split(':'), i = tilstand.kurv.findIndex(x => x.a === a && x.r === +r);
+    if (i >= 0) { tilstand.kurv.splice(i, 1); klekk(a, +r); }
+  } else if (b.dataset.kjop) {
+    const k = b.dataset.kjop, n = tilstand.niva;
+    const pris = k === 'mat' ? MAT[n.mat + 1].pris : k === 'kaster' ? INNST.kasterPris[n.kaster] : k === 'speed' ? INNST.speedPris[n.speed] : INNST.kurvPris[n.kurv];
+    if (tilstand.penger >= pris) { tilstand.penger -= pris; n[k]++; LYD.mynt(); melding('Oppgradert! ⬆️', 1.5); fokus = '[data-kjop="' + k + '"]'; }
+  } else if (b.dataset.laas) {
+    const d = DYR.find(x => x.id === b.dataset.laas);
+    if (d && tilstand.penger >= d.pris) { tilstand.penger -= d.pris; tilstand.dyr.push(d.id); oppdaterPenner(); LYD.klekk(); melding(d.ik + ' ' + d.navn + ' er låst opp!<small>Finn pennen på gården.</small>', 3); }
+  }
+  lagre(); oppdaterHud(); tegnBua();
+  const neste = (fokus && $('buaInnhold').querySelector(fokus + ':not([disabled])')) || $('buaInnhold').querySelector('button:not([disabled])') || $('bua').querySelector('.fane[aria-selected="true"]');
+  if (neste && $('bua').classList.contains('vis')) neste.focus();
+});
+function klekk(a, r) {
+  const d = DYR.find(x => x.id === a);
+  tilstand.kjaele[a] = (tilstand.kjaele[a] || 0) + 1;
+  if (r === 3) tilstand.legendarisk++;
+  LYD.klekk(); byggFoelgere(); oppdaterHud(); lagre();
+  $('klekketIk').textContent = d.baby;
+  $('klekketNavn').textContent = (r ? SJELDEN[r].navn + ' ' : '') + d.navn.toLowerCase() + 'kylling';
+  $('klekketTekst').textContent = 'Den følger etter deg og hjelper deg å plukke egg. Nå er eggene dine ' + Math.round(verdiBonus() * 100) + ' % mer verdt!';
+  $('klekket').classList.add('vis'); if (window.EVNPauseInert) window.EVNPauseInert($('klekket')); $('klekketOk').focus();
+}
+$('klekketOk').addEventListener('click', () => { lukkLag('klekket'); if ($('bua').classList.contains('vis')) { tegnBua(); const f = $('bua').querySelector('.fane[aria-selected="true"]'); if (f) f.focus(); } });
+
+// ======================================================
+// Løkke
+// ======================================================
+let tid = 0, sisteTid = performance.now();
+const tmp = new THREE.Vector3();
+function oppdater(dt) {
+  tid += dt;
+  if (meldTimer > 0) { meldTimer -= dt; if (meldTimer <= 0) $('melding').classList.remove('vis'); }
+  // Spiller
+  let mx = 0, mz = 0;
+  if (spiller.sloTil > 0) {
+    spiller.sloTil -= dt;
+    if (spiller.sloTil <= 0) { spiller.pos.set(INNST.hjem.x, 0, INNST.hjem.z); }
+  } else {
+    if (taster.KeyW || taster.ArrowUp) mz -= 1; if (taster.KeyS || taster.ArrowDown) mz += 1;
+    if (taster.KeyA || taster.ArrowLeft) mx -= 1; if (taster.KeyD || taster.ArrowRight) mx += 1;
+    if (joy.aktiv) { mx += joy.dx; mz += joy.dy; }
+    const l = Math.hypot(mx, mz); if (l > 1) { mx /= l; mz /= l; }
+    const fart = INNST.spillerFart[tilstand.niva.speed];
+    spiller.pos.x += mx * fart * dt; spiller.pos.z += mz * fart * dt;
+    const r = Math.hypot(spiller.pos.x, spiller.pos.z); if (r > VERDEN) { spiller.pos.x *= VERDEN / r; spiller.pos.z *= VERDEN / r; }
+    // Ikke gå gjennom Eggbua
+    const bx = spiller.pos.x - bua.position.x, bz = spiller.pos.z - bua.position.z;
+    if (Math.abs(bx) < 2.9 && Math.abs(bz) < 3.6) { if (2.9 - Math.abs(bx) < 3.6 - Math.abs(bz)) spiller.pos.x = bua.position.x + Math.sign(bx) * 2.9; else spiller.pos.z = bua.position.z + Math.sign(bz) * 3.6; }
+    if (l > 0.1) spiller.retning = Math.atan2(mx, mz);
+  }
+  spiller.fart = Math.hypot(mx, mz);
+  spiller.kastKlar = Math.max(0, spiller.kastKlar - dt);
+  $('kast').classList.toggle('vent', spiller.kastKlar > 0);
+  robot.position.copy(spiller.pos); robot.visible = spiller.sloTil <= 0 || Math.floor(tid * 10) % 2 === 0;
+  let dr = spiller.retning - robot.rotation.y; dr = Math.atan2(Math.sin(dr), Math.cos(dr)); robot.rotation.y += dr * Math.min(1, dt * 12);
+  const u = robot.userData, sving = Math.sin(tid * 12) * 0.6 * spiller.fart;
+  u.benV.rotation.x = sving; u.benH.rotation.x = -sving; u.armV.rotation.x = -sving;
+  spiller.kastAnim = Math.max(0, (spiller.kastAnim || 0) - dt);
+  u.armH.rotation.x = spiller.kastAnim > 0 ? -2.4 * (spiller.kastAnim / 0.25) : sving;
+  u.kropp.position.y = Math.abs(Math.sin(tid * 12)) * 0.08 * spiller.fart;
+  // Bua-knapp
+  const ved = iBua(); $('buaKnapp').hidden = !ved || spillTilstand !== 'spill';
+  // Følgere
+  let forrige = spiller.pos;
+  for (const f of foelgere) {
+    tmp.subVectors(forrige, f.mesh.position); tmp.y = 0; const l = tmp.length();
+    if (l > f.avstand) { tmp.multiplyScalar((l - f.avstand) / l); f.mesh.position.add(tmp.multiplyScalar(Math.min(1, dt * 8))); f.mesh.rotation.y = Math.atan2(tmp.x, tmp.z); }
+    f.mesh.position.y = Math.abs(Math.sin(tid * 10 + f.avstand)) * 0.15;
+    forrige = f.mesh.position;
+  }
+  // Dyr
+  for (const p of penner) {
+    if (!pennApen(p.art)) continue;
+    for (const a of p.dyr) {
+      if (a.sovTil && a.sovTil <= tid) { a.sovTil = 0; settHjerte(a, ''); }
+      a.venteTid -= dt;
+      const m = a.mesh;
+      if (a.venteTid <= 0) { const v = Math.random() * Math.PI * 2, r = Math.random() * (PENN_R - 1.5); a.mal.set(Math.cos(v) * r, 0, Math.sin(v) * r); a.venteTid = 2 + Math.random() * 3; }
+      tmp.subVectors(a.mal, m.position); tmp.y = 0; const l = tmp.length();
+      if (l > 0.2 && a.sovTil <= tid) { m.position.addScaledVector(tmp, Math.min(1, 1.2 * dt / l)); m.rotation.y = Math.atan2(tmp.x, tmp.z); }
+      a.hopp = Math.max(0, a.hopp - dt);
+      m.position.y = a.hopp > 0 ? Math.sin(a.hopp / 0.35 * Math.PI) * 0.6 : (l > 0.2 && a.sovTil <= tid ? Math.abs(Math.sin(tid * 9 + m.id)) * 0.1 : 0);
+    }
+  }
+  // Kastet mat
+  for (let i = flygendeMat.length - 1; i >= 0; i--) {
+    const f = flygendeMat[i]; f.t += dt / f.varighet;
+    f.mal.mesh.getWorldPosition(tmp); tmp.y = 1;
+    const t = Math.min(1, f.t);
+    f.mesh.position.lerpVectors(f.fra, tmp, t); f.mesh.position.y += Math.sin(t * Math.PI) * (1.5 + f.varighet * 3);
+    if (t >= 1) { scene.remove(f.mesh); flygendeMat.splice(i, 1); treffDyr(f.mal); }
+  }
+  // Egg på bakken
+  for (const e of bakkeEgg) { e.t += dt; e.mesh.rotation.y += dt * (e.r === 3 ? 3 : 1); e.mesh.position.y = 0.4 + Math.sin(e.t * 3) * 0.06; }
+  if (spiller.sloTil <= 0) plukkOpp();
+  // Monster
+  const mm = monster.mesh, mu = mm.userData;
+  const avstSpiller = Math.hypot(spiller.pos.x - monster.pos.x, spiller.pos.z - monster.pos.z);
+  const spillerTrygg = iTrygg(spiller.pos) || spiller.sloTil > 0;
+  if (monster.hvileTil > tid) { /* står og puster */ }
+  else if (monster.jager) {
+    monster.jageTid += dt;
+    if (spillerTrygg || monster.jageTid > INNST.monsterGiOpp || avstSpiller > INNST.monsterSyn * 1.6) { monster.jager = false; monster.hvileTil = tid + 2; mu.varsel.visible = false; if (spillerTrygg && avstSpiller < 16 && spiller.sloTil <= 0) melding('Puh! Du er trygg ved Eggbua 🏠', 1.5); }
+    else {
+      tmp.set(spiller.pos.x - monster.pos.x, 0, spiller.pos.z - monster.pos.z).normalize();
+      monster.pos.addScaledVector(tmp, monsterFart() * dt);
+      if (avstSpiller < 1.5) blirTatt();
+    }
+  } else {
+    if (avstSpiller < INNST.monsterSyn && !spillerTrygg) { monster.jager = true; monster.jageTid = 0; mu.varsel.visible = true; LYD.fare(); }
+    monster.venteTid -= dt;
+    if (monster.venteTid <= 0) { const v = Math.random() * Math.PI * 2, r = 12 + Math.random() * (VERDEN - 16); monster.mal.set(Math.cos(v) * r, 0, Math.sin(v) * r); monster.venteTid = 4 + Math.random() * 4; }
+    tmp.subVectors(monster.mal, monster.pos); tmp.y = 0; const l = tmp.length();
+    if (l > 0.5) monster.pos.addScaledVector(tmp, Math.min(1, 2.2 * dt / l));
+  }
+  // Monsteret går aldri inn i det trygge området
+  const hx = monster.pos.x - INNST.hjem.x, hz = monster.pos.z - INNST.hjem.z, hr = Math.hypot(hx, hz);
+  if (hr < INNST.tryggRadius + 1) { monster.pos.x = INNST.hjem.x + hx / (hr || 1) * (INNST.tryggRadius + 1); monster.pos.z = INNST.hjem.z + hz / (hr || 1) * (INNST.tryggRadius + 1); }
+  const mr = Math.hypot(monster.pos.x, monster.pos.z); if (mr > VERDEN) { monster.pos.x *= VERDEN / mr; monster.pos.z *= VERDEN / mr; }
+  const mvx = monster.pos.x - mm.position.x, mvz = monster.pos.z - mm.position.z;
+  if (Math.hypot(mvx, mvz) > 0.001) { const mrot = Math.atan2(mvx, mvz); let d = mrot - mm.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); mm.rotation.y += d * Math.min(1, dt * 6); }
+  mm.position.copy(monster.pos);
+  mu.k.position.y = Math.abs(Math.sin(tid * (monster.jager ? 10 : 4))) * (monster.jager ? 0.35 : 0.15);
+  mu.pupMat.color.setHex(monster.jager ? 0xff2222 : 0x1a1a1a);
+  // Kamera
+  tmp.set(spiller.pos.x, 0, spiller.pos.z + 15);
+  camera.position.lerp(tmp.setY(17), Math.min(1, dt * 4));
+  camera.lookAt(spiller.pos.x, 0.5, spiller.pos.z - 1);
+}
+let feilVist = false, lagreTimer = 0;
+function loop(n) {
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.05, (n - sisteTid) / 1000); sisteTid = n;
+  if (spillTilstand === 'spill' && !lagApent()) { oppdater(dt); lagreTimer += dt; if (lagreTimer > 10) { lagreTimer = 0; lagre(); } }
+  renderer.render(scene, camera);
+}
+
+// Kart for felles pause (EVN-PAUSE v2)
+const kartLerret = document.createElement('canvas'); kartLerret.width = kartLerret.height = 600;
+function tegnKart() {
+  const x = kartLerret.getContext('2d'), W = 600, S = W / (VERDEN * 2 + 10), px = v => W / 2 + v * S;
+  x.fillStyle = '#8fd16a'; x.fillRect(0, 0, W, W);
+  x.fillStyle = '#d9c08a'; x.beginPath(); x.arc(px(INNST.hjem.x), px(INNST.hjem.z), INNST.tryggRadius * S, 0, 6.283); x.fill();
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  for (const d of DYR) {
+    x.fillStyle = pennApen(d) ? '#b7d98a' : 'rgba(0,0,0,.25)'; x.strokeStyle = '#9c6b3e'; x.lineWidth = 3;
+    x.beginPath(); x.arc(px(d.x), px(d.z), PENN_R * S, 0, 6.283); x.fill(); x.stroke();
+    x.font = '30px sans-serif'; x.fillText(pennApen(d) ? d.ik : '🔒', px(d.x), px(d.z));
+  }
+  x.font = '34px sans-serif'; x.fillText('🏠', px(INNST.hjem.x + 6.5), px(INNST.hjem.z + 1));
+  for (const p of tilstand.poser) { x.font = '26px sans-serif'; x.fillText('🧺', px(p.x), px(p.z)); }
+  x.font = '36px sans-serif'; x.fillText('👾', px(monster.pos.x), px(monster.pos.z));
+  x.save(); x.translate(px(spiller.pos.x), px(spiller.pos.z)); x.rotate(-spiller.retning + Math.PI);
+  x.fillStyle = '#ffcc00'; x.strokeStyle = '#1d2440'; x.lineWidth = 3;
+  x.beginPath(); x.moveTo(0, -18); x.lineTo(12, 12); x.lineTo(0, 6); x.lineTo(-12, 12); x.closePath(); x.fill(); x.stroke(); x.restore();
+}
+
+$('startBtn').addEventListener('click', () => {
+  try { lyd = lyd || new (window.AudioContext || window.webkitAudioContext)(); lyd.resume && lyd.resume(); } catch (e) {}
+  $('start').classList.remove('vis'); $('hud').hidden = false; $('hoyre').hidden = false; $('kast').hidden = false; $('maal').hidden = false;
+  spillTilstand = 'spill'; sisteTid = performance.now();
+  try { document.dispatchEvent(new Event('evn-start')); } catch (e) {}
+  $('hjelp').innerHTML = document.documentElement.classList.contains('touch') ? 'Dra fingeren for å gå 👆 · Gul knapp: kast mat' : 'WASD/piler: gå · Mellomrom: kast mat · E: Eggbua';
+  setTimeout(() => $('hjelp').style.opacity = 0, 15000);
+  if (tilstand.totaltEgg === 0 && tilstand.penger === 0 && !tilstand.kurv.length) melding('Gå til hønene 🐔 og kast mat!<small>3 treff, så legger høna et egg. Pass deg for monsteret 👾</small>', 6);
+  else melding('Velkommen tilbake! 🥚', 2.5);
+  canvas.focus({ preventScroll: true });
+});
+// Teller egg for statistikk i lagringen (ikke personopplysninger)
+
+addEventListener('error', e => { if (feilVist || !e.error || spillTilstand === 'start') return; feilVist = true; try { lagre(); } catch (er) {} try { if (window.EVNPauseInert) window.EVNPauseInert($('feil')); } catch (er) {} $('feil').classList.add('vis'); $('feilLast').focus(); });
+$('feilLast').addEventListener('click', () => location.reload());
+canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); if (feilVist) return; feilVist = true; try { lagre(); } catch (er) {} $('feil').classList.add('vis'); $('feilLast').focus(); });
+
+oppdaterHud();
+camera.position.set(spiller.pos.x, 17, spiller.pos.z + 15); camera.lookAt(spiller.pos.x, 0.5, spiller.pos.z - 1);
+
+window.__evnP = EVNPause({
+  mappe: TEST ? 'eggjakten-test' : 'eggjakten', avsluttId: 'evnAvslutt',
+  tema: { panel: 'rgba(31,58,23,.97)', ink: '#fff', hi: '#ffc93c', btn: '#ffc93c', btnInk: '#4a2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400 },
+  knapp: (b, k) => { for (const x of [k, b]) { x.className = 'rund'; x.style.cssText = 'padding:0;font-size:22px'; } $('hoyre').insertBefore(k, $('evnAvslutt')); $('hoyre').insertBefore(b, $('evnAvslutt')); },
+  kart: { forhold: 1, info: () => '🔺 Du · 🏠 Eggbua (trygt) · 👾 Monsteret · 🧺 Egg du mistet', tegn: (c, w, h) => { tegnKart(); c.drawImage(kartLerret, 0, 0, w, h); } },
+  kanPause: () => spillTilstand === 'spill' && !lagApent() && !$('feil').classList.contains('vis'),
+  aktiv: () => spillTilstand === 'spill',
+  pause: () => { spillTilstand = 'pause'; for (const k in taster) taster[k] = false; slippAlt(); lagre(); },
+  fortsett: () => { spillTilstand = 'spill'; for (const k in taster) taster[k] = false; sisteTid = performance.now(); },
+  lagre: lagre,
+  styring: () => document.documentElement.classList.contains('touch')
+    ? '👆 Dra fingeren dit du vil gå<br>🟡 Den gule knappen: kast mat<br>🏠 Eggbua: selg og klekk egg, kjøp oppgraderinger<br>👾 Løp fra monsteret! Ved Eggbua er du trygg<br>🗺️ Kartet viser dyr, monsteret og egg du har mistet'
+    : '⬆️⬇️⬅️➡️ eller WASD: gå<br>Mellomrom eller K: kast mat<br>E: Eggbua (når du står ved den)<br>M: kart · L: lyd · P eller Esc: pause<br>👾 Løp fra monsteret! Ved Eggbua er du trygg'
+});
+EVNNullstill({
+  nokler: [LAGRING, LAGRING + '-kopi'],
+  tema: { panel: '#3f8a34', ink: '#fff', hi: '#ffc93c', btn: '#ffc93c', btnInk: '#4a2a00', font: "'Nunito', system-ui, sans-serif", head: "'Lilita One', sans-serif", headW: 400 },
+  tekst: 'Alle myntene, eggene, kjæledyrene og oppgraderingene blir borte.',
+  harLagring: () => tilstand.penger > 0 || tilstand.kurv.length > 0 || antallKjaele() > 0 || tilstand.dyr.length > 1 || tilstand.totaltEgg > 0,
+  plasser: el => $('evnTilbake').after(el),
+  vis: () => $('start').classList.contains('vis')
+});
+requestAnimationFrame(loop);
+// Til testing
+window.__spill = { tilstand, spiller, monster, penner, bakkeEgg, kast, apneBua, tegnBua, blirTatt, leggEgg, INNST, DYR, MAT, lagre, oppdaterHud, oppdaterPenner, get tid() { return tid; } };
+</script>
+<!-- EVN Studio: knapp tilbake til forsiden (vises bare under /spill/) -->
+<style>
+#evnSporsmal{position:fixed;inset:0;z-index:100000;display:none;place-items:center;background:rgba(15,20,40,.7);padding:16px}
+#evnSporsmal .boks{background:linear-gradient(#3f8a34,#1f3a17);border:3px solid #ffc93c;border-radius:20px;padding:22px;max-width:340px;display:grid;gap:14px;text-align:center;color:#fff;font:800 19px 'Nunito',system-ui,sans-serif}
+#evnSporsmal button{min-height:52px;border-radius:14px;font:800 19px 'Nunito',system-ui,sans-serif;cursor:pointer;touch-action:manipulation}
+#evnBli{background:linear-gradient(#ffd75e,#f0a91c);color:#4a2a00;border:3px solid #fff}
+#evnGaa{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5)}
+</style>
+<div id="evnSporsmal" role="dialog" aria-modal="true"><div class="boks">
+  <div>Vil du avslutte og gå tilbake til forsiden? Eggene og myntene dine er lagret.</div>
+  <button type="button" id="evnBli">Nei, spill videre</button><button type="button" id="evnGaa">Ja, avslutt</button>
+</div></div>
+<script>
+try {
+  if (location.pathname.indexOf('/spill/') !== -1) {
+    var av = document.getElementById('evnAvslutt'), sp = document.getElementById('evnSporsmal');
+    av.style.display = 'flex';
+    var tb = document.getElementById('evnTilbake'); if (tb) tb.hidden = false;
+    av.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.dispatchEvent(new Event('blur')); sp.style.display = 'grid'; if (window.EVNPauseInert) window.EVNPauseInert(sp); document.getElementById('evnBli').focus(); });
+    addEventListener('keydown', function (e) { if (e.key === 'Escape' && sp.style.display === 'grid') { e.preventDefault(); sp.style.display = 'none'; if (window.EVNPauseInert) window.EVNPauseInert(null); } });
+    ['pointerdown', 'mousedown', 'touchstart'].forEach(function (ev) { sp.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); av.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true }); });
+    document.getElementById('evnBli').addEventListener('click', function (e) { e.stopPropagation(); sp.style.display = 'none'; if (window.EVNPauseInert) window.EVNPauseInert(null); });
+    document.getElementById('evnGaa').addEventListener('click', function () { location.href = '../../'; });
+  }
+} catch (e) {}
+</script>
+</body>
+</html>
