@@ -451,7 +451,7 @@
       if (S.penger < pr) return melding('💰 Du mangler ' + fmt(pr - S.penger) + ' for å ta med ' + navn(ci) + '.');
       if (!harPlass(ci)) return melding('🏠 Gården er full. Selg et matdyr først, eller finn et som er bedre enn det svakeste.');
       fjern(h.a); bar = { ci, m: modell(ci) }; bar.topp = toppsett(bar.m, ci); bar.m.scale.setScalar(0.7); I.scene.add(bar.m);
-      melding(harLedig() ? 'Gå til det gule feltet «Lever her», eller trykk på en grønn ＋ på gården.' : 'Gården er full. Bær ' + navn(ci) + ' hjem og bytt med et svakere matdyr. Du betaler når det flytter inn.', 4);
+      melding(harLedig() ? 'Gå til den gule innsamlingssonen utenfor gården, eller trykk på en grønn ＋ på gården.' : 'Gården er full. Bær ' + navn(ci) + ' hjem og bytt med et svakere matdyr. Du betaler når det flytter inn.', 4);
     } else if (h.t === 'sett') settInn(h.i);
     else if (h.t === 'forste') velgPlass(h.i);
     else if (h.t === 'bytteValg') apneBytte();
@@ -509,7 +509,7 @@
   // ---------- Innsamlingssonen (Even 12.11.2026: «Collect zone» foran gården) ----------
   // Inntekten samles i en kasse. Går roboten inn i sonen til høyre for gangen foran gården, går pengene over til lommeboka.
   // Én sone for hele gården, ikke en knapp per plass. ?samle=0 gir automatisk inntekt som før.
-  const SAMLE = new URLSearchParams(location.search).get('samle') !== '0';
+  const SAMLE = new URLSearchParams(location.search).get('samle') === '1';   // Even 14.11.2026: «Pengen kommer inn automatisk du slipper å få hente de». Av som standard.
   const samleG = new T.Group(); I.scene.add(samleG); let samleNokkel = '', samleSkilt = null, samleSist = -1, paaSamle = false, samleTid = -9;
   function samleOmr() { const g = window.EVNGeo, d = I.gd.gjerdeD || 22; if (!g) return null; const z0 = g.HZ + 1.4, z1 = Math.min(d - 1.6, g.HZ + 7.4);
     return { x0: 2.4, x1: 7.4, z0, z1: Math.max(z1, z0 + 2.5) }; }
@@ -549,16 +549,18 @@
   // Et gult felt i passasjen mellom gården og åkeren. Går roboten inn på feltet med et matdyr, flyr matdyret til første ledige plass
   // (1. etasje først), uten at spilleren trykker på noe. Å velge plass selv med en ＋ virker fortsatt.
   const levG = new T.Group(); I.scene.add(levG); let levNokkel = '', paaLev = false, levBesok = 0;
-  function levOmr() { const e = eng(); if (!e) return null; const d = I.gd.gjerdeD || 22, z0 = d + 0.3, z1 = Math.min(d + 3.6, e.z0 - 0.3);
-    return { x0: -3.3, x1: 3.3, z0, z1: Math.max(z1, z0 + 1.6) }; }   // rett utenfor porten i gårdsgjerdet, så nær basen som mulig   // hele passasjen (roboten når |x| ≈ 3,05)
+  // Innsamlingssonen (Even 14.11.2026: «Innsamlingsone må være et stort felt rett utenfor gården fjern lever her og penge innsamling»):
+  // et stort felt rett utenfor porten i gårdsgjerdet. Bærer roboten et matdyr inn i feltet, havner det på gården.
+  function levOmr() { const e = eng(); if (!e) return null; const d = I.gd.gjerdeD || 22, z0 = d + 0.3;
+    return { x0: -8, x1: 8, z0, z1: z0 + 5.2 }; }   // rett utenfor porten i gårdsgjerdet, så nær basen som mulig   // hele passasjen (roboten når |x| ≈ 3,05)
   function byggLevFelt() {
     const o = levOmr(), n = o ? o.z0 + ':' + o.z1 : ''; if (n === levNokkel) return; levNokkel = n;
     levG.children.slice().forEach(c => { levG.remove(c); c.geometry && c.geometry.dispose(); c.material && c.material.dispose(); });
     if (!o) return;
-    const w = o.x1 - o.x0, d = o.z1 - o.z0, tex = tekstur('levfelt', 256, 128, x => {
-      x.fillStyle = 'rgba(255,214,64,.92)'; x.beginPath(); x.roundRect ? x.roundRect(6, 6, 244, 116, 28) : x.rect(6, 6, 244, 116); x.fill();
-      x.strokeStyle = '#fff'; x.lineWidth = 8; x.setLineDash([18, 12]); x.stroke();
-      x.fillStyle = '#5a3b12'; x.font = 'bold 44px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('🏠 Lever her', 128, 66);
+    const w = o.x1 - o.x0, d = o.z1 - o.z0, tex = tekstur('innsamlingssone', 768, 250, x => {
+      x.fillStyle = 'rgba(255,214,64,.88)'; x.beginPath(); x.roundRect ? x.roundRect(8, 8, 752, 234, 44) : x.rect(8, 8, 752, 234); x.fill();
+      x.strokeStyle = '#fff'; x.lineWidth = 10; x.setLineDash([26, 16]); x.stroke();
+      x.fillStyle = '#5a3b12'; x.font = 'bold 84px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('Innsamlingssone', 384, 128);
     });
     const m = new T.Mesh(new T.PlaneGeometry(w, d), new T.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
     m.rotation.x = -Math.PI / 2; m.position.set((o.x0 + o.x1) / 2, 0.24, (o.z0 + o.z1) / 2); m.renderOrder = 2; levG.add(m);

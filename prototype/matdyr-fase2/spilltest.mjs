@@ -123,7 +123,8 @@ const h = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-prot
   R.position.set(2.0, 0.45, (o.z0 + o.z1) / 2); st(30); ut.fullBaerer = !!P.bar() && P.S().base.every(c => c === 508);
   ut.fullSpor = !document.getElementById('dialog').hidden; if (document.getElementById('dNei')) document.getElementById('dNei').click(); st(2);
   // står allerede på feltet når matdyret tas med: leveres likevel uten å gå av og på
-  P.sett({ v: 1, penger: 1e6, gard: { niva: 6 }, plassNiva: 8, base: [], disc: [] }); st(2); const R3 = I.robot(), mz = (o.z0 + o.z1) / 2;
+  P.sett({ v: 1, penger: 1e6, gard: { niva: 6 }, plassNiva: 8, base: [], disc: [] }); st(2); const R3 = I.robot(), o3 = P.levOmr(), mz = (o3.z0 + o3.z1) / 2;   // feltet flytter seg med gjerdet på nivå 6
+  R3.position.set(-20, 0.45, mz - 30); st(3); if (P.bar()) P.gjorHandling(); st(3);   // slipp matdyret fra forrige del og gå ut av feltet først
   R3.position.set(0, 0.45, mz); st(5); P.slippNed(508, [1.2, mz]); st(3); P.gjorHandling(); st(90); ut.staarPaaFeltet = P.S().base[0] === 508 && !P.bar();
   return ut; })()
 `);
@@ -178,7 +179,7 @@ const tb = await ev(`(async () => { for (let i = 0; i < 150 && !window.EVNTobein
   return ut; })()`);
 if (/[?&]tobein=0/.test(process.argv[2] || '')) ok('?tobein=0: gamle figurer i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.n127 === 'donutku' && tb.n52 === null && tb.n2 === null && tb.n227 === null && !tb.fane);
 else ok('tobeinte lastes etter start og brukes i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.klar && tb.n508 === 'pilot_sau2_burger' && tb.n700 === 'pilot_skilpadde2_pizza' && tb.n127 === 'pilot_ku2_smultring' && tb.n52 === 'pilot_hai2_smultring' && tb.n2 === 'pilot_gris2_smultring' && tb.n227 === 'pilot_hval2_smultring' && tb.fane && tb.kamera.every(Boolean));
-// Innsamlingssonen (Even 12.11.2026): inntekten samles i kassa og går til lommeboka når roboten går inn i sonen. ?samle=0 gir automatisk inntekt.
+// Pengene kommer automatisk (Even 14.11.2026). Den gamle pengesonen fra 12.11 finnes bare med ?samle=1.
 const sa = await ev(`(async () => { const P = EVNProto, S0 = JSON.parse(JSON.stringify(P.S())); S0.base = [127, 125]; S0.kasse = 0; P.sett(S0); EVNVis({ fane: 'spill' });
   const R = EVNRobot(), K = EVNIntern.krok; R.position.set(0, 0, 12); const p0 = P.S().penger; for (let i = 0; i < 90; i++) { EVNSteg(1 / 30); K.steg(1 / 30, i / 30); }
   const ut = { samle: P.SAMLE, kasse: P.S().kasse, vokst: +(P.S().penger - p0).toFixed(2) };
@@ -187,8 +188,8 @@ const sa = await ev(`(async () => { const P = EVNProto, S0 = JSON.parse(JSON.str
   ut.lagret = (JSON.parse(localStorage.getItem(P.NOKKEL)) || {}).penger === P.S().penger;
   if (o && P.SAMLE) { for (let i = 0; i < 60; i++) { EVNSteg(1 / 30); K.steg(1 / 30, 4 + i / 15); } ut.kasseStaar = +P.S().kasse.toFixed(1); }   // står i sonen: hentes fortsatt
   return ut; })()`);
-if (/[?&]samle=0/.test(process.argv[2] || '')) ok('?samle=0: inntekten går rett i lommeboka (' + JSON.stringify(sa) + ')', !sa.samle && sa.vokst > 0);
-else ok('innsamlingssonen: inntekten samles i kassa og hentes i sonen (' + JSON.stringify(sa) + ')', sa.samle && sa.kasse > 0 && sa.vokst === 0 && sa.etter >= Math.floor(sa.kasse) && sa.kasseEtter < sa.kasse / 4 && sa.kasseStaar < sa.kasse / 4 && sa.lagret);
+if (!/[?&]samle=1/.test(process.argv[2] || '')) ok('standard (Even 14.11.2026): inntekten går rett i lommeboka (' + JSON.stringify(sa) + ')', !sa.samle && sa.vokst > 0);
+else ok('?samle=1: inntekten samles i kassa og hentes i pengesonen (' + JSON.stringify(sa) + ')', sa.samle && sa.kasse > 0 && sa.vokst === 0 && sa.etter >= Math.floor(sa.kasse) && sa.kasseEtter < sa.kasse / 4 && sa.kasseStaar < sa.kasse / 4 && sa.lagret);
 // Hulveien (Even 12.11.2026): matdyr som ikke blir tatt, går ned skråningen øst for porten, inn i tunnelen og forsvinner. ?groft=0 gir den gamle utgangen.
 const gr = await ev(`(async () => { const P = EVNProto, I = EVNIntern, K = I.krok; EVNVis({ fane: 'spill' }); const R = EVNRobot(); R.position.set(-20, 0, 12);
   for (const ci of [127, 52, 508, 700]) P.slippNed(ci);
