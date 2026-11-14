@@ -80,8 +80,12 @@
     innholdTil: 9,
     // Rebus' gåter (Even 13.11): svaret er varen. Spilleren gir Rebus varen. Lønn: pris × 2 + 10 mynter, 4 XP + nivået til varen. Ny gåte 3 minutter etter riktig svar
     // Gaveesker (Even 14.11, godkjent av Ivar 14.11): gratis, kan aldri kjøpes, sjansene vises åpent. Prosent per sjeldenhet.
-    gave: { sjanser: [['vanlig', 60], ['uvanlig', 28], ['sjelden', 10], ['superrar', 2]], vanlig: [20, 40], uvanlig: 60, sjelden: 120, superrarMynter: 200,
-      pynt: ['gullhone', 'gullegg', 'gullgulrot', 'gullstjerne'], pyntNavn: { gullhone: 'Gullhøne', gullegg: 'Gullegg', gullgulrot: 'Gullgulrot', gullstjerne: 'Gullstjerne' } },
+    // Gaveesker (Even 14.11, godkjent av Ivar 14.11). Premier og sjanser fra Even 14.11 (0.12.1): [premie, prosent, mengde, sjeldenhet]
+    gave: { premier: [['mynter', 50, [20, 60], 'vanlig'], ['xp', 25, 75, 'uvanlig'], ['frovarer', 13, 0, 'uvanlig'], ['maskin', 5, 0, 'sjelden'], ['superhost', 5, 0, 'sjelden'],
+        ['maned', 1, 0, 'superrar'], ['pynt', 0.9, 0, 'superrar'], ['gullgard', 0.1, 0, 'legendarisk']],
+      bonusDager: 30, maskinMynter: 300, superrarMynter: 200,
+      pynt: ['gullhone', 'gullegg', 'gullgulrot', 'gullstjerne', 'regnbue', 'gullfontene'],
+      pyntNavn: { gullhone: 'Gullhøne', gullegg: 'Gullegg', gullgulrot: 'Gullgulrot', gullstjerne: 'Gullstjerne', regnbue: 'Regnbue', gullfontene: 'Gullfontene' } },
     rebus: { nivaa: 2, pause: 180, myntFaktor: 2, myntPluss: 10, xp: 4 },
     gater: {
       hvete: 'Jeg er gul og står i lange rader på åkeren. Blir jeg malt, blir jeg til mel og brød. Hva er jeg?',

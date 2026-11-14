@@ -69,19 +69,21 @@
 
   // ---------- Åkre ----------
   function akerStatus(f, naa) { return !f.avling ? 'tom' : naa >= f.slutt ? 'moden' : 'vokser'; }
-  function kanPlante(s, i, avling) {
+  function bonusAktiv(s, naa) { return !!(s.gaver && s.gaver.bonus > (naa || 0)); }   // «gratis i en måned» fra gaveesken: gratis å plante og gratis fôrkvern
+  function kanPlante(s, i, avling, naa) {
     var f = s.akre[i], A = D.avlinger[avling];
     if (!f || !A) return 'ukjent';
     if (f.avling) return 'opptatt';
     if (A.nivaa > s.nivaa) return 'laast';
+    if (bonusAktiv(s, naa)) return null;
     if ((s.lager[avling] || 0) > 0) return null;
     if (A.gratis) return null;
     if (!s.akre.some(function (a) { return a.avling === avling; })) return null;   // Progresjonsregel F2: 0 i silo og ingen på åkrene gir gratis frø
     return 'ingen-fro';
   }
   function plant(s, i, avling, naa) {
-    var g = kanPlante(s, i, avling); if (g) return { ok: false, grunn: g };
-    var f = s.akre[i], gratis = !(s.lager[avling] > 0);
+    var g = kanPlante(s, i, avling, naa); if (g) return { ok: false, grunn: g };
+    var f = s.akre[i], gratis = !(s.lager[avling] > 0) || bonusAktiv(s, naa);
     if (!gratis) ta(s, mk(avling, 1));
     f.avling = avling; f.start = naa; f.slutt = naa + D.avlinger[avling].tid * 1000;
     return { ok: true, gratis: gratis };
@@ -126,14 +128,14 @@
     if (!b.eid) return 'ikke-bygd';
     if (o.nivaa > s.nivaa) return 'laast';
     if (uferdige(b, naa).length >= D.koPlasser) return 'ko-full';
-    if (!har(s, o.inn)) return 'mangler';
+    if (!(bygg === 'forkvern' && bonusAktiv(s, naa)) && !har(s, o.inn)) return 'mangler';
     return null;
   }
   function produser(s, bygg, vare, naa) {
     var g = kanProdusere(s, bygg, vare, naa); if (g) return { ok: false, grunn: g };
     var b = s.bygg[bygg], o = D.oppskrifter[vare], u = uferdige(b, naa);
     var start = u.length ? u[u.length - 1].slutt : naa;     // jobbene går etter hverandre
-    ta(s, o.inn);
+    if (!(bygg === 'forkvern' && bonusAktiv(s, naa))) ta(s, o.inn);
     b.ko.push({ vare: vare, start: start, slutt: start + o.tid * 1000 });
     return { ok: true };
   }
@@ -313,6 +315,7 @@
     if (r.gaver && typeof r.gaver === 'object') {
       if (Array.isArray(r.gaver.uaapnet)) s.gaver.uaapnet = r.gaver.uaapnet.filter(function (g) { return g && (g.kilde === 'dag' || g.kilde === 'nivaa'); }).slice(0, 20).map(function (g) { return { kilde: g.kilde, levert: !!g.levert }; });
       if (typeof r.gaver.dag === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.gaver.dag)) s.gaver.dag = r.gaver.dag;
+      s.gaver.bonus = Math.min(tall(r.gaver.bonus, 0), naa + 31 * 86400000); s.gaver.gullgard = r.gaver.gullgard === true; s.gaver.gullPaa = s.gaver.gullgard && r.gaver.gullPaa !== false;
       if (r.gaver.pynt && typeof r.gaver.pynt === 'object') D.gave.pynt.forEach(function (p) { var q = r.gaver.pynt[p]; if (q && typeof q === 'object') s.gaver.pynt[p] = { x: typeof q.x === 'number' && isFinite(q.x) ? q.x : null, z: typeof q.z === 'number' && isFinite(q.z) ? q.z : null, r: [0, 1, 2, 3].indexOf(q.r) >= 0 ? q.r : 0 }; });
     }
     if (r.oppl && typeof r.oppl === 'object') s.oppl.steg = Math.max(0, Math.floor(tall(r.oppl.steg, 0)));
@@ -353,15 +356,28 @@
   function klareGaver(s) { return s.gaver.uaapnet.filter(function (g) { return g.levert; }).length; }
   function aapneGave(s, naa) {
     var i = -1; s.gaver.uaapnet.some(function (g, j) { if (g.levert) { i = j; return true; } return false; }); if (i < 0) return { ok: false, grunn: 'ingen' };
-    var gave = s.gaver.uaapnet.splice(i, 1)[0], G = D.gave, x = tilf(s) * 100, sj = 'vanlig', sum = 0;
-    for (var k = 0; k < G.sjanser.length; k++) { sum += G.sjanser[k][1]; if (x < sum) { sj = G.sjanser[k][0]; break; } }
-    if (gave.kilde === 'nivaa' && sj === 'vanlig') sj = 'uvanlig';
-    var r = { ok: true, kilde: gave.kilde, sjeldenhet: sj, mynter: 0 }, valg = tilf(s);
+    var gave = s.gaver.uaapnet.splice(i, 1)[0], G = D.gave;
+    // 0.12.1 (Even 14.11): én liste med premier og sjanser. Gaven for nytt nivå gir aldri bare penger
+    var r = { ok: true, kilde: gave.kilde, mynter: 0, xp: 0, nye: [] };
+    var avl = Object.keys(D.avlinger).filter(function (a) { return D.avlinger[a].nivaa <= s.nivaa; }),
+        ferdig = Object.keys(D.gater).filter(function (v) { return !D.avlinger[v] && kanLage(s, v, 0, true); }),
+        voksende = s.akre.filter(function (f) { return f.avling && f.slutt > naa; }),
+        bygg = Object.keys(D.bygg).filter(function (b) { var B = D.bygg[b]; return s.bygg[b] && !s.bygg[b].eid && B.nivaa <= Math.min(s.nivaa, D.innholdTil); })
+          .sort(function (a, b) { return D.bygg[a].pris - D.bygg[b].pris; });
     function vare(liste, n) { var v = liste[Math.floor(tilf(s) * liste.length)]; if (plass(s, lagerType(v)) >= n) { legg(s, v, n); r.vare = v; r.antall = n; } else r.mynter += D.pris(v) * n; }
-    if (sj === 'vanlig') { if (valg < 0.5) r.mynter = G.vanlig[0] + Math.floor(tilf(s) * (G.vanlig[1] - G.vanlig[0] + 1)); else vare(Object.keys(D.avlinger).filter(function (a) { return D.avlinger[a].nivaa <= s.nivaa; }), 3); }
-    else if (sj === 'uvanlig') { var lag = Object.keys(D.gater).filter(function (v) { return !D.avlinger[v] && kanLage(s, v, 0, true); }); if (valg < 0.5 || !lag.length) r.mynter = G.uvanlig; else vare(lag, 2); }
-    else if (sj === 'sjelden') r.mynter = G.sjelden;
-    else { var ny = G.pynt.filter(function (p) { return !s.gaver.pynt[p]; }); if (ny.length) { r.pynt = ny[Math.floor(tilf(s) * ny.length)]; s.gaver.pynt[r.pynt] = { x: null, z: null, r: 0 }; } else r.mynter = G.superrarMynter; }
+    var liste = G.premier.filter(function (p) { return !(gave.kilde === 'nivaa' && p[0] === 'mynter'); }), sum = 0, tot = 0;
+    liste.forEach(function (p) { tot += p[1]; });
+    var x = tilf(s) * tot, pr = liste[liste.length - 1];
+    for (var k = 0; k < liste.length; k++) { sum += liste[k][1]; if (x < sum) { pr = liste[k]; break; } }
+    r.premie = pr[0]; r.sjeldenhet = pr[3] || 'vanlig'; var n = pr[2];
+    if (pr[0] === 'mynter') r.mynter = n[0] + Math.floor(tilf(s) * (n[1] - n[0] + 1));
+    else if (pr[0] === 'xp') { r.xp = n; r.nye = giXP(s, n, naa); }
+    else if (pr[0] === 'frovarer') { if (ferdig.length && tilf(s) < 0.5) vare(ferdig, 2); else vare(avl, 4); }
+    else if (pr[0] === 'maskin') { if (bygg.length) { r.bygg = bygg[0]; s.bygg[r.bygg].eid = true; if (D.bygg[r.bygg].dyr) r.dyr = giDyr(s, D.bygg[r.bygg].dyr); } else r.mynter = G.maskinMynter; }
+    else if (pr[0] === 'superhost') { if (voksende.length) { voksende.forEach(function (f) { f.slutt = naa; }); r.superhost = voksende.length; } else vare(avl, 4); }
+    else if (pr[0] === 'maned') { s.gaver.bonus = Math.max(s.gaver.bonus || 0, naa) + G.bonusDager * 86400000; r.bonus = s.gaver.bonus; }
+    else if (pr[0] === 'pynt') { var ny = G.pynt.filter(function (p) { return !s.gaver.pynt[p]; }); if (ny.length) { r.pynt = ny[Math.floor(tilf(s) * ny.length)]; s.gaver.pynt[r.pynt] = { x: null, z: null, r: 0 }; } else r.mynter = G.superrarMynter; }
+    else if (pr[0] === 'gullgard') { if (!s.gaver.gullgard) { s.gaver.gullgard = true; s.gaver.gullPaa = true; r.gullgard = true; } else r.mynter = G.superrarMynter; }
     s.mynter += r.mynter; return r;
   }
 
@@ -378,7 +394,7 @@
     nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
     nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
-    giDagsgave: giDagsgave, leverGaver: leverGaver, klareGaver: klareGaver, aapneGave: aapneGave
+    giDagsgave: giDagsgave, bonusAktiv: bonusAktiv, leverGaver: leverGaver, klareGaver: klareGaver, aapneGave: aapneGave
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;
 })(typeof window !== 'undefined' ? window : globalThis);

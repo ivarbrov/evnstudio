@@ -172,10 +172,15 @@ s = L.ny(T0);
 t('Én dagsgave per dato', L.giDagsgave(s, '2026-11-14') && !L.giDagsgave(s, '2026-11-14') && L.giDagsgave(s, '2026-11-15') && s.gaver.uaapnet.length === 2);
 t('Dagsgaven kan ikke åpnes før den er levert', L.klareGaver(s) === 0 && L.aapneGave(s, T0).grunn === 'ingen' && L.leverGaver(s) === 2 && L.klareGaver(s) === 2);
 L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length === 3 && s.gaver.uaapnet[2].kilde === 'nivaa' && s.gaver.uaapnet[2].levert);
-{ const c = {}; let p = 0; const s2 = L.ny(T0); for (let i = 0; i < 4000; i++) { s2.gaver.uaapnet.push({ kilde: i % 2 ? 'dag' : 'nivaa', levert: true }); const r2 = L.aapneGave(s2, T0); c[r2.kilde + r2.sjeldenhet] = (c[r2.kilde + r2.sjeldenhet] || 0) + 1; if (r2.pynt) p++; }
-  t('Sjansene stemmer omtrent (dag: 60/28/10/2 %)', Math.abs(c.dagvanlig / 2000 - 0.6) < 0.05 && Math.abs((c.dagsjelden || 0) / 2000 - 0.1) < 0.03 && (c.dagsuperrar || 0) > 10);
-  t('Gaven for nytt nivå er aldri vanlig', !c.nivaavanlig);
-  t('Superrar gir hver gullpynt én gang, så mynter', p === D.gave.pynt.length && Object.keys(s2.gaver.pynt).length === D.gave.pynt.length); }
+{ const c = {}; const s2 = L.ny(T0); L.giXP(s2, 300, T0); for (let i = 0; i < 20000; i++) { s2.gaver.uaapnet.push({ kilde: 'dag', levert: true }); const r2 = L.aapneGave(s2, T0); c[r2.premie] = (c[r2.premie] || 0) + 1; }
+  t('Sjansene stemmer omtrent (50 % mynter, 25 % XP, 5 % maskin)', Math.abs(c.mynter / 20000 - 0.5) < 0.02 && Math.abs(c.xp / 20000 - 0.25) < 0.02 && Math.abs(c.maskin / 20000 - 0.05) < 0.01 && c.gullgard > 0);
+  t('Maskin gir gratis bygg til alt er bygd, så mynter', Object.keys(s2.bygg).every(b => s2.bygg[b].eid || D.bygg[b].nivaa > Math.min(s2.nivaa, D.innholdTil)));
+  t('Gullgården og all gullpynt kan vinnes', s2.gaver.gullgard && Object.keys(s2.gaver.pynt).length === D.gave.pynt.length); }
+{ const s3 = L.ny(T0); for (let i = 0; i < 2000; i++) { s3.gaver.uaapnet.push({ kilde: 'nivaa', levert: true }); if (L.aapneGave(s3, T0).premie === 'mynter') { t('Nivågaven gir aldri bare mynter', false); break; } } t('Nivågaven gir aldri bare mynter', true); }
+{ const s4 = L.ny(T0); s4.gaver.bonus = T0 + 30 * 86400000; s4.lager.hvete = 2;
+  t('Gratis i en måned: planting bruker ikke frø', L.plant(s4, 0, 'hvete', T0).ok && s4.lager.hvete === 2);
+  t('Gratis i en måned: fôrkverna trenger ingen varer', L.produser(s4, 'forkvern', 'honsefor', T0).ok && s4.lager.hvete === 2);
+  delete s4.lager.hvete; t('Etter 30 dager koster det igjen', L.kanProdusere(s4, 'forkvern', 'honsefor', T0 + 31 * 86400000) === 'mangler' && L.kanProdusere(s4, 'forkvern', 'honsefor', T0) !== 'mangler'); }
 { const k = L.valider(JSON.parse(JSON.stringify(s)), T0); t('Gavene overlever lagring', k.gaver.uaapnet.length === 3 && k.gaver.dag === '2026-11-15'); }
 
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);

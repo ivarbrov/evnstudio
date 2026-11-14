@@ -606,7 +606,7 @@ function plasserAlt() {
     plasser(tv, pt.x, pt.z, 0); }
   { const h = ting.get('honsehus'), ph = s.plasser.honsehus; if (h && ph && (ph.x !== h.x || ph.z !== h.z)) { plasser(h, ph.x, ph.z, 0); flyttHoner(h); } }
   s.plasser.std = {x: 4, z: 0, r: 0};
-  synkKyr(); synkPynt();
+  synkKyr(); synkPynt(); settGullgard(s.gaver.gullgard && s.gaver.gullPaa);
 }
 const MODELL = {forkvern: lagForkvern, bakeri: lagBakeri, meieri: lagMeieri, fjos: lagFjos, sukkerverk: lagSukkerverk, popkorn: lagPopkorn, kjokken: lagKjokken}, HOYDE = {forkvern: 3.6, bakeri: 4.2, meieri: 4.2, fjos: 4.6, sukkerverk: 4.8, popkorn: 4.0, kjokken: 4.4};
 // Kyrne på beitet ved fjøset (0.9.8). Beitet følger fjøset når det flyttes eller snus.
@@ -651,7 +651,8 @@ function lagEgg() { const g = new THREE.SphereGeometry(0.17, 12, 10); g.scale(1,
 /* ======================= Synk: tilstand → verden ======================= */
 /* ======================= Gaveesker (0.12.0, Even 14.11, godkjent av Ivar 14.11) ======================= */
 // Én gratis eske hver dag (Blomsterkatten har den med) og én per nytt nivå. Den står ved markedsbua til du åpner den. Sjansene står på kortet.
-const GAVE_PLASS = [-3.4, 6.7], SJ = {vanlig: ['Vanlig', '#8c8c8c', '⚪'], uvanlig: ['Uvanlig', '#2e9e48', '🟢'], sjelden: ['Sjelden', '#2f6fd6', '🔵'], superrar: ['Superrar', '#d4a017', '🟡']};
+const GAVE_PLASS = [-3.4, 6.7], SJ = {vanlig: ['Vanlig', '#8c8c8c', '⚪'], uvanlig: ['Uvanlig', '#2e9e48', '🟢'], sjelden: ['Sjelden', '#2f6fd6', '🔵'], superrar: ['Superrar', '#d4a017', '🟡'], legendarisk: ['Legendarisk', '#b03fd1', '🌈']};
+const PREMIENAVN = {mynter: 'mynter', xp: '75 XP', frovarer: 'frø eller varer', maskin: 'en maskin', superhost: 'superhøst', maned: 'gratis i en måned', pynt: 'gullpynt', gullgard: 'Gullgården'};
 let gaveT = null, gaveVent = 0;
 const iDag = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 function lagGaveeske() { const g = new THREE.Group(), rod = fm(0xe0473a, 0.6), gul = fm(0xffd23f, 0.5);
@@ -670,12 +671,23 @@ function synkGaver() {
 function leverGaver(hvem) { const n = L.leverGaver(s); if (n) { melding(`🎁 ${hvem} har levert en gave! Den står ved markedsbua.`, 3400); lagre(); synkGaver(); } }
 function visGave(res) {
   aapneHandling(gaveT, '🎁 Gaveeske', () => { const n = L.klareGaver(s); let p = '';
-    if (res) { const [nv, farge, ik] = SJ[res.sjeldenhet], ting2 = res.pynt ? `${D.gave.pyntNavn[res.pynt]} ✨ til gården` : res.vare ? `${res.antall} ${ikon(res.vare)} ${navn(res.vare).toLowerCase()}` : `${res.mynter} 🪙`;
+    if (res) { const [nv, farge, ik] = SJ[res.sjeldenhet], ting2 = res.gullgard ? '✨ GULLGÅRDEN! ✨' : res.pynt ? `${D.gave.pyntNavn[res.pynt]} ✨ til gården` : res.bygg ? `${D.bygg[res.bygg].ikon} ${D.bygg[res.bygg].navn} gratis!` : res.bonus ? '🎁 Gratis i en måned!' : res.superhost ? `🌟 Superhøst! ${res.superhost} ${res.superhost === 1 ? 'åker er' : 'åkre er'} klare nå` : res.xp ? `⭐ ${res.xp} XP` : res.vare ? `${res.antall} ${ikon(res.vare)} ${navn(res.vare).toLowerCase()}` : `${res.mynter} 🪙`;
+      if (res.gullgard) p += '<p style="font-size:15px;text-align:center">Hele gården er gull! Du kan slå den av og på her.</p>';
+      if (res.bonus) p += `<p style="font-size:15px;text-align:center">Gratis å plante og gratis fôrkvern i ${D.gave.bonusDager} dager.</p>`;
+      if (res.bygg) p += `<p style="font-size:15px;text-align:center">${ting.get(res.bygg) ? 'Det står på gården nå.' : 'Det kommer når det blir ledig plass.'}</p>`;
       p += `<p style="text-align:center;font-size:15px;margin:0"><b style="color:${farge}">${ik} ${nv}</b></p><p style="text-align:center;font-size:24px;margin:6px 0 10px"><b>${ting2}</b></p>`; if (res.pynt) p += '<p style="font-size:15px;text-align:center">Gullpynten står på gården. Du kan flytte den.</p>'; }
     else p += `<p>${n === 1 ? 'Du har én gave.' : `Du har ${n} gaver.`} Trykk for å åpne!</p>`;
     if (n) p += `<div class="knapper"><button class="knapp gronn" data-g="aapneGave">🎁 ${res ? 'Åpne neste' : 'Åpne'}${n > 1 ? ` (${n})` : ''}</button></div>`;
-    p += `<p style="font-size:14px;opacity:.85">Sjanser: ${D.gave.sjanser.map(([k, pr]) => `${SJ[k][2]} ${SJ[k][0]} ${pr} %`).join(' · ')}. Gaven for nytt nivå er alltid minst uvanlig.</p>`; return p; });
+    if (L.bonusAktiv(s, naa())) p += `<p style="font-size:15px">🎁 Gratis å plante og gratis fôrkvern i ${Math.ceil((s.gaver.bonus - naa()) / 86400000)} dager til.</p>`;
+    if (s.gaver.gullgard) p += `<div class="knapper"><button class="knapp lys" data-g="gullgard">✨ Gullgården: ${s.gaver.gullPaa ? 'på' : 'av'}</button></div>`;
+    p += `<p style="font-size:14px;opacity:.85">Sjanser: ${D.gave.premier.map(q => `${PREMIENAVN[q[0]]} ${String(q[1]).replace('.', ',')} %`).join(' · ')}. Gaven for nytt nivå gir aldri bare mynter.</p>`; return p; });
 }
+// Gullgården (legendarisk, Even 14.11): låve, bygg, tak og pynt får gullfarge. Kan slås av og på.
+let gullOrig = null, gullNaa = false;
+function settGullgard(paa) { paa = !!paa; if (paa === gullNaa) return; gullNaa = paa;
+  const mats = [MAT.rodPlank, MAT.tak, MAT.tak2, MAT.hvitTrim].filter(Boolean), gull = h => new THREE.Color(h).convertSRGBToLinear();
+  if (!gullOrig) gullOrig = mats.map(m => ({m, map: m.map, farge: m.color.clone(), met: m.metalness, ru: m.roughness}));
+  gullOrig.forEach((o, i) => { const m = o.m; if (paa) { m.map = null; m.color.copy(gull(i === 1 || i === 2 ? 0xe2ad1f : 0xffd54a)); m.metalness = 0.6; m.roughness = 0.32; } else { m.map = o.map; m.color.copy(o.farge); m.metalness = o.met; m.roughness = o.ru; } m.needsUpdate = true; }); }
 // Gullpynt fra superrare gaver. Bare pynt, kan flyttes.
 const PYNT_FOT = [1.4, 1.4];
 function lagPynt(id) { const g = new THREE.Group(), gull = std({color: SRGB(0xf5c542), metalness: 0.75, roughness: 0.25}), stein = fm(0xb9b0a2, 0.9);
@@ -683,6 +695,8 @@ function lagPynt(id) { const g = new THREE.Group(), gull = std({color: SRGB(0xf5
   if (id === 'gullhone') { mesh(new THREE.SphereGeometry(0.33, 16, 12), gull, 0, 0.68, 0, g).scale.set(1.1, 0.95, 0.9); mesh(new THREE.SphereGeometry(0.2, 14, 10), gull, 0.26, 1.02, 0, g); mesh(new THREE.ConeGeometry(0.07, 0.16, 8), gull, 0.47, 1.0, 0, g).rotation.z = -Math.PI / 2; mesh(new THREE.ConeGeometry(0.16, 0.32, 8), gull, -0.32, 0.86, 0, g).rotation.z = 0.9; [-0.06, 0.06].forEach(z => mesh(new THREE.SphereGeometry(0.06, 8, 6), gull, 0.26, 1.24, z, g)); }
   else if (id === 'gullegg') { mesh(new THREE.TorusGeometry(0.34, 0.1, 8, 20), fm(0xc9a35a, 1), 0, 0.42, 0, g).rotation.x = Math.PI / 2; mesh(new THREE.SphereGeometry(0.3, 18, 14), gull, 0, 0.75, 0, g).scale.set(1, 1.3, 1); }
   else if (id === 'gullgulrot') { const k = mesh(new THREE.ConeGeometry(0.2, 0.9, 12), gull, 0, 0.82, 0, g); k.rotation.z = Math.PI; for (let i = 0; i < 4; i++) { const b = mesh(new THREE.ConeGeometry(0.05, 0.4, 5), gull, Math.cos(i * 1.6) * 0.06, 1.42, Math.sin(i * 1.6) * 0.06, g); b.rotation.set(Math.sin(i * 1.6) * 0.4, 0, Math.cos(i * 1.6) * 0.4); } }
+  else if (id === 'regnbue') { [0xe0473a, 0xf39c34, 0xf7d23e, 0x5cb85c, 0x3d8bd9, 0x8e5cc7].forEach((c, i) => { const b = mesh(new THREE.TorusGeometry(0.62 - i * 0.07, 0.04, 8, 28, Math.PI), fm(c, 0.6), 0, 0.36, 0, g); }); [-0.6, 0.6].forEach(x => mesh(new THREE.SphereGeometry(0.16, 10, 8), fm(0xffffff, 0.9), x, 0.42, 0, g).scale.set(1.3, 0.8, 1)); }
+  else if (id === 'gullfontene') { mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.2, 18), gull, 0, 0.45, 0, g); mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.04, 18), std({color: SRGB(0x5bb6e0), roughness: 0.15}), 0, 0.56, 0, g); mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.55, 8), gull, 0, 0.8, 0, g); mesh(new THREE.CylinderGeometry(0.24, 0.18, 0.1, 14), gull, 0, 1.08, 0, g); mesh(new THREE.SphereGeometry(0.1, 10, 8), std({color: SRGB(0x8fd3f2), roughness: 0.1}), 0, 1.2, 0, g); }
   else { const st = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = Math.PI / 2 + i * Math.PI / 5, rr2 = i % 2 ? 0.17 : 0.42; st[i ? 'lineTo' : 'moveTo'](Math.cos(a) * rr2, Math.sin(a) * rr2); } const sg = new THREE.ExtrudeGeometry(st, {depth: 0.14, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 2}); sg.translate(0, 0, -0.07); mesh(sg, gull, 0, 0.85, 0, g); mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.3, 6), gull, 0, 0.45, 0, g); }
   return g; }
 function synkPynt() {
@@ -1013,10 +1027,10 @@ function visAker(u) {
   aapneHandling(u, '🟫 Tom åker', () => {
     const tomme = s.akre.filter(a => !a.avling).length;
     return '<p>Hva vil du plante? Du planter 1 og høster 2.<br><small>✋ Tips: trykk «Plant» flere ganger, eller dra «Plant» ut over åkrene.</small></p>' + I_SPILLET.avlinger.map(a => { const A = D.avlinger[a];
-      if (A.nivaa <= s.nivaa && L.kanPlante(s, i, a) === 'ingen-fro') return `<div class="rad"><span class="stort">${A.ikon}</span><span class="midt">${A.navn}<small class="mangler">Du har ingen frø. Høst ${A.navn.toLowerCase()} som vokser, så får du flere.</small></span><button class="knapp" disabled>Plant</button></div>`;
+      if (A.nivaa <= s.nivaa && L.kanPlante(s, i, a, naa()) === 'ingen-fro') return `<div class="rad"><span class="stort">${A.ikon}</span><span class="midt">${A.navn}<small class="mangler">Du har ingen frø. Høst ${A.navn.toLowerCase()} som vokser, så får du flere.</small></span><button class="knapp" disabled>Plant</button></div>`;
       if (A.nivaa > s.nivaa) return `<div class="rad"><span class="stort">${A.ikon}</span><span class="midt">${A.navn}<small>Låses opp på nivå ${A.nivaa}</small></span><button class="knapp" disabled>🔒</button></div>`;
       const har = s.lager[a] || 0;
-      return `<div class="rad"><span class="stort">${A.ikon}</span><span class="midt">${A.navn}<small>${fmtTid(A.tid * 1000)} · +${A.xp} XP · du har ${har}${har ? '' : ' (gratis frø)'}</small></span><button class="knapp gronn fro" data-g="plant" data-a="${a}" title="Trykk, eller dra frøet over åkrene">${A.ikon} Plant</button>${tomme > 1 ? `<button class="knapp lys" data-g="plantAlle" data-a="${a}" title="Plant på alle tomme åkre">Alle (${tomme})</button>` : ''}</div>`; }).join('') +
+      return `<div class="rad"><span class="stort">${A.ikon}</span><span class="midt">${A.navn}<small>${fmtTid(A.tid * 1000)} · +${A.xp} XP · du har ${har}${L.bonusAktiv(s, naa()) ? ' · gratis 🎁' : har ? '' : ' (gratis frø)'}</small></span><button class="knapp gronn fro" data-g="plant" data-a="${a}" title="Trykk, eller dra frøet over åkrene">${A.ikon} Plant</button>${tomme > 1 ? `<button class="knapp lys" data-g="plantAlle" data-a="${a}" title="Plant på alle tomme åkre">Alle (${tomme})</button>` : ''}</div>`; }).join('') +
       '<div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt åkeren</button></div>';
   });
 }
@@ -1052,6 +1066,7 @@ function visBygg(u) {
     const klare = sb.ko.filter(j => t >= j.slutt);
     let p = `<div class="ko" aria-label="Køen">${plasser.join('')}</div>`;
     if (klare.length) p += `<div class="knapper"><button class="knapp" data-g="hent">Hent ${klare.map(j => ikon(j.vare)).join(' ')}</button></div>`;
+    if (b === 'forkvern' && L.bonusAktiv(s, t)) p += `<p style="font-size:15px">🎁 Gratis fôrkvern i ${Math.ceil((s.gaver.bonus - t) / 86400000)} dager til. Du trenger ingen varer.</p>`;
     p += opp.map(v => { const o = D.oppskrifter[v], g = L.kanProdusere(s, b, v, t);
       const inn = Object.keys(o.inn).map(k => `${o.inn[k]} ${ikon(k)}`).join(' + '), mangler = Object.keys(o.inn).filter(k => (s.lager[k] || 0) < o.inn[k]);
       return `<div class="rad"><span class="stort">${ikon(v)}</span><span class="midt">${o.ut > 1 ? o.ut + ' ' : ''}${navn(v)} · ${fmtTid(o.tid * 1000)}${D.produktXP(v) ? ' · +' + D.produktXP(v) + ' XP' : ''}<small class="${mangler.length ? 'mangler' : ''}">${inn}${mangler.length ? ' · du mangler ' + mangler.map(k => (o.inn[k] - (s.lager[k] || 0)) + ' ' + navn(k).toLowerCase()).join(', ') : ''}</small></span><button class="knapp gronn" data-g="lag" data-v="${v}" ${g ? 'disabled' : ''}>Lag</button></div>`; }).join('');
@@ -1067,7 +1082,8 @@ $('handlingInnhold').addEventListener('click', e => {
     else if (r.grunn === 'feil') { melding('Nei, det er ikke ' + navn(k.dataset.v).toLowerCase() + '. Prøv igjen! 🦊', 2600); }
     else if (r.grunn === 'mangler') { melding(`Riktig! Men du har ingen ${navn(k.dataset.v).toLowerCase()} ennå. Lag noen og kom tilbake! 🦊`, 3400); }
     return; }
-  if (g === 'aapneGave') { const r = L.aapneGave(s, t); if (r.ok) { if (gaveT) sprett.push({o: gaveT.gruppe, t: 0}); if (r.mynter) flyt('+' + r.mynter + ' 🪙', midtAv(gaveT, 2)); else if (r.vare) flyt('+' + r.antall + ' ' + ikon(r.vare), midtAv(gaveT, 2)); if (r.pynt) synkPynt(); lagre(); synkGaver(); synk(true); visGave(r); } return; }
+  if (g === 'gullgard') { s.gaver.gullPaa = !s.gaver.gullPaa; settGullgard(s.gaver.gullPaa); lagre(); tegnPaaNytt(); return; }
+  if (g === 'aapneGave') { const r = L.aapneGave(s, t); if (r.ok) { if (gaveT) sprett.push({o: gaveT.gruppe, t: 0}); if (r.mynter) flyt('+' + r.mynter + ' 🪙', midtAv(gaveT, 2)); else if (r.vare) flyt('+' + r.antall + ' ' + ikon(r.vare), midtAv(gaveT, 2)); if (r.pynt) synkPynt(); if (r.bygg || r.gullgard) plasserAlt(); if (r.xp) gi(r, midtAv(gaveT, 2)); lagre(); synkGaver(); synk(true); if (!(r.nye && r.nye.length)) visGave(r); } return; }
   if (g === 'nyGate') { L.byttGate(s, t); gateFor = s.rebus.gate; lagre(); tegnPaaNytt(); return; }
   if (g === 'plant' || g === 'plantAlle') { const a = k.dataset.a; const i = s.akre.findIndex(f => f.id === u.id);
     let n = plantPaa(i, a) ? 1 : 0; if (g === 'plantAlle') s.akre.forEach((f, j) => { if (!f.avling && plantPaa(j, a)) n++; });
