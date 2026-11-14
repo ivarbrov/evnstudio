@@ -715,7 +715,7 @@
     gd.gruppe.clear(); const g = gd.gruppe, n = gd.niva, ghost = new T.Group(); g.add(ghost);
     const skal = (nv, fn) => { if (n >= nv) fn(g); else if (gd.neste && nv === n + 1) { fn(ghost); } };
     // Tunet
-    gd.gjerdeD = n >= 2 ? 22 : 16;   // gårdsgjerdets z-radius (porten mot åkeren); brukes av leveringsfeltet
+    gd.gjerdeD = n >= 2 ? 22 : 16; gd.gjerdeR = { x: n >= 2 ? 30 : 22, z: gd.gjerdeD };   // gårdsgjerdets z-radius (porten mot åkeren); brukes av leveringsfeltet
     if (!(NY && nyttGjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0))) gjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0);
     // Enga foran gården: her regner matdyrene ned (bare i spillet)
     // Tredekke: plankegang fra porten inn til gårdsbygningen
@@ -933,9 +933,12 @@
     const gaar = m > 0.1;
     if (gaar) {
       const nx = p.x + vx * dt, nz = p.z + vz * dt, y = p.y;
-      // Gårdsgjerdet bak innsamlingssonen: roboten kommer bare gjennom porten (QA 2bd5a5d)
-      const gjennomGjerde = (x0, z0, x1, z1) => { const L = gd.lev; if (!L || y > 1) return false; const lin = L.z0 - 0.15;
-        return (z0 >= lin) !== (z1 >= lin) && Math.abs(x1) > L.port && Math.abs(x1) < L.x1 + 1; };
+      // Gårdsgjerdet stopper roboten hele veien rundt, på begge sider. Den kommer bare gjennom porten foran (QA 2bd5a5d og 208b671).
+      // Gjerdet er en ellipse; roboten holdes ca. 0,4 m fra den, og kan alltid bevege seg bort fra gjerdet.
+      const gjennomGjerde = (x0, z0, x1, z1) => { const G = gd.gjerdeR, L = gd.lev; if (!G || !L || y > 1) return false;
+        if (z1 > 0 && Math.abs(x1) < L.port) return false;
+        const f = (x, z) => Math.sqrt((x / G.x) ** 2 + (z / G.z) ** 2) - 1, b = 0.4 / Math.min(G.x, G.z), f0 = f(x0, z0), f1 = f(x1, z1);
+        return (Math.sign(f0) !== Math.sign(f1) && Math.abs(f0) > 1e-9) || (Math.abs(f1) < b && Math.abs(f1) < Math.abs(f0)); };
       const ok = (x, z) => { const rh = rampeHoyde(x, z); return !(rh !== null && rh > y + STEG && rh < y + 2.6) && !blokkert(p.x, p.z, x, z, y) && flateVed(x, z, y) <= y + STEG && ((x / 31) ** 2 + (z / 23) ** 2 < 1 || (gd.eng && x > gd.eng.x0 && x < gd.eng.x1 && z > gd.eng.z0 && z < gd.eng.z1) || (gd.eng && Math.abs(x) < 3 && z > 0 && z < gd.eng.z0 + 1) || (gd.lev && x > gd.lev.x0 && x < gd.lev.x1 && z > gd.lev.z0 && z < gd.lev.z1)) && !gjennomGjerde(p.x, p.z, x, z); };
       if (ok(nx, nz)) { p.x = nx; p.z = nz; } else if (ok(nx, p.z)) p.x = nx; else if (ok(p.x, nz)) p.z = nz;
       const mal = Math.atan2(vx, vz); let d = mal - r.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); r.rotation.y += d * Math.min(1, dt * 12);
