@@ -933,7 +933,10 @@
     const gaar = m > 0.1;
     if (gaar) {
       const nx = p.x + vx * dt, nz = p.z + vz * dt, y = p.y;
-      const ok = (x, z) => { const rh = rampeHoyde(x, z); return !(rh !== null && rh > y + STEG && rh < y + 2.6) && !blokkert(p.x, p.z, x, z, y) && flateVed(x, z, y) <= y + STEG && ((x / 31) ** 2 + (z / 23) ** 2 < 1 || (gd.eng && x > gd.eng.x0 && x < gd.eng.x1 && z > gd.eng.z0 && z < gd.eng.z1) || (gd.eng && Math.abs(x) < 3 && z > 0 && z < gd.eng.z0 + 1) || (gd.lev && x > gd.lev.x0 && x < gd.lev.x1 && z > gd.lev.z0 && z < gd.lev.z1)); };
+      // Gårdsgjerdet bak innsamlingssonen: roboten kommer bare gjennom porten (QA 2bd5a5d)
+      const gjennomGjerde = (x0, z0, x1, z1) => { const L = gd.lev; if (!L || y > 1) return false; const lin = L.z0 - 0.15;
+        return (z0 >= lin) !== (z1 >= lin) && Math.abs(x1) > L.port && Math.abs(x1) < L.x1 + 1; };
+      const ok = (x, z) => { const rh = rampeHoyde(x, z); return !(rh !== null && rh > y + STEG && rh < y + 2.6) && !blokkert(p.x, p.z, x, z, y) && flateVed(x, z, y) <= y + STEG && ((x / 31) ** 2 + (z / 23) ** 2 < 1 || (gd.eng && x > gd.eng.x0 && x < gd.eng.x1 && z > gd.eng.z0 && z < gd.eng.z1) || (gd.eng && Math.abs(x) < 3 && z > 0 && z < gd.eng.z0 + 1) || (gd.lev && x > gd.lev.x0 && x < gd.lev.x1 && z > gd.lev.z0 && z < gd.lev.z1)) && !gjennomGjerde(p.x, p.z, x, z); };
       if (ok(nx, nz)) { p.x = nx; p.z = nz; } else if (ok(nx, p.z)) p.x = nx; else if (ok(p.x, nz)) p.z = nz;
       const mal = Math.atan2(vx, vz); let d = mal - r.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); r.rotation.y += d * Math.min(1, dt * 12);
     }

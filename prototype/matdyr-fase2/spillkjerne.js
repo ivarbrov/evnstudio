@@ -155,7 +155,7 @@
   document.addEventListener('evn-tobein-klar', () => { if (dyrG) oppdaterDyr(); });
   function byggSpillGard(beholdRobot) {
     const r0 = I.robot(), pos = beholdRobot && r0 ? r0.position.clone() : null, rot = r0 ? r0.rotation.y : 0, gd = I.gd;
-    gd.niva = visNiva(); gd.neste = false; gd.gjennom = false; gd.aapne = plasserApne(); gd.eng = eng(); gd.lev = levOmr();
+    gd.niva = visNiva(); gd.neste = false; gd.gjennom = false; gd.aapne = plasserApne(); gd.eng = eng(); { const o = levOmr(); gd.lev = o && { ...o, z1: eng().z0 - 0.95, port: 3.2 }; }   // gangbart helt ut til åkergjerdet; gårdsgjerdet bak feltet stopper roboten utenfor porten
     gd.tegnDyr = (g, pl, ap) => { dyrG = new T.Group(); g.add(dyrG); plasserNa = pl; aapneNa = ap; fyllDyr(); };
     I.byggGard(); I.byggVegger(); I.forberedGjennom(); I.sp.etasje = -1;
     if (pos) { I.robot().position.copy(pos); I.robot().rotation.y = rot; }
