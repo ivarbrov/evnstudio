@@ -551,8 +551,11 @@
   const levG = new T.Group(); I.scene.add(levG); let levNokkel = '', paaLev = false, levBesok = 0;
   // Innsamlingssonen (Even 14.11.2026: «Innsamlingsone må være et stort felt rett utenfor gården fjern lever her og penge innsamling»):
   // et stort felt rett utenfor porten i gårdsgjerdet. Bærer roboten et matdyr inn i feltet, havner det på gården.
-  function levOmr() { const e = eng(); if (!e) return null; const d = I.gd.gjerdeD || 22, z0 = d + 0.3;
-    return { x0: -8, x1: 8, z0, z1: z0 + 5.2 }; }   // rett utenfor porten i gårdsgjerdet, så nær basen som mulig   // hele passasjen (roboten når |x| ≈ 3,05)
+  // Er det ikke plass mellom gårdsgjerdet og åkergjerdet (gårdsnivå 2 og høyere), ligger feltet rett innenfor åkergjerdet,
+  // så gjerdet ikke krysser det (QA e8102a6).
+  function levOmr() { const e = eng(); if (!e) return null; const d = I.gd.gjerdeD || 22, aaker = e.z0 - 0.6;
+    const z0 = d + 0.3 + 5.2 <= aaker - 0.2 ? d + 0.3 : aaker + 0.3;
+    return { x0: -8, x1: 8, z0, z1: z0 + 5.2 }; }
   function byggLevFelt() {
     const o = levOmr(), n = o ? o.z0 + ':' + o.z1 : ''; if (n === levNokkel) return; levNokkel = n;
     levG.children.slice().forEach(c => { levG.remove(c); c.geometry && c.geometry.dispose(); c.material && c.material.dispose(); });

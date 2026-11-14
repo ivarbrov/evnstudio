@@ -699,7 +699,7 @@
     if (MB) vis('gress', EVNMiljo.spred(Math.round(900 * q.gress), { fra: [-70, -60], til: [70, 70], frø: 17, skala: [1.6, 2.6], lov: (x, z) => sti(x, z) === 0 && jord(x, z) === 0 && !iAker(x, z, 1) && ell(x, z, 15.5, 13) > 1 && ell(x, z, 70, 60, 8) < 1 && EVNMiljo.stoy(x * 0.9 + 3, z * 0.9) > 0.25 }), { skygge: false });
     // Pynt på tunet og enga
     vis('hoyball', [{ x: -14, z: 14, ry: 0.4 }, { x: -12.4, z: 15.2, ry: 1.1 }, { x: 14, z: -13, ry: 2 }, { x: 35, z: 30, ry: 0.3 }, { x: 34.5, z: 32, ry: 1.3 }]);
-    vis('kasse', [{ x: 5.2, z: 18, ry: 0.2 }, { x: -35, z: 40, ry: 0.9 }]);
+    vis('kasse', [{ x: 10.5, z: 18, ry: 0.2 }, { x: -35, z: 40, ry: 0.9 }]);   // utenfor innsamlingssonen (QA e8102a6)
     // Fjell og en innsjø i det fjerne gir dybde (få trekanter, myke farger som går i tåken)
     const fjellMat = new T.MeshStandardMaterial({ color: LC('#7fa98a'), roughness: 1, flatShading: true }), snoMat = new T.MeshStandardMaterial({ color: LC('#eef4f6'), roughness: 1, flatShading: true });
     [[-0.9, 300, 95, 110], [-0.45, 330, 120, 140], [0.0, 310, 80, 120], [0.5, 340, 130, 150], [1.0, 300, 90, 110], [2.6, 320, 110, 130], [3.3, 300, 85, 120], [4.2, 330, 120, 140], [5.0, 310, 95, 115]].forEach(([a, d, h, r]) => {

@@ -188,7 +188,10 @@ const sa = await ev(`(async () => { const P = EVNProto, S0 = JSON.parse(JSON.str
   ut.lagret = (JSON.parse(localStorage.getItem(P.NOKKEL)) || {}).penger === P.S().penger;
   if (o && P.SAMLE) { for (let i = 0; i < 60; i++) { EVNSteg(1 / 30); K.steg(1 / 30, 4 + i / 15); } ut.kasseStaar = +P.S().kasse.toFixed(1); }   // står i sonen: hentes fortsatt
   return ut; })()`);
-if (!/[?&]samle=1/.test(process.argv[2] || '')) ok('standard (Even 14.11.2026): inntekten går rett i lommeboka (' + JSON.stringify(sa) + ')', !sa.samle && sa.vokst > 0);
+// Gammel kasse fra pengesonen går til lommeboka i standardmodus, uten tap eller dobling (QA e8102a6)
+const ka = await ev(`(async () => { const P = EVNProto, K = EVNIntern.krok; P.sett({ v: 1, penger: 100, kasse: 500.5, gard: { niva: 1 }, base: [], disc: [] }); EVNVis({ fane: 'spill' }); K.steg(1 / 30, 1);
+  return { penger: P.S().penger, kasse: P.S().kasse || 0 }; })()`);
+if (!/[?&]samle=1/.test(process.argv[2] || '')) ok('standard (Even 14.11.2026): inntekten går rett i lommeboka, og gammel kasse flyttes dit (' + JSON.stringify(sa) + ' ' + JSON.stringify(ka) + ')', !sa.samle && sa.vokst > 0 && ka.kasse === 0 && Math.abs(ka.penger - 600.5) < 1);
 else ok('?samle=1: inntekten samles i kassa og hentes i pengesonen (' + JSON.stringify(sa) + ')', sa.samle && sa.kasse > 0 && sa.vokst === 0 && sa.etter >= Math.floor(sa.kasse) && sa.kasseEtter < sa.kasse / 4 && sa.kasseStaar < sa.kasse / 4 && sa.lagret);
 // Hulveien (Even 12.11.2026): matdyr som ikke blir tatt, går ned skråningen øst for porten, inn i tunnelen og forsvinner. ?groft=0 gir den gamle utgangen.
 const gr = await ev(`(async () => { const P = EVNProto, I = EVNIntern, K = I.krok; EVNVis({ fane: 'spill' }); const R = EVNRobot(); R.position.set(-20, 0, 12);
