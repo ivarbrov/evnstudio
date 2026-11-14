@@ -51,11 +51,11 @@
     },
     // Bygg: nivå og pris. Produksjonsbygg har 2 køplasser. «dyr»: bygget er et dyrehus, og dyrene kommer når det er kjøpt.
     bygg: {
-      forkvern:   { navn: 'Fôrkverna',      ikon: '⚙️', nivaa: 1,  pris: 0 },
+      forkvern:   { navn: 'Fôrkvernen',      ikon: '⚙️', nivaa: 1,  pris: 0 },
       bakeri:     { navn: 'Bakeriet',       ikon: '🍞', nivaa: 2,  pris: 50 },
       meieri:     { navn: 'Meieriet',       ikon: '🥛', nivaa: 6,  pris: 600 },
       sukkerverk: { navn: 'Sukkerverket',   ikon: '🧂', nivaa: 7,  pris: 900 },
-      popkorn:    { navn: 'Popkornmaskina', ikon: '🍿', nivaa: 8,  pris: 1200 },
+      popkorn:    { navn: 'Popkornmaskinen', ikon: '🍿', nivaa: 8,  pris: 1200 },
       kjokken:    { navn: 'Gårdskjøkkenet', ikon: '🥞', nivaa: 9,  pris: 800 },
       fjos:       { navn: 'Fjøs og beite',  ikon: '🐄', nivaa: 6,  pris: 300, dyr: 'ku' }   // Ivar 12.11: 300 mynter, spilleren plasserer det selv
     },
@@ -92,9 +92,9 @@
       mais: 'Jeg har gule korn på en kolbe og grønne blader rundt meg. Hva er jeg?',
       erter: 'Jeg bor i en grønn belg sammen med søsknene mine. Vi er små, runde og grønne. Hva er jeg?',
       egg: 'Jeg har skall, men jeg er ikke en snegle. Høna legger meg i reiret. Hva er jeg?',
-      honsefor: 'Hønene blir glade når de får meg. Jeg lages av hvete i fôrkverna. Hva er jeg?',
+      honsefor: 'Hønene blir glade når de får meg. Jeg lages av hvete i fôrkvernen. Hva er jeg?',
       brod: 'Jeg kommer varm og god ut av ovnen, og du kan smøre smør på meg. Hva er jeg?',
-      kufor: 'Kyrne spiser meg. Jeg lages av erter og mais i fôrkverna. Hva er jeg?',
+      kufor: 'Kyrne spiser meg. Jeg lages av erter og mais i fôrkvernen. Hva er jeg?',
       melk: 'Jeg er hvit, kommer fra kua og er god i et glass. Hva er jeg?',
       flote: 'Jeg er tykk og hvit og lages av melk. Pisker du meg, blir jeg til krem. Hva er jeg?',
       smor: 'Jeg er gul og myk og lages av melk. Du smører meg på brødskiva. Hva er jeg?',

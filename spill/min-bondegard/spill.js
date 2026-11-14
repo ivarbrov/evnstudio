@@ -588,7 +588,7 @@ function plasserAlt() {
     if (!t && sb.x === null && !finnLedigPlass({fot: FOT[b], r: 0}, ...STANDARD[b])) continue;   /* 0.9.8: ingen ledig plass ennå. Byggemenyen foreslår å kjøpe Enga */
     const modell = sb.eid ? 'bygd' : 'plass';
     if (t && t.modell !== modell) { scene.remove(t.gruppe); const i = klikkbare.indexOf(t.gruppe); if (i >= 0) klikkbare.splice(i, 1); ting.delete(b); t = null; }
-    if (!t) { const g = sb.eid ? MODELL[b]() : lagByggeplass(D.bygg[b].navn.replace(/ og beite$/, '').replace(/et$|a$/, '')); scene.add(g); eierAv(g); klikkbar(g);
+    if (!t) { const g = sb.eid ? MODELL[b]() : lagByggeplass(D.bygg[b].navn.replace(/ og beite$/, '').replace(/et$|en$|a$/, '')); scene.add(g); eierAv(g); klikkbar(g);
       t = {type: 'bygg', id: b, gruppe: g, fot: FOT[b], hoyde: sb.eid ? HOYDE[b] : 3.0, modell}; t.ikon = lagIkon(t.hoyde); g.add(t.ikon); ting.set(b, t); }
     if (sb.x === null) { const [sx, sz] = STANDARD[b]; const p = finnLedigPlass(t, sx, sz) || [sx, sz]; sb.x = p[0]; sb.z = p[1]; }
     plasser(t, sb.x, sb.z, sb.r);
@@ -902,7 +902,7 @@ function gi(res, pos) {   // felles etter en handling: XP, nye nivåer, lagring
 }
 function lagerFullt(type) {
   aapneHandling(null, type === 'silo' ? '🌾 Siloen er full' : '📦 Låven er full', () =>
-    `<p>${type === 'silo' ? 'Det er ikke plass til flere avlinger.' : 'Det er ikke plass til flere varer.'} Selg noe i markedsbua, eller bruk det i fôrkverna eller bakeriet.</p>
+    `<p>${type === 'silo' ? 'Det er ikke plass til flere avlinger.' : 'Det er ikke plass til flere varer.'} Selg noe i markedsbua, eller bruk det i fôrkvernen eller bakeriet.</p>
      <div class="knapper"><button class="knapp" data-g="marked">🏪 Til markedsbua</button><button class="knapp lys" data-g="lager">📦 Se lageret</button></div>`);
 }
 function hostAlt(u0) {
@@ -918,7 +918,7 @@ function plantPaa(i, avling) {
   const u = ting.get(s.akre[i].id); sprett.push({o: u.gruppe, t: 0}); robotJobb(u); return true;
 }
 const artFor = u => u.id === 'fjos' ? 'ku' : 'hone';
-const FOR_TIPS = {hone: 'Lag hønsefôr av hvete i fôrkverna. ⚙️', ku: 'Lag kufôr av erter og mais i fôrkverna. ⚙️'};
+const FOR_TIPS = {hone: 'Lag hønsefôr av hvete i fôrkvernen. ⚙️', ku: 'Lag kufôr av erter og mais i fôrkvernen. ⚙️'};
 function mat(u) {
   const art = artFor(u), r = L.mat(s, art, naa());
   if (r.ok) { flyt('🍽️ ×' + r.antall, midtAv(u, 3)); robotJobb(u); (art === 'ku' ? kyr : hoener).forEach((h, i) => setTimeout(() => { h.userData.hopp = 0.5; visHjerte(h.position.clone().add(new THREE.Vector3(0, art === 'ku' ? 2.6 : 1.8, 0))); }, 300 + i * 200)); gi(null); }
@@ -1301,7 +1301,7 @@ const OPPL = [
   {tekst: '<b>Hei, nabo!</b> Jeg er Rebus, og jeg bor i skogkanten. Skal vi gjøre denne lille gården til den fineste i hele Elvedal? Trykk på en åker og <b>plant hvete</b>. 🌾', maal: () => ting.get(s.akre[0].id)},
   {tekst: 'Bra! Mens hveten vokser, kan du trykke på <b>hønsehuset</b> og gi hønene mat. 🐔', maal: () => ting.get('honsehus')},
   {tekst: 'Hønene spiser og legger egg. Når hveten blir <b>gul</b>, trykker du på åkeren for å <b>høste</b>.', maal: () => { const f = s.akre.find(a => a.avling) || s.akre[0]; return ting.get(f.id); }},
-  {tekst: 'Supert! Når hønsefôret tar slutt, lager du nytt av hvete i <b>fôrkverna</b>. Prøv nå! ⚙️', maal: () => ting.get('forkvern')},
+  {tekst: 'Supert! Når hønsefôret tar slutt, lager du nytt av hvete i <b>fôrkvernen</b>. Prøv nå! ⚙️', maal: () => ting.get('forkvern')},
   {tekst: 'Du kan <b>selge</b> det du ikke trenger i <b>markedsbua</b>. Da får du mynter til nye ting. Lykke til, nabo! 🦊', maal: () => ting.get('marked')}
 ];
 let opplSkjult = false;

@@ -180,7 +180,7 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
 { const s3 = L.ny(T0); for (let i = 0; i < 2000; i++) { s3.gaver.uaapnet.push({ kilde: 'nivaa', levert: true }); if (L.aapneGave(s3, T0).premie === 'mynter') { t('Nivågaven gir aldri bare mynter', false); break; } } t('Nivågaven gir aldri bare mynter', true); }
 { const s4 = L.ny(T0); s4.gaver.bonus = T0 + 7 * 86400000; s4.lager.hvete = 2;
   t('Gratis i 7 dager: planting bruker ikke frø', L.plant(s4, 0, 'hvete', T0).ok && s4.lager.hvete === 2);
-  t('Gratis i 7 dager: fôrkverna trenger ingen varer', L.produser(s4, 'forkvern', 'honsefor', T0).ok && s4.lager.hvete === 2);
+  t('Gratis i 7 dager: fôrkvernen trenger ingen varer', L.produser(s4, 'forkvern', 'honsefor', T0).ok && s4.lager.hvete === 2);
   delete s4.lager.hvete; t('Etter 7 dager koster det igjen', L.kanProdusere(s4, 'forkvern', 'honsefor', T0 + 8 * 86400000) === 'mangler' && L.kanProdusere(s4, 'forkvern', 'honsefor', T0) !== 'mangler'); }
 { const k = L.valider(JSON.parse(JSON.stringify(s)), T0); t('Gavene overlever lagring', k.gaver.uaapnet.length === 3 && k.gaver.dag === '2026-11-15'); }
 
