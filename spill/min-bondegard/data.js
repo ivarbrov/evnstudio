@@ -83,7 +83,7 @@
     // Gaveesker (Even 14.11, godkjent av Ivar 14.11). Premier og sjanser fra Even 14.11 (0.12.1): [premie, prosent, mengde, sjeldenhet]
     gave: { premier: [['mynter', 50, [20, 60], 'vanlig'], ['xp', 25, 75, 'uvanlig'], ['frovarer', 13, 0, 'uvanlig'], ['maskin', 5, 0, 'sjelden'], ['superhost', 5, 0, 'sjelden'],
         ['maned', 1, 0, 'superrar'], ['pynt', 0.9, 0, 'superrar'], ['gullgard', 0.1, 0, 'legendarisk']],
-      bonusDager: 30, maskinMynter: 300, superrarMynter: 200,
+      bonusDager: 7,   // Ivar 14.11: 7 dager (Even ønsket en måned) maskinMynter: 300, superrarMynter: 200,
       pynt: ['gullhone', 'gullegg', 'gullgulrot', 'gullstjerne', 'regnbue', 'gullfontene'],
       pyntNavn: { gullhone: 'Gullhøne', gullegg: 'Gullegg', gullgulrot: 'Gullgulrot', gullstjerne: 'Gullstjerne', regnbue: 'Regnbue', gullfontene: 'Gullfontene' } },
     rebus: { nivaa: 2, pause: 180, myntFaktor: 2, myntPluss: 10, xp: 4 },

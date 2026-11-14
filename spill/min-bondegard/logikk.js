@@ -315,7 +315,7 @@
     if (r.gaver && typeof r.gaver === 'object') {
       if (Array.isArray(r.gaver.uaapnet)) s.gaver.uaapnet = r.gaver.uaapnet.filter(function (g) { return g && (g.kilde === 'dag' || g.kilde === 'nivaa'); }).slice(0, 20).map(function (g) { return { kilde: g.kilde, levert: !!g.levert }; });
       if (typeof r.gaver.dag === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.gaver.dag)) s.gaver.dag = r.gaver.dag;
-      s.gaver.bonus = Math.min(tall(r.gaver.bonus, 0), naa + 31 * 86400000); s.gaver.gullgard = r.gaver.gullgard === true; s.gaver.gullPaa = s.gaver.gullgard && r.gaver.gullPaa !== false;
+      s.gaver.bonus = Math.min(tall(r.gaver.bonus, 0), naa + (D.gave.bonusDager + 1) * 86400000); s.gaver.gullgard = r.gaver.gullgard === true; s.gaver.gullPaa = s.gaver.gullgard && r.gaver.gullPaa !== false;
       if (r.gaver.pynt && typeof r.gaver.pynt === 'object') D.gave.pynt.forEach(function (p) { var q = r.gaver.pynt[p]; if (q && typeof q === 'object') s.gaver.pynt[p] = { x: typeof q.x === 'number' && isFinite(q.x) ? q.x : null, z: typeof q.z === 'number' && isFinite(q.z) ? q.z : null, r: [0, 1, 2, 3].indexOf(q.r) >= 0 ? q.r : 0 }; });
     }
     if (r.oppl && typeof r.oppl === 'object') s.oppl.steg = Math.max(0, Math.floor(tall(r.oppl.steg, 0)));

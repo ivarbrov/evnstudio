@@ -652,7 +652,7 @@ function lagEgg() { const g = new THREE.SphereGeometry(0.17, 12, 10); g.scale(1,
 /* ======================= Gaveesker (0.12.0, Even 14.11, godkjent av Ivar 14.11) ======================= */
 // Én gratis eske hver dag (Blomsterkatten har den med) og én per nytt nivå. Den står ved markedsbua til du åpner den. Sjansene står på kortet.
 const GAVE_PLASS = [-3.4, 6.7], SJ = {vanlig: ['Vanlig', '#8c8c8c', '⚪'], uvanlig: ['Uvanlig', '#2e9e48', '🟢'], sjelden: ['Sjelden', '#2f6fd6', '🔵'], superrar: ['Superrar', '#d4a017', '🟡'], legendarisk: ['Legendarisk', '#b03fd1', '🌈']};
-const PREMIENAVN = {mynter: 'mynter', xp: '75 XP', frovarer: 'frø eller varer', maskin: 'en maskin', superhost: 'superhøst', maned: 'gratis i en måned', pynt: 'gullpynt', gullgard: 'Gullgården'};
+const PREMIENAVN = {mynter: 'mynter', xp: '75 XP', frovarer: 'frø eller varer', maskin: 'en maskin', superhost: 'superhøst', maned: 'gratis i 7 dager', pynt: 'gullpynt', gullgard: 'Gullgården'};
 let gaveT = null, gaveVent = 0;
 const iDag = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 function lagGaveeske() { const g = new THREE.Group(), rod = fm(0xe0473a, 0.6), gul = fm(0xffd23f, 0.5);
@@ -671,7 +671,7 @@ function synkGaver() {
 function leverGaver(hvem) { const n = L.leverGaver(s); if (n) { melding(`🎁 ${hvem} har levert en gave! Den står ved markedsbua.`, 3400); lagre(); synkGaver(); } }
 function visGave(res) {
   aapneHandling(gaveT, '🎁 Gaveeske', () => { const n = L.klareGaver(s); let p = '';
-    if (res) { const [nv, farge, ik] = SJ[res.sjeldenhet], ting2 = res.gullgard ? '✨ GULLGÅRDEN! ✨' : res.pynt ? `${D.gave.pyntNavn[res.pynt]} ✨ til gården` : res.bygg ? `${D.bygg[res.bygg].ikon} ${D.bygg[res.bygg].navn} gratis!` : res.bonus ? '🎁 Gratis i en måned!' : res.superhost ? `🌟 Superhøst! ${res.superhost} ${res.superhost === 1 ? 'åker er' : 'åkre er'} klare nå` : res.xp ? `⭐ ${res.xp} XP` : res.vare ? `${res.antall} ${ikon(res.vare)} ${navn(res.vare).toLowerCase()}` : `${res.mynter} 🪙`;
+    if (res) { const [nv, farge, ik] = SJ[res.sjeldenhet], ting2 = res.gullgard ? '✨ GULLGÅRDEN! ✨' : res.pynt ? `${D.gave.pyntNavn[res.pynt]} ✨ til gården` : res.bygg ? `${D.bygg[res.bygg].ikon} ${D.bygg[res.bygg].navn} gratis!` : res.bonus ? `🎁 Gratis i ${D.gave.bonusDager} dager!` : res.superhost ? `🌟 Superhøst! ${res.superhost} ${res.superhost === 1 ? 'åker er' : 'åkre er'} klare nå` : res.xp ? `⭐ ${res.xp} XP` : res.vare ? `${res.antall} ${ikon(res.vare)} ${navn(res.vare).toLowerCase()}` : `${res.mynter} 🪙`;
       if (res.gullgard) p += '<p style="font-size:15px;text-align:center">Hele gården er gull! Du kan slå den av og på her.</p>';
       if (res.bonus) p += `<p style="font-size:15px;text-align:center">Gratis å plante og gratis fôrkvern i ${D.gave.bonusDager} dager.</p>`;
       if (res.bygg) p += `<p style="font-size:15px;text-align:center">${ting.get(res.bygg) ? 'Det står på gården nå.' : 'Det kommer når det blir ledig plass.'}</p>`;
