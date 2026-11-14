@@ -184,5 +184,14 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
   delete s4.lager.hvete; t('Etter 7 dager koster det igjen', L.kanProdusere(s4, 'forkvern', 'honsefor', T0 + 8 * 86400000) === 'mangler' && L.kanProdusere(s4, 'forkvern', 'honsefor', T0) !== 'mangler'); }
 { const k = L.valider(JSON.parse(JSON.stringify(s)), T0); t('Gavene overlever lagring', k.gaver.uaapnet.length === 3 && k.gaver.dag === '2026-11-15'); }
 
+// --- Nivå 10: Skogkanten og griser (0.13.0) ---
+{ const s5 = L.ny(T0); L.giXP(s5, 2000, T0); s5.mynter = 3000;
+  t('Nivå 10: grisebinge kan bygges, men ingen griser før den er kjøpt', s5.nivaa === 10 && s5.bygg.grisebinge && !s5.bygg.grisebinge.eid && !s5.dyr.gris);
+  t('Skogkanten koster 1500', L.kjopOmrade(s5, 'skogkanten').ok && s5.mynter === 1500);
+  const r5 = L.kjopBygg(s5, 'grisebinge'); t('Grisebingen koster 800 og gir 2 griser', r5.ok && r5.dyr === 2 && s5.dyr.gris.length === 2 && s5.mynter === 700);
+  s5.lager.gulrot = 2; s5.lager.erter = 1; t('Grisefôr lages av gulrot og erter', L.produser(s5, 'forkvern', 'grisefor', T0).ok);
+  s5.lager.grisefor = 1; L.mat(s5, 'gris', T0); t('Grisen gir trøfler etter 4 minutter', L.samleDyr(s5, 'gris', T0 + 240 * S).ok && s5.lager.troffel === 1);
+  const k5 = L.valider(JSON.parse(JSON.stringify(s5)), T0); t('Skogkanten og griser overlever lagring', k5.omrader.skogkanten && k5.dyr.gris.length === 2); }
+
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);
 process.exit(feil ? 1 : 0);

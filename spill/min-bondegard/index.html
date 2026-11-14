@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.12.3 – EVN Studio</title>
+<title>Min Bondegård 0.13.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -277,7 +277,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.12.3</div>
+    <div class="evn-ver" id="versjon">Versjon 0.13.0</div>
   </div>
 </div>
 
@@ -548,7 +548,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.12.3'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.13.0'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -785,7 +785,7 @@ function hoyde(x, z) {
     if (vedFiskeplass(x, z) && k > 0) h = Math.min(h, VANN_Y + 0.18 + k * 0.08); // lav og flat strand
   }
   if (Math.abs(z - VEI_Z) < 2.2 && Math.abs(x) < 80) h = Math.min(h, 0.05) * 0.4;
-  { const e = engaFlat(x, z); if (e > 0) h *= 1 - e; }   /* 0.9.8: Enga er flat, så fjøs og meieri står på bakken */
+  { const e = Math.max(engaFlat(x, z), skogFlat(x, z)); if (e > 0) h *= 1 - e; }   /* 0.9.8: Enga er flat, så fjøs og meieri står på bakken */
   for (const [a, b, c, d, L] of FLATE) { const dd = Math.hypot(Math.max(a - x, 0, x - b), Math.max(c - z, 0, z - d)); if (dd < 4) h = THREE.MathUtils.lerp(L, h, THREE.MathUtils.smoothstep(dd, 0, 4)); } // flat platå under kopiene i «Full gård»
   return h;
 }
@@ -798,14 +798,13 @@ function lagTerreng() {
   const gr1 = new THREE.Color(0x8cc94c), gr2 = new THREE.Color(0x5ea83a), gr3 = new THREE.Color(0x40802c), sand = new THREE.Color(0xd7c08f);
   const engT = new THREE.Color(0x9cb455), dypT = new THREE.Color(0x4a9146);
   const vat = new THREE.Color(0xb59a66), bunnF = new THREE.Color(0x7d8a52), vill = new THREE.Color(0x5b8f34), toerr = new THREE.Color(0xa8b45a);
-  for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i), z = p.getZ(i), h = hoyde(x, z); p.setY(i, h);
+  const fargeAv = (x, z, h, utenOmr) => {
     const n = vstoy(x * 0.08, 5, z * 0.08);
     c.copy(gr2).lerp(gr1, n * 0.9).lerp(gr3, THREE.MathUtils.clamp(h / 9, 0, 0.7));
     if (TREFORM === 'puff') { /* forslag 10.11 (Ivar): roligere gress. Store, myke felt av tørrere og dypere grønt i stedet for én sterk farge, og ingen nye smådetaljer */
       const n2 = vstoy(x * 0.035 + 40, 11, z * 0.035), n3 = vstoy(x * 0.02, 23, z * 0.02 + 17);
       c.lerp(engT, THREE.MathUtils.smoothstep(n2, 0.5, 0.85) * 0.4).lerp(dypT, THREE.MathUtils.smoothstep(n3, 0.5, 0.85) * 0.3); c.offsetHSL(0.012, -0.2, -0.02); } /* 10.11: enda litt mindre intens, og en tanke varmere */
-    const o = omradeVed(x, z); if (o) { c.lerp(vill, 0.32); c.lerp(toerr, THREE.MathUtils.smoothstep(vstoy(x * 0.3, 7, z * 0.3), 0.55, 0.8) * 0.45); }
+    const o = utenOmr ? null : omradeVed(x, z); if (o) { c.lerp(vill, 0.32); c.lerp(toerr, THREE.MathUtils.smoothstep(vstoy(x * 0.3, 7, z * 0.3), 0.55, 0.8) * 0.45); }
     if (!window.MB_MYK_VEI && paVei(x, z)) c.copy(sand).offsetHSL(0, 0, (n - 0.5) * 0.06);
     else if (paSti(x, z, 1.1)) c.lerp(sand, 0.62 * (1 - THREE.MathUtils.smoothstep(Math.abs(x - stiX(z)), 0.35, 1.1)) + 0.12);
     else if (NYSTIL && Math.hypot(x + 17.6, z - 4) < 2.6) c.lerp(sand, 0.22 * (1 - Math.hypot(x + 17.6, z - 4) / 2.6));
@@ -813,7 +812,11 @@ function lagTerreng() {
     const k = elvKant(x, z);
     if (k < 0) c.copy(bunnF).lerp(vat, THREE.MathUtils.clamp(1 + k * 0.6, 0, 1)); // elvebunn, synlig gjennom vannet
     else if (k < 2.2) c.lerp(vedFiskeplass(x, z) ? sand : vat, 1 - THREE.MathUtils.smoothstep(k, 0.2, 2.2)); // fuktig strandkant som glir over i gress
-    c.offsetHSL(0, -0.08, 0); c.convertSRGBToLinear(); farger.push(c.r * 1.4, c.g * 1.4, c.b * 1.4);
+    c.offsetHSL(0, -0.08, 0); c.convertSRGBToLinear(); return [c.r * 1.4, c.g * 1.4, c.b * 1.4]; };
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), z = p.getZ(i), h = hoyde(x, z); p.setY(i, h);
+    farger.push(...fargeAv(x, z, h, false));
+    if (iSkog(x, z, 1.5) && omradeVed(x, z)) SKOG_FARGE.push([i, ...fargeAv(x, z, h, true)]);   /* 0.13.0: fargen uten villmark når Skogkanten er kjøpt */
   }
   g.setAttribute('color', new THREE.Float32BufferAttribute(farger, 3)); g.computeVertexNormals();
   TERRENG = mesh(g, std({map: TEX.gress, vertexColors: true, roughness: 0.95}), 0, 0, 0, scene, false);
@@ -891,6 +894,9 @@ const OMRADER = [
 ];
 const ENGA = {x0: 14, x1: 22.4, z0: -12, z1: 10.6};
 const iEnga = (x, z) => x > ENGA.x0 + 0.3 && x < ENGA.x1 + 0.4 && z > ENGA.z0 - 0.4 && z < ENGA.z1 + 0.2;   /* trær og busker her samles i egne mesher som skjules når Enga er kjøpt */
+const SKOG = {x0: -24.4, x1: -16, z0: -12, z1: -0.6}, SKOG_FARGE = [];   /* 0.13.0: delen av Skogkanten som kjøpes: bak låven, vest for gjerdet. Rebus' lysning er utenfor */
+const iSkog = (x, z, m = 0) => x > SKOG.x0 - 0.4 - m && x < SKOG.x1 - 0.3 + m && z > SKOG.z0 - 0.4 - m && z < SKOG.z1 + 0.2 + m;
+const skogFlat = (x, z) => { const dd = Math.hypot(Math.max(SKOG.x0 - x, 0, x - SKOG.x1), Math.max(SKOG.z0 - z, 0, z - SKOG.z1)); return 1 - THREE.MathUtils.smoothstep(dd, 0, 2.5); };
 const engaFlat = (x, z) => { const dd = Math.hypot(Math.max(ENGA.x0 - x, 0, x - ENGA.x1), Math.max(ENGA.z0 - z, 0, z - ENGA.z1)); return 1 - THREE.MathUtils.smoothstep(dd, 0, 2.5); };
 function iPoly(pts, x, z) { let inn = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, zi] = pts[i], [xj, zj] = pts[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) inn = !inn; } return inn; }
 function omradeVed(x, z) { for (const o of OMRADER) if (o.tema !== 'eng' && iPoly(o.poly, x, z)) return o; return null; }   /* Enga er vanlig gress og vegetasjon til den kjøpes */
@@ -951,11 +957,11 @@ function plassLedig(x, z) {
   return true;
 }
 const RUTE = 18; const ruter = new Map();
-const ruterBlad = new Map(), bladMesher = [], engaMesher = [];
-function iRuteBlad(x, z, del) { const k = iEnga(x, z) ? 'enga' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterBlad.has(k)) ruterBlad.set(k, []); ruterBlad.get(k).push(...del); }
+const ruterBlad = new Map(), bladMesher = [], engaMesher = [], skogMesher = [];
+function iRuteBlad(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterBlad.has(k)) ruterBlad.set(k, []); ruterBlad.get(k).push(...del); }
 const ruterLett = new Map(); /* 0.8.12 tiltak 1: løvdotter som ikke kaster skygge på mobil */
-function iRuteLett(x, z, del) { const k = iEnga(x, z) ? 'enga' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterLett.has(k)) ruterLett.set(k, []); ruterLett.get(k).push(...del); }
-function iRute(x, z, del) { const k = iEnga(x, z) ? 'enga' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruter.has(k)) ruter.set(k, []); ruter.get(k).push(...del); }
+function iRuteLett(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterLett.has(k)) ruterLett.set(k, []); ruterLett.get(k).push(...del); }
+function iRute(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruter.has(k)) ruter.set(k, []); ruter.get(k).push(...del); }
 const skyggeBlob = [];
 // sveiser like hjørner (sømmen i kule- og dreiegeometri), slik at normalene blir myke uten synlige skjøter
 function sveis(g) { const p = g.attributes.position, kart = new Map(), ny = []; for (let i = 0; i < p.count; i++) { const k = Math.round(p.getX(i) * 1e4) + ',' + Math.round(p.getY(i) * 1e4) + ',' + Math.round(p.getZ(i) * 1e4); if (!kart.has(k)) kart.set(k, i); ny.push(kart.get(k)); }
@@ -1248,9 +1254,9 @@ function lagVegetasjon() {
   for (let z = -11; z < 10; z += rr(2.2, 4.5)) busk(15.3, z, rr(0.6, 0.95), rnd() < 0.25 ? 'baer' : 'rund', j++);
   lagGjengroing();
   lagElvebredd();
-  ruterBlad.forEach((del, k) => { const me = mesh(samleIndeksert(del), bladMat()); bladMesher.push(me); if (k === 'enga') engaMesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = KVAL !== 'mobil' && Math.hypot(bs.x, bs.z) < 34; }); // 0.7.4: på mobil kaster bladkortene ikke skygge; kronenes kjerner gjør det fortsatt
-  ruterLett.forEach((del, k) => { const me = mesh(samle(del), MAT.vertex); me.castShadow = false; if (k === 'enga') engaMesher.push(me); });
-  ruter.forEach((del, k) => { const me = mesh(samle(del), MAT.vertex); if (k === 'enga') engaMesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = Math.hypot(bs.x, bs.z) < 34; }); // bare ruter nær gården kaster skygge
+  ruterBlad.forEach((del, k) => { const me = mesh(samleIndeksert(del), bladMat()); bladMesher.push(me); if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = KVAL !== 'mobil' && Math.hypot(bs.x, bs.z) < 34; }); // 0.7.4: på mobil kaster bladkortene ikke skygge; kronenes kjerner gjør det fortsatt
+  ruterLett.forEach((del, k) => { const me = mesh(samle(del), MAT.vertex); me.castShadow = false; if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); });
+  ruter.forEach((del, k) => { const me = mesh(samle(del), MAT.vertex); if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = Math.hypot(bs.x, bs.z) < 34; }); // bare ruter nær gården kaster skygge
   lagFjernskog();
   [[-7, -6, 7.5], [6.5, -8, 3.2], [-10.5, 8, 2.6], [-12.9, -1.8, 2.2]].forEach(b => skyggeBlob.push(b));
   const bg = new THREE.PlaneGeometry(1, 1); bg.rotateX(-Math.PI / 2); const blobs = new THREE.InstancedMesh(bg, MAT.blob, skyggeBlob.length); const bm = new THREE.Matrix4();
@@ -1339,23 +1345,31 @@ function lagGressOgBlomster() {
 }
 
 /* ======================= Gjerde ======================= */
-let gjerdeOst = null, gjerdeEnga = null; const rrStd = (a, b) => rr(a, b);
+let gjerdeOst = null, gjerdeEnga = null, gjerdeVest = null, gjerdeSkog = null; const rrStd = (a, b) => rr(a, b);
 /* 0.9.8: spillet sier fra når Enga er kjøpt. Da forsvinner vegetasjonen, skiltet og gjerdet mot gården, og det nye gjerdet kommer */
+window.mbSkog = eid => { eid = !!eid; skogMesher.forEach(m => m.visible = !eid); if (gjerdeVest) gjerdeVest.visible = !eid; if (gjerdeSkog) gjerdeSkog.visible = eid;
+  const o = OMRADER.find(a => a.tema === 'skog'); if (o) { [o.skiltG, o.stikk, o.kant].forEach(m => { if (m) m.visible = !eid; });
+    [o.flate, o.skiltG].forEach(m => { const i = klikkbare.indexOf(m); if (eid && i >= 0) klikkbare.splice(i, 1); else if (!eid && i < 0 && m) klikkbare.push(m); }); }
+  if (TERRENG && SKOG_FARGE.length && TERRENG.userData.skog !== eid) { const ca = TERRENG.geometry.attributes.color; if (!TERRENG.userData.skogFor) TERRENG.userData.skogFor = SKOG_FARGE.map(([i]) => [ca.getX(i), ca.getY(i), ca.getZ(i)]);
+    SKOG_FARGE.forEach(([i, r, g, b], k) => { const f = eid ? [r, g, b] : TERRENG.userData.skogFor[k]; ca.setXYZ(i, f[0], f[1], f[2]); }); ca.needsUpdate = true; TERRENG.userData.skog = eid; } };
 window.mbEnga = eid => { engaMesher.forEach(m => m.visible = !eid); if (gjerdeOst) gjerdeOst.visible = !eid; if (gjerdeEnga) gjerdeEnga.visible = !!eid;
   const o = OMRADER.find(a => a.tema === 'eng'); if (!o) return; [o.skiltG, o.stikk, o.kant].forEach(m => { if (m) m.visible = !eid; });
   [o.flate, o.skiltG].forEach(m => { const i = klikkbare.indexOf(m); if (eid && i >= 0) klikkbare.splice(i, 1); else if (!eid && i < 0 && m) klikkbare.push(m); }); };
 function lagGjerde() {
   const deler = [], ost = []; const stolpeG = avrundetBoks(0.22, 1.25, 0.22, 0.04, 1);
-  const linje = (x1, z1, x2, z2, ut = deler, rr = rrStd) => { const deler = ut; const L = Math.hypot(x2 - x1, z2 - z1), n = Math.max(1, Math.round(L / 2.2)), a = Math.atan2(z2 - z1, x2 - x1);
+  const linje = (x1, z1, x2, z2, ut = deler, rr = rrStd) => { const til = z => typeof ut === 'function' ? ut(z) : ut; const L = Math.hypot(x2 - x1, z2 - z1), n = Math.max(1, Math.round(L / 2.2)), a = Math.atan2(z2 - z1, x2 - x1);
     const planke = avrundetBoks(L / n + 0.2, 0.13, 0.08, 0.03, 1);
-    for (let i = 0; i <= n; i++) { const x = x1 + (x2 - x1) * i / n, z = z1 + (z2 - z1) * i / n; deler.push({geo: stolpeG, m: M4(x, 0.62, z, 0, rr(-0.05, 0.05), rr(-0.03, 0.03)), farge: 0x8d6440});
+    for (let i = 0; i <= n; i++) { const x = x1 + (x2 - x1) * i / n, z = z1 + (z2 - z1) * i / n, deler = til(z); deler.push({geo: stolpeG, m: M4(x, 0.62, z, 0, rr(-0.05, 0.05), rr(-0.03, 0.03)), farge: 0x8d6440});
       if (i < n) [0.45, 0.92].forEach(y => deler.push({geo: planke, m: M4(x + (x2 - x1) / n / 2, y + rr(-0.02, 0.02), z + (z2 - z1) / n / 2, 0, -a, rr(-0.02, 0.02)), farge: 0xb08558})); } };
-  linje(-16, 10.6, -13.5, 10.6); linje(-3.8, 10.6, 14, 10.6); linje(14, 10.6, 14, -12, ost); linje(14, -12, -16, -12); linje(-16, -12, -16, 10.6);
-  mesh(samle(deler), MAT.vertex); gjerdeOst = mesh(samle(ost), MAT.vertex);
+  linje(-16, 10.6, -13.5, 10.6); linje(-3.8, 10.6, 14, 10.6); linje(14, 10.6, 14, -12, ost); linje(14, -12, -16, -12); const vest = []; linje(-16, -12, -16, 10.6, z => z < SKOG.z1 - 0.3 ? vest : deler);
+  mesh(samle(deler), MAT.vertex); gjerdeOst = mesh(samle(ost), MAT.vertex); gjerdeVest = mesh(samle(vest), MAT.vertex);   /* vestsiden bak låven forsvinner når Skogkanten kjøpes */
   /* Enga: gjerdet bygges med egne tilfeldige tall, så resten av gården ser lik ut som før */
   let f2 = 4242; const rr2 = (a, b) => a + (f2 = (f2 * 16807) % 2147483647) / 2147483647 * (b - a), eng = [];
   linje(14, 10.6, ENGA.x1, 10.6, eng, rr2); linje(ENGA.x1, 10.6, ENGA.x1, -12, eng, rr2); linje(ENGA.x1, -12, 14, -12, eng, rr2);
   gjerdeEnga = mesh(samle(eng), MAT.vertex); gjerdeEnga.visible = false;
+  let f3 = 777; const rr3 = (a, b) => a + (f3 = (f3 * 16807) % 2147483647) / 2147483647 * (b - a), sk = [];
+  linje(-16, SKOG.z1, SKOG.x0, SKOG.z1, sk, rr3); linje(SKOG.x0, SKOG.z1, SKOG.x0, -12, sk, rr3); linje(SKOG.x0, -12, -16, -12, sk, rr3);
+  gjerdeSkog = mesh(samle(sk), MAT.vertex); gjerdeSkog.visible = false;
 }
 
 /* ======================= Låve ======================= */

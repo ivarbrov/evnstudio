@@ -16,7 +16,7 @@
     dyr: {
       hone: { navn: 'Høne', flertall: 'Høner', ikon: '🐔', nivaa: 1,  spiser: 'honsefor', produkt: 'egg',    tid: 60,  xp: 1, start: 3 },
       ku:   { navn: 'Ku',   flertall: 'Kyr',   ikon: '🐄', nivaa: 6,  spiser: 'kufor',    produkt: 'melk',   tid: 120, xp: 2, start: 2, hus: 'fjos' },   // kyrne kommer når fjøset er kjøpt (Ivar 9.11 og 12.11)
-      gris: { navn: 'Gris', flertall: 'Griser', ikon: '🐖', nivaa: 10, spiser: 'grisefor', produkt: 'troffel', tid: 240, xp: 3, start: 2 }
+      gris: { navn: 'Gris', flertall: 'Griser', ikon: '🐖', nivaa: 10, spiser: 'grisefor', produkt: 'troffel', tid: 240, xp: 3, start: 2, hus: 'grisebinge' }
     },
     // Varer som ikke er avlinger. Verdien til produserte varer regnes ut nedenfor (formelen i progresjonsplanen kap. 6).
     varer: {
@@ -57,7 +57,8 @@
       sukkerverk: { navn: 'Sukkerverket',   ikon: '🧂', nivaa: 7,  pris: 900 },
       popkorn:    { navn: 'Popkornmaskinen', ikon: '🍿', nivaa: 8,  pris: 1200 },
       kjokken:    { navn: 'Gårdskjøkkenet', ikon: '🥞', nivaa: 9,  pris: 800 },
-      fjos:       { navn: 'Fjøs og beite',  ikon: '🐄', nivaa: 6,  pris: 300, dyr: 'ku' }   // Ivar 12.11: 300 mynter, spilleren plasserer det selv
+      fjos:       { navn: 'Fjøs og beite',  ikon: '🐄', nivaa: 6,  pris: 300, dyr: 'ku' },   // Ivar 12.11: 300 mynter, spilleren plasserer det selv
+      grisebinge: { navn: 'Grisebinge',     ikon: '🐖', nivaa: 10, pris: 800, dyr: 'gris' }
     },
     koPlasser: 2,
     xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325],
@@ -77,7 +78,7 @@
       enga:       { navn: 'Enga',       nivaa: 5,  pris: 300 },
       skogkanten: { navn: 'Skogkanten', nivaa: 10, pris: 1500 }
     },
-    innholdTil: 9,
+    innholdTil: 10,
     // Rebus' gåter (Even 13.11): svaret er varen. Spilleren gir Rebus varen. Lønn: pris × 2 + 10 mynter, 4 XP + nivået til varen. Ny gåte 3 minutter etter riktig svar
     // Gaveesker (Even 14.11, godkjent av Ivar 14.11): gratis, kan aldri kjøpes, sjansene vises åpent. Prosent per sjeldenhet.
     // Gaveesker (Even 14.11, godkjent av Ivar 14.11). Premier og sjanser fra Even 14.11 (0.12.1): [premie, prosent, mengde, sjeldenhet]
@@ -104,6 +105,8 @@
       popkorn: 'Jeg spretter i varmen og sier POP! Mange spiser meg på kino. Hva er jeg?',
       gulrot: 'Jeg er oransje og vokser med hodet ned i jorda. Kaniner elsker meg. Hva er jeg?',
       pannekaker: 'Vi er runde og flate, og vi ligger i en høy stabel på tallerkenen. Hva er vi?',
+      troffel: 'Grisene finner meg i jorda med snuten sin. Jeg ser ut som en liten brun sopp. Hva er jeg?',
+      grisefor: 'Grisene elsker meg. Jeg lages av gulrot og erter i fôrkvernen. Hva er jeg?',
       ost: 'Jeg lages av melk og har noen ganger hull i meg. Du legger meg på brødskiva. Hva er jeg?'
     },                      // nivået innholdet er bygget til i denne versjonen. Bestillinger ber aldri om noe over dette
     maksVentetid: 240                   // ingen jobb tar mer enn 4 minutter (planens beslutning B1, progresjonsplanen kap. 3)
