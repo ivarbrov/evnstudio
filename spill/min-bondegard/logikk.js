@@ -17,7 +17,8 @@
       oppl: { steg: 0 }, stat: { hostet: 0, egg: 0, laget: 0, solgt: 0, levert: 0, kunder: 0 },
       omrader: {},
       best: { nr: 0, fro: (Math.floor(naa) % 2147483646) + 1, liste: [] },
-      rebus: { gate: null, neste: naa, siste: [], loste: 0 }
+      rebus: { gate: null, neste: naa, siste: [], loste: 0 },
+      gaver: { uaapnet: [], dag: '', pynt: {} }
     };
     for (var k in D.startLager) s.lager[k] = D.startLager[k];
     giNivaa(s, 1, naa);
@@ -52,6 +53,7 @@
       s.xp -= D.xpNeste[s.nivaa];
       s.nivaa++;
       nye.push(giNivaa(s, s.nivaa, naa));
+      if (s.gaver) s.gaver.uaapnet.push({ kilde: 'nivaa', levert: true });   // gaveeske for hvert nytt nivå (0.12.0)
     }
     return nye;
   }
@@ -308,6 +310,11 @@
       s.rebus.neste = Math.min(tall(r.rebus.neste, naa), naa + D.rebus.pause * 1000); s.rebus.loste = Math.max(0, Math.floor(tall(r.rebus.loste, 0)));
       if (Array.isArray(r.rebus.siste)) s.rebus.siste = r.rebus.siste.filter(function (v) { return typeof v === 'string' && D.gater[v]; }).slice(-4);
     }
+    if (r.gaver && typeof r.gaver === 'object') {
+      if (Array.isArray(r.gaver.uaapnet)) s.gaver.uaapnet = r.gaver.uaapnet.filter(function (g) { return g && (g.kilde === 'dag' || g.kilde === 'nivaa'); }).slice(0, 20).map(function (g) { return { kilde: g.kilde, levert: !!g.levert }; });
+      if (typeof r.gaver.dag === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.gaver.dag)) s.gaver.dag = r.gaver.dag;
+      if (r.gaver.pynt && typeof r.gaver.pynt === 'object') D.gave.pynt.forEach(function (p) { var q = r.gaver.pynt[p]; if (q && typeof q === 'object') s.gaver.pynt[p] = { x: typeof q.x === 'number' && isFinite(q.x) ? q.x : null, z: typeof q.z === 'number' && isFinite(q.z) ? q.z : null, r: [0, 1, 2, 3].indexOf(q.r) >= 0 ? q.r : 0 }; });
+    }
     if (r.oppl && typeof r.oppl === 'object') s.oppl.steg = Math.max(0, Math.floor(tall(r.oppl.steg, 0)));
     if (r.stat && typeof r.stat === 'object') for (var st in s.stat) s.stat[st] = Math.max(0, Math.floor(tall(r.stat[st], 0)));
     ['silo', 'lave'].forEach(function (type) {   // mer enn plassen i lageret kuttes (QA 9.11)
@@ -338,6 +345,26 @@
   }
   function byttGate(s, naa) { if (!s.rebus.gate) return null; var gml = s.rebus.gate; s.rebus.gate = null; var ny2 = nyGate(s, naa); if (!ny2) s.rebus.gate = gml; return s.rebus.gate; }
 
+  // ---------- Gaveesker (0.12.0, Even 14.11, godkjent av Ivar 14.11) ----------
+  // Én gratis eske per dag (Blomsterkatten har den med) og én per nytt nivå. Kan aldri kjøpes. Ingen rekke av dager, og esken venter til den åpnes.
+  // Sjansene står i D.gave.sjanser og vises på kortet. Superrar gir gullpynt, som bare er pynt. Har du all pynten, får du mynter i stedet.
+  function giDagsgave(s, dato) { if (s.gaver.dag === dato) return false; s.gaver.dag = dato; s.gaver.uaapnet.push({ kilde: 'dag', levert: false }); return true; }
+  function leverGaver(s) { var n = 0; s.gaver.uaapnet.forEach(function (g) { if (!g.levert) { g.levert = true; n++; } }); return n; }
+  function klareGaver(s) { return s.gaver.uaapnet.filter(function (g) { return g.levert; }).length; }
+  function aapneGave(s, naa) {
+    var i = -1; s.gaver.uaapnet.some(function (g, j) { if (g.levert) { i = j; return true; } return false; }); if (i < 0) return { ok: false, grunn: 'ingen' };
+    var gave = s.gaver.uaapnet.splice(i, 1)[0], G = D.gave, x = tilf(s) * 100, sj = 'vanlig', sum = 0;
+    for (var k = 0; k < G.sjanser.length; k++) { sum += G.sjanser[k][1]; if (x < sum) { sj = G.sjanser[k][0]; break; } }
+    if (gave.kilde === 'nivaa' && sj === 'vanlig') sj = 'uvanlig';
+    var r = { ok: true, kilde: gave.kilde, sjeldenhet: sj, mynter: 0 }, valg = tilf(s);
+    function vare(liste, n) { var v = liste[Math.floor(tilf(s) * liste.length)]; if (plass(s, lagerType(v)) >= n) { legg(s, v, n); r.vare = v; r.antall = n; } else r.mynter += D.pris(v) * n; }
+    if (sj === 'vanlig') { if (valg < 0.5) r.mynter = G.vanlig[0] + Math.floor(tilf(s) * (G.vanlig[1] - G.vanlig[0] + 1)); else vare(Object.keys(D.avlinger).filter(function (a) { return D.avlinger[a].nivaa <= s.nivaa; }), 3); }
+    else if (sj === 'uvanlig') { var lag = Object.keys(D.gater).filter(function (v) { return !D.avlinger[v] && kanLage(s, v, 0, true); }); if (valg < 0.5 || !lag.length) r.mynter = G.uvanlig; else vare(lag, 2); }
+    else if (sj === 'sjelden') r.mynter = G.sjelden;
+    else { var ny = G.pynt.filter(function (p) { return !s.gaver.pynt[p]; }); if (ny.length) { r.pynt = ny[Math.floor(tilf(s) * ny.length)]; s.gaver.pynt[r.pynt] = { x: null, z: null, r: 0 }; } else r.mynter = G.superrarMynter; }
+    s.mynter += r.mynter; return r;
+  }
+
   function mk(v, n) { var o = {}; o[v] = n; return o; }
 
   var L = {
@@ -350,7 +377,8 @@
     giDyr: giDyr, kanKjopeOmrade: kanKjopeOmrade, kjopOmrade: kjopOmrade,
     nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
-    nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn
+    nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
+    giDagsgave: giDagsgave, leverGaver: leverGaver, klareGaver: klareGaver, aapneGave: aapneGave
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;
 })(typeof window !== 'undefined' ? window : globalThis);

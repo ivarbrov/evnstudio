@@ -79,6 +79,9 @@
     },
     innholdTil: 9,
     // Rebus' gåter (Even 13.11): svaret er varen. Spilleren gir Rebus varen. Lønn: pris × 2 + 10 mynter, 4 XP + nivået til varen. Ny gåte 3 minutter etter riktig svar
+    // Gaveesker (Even 14.11, godkjent av Ivar 14.11): gratis, kan aldri kjøpes, sjansene vises åpent. Prosent per sjeldenhet.
+    gave: { sjanser: [['vanlig', 60], ['uvanlig', 28], ['sjelden', 10], ['superrar', 2]], vanlig: [20, 40], uvanlig: 60, sjelden: 120, superrarMynter: 200,
+      pynt: ['gullhone', 'gullegg', 'gullgulrot', 'gullstjerne'], pyntNavn: { gullhone: 'Gullhøne', gullegg: 'Gullegg', gullgulrot: 'Gullgulrot', gullstjerne: 'Gullstjerne' } },
     rebus: { nivaa: 2, pause: 180, myntFaktor: 2, myntPluss: 10, xp: 4 },
     gater: {
       hvete: 'Jeg er gul og står i lange rader på åkeren. Blir jeg malt, blir jeg til mel og brød. Hva er jeg?',

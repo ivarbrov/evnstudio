@@ -167,5 +167,16 @@ L.giXP(s, 20, T0); { const g = L.harGate(s, T0); t('Nivå 2: gåten handler om n
 { const g = s.rebus.gate, n = L.byttGate(s, T0 + 181 * S); t('En annen gåte gir en ny', !!n && n !== g); }
 { const k = L.valider(JSON.parse(JSON.stringify(s)), T0 + 200 * S); t('Gåten overlever lagring', k.rebus.gate === s.rebus.gate && k.rebus.loste === 1); }
 
+// --- Gaveesker (0.12.0, Even 14.11, godkjent av Ivar 14.11) ---
+s = L.ny(T0);
+t('Én dagsgave per dato', L.giDagsgave(s, '2026-11-14') && !L.giDagsgave(s, '2026-11-14') && L.giDagsgave(s, '2026-11-15') && s.gaver.uaapnet.length === 2);
+t('Dagsgaven kan ikke åpnes før den er levert', L.klareGaver(s) === 0 && L.aapneGave(s, T0).grunn === 'ingen' && L.leverGaver(s) === 2 && L.klareGaver(s) === 2);
+L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length === 3 && s.gaver.uaapnet[2].kilde === 'nivaa' && s.gaver.uaapnet[2].levert);
+{ const c = {}; let p = 0; const s2 = L.ny(T0); for (let i = 0; i < 4000; i++) { s2.gaver.uaapnet.push({ kilde: i % 2 ? 'dag' : 'nivaa', levert: true }); const r2 = L.aapneGave(s2, T0); c[r2.kilde + r2.sjeldenhet] = (c[r2.kilde + r2.sjeldenhet] || 0) + 1; if (r2.pynt) p++; }
+  t('Sjansene stemmer omtrent (dag: 60/28/10/2 %)', Math.abs(c.dagvanlig / 2000 - 0.6) < 0.05 && Math.abs((c.dagsjelden || 0) / 2000 - 0.1) < 0.03 && (c.dagsuperrar || 0) > 10);
+  t('Gaven for nytt nivå er aldri vanlig', !c.nivaavanlig);
+  t('Superrar gir hver gullpynt én gang, så mynter', p === D.gave.pynt.length && Object.keys(s2.gaver.pynt).length === D.gave.pynt.length); }
+{ const k = L.valider(JSON.parse(JSON.stringify(s)), T0); t('Gavene overlever lagring', k.gaver.uaapnet.length === 3 && k.gaver.dag === '2026-11-15'); }
+
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);
 process.exit(feil ? 1 : 0);
