@@ -83,9 +83,9 @@ ok('salg lekker ikke geometrier', Array.isArray(d) && d[d.length - 1] - d[1] <= 
 // Åkeren: 14 matdyr som vil ut samtidig, med roboten midt i portåpningen, pluss vanlig regn i 3 minutter.
 // Ingen skal gå gjennom gjerdet, bli fjernet inne på åkeren eller stå fast i mer enn 5 s. Alle de 14 skal ut innen 60 s.
 const f = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-proto'); EVNVis({ fane: 'spill' }); await new Promise(r => setTimeout(r, 200));
-  const I = EVNIntern, P = EVNProto, e = { x0: -31, x1: 31, z0: 24, z1: 56 }, pz = 40, dt = 1 / 30, info = new Map(), ut = { inneFjernet: 0, brudd: 0, fast: 0 };
+  const I = EVNIntern, P = EVNProto, e = { x0: -31, x1: 31, z0: 30.5, z1: 56 }, pz = 40, dt = 1 / 30, info = new Map(), ut = { inneFjernet: 0, brudd: 0, fast: 0 };
   const R = I.robot(); R.position.set(e.x1 - 1, 0.45, pz); const forste = [];
-  for (let i = 0; i < 14; i++) { P.slippNed(i * 7 % 160, [e.x1 - 18 + (i % 4) * 3, e.z0 + 4 + Math.floor(i / 4) * 7 + (i % 4)]); const a = P.felt()[P.felt().length - 1]; a.tid = 0; a.alder = 8; forste.push(a); }
+  for (let i = 0; i < 14; i++) { P.slippNed(i * 7 % 160, [e.x1 - 18 + (i % 4) * 3, e.z0 + 3 + Math.floor(i / 4) * 5.5 + (i % 4)]); const a = P.felt()[P.felt().length - 1]; a.tid = 0; a.alder = 8; forste.push(a); }
   for (let i = 0; i < 180 * 30; i++) {
     R.position.set(e.x1 - 1, 0.45, pz); I.krok.steg(dt, i * dt); const felt = P.felt(), sett = new Set(felt);
     for (const a of felt) { if (a.tilstand === 'fall') continue; const p = a.g.position, d = info.get(a) || { st: 0 }; info.set(a, d);
@@ -101,11 +101,11 @@ ok('åkeren: 14 matdyr kommer ut forbi roboten i porten, uten gjerdebrudd, fastl
 const g = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-proto'); EVNVis({ fane: 'spill' }); await new Promise(r => setTimeout(r, 200));
   const I = EVNIntern, P = EVNProto, ut = {}, st = n => { for (let i = 0; i < n; i++) { EVNSteg(1 / 30); I.krok.steg(1 / 30, i / 30); } };
   P.sett({ v: 1, penger: 1e6, gard: { niva: 6 }, plassNiva: 8, base: [], disc: [] }); st(2); const R = I.robot();
-  R.position.set(0, 0.45, 30); P.slippNed(508, [1, 30]); st(3); P.gjorHandling(); ut.merkerAaker = P.merker().length;
+  R.position.set(0, 0.45, 34); P.slippNed(508, [1, 34]); st(3); P.gjorHandling(); ut.merkerAaker = P.merker().length;
   R.position.set(0, 0.45, 18); st(3); ut.merker = P.merker().length; ut.ledige = P.ledige().length;
   const i2 = P.ledige().find(i => I.plassPos(i).y > 2), p0 = P.S().penger; ut.valgt = P.velgPlass(i2); st(60);
   ut.etg2 = P.S().base[i2] === 508 && !P.bar() && JSON.parse(localStorage.getItem(P.NOKKEL)).base[i2] === 508; ut.betalt = Math.round(p0 - P.S().penger);
-  P.slippNed(508, [1, 30]); R.position.set(0, 0.45, 30); st(3); P.gjorHandling(); R.position.set(0, 0.45, 18); st(3);
+  P.slippNed(508, [1, 34]); R.position.set(0, 0.45, 34); st(3); P.gjorHandling(); R.position.set(0, 0.45, 18); st(3);
   const h = P.finnHandling(); ut.forste = h && h.t; const fi = h && h.i; P.gjorHandling(); st(60); ut.forsteEtg1 = P.S().base[fi] === 508 && I.plassPos(fi).y < 1;
   ut.antall = P.S().base.filter(c => c >= 0).length; return ut; })()
 `);
@@ -114,11 +114,11 @@ ok('basen: trykk på ledig plass i 2. etasje og «første ledige» (' + JSON.str
 const h = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-proto'); EVNVis({ fane: 'spill' }); await new Promise(r => setTimeout(r, 200));
   const I = EVNIntern, P = EVNProto, ut = {}, st = n => { for (let i = 0; i < n; i++) { EVNSteg(1 / 30); I.krok.steg(1 / 30, i / 30); } };
   P.sett({ v: 1, penger: 1e6, gard: { niva: 6 }, plassNiva: 8, base: [], disc: [] }); st(2); const R = I.robot(), o = P.levOmr();
-  R.position.set(0, 0.45, 30); P.slippNed(508, [1, 30]); st(3); P.gjorHandling(); ut.bar = !!P.bar();
+  R.position.set(0, 0.45, 34); P.slippNed(508, [1, 34]); st(3); P.gjorHandling(); ut.bar = !!P.bar();
   R.position.set(0, 0.45, (o.z0 + o.z1) / 2); st(60); ut.levert = P.S().base[0] === 508 && !P.bar(); ut.lagret = JSON.parse(localStorage.getItem(P.NOKKEL)).base[0] === 508;
   // full gård: ingenting skjer, matdyret bæres videre
   // full gård: ta med et matdyr først, fyll så gården mens det bæres. Feltet skal ikke levere, og matdyret bæres videre.
-  R.position.set(0, 0.45, 30); P.slippNed(508, [1, 30]); st(3); P.gjorHandling(); ut.fullFikkBaere = !!P.bar();
+  R.position.set(0, 0.45, 34); P.slippNed(508, [1, 34]); st(3); P.gjorHandling(); ut.fullFikkBaere = !!P.bar();
   for (let i = 0; i < P.S().base.length; i++) if (P.S().base[i] === -1) P.S().base[i] = 508;
   R.position.set(2.0, 0.45, (o.z0 + o.z1) / 2); st(30); ut.fullBaerer = !!P.bar() && P.S().base.every(c => c === 508);
   ut.fullSpor = !document.getElementById('dialog').hidden; if (document.getElementById('dNei')) document.getElementById('dNei').click(); st(2);
@@ -137,17 +137,17 @@ const byt = await ev(`(async () => { localStorage.removeItem('evn-matdyr-gard-pr
   const svak = alle[0], sterk = alle[159], midt = alle[80];
   const fyll = P.S().base.map((_, i) => i === 0 ? svak : midt); P.sett({ ...P.S(), base: fyll }); st(2); const R = I.robot(), o = P.levOmr();
   // dårligere enn det svakeste: kan ikke tas med
-  R.position.set(0, 0.45, 30); P.slippNed(svak, [1, 30]); st(3); P.gjorHandling(); ut.svakAvvist = !P.bar();
+  R.position.set(0, 0.45, 34); P.slippNed(svak, [1, 34]); st(3); P.gjorHandling(); ut.svakAvvist = !P.bar();
   P.felt().slice().forEach(a => a.g.position.x = 999); st(1);
   // bedre: tas med, feltet åpner spørsmålet, «Bytt med svakeste»
-  R.position.set(0, 0.45, 30); P.slippNed(sterk, [1, 30]); st(3); P.gjorHandling(); ut.sterkTatt = !!P.bar();
+  R.position.set(0, 0.45, 34); P.slippNed(sterk, [1, 34]); st(3); P.gjorHandling(); ut.sterkTatt = !!P.bar();
   const p0 = P.S().penger; R.position.set(0, 0.45, (o.z0 + o.z1) / 2); st(3); ut.dialog = !document.getElementById('dialog').hidden && !!document.getElementById('dJa');
   const pS = P.S().penger; document.getElementById('dJa').click(); ut.halvInn = P.S().penger - pS === Math.floor(P.PRICE(svak) / 2);
   let pFor = P.S().penger, n0 = 0; for (; n0 < 120 && P.bar(); n0++) { pFor = P.S().penger; st(1); } ut.trukket = Math.round(pFor - P.S().penger) >= P.PRICE(sterk) - 1 && Math.round(pFor - P.S().penger) <= P.PRICE(sterk) + Math.ceil(P.INC(midt) * (P.S().base.length) / 30) + 1;
   ut.byttet = P.S().base[0] === sterk && !P.bar(); ut.netto = Math.round(P.S().penger - p0); ut.forventet = Math.floor(P.PRICE(svak) / 2) - P.PRICE(sterk);
   ut.andreUrort = P.S().base.slice(1).every(c => c === midt);
   // «Velg en annen»: 🔁 over alle opptatte plasser, trykk på én bytter akkurat den
-  R.position.set(0, 0.45, 30); P.slippNed(sterk, [1, 30]); st(3); P.gjorHandling(); R.position.set(0, 0.45, 18); st(3);
+  R.position.set(0, 0.45, 34); P.slippNed(sterk, [1, 34]); st(3); P.gjorHandling(); R.position.set(0, 0.45, 18); st(3);
   P.apneBytte(); document.getElementById('dVelg').click(); st(3); ut.byttMerker = P.merker().length === n;
   P.apneBytte(); const knapper = [...document.querySelectorAll('#dialog button')]; let utenfor = false;
   for (let k = 0; k < knapper.length + 2; k++) { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true })); window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true })); if (!document.getElementById('dialog').contains(document.activeElement)) utenfor = true; }
@@ -188,6 +188,18 @@ const sa = await ev(`(async () => { const P = EVNProto, S0 = JSON.parse(JSON.str
   ut.lagret = (JSON.parse(localStorage.getItem(P.NOKKEL)) || {}).penger === P.S().penger;
   if (o && P.SAMLE) { for (let i = 0; i < 60; i++) { EVNSteg(1 / 30); K.steg(1 / 30, 4 + i / 15); } ut.kasseStaar = +P.S().kasse.toFixed(1); }   // står i sonen: hentes fortsatt
   return ut; })()`);
+// Innsamlingssonen ligger helt inntil gårdsgjerdet, er minst 7 m dyp, krysses ikke av åkergjerdet, og roboten kan gå i hele feltet (Even 14.11.2026)
+const lz = await ev(`(async () => { const P = EVNProto, I = EVNIntern, K = I.krok, ut = [];
+  for (const n of [1, 2, 6, 10]) { P.sett({ v: 1, penger: 0, gard: { niva: n }, base: [], disc: [] }); EVNVis({ fane: 'spill' }); K.steg(1 / 30, 1);
+    const o = P.levOmr(), d = I.gd.gjerdeD, e = I.gd.eng, R = I.robot(), sp = EVNSpill, b = EVNBane; let gaa = 0, tot = 0; b.teta = 0;
+    // Ekte gange med styrespaken: fra porten i gårdsgjerdet til ni punkter i feltet
+    for (const x of [-7.2, 0, 7.2]) for (const z of [o.z0 + 0.6, (o.z0 + o.z1) / 2, o.z1 - 0.6]) { R.position.set(0, 0.45, d - 1); tot++;
+      for (const [mx, mz] of [[0, d + 1.2], [x, z]]) for (let i = 0; i < 500; i++) { const dx = mx - R.position.x, dz = mz - R.position.z, m = Math.hypot(dx, dz); if (m < 0.3) break;
+        sp.inn = { x: dx / m, z: -dz / m }; EVNSteg(1 / 30); }
+      sp.inn = { x: 0, z: 0 }; EVNSteg(1 / 30); if (Math.hypot(R.position.x - x, R.position.z - z) < 0.6) gaa++; }
+    ut.push({ n, d, z0: o.z0, z1: o.z1, aaker: e.z0 - 0.6, inntil: Math.abs(o.z0 - d) < 0.5, dyp: o.z1 - o.z0, fri: o.z1 < e.z0 - 0.6, gaa, tot }); }
+  return ut; })()`);
+ok('innsamlingssonen helt inntil gården, 7 m dyp, uten gjerde gjennom (' + JSON.stringify(lz) + ')', lz.every(r => r.inntil && r.dyp >= 6.9 && r.fri && r.gaa === r.tot));
 // Gammel kasse fra pengesonen går til lommeboka i standardmodus, uten tap eller dobling (QA e8102a6)
 const ka = await ev(`(async () => { const P = EVNProto, K = EVNIntern.krok; P.sett({ v: 1, penger: 100, kasse: 500.5, gard: { niva: 1 }, base: [], disc: [] }); EVNVis({ fane: 'spill' }); K.steg(1 / 30, 1);
   return { penger: P.S().penger, kasse: P.S().kasse || 0 }; })()`);

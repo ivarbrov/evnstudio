@@ -629,10 +629,10 @@
     const t = new T.CanvasTexture(cv); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(w / 8, d / 8); t.encoding = T.sRGBEncoding; t.anisotropy = 4; return t;
   }
   // Rektangulært gjerde med port midt på siden nærmest gården
-  function rektGjerde(g, x0, x1, z0, z1, ostPort = 0) {
+  function rektGjerde(g, x0, x1, z0, z1, ostPort = 0, portZ = null) {
     const st = NY && mdel('gjerde_stolpe'), le = NY && mdel('gjerde_ledd'), stolper = [], ledd = [];
     const side = (ax, az, bx, bz) => { const L = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(L / 2.4)); for (let i = 0; i < n; i++) { const p = { x: ax + (bx - ax) * i / n, z: az + (bz - az) * i / n }, q = { x: ax + (bx - ax) * (i + 1) / n, z: az + (bz - az) * (i + 1) / n }; stolper.push(p); ledd.push({ x: p.x, z: p.z, ry: -Math.atan2(q.z - p.z, q.x - p.x), sx: Math.hypot(q.x - p.x, q.z - p.z) / 2.4 }); } };
-    side(x0, z0, -3.6, z0); side(3.6, z0, x1, z0); if (ostPort) { const pz = (z0 + z1) / 2; side(x1, z0, x1, pz - ostPort); side(x1, pz + ostPort, x1, z1); stolper.push({ x: x1, z: pz - ostPort }); } else side(x1, z0, x1, z1); side(x1, z1, x0, z1); side(x0, z1, x0, z0); stolper.push({ x: -3.6, z: z0 });
+    side(x0, z0, -3.6, z0); side(3.6, z0, x1, z0); if (ostPort) { const pz = portZ ?? (z0 + z1) / 2; side(x1, z0, x1, pz - ostPort); side(x1, pz + ostPort, x1, z1); stolper.push({ x: x1, z: pz - ostPort }); } else side(x1, z0, x1, z1); side(x1, z1, x0, z1); side(x0, z1, x0, z0); stolper.push({ x: -3.6, z: z0 });
     if (st && le) { const gs = EVNMiljo.instanser(st, stolper), gl = EVNMiljo.instanser(le, ledd); gs.userData.ikkeFlett = gl.userData.ikkeFlett = true; g.add(gs, gl); }
     else { stolper.forEach(p => boks(g, 0.2, 1.1, 0.2, p.x, 0.55, p.z, HVIT)); ledd.forEach(l => { const b = boks(g, l.sx * 2.4, 0.12, 0.08, l.x + Math.cos(-l.ry) * l.sx * 1.2, 0.95, l.z + Math.sin(-l.ry) * l.sx * 1.2, HVIT); b.rotation.y = l.ry; }); }
     for (const sx of [-1, 1]) boks(g, 0.35, 2.0, 0.35, sx * 3.6, 1.0, z0, GUL);
@@ -653,7 +653,7 @@
   const verden = new T.Group(); scene.add(verden);
   function byggVerden() {
     const q = EVNMiljo.NIVAER[KV], ell = (x, z, rx, rz, cz = 0) => (x / rx) ** 2 + ((z - cz) / rz) ** 2;
-    const AK = { x0: -31.5, x1: 31.5, z0: 23.5, z1: 56.5 }, iAker = (x, z, m = 0) => x > AK.x0 - m && x < AK.x1 + m && z > AK.z0 - m && z < AK.z1 + m;
+    const AK = { x0: -31.5, x1: 31.5, z0: 30, z1: 56.5 }, iAker = (x, z, m = 0) => x > AK.x0 - m && x < AK.x1 + m && z > AK.z0 - m && z < AK.z1 + m;
     const sti = (x, z) => (Math.abs(x) < 3.2 && z > 15 && z < 24 ? 1 : 0);
     // Matdyr-regns bakke: rolig gress, grus på tunet, jordstier, skogbunn under trærne. Store flater får lite støy,
     // så matdyrene er det som trekker blikket.
@@ -679,7 +679,7 @@
     scene.remove(bakke); bakke = t; scene.add(t);
     // Utgangen fra åkeren (øst for porten) holdes fri for spredte trær, busker og steiner. Der går matdyrene, og bare UTBUSKER står der.
     const utgang = (x, z) => x > 29 && x < 62 && Math.abs(z - 40) < 18;
-    const fri = (x, z) => ell(x, z, 33, 25) > 1 && !iAker(x, z, 2.5) && !(Math.abs(x) < 5 && z > 10 && z < 25) && !utgang(x, z);
+    const fri = (x, z) => ell(x, z, 33, 25) > 1 && !iAker(x, z, 2.5) && !(Math.abs(x) < 9 && z > 10 && z < 31) && !utgang(x, z);
     const D = n => mdel(n), vis = (n, pl, o) => { const d = D(n); if (d && pl.length) verden.add(EVNMiljo.instanser(d, pl, o)); };
     // Trær i en ring rundt gården og enga, tettere lenger ute
     const traer = EVNMiljo.spred(Math.round(90 * q.traer), { fra: [-110, -95], til: [110, 110], avstand: 5.5, frø: 3, skala: [0.85, 1.35], lov: (x, z) => fri(x, z) && ell(x, z, 40, 32) > 1 && !iAker(x, z, 6) && ell(x, z, 110, 95, 8) < 1 });
@@ -726,9 +726,9 @@
       const e = gd.eng, eg = new T.Group(); eg.userData.ikkeFlett = true; g.add(eg);
       const w = e.x1 - e.x0, d = e.z1 - e.z0, cx = (e.x0 + e.x1) / 2, cz = (e.z0 + e.z1) / 2;
       const jord = new T.Mesh(new T.PlaneGeometry(w, d), new T.MeshStandardMaterial({ map: aakerTekstur(w, d), roughness: 0.97 })); jord.rotation.x = -Math.PI / 2; jord.position.set(cx, 0.03, cz); jord.receiveShadow = true; eg.add(jord);
-      rektGjerde(eg, e.x0 - 0.6, e.x1 + 0.6, e.z0 - 0.6, e.z1 + 0.6, PORT_HALV);
+      rektGjerde(eg, e.x0 - 0.6, e.x1 + 0.6, e.z0 - 0.6, e.z1 + 0.6, PORT_HALV, e.pz);
       // Porten ut av åkeren i øst: to gule stolper, en sti ut og en hekk der matdyrene går videre ut i verden
-      const pz = (e.z0 + e.z1) / 2, px = e.x1 + 0.6;
+      const pz = e.pz ?? (e.z0 + e.z1) / 2, px = e.x1 + 0.6;
       for (const s2 of [-1, 1]) boks(eg, 0.35, 2.0, 0.35, px, 1.0, pz + s2 * PORT_HALV, GUL);
       const utsti = new T.Mesh(new T.PlaneGeometry(9, PORT_HALV * 2 - 0.6), M('#c9a06a', 0.95)); utsti.rotation.x = -Math.PI / 2; utsti.position.set(px + 4.3, 0.04, pz); utsti.receiveShadow = true; eg.add(utsti);
       skilt(eg, ['👋 Ut av åkeren'], px + 1.2, 0, pz - PORT_HALV - 1.2, -Math.PI / 2, '#ffe9a8');
@@ -933,7 +933,7 @@
     const gaar = m > 0.1;
     if (gaar) {
       const nx = p.x + vx * dt, nz = p.z + vz * dt, y = p.y;
-      const ok = (x, z) => { const rh = rampeHoyde(x, z); return !(rh !== null && rh > y + STEG && rh < y + 2.6) && !blokkert(p.x, p.z, x, z, y) && flateVed(x, z, y) <= y + STEG && ((x / 31) ** 2 + (z / 23) ** 2 < 1 || (gd.eng && x > gd.eng.x0 && x < gd.eng.x1 && z > gd.eng.z0 && z < gd.eng.z1) || (gd.eng && Math.abs(x) < 3 && z > 0 && z < gd.eng.z0 + 1)); };
+      const ok = (x, z) => { const rh = rampeHoyde(x, z); return !(rh !== null && rh > y + STEG && rh < y + 2.6) && !blokkert(p.x, p.z, x, z, y) && flateVed(x, z, y) <= y + STEG && ((x / 31) ** 2 + (z / 23) ** 2 < 1 || (gd.eng && x > gd.eng.x0 && x < gd.eng.x1 && z > gd.eng.z0 && z < gd.eng.z1) || (gd.eng && Math.abs(x) < 3 && z > 0 && z < gd.eng.z0 + 1) || (gd.lev && x > gd.lev.x0 && x < gd.lev.x1 && z > gd.lev.z0 && z < gd.lev.z1)); };
       if (ok(nx, nz)) { p.x = nx; p.z = nz; } else if (ok(nx, p.z)) p.x = nx; else if (ok(p.x, nz)) p.z = nz;
       const mal = Math.atan2(vx, vz); let d = mal - r.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); r.rotation.y += d * Math.min(1, dt * 12);
     }
@@ -960,7 +960,7 @@
   function settGjennom(e) { etasjeMesher.forEach(([o, et]) => { o.material = et > e ? o.userData.glass : o.userData.orig; }); }
   function startSpill() {
     if (krok.start) return krok.start();
-    gd.aapne = null; gd.tegnDyr = null; gd.eng = null; gd.niva = sp.niva; gd.neste = false; gd.gjennom = false; byggGard(); byggVegger(); forberedGjennom();
+    gd.aapne = null; gd.tegnDyr = null; gd.eng = null; gd.lev = null; gd.niva = sp.niva; gd.neste = false; gd.gjennom = false; byggGard(); byggVegger(); forberedGjennom();
     const r = gd.robot; r.position.set(A, 0, HZ + 7); r.rotation.y = Math.PI; sp.vy = 0; sp.paaBakken = true; sp.etasje = -1;
     Object.assign(bane, { teta: 0, fi: 1.12, r: innerWidth < 640 ? 18 : 15, rMin: 6, rMax: 40, auto: false });
     $('kort').innerHTML = '<h1>Prøv rampa</h1><div>Gå opp spiralrampa og inn i etasjene. Prøv å hoppe.</div><div class="liten">' + (TOUCH ? 'Styrespak nede til venstre, hopp nede til høyre. Dra på skjermen for å snu kameraet.' : 'WASD eller piltaster: gå · Mellomrom: hopp · Dra med musa: kamera · Hjul: zoom') + '</div><div id="spillStatus" class="rute">📍 1. etasje (bakken)</div>';
@@ -989,7 +989,7 @@
     md.gruppe.visible = f === 'matdyr'; gd.gruppe.visible = f !== 'matdyr';
     document.body.classList.toggle('spiller', f === 'spill');
     if (f === 'matdyr') { scene.fog.near = 80; visMatdyr(); byggPanelMatdyr(); }
-    else if (f === 'gard') { holder.classList.remove('ramme'); storrelse(); scene.fog.near = 120; gd.aapne = null; gd.tegnDyr = null; gd.eng = null; byggGard(); settKameraGard(); byggPanelGard(); }
+    else if (f === 'gard') { holder.classList.remove('ramme'); storrelse(); scene.fog.near = 120; gd.aapne = null; gd.tegnDyr = null; gd.eng = null; gd.lev = null; byggGard(); settKameraGard(); byggPanelGard(); }
     else { holder.classList.remove('ramme'); storrelse(); scene.fog.near = 120; startSpill(); byggPanelSpill(); }
     if (krok.fane) krok.fane(f);
   }

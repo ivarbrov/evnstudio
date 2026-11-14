@@ -155,7 +155,7 @@
   document.addEventListener('evn-tobein-klar', () => { if (dyrG) oppdaterDyr(); });
   function byggSpillGard(beholdRobot) {
     const r0 = I.robot(), pos = beholdRobot && r0 ? r0.position.clone() : null, rot = r0 ? r0.rotation.y : 0, gd = I.gd;
-    gd.niva = visNiva(); gd.neste = false; gd.gjennom = false; gd.aapne = plasserApne(); gd.eng = eng();
+    gd.niva = visNiva(); gd.neste = false; gd.gjennom = false; gd.aapne = plasserApne(); gd.eng = eng(); gd.lev = levOmr();
     gd.tegnDyr = (g, pl, ap) => { dyrG = new T.Group(); g.add(dyrG); plasserNa = pl; aapneNa = ap; fyllDyr(); };
     I.byggGard(); I.byggVegger(); I.forberedGjennom(); I.sp.etasje = -1;
     if (pos) { I.robot().position.copy(pos); I.robot().rotation.y = rot; }
@@ -165,12 +165,14 @@
   const feltG = new T.Group(); I.scene.add(feltG); feltG.visible = false;
   const felt = []; let nesteRegn = 1;
   // Matdyrene regner ned på enga foran gården, aldri inne på tunet
-  // Åkeren ligger rett foran gården, fast plass og størrelse (60 × 32 m)
-  const eng = () => ({ x0: -31, x1: 31, z0: 24, z1: 56 });
+  // Åkeren ligger foran gården, fast plass (60 × 25,5 m). Den starter ved z 30,5, så innsamlingssonen får plass helt inntil
+  // gårdsgjerdet på alle gårdsnivåer (Even 14.11.2026: «innsamlingsonen må være helt inn til gårdren og så kan du lage det litt dypere»).
+  // Porten i øst står fast ved z 40, der hulveien går ut.
+  const eng = () => ({ x0: -31, x1: 31, z0: 30.5, z1: 56, pz: 40 });
   function iFeltet(x, z) { const e = eng(); return x > e.x0 + 1.2 && x < e.x1 - 1.2 && z > e.z0 + 1.2 && z < e.z1 - 1.2; }
   // Matdyrene lander i starten av åkeren (vest) og vandrer fritt rundt. Når tiden deres er ute, søker de gradvis mot porten i øst,
   // hver langs sin egen rute og gjennom sitt eget punkt i portåpningen. Utenfor går de et stykke ut mellom buskene og tones bort der.
-  const port = () => { const e = eng(); return { x: e.x1, z: (e.z0 + e.z1) / 2, halv: I.PORT_HALV || 3.4 }; };
+  const port = () => { const e = eng(); return { x: e.x1, z: e.pz, halv: I.PORT_HALV || 3.4 }; };
   // Landingspunkt i vest, helst med god avstand til matdyr som allerede står der (så de ikke lander oppå hverandre)
   function tilfeldigPunkt() {
     const e = eng(); let best = null, bd = -1;
@@ -551,19 +553,18 @@
   const levG = new T.Group(); I.scene.add(levG); let levNokkel = '', paaLev = false, levBesok = 0;
   // Innsamlingssonen (Even 14.11.2026: «Innsamlingsone må være et stort felt rett utenfor gården fjern lever her og penge innsamling»):
   // et stort felt rett utenfor porten i gårdsgjerdet. Bærer roboten et matdyr inn i feltet, havner det på gården.
-  // Er det ikke plass mellom gårdsgjerdet og åkergjerdet (gårdsnivå 2 og høyere), ligger feltet rett innenfor åkergjerdet,
-  // så gjerdet ikke krysser det (QA e8102a6).
-  function levOmr() { const e = eng(); if (!e) return null; const d = I.gd.gjerdeD || 22, aaker = e.z0 - 0.6;
-    const z0 = d + 0.3 + 5.2 <= aaker - 0.2 ? d + 0.3 : aaker + 0.3;
-    return { x0: -8, x1: 8, z0, z1: z0 + 5.2 }; }
+  // Feltet ligger helt inntil gårdsgjerdet og er 7 m dypt (Even 14.11.2026). Åkergjerdet står lenger ute, så det krysser ikke feltet.
+  const LEV_DYP = 7;
+  function levOmr() { const e = eng(); if (!e) return null; const d = visNiva() >= 2 ? 22 : 16, z0 = d + 0.3;
+    return { x0: -8, x1: 8, z0, z1: Math.min(z0 + LEV_DYP, e.z0 - 1.2) }; }
   function byggLevFelt() {
     const o = levOmr(), n = o ? o.z0 + ':' + o.z1 : ''; if (n === levNokkel) return; levNokkel = n;
     levG.children.slice().forEach(c => { levG.remove(c); c.geometry && c.geometry.dispose(); c.material && c.material.dispose(); });
     if (!o) return;
-    const w = o.x1 - o.x0, d = o.z1 - o.z0, tex = tekstur('innsamlingssone', 768, 250, x => {
-      x.fillStyle = 'rgba(255,214,64,.88)'; x.beginPath(); x.roundRect ? x.roundRect(8, 8, 752, 234, 44) : x.rect(8, 8, 752, 234); x.fill();
+    const w = o.x1 - o.x0, d = o.z1 - o.z0, tex = tekstur('innsamlingssone', 768, 336, x => {
+      x.fillStyle = 'rgba(255,214,64,.88)'; x.beginPath(); x.roundRect ? x.roundRect(8, 8, 752, 320, 44) : x.rect(8, 8, 752, 320); x.fill();
       x.strokeStyle = '#fff'; x.lineWidth = 10; x.setLineDash([26, 16]); x.stroke();
-      x.fillStyle = '#5a3b12'; x.font = 'bold 84px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('Innsamlingssone', 384, 128);
+      x.fillStyle = '#5a3b12'; x.font = 'bold 84px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('Innsamlingssone', 384, 168);
     });
     const m = new T.Mesh(new T.PlaneGeometry(w, d), new T.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
     m.rotation.x = -Math.PI / 2; m.position.set((o.x0 + o.x1) / 2, 0.24, (o.z0 + o.z1) / 2); m.renderOrder = 2; levG.add(m);
