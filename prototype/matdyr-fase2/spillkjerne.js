@@ -155,7 +155,7 @@
   document.addEventListener('evn-tobein-klar', () => { if (dyrG) oppdaterDyr(); });
   function byggSpillGard(beholdRobot) {
     const r0 = I.robot(), pos = beholdRobot && r0 ? r0.position.clone() : null, rot = r0 ? r0.rotation.y : 0, gd = I.gd;
-    gd.niva = visNiva(); gd.neste = false; gd.gjennom = false; gd.aapne = plasserApne(); gd.eng = eng(); { const o = levOmr(); gd.lev = o && { ...o, z1: eng().z0 - 0.95, port: 3.2 }; }   // gangbart helt ut til åkergjerdet; gårdsgjerdet bak feltet stopper roboten utenfor porten
+    gd.niva = visNiva(); gd.neste = false; gd.gjennom = false; gd.aapne = plasserApne(); gd.eng = eng(); { const o = levOmr(); gd.lev = o && { ...o, z1: eng().z0 - 0.95, port: 8 }; }   // gangbart helt ut til åkergjerdet; gårdsgjerdet bak feltet stopper roboten utenfor porten
     gd.tegnDyr = (g, pl, ap) => { dyrG = new T.Group(); g.add(dyrG); plasserNa = pl; aapneNa = ap; fyllDyr(); };
     I.byggGard(); I.byggVegger(); I.forberedGjennom(); I.sp.etasje = -1;
     if (pos) { I.robot().position.copy(pos); I.robot().rotation.y = rot; }
@@ -553,10 +553,12 @@
   const levG = new T.Group(); I.scene.add(levG); let levNokkel = '', paaLev = false, levBesok = 0;
   // Innsamlingssonen (Even 14.11.2026: «Innsamlingsone må være et stort felt rett utenfor gården fjern lever her og penge innsamling»):
   // et stort felt rett utenfor porten i gårdsgjerdet. Bærer roboten et matdyr inn i feltet, havner det på gården.
-  // Feltet ligger helt inntil gårdsgjerdet og er 7 m dypt (Even 14.11.2026). Åkergjerdet står lenger ute, så det krysser ikke feltet.
+  // Feltet går fra den røde kanten på gården, gjennom porten i gårdsgjerdet og 7 m ut forbi gjerdet (Even 14.11.2026:
+  // «innsamlingsonen må være helt inn til gårdren og så kan du lage det litt dypere» og «Innsamlingssonen må helt inn til det røde på gårdene»).
+  // Porten i gårdsgjerdet er like bred som feltet. Åkergjerdet står lenger ute, så det krysser ikke feltet.
   const LEV_DYP = 7;
-  function levOmr() { const e = eng(); if (!e) return null; const d = visNiva() >= 2 ? 22 : 16, z0 = d + 0.3;
-    return { x0: -8, x1: 8, z0, z1: Math.min(z0 + LEV_DYP, e.z0 - 1.2) }; }
+  function levOmr() { const e = eng(); if (!e) return null; const d = visNiva() >= 2 ? 22 : 16, z0 = (I.gd.forkant ?? 7.2) + 0.05;
+    return { x0: -8, x1: 8, z0, z1: Math.min(d + 0.3 + LEV_DYP, e.z0 - 1.2) }; }
   function byggLevFelt() {
     const o = levOmr(), n = o ? o.z0 + ':' + o.z1 : ''; if (n === levNokkel) return; levNokkel = n;
     levG.children.slice().forEach(c => { levG.remove(c); c.geometry && c.geometry.dispose(); c.material && c.material.dispose(); });

@@ -560,13 +560,13 @@
   function drivhus(g, x, z) { const d = new T.Group(); d.position.set(x, 0, z); g.add(d); boks(d, 5, 0.4, 3.4, 0, 0.2, 0, '#8b5a2b'); const glass = new T.MeshStandardMaterial({ color: LC('#cfefff'), roughness: 0.1, transparent: true, opacity: 0.35 }); boks(d, 5, 2.4, 3.4, 0, 1.6, 0, glass); for (let i = 0; i < 5; i++) d.add(mesh(new T.SphereGeometry(0.35, 10, 8), M(['#ff6b6b', '#ffd23f', '#7ad66b'][i % 3], 0.6), -2 + i, 0.9, 0)); }
   function taarn(g, x, z) { const t = new T.Group(); t.position.set(x, 0, z); g.add(t); for (const sx of [-1, 1]) for (const sz of [-1, 1]) boks(t, 0.3, 9, 0.3, sx * 1.1, 4.5, sz * 1.1, '#8b5a2b'); boks(t, 3, 0.3, 3, 0, 9, 0, plankeMat); const tk = mesh(new T.ConeGeometry(2.3, 1.8, 4), M(ROD, 0.6), 0, 10.8, 0); tk.rotation.y = Math.PI / 4; t.add(tk); }
   // Gjerde rundt en ellipse. Med port (+1 = forsiden, -1 = baksiden) blir det en åpning på 7 m midt på den siden.
-  function gjerde(g, w, d, cx = 0, cz = 0, port = 0) {
-    const gap = port ? Math.asin(Math.min(1, 3.5 / w)) : 0, a0 = port > 0 ? Math.PI / 2 : -Math.PI / 2, n = 34;
+  function gjerde(g, w, d, cx = 0, cz = 0, port = 0, ph = 3.5) {
+    const gap = port ? Math.asin(Math.min(1, ph / w)) : 0, a0 = port > 0 ? Math.PI / 2 : -Math.PI / 2, n = 34;
     for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; if (port && Math.abs(Math.atan2(Math.sin(a - a0), Math.cos(a - a0))) < gap) continue; boks(g, 0.2, 1.1, 0.2, cx + Math.cos(a) * w, 0.55, cz + Math.sin(a) * d, HVIT); }
     const fra = port ? a0 + gap : 0, spenn = port ? Math.PI * 2 - 2 * gap : Math.PI * 2;
     const kurve = new T.CatmullRomCurve3(Array.from({ length: 49 }, (_, i) => { const a = fra + spenn * i / 48; return new T.Vector3(cx + Math.cos(a) * w, 0.95, cz + Math.sin(a) * d); }), !port);
     const ring = new T.Mesh(new T.TubeGeometry(kurve, 160, 0.07, 6, !port), M(HVIT, 0.7)); ring.castShadow = true; g.add(ring);
-    if (port) for (const sx of [-1, 1]) boks(g, 0.35, 2.0, 0.35, cx + sx * 3.6, 1.0, cz + port * d * Math.cos(Math.asin(Math.min(1, 3.6 / w))), GUL);
+    if (port) for (const sx of [-1, 1]) boks(g, 0.35, 2.0, 0.35, cx + sx * (ph + 0.1), 1.0, cz + port * d * Math.cos(Math.asin(Math.min(1, (ph + 0.1) / w))), GUL);
   }
   function flagg(g, x, y, z, farge) { g.add(mesh(new T.CylinderGeometry(0.07, 0.07, 4, 8), M('#dddddd', 0.4), x, y + 2, z)); const f = mesh(new T.PlaneGeometry(1.8, 1.1), M(farge, 0.6, { side: T.DoubleSide }), x + 0.95, y + 3.4, z); g.add(f); return f; }
 
@@ -638,19 +638,19 @@
     for (const sx of [-1, 1]) boks(g, 0.35, 2.0, 0.35, sx * 3.6, 1.0, z0, GUL);
   }
   // Tregjerde langs en ellipse: stolper og ledd instansert. Port (+1 forsiden, -1 baksiden) gir en åpning på 7 m.
-  function nyttGjerde(g, w, d, cx = 0, cz = 0, port = 0) {
+  function nyttGjerde(g, w, d, cx = 0, cz = 0, port = 0, ph = 3.5) {
     const st = mdel('gjerde_stolpe'), le = mdel('gjerde_ledd'); if (!st || !le) return false;
     const n = Math.round(2 * Math.PI * Math.sqrt((w * w + d * d) / 2) / 2.4), pkt = [];
     for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; pkt.push({ x: cx + Math.cos(a) * w, z: cz + Math.sin(a) * d, a }); }
-    const i_port = p => port && Math.abs(p.x - cx) < 3.5 && Math.sign(p.z - cz) === port;
+    const i_port = p => port && Math.abs(p.x - cx) < ph && Math.sign(p.z - cz) === port;
     const stolper = pkt.filter(p => !i_port(p)), ledd = [];
     pkt.forEach((p, i) => { const q = pkt[(i + 1) % n]; if (i_port(p) || i_port(q)) return; const dx = q.x - p.x, dz = q.z - p.z; ledd.push({ x: p.x, z: p.z, ry: -Math.atan2(dz, dx), sx: Math.hypot(dx, dz) / 2.4 }); });
     // Gjerdeledd helt fram til de gule portstolpene, så den synlige åpningen er like bred som den roboten kan gå gjennom (QA bfb6315)
-    if (port) for (const sx of [-1, 1]) { const px = cx + sx * 3.6, pz = cz + port * d * Math.cos(Math.asin(Math.min(1, 3.6 / w)));
+    if (port) for (const sx of [-1, 1]) { const px = cx + sx * (ph + 0.1), pz = cz + port * d * Math.cos(Math.asin(Math.min(1, (ph + 0.1) / w)));
       const q = stolper.filter(p => Math.sign(p.z - cz) === port && Math.sign(p.x - cx) === sx).sort((a, b) => Math.abs(a.x - cx) - Math.abs(b.x - cx))[0];
       if (q) { const dx = q.x - px, dz = q.z - pz; ledd.push({ x: px, z: pz, ry: -Math.atan2(dz, dx), sx: Math.hypot(dx, dz) / 2.4 }); } }
     const gs = EVNMiljo.instanser(st, stolper.map(p => ({ x: p.x, z: p.z, ry: p.a }))), gl = EVNMiljo.instanser(le, ledd); gs.userData.ikkeFlett = gl.userData.ikkeFlett = true; g.add(gs, gl);
-    if (port) for (const sx of [-1, 1]) boks(g, 0.35, 2.0, 0.35, cx + sx * 3.6, 1.0, cz + port * d * Math.cos(Math.asin(Math.min(1, 3.6 / w))), GUL);
+    if (port) for (const sx of [-1, 1]) boks(g, 0.35, 2.0, 0.35, cx + sx * (ph + 0.1), 1.0, cz + port * d * Math.cos(Math.asin(Math.min(1, (ph + 0.1) / w))), GUL);
     return true;
   }
   // Verden rundt gården bygges én gang: terreng, sti, trær, busker, steiner, blomster og gress
@@ -719,8 +719,10 @@
     gd.gruppe.clear(); const g = gd.gruppe, n = gd.niva, ghost = new T.Group(); g.add(ghost);
     const skal = (nv, fn) => { if (n >= nv) fn(g); else if (gd.neste && nv === n + 1) { fn(ghost); } };
     // Tunet
-    gd.gjerdeD = n >= 2 ? 22 : 16; gd.gjerdeR = { x: n >= 2 ? 30 : 22, z: gd.gjerdeD };   // gårdsgjerdets z-radius (porten mot åkeren); brukes av leveringsfeltet
-    if (!(NY && nyttGjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0))) gjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0);
+    gd.gjerdeD = n >= 2 ? 22 : 16; gd.gjerdeR = { x: n >= 2 ? 30 : 22, z: gd.gjerdeD }; gd.forkant = HZ;
+    // I spillet er porten like bred som innsamlingssonen, som går helt inn til den røde kanten på gården (Even 14.11.2026)
+    const PH = gd.eng ? 8.4 : 3.5;   // gårdsgjerdets z-radius (porten mot åkeren); brukes av leveringsfeltet
+    if (!(NY && nyttGjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0, PH))) gjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0, PH);
     // Enga foran gården: her regner matdyrene ned (bare i spillet)
     // Tredekke: plankegang fra porten inn til gårdsbygningen
     if (NY && gd.eng) { const fra = HZ + 0.3, til = (n >= 2 ? 22 : 16) - 0.3, dm = plankeMat.clone(); dm.map = plankeMat.map.clone(); dm.map.needsUpdate = true; dm.map.repeat.set(0.85, (til - fra) / 4); const dekke = new T.Mesh(new T.BoxGeometry(3.4, 0.1, til - fra), dm); dekke.position.set(0, 0.05, (fra + til) / 2); dekke.receiveShadow = true; g.add(dekke);
