@@ -645,6 +645,10 @@
     const i_port = p => port && Math.abs(p.x - cx) < 3.5 && Math.sign(p.z - cz) === port;
     const stolper = pkt.filter(p => !i_port(p)), ledd = [];
     pkt.forEach((p, i) => { const q = pkt[(i + 1) % n]; if (i_port(p) || i_port(q)) return; const dx = q.x - p.x, dz = q.z - p.z; ledd.push({ x: p.x, z: p.z, ry: -Math.atan2(dz, dx), sx: Math.hypot(dx, dz) / 2.4 }); });
+    // Gjerdeledd helt fram til de gule portstolpene, så den synlige åpningen er like bred som den roboten kan gå gjennom (QA bfb6315)
+    if (port) for (const sx of [-1, 1]) { const px = cx + sx * 3.6, pz = cz + port * d * Math.cos(Math.asin(Math.min(1, 3.6 / w)));
+      const q = stolper.filter(p => Math.sign(p.z - cz) === port && Math.sign(p.x - cx) === sx).sort((a, b) => Math.abs(a.x - cx) - Math.abs(b.x - cx))[0];
+      if (q) { const dx = q.x - px, dz = q.z - pz; ledd.push({ x: px, z: pz, ry: -Math.atan2(dz, dx), sx: Math.hypot(dx, dz) / 2.4 }); } }
     const gs = EVNMiljo.instanser(st, stolper.map(p => ({ x: p.x, z: p.z, ry: p.a }))), gl = EVNMiljo.instanser(le, ledd); gs.userData.ikkeFlett = gl.userData.ikkeFlett = true; g.add(gs, gl);
     if (port) for (const sx of [-1, 1]) boks(g, 0.35, 2.0, 0.35, cx + sx * 3.6, 1.0, cz + port * d * Math.cos(Math.asin(Math.min(1, 3.6 / w))), GUL);
     return true;
