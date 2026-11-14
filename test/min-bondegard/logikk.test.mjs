@@ -175,6 +175,7 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
 { const c = {}; const s2 = L.ny(T0); L.giXP(s2, 300, T0); for (let i = 0; i < 20000; i++) { s2.gaver.uaapnet.push({ kilde: 'dag', levert: true }); const r2 = L.aapneGave(s2, T0); c[r2.premie] = (c[r2.premie] || 0) + 1; }
   t('Sjansene stemmer omtrent (50 % mynter, 25 % XP, 5 % maskin)', Math.abs(c.mynter / 20000 - 0.5) < 0.02 && Math.abs(c.xp / 20000 - 0.25) < 0.02 && Math.abs(c.maskin / 20000 - 0.05) < 0.01 && c.gullgard > 0);
   t('Maskin gir gratis bygg til alt er bygd, så mynter', Object.keys(s2.bygg).every(b => s2.bygg[b].eid || D.bygg[b].nivaa > Math.min(s2.nivaa, D.innholdTil)));
+  t('Premier etter at alt er vunnet gir hele mynter', Number.isInteger(s2.mynter) && D.gave.maskinMynter === 300 && D.gave.superrarMynter === 200);
   t('Gullgården og all gullpynt kan vinnes', s2.gaver.gullgard && Object.keys(s2.gaver.pynt).length === D.gave.pynt.length); }
 { const s3 = L.ny(T0); for (let i = 0; i < 2000; i++) { s3.gaver.uaapnet.push({ kilde: 'nivaa', levert: true }); if (L.aapneGave(s3, T0).premie === 'mynter') { t('Nivågaven gir aldri bare mynter', false); break; } } t('Nivågaven gir aldri bare mynter', true); }
 { const s4 = L.ny(T0); s4.gaver.bonus = T0 + 7 * 86400000; s4.lager.hvete = 2;
