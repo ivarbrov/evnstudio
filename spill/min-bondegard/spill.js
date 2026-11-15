@@ -331,8 +331,9 @@ function lagLastebil() {
 }
 /* 0.15.0 (Even 15.11): varebilen er gårdens egen. Den står parkert på gården, kjører ut med varene når en bestilling leveres, og kommer tilbake.
    Skinn fra årstidsbilene (bursdag, valentin osv.) kommer senere og bytter bare utseendet. Bare til pynt: reglene er allerede brukt. */
-const VAREBIL_PLASS = [-5.5, 2.9];   /* Even 15.11: på gårdsveien inntil låven, med fronten mot veien. Gårdsveien er alltid fri for bygg */
+const VAREBIL_PLASS = [-5.5, 1.7];   /* Even 15.11: lenger bak, helt inntil låven */   /* Even 15.11: på gårdsveien inntil låven, med fronten mot veien. Gårdsveien er alltid fri for bygg */
 let varebilT = null;
+window.akerY = (x, z) => { for (const u of ting.values()) if (u.type === 'aker' && u.plassert && Math.abs(x - u.x) < STR / 2 - 0.1 && Math.abs(z - u.z) < STR / 2 - 0.1) return 0.27; return 0; };   /* høyden på jorda i åkeren */
 function synkVarebil() {
   if (!bil) bil = lagLastebil();
   if (!varebilT) { varebilT = {type: 'varebil', id: 'varebil', gruppe: bil, fot: FOT.varebil, hoyde: 2.6}; ting.set('varebil', varebilT); eierAv(bil); klikkbar(bil); varebilT.ikon = lagIkon(varebilT.hoyde); bil.add(varebilT.ikon); }
@@ -528,9 +529,22 @@ function lagKundebil() {
   mesh(avrundetBoks(1.0, 0.3, 1.3, 0.14, 3), lakk, 1.0, 1.08, 0, g);                               // panser
   mesh(avrundetBoks(0.7, 0.34, 1.3, 0.14, 3), lakk, -1.15, 1.1, 0, g);                             // bagasjelokk
   const rute = mesh(new THREE.BoxGeometry(0.06, 0.5, 1.2), fm(0xcfeaf5, 0.2), 0.52, 1.3, 0, g); rute.rotation.z = -0.3;
-  mesh(avrundetBoks(1.15, 0.12, 1.2, 0.05, 1), fm(0x8a5a3a, 0.8), -0.2, 0.98, 0, g);               // sete
+  const pute = fm(0xfff1d6, 0.75);   /* 0.15.3 (Even 15.11: «det brune midt i bilen»): et lyst sete med ryggstø i stedet for den brune plata */
+  mesh(avrundetBoks(1.0, 0.16, 1.15, 0.07, 2), pute, -0.2, 1.06, 0, g);                            // sete
+  mesh(avrundetBoks(0.16, 0.55, 1.15, 0.07, 2), pute, -0.78, 1.34, 0, g);                          // ryggstø
   [[1.0, 0.78], [1.0, -0.78], [-1.0, 0.78], [-1.0, -0.78]].forEach(([x, z]) => { const h = mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.26, 14), mork, x, 0.36, z, g); h.rotation.x = Math.PI / 2; const n = mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.28, 10), lys, x, 0.36, z, g); n.rotation.x = Math.PI / 2; });
   [0.45, -0.45].forEach(z => mesh(new THREE.SphereGeometry(0.12, 8, 6), fm(0xfff2a8, 0.3), 1.5, 0.82, z, g));
+  /* 0.15.3 (Even 15.11: «bilen til Blomst burde se mer ut som en blomst»): en stor blomst bak setet, blomsterhjul, blader langs sidene og små blomster på panseret */
+  const kronb = fm(0xff7eb6, 0.5), midt = fm(0xffd23f, 0.45), blad = fm(0x6cc04a, 0.6), kule = new THREE.SphereGeometry(1, 10, 8);
+  const blomst = (x, y, z, r, n, parent, rx, rz) => { const b = new THREE.Group(); b.position.set(x, y, z); b.rotation.set(rx || 0, 0, rz || 0); parent.add(b);
+    for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2, p = mesh(kule, kronb, Math.cos(a) * r * 0.62, 0, Math.sin(a) * r * 0.62, b); p.scale.set(r * 0.5, r * 0.12, r * 0.28); p.rotation.y = -a; }
+    const m = mesh(kule, midt, 0, r * 0.06, 0, b); m.scale.set(r * 0.32, r * 0.16, r * 0.32); return b; };
+  mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.9, 6), blad, -1.25, 1.65, 0, g);                       // stilk
+  [[0.25, 1], [-0.25, -1]].forEach(([z, sd]) => { const l = mesh(kule, blad, -1.25, 1.55, z, g); l.scale.set(0.12, 0.08, 0.28); l.rotation.x = sd * 0.5; });
+  blomst(-1.25, 2.12, 0, 0.85, 7, g, 0.45, -0.25);                                                         // den store blomsten, vendt litt fremover
+  [0.32, -0.32].forEach(z => blomst(1.05, 1.24, z, 0.32, 5, g));                                       // små blomster på panseret
+  [[1.0, 0.92], [1.0, -0.92], [-1.0, 0.92], [-1.0, -0.92]].forEach(([x, z]) => blomst(x, 0.36, z, 0.42, 6, g, Math.sign(z) * Math.PI / 2, 0));   // blomsterhjul
+  [0.77, -0.77].forEach(z => [-0.6, 0.4].forEach(x => { const l = mesh(kule, blad, x, 0.78, z, g); l.scale.set(0.42, 0.14, 0.05); l.rotation.z = x < 0 ? 0.25 : -0.25; }));   // blader langs sidene
   const treff = new THREE.Mesh(new THREE.BoxGeometry(3.4, 3.2, 2.0), new THREE.MeshBasicMaterial({visible: false})); treff.position.y = 1.6; g.add(treff); treff.userData.eier = g; klikkbar(treff);
   g.userData.katt = true; g.visible = false; scene.add(g); kunde.lakk = lakk; return g;
 }
@@ -584,7 +598,7 @@ const ting = new Map();
 const FOT = {forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], sukkerverk: [3.6, 3.4], popkorn: [3.0, 2.8], kjokken: [4.0, 3.8], grisebinge: [6.2, 7.4], silo: [3.0, 3.0], tavle: [2.2, 1.0], varebil: [2.2, 5.4]};
 const STANDARD = {
   akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45]],
-  forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], silo: [-0.4, -10.0], tavle: [-2.4, 8.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
+  forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], silo: [-0.4, -10.0], tavle: [-2.3, 4.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
 };
 const GARD = {x0: -15.55, x1: 13.6, z0: -11.55, z1: 10.2}, GARD_X1 = 13.6, GARD_X1_ENGA = 22.0, GARD_X0 = -15.55, GARD_X0_SKOG = -24.0, SKOG_Z1 = -1.0;   /* 0.13.0: Skogkanten gjør gården bredere mot vest bak låven (bare der z < -1, så Rebus' lysning er fri) */   /* 0.9.8: gården blir bredere når Enga er kjøpt */
 let hinder = [];   // faste hindringer: [x0, x1, z0, z1]
@@ -638,6 +652,7 @@ function plasserAlt() {
   let si = ting.get('silo'); if (!si) { const g = lagSilo(); scene.add(g); eierAv(g); klikkbar(g); si = {type: 'silo', id: 'silo', gruppe: g, fot: FOT.silo, hoyde: 6.6}; si.ikon = lagIkon(si.hoyde); g.add(si.ikon); ting.set('silo', si); }
   if (stdV < 3 && s.plasser.silo && ((s.plasser.silo.x === 11.95 && s.plasser.silo.z === -2.4) || (s.plasser.silo.x === -13.6 && s.plasser.silo.z === -1.75) || (s.plasser.silo.x === 1 && s.plasser.silo.z === -9.7))) delete s.plasser.silo;
   if (stdV < 4 && s.plasser.silo && s.plasser.silo.x === 1 && s.plasser.silo.z === -8.4) delete s.plasser.silo;   /* 0.9.7: standardplassen fra 0.8.10 flyttes inntil låven. En silo spilleren har flyttet selv, står der den står */   /* gamle standardplasser flyttes til ny */
+  if (stdV < 5 && s.plasser.tavle && Math.abs(s.plasser.tavle.x + 2.4) < 0.3 && Math.abs(s.plasser.tavle.z - 8.6) < 0.3) delete s.plasser.tavle;   /* 0.15.3 (Even 15.11): tavla på standardplassen ved porten flyttes nærmere åkrene. En tavle spilleren har flyttet selv, blir stående */
   const ps = s.plasser.silo || (() => { const p = finnLedigPlass(si, ...STANDARD.silo) || STANDARD.silo; return (s.plasser.silo = {x: p[0], z: p[1], r: 0}); })();
   plasser(si, ps.x, ps.z, ps.r);
   // Bestillingstavla kommer på nivå 4, ved gårdsveien. Den får nærmeste ledige plass hvis noe står der.
@@ -648,7 +663,7 @@ function plasserAlt() {
     plasser(tv, pt.x, pt.z, 0); }
   synkVarebil();
   { const h = ting.get('honsehus'), ph = s.plasser.honsehus; if (h && ph && (ph.x !== h.x || ph.z !== h.z)) { plasser(h, ph.x, ph.z, 0); flyttHoner(h); } }
-  s.plasser.std = {x: 4, z: 0, r: 0};
+  s.plasser.std = {x: 5, z: 0, r: 0};
   synkKyr(); synkPynt(); settGullgard(s.gaver.gullgard && s.gaver.gullPaa);
 }
 const MODELL = {forkvern: lagForkvern, bakeri: lagBakeri, meieri: lagMeieri, fjos: lagFjos, sukkerverk: lagSukkerverk, popkorn: lagPopkorn, kjokken: lagKjokken, grisebinge: lagGrisebinge}, HOYDE = {grisebinge: 3.2, forkvern: 3.6, bakeri: 4.2, meieri: 4.2, fjos: 4.6, sukkerverk: 4.8, popkorn: 4.0, kjokken: 4.4};
@@ -770,12 +785,12 @@ function synkGate() {
     if (paaGard && revSted !== 'gard' && (!revGang || revGang.hjem)) revGaa(false, forste); else if (!paaGard && revSted !== 'hjem' && (!revGang || !revGang.hjem)) revGaa(true, forste); }
 }
 // Rebus går stien ned til veien, langs veien og inn porten til en plass ved markedsbua. Hjem går han samme vei tilbake.
-const REV_HJEM = [-17.6, 4.0], REV_GARD = [-6.3, 7.0];
+const REV_HJEM = [-17.6, 4.0], REV_GARD = [-7.5, 0.9];   /* 0.15.3 (Even 15.11): Rebus venter ved benken foran låven, ikke ved porten */
 /* 0.15.0 (Even 15.11: «forbedre gåingen til Rebus»): farten passer skrittene i gåklippet. Klippet flytter foten ca. 0,5 m per halve skritt på 1,07 s,
    altså ca. 0,9 m/s. Han går 1,2 m/s, og klippet spilles 1,3 ganger så fort, så føttene ikke sklir. Svingene er mykere, og han blir ikke avbrutt av vinking mens han går */
 const REV_FART = 1.2, REV_TAKT = 1.3; window.revOpptatt = () => !!revGang;
 let revSted = 'hjem', revGang = null, revFlate = null, revY = 0.044, revKlar = false, revHjemEtter = 0;
-function revVei() { const v = [[stiX(4.6), 4.6]]; for (let z = 6; z <= VEI_Z - 1.2; z += 1.4) v.push([stiX(z), z]); v.push([stiX(VEI_Z - 1.2), VEI_Z - 1.2], [-14.6, VEI_Z + 1.4], [-6.0, VEI_Z + 1.4], [-6.3, VEI_Z - 1.2], REV_GARD); return v; }   /* 0.15.2 (Even 15.11): ytterst på veien, så han ikke går gjennom bilen til Blomst */
+function revVei() { const v = [[stiX(4.6), 4.6]]; for (let z = 6; z <= VEI_Z - 1.2; z += 1.4) v.push([stiX(z), z]); v.push([stiX(VEI_Z - 1.2), VEI_Z - 1.2], [-14.6, VEI_Z + 1.4], [-6.0, VEI_Z + 1.4], [-6.3, VEI_Z - 1.2], [-7.4, 7.7], [-7.5, 4.0], REV_GARD); return v; }   /* 0.15.2 (Even 15.11): ytterst på veien, så han ikke går gjennom bilen til Blomst */
 function revGaa(hjem, straks) {
   if (!rev) return; const v = revVei(); if (hjem) v.reverse().push(REV_HJEM); else v.unshift(REV_HJEM);
   if (straks || matchMedia('(prefers-reduced-motion: reduce)').matches) { revSett(...v[v.length - 1]); revSted = hjem ? 'hjem' : 'gard'; revGang = null; rev.rotation.y = hjem ? Math.PI / 2 + 0.35 : Math.PI / 4; return; }
@@ -915,7 +930,7 @@ function nesteJobb() {
   if (modus === 'dans') { jobbTimer = setTimeout(nesteJobb, 600); return; }
   const u = jobber.shift();
   if (!u) { if (modus === 'jobb') { modus = 'vent'; ventTimer = 2.5; ventSteg = 0; spill('Idle'); } return; }
-  modus = 'jobb'; snuTil = null; robot.position.y = 0;
+  modus = 'jobb'; snuTil = null;
   let fra = robot.position; const vei = [];
   (utVei || []).forEach(q => { vei.push(...window.ruteTil(fra, q), q); fra = q; }); utVei = null;   /* også veien ut fra benken går rundt hindringer */
   const r = u.robotRekt || tingRekt(u); vei.push(...(finnVei(fra, r, u.type === 'aker' ? 0.6 : 1.0) || []));

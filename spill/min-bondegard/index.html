@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.15.2 – EVN Studio</title>
+<title>Min Bondegård 0.15.3 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -278,7 +278,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.15.2</div>
+    <div class="evn-ver" id="versjon">Versjon 0.15.3</div>
   </div>
 </div>
 
@@ -549,7 +549,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.15.2'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.15.3'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -2309,10 +2309,11 @@ function loop(ts) {
   if (robot) {
     if (mal) { tmp.copy(mal.vei[0]).sub(robot.position); tmp.y = 0; const d = tmp.length();
       if (d < 0.08) { mal.vei.shift(); if (!mal.vei.length) { const f = mal.ferdig; mal = null; f && f(); } }
-      else { robot.rotation.y = snuMot(robot.rotation.y, Math.atan2(tmp.x, tmp.z), dt * 9); robot.position.y = 0; robot.position.addScaledVector(tmp.normalize(), Math.min(d, dt * 2.3)); } }
+      else { robot.rotation.y = snuMot(robot.rotation.y, Math.atan2(tmp.x, tmp.z), dt * 9); robot.position.addScaledVector(tmp.normalize(), Math.min(d, dt * 2.3)); } }
     else if (snuTil) { robot.rotation.y = snuMot(robot.rotation.y, snuTil.r, dt * 7); if (Math.abs(vinkelDiff(robot.rotation.y, snuTil.r)) < 0.02) { const f = snuTil.ferdig; snuTil = null; f(); } }
-    else if (modus === 'vent') { ventTimer -= dt; if (ventTimer <= 0) { if (ventSteg === 2) { spill('Idle'); robot.position.y = 0; ventSteg = 0; ventTimer = 1.5; } else nesteVent(); } }
+    else if (modus === 'vent') { ventTimer -= dt; if (ventTimer <= 0) { if (ventSteg === 2) { spill('Idle'); ventSteg = 0; ventTimer = 1.5; } else nesteVent(); } }
   }
+  if (robot && window.akerY) { const ty = window.akerY(robot.position.x, robot.position.z); robot.position.y += (ty - robot.position.y) * Math.min(1, dt * 12); }   /* 0.15.3 (Even 15.11): roboten står oppå jorda i åkeren, så beina synes */
   oppdaterDyrene(dt, t); if (window.spillOppdater) window.spillOppdater(dt, t);
   for (let i = sprett.length - 1; i >= 0; i--) { const s = sprett[i]; s.t += dt; const k = Math.sin(Math.min(s.t / 0.35, 1) * Math.PI); if (s.o.userData.skala0 === undefined) s.o.userData.skala0 = s.o.scale.x; const base = s.o.userData.skala0; s.o.scale.setScalar(base * (1 + k * 0.08)); if (s.t > 0.35) { s.o.scale.setScalar(base); sprett.splice(i, 1); } }
   if (VANN) VANN.material.uniforms.tid.value = t;
