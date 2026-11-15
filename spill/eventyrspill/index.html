@@ -159,7 +159,87 @@
   #tilbake { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(420px, calc(100% - 32px));
     padding: 16px 22px; font-size: 20px; font-weight: bold; border-radius: 14px; border: 3px solid #1f3f80;
     background: #3a6fd8; color: #fff; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.6); z-index: 10; }
+
+  /* ===== EVN-UI for Era Defenders (test 0.22.0): samme oppbygging som Min Bondegård og Fiskespillet =====
+     Lilita One i titler, Nunito i tekst, runde «piller» øverst til venstre, ikonknapper øverst til høyre.
+     To fargevalg Even kan velge mellom: data-ui="a" (lys steinalder) og data-ui="b" (mørk tidsportal). */
+  html[data-ui="a"] { --ui-panel: rgba(70,44,22,.9); --ui-panelkant: rgba(255,230,180,.45); --ui-kort: #fffaf0; --ui-kortbg: #fffaf0; --ui-blekk: #3b2a12;
+    --ui-kant: #e9d7a8; --ui-tittel: #6b3d12; --ui-dempet: #6d5a3c; --ui-aksent: #a0522d; --ui-gronn: #2e7d32;
+    --ui-knapp: linear-gradient(#ffcf5a, #f59f00); --ui-knappkant: #b86e00; --ui-knapptekst: #3b1d00;
+    --ui-andre: #f3e6c4; --ui-andrekant: #d9bf86; --ui-andretekst: #5a3a12; --ui-valgt: #ffe3a3; --ui-valgtkant: #e09a1e; }
+  html[data-ui="b"] { --ui-panel: rgba(13,30,66,.9); --ui-panelkant: rgba(140,190,255,.4); --ui-kort: #ffffff; --ui-kortbg: linear-gradient(170deg, #1d5594, #0d2547 70%);
+    --ui-blekk: #ffffff; --ui-kant: #5d8fcf; --ui-tittel: #ffd54a; --ui-dempet: #c9d8f0; --ui-aksent: #ffe9a8; --ui-gronn: #9be7a0;
+    --ui-knapp: linear-gradient(#ffe066, #f5b800); --ui-knappkant: #a87400; --ui-knapptekst: #3b2a00;
+    --ui-andre: rgba(255,255,255,.1); --ui-andrekant: rgba(255,255,255,.4); --ui-andretekst: #ffffff; --ui-valgt: rgba(255,213,74,.25); --ui-valgtkant: #ffd54a; }
+  html[data-ui] body { font-family: 'Nunito', system-ui, sans-serif; }
+  html[data-ui] #meny, html[data-ui] #epokeKart { background: rgba(0,0,0,.45); }
+  html[data-ui] #meny .boks, html[data-ui] #epokeKart .boks, html[data-ui] #evnSporsmal .boks {
+    background: var(--ui-kortbg); color: var(--ui-kort); color: var(--ui-blekk); border: 4px solid var(--ui-kant); border-radius: 26px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.45); font-weight: 700; }
+  html[data-ui] #meny h1, html[data-ui] #epokeKart h1, html[data-ui] #base h1 { font-family: 'Lilita One', 'Nunito', sans-serif; font-weight: 400; color: var(--ui-tittel); letter-spacing: .01em; }
+  html[data-ui] #meny h1 { font-size: 40px; } html[data-ui] #meny.seier h1 { font-size: 38px; }
+  html[data-ui] #meny .epoke { color: var(--ui-aksent); font-weight: 800; }
+  html[data-ui] #meny .lagret { color: var(--ui-gronn); font-weight: 800; }
+  html[data-ui] #meny .lagret.stats { color: var(--ui-blekk); }
+  html[data-ui] #meny .maal { font-weight: 800; }
+  html[data-ui] #meny ul, html[data-ui] #meny .vansk-tittel, html[data-ui] #meny .vansk-info, html[data-ui] #epokeKart .stjernekrav { color: var(--ui-dempet); }
+  html[data-ui] #meny .start { font-family: 'Lilita One', 'Nunito', sans-serif; font-weight: 400; font-size: 30px; letter-spacing: .02em;
+    background: var(--ui-knapp); color: var(--ui-knapptekst); border: 3px solid #fff; border-radius: 20px; box-shadow: 0 6px 0 var(--ui-knappkant), 0 10px 24px rgba(0,0,0,.25);
+    --evn-glod: rgba(0,0,0,.25); justify-self: center; min-width: 60%; }
+  html[data-ui] #meny .andre, html[data-ui] #epokeKart .andre { font-family: inherit; font-weight: 800; background: var(--ui-andre); color: var(--ui-andretekst);
+    border: 3px solid var(--ui-andrekant); border-radius: 16px; }
+  html[data-ui] #meny .vansk button { font-family: inherit; font-weight: 800; background: var(--ui-andre); color: var(--ui-andretekst); border: 3px solid var(--ui-andrekant); border-radius: 14px; }
+  html[data-ui] #meny .vansk button[aria-pressed="true"] { background: var(--ui-valgt); border-color: var(--ui-valgtkant); box-shadow: 0 3px 0 var(--ui-valgtkant); }
+  html[data-ui] #meny .evn-tilbake { color: var(--ui-blekk); }
+  html[data-ui] #meny .meny-maskot { filter: drop-shadow(0 6px 10px rgba(0,0,0,.3)); }
+  html[data-ui] #meny .meny-intro { text-align: left; }
+  html[data-ui] #meny.slutt .meny-intro, html[data-ui] #meny.slutt .maal { text-align: center; max-width: none; } /* «Tips»-linjen midt på */
+  html[data-ui] #epokeKart .epoke-kort { color: var(--ui-dempet); border-color: var(--ui-andrekant); background: var(--ui-andre); }
+  html[data-ui] #evnSporsmal .boks { color: var(--ui-blekk); }
+  html[data-ui] #evnBli { background: var(--ui-knapp); color: var(--ui-knapptekst); border: 3px solid #fff; box-shadow: 0 5px 0 var(--ui-knappkant); }
+  html[data-ui] #evnGaa { color: var(--ui-andretekst); background: var(--ui-andre); border: 3px solid var(--ui-andrekant); }
+  /* Basen: samme kort og farger */
+  html[data-ui] #base { background: rgba(0,0,0,.72); padding-top: 0; }
+  html[data-ui] #base .innhold { background: var(--ui-kortbg); color: var(--ui-blekk); border: 4px solid var(--ui-kant); border-radius: 26px; padding: 18px 18px 110px; margin-top: 76px; }
+  html[data-ui] #base .info, html[data-ui] #base .basenavn label, html[data-ui] #base .basenavn small { color: var(--ui-dempet); }
+  html[data-ui] #base .basenavn input { color: var(--ui-blekk); background: var(--ui-andre); border-color: var(--ui-andrekant); }
+  html[data-ui] #base .kort { background: var(--ui-andre); border: 3px solid var(--ui-andrekant); border-radius: 18px; }
+  html[data-ui] #base .kort h3 { color: var(--ui-tittel); font-family: 'Lilita One', 'Nunito', sans-serif; font-weight: 400; font-size: 20px; }
+  html[data-ui] #base .kort p { color: var(--ui-dempet); }
+  html[data-ui] #base .kort .niva { color: var(--ui-aksent); }
+  html[data-ui] #base .kort button { font-family: inherit; font-weight: 800; background: var(--ui-knapp); color: var(--ui-knapptekst); border: 2px solid #fff; border-radius: 12px; box-shadow: 0 3px 0 var(--ui-knappkant); }
+  html[data-ui] #base .kort button:disabled { background: #9e9e9e; color: #eee; box-shadow: none; }
+  html[data-ui] #tilbake { font-family: 'Lilita One', 'Nunito', sans-serif; font-weight: 400; font-size: 22px; background: var(--ui-knapp); color: var(--ui-knapptekst); border: 3px solid #fff; border-radius: 20px; box-shadow: 0 5px 0 var(--ui-knappkant), 0 8px 20px rgba(0,0,0,.4); }
+  /* Piller øverst til venstre (erstatter linjene som ble tegnet i spillet) */
+  #hud, #hoyre { display: none; }
+  html[data-ui] #hud { position: fixed; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); z-index: 6;
+    display: flex; flex-wrap: wrap; gap: 8px; max-width: min(470px, calc(100vw - 330px)); pointer-events: none; }
+  html[data-ui] #hud[hidden], html[data-ui] #hoyre[hidden] { display: none; }
+  html[data-ui] .pille { background: var(--ui-panel); border: 2px solid var(--ui-panelkant); border-radius: 999px; padding: 3px 12px 3px 4px; min-height: 40px; box-sizing: border-box;
+    display: flex; align-items: center; gap: 6px; color: #fff; font: 800 16px 'Nunito', system-ui, sans-serif; box-shadow: 0 2px 8px rgba(0,0,0,.25); white-space: nowrap; }
+  html[data-ui] .pille .ikon { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 18px; background: rgba(255,255,255,.16); flex-shrink: 0; }
+  html[data-ui] .pille .maaler { width: 92px; height: 12px; border-radius: 99px; background: rgba(0,0,0,.45); overflow: hidden; }
+  html[data-ui] .pille .maaler i { display: block; height: 100%; width: 0; border-radius: 99px; transition: width .2s; }
+  html[data-ui] #pLiv .maaler i { background: #ff5252; } html[data-ui] #pKraft .maaler i { background: #b388ff; } html[data-ui] #pNiva .maaler i { background: #4fc3f7; }
+  html[data-ui] #pMur .maaler i { background: #bdbdbd; } html[data-ui] #pMur.knust { background: rgba(160,20,20,.9); }
+  html[data-ui] #pNiva .ikon { background: #ffd23f; color: #5a3a00; font-size: 16px; font-weight: 900; }
+  html[data-ui] #pLiv.lav { animation: uiLav 1s infinite; } @keyframes uiLav { 50% { box-shadow: 0 0 0 4px rgba(255,82,82,.6); } }
+  /* Ikonknapper øverst til høyre */
+  html[data-ui] #hoyre { position: fixed; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); z-index: 24; display: flex; gap: 8px; align-items: center; }
+  html[data-ui] #hoyre > * { flex-shrink: 0; }
+  html[data-ui] #hoyre .rund, html[data-ui] #hoyre > button, html[data-ui] #hoyre > a { position: static !important; width: 48px; height: 48px; min-height: 48px; border-radius: 14px; padding: 0;
+    background: var(--ui-panel) !important; border: 2px solid var(--ui-panelkant) !important; color: #fff; font-size: 22px; line-height: 44px; text-align: center; vertical-align: middle;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25); cursor: pointer; text-decoration: none; box-sizing: border-box; }
+  html[data-ui] #hoyre > button[hidden], html[data-ui] #hoyre > a[hidden] { display: none !important; }
+  html[data-ui] #hoyre #baseKnapp { width: auto; padding: 0 14px; gap: 6px; font: 800 17px 'Nunito', system-ui, sans-serif; transform: none; background: var(--ui-knapp) !important; color: var(--ui-knapptekst); border: 2px solid #fff !important; box-shadow: 0 3px 0 var(--ui-knappkant); }
+  @media (max-width: 760px) {
+    html[data-ui] #hud { top: calc(66px + env(safe-area-inset-top)); max-width: calc(100vw - 20px); gap: 6px; }
+    html[data-ui] .pille { font-size: 14px; min-height: 34px; padding: 2px 9px 2px 3px; } html[data-ui] .pille .ikon { width: 28px; height: 28px; font-size: 15px; }
+    html[data-ui] .pille .maaler { width: 60px; }
+    html[data-ui] #hoyre #baseKnapp .bare-pc { display: none; }
+  }
 </style>
+<link rel="stylesheet" href="../../fonter/fonter.css">
 </head>
 <body>
 <!-- E-coins (felles for alle EVN-spill). Spillet virker som før hvis den ikke lastes. -->
@@ -171,6 +251,15 @@ addEventListener('touchstart',function(){t(true);},{passive:true,capture:true});
 addEventListener('keydown',function(){t(false);},true);})();
 </script>
 <canvas id="spill"></canvas>
+<div id="hud" hidden aria-hidden="true">
+  <div class="pille" id="pLiv"><span class="ikon">❤️</span><span class="maaler"><i></i></span><b></b></div>
+  <div class="pille" id="pKraft"><span class="ikon"></span><span class="maaler"><i></i></span><b></b></div>
+  <div class="pille" id="pNiva"><span class="ikon"></span><span class="maaler"><i></i></span></div>
+  <div class="pille" id="pPenger"><span class="ikon">💰</span><b></b></div>
+  <div class="pille" id="pBolge"><span class="ikon"></span><b></b></div>
+  <div class="pille" id="pMur" hidden><span class="ikon">🧱</span><span class="maaler"><i></i></span><b></b></div>
+</div>
+<div id="hoyre" hidden></div>
 <button id="baseKnapp">🏰 Basen<span class="bare-pc"> (B)</span></button>
 <div id="meny"><div class="boks">
   <span class="evn-merke">EVN STUDIO</span>
@@ -480,6 +569,15 @@ const BOSS_HVER = 5;          // en boss kommer hver 5. bølge
 
 // ===================== VANSKELIGHETSGRAD (velges på startkortet) =====================
 // Lett er slik spillet var før 1.11.2026. Prøv å endre tallene!
+// ===================== UTSEENDE (EVN-UI) =====================
+// 'a' = lys steinalder (som Min Bondegård), 'b' = mørk tidsportal (som Fiskespillet), '' = som før. Even velger.
+const UI_VARIANT = 'a';
+var SKRIFT = 'system-ui';
+function settUi(v) {
+  if (v) document.documentElement.dataset.ui = v; else delete document.documentElement.dataset.ui;
+  SKRIFT = v ? "'Nunito', system-ui" : 'system-ui';
+}
+settUi(UI_VARIANT);
 const VANSKELIGHET = {
   lett:      { navn: 'Lett',      ikon: '🙂', bolgeLiv: 1,    nivaLiv: 1,    mana: 0.35, verdenLiv: 0,    verdenSkade: 0, fart: 1,    pris: 1,    usarbar: 40, spesial: false, skuddNed: 0,   tilbakeslag: 25, magiNed: 30, pistolGang: 1.5, taIgjen: 0 },
   normal:    { navn: 'Normal',    ikon: '😎', bolgeLiv: 0.4,  nivaLiv: 0.25, mana: 0.27, verdenLiv: 0.1,  verdenSkade: 4, fart: 1.1,  pris: 1,    usarbar: 40, spesial: true,  skuddNed: 170, tilbakeslag: 0,  magiNed: 40, pistolGang: 2,   taIgjen: 0 },
@@ -1246,7 +1344,7 @@ function tegnMobilKontroller() {
     const dx = spak.x - spak.sx, dy = spak.y - spak.sy, d = Math.hypot(dx, dy), m = Math.min(d, SPAK_RADIUS);
     sirkel(spak.sx + (d ? dx / d * m : 0), spak.sy + (d ? dy / d * m : 0), 26, 'rgba(255,255,255,0.6)');
   } else {
-    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '14px system-ui'; ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.font = '14px ' + SKRIFT; ctx.textAlign = 'left';
     ctx.fillText('👆 Dra her for å gå', 20, canvas.height - 130);
   }
   for (const k of mobilKnapper()) {
@@ -1254,7 +1352,7 @@ function tegnMobilKontroller() {
     sirkel(k.x, k.y, k.r, holdt ? 'rgba(255,255,255,0.55)' : k.farge);
     ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(k.x, k.y, k.r, 0, Math.PI * 2); ctx.stroke();
-    ctx.font = Math.round(k.r * 0.9) + 'px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = Math.round(k.r * 0.9) + 'px ' + SKRIFT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     if (k.id === 'sverd' && epoke().naer === 'kølle') tegnKolleIkon(k.x, k.y, k.r);   // det finnes ingen kølle-emoji (🪵 så ut som tømmerstokker)
     else { ctx.fillStyle = '#fff'; ctx.fillText(k.ikon, k.x, k.y + 2); }
     ctx.textBaseline = 'alphabetic';
@@ -2112,7 +2210,7 @@ function tegnDrage() {
   ctx.beginPath(); ctx.moveTo(8, 6); ctx.lineTo(5, 11); ctx.lineTo(10, 7); ctx.fill();
   ctx.restore();
   const nivaa = antallBygget('drage');
-  ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#ffd54a';
+  ctx.font = 'bold 10px ' + SKRIFT; ctx.textAlign = 'center'; ctx.fillStyle = '#ffd54a';
   ctx.fillText('⭐'.repeat(nivaa), d.x, y - 22);
 }
 
@@ -2586,7 +2684,7 @@ function tegnLammet(f) {
   } else {
     ctx.strokeStyle = 'rgba(255,213,74,0.8)'; ctx.lineWidth = 3; ctx.setLineDash([6, 6]);
     ctx.beginPath(); ctx.arc(f.x, f.y, f.r + 8, tid * 0.05, tid * 0.05 + 7); ctx.stroke(); ctx.setLineDash([]);
-    ctx.font = '16px system-ui'; ctx.textAlign = 'center'; ctx.fillText('⏸️', f.x, f.y - f.r - 16);
+    ctx.font = '16px ' + SKRIFT; ctx.textAlign = 'center'; ctx.fillText('⏸️', f.x, f.y - f.r - 16);
   }
 }
 
@@ -2677,7 +2775,7 @@ function tegnBaseBakke() {
   // skilt
   ctx.fillStyle = '#6b4a2b'; ctx.fillRect(BASE_X - 3, BASE_Y + BASE_RADIUS * 0.92 - 46, 6, 30);
   ctx.fillStyle = '#8a5f36'; ctx.fillRect(BASE_X - 55, BASE_Y + BASE_RADIUS * 0.92 - 66, 110, 26);
-  ctx.fillStyle = '#ffe9b0'; ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffe9b0'; ctx.font = 'bold 14px ' + SKRIFT; ctx.textAlign = 'center';
   ctx.fillText('🏰 ' + basenavnTekst(), BASE_X, BASE_Y + BASE_RADIUS * 0.92 - 48);
 }
 
@@ -2690,7 +2788,7 @@ function tegnPortal() {
     ctx.strokeStyle = ['#e040fb', '#7c4dff', '#00e5ff', '#ffffff'][i]; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.ellipse(x, y, 30 - i * 6, 22 - i * 4, tid * 0.05 * (i % 2 ? 1 : -1) + i, 0.3, Math.PI * 1.6); ctx.stroke();
   }
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 13px ' + SKRIFT; ctx.textAlign = 'center';
   ctx.fillText('⏳ Tidsmaskin til ' + VERDENSNAVN[helt.verden + 1], x, y - 40);
 }
 
@@ -2741,7 +2839,7 @@ function tegnTarn(i) {
     ctx.fillStyle = '#400'; ctx.fillRect(x - 18, y + 6, 36, 4);
     ctx.fillStyle = '#bdbdbd'; ctx.fillRect(x - 18, y + 6, 36 * helt.tarnLiv[i] / TARN_MAKS, 4);
   }
-  ctx.fillStyle = '#ffe9b0'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffe9b0'; ctx.font = 'bold 11px ' + SKRIFT; ctx.textAlign = 'center';
 }
 
 function tegnPynt(p) {
@@ -2771,7 +2869,7 @@ function tegnPynt(p) {
     for (let k = 0; k <= 10; k++) ctx.lineTo(x + 1.5 + k * 3, y - 55 + Math.sin(tid * 0.15 + k * 0.6) * 2);
     for (let k = 10; k >= 0; k--) ctx.lineTo(x + 1.5 + k * 3, y - 37 + Math.sin(tid * 0.15 + k * 0.6) * 2);
     ctx.fill();
-    ctx.fillStyle = '#ffd54a'; ctx.font = 'bold 9px system-ui'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffd54a'; ctx.font = 'bold 9px ' + SKRIFT; ctx.textAlign = 'center';
     ctx.fillText('EVN', x + 17, y - 43 + Math.sin(tid * 0.15 + 3) * 2);
   }
   if (p.type === 'statue') {
@@ -2831,7 +2929,7 @@ function tegnBygning(id) {
   }
   if (id === 'skomaker') {
     hus(x, y, 56, 34, '#b07d4f', '#8d3b2a');
-    ctx.font = '22px system-ui'; ctx.textAlign = 'center'; ctx.fillText('👢', x + 40, y - 30);
+    ctx.font = '22px ' + SKRIFT; ctx.textAlign = 'center'; ctx.fillText('👢', x + 40, y - 30);
   }
   if (id === 'trippel') {
     ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(x + 4, y + 2, 22, 7, 0, 0, 7); ctx.fill();
@@ -2858,12 +2956,12 @@ function tegnBygning(id) {
     for (let k = 0; k < 4; k++) { ctx.fillStyle = '#f5f5f5'; ctx.fillRect(x - 26 + k * 16, y - 44, 7, 36); }
     ctx.fillStyle = '#eeeeee'; ctx.beginPath(); ctx.moveTo(x - 36, y - 44); ctx.lineTo(x, y - 66); ctx.lineTo(x + 36, y - 44); ctx.fill();
     const puls = 1 + Math.sin(tid * 0.1) * 0.15;
-    ctx.font = Math.round(16 * puls) + 'px system-ui'; ctx.textAlign = 'center'; ctx.fillText('💚', x, y - 47);
+    ctx.font = Math.round(16 * puls) + 'px ' + SKRIFT; ctx.textAlign = 'center'; ctx.fillText('💚', x, y - 47);
   }
   // navneskilt med nivå
   const b = BYGNINGER.find(b => b.id === id);
-  const tekst = b.navn + (b.priser.length > 1 ? ' ' + '⭐'.repeat(niva) : '');
-  ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
+  const tekst = b.navn + (b.priser.length > 1 ? (document.documentElement.dataset.ui ? ' ⭐' + niva : ' ' + '⭐'.repeat(niva)) : '');
+  ctx.font = 'bold 12px ' + SKRIFT; ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(x - ctx.measureText(tekst).width / 2 - 5, y + 6, ctx.measureText(tekst).width + 10, 17);
   ctx.fillStyle = '#ffe9b0'; ctx.fillText(tekst, x, y + 19);
 }
@@ -2879,19 +2977,43 @@ function tegnMynt(m) {
 function tegnLinje(x, y, b, verdi, maks, farge, tekst) {
   ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(x, y, b, 20);
   ctx.fillStyle = farge; ctx.fillRect(x + 2, y + 2, (b - 4) * Math.max(0, Math.min(1, verdi / maks)), 16);
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 13px ' + SKRIFT; ctx.textAlign = 'left';
   ctx.fillText(tekst, x + 8, y + 15);
 }
 
+// Pillene øverst til venstre (EVN-UI). Teksten skrives bare når den endres.
+const hudEl = document.getElementById('hud');
+function hudSett(id, tekst, andel, ikon) {
+  const el = document.getElementById(id); if (!el) return;
+  const b = el.querySelector('b'); if (b && b.textContent !== tekst) b.textContent = tekst;
+  const i = el.querySelector('.maaler i'); if (i && andel !== undefined) i.style.width = Math.round(Math.max(0, Math.min(1, andel)) * 100) + '%';
+  if (ikon !== undefined) { const ik = el.querySelector('.ikon'); if (ik.textContent !== String(ikon)) ik.textContent = ikon; }
+}
+function oppdaterHud() {
+  hudEl.hidden = !(tilstand === 'spill' || tilstand === 'pause');
+  if (hudEl.hidden) return;
+  hudSett('pLiv', helt.liv + '/' + helt.maksLiv, helt.liv / helt.maksLiv);
+  document.getElementById('pLiv').classList.toggle('lav', helt.liv / helt.maksLiv <= 0.3);
+  hudSett('pKraft', String(Math.floor(helt.mana)), helt.mana / helt.maksMana, VAAPENIKON[epoke().avstand]);
+  hudSett('pNiva', '', helt.xp / xpTilNesteNiva(), helt.niva);
+  hudSett('pPenger', helt.penger + (helt.drikker > 0 ? '  🧪 ' + helt.drikker : ''));
+  hudSett('pBolge', 'Bølge ' + bolge, undefined, VERDENSIKON[helt.verden]);
+  const mur = document.getElementById('pMur'); mur.hidden = !antallBygget('mur');
+  if (!mur.hidden) { hudSett('pMur', helt.murLiv === 0 ? 'Knust!' : helt.murLiv + '/' + murMaks(), helt.murLiv / murMaks()); mur.classList.toggle('knust', helt.murLiv === 0); }
+}
 function tegnPanel() {
+  if (document.documentElement.dataset.ui) { oppdaterHud(); tegnHjelpelinje(); return; }
   tegnLinje(16, 16, 240, helt.liv, helt.maksLiv, '#e53935', '❤️ Liv ' + helt.liv + '/' + helt.maksLiv);
   tegnLinje(16, 42, 240, helt.mana, helt.maksMana, '#7e57c2', VAAPENIKON[epoke().avstand] + ' Kraft ' + Math.floor(helt.mana));
   tegnLinje(16, 68, 240, helt.xp, xpTilNesteNiva(), '#29b6f6', '⭐ Nivå ' + helt.niva + '  (' + helt.xp + '/' + xpTilNesteNiva() + ' XP)');
   ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(16, 94, 240, 24);
-  ctx.fillStyle = '#ffd54a'; ctx.font = 'bold 15px system-ui'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffd54a'; ctx.font = 'bold 15px ' + SKRIFT; ctx.textAlign = 'left';
   ctx.fillText('💰 ' + helt.penger + (helt.drikker > 0 ? '   🧪 ' + helt.drikker : '') + '   ' + VERDENSIKON[helt.verden] + ' Bølge ' + bolge, 24, 111);
   if (antallBygget('mur')) tegnLinje(16, 122, 240, helt.murLiv, murMaks(), '#9e9e9e', '🧱 Mur ' + helt.murLiv + '/' + murMaks() + (helt.murLiv === 0 ? '  KNUST!' : ''));
-  ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '13px system-ui';
+  tegnHjelpelinje();
+}
+function tegnHjelpelinje() {
+  ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '13px ' + SKRIFT;
   if (!erTouch) ctx.fillText('Piler/WASD: gå   Mellomrom: ' + VAAPENNAVN[epoke().naer] + '   E/klikk: ' + VAAPENNAVN[epoke().avstand] + (antallBygget('pistol') ? '   F/høyreklikk: pistol' : '') + '   B: basen   M: kart   P: pause', canvas.width - 16, canvas.height - 16);
 }
 
@@ -2908,9 +3030,9 @@ function tegnMeny(tittel, linjer) {
     ctx.fill();
     ctx.drawImage(logoBilde, kx + 14, ky + 8, b, h);
   }
-  ctx.textAlign = 'center'; ctx.fillStyle = '#ffd54a'; ctx.font = 'bold ' + Math.min(44, canvas.width / 11) + 'px system-ui';
+  ctx.textAlign = 'center'; ctx.fillStyle = '#ffd54a'; ctx.font = 'bold ' + Math.min(44, canvas.width / 11) + 'px ' + SKRIFT;
   ctx.fillText(tittel, canvas.width / 2, canvas.height / 2 - 90);
-  ctx.fillStyle = '#fff'; ctx.font = Math.min(20, canvas.width / 24) + 'px system-ui';
+  ctx.fillStyle = '#fff'; ctx.font = Math.min(20, canvas.width / 24) + 'px ' + SKRIFT;
   linjer.forEach((l, i) => ctx.fillText(l, canvas.width / 2, canvas.height / 2 - 30 + i * 32));
 }
 
@@ -2924,7 +3046,7 @@ function tegnPortalPil() {
   ctx.save(); ctx.translate(px, py); ctx.rotate(v);
   ctx.fillStyle = '#e040fb'; ctx.beginPath(); ctx.moveTo(22, 0); ctx.lineTo(-10, -14); ctx.lineTo(-4, 0); ctx.lineTo(-10, 14); ctx.closePath(); ctx.fill();
   ctx.restore();
-  ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
+  ctx.font = 'bold 13px ' + SKRIFT; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
   ctx.fillText('🌀 Portal', px - Math.cos(v) * 30, py - Math.sin(v) * 30 + 4);
 }
 
@@ -3027,7 +3149,7 @@ function tegn() {
   for (const t of traer) tegnTre(t);
   for (const t of tekster) {
     ctx.globalAlpha = Math.min(1, t.tid / 20);
-    ctx.font = 'bold ' + t.storrelse + 'px system-ui'; ctx.textAlign = 'center';
+    ctx.font = 'bold ' + t.storrelse + 'px ' + SKRIFT; ctx.textAlign = 'center';
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillText(t.tekst, t.x + 2, t.y + 2);
     ctx.fillStyle = t.farge; ctx.fillText(t.tekst, t.x, t.y);
   }
@@ -3191,11 +3313,22 @@ try {
   }
 } catch (e) {}
 
+// EVN-UI: Basen, kart, pause og avslutt samles øverst til høyre
+function uiFlyttKnapper(kart, pause) {
+  const h = document.getElementById('hoyre'); h.hidden = false;
+  const base = document.getElementById('baseKnapp'), av = document.getElementById('avsluttKnapp');
+  h.append(base, kart, pause, av);
+  av.textContent = '🚪'; av.setAttribute('aria-label', 'Avslutt'); av.title = 'Avslutt';
+  kart.title = kart.title || 'Kart (M)'; pause.title = pause.title || 'Pause (P)';
+}
 // Felles pause med spilletid (⏸ / P / Esc). Spilletid lagres i 'evn-spilletid-eventyrspill'.
 EVNPause({
   mappe: 'eventyrspill', avsluttId: 'avsluttKnapp',
   tema: { panel: 'rgba(28,36,54,.97)', ink: '#fff', hi: '#ffd54a', btn: '#ffd54a', btnInk: '#2b1d00' },
-  knapp: (b, k) => { b.style.cssText = 'position:fixed;top:68px;right:16px;z-index:24'; k.style.cssText = 'position:fixed;top:68px;right:72px;z-index:24'; document.body.append(k, b); },
+  knapp: (b, k) => {
+    if (document.documentElement.dataset.ui) { b.style.cssText = ''; k.style.cssText = ''; uiFlyttKnapper(k, b); return; }
+    b.style.cssText = 'position:fixed;top:68px;right:16px;z-index:24'; k.style.cssText = 'position:fixed;top:68px;right:72px;z-index:24'; document.body.append(k, b);
+  },
   kart: {
     forhold: VERDEN_BREDDE / VERDEN_HOYDE,
     info: () => '🟡 Du · 🔴 Monstre · 🏰 Basen',
@@ -3206,7 +3339,7 @@ EVNPause({
       for (const t of traer || []) prikk(t.x, t.y, Math.max(2, t.r * sx * 0.8), 'rgba(20,30,15,0.75)');
       c.beginPath(); c.ellipse(BASE_X * sx, BASE_Y * sy, BASE_RADIUS * sx, BASE_RADIUS * 0.92 * sy, 0, 0, Math.PI * 2);
       c.fillStyle = 'rgba(140,105,60,0.45)'; c.fill(); c.lineWidth = 3; c.strokeStyle = '#6b4a2b'; c.stroke();
-      const s = Math.max(14, Math.round(w / 40)); c.font = s + 'px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      const s = Math.max(14, Math.round(w / 40)); c.font = s + 'px ' + SKRIFT; c.textAlign = 'center'; c.textBaseline = 'middle';
       c.fillText('🏰', BASE_X * sx, BASE_Y * sy);
       if (helt.portalApen) c.fillText('🌀', PORTAL.x * sx, PORTAL.y * sy - s);
       for (const m of mynter || []) prikk(m.x, m.y, Math.max(2, w / 300), '#ffd54a');
