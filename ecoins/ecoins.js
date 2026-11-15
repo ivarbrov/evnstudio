@@ -103,7 +103,9 @@
     ["mork.oppdrag.heksa", 40, "Heksa"],
     ["mork.oppdrag.overlevaren", 40, "Overlevaren (5 netter)"],
     ["mork.oppdrag.dinoslott", 50, "Beinslottet – Skjelett-T-rex-kongen"],
-    ["mork.niva.10", 40, "Heltenivå 10 (maks)"]]}];
+    ["mork.niva.10", 40, "Heltenivå 10 (maks)"]]}, 
+   {"id": "min-bondegard", "navn": "Min Bondegård", "kommer": false, "m": [["bondegard.nivaa.5", 20, "Nivå 5 på gården"],
+    ["bondegard.nivaa.10", 40, "Nivå 10 på gården"]]}];
   var VARER = [{"id": "vernehjelm", "navn": "Vernehjelm", "plass": "hode", "pris": 40},
     {"id": "steinhette", "navn": "Steinalderhette", "plass": "hode", "pris": 40},
     {"id": "ryggsekk", "navn": "Ryggsekk", "plass": "rygg", "pris": 40},
