@@ -9,7 +9,7 @@
 <!-- EVN-SIKKERHET: CSP-taggen fra /sikkerhet/ legges inn her ved publisering på evnstudio.no (tas ut i Claude-artefakter). -->
 <link rel="icon" href="../../favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Matdyr-regn 0.10.3 – EVN Studio</title>
+<title>Matdyr-regn 0.10.4 – EVN Studio</title>
 <script src="../../statistikk.js" data-spill="matdyr" defer></script>
 <style>
   :root { --gull:#ffc93c; --mork:#1d2440; --gronn:#2fb35a; }
@@ -176,7 +176,7 @@
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <p class="ingen3d hidden" id="noGL">😕 Denne nettleseren kan ikke vise 3D. Prøv en annen nettleser, eller be en voksen om hjelp.</p>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.10.3</div>
+    <div class="evn-ver" id="versjon">Versjon 0.10.4</div>
   </div>
 </div>
 
@@ -517,7 +517,7 @@ window.EVNPause = function (cfg) {
 
 <script>
 "use strict";
-const VERSJON="0.10.3";
+const VERSJON="0.10.4";
 function ingen3d(){window.__ingen3d=true;$("noGL").classList.remove("hidden");$("startBtn").hidden=true}
 // ================= Matdyr-data: 40 dyr × 25 mat/drikke = 1000 =================
 const ANIMALS=[["🐷","gris"],["🐸","frosk"],["🦈","hai"],["🐙","blekksprut"],["🐒","ape"],["🐄","ku"],["🐭","mus"],["🐧","pingvin"],["🐘","elefant"],["🐋","hval"],["🐱","katt"],["🐶","hund"],["🐰","kanin"],["🦊","rev"],["🐻","bjørn"],["🐼","panda"],["🦁","løve"],["🐯","tiger"],["🐴","hest"],["🦄","enhjørning"],["🐑","sau"],["🐐","geit"],["🐔","høne"],["🦆","and"],["🦉","ugle"],["🦜","papegøye"],["🦩","flamingo"],["🐊","krokodille"],["🐢","skilpadde"],["🐍","slange"],["🦖","dinosaur"],["🦒","sjiraff"],["🦓","sebra"],["🐫","kamel"],["🦛","flodhest"],["🦏","neshorn"],["🐨","koala"],["🦥","dovendyr"],["🐌","snegle"],["🦀","krabbe"]];
@@ -990,7 +990,31 @@ function makeBlenderModel(ci,ai){
   g.userData={body:bodyG,legs:legs.filter(Boolean),mode:AN[ai].t,seed:Math.random()*6,gl:true};
   return g;
 }
+// ---- Matdyr på to bein (Even 10.–12.11.2026; Ivar 16.11.2026: «matdyrene på to bein skal inn i produksjonsspillet») ----
+// 18 matdyr har egne figurer der dyret går på to bein og bærer maten selv. Bare utseendet endres: ID, sjeldenhet, pris, inntekt og lagring er som før.
+// Figurene lastes først når spillet har startet (tobein-dyr.js), så oppstarten ikke blir tregere. Til de er lastet brukes de vanlige figurene.
+const TB={};let tbLastet=false;
+function loadTobein(){if(tbLastet||FIG!=="blender"||!THREE.GLTFLoader)return;tbLastet=true;const sk=document.createElement("script");sk.src="tobein-dyr.js";
+  sk.onerror=()=>console.warn("tobein: fant ikke tobein-dyr.js");
+  sk.onload=()=>{const d=window.EVN_TOBEIN_DYR||{},keys=Object.keys(d);let n=0;const ferdig=()=>{if(++n<keys.length)return;plotSprites.forEach(p=>p.userData.k="");refreshBase();
+      if(carry&&TB[carry.ci]){carrySprite.clear();carrySprite.add(makeModel(carry.ci))}window.EVNTobeinKlar=true;try{document.dispatchEvent(new Event("evn-tobein-klar"))}catch(e){}};
+    keys.forEach(k=>{try{const bin=atob(d[k]),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+      /* Figurene har teksturer. CSP tillater blob: for bilder, men ikke for fetch, så teksturene lastes som <img> (TextureLoader) i stedet for ImageBitmapLoader. */
+      const ld=new THREE.GLTFLoader();ld.register(ps=>{ps.textureLoader=new THREE.TextureLoader(ps.options.manager);return {name:"evn_img"}});
+      ld.parse(u.buffer,"",gl=>{const sc=gl.scene;sc.updateMatrixWorld(true);const bb=new THREE.Box3().setFromObject(sc),sz=new THREE.Vector3();bb.getSize(sz);TB[+k]={scene:sc,bb,sz};ferdig()},
+        e=>{console.warn("tobein",k,e);ferdig()})}catch(e){console.warn("tobein",e);ferdig()}})};
+  document.head.appendChild(sk)}
+document.addEventListener("evn-start",()=>setTimeout(loadTobein,300),{once:true});
+function makeTobeinModel(ci){
+  const L=TB[ci],c=COMBOS[ci],hidden=isHidden(ci),inner=L.scene.clone(true),k=(2.6/Math.max(L.sz.x,L.sz.y,L.sz.z*0.85))*(1+c.r*0.1);
+  inner.scale.setScalar(k);inner.position.set(-(L.bb.min.x+L.bb.max.x)/2*k,-L.bb.min.y*k,-(L.bb.min.z+L.bb.max.z)/2*k);
+  const nd={};inner.traverse(o=>{if(["bein_vf","bein_hf","vinge_v","vinge_h","hode"].includes(o.name))nd[o.name]={o,r:o.rotation.clone()};
+    if(o.isMesh){o.castShadow=true;if(hidden)o.material=MAT_H}});
+  const g=new THREE.Group(),bodyG=new THREE.Group();bodyG.add(inner);g.add(bodyG);
+  g.userData={body:bodyG,legs:[],tb:nd,seed:Math.random()*6,gl:true};return g;
+}
 function makeModel(ci){
+  if(FIG==="blender"&&TB[ci])return makeTobeinModel(ci);
   {const ai=Math.floor(ci/FOODS.length);if(FIG==="blender"&&BL[ai])return makeBlenderModel(ci,ai)}
   const P=modelParts(ci),mat=modelMat(ci),g=new THREE.Group(),body=new THREE.Mesh(P.body,mat);body.castShadow=true;g.add(body);
   g.userData={body,legs:[],mode:P.mode,seed:Math.random()*6};
@@ -999,6 +1023,11 @@ function makeModel(ci){
 }
 function animModel(g,t,moving){
   const u=g.userData,w=moving?1:0,s=Math.sin(t*9+u.seed);
+  if(u.tb){/* to bein: beina og armene svinger i takt, som når man går (som i prototypen, Even 12.11.2026) */
+    const a=Math.sin(t*7+u.seed)*w,sett=(n,x,z)=>{const d=u.tb[n];if(d)d.o.rotation.set(d.r.x+x,d.r.y,d.r.z+z)};
+    sett("bein_vf",a*0.5,0);sett("bein_hf",-a*0.5,0);sett("vinge_v",-a*0.45,moving?0:-Math.sin(t*1.8+u.seed)*0.04);sett("vinge_h",a*0.45,moving?0:Math.sin(t*1.8+u.seed)*0.04);
+    sett("hode",Math.sin(t*1.3+u.seed)*0.07,Math.sin(t*0.9+u.seed)*0.05);
+    u.body.rotation.z=moving?a*0.09:Math.sin(t*1.6+u.seed)*0.025;u.body.position.y=moving?Math.abs(a)*0.08:0;return}
   if(u.gl){if(u.legs.length===2){u.legs[0].rotation.x=s*0.55*w;u.legs[1].rotation.x=-s*0.55*w;u.body.position.y=Math.abs(s)*0.08*w}else if(u.mode==="frog")u.body.position.y=Math.max(0,Math.sin(t*4+u.seed))*0.7*w;return}
   if(u.legs.length){u.legs[0].rotation.x=s*0.55*w;u.legs[1].rotation.x=-s*0.55*w;const y=Math.abs(s)*0.08*w;u.body.position.y=y;u.legs.forEach(l=>l.position.y=modelCacheHip(l)+y)}
   else if(u.mode==="frog"){u.body.position.y=Math.max(0,Math.sin(t*4+u.seed))*0.7*w}
