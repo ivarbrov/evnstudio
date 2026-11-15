@@ -342,8 +342,7 @@
   function svarGate(s, v, naa) {
     var g = s.rebus.gate; if (!g) return { ok: false, grunn: 'ingen' };
     if (v !== g) return { ok: false, grunn: 'feil' };
-    if ((s.lager[v] || 0) < 1) return { ok: false, grunn: 'mangler' };
-    ta(s, mk(v, 1)); var l = gateLonn(v); s.mynter += l.mynter; s.rebus.gate = null; s.rebus.neste = naa + D.rebus.pause * 1000; s.rebus.loste++;
+    var l = gateLonn(v); s.mynter += l.mynter; s.rebus.gate = null; s.rebus.neste = naa + D.rebus.pause * 1000; s.rebus.loste++;
     return { ok: true, vare: v, mynter: l.mynter, xp: l.xp, nye: giXP(s, l.xp, naa) };
   }
   function byttGate(s, naa) { if (!s.rebus.gate) return null; var gml = s.rebus.gate; s.rebus.gate = null; var ny2 = nyGate(s, naa); if (!ny2) s.rebus.gate = gml; return s.rebus.gate; }

@@ -87,7 +87,7 @@
       bonusDager: 7, maskinMynter: 300, superrarMynter: 200,   // bonusDager: Ivar 14.11, 7 dager (Even ønsket en måned)
       pynt: ['gullhone', 'gullegg', 'gullgulrot', 'gullstjerne', 'regnbue', 'gullfontene'],
       pyntNavn: { gullhone: 'Gullhøne', gullegg: 'Gullegg', gullgulrot: 'Gullgulrot', gullstjerne: 'Gullstjerne', regnbue: 'Regnbue', gullfontene: 'Gullfontene' } },
-    rebus: { nivaa: 2, pause: 180, myntFaktor: 2, myntPluss: 10, xp: 4 },
+    rebus: { nivaa: 2, pause: 180, myntFaktor: 1, myntPluss: 10, xp: 4 },   /* 0.15.1 (Even 15.11): du trenger ikke ha svaret på lager. Rebus tar ingen vare, så lønna er varens verdi mindre enn før (samme gevinst som før) */
     gater: {
       hvete: 'Jeg er gul og står i lange rader på åkeren. Blir jeg malt, blir jeg til mel og brød. Hva er jeg?',
       mais: 'Jeg har gule korn på en kolbe og grønne blader rundt meg. Hva er jeg?',

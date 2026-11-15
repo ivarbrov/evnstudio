@@ -331,19 +331,19 @@ function lagLastebil() {
 }
 /* 0.15.0 (Even 15.11): varebilen er gårdens egen. Den står parkert på gården, kjører ut med varene når en bestilling leveres, og kommer tilbake.
    Skinn fra årstidsbilene (bursdag, valentin osv.) kommer senere og bytter bare utseendet. Bare til pynt: reglene er allerede brukt. */
-const VAREBIL_PLASS = [-8.1, 3.0];   /* Even 15.11: inntil låven, langs gårdsveien med fronten mot låven (mellom benken/bakeriet og gårdsveien) */
+const VAREBIL_PLASS = [-5.5, 2.9];   /* Even 15.11: på gårdsveien inntil låven, med fronten mot veien. Gårdsveien er alltid fri for bygg */
 let varebilT = null;
 function synkVarebil() {
   if (!bil) bil = lagLastebil();
   if (!varebilT) { varebilT = {type: 'varebil', id: 'varebil', gruppe: bil, fot: FOT.varebil, hoyde: 2.6}; ting.set('varebil', varebilT); eierAv(bil); klikkbar(bil); varebilT.ikon = lagIkon(varebilT.hoyde); bil.add(varebilT.ikon); }
-  if (!varebilT.plassert) { const p = erLedig(varebilT, ...VAREBIL_PLASS, 0) ? VAREBIL_PLASS : (finnLedigPlass(varebilT, ...VAREBIL_PLASS) || VAREBIL_PLASS); plasser(varebilT, p[0], p[1], 0); bil.visible = true; bil.rotation.y = Math.PI / 2; }
+  if (!varebilT.plassert) { plasser(varebilT, ...VAREBIL_PLASS, 0); bil.visible = true; bil.rotation.y = -Math.PI / 2; }
 }
 function kjorLastebil() { bilKo.n++; if (!bil) synkVarebil(); const redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (bilKo.fase !== 0) return;
   if (redusert) { sprett.push({o: bil, t: 0}); bilKo.n = 0; return; }   /* redusert bevegelse: bilen spretter litt der den står */
   const x0 = varebilT.x, z0 = varebilT.z; bilKo.fase = 1; bilKo.t = 0;
-  bilKo.vei = [[x0 + 0.2, z0 + 3.0, 'b'], [-5.5, z0 + 5.2, 's'], [-5.5, VEI_Z - 1.0, 's'], [-3.5, BIL_Z, 's'], [36, BIL_Z]];   /* rygg ut, så gårdsveien ut og østover */ bilKo.i = 0;   /* ut gårdsveien og østover */
-  bilKo.hjem = [[-36, BIL_Z], [-7.5, BIL_Z, 'n'], [-5.5, VEI_Z - 1.6, 's'], [-5.6, z0 + 4.2, 's'], [-7.0, z0 + 3.2, 's'], [x0, z0 + 1.8, 's'], [x0, z0, 's']];   /* inn gårdsveien og fram til låven (s = sakte, n = brems ned, b = rygg) */
+  bilKo.vei = [[x0, VEI_Z - 1.0, 's'], [x0 + 2.0, BIL_Z, 's'], [36, BIL_Z]];   /* rett ut gårdsveien og østover */ bilKo.i = 0;   /* ut gårdsveien og østover */
+  bilKo.hjem = [[-36, BIL_Z], [x0 + 3.0, BIL_Z, 'n'], [x0, VEI_Z - 1.4, 'b'], [x0, z0, 'b']];   /* forbi porten og rygg inn gårdsveien til låven (n = brems ned, b = rygg) */
 }
 function oppdaterBil(dt) {
   if (!bil || bilKo.fase === 0) return;
@@ -355,7 +355,7 @@ function oppdaterBil(dt) {
   if (d - steg < 0.02) { bilKo.i++;
     if (bilKo.i >= bilKo.vei.length) {
       if (bilKo.fase === 1) { bilKo.fase = 2; bilKo.t = 0; bil.visible = false; }
-      else { bilKo.fase = 0; bilKo.n = 0; plasser(varebilT, varebilT.x, varebilT.z, 0); bil.rotation.y = Math.PI / 2; } } }
+      else { bilKo.fase = 0; bilKo.n = 0; plasser(varebilT, varebilT.x, varebilT.z, 0); bil.rotation.y = -Math.PI / 2; } } }
   bil.position.y = hoyde(bil.position.x, bil.position.z) + Math.abs(Math.sin((bil.position.x + bil.position.z) * 1.7)) * 0.04;
 }
 
@@ -775,7 +775,7 @@ const REV_HJEM = [-17.6, 4.0], REV_GARD = [-6.3, 7.0];
    altså ca. 0,9 m/s. Han går 1,2 m/s, og klippet spilles 1,3 ganger så fort, så føttene ikke sklir. Svingene er mykere, og han blir ikke avbrutt av vinking mens han går */
 const REV_FART = 1.2, REV_TAKT = 1.3; window.revOpptatt = () => !!revGang;
 let revSted = 'hjem', revGang = null, revFlate = null, revY = 0.044, revKlar = false, revHjemEtter = 0;
-function revVei() { const v = [[stiX(4.6), 4.6]]; for (let z = 6; z <= VEI_Z - 1.2; z += 1.4) v.push([stiX(z), z]); v.push([stiX(VEI_Z - 1.2), VEI_Z - 1.2], [-6.3, VEI_Z - 1.2], REV_GARD); return v; }
+function revVei() { const v = [[stiX(4.6), 4.6]]; for (let z = 6; z <= VEI_Z - 1.2; z += 1.4) v.push([stiX(z), z]); v.push([stiX(VEI_Z - 1.2), VEI_Z - 1.2], [-14.6, VEI_Z + 1.4], [-6.0, VEI_Z + 1.4], [-6.3, VEI_Z - 1.2], REV_GARD); return v; }   /* 0.15.2 (Even 15.11): ytterst på veien, så han ikke går gjennom bilen til Blomst */
 function revGaa(hjem, straks) {
   if (!rev) return; const v = revVei(); if (hjem) v.reverse().push(REV_HJEM); else v.unshift(REV_HJEM);
   if (straks || matchMedia('(prefers-reduced-motion: reduce)').matches) { revSett(...v[v.length - 1]); revSted = hjem ? 'hjem' : 'gard'; revGang = null; rev.rotation.y = hjem ? Math.PI / 2 + 0.35 : Math.PI / 4; return; }
@@ -800,9 +800,8 @@ function visGate() {
     const andre = Object.keys(D.gater).filter(v => v !== g && D.nivaaFor(v) <= s.nivaa).sort((a, b) => ((s.lager[b] || 0) > 0) - ((s.lager[a] || 0) > 0) || rnd2() - 0.5).slice(0, 5);
     const har = [g, ...andre].map(v => [v, rnd2()]).sort((a, b) => a[1] - b[1]).map(a => a[0]);
     return `<p style="font-size:19px;line-height:1.35"><b>${D.gater[g]}</b></p>
-      <p style="font-size:15px">Gi meg svaret, så får du <b>${l.mynter} 🪙</b> og <b>${l.xp} XP</b>.</p>
-      ${har.length ? `<div class="knapper" style="flex-wrap:wrap">${har.map(v => `<button class="knapp lys" data-g="svar" data-v="${v}" aria-label="Gi ${navn(v)}, du har ${s.lager[v] || 0}">${ikon(v)} ${navn(v)} <small>(${s.lager[v] || 0})</small></button>`).join('')}</div>` : ''}
-      <p style="font-size:15px">Tallet viser hvor mange du har. Har du ikke svaret ennå? Lag det, og kom tilbake. 🦊</p>
+      <p style="font-size:15px">Si svaret, så får du <b>${l.mynter} 🪙</b> og <b>${l.xp} XP</b>.</p>
+      ${har.length ? `<div class="knapper" style="flex-wrap:wrap">${har.map(v => `<button class="knapp lys" data-g="svar" data-v="${v}" aria-label="Svar ${navn(v)}">${ikon(v)} ${navn(v)}</button>`).join('')}</div>` : ''}
       <div class="knapper"><button class="knapp lys" data-g="nyGate">🔄 En annen gåte</button></div>`;
   });
 }
@@ -1146,7 +1145,6 @@ $('handlingInnhold').addEventListener('click', e => {
   if (g === 'svar') { const r = L.svarGate(s, k.dataset.v, t), p = rev ? rev.position.clone().setY(3) : null;
     if (r.ok) { lukkHandling(); flyt('+' + r.mynter + ' 🪙', p); hilsRev(false); revHjemEtter = performance.now() + 3000; melding(`Riktig! Det var ${navn(r.vare).toLowerCase()}! 🦊🎉`, 2800); gi(r, p); }
     else if (r.grunn === 'feil') { melding('Nei, det er ikke ' + navn(k.dataset.v).toLowerCase() + '. Prøv igjen! 🦊', 2600); }
-    else if (r.grunn === 'mangler') { melding(`Riktig! Men du har ingen ${navn(k.dataset.v).toLowerCase()} ennå. Lag noen og kom tilbake! 🦊`, 3400); }
     return; }
   if (g === 'gullgard') { s.gaver.gullPaa = !s.gaver.gullPaa; settGullgard(s.gaver.gullPaa); lagre(); tegnPaaNytt(); return; }
   if (g === 'aapneGave') { const r = L.aapneGave(s, t); if (r.ok) { if (gaveT) sprett.push({o: gaveT.gruppe, t: 0}); if (r.mynter) flyt('+' + r.mynter + ' 🪙', midtAv(gaveT, 2)); else if (r.vare) flyt('+' + r.antall + ' ' + ikon(r.vare), midtAv(gaveT, 2)); if (r.pynt) synkPynt(); if (r.bygg || r.gullgard) plasserAlt(); if (r.xp) gi(r, midtAv(gaveT, 2)); lagre(); synkGaver(); synk(true); if (!(r.nye && r.nye.length)) visGave(r); } return; }
