@@ -55,7 +55,7 @@
       bakeri:     { navn: 'Bakeriet',       ikon: '🍞', nivaa: 2,  pris: 50 },
       meieri:     { navn: 'Meieriet',       ikon: '🥛', nivaa: 6,  pris: 600 },
       sukkerverk: { navn: 'Sukkerverket',   ikon: '🧂', nivaa: 7,  pris: 900 },
-      popkorn:    { navn: 'Popkornmaskinen', ikon: '🍿', nivaa: 8,  pris: 750 },   // Even 15.11: 750 (var 1200). Må godkjennes av en voksen før publisering
+      popkorn:    { navn: 'Popkornmaskinen', ikon: '🍿', nivaa: 8,  pris: 750 },   // Even 15.11: 750 (var 1200), godkjent av Ivar 15.11
       kjokken:    { navn: 'Gårdskjøkkenet', ikon: '🥞', nivaa: 9,  pris: 800 },
       fjos:       { navn: 'Fjøs og beite',  ikon: '🐄', nivaa: 6,  pris: 300, dyr: 'ku' },   // Ivar 12.11: 300 mynter, spilleren plasserer det selv
       grisebinge: { navn: 'Grisebinge',     ikon: '🐖', nivaa: 10, pris: 800, dyr: 'gris' }
@@ -70,7 +70,7 @@
     startLager: { honsefor: 6, hvete: 4 },
     nyAvlingFro: 3,                     // en ny avling gir 3 frø når den låses opp
     // Bestillinger (progresjonsplanen kap. 4 F5 og kap. 6). Tavla kommer på nivå 4. Antall bestillinger øker med nivået.
-    bestillinger: { nivaa: 4, plasser: { 4: 3, 7: 4, 10: 5 }, bytteForslag: 900, maksKjede: 600, myntFaktor: 1.6, xpFaktor: 0.6, xpPot: 0.85, minXP: 3 },
+    bestillinger: { nivaa: 4, plasser: { 4: 3, 7: 4, 10: 5 }, bytteForslag: 900, maksKjede: 600, myntFaktor: 2.0, xpFaktor: 0.6, xpPot: 0.85, minXP: 3 },
     // Kunder som kjører innom markedsbua (Even 11.11): ber om én vare og betaler markedspris (Ivar 11.11). Ingen straff om spilleren ikke har varen.
     kunder: { faktor: 1, pause: [70, 120], venter: 60 },
     // Områder spilleren kan kjøpe (Ivar 12.11: Enga på nivå 5 for 300). Skogkanten er med i fase 4.

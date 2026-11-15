@@ -112,7 +112,8 @@ t('Bestillinger ber bare om varer spilleren kan lage', s.best.liste.every(o => O
 t('Uten bakeri og uten råd: brød er ikke med', (() => { const x = L.ny(T0); L.giXP(x, 105, T0); x.mynter = 0; x.bygg.bakeri.eid = false; x.mynter = -400; return !L.bestPool(x).includes('brod'); })());
 t('Ingenting over innholdsnivået i denne versjonen', (() => { const x = L.ny(T0); L.giXP(x, 5000, T0); return L.bestPool(x).every(v => D.nivaaFor(v) <= D.innholdTil); })());
 { const o = s.best.liste[0], verdi = Object.keys(o.varer).reduce((a, v) => a + D.verdi(v) * o.varer[v], 0);
-  t('Belønning følger formelen', o.mynter === Math.round(verdi * 1.6) && o.xp === Math.max(3, Math.round(0.6 * Math.pow(verdi, 0.85)))); }
+t('Ivar 15.11: bestillinger gir 2,0 × verdien, Popkornmaskinen koster 750', D.bestillinger.myntFaktor === 2.0 && D.bygg.popkorn.pris === 750);
+  t('Belønning følger formelen', o.mynter === Math.round(verdi * D.bestillinger.myntFaktor) && o.xp === Math.max(3, Math.round(0.6 * Math.pow(verdi, 0.85)))); }
 t('Kan ikke levere uten varene', (() => { s.lager = {}; return L.lever(s, 0, T0).grunn === 'mangler' && !L.kanLevere(s, 0); })());
 { const o = s.best.liste[0]; for (const v in o.varer) s.lager[v] = o.varer[v] + 1; const m0 = s.mynter, id = o.id, lev0 = s.stat.levert;
   r = L.lever(s, 0, T0 + S);
@@ -124,7 +125,7 @@ t('Forslag om bytte først etter 15 minutter', (() => { s.lager = {}; const o = 
 { const kopi = L.valider(JSON.parse(JSON.stringify(s)), T0 + 3 * S);
   t('Bestillinger overlever lagring', JSON.stringify(kopi.best.liste) === JSON.stringify(s.best.liste) && kopi.best.fro === s.best.fro && kopi.best.nr === s.best.nr); }
 { const rar = JSON.parse(JSON.stringify(s)); rar.best.liste = [{ varer: { hvete: 2 }, mynter: 99999, xp: 99999 }, { varer: { gull: 5 } }, 'tull', { varer: { honsefor: 3 } }, { varer: { hvete: 500 } }];
-  const k = L.valider(rar, T0); t('Lagret bestilling kan ikke gi mer enn reglene', k.best.liste.length === 3 && k.best.liste[0].mynter === 6 && k.best.liste[0].xp === 3 && k.best.liste.every(o => Object.keys(o.varer).every(v => !D.erFor(v) && o.varer[v] <= 12))); }
+  const k = L.valider(rar, T0); t('Lagret bestilling kan ikke gi mer enn reglene', k.best.liste.length === 3 && k.best.liste[0].mynter === D.bestillingMynter(2 * D.pris('hvete')) && k.best.liste[0].xp === 3 && k.best.liste.every(o => Object.keys(o.varer).every(v => !D.erFor(v) && o.varer[v] <= 12))); }
 t('Gammel lagring uten bestillinger får dem på nivå 4', (() => { const k = L.valider({ v: 1, nivaa: 4, mynter: 100, lager: {} }, T0); return k.best.liste.length === 3; })());
 t('Samme tilstand gir samme bestilling', (() => { const a = JSON.parse(JSON.stringify(s)), b = JSON.parse(JSON.stringify(s)); return JSON.stringify(L.nyBestilling(a, T0)) === JSON.stringify(L.nyBestilling(b, T0)); })());
 // --- Erter (nivå 5) ---
