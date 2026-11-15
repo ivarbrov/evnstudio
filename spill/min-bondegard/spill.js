@@ -360,7 +360,7 @@ function oppdaterBil(dt) {
   if (Math.hypot(m[0] - bil.position.x, m[1] - bil.position.z) < (sist ? 0.02 : 0.5)) { bilKo.i++;
     if (bilKo.i >= bilKo.vei.length) {
       if (bilKo.fase === 1) { bilKo.fase = 2; bilKo.t = 0; bil.visible = false; }
-      else { bilKo.fase = 0; bilKo.n = 0; plasser(varebilT, varebilT.x, varebilT.z, 0); bil.rotation.y = -Math.PI / 2; } } }
+      else { const igjen = bilKo.n > 1; bilKo.fase = 0; bilKo.n = 0; plasser(varebilT, varebilT.x, varebilT.z, 0); bil.rotation.y = -Math.PI / 2; if (igjen) kjorLastebil(); } } }   /* QA 15.11: en levering mens bilen var ute gir en ny tur */
   bil.position.y = hoyde(bil.position.x, bil.position.z) + Math.abs(Math.sin((bil.position.x + bil.position.z) * 1.7)) * 0.04;
 }
 
@@ -646,6 +646,13 @@ function plasserAlt() {
   const GML = {forkvern: [1.0, -9.7], bakeri: [0.7, -5.4]};   /* bygg som står på gammel standardplass (0.8.0–0.8.6), får ny */
   const stdV = s.plasser.std ? s.plasser.std.x : 0;   /* hvilken standardplassering lagringen har sett (engangsflagg, QA 10.11) */
   for (const b in GML) { const sb = s.bygg[b]; if (stdV < 3 && sb && sb.x === GML[b][0] && sb.z === GML[b][1] && !ting.has(b)) { sb.x = null; sb.z = null; } }
+  /* 0.15.8 (QA 15.11): siloen plasseres før byggene, så en ny byggeplass ikke havner oppå den */
+  let si = ting.get('silo'); if (!si) { const g = lagSilo(); scene.add(g); eierAv(g); klikkbar(g); si = {type: 'silo', id: 'silo', gruppe: g, fot: FOT.silo, hoyde: 6.6}; si.ikon = lagIkon(si.hoyde); g.add(si.ikon); ting.set('silo', si); }
+  if (stdV < 3 && s.plasser.silo && ((s.plasser.silo.x === 11.95 && s.plasser.silo.z === -2.4) || (s.plasser.silo.x === -13.6 && s.plasser.silo.z === -1.75) || (s.plasser.silo.x === 1 && s.plasser.silo.z === -9.7))) delete s.plasser.silo;
+  if (stdV < 4 && s.plasser.silo && s.plasser.silo.x === 1 && s.plasser.silo.z === -8.4) delete s.plasser.silo;   /* 0.9.7: standardplassen fra 0.8.10 flyttes inntil låven. En silo spilleren har flyttet selv, står der den står */   /* gamle standardplasser flyttes til ny */
+  if (stdV < 5 && s.plasser.tavle && Math.abs(s.plasser.tavle.x + 2.4) < 0.3 && Math.abs(s.plasser.tavle.z - 8.6) < 0.3) delete s.plasser.tavle;   /* 0.15.3 (Even 15.11): tavla på standardplassen ved porten flyttes nærmere åkrene. En tavle spilleren har flyttet selv, blir stående */
+  const ps = s.plasser.silo || (() => { const p = finnLedigPlass(si, ...STANDARD.silo) || STANDARD.silo; return (s.plasser.silo = {x: p[0], z: p[1], r: 0}); })();
+  plasser(si, ps.x, ps.z, ps.r);
   for (const b of I_SPILLET.bygg) { const sb = s.bygg[b]; if (!sb) continue; let t = ting.get(b);
     if (!t && sb.x === null && !finnLedigPlass({fot: FOT[b], r: 0}, ...STANDARD[b])) continue;   /* 0.9.8: ingen ledig plass ennå. Byggemenyen foreslår å kjøpe Enga */
     const modell = sb.eid ? 'bygd' : 'plass';
@@ -655,12 +662,6 @@ function plasserAlt() {
     if (sb.x === null) { const [sx, sz] = STANDARD[b]; const p = finnLedigPlass(t, sx, sz) || [sx, sz]; sb.x = p[0]; sb.z = p[1]; }
     plasser(t, sb.x, sb.z, sb.r);
   }
-  let si = ting.get('silo'); if (!si) { const g = lagSilo(); scene.add(g); eierAv(g); klikkbar(g); si = {type: 'silo', id: 'silo', gruppe: g, fot: FOT.silo, hoyde: 6.6}; si.ikon = lagIkon(si.hoyde); g.add(si.ikon); ting.set('silo', si); }
-  if (stdV < 3 && s.plasser.silo && ((s.plasser.silo.x === 11.95 && s.plasser.silo.z === -2.4) || (s.plasser.silo.x === -13.6 && s.plasser.silo.z === -1.75) || (s.plasser.silo.x === 1 && s.plasser.silo.z === -9.7))) delete s.plasser.silo;
-  if (stdV < 4 && s.plasser.silo && s.plasser.silo.x === 1 && s.plasser.silo.z === -8.4) delete s.plasser.silo;   /* 0.9.7: standardplassen fra 0.8.10 flyttes inntil låven. En silo spilleren har flyttet selv, står der den står */   /* gamle standardplasser flyttes til ny */
-  if (stdV < 5 && s.plasser.tavle && Math.abs(s.plasser.tavle.x + 2.4) < 0.3 && Math.abs(s.plasser.tavle.z - 8.6) < 0.3) delete s.plasser.tavle;   /* 0.15.3 (Even 15.11): tavla på standardplassen ved porten flyttes nærmere åkrene. En tavle spilleren har flyttet selv, blir stående */
-  const ps = s.plasser.silo || (() => { const p = finnLedigPlass(si, ...STANDARD.silo) || STANDARD.silo; return (s.plasser.silo = {x: p[0], z: p[1], r: 0}); })();
-  plasser(si, ps.x, ps.z, ps.r);
   // Bestillingstavla kommer på nivå 4, ved gårdsveien. Den får nærmeste ledige plass hvis noe står der.
   if (s.nivaa >= D.bestillinger.nivaa) { let tv = ting.get('tavle');
     if (!tv) { const g = lagTavle(); scene.add(g); eierAv(g); klikkbar(g); tv = {type: 'tavle', id: 'tavle', gruppe: g, fot: FOT.tavle, hoyde: 3.1}; tv.ikon = lagIkon(tv.hoyde); g.add(tv.ikon); ting.set('tavle', tv); }
