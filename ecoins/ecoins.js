@@ -64,7 +64,7 @@
     ["era.epoke.6", 40, "Romstasjonen fullført – portalen åpnes (bølge 10)"],
     ["era.boss.7", 15, "Første boss slått i Tidsvirvelen (bølge 5)"],
     ["era.seier", 150, "Tidsherren (sluttbossen) er slått"]]}, 
-   {"id": "magiske-egg", "navn": "Magiske egg", "kommer": false, "fjernet": true, "m": [["egg.art.boblefrosk", 8, "Første Boblefrosk klekket"],
+   {"id": "magiske-egg", "navn": "Magiske egg", "kommer": false, "m": [["egg.art.boblefrosk", 8, "Første Boblefrosk klekket"],
     ["egg.art.glitterkanin", 8, "Første Glitterkanin klekket"],
     ["egg.art.bladrev", 8, "Første Bladrev klekket"],
     ["egg.park.2", 20, "Parknivå 2 nådd"],
@@ -103,7 +103,9 @@
     ["mork.oppdrag.heksa", 40, "Heksa"],
     ["mork.oppdrag.overlevaren", 40, "Overlevaren (5 netter)"],
     ["mork.oppdrag.dinoslott", 50, "Beinslottet – Skjelett-T-rex-kongen"],
-    ["mork.niva.10", 40, "Heltenivå 10 (maks)"]]}];
+    ["mork.niva.10", 40, "Heltenivå 10 (maks)"]]}, 
+   {"id": "min-bondegard", "navn": "Min Bondegård", "kommer": false, "m": [["bondegard.nivaa.5", 20, "Nivå 5 på gården"],
+    ["bondegard.nivaa.10", 40, "Nivå 10 på gården"]]}];
   var VARER = [{"id": "vernehjelm", "navn": "Vernehjelm", "plass": "hode", "pris": 40},
     {"id": "steinhette", "navn": "Steinalderhette", "plass": "hode", "pris": 40},
     {"id": "ryggsekk", "navn": "Ryggsekk", "plass": "rygg", "pris": 40},

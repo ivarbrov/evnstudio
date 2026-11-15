@@ -1,0 +1,122 @@
+# Min Bondegård
+
+Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innhold og grafikk er våre egne.
+
+- Plan: `claude/min-bondegard-spillbar-1-10-plan.md` (prosjektfil). Progresjon og tall: `claude/min-bondegard-progresjon.md`.
+- Grafisk referanse og tilbakefall: testscene 0.7.4 på grenen `prototype/min-bondegard-testscene` (`prototype/min-bondegard/`). Den er ikke endret.
+- Ikke publisert. Publisering krever voksen godkjenning av konkret versjon.
+
+## Filer
+
+| Fil | Innhold |
+|---|---|
+| `index.html` | Verden fra testscene 0.7.4 (terreng, bygg, dyr, robot, rev), grensesnitt, felles pause, nullstilling og feilkort |
+| `data.js` | Alle tall for nivå 1–10: avlinger, dyr, oppskrifter, bygg, XP, lager og priser. Én kilde for spillet, testene og simuleringen |
+| `logikk.js` | Spillreglene uten grafikk: plante, høste, mate, produsere, selge, nivå, tid og lagring |
+| `spill.js` | Kobler reglene til verden: åkre og bygg som kan flyttes, robotens jobber, handlingskort, lager og markedsbu, opplæring |
+
+## Tester
+
+- `node test/min-bondegard/logikk.test.mjs`: spillreglene, tallene, lagring og tid (planens beslutning B1).
+- `node test/min-bondegard/sim.mjs`: simulering på de ekte reglene. Måler tid til nivå 2–4, fastlåsing og venting.
+- `node test/kjor.mjs`: felles røyktest (start, pause, versjon, CSP, ingen feil).
+
+## Lagring
+
+`evn-min-bondegard-v1` i `localStorage`, format `{v: 1, seq, sist, nivaa, xp, mynter, lager, akre, dyr, bygg, plasser, oppl, stat}`.
+- Alle jobber har en fast slutt-tid. De blir ferdige mens spillet er lukket (planens beslutning B1), og venter til spilleren henter dem.
+- Ting som hentes, fjernes fra tilstanden. Derfor kan ingenting hentes to ganger, uansett omlasting.
+- Går klokka bakover, blir ingen ventetid lengre enn jobben selv.
+- `seq` øker ved hver lagring. Har en annen fane lagret nyere fremgang, tas den i bruk.
+- Ødelagt lagring, eller lagring fra en nyere versjon, tas vare på i `evn-min-bondegard-v1-kopi`. Den forrige kopien flyttes til `-kopi2`. Spillet starter en ny gård.
+- `?test` i adressen gir egen lagring (`evn-min-bondegard-test`) og viser testmenyen fra testscenen.
+
+## Versjoner
+
+- **0.8.10** (ikke publisert): Benken står inntil låven, til venstre for gårdsveien, og ikke alene mellom veien og åkrene (Ivar 10.11). Robotens tur til benken er endret tilsvarende.
+- **0.8.11** (ikke publisert): Rettinger etter QA av 0.8.9. Pause midt i et høste-drag gir ikke lenger feilkortet, og et slipp etter pausen høster ikke noe. Drar man frøet ut fra «Plant», plantes den valgte åkeren først, og åkre som lå skjult bak kortet, plantes ikke før fingeren har vært utenfor kortet.
+- **0.8.12** (ikke publisert): Nivåtallet står midt i stjernen på alle enheter (stjernen er en tegnet form, ikke tegnet ★). Forslag til ny natur ligger bak `?tre=puff` og er ikke standard: løvdotter, roligere gress, lysere gran. På mobil kaster bare hovedklasene i kronen skygge (tiltak 1 etter måling på iPhone 10.11).
+- **0.8.13** (ikke publisert): Bare testverktøy (`?test`). «Full gård» hang i evig løkke i spillet, fordi åkre og beiter ikke er bygd på forhånd. Langtesten viser treform og om kravene fra Ivar 10.11 er oppfylt (snitt ≥ 58, 1 % lav ≥ 45, hakk < 0,5 %).
+- **0.8.14** (ikke publisert): Reven heter Rebus i Min Bondegård (Even 10.11). Før het han Nysgjerrig. Bare tekst er endret.
+- **0.8.15** (ikke publisert): Korte meldinger («Mens du var borte …») legger seg under revens tips i stedet for oppå det.
+- **0.9.0** (ikke publisert): Fase 2, nivå 3–5.
+  - Bestillingstavle på nivå 4 med 3 bestillinger. Bestillingene ber bare om varer spilleren kan lage (F5), kan byttes gratis, og spillet foreslår bytte etter 15 minutter.
+  - Lastebilen fra Elvedal kjører inn, laster og kjører ut. Mynter = 1,6 × verdi. XP = 0,6 × verdi^0,85, minst 3.
+  - Erter på nivå 5 (3 frø, 2 min). 12 åkre fra nivå 5.
+  - Lagringen har fått feltet `best: {nr, fro, liste[{id, varer, mynter, xp, siden}]}` og `stat.levert`. Formatet er fortsatt `v: 1`. Eldre lagringer får bestillinger når de lastes.
+  - Toppfeltet tilpasser seg antall knapper. Nytt: knappen 📋 og tasten T.
+  - E-coins på nivå 5 er ikke med. Beløpet er ikke godkjent (B2), og milepælen må inn i den felles regeltabellen.
+- **0.9.1** (ikke publisert): Rettinger etter QA av 0.9.0. 📋-knappen er skjult før nivå 4. Bestillingene er lesbare på smale skjermer. Meldingen etter levering vises over dialogen. To raske trykk sender ikke to bestillinger. Fokus går til neste «Send». Tilfeldige bestillinger regnes med heltall (`Math.imul`). Med redusert bevegelse kjører ikke lastebilen over skjermen.
+- **0.9.2** (ikke publisert): Lastebilen kjører saktere (høyst 8–9 m/s). Etter ett trykk på «Plant» står kortet klart på nærmeste tomme åker, så det går fort å så to sorter om hverandre (Ivar 11.11).
+- **0.9.3** (ikke publisert): Byggemenyen sier «Kommer i neste versjon av spillet» for fjøs og grisebinge når nivået er nådd, i stedet for lås og nivå.
+- **0.15.11** (ikke publisert): Rettinger etter QA av 0.15.8 (26c1539): en byggeplass som allerede står oppå siloen, får ny plass. Feilsvarene i gåten velges tilfeldig, så svaret ikke skiller seg ut. Skjermleserteksten for levering sier «varebilen».
+- **0.15.10** (ikke publisert): Bestillinger gir igjen 1,6 × verdien (Ivar 15.11 kl. 19.55). Popkornmaskinen 750 og gaveeskene som før.
+- **0.15.9** (ikke publisert): Bestillinger gir 25 % flere mynter (myntfaktor 1,6 → 2,0). Popkornmaskinen 750 og gaveeskene som de er. Alt godkjent av Ivar 15.11.
+- **0.15.8** (ikke publisert): Rettinger etter QA av 0.15.0 (27d7f7b): siloen plasseres før byggene, så en byggeplass ikke havner oppå den. Tavla sier «Varebilen din kjører dem ut». En levering mens varebilen er ute gir en ny tur. Handlingskortet (blant annet gåten) holder seg innenfor skjermen på smale telefoner.
+- **0.15.7** (ikke publisert): Popkornmaskinen koster 750 mynter i stedet for 1200 (Even 15.11). Må godkjennes av en voksen før publisering.
+- **0.15.6** (ikke publisert): Den øverste eska på varebilen står rett oppå den nederste. Rebus venter litt lenger fra bilen.
+- **0.15.5** (ikke publisert): Varebilen svinger i buer (svingradius ca. 2,6 m), også når den rygger. Varebilen kjører i ytre felt og Blomst i indre, så bilene ikke går gjennom hverandre. Blomst går på veien og inn gjennom åpningen ved markedsbua. «fôr» skrives «for» (Even 15.11).
+- **0.15.4** (ikke publisert): Hjulene til Blomst ruller.
+- **0.15.3** (ikke publisert): Blomsterbil for Blomst (stor blomst, blomsterhjul, blader og et lyst sete). Rebus venter ved benken og tavla står nærmere åkrene (en tavle på den gamle standardplassen flyttes én gang). Varebilen står helt inntil låven. Roboten står oppå åkerjorda.
+- **0.15.2** (ikke publisert): Et riktig svar på Rebus' gåte teller selv om du ikke har varen. Rebus tar ingen vare, og lønna er varens verdi + 10 mynter (samme gevinst som før). Varebilen står på gårdsveien med fronten mot veien. Rebus går utenom bilen til Blomst.
+- **0.15.1** (ikke publisert): Varebilen parkerer inntil låven.
+- **0.15.0** (ikke publisert): Gårdens egen varebil erstatter lastebilen fra Elvedal (Even 15.11). Den står parkert, kjører ut med bestillingene og kommer tilbake. Trykk på bilen åpner tavla fra nivå 4. Rebus går 1,2 m/s med gåklippet i 1,3× fart, så føttene ikke sklir.
+- **0.14.1** (ikke publisert): Katten heter Blomst (Even 15.11). Snakkebobla og gavemeldingen sier «Blomst».
+- **0.14.0** (ikke publisert): E-coins (godkjent av Ivar 12.11): 20 på nivå 5 og 40 på nivå 10, gjennom felles `ecoins/ecoins.js`. Nivåkortet viser E-coinsene. Ved oppstart avstemmes det som allerede er nådd, så de som har kommet forbi nivå 5 får dem. Ikke i testmodus. Regeltabellen er endret på grenen `felles/ecoins-min-bondegard` (723c77c), og samme endring er kopiert hit så spillet virker.
+- **0.13.0** (ikke publisert): Nivå 10. Skogkanten (1500 🪙) gjør gården bredere mot vest bak låven (Rebus' lysning er utenfor). Grisebinge (800 🪙) med 2 griser som spiser grisefôr (gulrot og erter i fôrkvernen) og gir trøfler. Gåter om trøfler og grisefôr. Kyr og griser bruker samme kode. Simulering: nivå 10 etter 36–39 min, 0 fastlåst, alle kjøper grisebingen.
+- **0.12.3** (ikke publisert): Fôrkvernen og Popkornmaskinen heter nå det i stedet for -a-formene (Ivar 14.11).
+- **0.12.2** (ikke publisert): «Gratis i en måned» er nå gratis planting og fôrkvern i 7 dager (Ivar 14.11).
+- **0.12.1** (ikke publisert): Evens premieliste i gaveeskene (14.11): mynter 50 %, 75 XP 25 %, frø eller varer 13 %, en maskin (gratis bygg) 5 %, superhøst 5 %, gratis i en måned (gratis planting og fôrkvern i 30 dager) 1 %, gullpynt 0,9 % og Gullgården 0,1 % (hele gården i gull, kan slås av og på). Nivågaven gir aldri bare mynter. Regnbue og gullfontene er ny gullpynt. Premium er tatt ut (ingen premiumvaluta i EVN Studio).
+- **0.12.0** (ikke publisert): Gaveesker (Even 14.11, godkjent av Ivar 14.11). Én gratis eske hver dag, levert av Blomsterkatten (eller etter ett minutt), og én for hvert nytt nivå. Esken står ved markedsbua til den åpnes. Sjanser: vanlig 60 %, uvanlig 28 %, sjelden 10 %, superrar 2 %, og de vises på kortet. Nivågaven er minst uvanlig. Superrar gir gullpynt (gullhøne, gullegg, gullgulrot, gullstjerne) som kan flyttes, så 200 mynter når all pynten er funnet. Kan aldri kjøpes, ingen dagsrekke, ingenting går tapt.
+- **0.11.2** (ikke publisert): Gåtene viser alltid det riktige svaret blant seks valg, med hvor mange du har av hver. Velger du riktig uten å ha varen, sier Rebus at du må lage den først (Ivar 13.11).
+- **0.11.1** (ikke publisert): Rebus går ned stien, langs veien og inn porten til en plass ved markedsbua når han har en gåte, og hjem igjen etter riktig svar (Even 13.11).
+- **0.11.0** (ikke publisert): Rebus' gåter (Even 13.11). Fra nivå 2, etter opplæringen, har Rebus en gåte om en vare spilleren kan lage nå. Et ❓ står over ham. Du svarer ved å gi ham varen. Riktig svar gir pris × 2 + 10 mynter og 4 XP + varens nivå. Feil svar koster ingenting. Ny gåte etter 3 minutter, og du kan be om en annen gåte.
+- **0.10.0** (ikke publisert): Innhold til og med nivå 9: sukkerrør (7) og gulrot (9) på åkrene, Sukkerverket (7), maisbrød i bakeriet (7), Popkornmaskina (8), Gårdskjøkkenet med pannekaker (9) og ost i meieriet (9). Bestillinger og kunder kan be om alt til og med nivå 9. Nivå 10 (griser, Skogkanten) gjenstår.
+- **0.9.9** (ikke publisert): Hønsehuset kan flyttes (uten å snus). Løpegården, hønene, kyllingene, eggene og skyggen følger med. Beitet ved fjøset er større, 8 × 8,5 m (Ivar 12.11).
+- **0.9.8** (ikke publisert): Enga øst for gården kan kjøpes på nivå 5 for 300 🪙. Da forsvinner trærne der, gjerdet flyttes og gården blir bredere. Nivå 6: Fjøs og beite (300 🪙) med 2 kyr som spiser kufôr og gir melk, og Meieriet (600 🪙) som lager fløte og smør. Byggemenyen foreslår Enga når det ikke er plass (Ivar 12.11).
+- **0.9.7** (ikke publisert): Blomsterkatten gjør ett jevnt hopp ut og inn av bilen med sin egen hoppanimasjon, og har samme størrelse i bilen og ute. Snakkebobla kommer når hun har landet, og flyttes med `transform` (Ivar 12.11: det hakket). Siloen står som standard helt inntil låven, lenger bak (Ivar 12.11). Silo som sto på den gamle standardplassen, flyttes dit. Hun hopper rolig ut uten viftende armer, kommer sjeldnere (hvert 70.–120. sekund) og kommer gående hver tredje gang (Ivar 12.11).
+- **0.9.6** (ikke publisert): Blomsterkatten hopper ut av bilen når den har stoppet, og står ved siden av den mens hun handler. Da synes hele figuren (Even 11.11). Hun sitter også høyere i bilen.
+- **0.9.5** (ikke publisert): Blomsterkatten betaler markedspris (Ivar 11.11).
+- **0.9.4** (ikke publisert): Kunder som kjører innom («drive through», Even 11.11).
+  - Blomsterkatten kommer kjørende i en liten åpen bil, stopper på veien foran markedsbua og ber om én vare. Trykk på henne eller snakkebobla for å selge.
+  - Hun betaler markedspris (Ivar 11.11, fra 0.9.5. I 0.9.4 var det 1,5 ×). Salget gir ikke XP. Har spilleren ikke varen, venter hun opptil 60 s og kjører videre uten straff.
+  - Kattemodellen er hentet uendret fra grenen `prototype/bondegard-kattekunde` (testscene 0.8.6).
+  - Lastebilen kjører i ytre felt. `stat.kunder` teller salg til kunder.
+- **0.8.9** (ikke publisert): Rettinger etter QA av 0.8.7 (`qa/rapporter/2026-11-10-min-bondegard-7270d54.md`):
+  - Et drag fra «Plant» begynner først etter 12 px, så et skjelvende trykk planter den valgte åkeren. Kortet lukkes så snart draget begynner, så ingen åker plantes i skjul bak det.
+  - Pausen avbryter et drag.
+  - Raske sveip sjekker også punktene mellom to bevegelser.
+  - Flytting fra gamle standardplasser skjer én gang, styrt av et flagg i lagringen (`plasser.std`) i stedet for å sammenligne koordinater.
+- **0.8.8** (ikke publisert): Ivar 10.11: Siloen står nærmere tunet (1,0; −8,4), og en silo på forrige standardplass flyttes dit. Gårdsveiene er egne flater med rette, myke kanter. Før var kantene trappete, fordi sandfargen lå i terrengnettet.
+- **0.8.7** (ikke publisert): Rettinger etter QA av 0.8.5 (`qa/rapporter/2026-11-09-min-bondegard-21841a2.md`). Roboten blir stående når alle venteturene er sperret av bygg. Handlingskortet holder seg innenfor skjermen i liggende format. Revetipset dekker ikke myntene på 375 px. Lagringsavsnittet nevner `-kopi2`.
+- **0.8.6** (ikke publisert):
+  - Dra for å plante og høste (Even 10.11). Dra «Plant» fra handlingskortet ut over tomme åkre, eller trykk på en moden åker og dra over de andre. Et vanlig trykk høster fortsatt alt som er modent.
+  - Ny plassering (Ivar 10.11): siloen står der fôrkverna sto, mellom låven og hønsehuset. Fôrkverna står foran låven, og bakeriet står på den åpne plassen ved markedsbua. Rundballene ved låven er tilbake. Bygg på gammel standardplass flyttes til den nye.
+- **0.8.5** (ikke publisert): Rettinger etter EVN Game QA av 0.8.3 (`qa/rapporter/2026-11-09-min-bondegard-f385c5f.md`):
+  - T2: pausen lukker åpne kort og dialoger før den åpner, og Esc rører ikke det som ligger under pausen.
+  - Robotens ventetur går rundt hindringer på hver strekning, også veien ut fra benken. Turer til steder der spilleren har satt et bygg, hoppes over.
+  - Lageret kuttes til plassen i silo og låve ved innlasting.
+  - De to siste uleselige lagringene tas vare på (`-kopi` og `-kopi2`).
+  - Feilkortet sier ikke lenger at gården er lagret før noe er lagret.
+  - Revetipset ligger under HUD på 320 px.
+- **0.8.4** (ikke publisert): Ting som flyttes, kan dras med finger eller mus. Før flyttet dra-bevegelsen kameraet, og bare trykk flyttet tingen (Even 9.11).
+- **0.8.3** (ikke publisert): Rettinger etter EVN Game QA av 0.8.0 (`qa/rapporter/2026-11-09-min-bondegard-d582ecd.md`):
+  - F3: ødelagt lagring tas alltid vare på i kopien.
+  - K2: feilkortet vises også før Start og ved avviste løfter.
+  - B3: uten WebGL sier startkortet at 3D ikke virker.
+  - T2: Esc lukker kort og dialoger før pausen.
+  - «Mens du var borte»-meldingen virker, urimelige lagertall kuttes, og revetipset havner ikke over HUD på smale skjermer.
+  - XP vises i handlingskortene, og trykk på XP-stjerna viser hva som gir XP (Even 9.11).
+  - Siloen står ved låven der rundballene sto (Ivar 9.11). Rundballene er tatt ut av spillet.
+- **0.8.2** (ikke publisert): Bingene for ku, gris og sau er ikke ferdig bygd fra start (Ivar 9.11). De kommer som større dyrehus som spilleren bygger: fjøs og beite på nivå 6, grisebinge på nivå 10. Ny byggemeny (🔨, tast B) viser hva som er bygd, hva som kan bygges, og hva som kommer på neste nivå (Even 9.11).
+- **0.8.1** (ikke publisert): Roboten finner veien rundt bygg, gjerder og binger og går ikke lenger gjennom gjerdet ved hønsegården (Even 9.11). Den kan gå over åkrene og gårdsveien. Mobil i høykant starter med hele tunet i bildet.
+- **0.8.0** (fase 1, ikke publisert):
+  - Spillbar kjernesløyfe for nivå 1–3: hvete og mais, høner og egg, fôrkvern, bakeri (kjøpes for 50), silo og låve, markedsbu, mynter, XP og nivåer.
+  - Produksjonen fortsetter mens spillet er lukket.
+  - Åkre, fôrkvern, bakeri og silo kan flyttes innenfor gården (planens beslutning B3).
+  - Opplæring i fem steg med Rebus.
+  - Felles pause (EVN-PAUSE v2) og statistikk (`evn-start`).
+  - Kjente begrensninger:
+    - Bestillinger og lastebil kommer i 0.9.0.
+    - Låven, hønsehuset og markedsbua kan ikke flyttes ennå.
+    - Ytelse på iPhone er ikke målt for spillversjonen.

@@ -123,3 +123,84 @@ body.touchui #hud #evnRad #evnAvslutt .evn-avs-tekst{display:none}
 .h2Faner button{flex:1;min-height:44px;border-radius:12px;border:2px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#fff;font:inherit;font-weight:700;cursor:pointer}
 .h2Faner button.on{border-color:#ffcc00;background:rgba(255,204,0,.18)}
 #evnPause #h2NyVerden{margin-top:6px}
+
+/* ---------- 2.0.9: ryddig mobiloppsett ----------
+   Styrespak nede til venstre, Hopp nede til høyre på samme høyde (som i Matdyr), én stor handlingsknapp rett over Hopp.
+   Bare ⏸ er synlig øverst: kart, hjelp, kamera og avslutt ligger i pausemenyen. Våpenraden ligger nederst, under knappene. */
+body.touchui{--kb:calc(84px + env(safe-area-inset-bottom,0px));--kr:env(safe-area-inset-right,0px)}
+body.touchui #h2Hint{display:none!important}                          /* handlingsknappen viser hva trykket gjør */
+body.touchui #useBtn,body.touchui #camBtn{display:none!important}
+body.touchui #hud #evnRad #evnKartKnapp,body.touchui #hud #evnRad #h2Hjelp{display:none!important}
+/* Avslutt skjules på skjermen, men beholder display (EVN-PAUSE viser «Avslutt» i pausen bare når lenken er synlig for den) */
+body.touchui #hud #evnRad #evnAvslutt{position:fixed!important;left:0!important;top:0!important;width:1px!important;height:1px!important;min-width:0!important;min-height:0!important;padding:0!important;border:0!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important;clip-path:inset(50%)}
+/* Topp: status til venstre, dag og ⏸ til høyre, på samme linje */
+@media (pointer:coarse){
+  body.touchui #hud{flex-wrap:nowrap!important}
+  body.touchui #hud .clock{order:0!important;width:auto!important}
+}
+body.touchui #hud > .panel:first-child{flex:none;padding:6px 9px!important;gap:5px!important;min-width:0!important;border-radius:12px}
+body.touchui #h2Res{min-height:0;margin-top:0}
+body.touchui #h2Res:empty{display:none}
+body.touchui #h2Vapen{left:0;transform:none;bottom:auto!important;font-size:12px;background:var(--h2-glass2);border:1px solid var(--h2-line);border-radius:999px;padding:3px 10px}
+/* Knappene */
+body.touchui #touch .acts,body.touchui #touch .big,body.touchui #touch .small{display:contents}
+body.touchui #touch button{position:fixed;box-sizing:border-box;z-index:6;-webkit-tap-highlight-color:transparent}
+body.touchui #jumpBtn{right:calc(18px + var(--kr));bottom:var(--kb);width:96px;height:96px;border-radius:50%!important;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:34px!important;line-height:1;font-weight:800;
+  background:linear-gradient(#ffd75e,#f0a91c)!important;color:#3a2300!important;border:3px solid #fff!important;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+body.touchui #jumpBtn span{font-size:14px;margin-top:2px}
+body.touchui #act{right:calc(14px + var(--kr));bottom:calc(var(--kb) + 108px);width:104px;height:104px;border-radius:50%!important;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;
+  background:linear-gradient(#ffad5c,#e8701f)!important;color:#2a1606!important;border:3px solid #fff!important;box-shadow:0 3px 12px rgba(0,0,0,.4)}
+body.touchui #act .ai{font-size:40px}
+body.touchui #act .at,body.touchui #eatBtn .at,body.touchui #buildBtn .at{font:800 15px var(--body);margin-top:3px;white-space:nowrap}
+/* Snarvei (spis/stek eller avbryt bygging): liten knapp til venstre for handlingsknappen, bare når den trengs */
+body.touchui #eatBtn,body.touchui #buildBtn{right:calc(130px + var(--kr));bottom:calc(var(--kb) + 128px);width:64px!important;height:64px!important;border-radius:50%!important;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;font-size:24px!important;
+  background:rgba(12,20,16,.78)!important;border:2px solid rgba(243,234,214,.55)!important;color:var(--bone)}
+body.touchui #eatBtn .at,body.touchui #buildBtn .at{font-size:11px}
+body.touchui #eatBtn[hidden],body.touchui #buildBtn[hidden]{display:none!important}
+body.touchui #eatBtn{border-color:#7fd36a!important}
+/* Styrespaken: 140 px som i Matdyr (hvileplassen settes i spill.js) */
+body.touchui #joy{width:140px;height:140px;margin:-70px 0 0 -70px}
+/* Våpenraden: én kompakt rad nederst, kan rulles sideveis; ryggsekken står alltid synlig til høyre */
+body.touchui #hotbar{bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;flex-wrap:nowrap!important;overflow-x:auto;overscroll-behavior:contain;scrollbar-width:none;
+  max-width:calc(100vw - 20px - env(safe-area-inset-left,0px) - var(--kr))!important;width:max-content;gap:4px!important;padding:4px!important;touch-action:pan-x}
+body.touchui #hotbar::-webkit-scrollbar{display:none}
+body.touchui #hotbar button{flex:none;width:46px!important;height:46px!important}
+body.touchui #hotbar .k{display:none}                                  /* tastene 1–0 gjelder bare tastatur */
+body.touchui #hotbar #invBtn{position:sticky;right:0;z-index:1;background:rgba(30,40,32,.95);margin-left:8px}
+body.touchui #hotbar button.on{transform:translateY(-2px);border-width:3px}
+/* Liggende mobil: lite høyde – knappene nærmere bunnen, våpenraden mellom styrespaken og knappene */
+@media (pointer:coarse) and (orientation:landscape){
+  body.touchui{--kb:calc(16px + env(safe-area-inset-bottom,0px))}
+  body.touchui #act{bottom:calc(var(--kb) + 106px);width:96px;height:96px}
+  body.touchui #act .ai{font-size:36px}
+  body.touchui #eatBtn,body.touchui #buildBtn{right:calc(124px + var(--kr));bottom:calc(var(--kb) + 120px)}
+  body.touchui #hotbar{max-width:calc(100vw - 2 * 180px)!important}
+}
+/* Dag-feltet på én linje */
+body.touchui #h2Dag{white-space:nowrap;gap:6px!important;padding:5px 10px!important}
+body.touchui #h2Dag #phase{white-space:nowrap}
+body.touchui #h2Dag #biome{max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Stående: snarveien står over handlingsknappen, så midten er fri */
+@media (pointer:coarse) and (orientation:portrait){
+  body.touchui #eatBtn,body.touchui #buildBtn{right:calc(34px + var(--kr));bottom:calc(var(--kb) + 224px)}
+}
+@media (pointer:coarse) and (orientation:landscape){
+  body.touchui #hotbar{max-width:calc(100vw - 2 * 182px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))!important}
+}
+/* Smal mobil på høykant: kortere linjer og bare ikonet for området, så ⏸ alltid får plass */
+@media (pointer:coarse) and (orientation:portrait) and (max-width:430px){
+  body.touchui #hud .bar{width:84px!important}
+  body.touchui #h2Dag #biome{max-width:15px;text-overflow:clip}
+}
+@media (pointer:coarse) and (orientation:portrait) and (max-width:360px){
+  body.touchui #hud .bar{width:64px!important}
+  body.touchui #h2Dag #biome{display:none!important}
+}
+/* Ryggsekken: Spis og Bygg øverst */
+.h2Snarvei{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 10px}
+.h2Snarvei button{min-height:52px;border-radius:14px;border:2px solid rgba(255,255,255,.25);background:rgba(255,154,60,.22);color:#fff;font:inherit;font-weight:800;font-size:17px;cursor:pointer}
+.h2Snarvei button:disabled{opacity:.45}
+.h2Snarvei small{font-weight:700;opacity:.8;font-size:13px}
