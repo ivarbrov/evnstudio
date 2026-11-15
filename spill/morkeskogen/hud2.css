@@ -189,7 +189,7 @@ body.touchui #h2Dag #biome{max-width:72px;overflow:hidden;text-overflow:ellipsis
   body.touchui #eatBtn,body.touchui #buildBtn{right:calc(34px + var(--kr));bottom:calc(var(--kb) + 200px)}
 }
 @media (pointer:coarse) and (orientation:landscape){
-  body.touchui #hotbar{max-width:calc(100vw - 2 * 182px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))!important}
+  body.touchui #hotbar{left:50%!important;max-width:calc(100vw - 2 * 182px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))!important}   /* 2.0.10: midtstilt, så raden ikke går inn i styrespaken (eldre regel flyttet den 40 px mot venstre) */
 }
 /* Smal mobil på høykant: kortere linjer og bare ikonet for området, så ⏸ alltid får plass */
 @media (pointer:coarse) and (orientation:portrait) and (max-width:430px){
