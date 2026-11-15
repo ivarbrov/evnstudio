@@ -155,7 +155,7 @@
   document.addEventListener('evn-tobein-klar', () => { if (dyrG) oppdaterDyr(); });
   function byggSpillGard(beholdRobot) {
     const r0 = I.robot(), pos = beholdRobot && r0 ? r0.position.clone() : null, rot = r0 ? r0.rotation.y : 0, gd = I.gd;
-    gd.niva = visNiva(); gd.neste = false; gd.gjennom = false; gd.aapne = plasserApne(); gd.eng = eng(); { const o = levOmr(); gd.lev = o && { ...o, z1: eng().z0 - 0.95, port: 8 }; }   // gangbart helt ut til åkergjerdet; gårdsgjerdet bak feltet stopper roboten utenfor porten
+    gd.niva = visNiva(); gd.neste = false; gd.gjennom = false; gd.aapne = plasserApne(); gd.eng = eng(); { const o = levOmr(); gd.lev = o && { x0: -8, x1: 8, z0: (visNiva() >= 2 ? 22 : 16) + 0.3, z1: eng().z0 - 0.95, port: 3.2 }; }   // gangbart helt ut til åkergjerdet; gårdsgjerdet bak feltet stopper roboten utenfor porten
     gd.tegnDyr = (g, pl, ap) => { dyrG = new T.Group(); g.add(dyrG); plasserNa = pl; aapneNa = ap; fyllDyr(); };
     I.byggGard(); I.byggVegger(); I.forberedGjennom(); I.sp.etasje = -1;
     if (pos) { I.robot().position.copy(pos); I.robot().rotation.y = rot; }
@@ -555,18 +555,21 @@
   // et stort felt rett utenfor porten i gårdsgjerdet. Bærer roboten et matdyr inn i feltet, havner det på gården.
   // Feltet går fra den røde kanten på gården, gjennom porten i gårdsgjerdet og 7 m ut forbi gjerdet (Even 14.11.2026:
   // «innsamlingsonen må være helt inn til gårdren og så kan du lage det litt dypere» og «Innsamlingssonen må helt inn til det røde på gårdene»).
-  // Porten i gårdsgjerdet er like bred som feltet. Åkergjerdet står lenger ute, så det krysser ikke feltet.
-  const LEV_DYP = 7;
-  function levOmr() { const e = eng(); if (!e) return null; const d = visNiva() >= 2 ? 22 : 16, z0 = (I.gd.forkant ?? 7.2) + 0.05;
-    return { x0: -8, x1: 8, z0, z1: Math.min(d + 0.3 + LEV_DYP, e.z0 - 1.2) }; }
+  // 15.11.2026 viste Even et bilde av hvordan han vil ha det: et grønt felt rett foran gården, inntil den røde kanten, litt smalere
+  // enn gården og omtrent halvparten så dypt som det er bredt. Feltet ligger inne på tunet, så gårdsgjerdet har vanlig port igjen.
+  const LEV_B = 6, LEV_DYP = 7;
+  function levOmr() { const e = eng(); if (!e) return null; const z0 = (I.gd.forkant ?? 7.2) + 0.05;
+    return { x0: -LEV_B, x1: LEV_B, z0, z1: z0 + LEV_DYP }; }
   function byggLevFelt() {
     const o = levOmr(), n = o ? o.z0 + ':' + o.z1 : ''; if (n === levNokkel) return; levNokkel = n;
     levG.children.slice().forEach(c => { levG.remove(c); c.geometry && c.geometry.dispose(); c.material && c.material.dispose(); });
     if (!o) return;
-    const w = o.x1 - o.x0, d = o.z1 - o.z0, tex = tekstur('innsamlingssone', 768, 336, x => {
-      x.fillStyle = 'rgba(255,214,64,.88)'; x.beginPath(); x.roundRect ? x.roundRect(8, 8, 752, 320, 44) : x.rect(8, 8, 752, 320); x.fill();
-      x.strokeStyle = '#fff'; x.lineWidth = 10; x.setLineDash([26, 16]); x.stroke();
-      x.fillStyle = '#5a3b12'; x.font = 'bold 84px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('Innsamlingssone', 384, 168);
+    const w = o.x1 - o.x0, d = o.z1 - o.z0, tex = tekstur('innsamlingssone', 768, 448, x => {
+      x.fillStyle = 'rgba(74,190,84,.95)'; x.beginPath(); x.roundRect ? x.roundRect(8, 8, 752, 432, 40) : x.rect(8, 8, 752, 432); x.fill();
+      x.strokeStyle = '#eef3e6'; x.lineWidth = 16; x.setLineDash([]); x.stroke();
+      x.strokeStyle = 'rgba(255,255,255,.75)'; x.lineWidth = 6; x.setLineDash([24, 14]); x.beginPath(); x.roundRect ? x.roundRect(30, 30, 708, 388, 28) : x.rect(30, 30, 708, 388); x.stroke(); x.setLineDash([]);
+      x.font = 'bold 96px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
+      for (const [t, y] of [['INNSAMLINGS-', 170], ['SONE', 285]]) { x.strokeStyle = '#1f5a26'; x.lineWidth = 16; x.strokeText(t, 384, y); x.fillStyle = '#fff'; x.fillText(t, 384, y); }
     });
     const m = new T.Mesh(new T.PlaneGeometry(w, d), new T.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
     m.rotation.x = -Math.PI / 2; m.position.set((o.x0 + o.x1) / 2, 0.24, (o.z0 + o.z1) / 2); m.renderOrder = 2; levG.add(m);

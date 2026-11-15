@@ -192,12 +192,12 @@ const sa = await ev(`(async () => { const P = EVNProto, S0 = JSON.parse(JSON.str
 const lz = await ev(`(async () => { const P = EVNProto, I = EVNIntern, K = I.krok, ut = [];
   for (const n of [1, 2, 6, 10]) { P.sett({ v: 1, penger: 0, gard: { niva: n }, base: [], disc: [] }); EVNVis({ fane: 'spill' }); K.steg(1 / 30, 1);
     const o = P.levOmr(), d = I.gd.gjerdeD, e = I.gd.eng, R = I.robot(), sp = EVNSpill, b = EVNBane; let gaa = 0, tot = 0; b.teta = 0;
-    // Ekte gange med styrespaken: fra porten i gårdsgjerdet til ni punkter i feltet
-    for (const x of [-7.2, 0, 7.2]) for (const z of [o.z0 + 0.6, (o.z0 + o.z1) / 2, o.z1 - 0.6]) { R.position.set(0, 0.45, d - 1); tot++;
-      for (const [mx, mz] of [[0, d + 1.2], [x, z]]) for (let i = 0; i < 500; i++) { const dx = mx - R.position.x, dz = mz - R.position.z, m = Math.hypot(dx, dz); if (m < 0.3) break;
+    // Ekte gange med styrespaken: fra utenfor porten, inn gjennom porten og til ni punkter i feltet
+    for (const x of [-5.2, 0, 5.2]) for (const z of [o.z0 + 0.6, (o.z0 + o.z1) / 2, o.z1 - 0.6]) { R.position.set(0, 0.45, d + 1.5); tot++;
+      for (const [mx, mz] of [[0, d - 1.2], [x, z]]) for (let i = 0; i < 500; i++) { const dx = mx - R.position.x, dz = mz - R.position.z, m = Math.hypot(dx, dz); if (m < 0.3) break;
         sp.inn = { x: dx / m, z: -dz / m }; EVNSteg(1 / 30); }
       sp.inn = { x: 0, z: 0 }; EVNSteg(1 / 30); if (Math.hypot(R.position.x - x, R.position.z - z) < 0.6) gaa++; }
-    ut.push({ n, d, z0: o.z0, z1: o.z1, aaker: e.z0 - 0.6, inntil: Math.abs(o.z0 - I.gd.forkant - 0.05) < 0.1, dyp: o.z1 - d, fri: o.z1 < e.z0 - 0.6, gaa, tot }); }
+    ut.push({ n, d, z0: o.z0, z1: o.z1, aaker: e.z0 - 0.6, inntil: Math.abs(o.z0 - I.gd.forkant - 0.05) < 0.1, dyp: o.z1 - o.z0, bredde: o.x1 - o.x0, inne: o.z1 < d - 0.5, fri: o.z1 < e.z0 - 0.6, gaa, tot }); }
   return ut; })()`);
 // Gårdsgjerdet stopper roboten hele veien rundt og fra begge sider, porten slipper den gjennom, og roboten kan gå helt ut til åkergjerdet (QA 2bd5a5d og 208b671)
 const gj = await ev(`(async () => { const P = EVNProto, I = EVNIntern, sp = EVNSpill, ut = [];
@@ -205,12 +205,12 @@ const gj = await ev(`(async () => { const P = EVNProto, I = EVNIntern, sp = EVNS
     const o = P.levOmr(), e = I.gd.eng, R = I.robot(), kjor = (x, z, iz) => { R.position.set(x, 0.45, z); for (let i = 0; i < 120; i++) { sp.inn = { x: 0, z: iz }; EVNSteg(1 / 30); } sp.inn = { x: 0, z: 0 }; EVNSteg(1 / 30); return +R.position.z.toFixed(2); };
     const G = I.gd.gjerdeR, fz = x => G.z * Math.sqrt(1 - (x / G.x) ** 2);
     // Inne på gården ut mot gjerdet (rett ved siden av den brede porten og lenger ut på siden), og utenfra inn mot gjerdet (bare nivå 1 har gangbart gress der)
-    const inne = [9.2, 12, 15].map(x => +(fz(x) - kjor(x, fz(x) - 2.5, -1)).toFixed(2)), utenfra = (n === 1 ? [10, 12] : []).map(x => +(kjor(x, fz(x) + 2, 1) - fz(x)).toFixed(2));
+    const inne = [4.5, 8.5, 12].map(x => +(fz(x) - kjor(x, fz(x) - 2.5, -1)).toFixed(2)), utenfra = [4.5, 7.5].map(x => +(kjor(x, fz(x) + 2, 1) - fz(x)).toFixed(2));
     const d = I.gd.gjerdeD;
     ut.push({ n, port6: kjor(6, d + 1, 1), port0: kjor(0, d + 1, 1), ut: kjor(-7.5, d + 1, -1), lin: fz(6), aaker: e.z0 - 0.6, inne, utenfra }); }
   return ut; })()`);
-ok('gårdsgjerdet stopper roboten fra begge sider, den brede porten slipper gjennom, ingen usynlig stopp før åkergjerdet (' + JSON.stringify(gj) + ')', gj.every(r => r.port6 < r.lin - 1 && r.port0 < r.lin - 1 && r.ut > r.aaker - 0.7 && r.inne.every(d => d > 0.1 && d < 1) && r.utenfra.every(d => d > 0.1 && d < 1)));
-ok('innsamlingssonen fra den røde kanten på gården til 7 m utenfor gjerdet, uten åkergjerde gjennom (' + JSON.stringify(lz) + ')', lz.every(r => r.inntil && r.dyp >= 7.2 && r.fri && r.gaa === r.tot));
+ok('gårdsgjerdet stopper roboten fra begge sider, porten slipper gjennom, ingen usynlig stopp før åkergjerdet (' + JSON.stringify(gj) + ')', gj.every(r => r.port6 >= r.lin && r.port0 < r.lin - 1 && r.ut > r.aaker - 0.7 && r.inne.every(d => d > 0.1 && d < 1) && r.utenfra.every(d => d > 0.1 && d < 1)));
+ok('innsamlingssonen: 12 × 7 m rett foran gården, inntil den røde kanten og inne på tunet (' + JSON.stringify(lz) + ')', lz.every(r => r.inntil && r.dyp >= 6.9 && r.bredde >= 11.9 && r.inne && r.fri && r.gaa === r.tot));
 // Gammel kasse fra pengesonen går til lommeboka i standardmodus, uten tap eller dobling (QA e8102a6)
 const ka = await ev(`(async () => { const P = EVNProto, K = EVNIntern.krok; P.sett({ v: 1, penger: 100, kasse: 500.5, gard: { niva: 1 }, base: [], disc: [] }); EVNVis({ fane: 'spill' }); K.steg(1 / 30, 1);
   return { penger: P.S().penger, kasse: P.S().kasse || 0 }; })()`);

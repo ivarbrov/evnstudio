@@ -720,8 +720,7 @@
     const skal = (nv, fn) => { if (n >= nv) fn(g); else if (gd.neste && nv === n + 1) { fn(ghost); } };
     // Tunet
     gd.gjerdeD = n >= 2 ? 22 : 16; gd.gjerdeR = { x: n >= 2 ? 30 : 22, z: gd.gjerdeD }; gd.forkant = HZ;
-    // I spillet er porten like bred som innsamlingssonen, som går helt inn til den røde kanten på gården (Even 14.11.2026)
-    const PH = gd.eng ? 8.4 : 3.5;   // gårdsgjerdets z-radius (porten mot åkeren); brukes av leveringsfeltet
+    const PH = 3.5;   // portbredden (halv); innsamlingssonen ligger inne på tunet, så porten er vanlig bred (Even 15.11.2026)   // gårdsgjerdets z-radius (porten mot åkeren); brukes av leveringsfeltet
     if (!(NY && nyttGjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0, PH))) gjerde(g, n >= 2 ? 30 : 22, n >= 2 ? 22 : 16, 0, 0, gd.eng ? 1 : 0, PH);
     // Enga foran gården: her regner matdyrene ned (bare i spillet)
     // Tredekke: plankegang fra porten inn til gårdsbygningen
