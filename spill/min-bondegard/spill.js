@@ -532,7 +532,8 @@ function lagKundebil() {
   const pute = fm(0xfff1d6, 0.75);   /* 0.15.3 (Even 15.11: «det brune midt i bilen»): et lyst sete med ryggstø i stedet for den brune plata */
   mesh(avrundetBoks(1.0, 0.16, 1.15, 0.07, 2), pute, -0.2, 1.06, 0, g);                            // sete
   mesh(avrundetBoks(0.16, 0.55, 1.15, 0.07, 2), pute, -0.78, 1.34, 0, g);                          // ryggstø
-  [[1.0, 0.78], [1.0, -0.78], [-1.0, 0.78], [-1.0, -0.78]].forEach(([x, z]) => { const h = mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.26, 14), mork, x, 0.36, z, g); h.rotation.x = Math.PI / 2; const n = mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.28, 10), lys, x, 0.36, z, g); n.rotation.x = Math.PI / 2; });
+  const hjul = [[1.0, 0.78], [1.0, -0.78], [-1.0, 0.78], [-1.0, -0.78]].map(([x, z]) => { const w = new THREE.Group(); w.position.set(x, 0.36, z); g.add(w); const h = mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.26, 14), mork, 0, 0, 0, w); h.rotation.x = Math.PI / 2; const n = mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.28, 10), lys, 0, 0, 0, w); n.rotation.x = Math.PI / 2; return w; });   /* 0.15.4: hjulene er egne grupper, så de kan rulle */
+  g.userData.hjul = hjul;
   [0.45, -0.45].forEach(z => mesh(new THREE.SphereGeometry(0.12, 8, 6), fm(0xfff2a8, 0.3), 1.5, 0.82, z, g));
   /* 0.15.3 (Even 15.11: «bilen til Blomst burde se mer ut som en blomst»): en stor blomst bak setet, blomsterhjul, blader langs sidene og små blomster på panseret */
   const kronb = fm(0xff7eb6, 0.5), midt = fm(0xffd23f, 0.45), blad = fm(0x6cc04a, 0.6), kule = new THREE.SphereGeometry(1, 10, 8);
@@ -543,7 +544,7 @@ function lagKundebil() {
   [[0.25, 1], [-0.25, -1]].forEach(([z, sd]) => { const l = mesh(kule, blad, -1.25, 1.55, z, g); l.scale.set(0.12, 0.08, 0.28); l.rotation.x = sd * 0.5; });
   blomst(-1.25, 2.12, 0, 0.85, 7, g, 0.45, -0.25);                                                         // den store blomsten, vendt litt fremover
   [0.32, -0.32].forEach(z => blomst(1.05, 1.24, z, 0.32, 5, g));                                       // små blomster på panseret
-  [[1.0, 0.92], [1.0, -0.92], [-1.0, 0.92], [-1.0, -0.92]].forEach(([x, z]) => blomst(x, 0.36, z, 0.42, 6, g, Math.sign(z) * Math.PI / 2, 0));   // blomsterhjul
+  hjul.forEach(w => blomst(0, 0, Math.sign(w.position.z) * 0.14, 0.42, 6, w, Math.sign(w.position.z) * Math.PI / 2, 0));   // blomsterhjul, ruller med hjulet
   [0.77, -0.77].forEach(z => [-0.6, 0.4].forEach(x => { const l = mesh(kule, blad, x, 0.78, z, g); l.scale.set(0.42, 0.14, 0.05); l.rotation.z = x < 0 ? 0.25 : -0.25; }));   // blader langs sidene
   const treff = new THREE.Mesh(new THREE.BoxGeometry(3.4, 3.2, 2.0), new THREE.MeshBasicMaterial({visible: false})); treff.position.y = 1.6; g.add(treff); treff.userData.eier = g; klikkbar(treff);
   g.userData.katt = true; g.visible = false; scene.add(g); kunde.lakk = lakk; return g;
@@ -583,6 +584,7 @@ function oppdaterKunde(dt, t) {
   if (kunde.fase === 'borte') { if (s.oppl.steg < 3 && s.nivaa < 2) return;   /* ikke midt i den første opplæringen */ kunde.t -= dt; if (kunde.t <= 0 && bilKo.fase === 0) kundeStart(); return; }
   if (kunde.gaaende) { kundeGaaende(dt, t); return; }
   const b = kunde.bil;
+  if (b && b.userData.hjul) { const dx = b.position.x - (b.userData.sx === undefined ? b.position.x : b.userData.sx); b.userData.sx = b.position.x; if (Math.abs(dx) < 5) b.userData.hjul.forEach(w => { w.rotation.z -= dx / 0.36; }); }   /* Even 15.11: hjulene til Blomst ruller */
   if (kunde.fase === 'inn') { const igjen = KUNDE_STOPP - b.position.x; b.position.x += Math.max(1.2, Math.min(7, igjen * 1.2)) * dt; if (b.position.x >= KUNDE_STOPP) { b.position.x = KUNDE_STOPP; kunde.fase = 'venter'; kunde.t = 0; leverGaver('Blomst'); } }
   else if (kunde.fase === 'venter') { if (!kunde.sagt && kunde.anim >= 1) { kunde.sagt = true; kundeSi(); } kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; } }
   else if (kunde.fase === 'takk') { kunde.t += dt; if (kunde.t > 1.8) { kunde.fase = 'hjem'; kunde.t = 0; } }
