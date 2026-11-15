@@ -453,7 +453,7 @@
       if (S.penger < pr) return melding('💰 Du mangler ' + fmt(pr - S.penger) + ' for å ta med ' + navn(ci) + '.');
       if (!harPlass(ci)) return melding('🏠 Gården er full. Selg et matdyr først, eller finn et som er bedre enn det svakeste.');
       fjern(h.a); bar = { ci, m: modell(ci) }; bar.topp = toppsett(bar.m, ci); bar.m.scale.setScalar(0.7); I.scene.add(bar.m);
-      melding(harLedig() ? 'Gå til den gule innsamlingssonen utenfor gården, eller trykk på en grønn ＋ på gården.' : 'Gården er full. Bær ' + navn(ci) + ' hjem og bytt med et svakere matdyr. Du betaler når det flytter inn.', 4);
+      melding(harLedig() ? 'Gå til den grønne innsamlingssonen rett foran gården, eller trykk på en grønn ＋ på gården.' : 'Gården er full. Bær ' + navn(ci) + ' hjem og bytt med et svakere matdyr. Du betaler når det flytter inn.', 4);
     } else if (h.t === 'sett') settInn(h.i);
     else if (h.t === 'forste') velgPlass(h.i);
     else if (h.t === 'bytteValg') apneBytte();
