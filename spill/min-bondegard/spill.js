@@ -331,19 +331,19 @@ function lagLastebil() {
 }
 /* 0.15.0 (Even 15.11): varebilen er gårdens egen. Den står parkert på gården, kjører ut med varene når en bestilling leveres, og kommer tilbake.
    Skinn fra årstidsbilene (bursdag, valentin osv.) kommer senere og bytter bare utseendet. Bare til pynt: reglene er allerede brukt. */
-const VAREBIL_PLASS = [-10.1, 5.5]; window.MB_VAREBIL = true;   /* mellom bakeriet og markedsbua, med fronten mot gårdsveien. Robotens vinketur mot Rebus stopper før bilen */
+const VAREBIL_PLASS = [-8.1, 3.0];   /* Even 15.11: inntil låven, langs gårdsveien med fronten mot låven (mellom benken/bakeriet og gårdsveien) */
 let varebilT = null;
 function synkVarebil() {
   if (!bil) bil = lagLastebil();
   if (!varebilT) { varebilT = {type: 'varebil', id: 'varebil', gruppe: bil, fot: FOT.varebil, hoyde: 2.6}; ting.set('varebil', varebilT); eierAv(bil); klikkbar(bil); varebilT.ikon = lagIkon(varebilT.hoyde); bil.add(varebilT.ikon); }
-  if (!varebilT.plassert) { const p = erLedig(varebilT, ...VAREBIL_PLASS, 0) ? VAREBIL_PLASS : (finnLedigPlass(varebilT, ...VAREBIL_PLASS) || VAREBIL_PLASS); plasser(varebilT, p[0], p[1], 0); bil.visible = true; bil.rotation.y = 0; }
+  if (!varebilT.plassert) { const p = erLedig(varebilT, ...VAREBIL_PLASS, 0) ? VAREBIL_PLASS : (finnLedigPlass(varebilT, ...VAREBIL_PLASS) || VAREBIL_PLASS); plasser(varebilT, p[0], p[1], 0); bil.visible = true; bil.rotation.y = Math.PI / 2; }
 }
 function kjorLastebil() { bilKo.n++; if (!bil) synkVarebil(); const redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (bilKo.fase !== 0) return;
   if (redusert) { sprett.push({o: bil, t: 0}); bilKo.n = 0; return; }   /* redusert bevegelse: bilen spretter litt der den står */
   const x0 = varebilT.x, z0 = varebilT.z; bilKo.fase = 1; bilKo.t = 0;
-  bilKo.vei = [[-5.5, z0 + 0.4, 's'], [-5.5, VEI_Z - 1.0, 's'], [-3.5, BIL_Z, 's'], [36, BIL_Z]]; bilKo.i = 0;   /* ut gårdsveien og østover */
-  bilKo.hjem = [[-36, BIL_Z], [-7.5, BIL_Z, 'n'], [-5.5, VEI_Z - 1.6, 's'], [-5.4, z0 + 0.2, 's'], [-5.2, z0 - 1.0, 's'], [x0, z0, 'b']];   /* inn gårdsveien og rygg inn på plassen (s = sakte, n = brems ned, b = rygg) */
+  bilKo.vei = [[x0 + 0.2, z0 + 3.0, 'b'], [-5.5, z0 + 5.2, 's'], [-5.5, VEI_Z - 1.0, 's'], [-3.5, BIL_Z, 's'], [36, BIL_Z]];   /* rygg ut, så gårdsveien ut og østover */ bilKo.i = 0;   /* ut gårdsveien og østover */
+  bilKo.hjem = [[-36, BIL_Z], [-7.5, BIL_Z, 'n'], [-5.5, VEI_Z - 1.6, 's'], [-5.6, z0 + 4.2, 's'], [-7.0, z0 + 3.2, 's'], [x0, z0 + 1.8, 's'], [x0, z0, 's']];   /* inn gårdsveien og fram til låven (s = sakte, n = brems ned, b = rygg) */
 }
 function oppdaterBil(dt) {
   if (!bil || bilKo.fase === 0) return;
@@ -355,7 +355,7 @@ function oppdaterBil(dt) {
   if (d - steg < 0.02) { bilKo.i++;
     if (bilKo.i >= bilKo.vei.length) {
       if (bilKo.fase === 1) { bilKo.fase = 2; bilKo.t = 0; bil.visible = false; }
-      else { bilKo.fase = 0; bilKo.n = 0; plasser(varebilT, varebilT.x, varebilT.z, 0); } } }
+      else { bilKo.fase = 0; bilKo.n = 0; plasser(varebilT, varebilT.x, varebilT.z, 0); bil.rotation.y = Math.PI / 2; } } }
   bil.position.y = hoyde(bil.position.x, bil.position.z) + Math.abs(Math.sin((bil.position.x + bil.position.z) * 1.7)) * 0.04;
 }
 
@@ -581,7 +581,7 @@ function oppdaterKunde(dt, t) {
 /* ======================= Ting på gården ======================= */
 // Alt spilleren kan trykke på. Åkre, fôrkvern, bakeri og silo kan flyttes. Låven, hønsehuset, beitet og markedsbua står fast i denne versjonen.
 const ting = new Map();
-const FOT = {forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], sukkerverk: [3.6, 3.4], popkorn: [3.0, 2.8], kjokken: [4.0, 3.8], grisebinge: [6.2, 7.4], silo: [3.0, 3.0], tavle: [2.2, 1.0], varebil: [5.4, 2.4]};
+const FOT = {forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], sukkerverk: [3.6, 3.4], popkorn: [3.0, 2.8], kjokken: [4.0, 3.8], grisebinge: [6.2, 7.4], silo: [3.0, 3.0], tavle: [2.2, 1.0], varebil: [2.2, 5.4]};
 const STANDARD = {
   akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45]],
   forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], silo: [-0.4, -10.0], tavle: [-2.4, 8.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
