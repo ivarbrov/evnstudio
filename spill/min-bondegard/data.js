@@ -55,7 +55,7 @@
       bakeri:     { navn: 'Bakeriet',       ikon: '🍞', nivaa: 2,  pris: 50 },
       meieri:     { navn: 'Meieriet',       ikon: '🥛', nivaa: 6,  pris: 600 },
       sukkerverk: { navn: 'Sukkerverket',   ikon: '🧂', nivaa: 7,  pris: 900 },
-      popkorn:    { navn: 'Popkornmaskinen', ikon: '🍿', nivaa: 8,  pris: 1200 },
+      popkorn:    { navn: 'Popkornmaskinen', ikon: '🍿', nivaa: 8,  pris: 750 },   // Even 15.11: 750 (var 1200). Må godkjennes av en voksen før publisering
       kjokken:    { navn: 'Gårdskjøkkenet', ikon: '🥞', nivaa: 9,  pris: 800 },
       fjos:       { navn: 'Fjøs og beite',  ikon: '🐄', nivaa: 6,  pris: 300, dyr: 'ku' },   // Ivar 12.11: 300 mynter, spilleren plasserer det selv
       grisebinge: { navn: 'Grisebinge',     ikon: '🐖', nivaa: 10, pris: 800, dyr: 'gris' }
