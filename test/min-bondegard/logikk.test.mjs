@@ -112,7 +112,7 @@ t('Bestillinger ber bare om varer spilleren kan lage', s.best.liste.every(o => O
 t('Uten bakeri og uten råd: brød er ikke med', (() => { const x = L.ny(T0); L.giXP(x, 105, T0); x.mynter = 0; x.bygg.bakeri.eid = false; x.mynter = -400; return !L.bestPool(x).includes('brod'); })());
 t('Ingenting over innholdsnivået i denne versjonen', (() => { const x = L.ny(T0); L.giXP(x, 5000, T0); return L.bestPool(x).every(v => D.nivaaFor(v) <= D.innholdTil); })());
 { const o = s.best.liste[0], verdi = Object.keys(o.varer).reduce((a, v) => a + D.verdi(v) * o.varer[v], 0);
-t('Ivar 15.11: bestillinger gir 2,0 × verdien, Popkornmaskinen koster 750', D.bestillinger.myntFaktor === 2.0 && D.bygg.popkorn.pris === 750);
+t('Ivar 15.11: bestillinger gir 1,6 × verdien (tilbake fra 2,0), Popkornmaskinen koster 750', D.bestillinger.myntFaktor === 1.6 && D.bygg.popkorn.pris === 750);
   t('Belønning følger formelen', o.mynter === Math.round(verdi * D.bestillinger.myntFaktor) && o.xp === Math.max(3, Math.round(0.6 * Math.pow(verdi, 0.85)))); }
 t('Kan ikke levere uten varene', (() => { s.lager = {}; return L.lever(s, 0, T0).grunn === 'mangler' && !L.kanLevere(s, 0); })());
 { const o = s.best.liste[0]; for (const v in o.varer) s.lager[v] = o.varer[v] + 1; const m0 = s.mynter, id = o.id, lev0 = s.stat.levert;

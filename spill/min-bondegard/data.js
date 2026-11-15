@@ -70,7 +70,7 @@
     startLager: { honsefor: 6, hvete: 4 },
     nyAvlingFro: 3,                     // en ny avling gir 3 frø når den låses opp
     // Bestillinger (progresjonsplanen kap. 4 F5 og kap. 6). Tavla kommer på nivå 4. Antall bestillinger øker med nivået.
-    bestillinger: { nivaa: 4, plasser: { 4: 3, 7: 4, 10: 5 }, bytteForslag: 900, maksKjede: 600, myntFaktor: 2.0, xpFaktor: 0.6, xpPot: 0.85, minXP: 3 },
+    bestillinger: { nivaa: 4, plasser: { 4: 3, 7: 4, 10: 5 }, bytteForslag: 900, maksKjede: 600, myntFaktor: 1.6, xpFaktor: 0.6, xpPot: 0.85, minXP: 3 },
     // Kunder som kjører innom markedsbua (Even 11.11): ber om én vare og betaler markedspris (Ivar 11.11). Ingen straff om spilleren ikke har varen.
     kunder: { faktor: 1, pause: [70, 120], venter: 60 },
     // Områder spilleren kan kjøpe (Ivar 12.11: Enga på nivå 5 for 300). Skogkanten er med i fase 4.
