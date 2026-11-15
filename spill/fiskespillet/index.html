@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fiskespillet 0.11.4 – EVN Studio</title>
+<title>Fiskespillet 0.11.5 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -218,7 +218,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.11.4</div>
+    <div class="evn-ver" id="versjon">Versjon 0.11.5</div>
   </div>
 </div>
 
@@ -552,7 +552,7 @@ window.EVNPause = function (cfg) {
 <script src="../../ecoins/gltfloader-r128.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.11.4';
+const VERSJON = '0.11.5';
 const TEST = location.hash === '#test';
 // Testmodus har egen lagring, så ekte fremgang aldri blandes med testpenger (prosjektinstruks kap. 9)
 const LAGRING = TEST ? 'evn-fiskespillet-test' : 'evn-fiskespillet-v1';
@@ -758,7 +758,7 @@ const camera = new THREE.PerspectiveCamera(50, 1, 0.5, 900);
 let zoom = 1, landZoom = 1;   // landZoom: zoom ut på land for å se landsbyen når du bygger (Evens ønske 6.11.2026)
 const settLandZoom = v => { landZoom = Math.min(4, Math.max(0.7, v)); };
 
-scene.add(new THREE.HemisphereLight(C(0xffffff), C(0x2a6a9a), 0.9));
+const himmelLys = new THREE.HemisphereLight(C(0xffffff), C(0x2a6a9a), 0.9); scene.add(himmelLys);
 const sol = new THREE.DirectionalLight(C(0xfff2dc), 1.5);
 sol.position.set(60, 100, 40);
 scene.add(sol);
@@ -797,6 +797,7 @@ function skilt(tekst, h, bak) {
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthWrite: false, fog: false }));
   s.scale.set(h * b / cv.height, h, 1); s.userData.grunn = s.scale.clone(); ALLE_SKILT.push(s); return s;
 }
+let havnaSkilt = null;   // skjules på land, der det dekket roboten på brygga (0.11.5)
 const ALLE_SKILT = [];
 // På land står du nær skiltene, så de gjøres mindre der
 function skiltStorrelse(k) { for (const s of ALLE_SKILT) s.scale.copy(s.userData.grunn).multiplyScalar(k); }
@@ -1043,7 +1044,7 @@ const ktankGruppe = new THREE.Group(); ktankGruppe.position.set(KTANK.x, KTANK.y
   const b = new THREE.Group(); oy.add(b);
   del(BOX, M(0xb98a52), 7, 0.6, 26, 0, 1.6, OY_R + 10, b);
   for (let z = OY_R; z <= OY_R + 22; z += 5.5) for (const x of [-3, 3]) del(CYL, M(0x7a5530), 0.45, 5, 0.45, x, -0.6, z, b);
-  const s = skilt('⚓ Havna', 2.6); s.position.set(0, 7, OY_R + 20); b.add(s);
+  const s = skilt('⚓ Havna', 2.6); s.position.set(0, 7, OY_R + 20); b.add(s); havnaSkilt = s;
   for (let z = OY_R + 6; z <= OY_R + 20; z += 3.5) hindre.push({ x: 0, z, r: 4.2 });
 }
 // Små skjær og øyer rundt på havet
@@ -1612,7 +1613,8 @@ function oppdaterHud() {
   $('last').textContent = tilstand.last.length + '/' + tilstand.plass;
   $('pLast').classList.toggle('full', tilstand.last.length >= tilstand.plass);
   $('akv').textContent = tilstand.akv.length + '/' + tilstand.akvPlass;
-  $('funnet').textContent = tall(antallFunnet()) + ' av ' + ANTALL_FISKER;
+  // Toppfeltet viser artene (25), som er et mål som kan nås. De 5000 variantene står i fiskeboka (0.11.5).
+  { let arter = 0; for (let f = 0; f < FORMER.length; f++) if (antallFunnetForm(f) > 0) arter++; $('funnet').textContent = arter + ' av ' + FORMER.length; }
 }
 
 // Fisk som ligger i båten
@@ -2470,13 +2472,13 @@ function gaaILand() {
   land.aktiv = true; land.retning = Math.PI; land.fart = 0;
   land.pos.copy(KAI()); land.pos.y = landHoyde(land.pos.x, land.pos.z);
   spiller.fart = 0; settTurbo(false);
-  skiltStorrelse(0.45); scene.add(helt); helt.position.copy(land.pos); helt.rotation.set(0, land.retning, 0);
+  skiltStorrelse(0.45); if (havnaSkilt) havnaSkilt.visible = false; scene.add(helt); helt.position.copy(land.pos); helt.rotation.set(0, land.retning, 0);
   stang.visible = false;
   melding('🚶 Du er på land!<small>Trykk 🔨 Bygg for å bygge hus der du vil. Gå til butikken eller akvariet og trykk på den gule knappen. Gå tilbake til kaia og trykk ⛵ for å gå om bord.</small>', 6, true);
 }
 function gaaOmBord() {
   if (!land.aktiv) return;
-  avbrytPlassering(); land.aktiv = false; skiltStorrelse(1); baat.add(helt); helt.rotation.set(0, 0, 0); stang.visible = true;
+  avbrytPlassering(); land.aktiv = false; skiltStorrelse(1); if (havnaSkilt) havnaSkilt.visible = true; baat.add(helt); helt.rotation.set(0, 0, 0); stang.visible = true;
   helt.position.set(0, baat.userData.dekkY, -baat.userData.L * 0.18);
   robotGaa(false); varIHavna = true; melding('⛵ Du er om bord igjen.', 2);
 }
@@ -2670,6 +2672,19 @@ function oppdaterInntekt(dt) {
   tilstand.rest += akvPerMinutt() * dt / 60;
   if (tilstand.rest >= 1) { const n = Math.floor(tilstand.rest); tilstand.rest -= n; tilstand.penger += n; oppdaterHud(); }
 }
+// Stemning per sone (0.11.5): himmel, dis og lys blir mørkere og gråere ute i Dyphavet, så sonene føles forskjellige.
+const STEMNING = { lys: C(HIMMEL), mork: C(0x7f95b4), hLys: C(0xcdeeff), hMork: C(0x93a8c4), t: 0 };
+function oppdaterStemning(dt) {
+  const d = land.aktiv ? 0 : Math.hypot(spiller.pos.x, spiller.pos.z);
+  const s = (a, b, x) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
+  const maal = 0.3 * s(SONE_GRENSE[0] - 20, SONE_GRENSE[0] + 40, d) + 0.7 * s(SONE_GRENSE[1] - 30, SONE_GRENSE[1] + 50, d);
+  STEMNING.t += (maal - STEMNING.t) * Math.min(1, dt * 1.5);
+  const t = STEMNING.t;
+  scene.background.copy(STEMNING.lys).lerp(STEMNING.mork, t); scene.fog.color.copy(scene.background);
+  scene.fog.near = 160 - 60 * t; scene.fog.far = 520 - 140 * t;
+  havUniforms.himmel.value.copy(STEMNING.hLys).lerp(STEMNING.hMork, t);
+  himmelLys.intensity = 0.9 - 0.2 * t; sol.intensity = 1.5 - 0.45 * t;
+}
 function loop(na) {
   requestAnimationFrame(loop);
   let dt = (na - sisteTid) / 1000; sisteTid = na; if (!(dt > 0)) dt = 0; const ekteDt = Math.min(dt, 0.25); dt = Math.min(dt, 0.05);   // ekteDt: Kraken-visningen varer like lenge ved lav bildefrekvens
@@ -2681,7 +2696,7 @@ function loop(na) {
     lagreTid += dt; if (lagreTid > 5) { lagreTid = 0; lagre(); }
   } else { baat.position.y = 0.25 + Math.sin(tid * 1.6) * 0.15; }
   if (spillTilstand !== 'pause') { oppdaterVerden(dt, tid); oppdaterAkvarium(dt, tid); oppdaterSkum(dt); oppdaterPlask(dt); robotAnimasjon(dt); for (const m of lastGruppe.children) animerFisk(m, tid * 0.3, 0.5); }
-  oppdaterMelding(dt); oppdaterHandling(); oppdaterKamera(dt);
+  oppdaterStemning(dt); oppdaterMelding(dt); oppdaterHandling(); oppdaterKamera(dt);
   if (!webglTapt) renderer.render(scene, camera);
 }
 addEventListener('pagehide', lagre);
