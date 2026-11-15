@@ -145,17 +145,18 @@ body.touchui #h2Vapen{left:0;transform:none;bottom:auto!important;font-size:12px
 /* Knappene */
 body.touchui #touch .acts,body.touchui #touch .big,body.touchui #touch .small{display:contents}
 body.touchui #touch button{position:fixed;box-sizing:border-box;z-index:6;-webkit-tap-highlight-color:transparent}
-body.touchui #jumpBtn{right:calc(18px + var(--kr));bottom:var(--kb);width:96px;height:96px;border-radius:50%!important;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:34px!important;line-height:1;font-weight:800;
+body.touchui #jumpBtn{right:calc(30px + var(--kr));bottom:var(--kb);width:72px;height:72px;   /* 2.0.10: mindre (før 96 px), Ivars ønske */
+  border-radius:50%!important;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:26px!important;line-height:1;font-weight:800;
   background:linear-gradient(#ffd75e,#f0a91c)!important;color:#3a2300!important;border:3px solid #fff!important;box-shadow:0 3px 10px rgba(0,0,0,.35)}
-body.touchui #jumpBtn span{font-size:14px;margin-top:2px}
-body.touchui #act{right:calc(14px + var(--kr));bottom:calc(var(--kb) + 108px);width:104px;height:104px;border-radius:50%!important;
+body.touchui #jumpBtn span{font-size:12px;margin-top:1px}
+body.touchui #act{right:calc(14px + var(--kr));bottom:calc(var(--kb) + 84px);width:104px;height:104px;border-radius:50%!important;
   display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;
   background:linear-gradient(#ffad5c,#e8701f)!important;color:#2a1606!important;border:3px solid #fff!important;box-shadow:0 3px 12px rgba(0,0,0,.4)}
 body.touchui #act .ai{font-size:40px}
 body.touchui #act .at,body.touchui #eatBtn .at,body.touchui #buildBtn .at{font:800 15px var(--body);margin-top:3px;white-space:nowrap}
 /* Snarvei (spis/stek eller avbryt bygging): liten knapp til venstre for handlingsknappen, bare når den trengs */
-body.touchui #eatBtn,body.touchui #buildBtn{right:calc(130px + var(--kr));bottom:calc(var(--kb) + 128px);width:64px!important;height:64px!important;border-radius:50%!important;
+body.touchui #eatBtn,body.touchui #buildBtn{right:calc(130px + var(--kr));bottom:calc(var(--kb) + 104px);width:64px!important;height:64px!important;border-radius:50%!important;
   display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;font-size:24px!important;
   background:rgba(12,20,16,.78)!important;border:2px solid rgba(243,234,214,.55)!important;color:var(--bone)}
 body.touchui #eatBtn .at,body.touchui #buildBtn .at{font-size:11px}
@@ -174,9 +175,9 @@ body.touchui #hotbar button.on{transform:translateY(-2px);border-width:3px}
 /* Liggende mobil: lite høyde – knappene nærmere bunnen, våpenraden mellom styrespaken og knappene */
 @media (pointer:coarse) and (orientation:landscape){
   body.touchui{--kb:calc(16px + env(safe-area-inset-bottom,0px))}
-  body.touchui #act{bottom:calc(var(--kb) + 106px);width:96px;height:96px}
+  body.touchui #act{bottom:calc(var(--kb) + 82px);width:96px;height:96px}
   body.touchui #act .ai{font-size:36px}
-  body.touchui #eatBtn,body.touchui #buildBtn{right:calc(124px + var(--kr));bottom:calc(var(--kb) + 120px)}
+  body.touchui #eatBtn,body.touchui #buildBtn{right:calc(124px + var(--kr));bottom:calc(var(--kb) + 96px)}
   body.touchui #hotbar{max-width:calc(100vw - 2 * 180px)!important}
 }
 /* Dag-feltet på én linje */
@@ -185,10 +186,10 @@ body.touchui #h2Dag #phase{white-space:nowrap}
 body.touchui #h2Dag #biome{max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Stående: snarveien står over handlingsknappen, så midten er fri */
 @media (pointer:coarse) and (orientation:portrait){
-  body.touchui #eatBtn,body.touchui #buildBtn{right:calc(34px + var(--kr));bottom:calc(var(--kb) + 224px)}
+  body.touchui #eatBtn,body.touchui #buildBtn{right:calc(34px + var(--kr));bottom:calc(var(--kb) + 200px)}
 }
 @media (pointer:coarse) and (orientation:landscape){
-  body.touchui #hotbar{max-width:calc(100vw - 2 * 182px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))!important}
+  body.touchui #hotbar{left:50%!important;max-width:calc(100vw - 2 * 182px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))!important}   /* 2.0.10: midtstilt, så raden ikke går inn i styrespaken (eldre regel flyttet den 40 px mot venstre) */
 }
 /* Smal mobil på høykant: kortere linjer og bare ikonet for området, så ⏸ alltid får plass */
 @media (pointer:coarse) and (orientation:portrait) and (max-width:430px){
