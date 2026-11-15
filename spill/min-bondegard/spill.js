@@ -904,8 +904,13 @@ function nesteJobb() {
 /* ======================= Nytt nivå ======================= */
 const nivaaKo = []; let nivaaVises = false, nivaaTimer = 0;
 function feirNivaa(nye) { if (!nye || !nye.length) return; nivaaKo.push(...nye); if (!nivaaVises) visNesteNivaa(); }
+/* 0.14.0: E-coins (godkjent av Ivar 12.11): 20 på nivå 5 og 40 på nivå 10, via felles ecoins.js. Ikke i testmodus, så testing ikke gir ekte E-coins */
+const ECOIN_NIVAA = {5: 'bondegard.nivaa.5', 10: 'bondegard.nivaa.10'};
+const ecoins = () => (!TESTMODUS && window.EVNEcoins) || null;
+function ecoinAvstem() { try { const E = ecoins(); if (E) E.avstem(Object.keys(ECOIN_NIVAA).filter(n => s.nivaa >= +n).map(n => ECOIN_NIVAA[n]), 'Min Bondegård'); } catch (e) {} }
 function nyttTekst(n) {
   const nytt = [], senere = [];
+  if (ECOIN_NIVAA[n.nivaa] && ecoins()) { const m = ecoins().milepael(ECOIN_NIVAA[n.nivaa]); if (m) nytt.push(`🪙 ${m.e} E-coins til roboten`); }
   n.avlinger.forEach(a => (I_SPILLET.avlinger.includes(a) ? nytt : senere).push(ikon(a) + ' ' + navn(a)));
   n.bygg.forEach(b => (I_SPILLET.bygg.includes(b) ? nytt : senere).push(D.bygg[b].ikon + ' ' + D.bygg[b].navn.replace(/^./, c => c.toLowerCase())));
   n.dyr.forEach(d => (I_SPILLET.dyr.includes(d) ? nytt : senere).push(D.dyr[d].ikon + ' ' + D.dyr[d].flertall.toLowerCase()));
@@ -919,6 +924,7 @@ function nyttTekst(n) {
 }
 function visNesteNivaa() {
   const n = nivaaKo.shift(); if (!n) { nivaaVises = false; $('nivaaOpp').classList.remove('vis'); return; }
+  if (ECOIN_NIVAA[n.nivaa]) try { const E = ecoins(); if (E) E.belonn(ECOIN_NIVAA[n.nivaa]); } catch (e) {}
   nivaaVises = true; $('nivaaTittel').textContent = `Nivå ${n.nivaa}! ⭐`; $('nivaaTekst').innerHTML = nyttTekst(n); $('nivaaOpp').classList.add('vis');
   if (robot && !matchMedia('(prefers-reduced-motion: reduce)').matches) { jobber.length = 0; clearTimeout(jobbTimer); nyttNivaa(); jobbTimer = setTimeout(nesteJobb, 4300); }
   clearTimeout(nivaaTimer); nivaaTimer = setTimeout(visNesteNivaa, 4000);
@@ -1388,7 +1394,7 @@ function borteTekst() {
 }
 $('startBtn').addEventListener('click', () => {
   if (startet) return;
-  startet = true; $('start').classList.remove('vis'); $('last').style.display = 'none'; $('hud').hidden = false; $('hoyre').hidden = false; layoutHud(); setTimeout(layoutHud, 400);
+  startet = true; setTimeout(ecoinAvstem, 1500); $('start').classList.remove('vis'); $('last').style.display = 'none'; $('hud').hidden = false; $('hoyre').hidden = false; layoutHud(); setTimeout(layoutHud, 400);
   try { document.dispatchEvent(new Event('evn-start')); } catch (e) {}
   lagre(); synk(true);
   if (forste.reddet) melding('Den gamle lagringen kunne ikke leses. Den er tatt vare på, og du starter en ny gård.', 5000);

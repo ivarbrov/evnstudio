@@ -32,7 +32,7 @@
       var sumRegler = E.spill.reduce(function (a, s) { return a + s.m.reduce(function (b, m) { return b + m[1]; }, 0); }, 0);
       var publisert = E.spill.filter(function (s) { return !s.kommer; }).reduce(function (a, s) { return a + s.m.reduce(function (b, m) { return b + m[1]; }, 0); }, 0);
       var butikk = E.varer.reduce(function (a, v) { return a + v.pris; }, 0);
-      legg('EC1', 'Regeltabellen stemmer med godkjent modell (1713 publisert, 2153 med Mørkeskogen 2.0, butikk 1585)', publisert === 1713 && sumRegler === 2153 && butikk === 1585, publisert + ' / ' + sumRegler + ' / ' + butikk);
+      legg('EC1', 'Regeltabellen stemmer med godkjent modell (1713 publisert, 2213 med Mørkeskogen 2.0 og Min Bondegård, butikk 1585)', publisert === 1713 && sumRegler === 2213 && butikk === 1585, publisert + ' / ' + sumRegler + ' / ' + butikk);
       var ider = {}; var dobbelId = E.spill.some(function (s) { return s.m.some(function (m) { if (ider[m[0]]) return true; ider[m[0]] = 1; return false; }); });
       legg('EC1', 'Hver milepæl-ID er unik', !dobbelId);
 
