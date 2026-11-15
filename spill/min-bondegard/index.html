@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.15.4 – EVN Studio</title>
+<title>Min Bondegård 0.15.5 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -278,7 +278,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.15.4</div>
+    <div class="evn-ver" id="versjon">Versjon 0.15.5</div>
   </div>
 </div>
 
@@ -549,7 +549,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.15.4'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.15.5'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -1586,7 +1586,7 @@ function lagDetaljer() {
   const sekk = (x, z, r, farge) => { const sk = mesh(avrundetBoks(0.5, 0.7, 0.4, 0.18, 3), fm(farge, 0.95), x, 0.35, z, G); sk.rotation.y = r; mesh(new THREE.CylinderGeometry(0.08, 0.14, 0.12, 8), fm(farge, 0.95), x, 0.74, z, G); };
   sekk(-13.0, 7.3, 0.4, 0xd8c39a); sekk(-12.6, 6.8, -0.3, 0xc9b183);
   const krakk = new THREE.Group(); krakk.position.set(-9.4, 0, 6.9); G.add(krakk); mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.08, 14), tre, 0, 0.55, 0, krakk); [0, 2.1, 4.2].forEach(a => { const b = mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.55, 5), brun, Math.cos(a) * 0.18, 0.27, Math.sin(a) * 0.18, krakk); b.rotation.set(Math.sin(a) * 0.12, 0, -Math.cos(a) * 0.12); });
-  // --- hønsehus: port med skilt, fôrsekk, eggkurv, bøtte, halm, vindmåler
+  // --- hønsehus: port med skilt, forsekk, eggkurv, bøtte, halm, vindmåler
   const port = new THREE.Group(); port.position.set(4.3, 0, -0.4); G.add(port);
   [[-0.55, 0], [0.55, 0]].forEach(([x]) => mesh(avrundetBoks(0.16, 1.45, 0.16, 0.04, 1), brun, x, 0.72, 0, port));
   [0.3, 1.05].forEach(y => mesh(avrundetBoks(1.0, 0.1, 0.07, 0.03, 1), tre, 0, y, 0.03, port)); const sv = mesh(avrundetBoks(1.15, 0.09, 0.06, 0.03, 1), tre, 0, 0.67, 0.04, port); sv.rotation.z = 0.62;
