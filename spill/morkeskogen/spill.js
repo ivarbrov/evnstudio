@@ -3981,7 +3981,7 @@ const DC_R2 = { x0: -386, x1: -300, yb: -300, yt: 160, f: 1 };    // trapp 2 →
 const DC_PIL = [[-160, -150], [160, -150], [-160, 150], [160, 150]], DC_PILR = 26;
 const DC_TOW = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sy]) => [sx * (DC_HX + 45), sy * (DC_HX + 45)]), DC_TOWR = 62;
 // Hvor sterke fiendene er. Prøv å endre tallene! (liv = hvor mange slag de tåler, skade = hvor mye de tar av livet ditt)
-const DC_HP = { sk: 8, tri: 90, boss: 900 }, DC_DMG = { sk: 4, tri: 22, boss: 30, stomp: 15 };
+const DC_HP = { sk: 8, tri: 90, boss: 100 }, DC_DMG = { sk: 4, tri: 22, boss: 30, stomp: 15 };   // 2.0.9: T-rex-kongen har 100 liv (før 900), Evens ønske 15.11.2026
 // Veggene: o='x' er en vegg som går øst–vest (stopper deg i nord–sør), o='y' går nord–sør. z0–z1 = høyden veggen gjelder for.
 const DC_WALLS = [
   { o: 'x', c: -DC_HX, a0: -DC_HX - 18, a1: DC_HX + 18, z0: -50, z1: 3000 },
