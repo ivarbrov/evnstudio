@@ -653,6 +653,7 @@ function plasserAlt() {
   if (stdV < 5 && s.plasser.tavle && Math.abs(s.plasser.tavle.x + 2.4) < 0.3 && Math.abs(s.plasser.tavle.z - 8.6) < 0.3) delete s.plasser.tavle;   /* 0.15.3 (Even 15.11): tavla på standardplassen ved porten flyttes nærmere åkrene. En tavle spilleren har flyttet selv, blir stående */
   const ps = s.plasser.silo || (() => { const p = finnLedigPlass(si, ...STANDARD.silo) || STANDARD.silo; return (s.plasser.silo = {x: p[0], z: p[1], r: 0}); })();
   plasser(si, ps.x, ps.z, ps.r);
+  for (const b in s.bygg) { const sb = s.bygg[b]; if (sb && !sb.eid && sb.x !== null && FOT[b] && overlapp(fotRekt({fot: FOT[b]}, sb.x, sb.z, sb.r), fotRekt(si, si.x, si.z, si.r))) { sb.x = null; sb.z = null; if (ting.has(b)) { const t = ting.get(b); t.plassert = false; } } }   /* 0.15.11 (QA 15.11): en byggeplass som står oppå siloen, får ny plass */
   for (const b of I_SPILLET.bygg) { const sb = s.bygg[b]; if (!sb) continue; let t = ting.get(b);
     if (!t && sb.x === null && !finnLedigPlass({fot: FOT[b], r: 0}, ...STANDARD[b])) continue;   /* 0.9.8: ingen ledig plass ennå. Byggemenyen foreslår å kjøpe Enga */
     const modell = sb.eid ? 'bygd' : 'plass';
@@ -819,7 +820,7 @@ function visGate() {
     if (!g) return `<p>Takk for sist, nabo! Jeg tenker på en ny gåte. Kom tilbake om <b data-slutt="${s.rebus.neste}">${fmtTid(s.rebus.neste - t)}</b>. 🦊</p><p style="font-size:15px">Du har løst ${s.rebus.loste} ${s.rebus.loste === 1 ? 'gåte' : 'gåter'}.</p>`;
     /* 0.11.2 (Ivar 13.11: «feil svaralternativ»): det riktige svaret er alltid med, sammen med fem andre ting spilleren kjenner, i fast tilfeldig rekkefølge */
     const l = L.gateLonn(g); let f = [...(g + s.rebus.loste)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7); const rnd2 = () => (f = (Math.imul(f, 1103515245) + 12345) >>> 0) / 4294967296;
-    const andre = Object.keys(D.gater).filter(v => v !== g && D.nivaaFor(v) <= s.nivaa).sort((a, b) => ((s.lager[b] || 0) > 0) - ((s.lager[a] || 0) > 0) || rnd2() - 0.5).slice(0, 5);
+    const andre = Object.keys(D.gater).filter(v => v !== g && D.nivaaFor(v) <= s.nivaa).map(v => [v, rnd2()]).sort((a, b) => a[1] - b[1]).map(a => a[0]).slice(0, 5);   /* 0.15.11 (QA 15.11): tilfeldige feilsvar, så svaret ikke skiller seg ut som det eneste du ikke har */
     const har = [g, ...andre].map(v => [v, rnd2()]).sort((a, b) => a[1] - b[1]).map(a => a[0]);
     return `<p style="font-size:19px;line-height:1.35"><b>${D.gater[g]}</b></p>
       <p style="font-size:15px">Si svaret, så får du <b>${l.mynter} 🪙</b> og <b>${l.xp} XP</b>.</p>
@@ -1278,7 +1279,7 @@ function visTavle() {
   const t = naa();
   $('tavleListe').innerHTML = s.best.liste.map((o, i) => { const kan = L.kanLevere(s, i), bytt = L.boerByttes(s, i, t);
     const varer = Object.keys(o.varer).map(v => { const h = s.lager[v] || 0, ok = h >= o.varer[v]; return `<span class="${ok ? 'harnok' : 'mangler'}">${o.varer[v]} ${ikon(v)} ${navn(v).toLowerCase()} <small>(du har ${h})</small></span>`; }).join('<br>');
-    return `<div class="rad best${kan ? ' klar' : ''}"><span class="midt">${varer}<small>Du får ${o.mynter} 🪙 og ${o.xp} XP${bytt ? ' · Vanskelig? Du kan bytte gratis.' : ''}</small></span><button class="knapp gronn" data-lever="${i}" ${kan ? '' : 'disabled'} aria-label="Send bestilling ${i + 1} med lastebilen">🚚 Send</button><button class="knapp lys${bytt ? ' anbefalt' : ''}" data-bytt="${i}" aria-label="Bytt bestilling ${i + 1}">Bytt</button></div>`; }).join('') || '<p>Ingen bestillinger akkurat nå.</p>';
+    return `<div class="rad best${kan ? ' klar' : ''}"><span class="midt">${varer}<small>Du får ${o.mynter} 🪙 og ${o.xp} XP${bytt ? ' · Vanskelig? Du kan bytte gratis.' : ''}</small></span><button class="knapp gronn" data-lever="${i}" ${kan ? '' : 'disabled'} aria-label="Send bestilling ${i + 1} med varebilen">🚚 Send</button><button class="knapp lys${bytt ? ' anbefalt' : ''}" data-bytt="${i}" aria-label="Bytt bestilling ${i + 1}">Bytt</button></div>`; }).join('') || '<p>Ingen bestillinger akkurat nå.</p>';
   if (!$('tavle').classList.contains('vis')) aapneDialog('tavle');
 }
 $('tavleKnapp').addEventListener('click', visTavle);
