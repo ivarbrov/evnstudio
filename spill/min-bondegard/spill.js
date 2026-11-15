@@ -323,7 +323,7 @@ function lagLastebil() {
   mesh(new THREE.BoxGeometry(0.06, 0.6, 1.3), fm(0xbfe3f2, 0.2), 2.11, 1.5, 0, g);          // frontrute
   mesh(avrundetBoks(3.0, 0.2, 1.9, 0.05, 1), MAT.brunPlank, -0.9, 0.75, 0, g);              // plan
   [[-0.9, 1.15, 0.92, 3.0, 0.08], [-0.9, 1.15, -0.92, 3.0, 0.08], [-2.38, 1.15, 0, 0.08, 1.9]].forEach(([x, y, z, w, d]) => mesh(avrundetBoks(w, 0.7, d, 0.03, 1), MAT.lysPlank, x, y, z, g));
-  [[-1.6, 0.3], [-0.5, -0.35], [-1.1, 0.4]].forEach(([x, z], i) => mesh(avrundetBoks(0.7, 0.55, 0.7, 0.05, 1), MAT.brunPlank, x, 1.15 + (i === 2 ? 0.5 : 0), z, g));   // kasser
+  [[-1.6, 0.3, 0], [-0.5, -0.35, 0], [-1.58, 0.28, 0.25]].forEach(([x, z, r], i) => { const k = mesh(avrundetBoks(0.7, 0.55, 0.7, 0.05, 1), MAT.brunPlank, x, 1.15 + (i === 2 ? 0.55 : 0), z, g); k.rotation.y = r; });   // kasser. 0.15.6 (Even 15.11: «eska flyr»): den øverste står rett oppå den nederste
   [[1.9, 0.95], [1.9, -0.95], [-1.6, 0.95], [-1.6, -0.95]].forEach(([x, z]) => { const h = mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 14), mork, x, 0.42, z, g); h.rotation.x = Math.PI / 2; const n = mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.32, 10), lys, x, 0.42, z, g); n.rotation.x = Math.PI / 2; });
   [0.55, -0.55].forEach(z => mesh(new THREE.SphereGeometry(0.13, 8, 6), fm(0xfff2a8, 0.3), 2.7, 0.95, z, g));
   const sk = skiltTekst('Min gård', 1.5); sk.position.set(-0.9, 1.2, 0.97); g.add(sk);
@@ -791,12 +791,12 @@ function synkGate() {
     if (paaGard && revSted !== 'gard' && (!revGang || revGang.hjem)) revGaa(false, forste); else if (!paaGard && revSted !== 'hjem' && (!revGang || !revGang.hjem)) revGaa(true, forste); }
 }
 // Rebus går stien ned til veien, langs veien og inn porten til en plass ved markedsbua. Hjem går han samme vei tilbake.
-const REV_HJEM = [-17.6, 4.0], REV_GARD = [-7.5, 0.9];   /* 0.15.3 (Even 15.11): Rebus venter ved benken foran låven, ikke ved porten */
+const REV_HJEM = [-17.6, 4.0], REV_GARD = [-8.0, 1.3];   /* 0.15.3 (Even 15.11): Rebus venter ved benken foran låven, ikke ved porten */
 /* 0.15.0 (Even 15.11: «forbedre gåingen til Rebus»): farten passer skrittene i gåklippet. Klippet flytter foten ca. 0,5 m per halve skritt på 1,07 s,
    altså ca. 0,9 m/s. Han går 1,2 m/s, og klippet spilles 1,3 ganger så fort, så føttene ikke sklir. Svingene er mykere, og han blir ikke avbrutt av vinking mens han går */
 const REV_FART = 1.2, REV_TAKT = 1.3; window.revOpptatt = () => !!revGang;
 let revSted = 'hjem', revGang = null, revFlate = null, revY = 0.044, revKlar = false, revHjemEtter = 0;
-function revVei() { const v = [[stiX(4.6), 4.6]]; for (let z = 6; z <= VEI_Z - 1.2; z += 1.4) v.push([stiX(z), z]); v.push([stiX(VEI_Z - 1.2), VEI_Z - 1.2], [-14.6, VEI_Z - 1.2], [-13.2, VEI_Z + 1.3], [-7.6, VEI_Z + 1.3], [-6.3, VEI_Z - 1.2], [-7.4, 7.7], [-7.5, 4.0], REV_GARD); return v; }   /* 0.15.2 (Even 15.11): ytterst på veien, så han ikke går gjennom bilen til Blomst */
+function revVei() { const v = [[stiX(4.6), 4.6]]; for (let z = 6; z <= VEI_Z - 1.2; z += 1.4) v.push([stiX(z), z]); v.push([stiX(VEI_Z - 1.2), VEI_Z - 1.2], [-14.6, VEI_Z - 1.2], [-13.2, VEI_Z + 1.3], [-7.6, VEI_Z + 1.3], [-6.3, VEI_Z - 1.2], [-7.6, 7.7], [-8.0, 4.0], REV_GARD); return v; }   /* 0.15.2 (Even 15.11): ytterst på veien, så han ikke går gjennom bilen til Blomst */
 function revGaa(hjem, straks) {
   if (!rev) return; const v = revVei(); if (hjem) v.reverse().push(REV_HJEM); else v.unshift(REV_HJEM);
   if (straks || matchMedia('(prefers-reduced-motion: reduce)').matches) { revSett(...v[v.length - 1]); revSted = hjem ? 'hjem' : 'gard'; revGang = null; rev.rotation.y = hjem ? Math.PI / 2 + 0.35 : Math.PI / 4; return; }
