@@ -548,7 +548,7 @@
   }
 
   // ---------- Leveringsfeltet ----------
-  // Et gult felt i passasjen mellom gården og åkeren. Går roboten inn på feltet med et matdyr, flyr matdyret til første ledige plass
+  // Et grønt felt rett foran gården, inntil den røde kanten (se levOmr). Går roboten inn på feltet med et matdyr, flyr matdyret til første ledige plass
   // (1. etasje først), uten at spilleren trykker på noe. Å velge plass selv med en ＋ virker fortsatt.
   const levG = new T.Group(); I.scene.add(levG); let levNokkel = '', paaLev = false, levBesok = 0;
   // Innsamlingssonen (Even 14.11.2026: «Innsamlingsone må være et stort felt rett utenfor gården fjern lever her og penge innsamling»):
