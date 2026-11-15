@@ -527,7 +527,8 @@ function kundeStart() {
   const redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
   kunde.bil.position.set(redusert ? KUNDE_STOPP : -34, 0, KUNDE_Z); kunde.bil.visible = true; katt.rotation.y = Math.PI / 2; kunde.fase = redusert ? 'venter' : 'inn'; kunde.t = 0; kunde.ute = 0; kunde.mal = redusert ? 1 : 0; kunde.anim = 1; kunde.sagt = false;
 }
-function kundeSi(ekstra) { const o = kunde.onske; kattBoble.innerHTML = ekstra || `<b>Blomsterkatten:</b> ${o.antall} ${ikon(o.vare)} ${navn(o.vare).toLowerCase()}, takk!<small>Trykk for å selge · ${o.mynter} 🪙</small>`; kattBoble.style.display = 'block'; kattBobleTid = 999; }
+/* 0.14.1 (Even 15.11): katten heter Blomst */
+function kundeSi(ekstra) { const o = kunde.onske; kattBoble.innerHTML = ekstra || `<b>Blomst:</b> ${o.antall} ${ikon(o.vare)} ${navn(o.vare).toLowerCase()}, takk!<small>Trykk for å selge · ${o.mynter} 🪙</small>`; kattBoble.style.display = 'block'; kattBobleTid = 999; }
 function kundeTrykk() {
   if (kunde.fase !== 'venter' || !kunde.sagt) return;
   const r = L.selgTilKunde(s, kunde.onske), u = katt.userData;
@@ -538,7 +539,7 @@ function kundeTrykk() {
 $('kattBoble').addEventListener('click', kundeTrykk);
 $('kattBoble').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); kundeTrykk(); } });
 function kundeGaaende(dt, t) { const u = katt.userData;
-  if (kunde.fase === 'inn') { if (u.tilst === 'staar') { kunde.fase = 'venter'; kunde.t = 0; leverGaver('Blomsterkatten'); } }
+  if (kunde.fase === 'inn') { if (u.tilst === 'staar') { kunde.fase = 'venter'; kunde.t = 0; leverGaver('Blomst'); } }
   else if (kunde.fase === 'venter') { if (!kunde.sagt) { kunde.sagt = true; kundeSi(); } kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; } }
   else if (kunde.fase === 'takk') { kunde.t += dt; if (kunde.t > 1.8) { kunde.fase = 'hjem'; kattBobleTid = 0.01; Object.assign(u, {tilst: 'gaar', vei: [new THREE.Vector3(-27, 0, KATT_GATE.z)], etter: 'kundeUt'}); } }
   else if (kunde.fase === 'hjem') { if (u.tilst === 'staar') { kunde.fase = 'borte'; kunde.gaaende = false; kunde.t = D.kunder.pause[0] + Math.random() * (D.kunder.pause[1] - D.kunder.pause[0]); } }
@@ -549,7 +550,7 @@ function oppdaterKunde(dt, t) {
   if (kunde.fase === 'borte') { if (s.oppl.steg < 3 && s.nivaa < 2) return;   /* ikke midt i den første opplæringen */ kunde.t -= dt; if (kunde.t <= 0 && bilKo.fase === 0) kundeStart(); return; }
   if (kunde.gaaende) { kundeGaaende(dt, t); return; }
   const b = kunde.bil;
-  if (kunde.fase === 'inn') { const igjen = KUNDE_STOPP - b.position.x; b.position.x += Math.max(1.2, Math.min(7, igjen * 1.2)) * dt; if (b.position.x >= KUNDE_STOPP) { b.position.x = KUNDE_STOPP; kunde.fase = 'venter'; kunde.t = 0; leverGaver('Blomsterkatten'); } }
+  if (kunde.fase === 'inn') { const igjen = KUNDE_STOPP - b.position.x; b.position.x += Math.max(1.2, Math.min(7, igjen * 1.2)) * dt; if (b.position.x >= KUNDE_STOPP) { b.position.x = KUNDE_STOPP; kunde.fase = 'venter'; kunde.t = 0; leverGaver('Blomst'); } }
   else if (kunde.fase === 'venter') { if (!kunde.sagt && kunde.anim >= 1) { kunde.sagt = true; kundeSi(); } kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; } }
   else if (kunde.fase === 'takk') { kunde.t += dt; if (kunde.t > 1.8) { kunde.fase = 'hjem'; kunde.t = 0; } }
   else if (kunde.fase === 'hjem') { kunde.t += dt; if (kunde.mal === 0 && kunde.anim >= 1) { kunde.fase = 'ut'; kattBobleTid = 0.01; if (matchMedia('(prefers-reduced-motion: reduce)').matches) b.position.x = 99; } }
@@ -1372,7 +1373,7 @@ window.spillOppdater = (dt, t) => {
   if (pil && pil.visible && pil.userData.u) { const p = pil.userData.u.gruppe.position, h = pil.userData.u.hoyde || 3; pil.position.set(p.x, h + 1.2 + Math.abs(Math.sin(t * 4)) * 0.6, p.z); }
   if (kameraMaal) { cam.target.lerp(_p.set(kameraMaal.x, 0, kameraMaal.z), Math.min(1, dt * 5)); plasserKamera(); if (cam.target.distanceTo(_p) < 0.05) kameraMaal = null; }
   oppdaterBil(dt); oppdaterKunde(dt, t); oppdaterRev(dt, t);
-  if (gaveVent > 0 && startet && !pauset) { gaveVent -= dt; if (gaveVent <= 0) leverGaver('Blomsterkatten'); }   /* kommer hun ikke innen ett minutt, står gaven der likevel */
+  if (gaveVent > 0 && startet && !pauset) { gaveVent -= dt; if (gaveVent <= 0) leverGaver('Blomst'); }   /* kommer hun ikke innen ett minutt, står gaven der likevel */
   synkT += dt; if (synkT > 0.25) { synkT = 0; synk(); oppdaterTider(); }
   lagreT += dt; if (lagreT > 15 && startet) { lagreT = 0; lagre(); }
 };
