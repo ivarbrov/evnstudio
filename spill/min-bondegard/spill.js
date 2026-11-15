@@ -326,18 +326,37 @@ function lagLastebil() {
   [[-1.6, 0.3], [-0.5, -0.35], [-1.1, 0.4]].forEach(([x, z], i) => mesh(avrundetBoks(0.7, 0.55, 0.7, 0.05, 1), MAT.brunPlank, x, 1.15 + (i === 2 ? 0.5 : 0), z, g));   // kasser
   [[1.9, 0.95], [1.9, -0.95], [-1.6, 0.95], [-1.6, -0.95]].forEach(([x, z]) => { const h = mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 14), mork, x, 0.42, z, g); h.rotation.x = Math.PI / 2; const n = mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.32, 10), lys, x, 0.42, z, g); n.rotation.x = Math.PI / 2; });
   [0.55, -0.55].forEach(z => mesh(new THREE.SphereGeometry(0.13, 8, 6), fm(0xfff2a8, 0.3), 2.7, 0.95, z, g));
-  const sk = skiltTekst('Elvedal', 1.5); sk.position.set(-0.9, 1.2, 0.97); g.add(sk);
+  const sk = skiltTekst('Min gård', 1.5); sk.position.set(-0.9, 1.2, 0.97); g.add(sk);
   g.visible = false; scene.add(g); return g;
 }
-// Lastebilen kjører inn langs veien, stopper ved gårdsveien, laster og kjører videre. Bare til pynt: reglene er allerede brukt.
-function kjorLastebil() { bilKo.n++; if (!bil) bil = lagLastebil(); const redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (bilKo.fase === 0) { bil.visible = true; if (redusert) { bil.position.set(-5.5, 0, BIL_Z); bilKo.fase = 2; bilKo.t = 0; } else { bilKo.fase = 1; bil.position.set(-34, 0, BIL_Z); } } }   /* 0.9.2 (Ivar 11.11): bilen kjører rolig, høyst 8–9 m/s, og starter nærmere */   /* redusert bevegelse: bilen står ved gårdsveien en liten stund og kjører ikke over skjermen (QA 10.11) */
+/* 0.15.0 (Even 15.11): varebilen er gårdens egen. Den står parkert på gården, kjører ut med varene når en bestilling leveres, og kommer tilbake.
+   Skinn fra årstidsbilene (bursdag, valentin osv.) kommer senere og bytter bare utseendet. Bare til pynt: reglene er allerede brukt. */
+const VAREBIL_PLASS = [-10.1, 5.5]; window.MB_VAREBIL = true;   /* mellom bakeriet og markedsbua, med fronten mot gårdsveien. Robotens vinketur mot Rebus stopper før bilen */
+let varebilT = null;
+function synkVarebil() {
+  if (!bil) bil = lagLastebil();
+  if (!varebilT) { varebilT = {type: 'varebil', id: 'varebil', gruppe: bil, fot: FOT.varebil, hoyde: 2.6}; ting.set('varebil', varebilT); eierAv(bil); klikkbar(bil); varebilT.ikon = lagIkon(varebilT.hoyde); bil.add(varebilT.ikon); }
+  if (!varebilT.plassert) { const p = erLedig(varebilT, ...VAREBIL_PLASS, 0) ? VAREBIL_PLASS : (finnLedigPlass(varebilT, ...VAREBIL_PLASS) || VAREBIL_PLASS); plasser(varebilT, p[0], p[1], 0); bil.visible = true; bil.rotation.y = 0; }
+}
+function kjorLastebil() { bilKo.n++; if (!bil) synkVarebil(); const redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (bilKo.fase !== 0) return;
+  if (redusert) { sprett.push({o: bil, t: 0}); bilKo.n = 0; return; }   /* redusert bevegelse: bilen spretter litt der den står */
+  const x0 = varebilT.x, z0 = varebilT.z; bilKo.fase = 1; bilKo.t = 0;
+  bilKo.vei = [[-5.5, z0 + 0.4, 's'], [-5.5, VEI_Z - 1.0, 's'], [-3.5, BIL_Z, 's'], [36, BIL_Z]]; bilKo.i = 0;   /* ut gårdsveien og østover */
+  bilKo.hjem = [[-36, BIL_Z], [-7.5, BIL_Z, 'n'], [-5.5, VEI_Z - 1.6, 's'], [-5.4, z0 + 0.2, 's'], [-5.2, z0 - 1.0, 's'], [x0, z0, 'b']];   /* inn gårdsveien og rygg inn på plassen (s = sakte, n = brems ned, b = rygg) */
+}
 function oppdaterBil(dt) {
-  if (!bil || bilKo.fase === 0) return; const STOPP = -5.5, redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (bilKo.fase === 1) { const igjen = STOPP - bil.position.x, fart = redusert ? 60 : Math.max(1.5, Math.min(8, igjen * 1.2)); bil.position.x += fart * dt; if (bil.position.x >= STOPP) { bil.position.x = STOPP; bilKo.fase = 2; bilKo.t = 0; } }
-  else if (bilKo.fase === 2) { bilKo.t += dt; if (bilKo.t > 1.4) { bilKo.n--; if (bilKo.n > 0) bilKo.t = 0.6; else if (redusert) { bil.visible = false; bilKo.fase = 0; bilKo.n = 0; } else bilKo.fase = 3; } }
-  else { const borte = bil.position.x - STOPP, fart = redusert ? 60 : Math.max(1.5, Math.min(9, 1.5 + borte * 1.2)); bil.position.x += fart * dt; if (bil.position.x > 34) { bil.visible = false; bilKo.fase = 0; bilKo.n = 0; } }
-  bil.position.y = hoyde(bil.position.x, BIL_Z) + (bilKo.fase === 2 ? 0 : Math.abs(Math.sin(bil.position.x * 1.7)) * 0.04);
+  if (!bil || bilKo.fase === 0) return;
+  if (bilKo.fase === 2) { bilKo.t += dt; if (bilKo.t > 2.5) { bilKo.fase = 3; bilKo.vei = bilKo.hjem; bilKo.i = 0; bil.position.set(-36, 0, BIL_Z); bil.rotation.y = 0; bil.visible = true; } return; }   /* ute på levering */
+  const m = bilKo.vei[bilKo.i], dx = m[0] - bil.position.x, dz = m[1] - bil.position.z, d = Math.hypot(dx, dz), sist = bilKo.i === bilKo.vei.length - 1;
+  const bak = m[2] === 'b', fart = bak ? 1.5 : m[2] === 's' ? 2.2 : Math.max(1.4, Math.min(7, m[2] === 'n' ? d * 1.0 + 2.2 : 99, 1.4 + bilKo.t * 3)); bilKo.t += dt;
+  const steg = Math.min(d, fart * dt);
+  if (d > 0.01) { bil.position.x += dx / d * steg; bil.position.z += dz / d * steg; bil.rotation.y = snuMot(bil.rotation.y, bak ? Math.atan2(dz, -dx) : Math.atan2(-dz, dx), dt * 6); }
+  if (d - steg < 0.02) { bilKo.i++;
+    if (bilKo.i >= bilKo.vei.length) {
+      if (bilKo.fase === 1) { bilKo.fase = 2; bilKo.t = 0; bil.visible = false; }
+      else { bilKo.fase = 0; bilKo.n = 0; plasser(varebilT, varebilT.x, varebilT.z, 0); } } }
+  bil.position.y = hoyde(bil.position.x, bil.position.z) + Math.abs(Math.sin((bil.position.x + bil.position.z) * 1.7)) * 0.04;
 }
 
 /* ======================= Kunder som kjører innom (Even 11.11: «drive through») =======================
@@ -562,7 +581,7 @@ function oppdaterKunde(dt, t) {
 /* ======================= Ting på gården ======================= */
 // Alt spilleren kan trykke på. Åkre, fôrkvern, bakeri og silo kan flyttes. Låven, hønsehuset, beitet og markedsbua står fast i denne versjonen.
 const ting = new Map();
-const FOT = {forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], sukkerverk: [3.6, 3.4], popkorn: [3.0, 2.8], kjokken: [4.0, 3.8], grisebinge: [6.2, 7.4], silo: [3.0, 3.0], tavle: [2.2, 1.0]};
+const FOT = {forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], sukkerverk: [3.6, 3.4], popkorn: [3.0, 2.8], kjokken: [4.0, 3.8], grisebinge: [6.2, 7.4], silo: [3.0, 3.0], tavle: [2.2, 1.0], varebil: [5.4, 2.4]};
 const STANDARD = {
   akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45]],
   forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], silo: [-0.4, -10.0], tavle: [-2.4, 8.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
@@ -627,6 +646,7 @@ function plasserAlt() {
     if (s.plasser.tavle && !ting.get('tavle').plassert && !erLedig(tv, s.plasser.tavle.x, s.plasser.tavle.z, 0)) delete s.plasser.tavle;   /* en lagret plass utenfor gården eller oppå noe brukes ikke (QA 10.11) */
     const pt = s.plasser.tavle || (() => { const p = finnLedigPlass(tv, ...STANDARD.tavle) || STANDARD.tavle; return (s.plasser.tavle = {x: p[0], z: p[1], r: 0}); })();
     plasser(tv, pt.x, pt.z, 0); }
+  synkVarebil();
   { const h = ting.get('honsehus'), ph = s.plasser.honsehus; if (h && ph && (ph.x !== h.x || ph.z !== h.z)) { plasser(h, ph.x, ph.z, 0); flyttHoner(h); } }
   s.plasser.std = {x: 4, z: 0, r: 0};
   synkKyr(); synkPynt(); settGullgard(s.gaver.gullgard && s.gaver.gullPaa);
@@ -751,20 +771,23 @@ function synkGate() {
 }
 // Rebus går stien ned til veien, langs veien og inn porten til en plass ved markedsbua. Hjem går han samme vei tilbake.
 const REV_HJEM = [-17.6, 4.0], REV_GARD = [-6.3, 7.0];
+/* 0.15.0 (Even 15.11: «forbedre gåingen til Rebus»): farten passer skrittene i gåklippet. Klippet flytter foten ca. 0,5 m per halve skritt på 1,07 s,
+   altså ca. 0,9 m/s. Han går 1,2 m/s, og klippet spilles 1,3 ganger så fort, så føttene ikke sklir. Svingene er mykere, og han blir ikke avbrutt av vinking mens han går */
+const REV_FART = 1.2, REV_TAKT = 1.3; window.revOpptatt = () => !!revGang;
 let revSted = 'hjem', revGang = null, revFlate = null, revY = 0.044, revKlar = false, revHjemEtter = 0;
 function revVei() { const v = [[stiX(4.6), 4.6]]; for (let z = 6; z <= VEI_Z - 1.2; z += 1.4) v.push([stiX(z), z]); v.push([stiX(VEI_Z - 1.2), VEI_Z - 1.2], [-6.3, VEI_Z - 1.2], REV_GARD); return v; }
 function revGaa(hjem, straks) {
   if (!rev) return; const v = revVei(); if (hjem) v.reverse().push(REV_HJEM); else v.unshift(REV_HJEM);
   if (straks || matchMedia('(prefers-reduced-motion: reduce)').matches) { revSett(...v[v.length - 1]); revSted = hjem ? 'hjem' : 'gard'; revGang = null; rev.rotation.y = hjem ? Math.PI / 2 + 0.35 : Math.PI / 4; return; }
   const p = rev.position; let i = 0, best = 1e9; v.forEach((q, j) => { const d = Math.hypot(q[0] - p.x, q[1] - p.z); if (d < best) { best = d; i = j; } });   /* fra nærmeste punkt, også om han snur midt i */
-  revGang = {vei: v, i: Math.min(i + 1, v.length - 1), hjem}; revSted = 'gaar'; revSpill('Walking');
+  revGang = {vei: v, i: Math.min(i + 1, v.length - 1), hjem, tid: 0}; revSted = 'gaar'; revSpill('Walking'); if (revAktiv) revAktiv.timeScale = REV_TAKT;
 }
 function revSett(x, z) { rev.position.set(x, hoyde(x, z) + revY, z); if (!revFlate) revFlate = scene.children.find(o => o.userData.eier === rev && o.geometry && o.geometry.type === 'CylinderGeometry'); if (revFlate) revFlate.position.set(x, rev.position.y + 1.1, z); }
 function oppdaterRev(dt, t) {
   if (!rev) return;
-  if (revGang) { const m = revGang.vei[revGang.i], dx = m[0] - rev.position.x, dz = m[1] - rev.position.z, d = Math.hypot(dx, dz), steg = dt * 1.7;
+  if (revGang) { const m = revGang.vei[revGang.i], dx = m[0] - rev.position.x, dz = m[1] - rev.position.z, d = Math.hypot(dx, dz), steg = dt * REV_FART * Math.min(1, 0.35 + revGang.tid++ * 0.05);
     if (d <= steg) { revSett(m[0], m[1]); if (++revGang.i >= revGang.vei.length) { revSted = revGang.hjem ? 'hjem' : 'gard'; revGang = null; rev.rotation.y = revSted === 'hjem' ? Math.PI / 2 + 0.35 : Math.PI / 4; revSpill('Idle'); if (revSted === 'gard') { revSpill('Wave', false); setTimeout(() => { if (!revGang) revSpill('Idle'); }, 2200); } } }
-    else { revSett(rev.position.x + dx / d * steg, rev.position.z + dz / d * steg); rev.rotation.y = snuMot(rev.rotation.y, Math.atan2(dx, dz), dt * 8); } }
+    else { revSett(rev.position.x + dx / d * steg, rev.position.z + dz / d * steg); rev.rotation.y = snuMot(rev.rotation.y, Math.atan2(dx, dz), dt * 5); } }
   if (revIkon && revIkon.visible) revIkon.position.set(rev.position.x, rev.position.y + 2.9 + Math.sin(t * 3) * 0.12, rev.position.z);
 }
 function visGate() {
@@ -916,7 +939,7 @@ function nyttTekst(n) {
   n.bygg.forEach(b => (I_SPILLET.bygg.includes(b) ? nytt : senere).push(D.bygg[b].ikon + ' ' + D.bygg[b].navn.replace(/^./, c => c.toLowerCase())));
   n.dyr.forEach(d => (I_SPILLET.dyr.includes(d) ? nytt : senere).push(D.dyr[d].ikon + ' ' + D.dyr[d].flertall.toLowerCase()));
   if (n.akre) nytt.push('🟫 ' + n.akre + ' nye åkre');
-  if (n.tavle) nytt.push('📋 bestillinger og lastebil');
+  if (n.tavle) nytt.push('📋 bestillinger og varebil');
   if (s.oppl.steg >= OPPL.length) nytt.push('🎁 en gaveeske ved markedsbua');
   (n.omrader || []).filter(o => I_SPILLET.omrader.includes(o)).forEach(o => nytt.push('🌿 ' + D.omrader[o].navn + ' kan kjøpes'));
   let t = '+' + n.mynter + ' 🪙'; if (nytt.length) t += ' · Nytt: ' + nytt.join(', ');
@@ -1205,7 +1228,7 @@ function nesteNivaaTekst() {
   DYREHUS.forEach(h => { if (h.nivaa === n) ting2.push(h.ikon + ' ' + h.navn); });
   for (const o of I_SPILLET.omrader) if (D.omrader[o].nivaa === n) ting2.push('🌿 ' + D.omrader[o].navn + ' kan kjøpes');
   if (D.ved(D.akre, n) > D.ved(D.akre, s.nivaa)) ting2.push('🟫 ' + (D.ved(D.akre, n) - D.ved(D.akre, s.nivaa)) + ' nye åkre');
-  if (n === 4) ting2.push('📋 Bestillinger og lastebil');
+  if (n === 4) ting2.push('📋 Bestillinger og varebil');
   return `<b>Nivå ${n}:</b> ` + (ting2.length ? ting2.join(', ') : 'mynter og XP') + ` · ${Math.max(0, D.xpNeste[s.nivaa] - Math.floor(s.xp))} XP igjen`;
 }
 function visByggMeny() {
@@ -1243,7 +1266,7 @@ let tavleSperre = 0;
 $('tavleListe').addEventListener('click', e => { const k = e.target.closest('button'); if (!k || k.disabled) return; const t = naa(), tv = ting.get('tavle');
   if (t < tavleSperre) return; tavleSperre = t + 600;   /* to raske trykk skal ikke sende eller bytte to bestillinger (QA 10.11) */
   if (k.dataset.lever !== undefined) { const r = L.lever(s, +k.dataset.lever, t); if (!r.ok) { visTavle(); return; }
-    kjorLastebil(); melding(`🚚 Lastebilen henter varene: +${r.mynter} 🪙 og +${r.xp} XP`, 3200); gi({xp: r.xp, nye: r.nye}, tv ? midtAv(tv, 3) : null); if (tv) robotJobb(tv);
+    kjorLastebil(); melding(`🚚 Varebilen kjører ut med varene: +${r.mynter} 🪙 og +${r.xp} XP`, 3200); gi({xp: r.xp, nye: r.nye}, tv ? midtAv(tv, 3) : null); if (tv) robotJobb(tv);
     if (r.nye && r.nye.length) lukkDialog('tavle'); else { visTavle(); const b = $('tavleListe').querySelector('[data-lever]:not(:disabled)') || $('tavle').querySelector('.kryss'); if (b && sisteInput === 'tast') b.focus({preventScroll: true}); } }   /* fokus til neste «Send», aldri til «Bytt» (QA 10.11) */
   else if (k.dataset.bytt !== undefined) { if (L.byttBestilling(s, +k.dataset.bytt, t).ok) { lagre(); synk(true); visTavle(); melding('Ny bestilling! 📋'); } } });
 
@@ -1301,7 +1324,8 @@ function bruk(u) {
   else if (u.type === 'bygg') visBygg(u);
   else if (u.type === 'silo' || u.type === 'laave') visLager();
   else if (u.type === 'marked') { visMarked(); fremOppl('marked'); }
-  else if (u.type === 'tavle') visTavle();
+  else if (u.type === 'tavle' || (u.type === 'varebil' && ting.get('tavle'))) visTavle();
+  else if (u.type === 'varebil') melding(`🚚 Dette er varebilen din. Fra nivå ${D.bestillinger.nivaa} kjører den ut med bestillingene.`, 3200);
   else if (u.type === 'gave') visGave();
   else if (u.type === 'pynt') visPynt(u);
 }
@@ -1309,7 +1333,7 @@ window.spillTrykk = (o, t, ray) => {
   if (!startet || pauset || undertrykkTrykk || draModus) return true;   /* et drag håndteres i sluttDra */
   if (flytt) { flyttTil(ray); return true; }
   if (o && o.userData.katt) { kundeTrykk(); return true; }
-  if (o === rev) { if (s.oppl.steg >= OPPL.length && s.nivaa >= D.rebus.nivaa) visGate(); else { hilsRev(false); visOppl(true); } return true; }
+  if (o === rev) { if (s.oppl.steg >= OPPL.length && s.nivaa >= D.rebus.nivaa) visGate(); else { if (!revGang) hilsRev(false); visOppl(true); } return true; }
   if (o && o.userData.omrade && (o.userData.omrade.tema === 'eng' || o.userData.omrade.tema === 'skog')) { visOmradeKjop(o.userData.omrade.tema === 'eng' ? 'enga' : 'skogkanten'); return true; }
   const u = tingFor(o);
   if (u) { if (o && o.userData.art) { o.userData.hopp = 0.4; } bruk(u); return true; }
