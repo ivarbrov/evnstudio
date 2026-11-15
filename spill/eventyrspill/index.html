@@ -806,6 +806,7 @@ function nyttSpill() {
     murLiv: 0, tarnLiv: [0, 0, 0, 0],   // hvor hel muren og tårnene er
     verden: 1, hoyesteVerden: 1, portalApen: false, sjekkpunkt: 0, alleKlart: false, basenavn: '',
     stjerner: {}, epokeForsok: { dod: false, ikkeVansk: true },
+    drept: 0, rekorder: {}, lop: null,
     vansk: 'normal', runde: 0, seiret: false, spilletid: 0, bosser: 0, dodsfall: 0,
     dragePos: { x: VERDEN_BREDDE / 2 - 40, y: VERDEN_HOYDE / 2 }, drageNed: 0, drageFlamme: 0, drageMaal: null,
     kanonNed: 0, kanonVinkel: 0, lynNed: 0, tempelNed: 0, empNed: 0,
@@ -827,7 +828,7 @@ function nyttSpill() {
     helt.alleKlart = gammel.alleKlart;
     helt.basenavn = gammel.basenavn || '';
     helt.hoyesteVerden = Math.max(gammel.hoyesteVerden || 1, helt.verden);
-    for (const k of ['vansk', 'runde', 'seiret', 'spilletid', 'bosser', 'dodsfall', 'stjerner', 'epokeForsok']) if (gammel[k] !== undefined) helt[k] = gammel[k];
+    for (const k of ['vansk', 'runde', 'seiret', 'spilletid', 'bosser', 'dodsfall', 'stjerner', 'epokeForsok', 'drept', 'rekorder', 'lop']) if (gammel[k] !== undefined) helt[k] = gammel[k];
     helt.murLiv = gammel.murLiv;
     helt.tarnLiv = gammel.tarnLiv.slice();
     for (const id in gammel.bygget) {
@@ -835,7 +836,7 @@ function nyttSpill() {
       helt.bygget[id] = gammel.bygget[id];
     }
   }
-  if (!gammel) helt.epokeForsok = { dod: false, ikkeVansk: helt.vansk !== 'vanskelig' };
+  if (!gammel) { helt.epokeForsok = { dod: false, ikkeVansk: helt.vansk !== 'vanskelig' }; helt.lop = nyttLop(true); }
   fiender = []; kuler = []; mynter = []; tekster = []; partikler = []; piler = []; kanonkuler = []; lyn = []; ringer = []; fiendeskudd = []; bossMerker = []; seierVent = 0;
   bolge = 0; tid = 0; risting = 0;
   kamera = { x: 0, y: 0 };
@@ -921,7 +922,7 @@ function lagre() {
   if (!helt) return;
   try {
     const d = {};
-    for (const k of ['niva', 'xp', 'penger', 'drikker', 'pynt', 'bygget', 'verden', 'portalApen', 'sjekkpunkt', 'alleKlart', 'murLiv', 'tarnLiv', 'vansk', 'runde', 'seiret', 'spilletid', 'bosser', 'dodsfall', 'basenavn', 'hoyesteVerden', 'stjerner', 'epokeForsok']) d[k] = helt[k];
+    for (const k of ['niva', 'xp', 'penger', 'drikker', 'pynt', 'bygget', 'verden', 'portalApen', 'sjekkpunkt', 'alleKlart', 'murLiv', 'tarnLiv', 'vansk', 'runde', 'seiret', 'spilletid', 'bosser', 'dodsfall', 'basenavn', 'hoyesteVerden', 'stjerner', 'epokeForsok', 'drept', 'rekorder', 'lop']) d[k] = helt[k];
     d.epoker = 7;
     localStorage.setItem(LAGRE_NOKKEL, JSON.stringify(d));
   } catch (e) { /* lagring er ikke tilgjengelig – spillet virker likevel */ }
@@ -947,6 +948,10 @@ function hentLagring() {
       if (h.seiret || (h.runde || 0) > 0) for (let n = 1; n <= SISTE_VERDEN; n++) h.stjerner[n] = { klart: 1 };
     }
     if (!h.epokeForsok || typeof h.epokeForsok !== 'object') h.epokeForsok = { dod: true, ikkeVansk: true }; // vet ikke hvordan epoken har gått så langt
+    if (typeof h.drept !== 'number') h.drept = 0;
+    if (!h.rekorder || typeof h.rekorder !== 'object') h.rekorder = {};
+    if (!h.lop || typeof h.lop !== 'object') // lagringer fra før rekorden: første runde teller fra spillets start, monstrene telles fra nå
+      h.lop = { start: 0, drept: 0, dod: h.dodsfall || 0, vansk: h.vansk || 'lett', gyldig: !(h.runde || 0), ferdig: !!h.seiret, dreptUkjent: true };
     return h;
   } catch (e) { return null; }
 }
@@ -1541,6 +1546,7 @@ function oppdater() {
   oppdaterBossMerker();
   for (const f of fiender) {
     if (f.liv <= 0) {
+      helt.drept = (helt.drept || 0) + 1; if (helt.lop) helt.lop.drept++;
       if (f.boss) { helt.bosser = (helt.bosser || 0) + 1; try { if (window.EVNEcoins) EVNEcoins.belonn('era.boss.' + helt.verden); } catch (e) {} }
       if (f.sluttboss) vunnet();
       for (let i = 0; i < f.penger; i++) mynter.push({ x: f.x + Math.random() * 20 - 10, y: f.y + Math.random() * 20 - 10, verdi: 1, tid: 0 });
@@ -1583,7 +1589,7 @@ function oppdater() {
   if (helt.verden < SISTE_VERDEN && helt.portalApen && Math.hypot(helt.x - PORTAL.x, helt.y - PORTAL.y) < 26) gaaTilVerden(helt.verden + 1);
   if (helt.liv > 0 && helt.drikker > 0 && helt.liv <= helt.maksLiv * 0.3) drikk(true); // livsdrikken drikkes av seg selv når livet er lavt
   if (seierVent > 0 && --seierVent === 0) { tilstand = 'seier'; document.getElementById('baseKnapp').style.display = 'none'; lagre(); }
-  if (helt.liv <= 0) { helt.liv = 0; helt.dodsfall = (helt.dodsfall || 0) + 1; if (helt.epokeForsok) helt.epokeForsok.dod = true; tilstand = 'slutt'; sluttTid = performance.now(); document.getElementById('baseKnapp').style.display = 'none'; lagre(); }
+  if (helt.liv <= 0) { helt.liv = 0; helt.dodsfall = (helt.dodsfall || 0) + 1; if (helt.epokeForsok) helt.epokeForsok.dod = true; if (helt.lop) helt.lop.dod++; tilstand = 'slutt'; sluttTid = performance.now(); document.getElementById('baseKnapp').style.display = 'none'; lagre(); }
   if (tid % 600 === 0) lagre(); // lagrer hvert 10. sekund
 
   const vb = canvas.width / zoom, vh = canvas.height / zoom; // hvor mye av verden vi ser
@@ -1736,6 +1742,7 @@ let seierVent = 0;
 function vunnet() {
   helt.seiret = true; helt.alleKlart = true;
   epokeKlart(SISTE_VERDEN);
+  lopFerdig();
   try { if (window.EVNEcoins) EVNEcoins.belonn('era.seier'); } catch (e) {}
   visTekst('🏆 DU SLO TIDSHERREN! 🏆', helt.x, helt.y - 110, '#ffd54a', 32);
   for (const f of fiender) if (!f.sluttboss) { f.liv = 0; lagPartikler(f.x, f.y, '#ffd54a', 15, 4); }
@@ -1746,6 +1753,7 @@ function vunnet() {
 function fortsettEtterSeier() { tilstand = 'spill'; menyVist = ''; document.getElementById('baseKnapp').style.display = 'block'; }
 function nyRunde() {
   helt.runde = (helt.runde || 0) + 1; helt.seiret = false; helt.alleKlart = false;
+  helt.lop = nyttLop(false); // helten beholder nivået, så denne runden teller ikke som rekord (venter på Evens valg for «Ny runde»)
   tilstand = 'spill'; menyVist = '';
   document.getElementById('baseKnapp').style.display = 'block';
   gaaTilVerden(1);
@@ -1774,6 +1782,29 @@ function epokeKlart(n) {
     lagPartikler(helt.x, helt.y, '#ffe066', 30, 5);
   }
   lagre();
+}
+
+// ===================== REKORD =====================
+// Rekorden er den korteste tiden fra steinalderen til Tidsherren er slått, én for hver vanskelighetsgrad.
+// Bare en runde som starter på nivå 1 kan gi rekord. Monstre slått og ganger slått ut vises på seiersskjermen.
+// Bytter du til en lettere grad underveis, teller runden på den letteste graden du har brukt.
+const VANSK_REKKE = ['lett', 'normal', 'vanskelig'];
+function lettesteVansk(a, b) { return VANSK_REKKE[Math.min(VANSK_REKKE.indexOf(a), VANSK_REKKE.indexOf(b))] || 'lett'; }
+function nyttLop(gyldig) { return { start: helt.spilletid || 0, drept: 0, dod: 0, vansk: helt.vansk || 'normal', gyldig, ferdig: false }; }
+function rekordTid(s) { s = Math.max(0, Math.round(s)); const t = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, sek = ('0' + (s % 60)).slice(-2); return t ? t + ':' + ('0' + m).slice(-2) + ':' + sek : m + ':' + sek; }
+function lopFerdig() {
+  const l = helt.lop; if (!l || l.ferdig) return;
+  l.ferdig = true; l.tid = (helt.spilletid || 0) - l.start; l.nyRekord = false;
+  if (!helt.rekorder) helt.rekorder = {};
+  const gammel = helt.rekorder[l.vansk];
+  if (l.gyldig && (!gammel || l.tid < gammel.tid)) {
+    helt.rekorder[l.vansk] = { tid: l.tid, drept: l.dreptUkjent ? null : l.drept, dod: l.dod, dato: new Date().toLocaleDateString('sv-SE') };
+    l.nyRekord = true;
+  }
+}
+function rekordLinje(vansk) {
+  const r = (helt.rekorder || {})[vansk]; if (!r) return '';
+  return '🏆 Rekord på ' + VANSKELIGHET[vansk].navn + ': ' + rekordTid(r.tid);
 }
 
 // ===================== BOSSENES TRIKS =====================
@@ -3043,7 +3074,7 @@ function oppdaterMeny() {
   // vanskelighetsgrad vises bare på startkortet
   document.getElementById('menyVansk').style.display = start ? '' : 'none';
   for (const b of document.querySelectorAll('#menyVansk button')) b.setAttribute('aria-pressed', b.dataset.v === (helt.vansk || 'lett') ? 'true' : 'false');
-  document.getElementById('vanskInfo').textContent = VANSK_INFO[helt.vansk] || VANSK_INFO.lett;
+  document.getElementById('vanskInfo').textContent = (VANSK_INFO[helt.vansk] || VANSK_INFO.lett) + (start && rekordLinje(helt.vansk) ? ' ' + rekordLinje(helt.vansk) : '');
   const lagretEl = document.getElementById('menyLagret');
   lagretEl.classList.toggle('stats', tilstand === 'seier');
   document.getElementById('menyNyRunde').hidden = tilstand !== 'seier';
@@ -3052,7 +3083,11 @@ function oppdaterMeny() {
     const v = vg();
     document.getElementById('menyTittel').textContent = '🏆 Du klarte det!';
     document.getElementById('menyEpoke').textContent = 'Du slo Tidsherren og reddet hele tiden – fra steinalderen til Tidsvirvelen!';
-    lagretEl.textContent = '⏱️ ' + spilletidTekst(helt.spilletid || 0) + ' · ⬆️ Nivå ' + helt.niva + ' · 👑 ' + (helt.bosser || 0) + ' bosser · 💀 ' + (helt.dodsfall || 0) + ' ganger slått ut · ⭐ ' + alleStjerner() + ' av ' + SISTE_VERDEN * STJERNEKRAV.length + ' stjerner · ' + v.ikon + ' ' + v.navn + ((helt.runde || 0) ? ' · Runde ' + (helt.runde + 1) : '');
+    const l = helt.lop || {};
+    const rekordTekst = l.nyRekord ? '🏆 Ny rekord på ' + VANSKELIGHET[l.vansk].navn + '!' : (l.gyldig ? rekordLinje(l.vansk) : '');
+    lagretEl.textContent = (rekordTekst ? rekordTekst + ' · ' : '') + '⏱️ ' + rekordTid(l.tid !== undefined ? l.tid : (helt.spilletid || 0)) +
+      (l.dreptUkjent ? '' : ' · 👾 ' + (l.drept || 0) + ' monstre slått') + ' · 💀 ' + (l.dod || 0) + (l.dod === 1 ? ' gang' : ' ganger') + ' slått ut · ⬆️ Nivå ' + helt.niva +
+      ' · ⭐ ' + alleStjerner() + ' av ' + SISTE_VERDEN * STJERNEKRAV.length + ' stjerner · ' + v.ikon + ' ' + v.navn + ((helt.runde || 0) ? ' · Runde ' + (helt.runde + 1) : '');
     document.getElementById('menyMaal').textContent = 'Vil du spille videre, eller prøve en ny runde der fiendene er sterkere? Du beholder basen og nivået. Med «Velg tidsepoke» kan du spille en tidligere tidsepoke på nytt.';
     document.getElementById('menyStart').textContent = '♾️ Fortsett å spille';
   }
@@ -3061,7 +3096,7 @@ function oppdaterMeny() {
 for (const b of document.querySelectorAll('#menyVansk button')) {
   b.addEventListener('click', e => {
     e.stopPropagation();
-    helt.vansk = b.dataset.v; if (helt.vansk !== 'vanskelig' && helt.epokeForsok) helt.epokeForsok.ikkeVansk = true; lagre(); menyVist = ''; oppdaterMeny();
+    helt.vansk = b.dataset.v; if (helt.vansk !== 'vanskelig' && helt.epokeForsok) helt.epokeForsok.ikkeVansk = true; if (helt.lop) helt.lop.vansk = lettesteVansk(helt.lop.vansk, helt.vansk); lagre(); menyVist = ''; oppdaterMeny();
   });
 }
 document.getElementById('menyNyRunde').addEventListener('click', e => { e.stopPropagation(); nyRunde(); });
