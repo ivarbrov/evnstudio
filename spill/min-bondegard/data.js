@@ -82,6 +82,7 @@
     omrader: {
       enga:       { navn: 'Enga',       nivaa: 5,  pris: 300 },
       skogkanten: { navn: 'Skogkanten', nivaa: 10, pris: 1500 },
+      ostjordet:  { navn: 'Østjordet',  nivaa: 10, pris: 1500, krever: 'jordet' },   // 0.20.0 (Ivar 16.11): utvidelsen øst for Jordet. Navn og pris er forslag
       jordet:     { navn: 'Jordet',     nivaa: 8,  pris: 1000 }   // 0.17.0 (Even 15.11): jordet på andre siden av veien. Nivå og pris er forslag og må godkjennes av en voksen
     },
     innholdTil: 10,
