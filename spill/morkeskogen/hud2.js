@@ -10,9 +10,10 @@
     const hud = $('hud'), status = hud && hud.querySelector('.panel'), klokke = hud && hud.querySelector('.clock');
     if (!status || !klokke || $('h2Res')) return !!$('h2Res');
     // Ressurser under statusfeltet
-    const res = document.createElement('div'); res.id = 'h2Res'; status.appendChild(res);
-    // Dag og område i ett felt; knappene pause, kart og hjelp ved siden av
-    const dag = document.createElement('div'); dag.id = 'h2Dag'; dag.append($('phase'), $('biome')); klokke.prepend(dag);
+    const res = document.createElement('div'); res.id = 'h2Res';
+    // Dag og område i ett felt. 2.0.12: står i statusfeltet ved siden av veden (Ivars ønske), ikke oppe til høyre
+    const dag = document.createElement('div'); dag.id = 'h2Dag'; dag.append($('phase'), $('biome'));
+    const bunn = document.createElement('div'); bunn.id = 'h2Bunn'; bunn.append(res, dag); status.appendChild(bunn);
     // Våpennavn og nivå over hurtiglinja (samme elementer som før)
     const v = document.createElement('div'); v.id = 'h2Vapen'; v.hidden = true;
     v.append($('wIcon'), ' ', $('axe'), ' · ', Object.assign(document.createElement('span'), { className: 'n', textContent: '⭐ Nivå ' }));
@@ -25,7 +26,11 @@
     // 2.0.12: fast 🔨 Bygg-knapp øverst til høyre, under ⏸ (som i Min Bondegård)
     { const bk = document.createElement('button'); bk.id = 'h2Bygg'; bk.type = 'button'; bk.title = 'Bygg (B)'; bk.setAttribute('aria-label', 'Bygg'); bk.hidden = true;
       bk.innerHTML = '<span class="ai">🔨</span><span class="at">Bygg</span>';
-      bk.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (typeof window.EVN2_bygg === 'function') window.EVN2_bygg(); }); document.body.appendChild(bk); }
+      bk.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (typeof window.EVN2_bygg === 'function') window.EVN2_bygg(); }); document.body.appendChild(bk);
+      // 2.0.12: 🗺️ Kart ved siden av Bygg på mobil (Ivars ønske). På PC står 🗺️ i toppraden som før.
+      const kk = document.createElement('button'); kk.id = 'h2Kart'; kk.type = 'button'; kk.title = 'Kart (M)'; kk.setAttribute('aria-label', 'Kart'); kk.hidden = true;
+      kk.innerHTML = '<span class="ai">🗺️</span><span class="at">Kart</span>';
+      kk.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); const k = $('evnKartKnapp'); if (k) k.click(); }); document.body.appendChild(kk); }
     // Klarspråk: «Nivå» ved bålet het det samme som heltens nivå. Merket heter nå «Bål N» (tallet skrives fortsatt av spillet i #fireLvl).
     const fl = $('fireLvl'); if (fl && fl.previousSibling && fl.previousSibling.nodeType === 3) fl.previousSibling.textContent = 'Bål ';
     const hn = document.createElement('div'); hn.id = 'h2Hint'; hn.hidden = true; hn.setAttribute('role', 'status'); document.body.appendChild(hn);
@@ -153,7 +158,10 @@
     // Våpenlinja over hurtiglinja følger hurtiglinja
     const hb = $('hotbar'), v = $('h2Vapen'); if (v && hb) v.hidden = hb.hidden;
     { const bk = $('h2Bygg'), rad = $('evnRad'), hud = $('hud'); if (bk && hud) { bk.hidden = hud.hidden || !hb || hb.hidden;
-        if (!bk.hidden && rad) { const r = rad.getBoundingClientRect(); bk.style.top = (r.bottom + 8) + 'px'; bk.style.right = Math.max(8, innerWidth - r.right) + 'px'; } } }
+        if (!bk.hidden && rad) { const r = rad.getBoundingClientRect(); bk.style.top = (r.bottom + 8) + 'px'; bk.style.right = Math.max(8, innerWidth - r.right) + 'px'; }
+        const kk = $('h2Kart'); if (kk) { kk.hidden = bk.hidden || !document.body.classList.contains('touchui');
+          if (!kk.hidden) { if (innerWidth < 380) { kk.style.top = (parseFloat(bk.style.top) + 56 + 8) + 'px'; kk.style.right = bk.style.right; }   // smal skjerm: Kart under Bygg, så den ikke treffer våpenlinja
+            else { kk.style.top = bk.style.top; kk.style.right = (parseFloat(bk.style.right) + 56 + 8) + 'px'; } } } } }
     // 2.0.9: på mobil er Avslutt-lenken skjult (den ligger i pausen). Den skal da ikke kunne nås med Tab eller leses opp.
     { const a = $('evnAvslutt'), t = document.body.classList.contains('touchui'); if (a && (a.getAttribute('aria-hidden') === 'true') !== t) { if (t) { a.setAttribute('aria-hidden', 'true'); a.tabIndex = -1; } else { a.removeAttribute('aria-hidden'); a.removeAttribute('tabindex'); } } }
     // Ressurser: endret siste 4 s, fullt lager, eller ved (når hintet handler om bålet)

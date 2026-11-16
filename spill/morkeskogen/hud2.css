@@ -231,13 +231,13 @@ body.touchui #h2Dag #biome{max-width:72px;overflow:hidden;text-overflow:ellipsis
 }
 
 /* ---------- 2.0.12: Bygg-knapp, nivåknapp og ryddig meny ---------- */
-#h2Bygg{position:fixed;z-index:5;width:56px;height:56px;padding:0;border-radius:16px;pointer-events:auto;cursor:pointer;
+#h2Bygg,#h2Kart{position:fixed;z-index:5;width:56px;height:56px;padding:0;border-radius:16px;pointer-events:auto;cursor:pointer;
   display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;gap:2px;
   background:rgba(12,20,16,.84);border:2px solid rgba(243,234,214,.45);color:#f3ead6;box-shadow:0 2px 8px rgba(0,0,0,.35);-webkit-tap-highlight-color:transparent}
-#h2Bygg[hidden]{display:none!important}
-#h2Bygg .ai{font-size:24px}
-#h2Bygg .at{font:800 11px var(--body,inherit)}
-#h2Bygg:active{transform:scale(.94)}
+#h2Bygg[hidden],#h2Kart[hidden]{display:none!important}
+#h2Bygg .ai,#h2Kart .ai{font-size:24px}
+#h2Bygg .at,#h2Kart .at{font:800 11px var(--body,inherit)}
+#h2Bygg:active,#h2Kart:active{transform:scale(.94)}
 #h2Vapen .h2NivaaKnapp{pointer-events:auto;cursor:pointer;border-radius:999px;padding:2px 6px;margin-left:2px;background:rgba(255,204,0,.16);border:1px solid rgba(255,204,0,.45)}
 #h2Vapen .h2NivaaKnapp .pil{font-weight:800;opacity:.8}
 #h2Vapen{pointer-events:none}
@@ -253,3 +253,10 @@ body.touchui #h2Dag #biome{max-width:72px;overflow:hidden;text-overflow:ellipsis
 .h2NivaaTopp .h2Liten{font-size:13px;opacity:.85}
 .h2XpBar{height:12px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}
 .h2XpBar i{display:block;height:100%;background:linear-gradient(90deg,#ffd75e,#f0a91c)}
+/* Dag-feltet i statusfeltet, ved siden av veden (2.0.12) */
+#h2Bunn{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px;pointer-events:none}
+#h2Bunn #h2Res{margin-top:0!important;min-height:0!important}
+#h2Bunn #h2Res:empty{display:none}
+#h2Bunn #h2Dag{padding:3px 10px!important;gap:5px!important;white-space:nowrap;font-size:13px}
+#h2Bunn #h2Dag #phase{font-size:13px!important}
+#h2Bunn #h2Dag #biome{font-size:11px!important}
