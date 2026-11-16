@@ -9,7 +9,7 @@
 <!-- EVN-SIKKERHET: CSP-taggen fra /sikkerhet/ legges inn her ved publisering på evnstudio.no (tas ut i Claude-artefakter). -->
 <link rel="icon" href="../../favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Matdyr-regn 0.10.4 – EVN Studio</title>
+<title>Matdyr-regn 0.10.5 – EVN Studio</title>
 <script src="../../statistikk.js" data-spill="matdyr" defer></script>
 <style>
   :root { --gull:#ffc93c; --mork:#1d2440; --gronn:#2fb35a; }
@@ -176,7 +176,7 @@
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <p class="ingen3d hidden" id="noGL">😕 Denne nettleseren kan ikke vise 3D. Prøv en annen nettleser, eller be en voksen om hjelp.</p>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.10.4</div>
+    <div class="evn-ver" id="versjon">Versjon 0.10.5</div>
   </div>
 </div>
 
@@ -517,7 +517,7 @@ window.EVNPause = function (cfg) {
 
 <script>
 "use strict";
-const VERSJON="0.10.4";
+const VERSJON="0.10.5";
 function ingen3d(){window.__ingen3d=true;$("noGL").classList.remove("hidden");$("startBtn").hidden=true}
 // ================= Matdyr-data: 40 dyr × 25 mat/drikke = 1000 =================
 const ANIMALS=[["🐷","gris"],["🐸","frosk"],["🦈","hai"],["🐙","blekksprut"],["🐒","ape"],["🐄","ku"],["🐭","mus"],["🐧","pingvin"],["🐘","elefant"],["🐋","hval"],["🐱","katt"],["🐶","hund"],["🐰","kanin"],["🦊","rev"],["🐻","bjørn"],["🐼","panda"],["🦁","løve"],["🐯","tiger"],["🐴","hest"],["🦄","enhjørning"],["🐑","sau"],["🐐","geit"],["🐔","høne"],["🦆","and"],["🦉","ugle"],["🦜","papegøye"],["🦩","flamingo"],["🐊","krokodille"],["🐢","skilpadde"],["🐍","slange"],["🦖","dinosaur"],["🦒","sjiraff"],["🦓","sebra"],["🐫","kamel"],["🦛","flodhest"],["🦏","neshorn"],["🐨","koala"],["🦥","dovendyr"],["🐌","snegle"],["🦀","krabbe"]];
@@ -996,7 +996,7 @@ function makeBlenderModel(ci,ai){
 const TB={};let tbLastet=false;
 function loadTobein(){if(tbLastet||FIG!=="blender"||!THREE.GLTFLoader)return;tbLastet=true;const sk=document.createElement("script");sk.src="tobein-dyr.js";
   sk.onerror=()=>console.warn("tobein: fant ikke tobein-dyr.js");
-  sk.onload=()=>{const d=window.EVN_TOBEIN_DYR||{},keys=Object.keys(d);let n=0;const ferdig=()=>{if(++n<keys.length)return;plotSprites.forEach(p=>p.userData.k="");refreshBase();
+  sk.onload=()=>{const d=window.EVN_TOBEIN_DYR||{},keys=Object.keys(d);let n=0;const ferdig=()=>{if(++n<keys.length)return;try{delete window.EVN_TOBEIN_DYR}catch(e){}/* base64-teksten trengs ikke etter tolkingen (QA 0.10.4) */plotSprites.forEach(p=>p.userData.k="");refreshBase();
       if(carry&&TB[carry.ci]){carrySprite.clear();carrySprite.add(makeModel(carry.ci))}window.EVNTobeinKlar=true;try{document.dispatchEvent(new Event("evn-tobein-klar"))}catch(e){}};
     keys.forEach(k=>{try{const bin=atob(d[k]),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
       /* Figurene har teksturer. CSP tillater blob: for bilder, men ikke for fetch, så teksturene lastes som <img> (TextureLoader) i stedet for ImageBitmapLoader. */
@@ -1013,8 +1013,8 @@ function makeTobeinModel(ci){
   const g=new THREE.Group(),bodyG=new THREE.Group();bodyG.add(inner);g.add(bodyG);
   g.userData={body:bodyG,legs:[],tb:nd,seed:Math.random()*6,gl:true};return g;
 }
-function makeModel(ci){
-  if(FIG==="blender"&&TB[ci])return makeTobeinModel(ci);
+function makeModel(ci,vanlig){
+  if(FIG==="blender"&&TB[ci]&&!vanlig)return makeTobeinModel(ci);
   {const ai=Math.floor(ci/FOODS.length);if(FIG==="blender"&&BL[ai])return makeBlenderModel(ci,ai)}
   const P=modelParts(ci),mat=modelMat(ci),g=new THREE.Group(),body=new THREE.Mesh(P.body,mat);body.castShadow=true;g.add(body);
   g.userData={body,legs:[],mode:P.mode,seed:Math.random()*6};
@@ -1450,7 +1450,8 @@ function lagMiniatyrer(){
     const px=new Uint8Array(S*S*4),cv=document.createElement("canvas");cv.width=cv.height=S;const g=cv.getContext("2d"),img=g.createImageData(S,S);
     const oldTarget=renderer.getRenderTarget(),oldClear=renderer.getClearAlpha();renderer.setClearColor(0x000000,0);
     for(let ai=0;ai<ANIMALS.length;ai++){
-      const m=makeModel(ai*FOODS.length),bb=new THREE.Box3().setFromObject(m),sz=new THREE.Vector3();bb.getSize(sz);const k=2.6/Math.max(sz.x,sz.y,sz.z*.85,.01);m.scale.multiplyScalar(k);m.position.set(-(bb.min.x+bb.max.x)/2*k,-bb.min.y*k,-(bb.min.z+bb.max.z)/2*k);
+      /* Bildene i Matdyrboka viser dyrearten, så de bruker alltid den vanlige figuren (QA 0.10.4: ellers varierte bildene mellom øktene) */
+      const m=makeModel(ai*FOODS.length,true),bb=new THREE.Box3().setFromObject(m),sz=new THREE.Vector3();bb.getSize(sz);const k=2.6/Math.max(sz.x,sz.y,sz.z*.85,.01);m.scale.multiplyScalar(k);m.position.set(-(bb.min.x+bb.max.x)/2*k,-bb.min.y*k,-(bb.min.z+bb.max.z)/2*k);
       const holder=new THREE.Group();holder.add(m);holder.rotation.y=-0.5;sc.add(holder);
       renderer.setRenderTarget(rt);renderer.clear();renderer.render(sc,cam);renderer.readRenderTargetPixels(rt,0,0,S,S,px);sc.remove(holder);
       for(let y=0;y<S;y++)img.data.set(px.subarray((S-1-y)*S*4,(S-y)*S*4),y*S*4);g.putImageData(img,0,0);MINI[ai]=cv.toDataURL("image/png");
