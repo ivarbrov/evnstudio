@@ -260,3 +260,16 @@ body.touchui #h2Dag #biome{max-width:72px;overflow:hidden;text-overflow:ellipsis
 #h2Bunn #h2Dag{padding:3px 10px!important;gap:5px!important;white-space:nowrap;font-size:13px}
 #h2Bunn #h2Dag #phase{font-size:13px!important}
 #h2Bunn #h2Dag #biome{font-size:11px!important}
+/* Større trykkflate for nivåknappen (minst 44 px høy), uten at den ser større ut */
+#h2Vapen .h2NivaaKnapp{position:relative}
+#h2Vapen .h2NivaaKnapp::after{content:"";position:absolute;left:-6px;right:-6px;top:50%;height:44px;transform:translateY(-50%)}
+/* Lav, liggende skjerm (f.eks. 568×320): mindre overskrift og faner, så lista får plass */
+@media (max-height:420px){
+  #menu .card{padding:8px 14px!important;gap:6px!important}
+  #menu #menuTitle{font-size:18px}
+  #menu .menux{padding:2px 10px!important;font-size:14px!important;margin:0}
+  #menu .h2Faner button{min-height:36px}
+  #menu .h2Faner{padding:2px 0 4px;margin-bottom:4px}
+  #menu #menuClose{padding:6px!important;min-height:36px}
+  .h2NivaaTopp{padding:6px 10px;gap:3px}
+}
