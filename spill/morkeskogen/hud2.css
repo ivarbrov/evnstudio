@@ -229,3 +229,27 @@ body.touchui #h2Dag #biome{max-width:72px;overflow:hidden;text-overflow:ellipsis
   body:not(.touchui) #hud > .panel:first-child{min-width:0!important}
   body:not(.touchui) #h2Dag{min-width:0!important;padding:5px 10px!important}
 }
+
+/* ---------- 2.0.12: Bygg-knapp, nivåknapp og ryddig meny ---------- */
+#h2Bygg{position:fixed;z-index:5;width:56px;height:56px;padding:0;border-radius:16px;pointer-events:auto;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;gap:2px;
+  background:rgba(12,20,16,.84);border:2px solid rgba(243,234,214,.45);color:#f3ead6;box-shadow:0 2px 8px rgba(0,0,0,.35);-webkit-tap-highlight-color:transparent}
+#h2Bygg[hidden]{display:none!important}
+#h2Bygg .ai{font-size:24px}
+#h2Bygg .at{font:800 11px var(--body,inherit)}
+#h2Bygg:active{transform:scale(.94)}
+#h2Vapen .h2NivaaKnapp{pointer-events:auto;cursor:pointer;border-radius:999px;padding:2px 6px;margin-left:2px;background:rgba(255,204,0,.16);border:1px solid rgba(255,204,0,.45)}
+#h2Vapen .h2NivaaKnapp .pil{font-weight:800;opacity:.8}
+#h2Vapen{pointer-events:none}
+/* Menyen: overskrift, Lukk og faner står fast øverst; bare innholdet ruller (før la fanene og «Lukk» seg oppå teksten) */
+#menu .card{box-sizing:border-box;max-height:calc(100dvh - 32px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;margin:auto}
+#menu .menux{position:static!important;align-self:flex-end;flex:none}
+#menu #menuTitle{flex:none;margin:0}
+#menu #menuList{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#menu #menuClose{flex:none}
+#menu .h2Faner{top:0;background:#13201a;margin-top:0;padding:4px 0 8px}
+.h2NivaaTopp{display:grid;gap:6px;margin:0 0 10px;padding:10px 12px;border-radius:12px;background:rgba(255,204,0,.08);border:1px solid rgba(255,204,0,.3)}
+.h2NivaaTopp p{margin:0}
+.h2NivaaTopp .h2Liten{font-size:13px;opacity:.85}
+.h2XpBar{height:12px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}
+.h2XpBar i{display:block;height:100%;background:linear-gradient(90deg,#ffd75e,#f0a91c)}
