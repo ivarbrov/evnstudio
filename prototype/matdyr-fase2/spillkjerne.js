@@ -565,13 +565,13 @@
     levG.children.slice().forEach(c => { levG.remove(c); c.geometry && c.geometry.dispose(); c.material && c.material.dispose(); });
     if (!o) return;
     const w = o.x1 - o.x0, d = o.z1 - o.z0, tex = tekstur('innsamlingssone', 768, 448, x => {
-      x.fillStyle = 'rgba(74,190,84,.95)'; x.beginPath(); x.roundRect ? x.roundRect(8, 8, 752, 432, 40) : x.rect(8, 8, 752, 432); x.fill();
+      x.fillStyle = '#4abe54'; x.beginPath(); x.roundRect ? x.roundRect(8, 8, 752, 432, 40) : x.rect(8, 8, 752, 432); x.fill();
       x.strokeStyle = '#eef3e6'; x.lineWidth = 16; x.setLineDash([]); x.stroke();
-      x.strokeStyle = 'rgba(255,255,255,.75)'; x.lineWidth = 6; x.setLineDash([24, 14]); x.beginPath(); x.roundRect ? x.roundRect(30, 30, 708, 388, 28) : x.rect(30, 30, 708, 388); x.stroke(); x.setLineDash([]);
+      x.strokeStyle = '#d9f2d9'; x.lineWidth = 6; x.setLineDash([24, 14]); x.beginPath(); x.roundRect ? x.roundRect(30, 30, 708, 388, 28) : x.rect(30, 30, 708, 388); x.stroke(); x.setLineDash([]);
       x.font = 'bold 96px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
       for (const [t, y] of [['INNSAMLINGS-', 170], ['SONE', 285]]) { x.strokeStyle = '#1f5a26'; x.lineWidth = 16; x.strokeText(t, 384, y); x.fillStyle = '#fff'; x.fillText(t, 384, y); }
     });
-    const m = new T.Mesh(new T.PlaneGeometry(w, d), new T.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+    const m = new T.Mesh(new T.PlaneGeometry(w, d), new T.MeshBasicMaterial({ map: tex, alphaTest: 0.5 }));   // ikke gjennomsiktig (Even 16.11.2026); alphaTest kutter bare de runde hjørnene
     m.rotation.x = -Math.PI / 2; m.position.set((o.x0 + o.x1) / 2, 0.24, (o.z0 + o.z1) / 2); m.renderOrder = 2; levG.add(m);
   }
   const iLevFelt = p => { const o = levOmr(); return !!o && p.y < 1.5 && p.x > o.x0 && p.x < o.x1 && p.z > o.z0 && p.z < o.z1; };
