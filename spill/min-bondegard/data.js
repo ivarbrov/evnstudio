@@ -33,7 +33,9 @@
       ost:      { navn: 'Ost',      ikon: '🧀' },
       sukker:   { navn: 'Sukker',   ikon: '🧂' },
       popkorn:  { navn: 'Popkorn',  ikon: '🍿' },
-      pannekaker: { navn: 'Pannekaker', ikon: '🥞' }
+      pannekaker: { navn: 'Pannekaker', ikon: '🥞' },
+      festhatt:   { navn: 'Festhatt', ikon: '🥳', arr: 'bursdag' },   // 0.16.0: lages til Bursdagsfesten og sendes med varebilen. Kan ikke selges eller bestilles
+      bursdagskake: { navn: 'Bursdagskake', ikon: '🎂' }
     },
     // Oppskrifter: bygg, nivå, råvarer, tid (s), antall ut
     oppskrifter: {
@@ -47,7 +49,9 @@
       ost:        { bygg: 'meieri',     nivaa: 9,  inn: { melk: 3 },                      tid: 150, ut: 1 },
       sukker:     { bygg: 'sukkerverk', nivaa: 7,  inn: { sukkerror: 1 },                 tid: 60,  ut: 1 },
       popkorn:    { bygg: 'popkorn',    nivaa: 8,  inn: { mais: 2 },                      tid: 60,  ut: 1 },
-      pannekaker: { bygg: 'kjokken',    nivaa: 9,  inn: { egg: 2, melk: 1, sukker: 1 },   tid: 120, ut: 1 }
+      pannekaker: { bygg: 'kjokken',    nivaa: 9,  inn: { egg: 2, melk: 1, sukker: 1 },   tid: 120, ut: 1 },
+      festhatt:   { bygg: 'festbord',   nivaa: 3,  inn: { hvete: 2, mais: 1 },            tid: 60,  ut: 1 },
+      bursdagskake: { bygg: 'bakeri',   nivaa: 3,  inn: { hvete: 2, egg: 2 },             tid: 120, ut: 1, krever: { arr: 'bursdag', trinn: 2 } }   // premie i Bursdagsfesten
     },
     // Bygg: nivå og pris. Produksjonsbygg har 2 køplasser. «dyr»: bygget er et dyrehus, og dyrene kommer når det er kjøpt.
     bygg: {
@@ -58,7 +62,8 @@
       popkorn:    { navn: 'Popkornmaskinen', ikon: '🍿', nivaa: 8,  pris: 750 },   // Even 15.11: 750 (var 1200), godkjent av Ivar 15.11
       kjokken:    { navn: 'Gårdskjøkkenet', ikon: '🥞', nivaa: 9,  pris: 800 },
       fjos:       { navn: 'Fjøs og beite',  ikon: '🐄', nivaa: 6,  pris: 300, dyr: 'ku' },   // Ivar 12.11: 300 mynter, spilleren plasserer det selv
-      grisebinge: { navn: 'Grisebinge',     ikon: '🐖', nivaa: 10, pris: 800, dyr: 'gris' }
+      grisebinge: { navn: 'Grisebinge',     ikon: '🐖', nivaa: 10, pris: 800, dyr: 'gris' },
+      festbord:   { navn: 'Festbordet',     ikon: '🎉', nivaa: 3,  pris: 150, arr: 'bursdag' }   // kommer med Bursdagsfesten, ikke med nivået (Even 11.11: første maskin ca. 150)
     },
     koPlasser: 2,
     xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325],
@@ -86,7 +91,17 @@
         ['maned', 1, 0, 'superrar'], ['pynt', 0.9, 0, 'superrar'], ['gullgard', 0.1, 0, 'legendarisk']],
       bonusDager: 7, maskinMynter: 300, superrarMynter: 200,   // bonusDager: Ivar 14.11, 7 dager (Even ønsket en måned)
       pynt: ['gullhone', 'gullegg', 'gullgulrot', 'gullstjerne', 'regnbue', 'gullfontene'],
-      pyntNavn: { gullhone: 'Gullhøne', gullegg: 'Gullegg', gullgulrot: 'Gullgulrot', gullstjerne: 'Gullstjerne', regnbue: 'Regnbue', gullfontene: 'Gullfontene' } },
+      pyntNavn: { gullhone: 'Gullhøne', gullegg: 'Gullegg', gullgulrot: 'Gullgulrot', gullstjerne: 'Gullstjerne', regnbue: 'Regnbue', gullfontene: 'Gullfontene', bursdagspynt: 'Ballonger og kake' } },
+    /* 0.16.0 Årstidsfester (Even 11.11 og 15.11, rammene godkjent av Ivar 12.11 og 15.11). Festen er åpen i sin måned hvert år.
+       Det du har sendt, blir med til neste år, og ingenting går tapt. Premiene kommer trinnvis og er bare til pynt, bortsett fra oppskriften.
+       Tallene (antall hatter per trinn, pris på Festbordet, mynter og XP per hatt) er Claudes forslag og må godkjennes av en voksen før publisering. */
+    arr: {
+      bursdag: { navn: 'Bursdagsfesten', ikon: '🎂', maned: 11, nivaa: 3, vare: 'festhatt', bygg: 'festbord', xp: 2,
+        trinn: [ { n: 5, premie: 'hatter', tekst: 'Dyrene får festhatter i november' }, { n: 15, premie: 'oppskrift', vare: 'bursdagskake', tekst: 'Ny oppskrift: bursdagskake i bakeriet' },
+                 { n: 30, premie: 'skinn', skinn: 'bursdag', tekst: 'Bursdagsbilen: nytt utseende til varebilen' }, { n: 50, premie: 'pynt', pynt: 'bursdagspynt', tekst: 'Pynt til gården: ballonger og kake' } ] }
+    },
+    skinn: { bursdag: 'Bursdagsbilen' },
+    arrPynt: ['bursdagspynt'],
     rebus: { nivaa: 2, pause: 180, myntFaktor: 1, myntPluss: 10, xp: 4 },   /* 0.15.1 (Even 15.11): du trenger ikke ha svaret på lager. Rebus tar ingen vare, så lønna er varens verdi mindre enn før (samme gevinst som før) */
     gater: {
       hvete: 'Jeg er gul og står i lange rader på åkeren. Blir jeg malt, blir jeg til mel og brød. Hva er jeg?',

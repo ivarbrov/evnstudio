@@ -195,5 +195,34 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
   s5.lager.grisefor = 1; L.mat(s5, 'gris', T0); t('Grisen gir trøfler etter 4 minutter', L.samleDyr(s5, 'gris', T0 + 240 * S).ok && s5.lager.troffel === 1);
   const k5 = L.valider(JSON.parse(JSON.stringify(s5)), T0); t('Skogkanten og griser overlever lagring', k5.omrader.skogkanten && k5.dyr.gris.length === 2); }
 
+
+// --- Årstidsfester (0.16.0) ---
+{ const A = D.arr.bursdag, k = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 3 }), T0);
+  t('Festen er stengt under nivå 3 og utenfor november', L.arrId(L.ny(T0), 11) === null && L.arrId(k, 11) === 'bursdag' && L.arrId(k, 12) === null);
+  t('Festbordet følger ikke med nivået', !L.valider(JSON.parse(JSON.stringify(Object.assign(L.ny(T0), { nivaa: 5 }))), T0).bygg.festbord);
+  L.arrStart(k, 'bursdag');
+  t('Festen gir en byggeplass for Festbordet', k.bygg.festbord && k.bygg.festbord.eid === false && k.arr.bursdag.levert === 0);
+  t('Uten hatter kan ingenting sendes', L.arrLever(k, 'bursdag', 11, T0).grunn === 'mangler');
+  k.lager.festhatt = 5; const m0 = k.mynter;
+  t('Utenfor november kan hatter ikke sendes, og de blir liggende', L.arrLever(k, 'bursdag', 12, T0).grunn === 'stengt' && k.lager.festhatt === 5);
+  const r1 = L.arrLever(k, 'bursdag', 11, T0);
+  t('5 hatter gir første premie, mynter og XP', r1.ok && r1.antall === 5 && !k.lager.festhatt && k.mynter === m0 + 5 * D.pris('festhatt') && r1.xp === 5 * A.xp && r1.premier.length === 1 && r1.premier[0].premie === 'hatter' && L.arrHar(k, 'bursdag', 'hatter'));
+  k.bygg.bakeri.eid = true; k.lager.hvete = 4; k.lager.egg = 4;
+  t('Bursdagskaka er låst før trinn 2', L.kanProdusere(k, 'bakeri', 'bursdagskake', T0) === 'laast' && !L.kanLage(k, 'bursdagskake'));
+  k.lager.festhatt = 25; const r2 = L.arrLever(k, 'bursdag', 11, T0);
+  t('30 hatter gir oppskrift og bursdagsbilen i samme sending', r2.premier.map(x => x.premie).join() === 'oppskrift,skinn' && k.skinn.eid.bursdag && k.skinn.valgt === 'bursdag' && L.kanProdusere(k, 'bakeri', 'bursdagskake', T0) === null);
+  k.lager.festhatt = 20; const r3 = L.arrLever(k, 'bursdag', 11, T0);
+  t('50 hatter gir pynten, og ingenting gis to ganger', r3.premier.length === 1 && k.gaver.pynt.bursdagspynt && L.arrTrinn(k, 'bursdag') === 4 && (k.lager.festhatt = 3, L.arrLever(k, 'bursdag', 11, T0).premier.length === 0));
+  t('Skinn kan byttes, men bare til et som er eid', L.velgSkinn(k, null) && k.skinn.valgt === null && !L.velgSkinn(k, 'jul') && L.velgSkinn(k, 'bursdag'));
+  t('Festhatter kan ikke selges eller bestilles', !L.kanSelge('festhatt') && !L.bestPool(k).includes('festhatt') && L.bestPool(k).includes('bursdagskake'));
+  k.bygg.festbord.eid = true; k.bygg.festbord.x = 2; k.bygg.festbord.z = 3; k.gaver.pynt.bursdagspynt.x = 1;
+  const v = L.valider(JSON.parse(JSON.stringify(k)), T0);
+  t('Lagring og lasting beholder festen', v.arr.bursdag.levert === 53 && v.bygg.festbord.eid && v.bygg.festbord.x === 2 && v.skinn.valgt === 'bursdag' && v.skinn.eid.bursdag && v.gaver.pynt.bursdagspynt.x === 1);
+  const juks = JSON.parse(JSON.stringify(L.ny(T0))); juks.nivaa = 5; juks.skinn = { eid: { bursdag: true }, valgt: 'bursdag' }; juks.gaver.pynt = { bursdagspynt: { x: 1, z: 1, r: 0 } }; juks.arr = { bursdag: { levert: 4 } };
+  const vj = L.valider(juks, T0);
+  t('Lagringen kan ikke gi premier som ikke er tjent', !vj.skinn.eid.bursdag && vj.skinn.valgt === null && !vj.gaver.pynt.bursdagspynt && vj.arr.bursdag.levert === 4);
+  t('Feil typer i festen tåles', L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 4, arr: { bursdag: { levert: 'x' } }, skinn: 7 }), T0).arr.bursdag.levert === 0);
+  t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
+}
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);
 process.exit(feil ? 1 : 0);

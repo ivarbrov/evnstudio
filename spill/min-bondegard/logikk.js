@@ -18,7 +18,8 @@
       omrader: {},
       best: { nr: 0, fro: (Math.floor(naa) % 2147483646) + 1, liste: [] },
       rebus: { gate: null, neste: naa, siste: [], loste: 0 },
-      gaver: { uaapnet: [], dag: '', pynt: {} }
+      gaver: { uaapnet: [], dag: '', pynt: {} },
+      arr: {}, skinn: { eid: {}, valgt: null }
     };
     for (var k in D.startLager) s.lager[k] = D.startLager[k];
     giNivaa(s, 1, naa);
@@ -36,11 +37,11 @@
       s.dyr[d] = []; for (var i = 0; i < D.dyr[d].start; i++) s.dyr[d].push({ slutt: null });
       nytt.dyr.push(d);
     }
-    for (var b in D.bygg) if (D.bygg[b].nivaa === n && !s.bygg[b]) {
+    for (var b in D.bygg) if (D.bygg[b].nivaa === n && !s.bygg[b] && !D.bygg[b].arr) {
       s.bygg[b] = { eid: D.bygg[b].pris === 0, x: null, z: null, r: 0, ko: [] };
       nytt.bygg.push(b);
     }
-    for (var o in D.oppskrifter) if (D.oppskrifter[o].nivaa === n) nytt.oppskrifter.push(o);
+    for (var o in D.oppskrifter) if (D.oppskrifter[o].nivaa === n && !D.oppskrifter[o].krever && !D.bygg[D.oppskrifter[o].bygg].arr) nytt.oppskrifter.push(o);   // festens oppskrifter følger ikke med nivået
     nytt.omrader = []; for (var om in D.omrader) if (D.omrader[om].nivaa === n) nytt.omrader.push(om);
     nytt.tavle = n === D.bestillinger.nivaa; nytt.bestillinger = fyllBestillinger(s, naa);
     return nytt;
@@ -127,6 +128,7 @@
     if (!b || !o || o.bygg !== bygg) return 'ukjent';
     if (!b.eid) return 'ikke-bygd';
     if (o.nivaa > s.nivaa) return 'laast';
+    if (o.krever && arrTrinn(s, o.krever.arr) < o.krever.trinn) return 'laast';
     if (uferdige(b, naa).length >= D.koPlasser) return 'ko-full';
     if (!(bygg === 'forkvern' && bonusAktiv(s, naa)) && !har(s, o.inn)) return 'mangler';
     return null;
@@ -171,7 +173,7 @@
   function kjopOmrade(s, id) { var g = kanKjopeOmrade(s, id); if (g) return { ok: false, grunn: g }; s.mynter -= D.omrader[id].pris; s.omrader[id] = true; return { ok: true }; }
 
   // ---------- Markedsbua (progresjonsregel F3) ----------
-  function kanSelge(v) { return !D.erFor(v); }
+  function kanSelge(v) { return !D.erFor(v) && !(D.varer[v] && D.varer[v].arr); }
   function selg(s, v, n) {
     if (!kanSelge(v)) return { ok: false, grunn: 'for' };
     n = Math.min(n, s.lager[v] || 0);
@@ -189,13 +191,14 @@
     if (D.avlinger[v]) return true;
     for (var d in D.dyr) if (D.dyr[d].produkt === v) return !!s.dyr[d] && kanLage(s, D.dyr[d].spiser, (dybde || 0) + 1, naa);
     var o = D.oppskrifter[v]; if (!o) return false;
+    if (o.krever && arrTrinn(s, o.krever.arr) < o.krever.trinn) return false;
     var b = s.bygg[o.bygg]; if (!b || (!b.eid && (naa || D.bygg[o.bygg].pris > s.mynter + 300))) return false;
     for (var k in o.inn) if (!kanLage(s, k, (dybde || 0) + 1, naa)) return false;
     return true;
   }
   function bestPool(s) {
     var alle = Object.keys(D.avlinger).concat(Object.keys(D.varer));
-    return alle.filter(function (v) { return !D.erFor(v) && kanLage(s, v) && D.kjedeTid(v) <= D.bestillinger.maksKjede; });
+    return alle.filter(function (v) { return !D.erFor(v) && !(D.varer[v] && D.varer[v].arr) && kanLage(s, v) && D.kjedeTid(v) <= D.bestillinger.maksKjede; });
   }
   function bestVerdi(varer) { var v = 0; for (var k in varer) v += D.verdi(k) * varer[k]; return v; }
   function nyBestilling(s, naa) {
@@ -281,6 +284,10 @@
       a.x = typeof f.x === 'number' && isFinite(f.x) ? f.x : null; a.z = typeof f.z === 'number' && isFinite(f.z) ? f.z : null;
       if (D.avlinger[f.avling]) { a.avling = f.avling; a.start = tall(f.start, naa); a.slutt = tall(f.slutt, naa); }
     });
+    // Årstidsfester (0.16.0): antall sendt er det eneste som lagres. Premiene regnes ut fra tallet, så lagringen kan ikke gi mer enn reglene.
+    if (r.arr && typeof r.arr === 'object') for (var aid in D.arr) { var ra = r.arr[aid]; if (!ra || typeof ra !== 'object' || s.nivaa < D.arr[aid].nivaa) continue;
+      arrStart(s, aid); s.arr[aid].levert = Math.max(0, Math.min(9999, Math.floor(tall(ra.levert, 0)))); arrPremier(s, aid, 0); }
+    if (r.skinn && typeof r.skinn === 'object' && typeof r.skinn.valgt === 'string' && s.skinn.eid[r.skinn.valgt]) s.skinn.valgt = r.skinn.valgt; else if (r.skinn && r.skinn.valgt === null) s.skinn.valgt = null;
     if (r.bygg && typeof r.bygg === 'object') for (var b in s.bygg) { var rb = r.bygg[b]; if (!rb || typeof rb !== 'object') continue;
       var sb = s.bygg[b]; sb.eid = sb.eid || rb.eid === true;
       sb.x = typeof rb.x === 'number' && isFinite(rb.x) ? rb.x : null; sb.z = typeof rb.z === 'number' && isFinite(rb.z) ? rb.z : null; sb.r = tall(rb.r, 0);
@@ -316,7 +323,7 @@
       if (Array.isArray(r.gaver.uaapnet)) s.gaver.uaapnet = r.gaver.uaapnet.filter(function (g) { return g && (g.kilde === 'dag' || g.kilde === 'nivaa'); }).slice(0, 20).map(function (g) { return { kilde: g.kilde, levert: !!g.levert }; });
       if (typeof r.gaver.dag === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.gaver.dag)) s.gaver.dag = r.gaver.dag;
       s.gaver.bonus = Math.min(tall(r.gaver.bonus, 0), naa + (D.gave.bonusDager + 1) * 86400000); s.gaver.gullgard = r.gaver.gullgard === true; s.gaver.gullPaa = s.gaver.gullgard && r.gaver.gullPaa !== false;
-      if (r.gaver.pynt && typeof r.gaver.pynt === 'object') D.gave.pynt.forEach(function (p) { var q = r.gaver.pynt[p]; if (q && typeof q === 'object') s.gaver.pynt[p] = { x: typeof q.x === 'number' && isFinite(q.x) ? q.x : null, z: typeof q.z === 'number' && isFinite(q.z) ? q.z : null, r: [0, 1, 2, 3].indexOf(q.r) >= 0 ? q.r : 0 }; });
+      if (r.gaver.pynt && typeof r.gaver.pynt === 'object') D.gave.pynt.concat(D.arrPynt.filter(function (p) { return !!s.gaver.pynt[p]; })).forEach(function (p) { var q = r.gaver.pynt[p]; if (q && typeof q === 'object') s.gaver.pynt[p] = { x: typeof q.x === 'number' && isFinite(q.x) ? q.x : null, z: typeof q.z === 'number' && isFinite(q.z) ? q.z : null, r: [0, 1, 2, 3].indexOf(q.r) >= 0 ? q.r : 0 }; });
     }
     if (r.oppl && typeof r.oppl === 'object') s.oppl.steg = Math.max(0, Math.floor(tall(r.oppl.steg, 0)));
     if (r.stat && typeof r.stat === 'object') for (var st in s.stat) s.stat[st] = Math.max(0, Math.floor(tall(r.stat[st], 0)));
@@ -361,7 +368,7 @@
     var avl = Object.keys(D.avlinger).filter(function (a) { return D.avlinger[a].nivaa <= s.nivaa; }),
         ferdig = Object.keys(D.gater).filter(function (v) { return !D.avlinger[v] && kanLage(s, v, 0, true); }),
         voksende = s.akre.filter(function (f) { return f.avling && f.slutt > naa; }),
-        bygg = Object.keys(D.bygg).filter(function (b) { var B = D.bygg[b]; return s.bygg[b] && !s.bygg[b].eid && B.nivaa <= Math.min(s.nivaa, D.innholdTil); })
+        bygg = Object.keys(D.bygg).filter(function (b) { var B = D.bygg[b]; return !B.arr && s.bygg[b] && !s.bygg[b].eid && B.nivaa <= Math.min(s.nivaa, D.innholdTil); })
           .sort(function (a, b) { return D.bygg[a].pris - D.bygg[b].pris; });
     function vare(liste, n) { var v = liste[Math.floor(tilf(s) * liste.length)]; if (plass(s, lagerType(v)) >= n) { legg(s, v, n); r.vare = v; r.antall = n; } else r.mynter += D.pris(v) * n; }
     var liste = G.premier.filter(function (p) { return !(gave.kilde === 'nivaa' && p[0] === 'mynter'); }), sum = 0, tot = 0;
@@ -380,6 +387,39 @@
     s.mynter += r.mynter; return r;
   }
 
+  // ---------- Årstidsfester (0.16.0, Even 11.11 og 15.11) ----------
+  // Festen er åpen i sin måned. Spilleren lager festens vare og sender den med varebilen. Premiene kommer trinnvis etter hvor mye som er sendt.
+  // Ingenting går tapt: det som er sendt, står til neste år, og premiene er permanente (hattene på dyrene vises bare i festmåneden).
+  function arrId(s, maned) { for (var id in D.arr) if (D.arr[id].maned === maned && s.nivaa >= D.arr[id].nivaa) return id; return null; }
+  function arrStart(s, id) {
+    var A = D.arr[id]; if (!A) return false;
+    if (!s.arr[id]) s.arr[id] = { levert: 0 };
+    if (A.bygg && !s.bygg[A.bygg]) s.bygg[A.bygg] = { eid: false, x: null, z: null, r: 0, ko: [] };
+    return true;
+  }
+  function arrTrinn(s, id) { var a = s.arr && s.arr[id], n = 0; if (!a || !D.arr[id]) return 0; D.arr[id].trinn.forEach(function (t) { if (a.levert >= t.n) n++; }); return n; }
+  function arrHar(s, id, premie) { var A = D.arr[id]; if (!A) return false; var n = arrTrinn(s, id); return A.trinn.some(function (t, i) { return t.premie === premie && i < n; }); }
+  // Gir premiene for trinnene fra og med «fra». Skinn og pynt lagres som eid. Hatter og oppskrift følger av antall sendt.
+  function arrPremier(s, id, fra) {
+    var nye = D.arr[id].trinn.slice(fra, arrTrinn(s, id));
+    nye.forEach(function (t) {
+      if (t.premie === 'skinn') s.skinn.eid[t.skinn] = true;
+      if (t.premie === 'pynt' && !s.gaver.pynt[t.pynt]) s.gaver.pynt[t.pynt] = { x: null, z: null, r: 0 };
+    });
+    return nye;
+  }
+  function arrLever(s, id, maned, naa) {
+    var A = D.arr[id]; if (!A || arrId(s, maned) !== id) return { ok: false, grunn: 'stengt' };
+    arrStart(s, id);
+    var n = s.lager[A.vare] || 0; if (n <= 0) return { ok: false, grunn: 'mangler' };
+    var for0 = arrTrinn(s, id); ta(s, mk(A.vare, n)); s.arr[id].levert = Math.min(9999, s.arr[id].levert + n);
+    var m = D.pris(A.vare) * n; s.mynter += m;
+    var premier = arrPremier(s, id, for0);
+    premier.forEach(function (t) { if (t.premie === 'skinn') s.skinn.valgt = t.skinn; });
+    return { ok: true, antall: n, mynter: m, xp: A.xp * n, premier: premier, nye: giXP(s, A.xp * n, naa) };
+  }
+  function velgSkinn(s, id) { if (id && !s.skinn.eid[id]) return false; s.skinn.valgt = id || null; return true; }
+
   function mk(v, n) { var o = {}; o[v] = n; return o; }
 
   var L = {
@@ -393,6 +433,7 @@
     nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
     nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
+    arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
     giDagsgave: giDagsgave, bonusAktiv: bonusAktiv, leverGaver: leverGaver, klareGaver: klareGaver, aapneGave: aapneGave
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;
