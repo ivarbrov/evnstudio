@@ -850,7 +850,11 @@ const REV_HJEM = [-17.6, 4.0], REV_GARD = [-8.0, 1.3];   /* 0.15.3 (Even 15.11):
    altså ca. 0,9 m/s. Han går 1,2 m/s, og klippet spilles 1,3 ganger så fort, så føttene ikke sklir. Svingene er mykere, og han blir ikke avbrutt av vinking mens han går */
 const REV_FART = 1.2, REV_TAKT = 1.3; window.revOpptatt = () => !!revGang;
 let revSted = 'hjem', revGang = null, revFlate = null, revY = 0.044, revKlar = false, revHjemEtter = 0;
-function revVei() { const v = [[stiX(4.6), 4.6]]; for (let z = 6; z <= VEI_Z - 1.2; z += 1.4) v.push([stiX(z), z]); v.push([stiX(VEI_Z - 1.2), VEI_Z - 1.2], [-14.6, VEI_Z - 1.2], [-13.2, VEI_Z + 1.3], [-7.6, VEI_Z + 1.3], [-6.3, VEI_Z - 1.2], [-7.6, 7.7], [-8.0, 4.0], REV_GARD); return v; }   /* 0.15.2 (Even 15.11): ytterst på veien, så han ikke går gjennom bilen til Blomst */
+function revVei() { const v = [[stiX(4.6), 4.6]]; for (let z = 6; z <= VEI_Z - 1.2; z += 1.4) v.push([stiX(z), z]); v.push([stiX(VEI_Z - 1.2), VEI_Z - 1.2], [-14.6, VEI_Z - 1.2], [-13.2, VEI_Z + 1.3], [-7.6, VEI_Z + 1.3], [-6.3, VEI_Z - 1.2], [-5.5, 10.2]);
+  /* 0.17.1 (Even 16.11: «Rebus går gjennom byggene»): inne på gården går han samme vei som roboten ville gått, utenom bygg og åkerkanter. Står noe på plassen hans, stopper han ved siden av */
+  let inn = null; try { inn = finnVei({x: -5.5, z: 10.2}, [REV_GARD[0] - 0.3, REV_GARD[0] + 0.3, REV_GARD[1] - 0.3, REV_GARD[1] + 0.3], 0.8); } catch (e) {}
+  if (inn && inn.length) inn.forEach(q => v.push([q.x, q.z])); else if (inn === null) v.push([-5.5, 8.6]); else v.push(REV_GARD);
+  return v; }   /* 0.15.2 (Even 15.11): ytterst på veien, så han ikke går gjennom bilen til Blomst */
 function revGaa(hjem, straks) {
   if (!rev) return; const v = revVei(); if (hjem) v.reverse().push(REV_HJEM); else v.unshift(REV_HJEM);
   if (straks || matchMedia('(prefers-reduced-motion: reduce)').matches) { revSett(...v[v.length - 1]); revSted = hjem ? 'hjem' : 'gard'; revGang = null; rev.rotation.y = hjem ? Math.PI / 2 + 0.35 : Math.PI / 4; return; }
