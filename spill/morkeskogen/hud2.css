@@ -205,3 +205,27 @@ body.touchui #h2Dag #biome{max-width:72px;overflow:hidden;text-overflow:ellipsis
 .h2Snarvei button{min-height:52px;border-radius:14px;border:2px solid rgba(255,255,255,.25);background:rgba(255,154,60,.22);color:#fff;font:inherit;font-weight:800;font-size:17px;cursor:pointer}
 .h2Snarvei button:disabled{opacity:.45}
 .h2Snarvei small{font-weight:700;opacity:.8;font-size:13px}
+
+/* ---------- 2.0.11: små skjermer ---------- */
+/* Lave telefoner på høykant (f.eks. 320×568): Start skal synes uten å rulle */
+@media (orientation:portrait) and (max-height:620px){
+  #startScreen .card{padding:14px 18px!important;gap:8px!important}
+  #startScreen .card h1{font-size:30px!important;margin:0!important}
+  #startScreen .start-maskot{height:76px!important}
+  #startScreen .card p{font-size:14px!important}
+  #startScreen .maal{font-size:13.5px!important;gap:3px!important}
+  #startBtn{padding:10px!important;font-size:21px!important}
+}
+/* Smale PC-vinduer: toppraden på én linje, ingenting utenfor kanten */
+@media (max-width:760px){
+  body:not(.touchui) #h2Dag{white-space:nowrap}
+  body:not(.touchui) #h2Dag #biome{display:none!important}
+  body:not(.touchui) #hud #evnRad #evnAvslutt .evn-avs-tekst{display:none}
+  body:not(.touchui) #hud #evnRad #evnAvslutt{padding:0!important;width:44px}
+  body:not(.touchui) #hud #evnRad{gap:4px}
+}
+@media (max-width:640px){
+  body:not(.touchui) #hud .bar{width:96px!important}
+  body:not(.touchui) #hud > .panel:first-child{min-width:0!important}
+  body:not(.touchui) #h2Dag{min-width:0!important;padding:5px 10px!important}
+}
