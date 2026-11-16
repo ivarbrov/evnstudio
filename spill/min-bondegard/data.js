@@ -81,7 +81,8 @@
     // Områder spilleren kan kjøpe (Ivar 12.11: Enga på nivå 5 for 300). Skogkanten er med i fase 4.
     omrader: {
       enga:       { navn: 'Enga',       nivaa: 5,  pris: 300 },
-      skogkanten: { navn: 'Skogkanten', nivaa: 10, pris: 1500 }
+      skogkanten: { navn: 'Skogkanten', nivaa: 10, pris: 1500 },
+      jordet:     { navn: 'Jordet',     nivaa: 8,  pris: 1000 }   // 0.17.0 (Even 15.11): jordet på andre siden av veien. Nivå og pris er forslag og må godkjennes av en voksen
     },
     innholdTil: 10,
     // Rebus' gåter (Even 13.11): svaret er varen. Spilleren gir Rebus varen. Lønn: pris × 2 + 10 mynter, 4 XP + nivået til varen. Ny gåte 3 minutter etter riktig svar

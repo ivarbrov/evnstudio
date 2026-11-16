@@ -222,6 +222,8 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
   const vj = L.valider(juks, T0);
   t('Lagringen kan ikke gi premier som ikke er tjent', !vj.skinn.eid.bursdag && vj.skinn.valgt === null && !vj.gaver.pynt.bursdagspynt && vj.arr.bursdag.levert === 4);
   t('Feil typer i festen tåles', L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 4, arr: { bursdag: { levert: 'x' } }, skinn: 7 }), T0).arr.bursdag.levert === 0);
+  { const j = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 8, mynter: 1000 }), T0), j7 = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 7, mynter: 5000 }), T0);
+    t('Jordet kan kjøpes på nivå 8 for 1000 og lagres', L.kanKjopeOmrade(j7, 'jordet') === 'laast' && L.kjopOmrade(j, 'jordet').ok && j.mynter === 0 && L.valider(JSON.parse(JSON.stringify(j)), T0).omrader.jordet === true); }
   t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);

@@ -15,7 +15,7 @@ if (matchMedia('(pointer:coarse)').matches) document.documentElement.classList.a
 addEventListener('pointerdown', e => document.documentElement.classList.toggle('touch', e.pointerType === 'touch'), {passive: true, capture: true});
 
 // Det som er laget i denne versjonen. Resten av nivå 1–10 ligger i data.js og kommer i fase 2–4.
-const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot'], bygg: ['forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken', 'grisebinge', 'festbord'], dyr: ['hone', 'ku', 'gris'], omrader: ['enga', 'skogkanten']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
+const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot'], bygg: ['forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken', 'grisebinge', 'festbord'], dyr: ['hone', 'ku', 'gris'], omrader: ['enga', 'skogkanten', 'jordet']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
 
 /* ======================= Lagring (F2, F3) ======================= */
 let s = null, lagringFeilet = false;
@@ -611,6 +611,7 @@ const STANDARD = {
   akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45]],
   festbord: [-2.2, 8.2], forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], silo: [-0.4, -10.0], tavle: [-2.3, 4.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
 };
+const JORD = [-13.7, 13.5, 15.4, 22.6];   /* 0.17.0: der ting kan stå på Jordet: x0, x1, z0, z1 */
 const GARD = {x0: -15.55, x1: 13.6, z0: -11.55, z1: 10.2}, GARD_X1 = 13.6, GARD_X1_ENGA = 22.0, GARD_X0 = -15.55, GARD_X0_SKOG = -24.0, SKOG_Z1 = -1.0;   /* 0.13.0: Skogkanten gjør gården bredere mot vest bak låven (bare der z < -1, så Rebus' lysning er fri) */   /* 0.9.8: gården blir bredere når Enga er kjøpt */
 let hinder = [];   // faste hindringer: [x0, x1, z0, z1]
 function finnHinder() {
@@ -626,8 +627,9 @@ function fotRekt(t, x, z, r) { const [w, d] = t.fot; const [a, b] = (r || 0) % 2
 const overlapp = (p, q) => p[0] < q[1] - 0.02 && p[1] > q[0] + 0.02 && p[2] < q[3] - 0.02 && p[3] > q[2] + 0.02;
 function erLedig(t, x, z, r) {
   const p = fotRekt(t, x, z, r);
-  if (p[0] < GARD.x0 || p[1] > GARD.x1 || p[2] < GARD.z0 || p[3] > GARD.z1) return false;
-  if (p[0] < GARD_X0 && p[3] > SKOG_Z1) return false;   /* Skogkanten-delen går bare bak låven */
+  const paJordet = s.omrader && s.omrader.jordet && p[0] >= JORD[0] && p[1] <= JORD[1] && p[2] >= JORD[2] && p[3] <= JORD[3];   /* 0.17.0: Jordet over veien er en egen del av gården */
+  if (!paJordet && (p[0] < GARD.x0 || p[1] > GARD.x1 || p[2] < GARD.z0 || p[3] > GARD.z1)) return false;
+  if (!paJordet && p[0] < GARD_X0 && p[3] > SKOG_Z1) return false;   /* Skogkanten-delen går bare bak låven */
   if (hinder.some(h => overlapp(p, h))) return false;
   for (const [id, u] of ting) if (u !== t && u.fot && u.plassert && overlapp(p, fotRekt(u, u.x, u.z, u.r))) return false;
   return true;
@@ -635,7 +637,8 @@ function erLedig(t, x, z, r) {
 function finnLedigPlass(t, nx, nz) {
   if (erLedig(t, nx, nz, t.r)) return [nx, nz];
   let best = null, bd = 1e9;
-  for (let x = GARD.x0; x <= GARD.x1; x += 0.25) for (let z = GARD.z0; z <= GARD.z1; z += 0.25) { const d = (x - nx) ** 2 + (z - nz) ** 2; if (d < bd && erLedig(t, x, z, t.r)) { bd = d; best = [x, z]; } }
+  const zMaks = s.omrader && s.omrader.jordet ? JORD[3] : GARD.z1;
+  for (let x = GARD.x0; x <= GARD.x1; x += 0.25) for (let z = GARD.z0; z <= zMaks; z += 0.25) { const d = (x - nx) ** 2 + (z - nz) ** 2; if (d < bd && erLedig(t, x, z, t.r)) { bd = d; best = [x, z]; } }
   return best;
 }
 function plasser(t, x, z, r) { t.x = x; t.z = z; t.r = r || 0; t.plassert = true; t.gruppe.position.set(x, 0, z); t.gruppe.rotation.y = t.r * Math.PI / 2; t.gruppe.updateMatrixWorld(true); }
@@ -643,7 +646,7 @@ function plasser(t, x, z, r) { t.x = x; t.z = z; t.r = r || 0; t.plassert = true
 function plasserAlt() {
   synkArr();
   const enga = !!(s.omrader && s.omrader.enga), skog = !!(s.omrader && s.omrader.skogkanten); GARD.x1 = enga ? GARD_X1_ENGA : GARD_X1; GARD.x0 = skog ? GARD_X0_SKOG : GARD_X0;
-  if (window.mbEnga) window.mbEnga(enga); if (window.mbSkog) window.mbSkog(skog);
+  if (window.mbEnga) window.mbEnga(enga); if (window.mbSkog) window.mbSkog(skog); if (window.mbJorde) window.mbJorde(s.omrader && s.omrader.jordet);
   s.akre.forEach((f, i) => {
     let t = ting.get(f.id); if (!t) { t = lagAkerGruppe(f); ting.set(f.id, t); }
     if (f.x === null) { const [sx, sz] = STANDARD.akre[i] || [0, 0]; const p = finnLedigPlass(t, sx, sz) || [sx, sz]; f.x = p[0]; f.z = p[1]; }
@@ -930,7 +933,7 @@ function midtAv(u, y = 2) { return new THREE.Vector3(u.gruppe.position.x, y, u.g
 // Reglene venter ikke på roboten: det spilleren gjør, skjer med en gang. Roboten går dit og viser det (høyst 5 jobber i kø).
 // Veifinning (Even 9.11: «roboten går gjennom gjerde på hønsegården»): rutenett på 0,5 m over gården. Bygg, gjerder og binger er
 // stengt, åkrene kan roboten gå over. Korteste vei finnes med Dijkstra (8 retninger) og rettes ut der roboten ser fram.
-const RUTENETT = 0.5, ROBOT_R = 0.4, RX0 = GARD_X0_SKOG, NX = Math.round((GARD_X1_ENGA - RX0) / RUTENETT) + 1, NZ = Math.round((GARD.z1 - GARD.z0) / RUTENETT) + 1;   /* rutenettet dekker hele den største gården */
+const RUTENETT = 0.5, ROBOT_R = 0.4, RX0 = GARD_X0_SKOG, NX = Math.round((GARD_X1_ENGA - RX0) / RUTENETT) + 1, NZ = Math.round((JORD[3] + 0.4 - GARD.z0) / RUTENETT) + 1;   /* rutenettet dekker hele den største gården */
 const boksCache = new Map();
 function tingRekt(u) {
   if (u.fot) return fotRekt(u, u.x, u.z, u.r);
@@ -948,6 +951,11 @@ function stengtKart() {
   }
   for (let i = 0; i < NX; i++) { const x = RX0 + i * RUTENETT; if (x > GARD.x1 + 0.3 || x < GARD.x0 - 0.3) for (let j = 0; j < NZ; j++) stengt[i * NZ + j] = 1;   /* Enga og Skogkanten er stengt til de er kjøpt */
     else if (x < GARD_X0 - 0.3) for (let j = 0; j < NZ; j++) if (GARD.z0 + j * RUTENETT > SKOG_Z1 + 0.3) stengt[i * NZ + j] = 1; }
+  /* 0.17.0: sør for gården er alt stengt, bortsett fra gårdsveien over veien og Jordet når det er kjøpt */
+  const jordet = !!(s.omrader && s.omrader.jordet);
+  for (let i = 0; i < NX; i++) { const x = RX0 + i * RUTENETT; for (let j = 0; j < NZ; j++) { const z = GARD.z0 + j * RUTENETT; if (z <= GARD.z1 + 0.3) continue;
+    const overgang = jordet && Math.abs(x + 5.5) < 1.3 && z < JORD[2] + 0.2, inne = jordet && x > JORD[0] - 0.4 && x < JORD[1] + 0.4 && z > JORD[2] - 0.4 && z < JORD[3] + 0.4;
+    if (!overgang && !inne) stengt[i * NZ + j] = 1; } }
   return stengt;
 }
 const avstRekt = (x, z, r) => Math.hypot(Math.max(r[0] - x, 0, x - r[1]), Math.max(r[2] - z, 0, z - r[3]));
@@ -1184,6 +1192,7 @@ function visDyr(u, art) {   /* hønsehuset og fjøset (0.9.8) bruker samme kort 
 }
 const OMR = {   /* 0.13.0: Enga og Skogkanten bruker samme kjøpskort */
   enga: {ikon: '🌿', midt: [18, 0, -1], tekst: 'En stor eng øst for gården. Da blir gården bredere, og du får plass til fjøs, beite og meieri.', eid: 'Enga er din. Her er det plass til fjøset og meieriet.', takk: 'Enga er din! 🌿 Nå er det plass til fjøs og meieri.'},
+  jordet: {ikon: '🌻', midt: [0, 0, 19], tekst: 'Et stort jorde på andre siden av veien. Du får et nytt gjerde og plass til flere åkre og bygg.', eid: 'Jordet er ditt. Her er det plass til mer.', takk: 'Jordet er ditt! 🌻 Flytt åkre og bygg hit med ✋ Flytt.'},
   skogkanten: {ikon: '🌲', midt: [-19, 0, -6], tekst: 'Skogen bak låven. Trærne ryddes, gjerdet flyttes, og du får plass til grisebingen og mer.', eid: 'Skogkanten er din. Her er det plass til grisebingen.', takk: 'Skogkanten er din! 🌲 Nå er det plass til grisebingen.'}
 };
 function visOmradeKjop(id) {
@@ -1414,7 +1423,7 @@ window.spillTrykk = (o, t, ray) => {
   if (flytt) { flyttTil(ray); return true; }
   if (o && o.userData.katt) { kundeTrykk(); return true; }
   if (o === rev) { if (s.oppl.steg >= OPPL.length && s.nivaa >= D.rebus.nivaa) visGate(); else { if (!revGang) hilsRev(false); visOppl(true); } return true; }
-  if (o && o.userData.omrade && (o.userData.omrade.tema === 'eng' || o.userData.omrade.tema === 'skog')) { visOmradeKjop(o.userData.omrade.tema === 'eng' ? 'enga' : 'skogkanten'); return true; }
+  if (o && o.userData.omrade && ['eng', 'skog', 'jorde'].includes(o.userData.omrade.tema)) { visOmradeKjop({eng: 'enga', skog: 'skogkanten', jorde: 'jordet'}[o.userData.omrade.tema]); return true; }
   const u = tingFor(o);
   if (u) { if (o && o.userData.art) { o.userData.hopp = 0.4; } bruk(u); return true; }
   lukkHandling();
