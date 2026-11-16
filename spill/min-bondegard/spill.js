@@ -614,8 +614,8 @@ const STANDARD = {
   akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45]],
   festbord: [-2.2, 8.2], forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], silo: [-0.4, -10.0], tavle: [-2.3, 4.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
 };
-const JORD = [-13.7, 13.5, 15.4, 22.6];   /* 0.17.0: der ting kan stå på Jordet: x0, x1, z0, z1 */
-const GARD = {x0: -15.55, x1: 13.6, z0: -11.55, z1: 10.2}, GARD_X1 = 13.6, GARD_X1_ENGA = 22.0, GARD_X0 = -15.55, GARD_X0_SKOG = -24.0, SKOG_Z1 = -1.0;   /* 0.13.0: Skogkanten gjør gården bredere mot vest bak låven (bare der z < -1, så Rebus' lysning er fri) */   /* 0.9.8: gården blir bredere når Enga er kjøpt */
+const JORD = [-13.7, 21.5, 15.4, 29.6];   /* 0.17.0: der ting kan stå på Jordet: x0, x1, z0, z1 */
+const GARD = {x0: -15.55, x1: 13.6, z0: -11.55, z1: 10.2}, GARD_X1 = 13.6, GARD_X1_ENGA = 30.0, GARD_X0 = -15.55, GARD_X0_SKOG = -24.0, SKOG_Z1 = -1.0;   /* 0.13.0: Skogkanten gjør gården bredere mot vest bak låven (bare der z < -1, så Rebus' lysning er fri) */   /* 0.9.8: gården blir bredere når Enga er kjøpt */
 let hinder = [];   // faste hindringer: [x0, x1, z0, z1]
 function finnHinder() {
   hinder = [];
@@ -1575,6 +1575,15 @@ loop();
    Bare i den private forhåndsvisningen (window.MB_ADMIN settes av byggeskriptet) og i testmodus med ?test&admin.
    Finnes ikke for vanlige spillere på evnstudio.no. Det admin gir, er ikke en del av spillets økonomi. */
 const admLager = () => { try { return JSON.parse(localStorage.getItem('mb-admin') || '{}'); } catch (e) { return {}; } };
+function admLagre(f) { const l = admLager(); f(l); try { localStorage.setItem('mb-admin', JSON.stringify(l)); } catch (e) {} }
+function admPlanter() { if (admLager().planter) for (const a in D.avlinger) D.avlinger[a].nivaa = 1; }   /* alle plantene kan plantes uansett nivå */
+function admBursdag() {   /* alle premiene fra Bursdagsfesten, og Festbordet ferdig bygd */
+  const id = 'bursdag', A = D.arr[id]; for (let i = 0; i < 400 && s.nivaa < A.nivaa; i++) L.giXP(s, 5, naa());   /* festen krever nivå 3, ellers tas premiene ikke vare på i lagringen */
+  L.arrStart(s, id); s.arr[id].levert = Math.max(s.arr[id].levert, A.trinn[A.trinn.length - 1].n);
+  if (s.bygg[A.bygg]) s.bygg[A.bygg].eid = true;
+  A.trinn.forEach(tr => { if (tr.premie === 'skinn') s.skinn.eid[tr.skinn] = true; if (tr.premie === 'pynt' && !s.gaver.pynt[tr.pynt]) s.gaver.pynt[tr.pynt] = {x: null, z: null, r: 0}; });
+  s.lager[A.vare] = (s.lager[A.vare] || 0) + 5; L.velgSkinn(s, 'bursdag');
+}
 function admSkinn() { (admLager().skinn || []).forEach(id => { if (D.skinn[id]) s.skinn.eid[id] = true; }); }
 function visAdmin() {
   aapneHandling(null, '👑 Admin', () => `<p>Her bestemmer du. Dette finnes bare i testversjonen.</p>
@@ -1582,6 +1591,8 @@ function visAdmin() {
     <div class="rad"><span class="stort">🚚</span><span class="midt">Bilkaos<small>Alle bilene kommer på én gang</small></span><button class="knapp" data-g="adm" data-v="biler" type="button">Start</button></div>
     <div class="rad"><span class="stort">✖️</span><span class="midt">5 ganger mynter<small>${adm.x5 ? 'Er på' : 'Er av'}</small></span><button class="knapp" data-g="adm" data-v="x5" type="button">${adm.x5 ? 'Slå av' : 'Slå på'}</button></div>
     ${Object.keys(D.skinn).map(id => `<div class="rad"><span class="stort">🎂</span><span class="midt">${D.skinn[id]}<small>${s.skinn.eid[id] ? 'Du har den' : 'Festbil'}</small></span><button class="knapp" data-g="adm" data-v="skinn" data-id="${id}" type="button" ${s.skinn.eid[id] ? 'disabled' : ''}>Få</button></div>`).join('')}
+    <div class="rad"><span class="stort">🎉</span><span class="midt">Alle bursdagstingene<small>Festbordet, hatter, kake, bil og pynt</small></span><button class="knapp" data-g="adm" data-v="bursdag" type="button">Få</button></div>
+    <div class="rad"><span class="stort">🌱</span><span class="midt">Alle plantene<small>${admLager().planter ? 'Du kan plante alt' : 'Plant alt, uansett nivå'}</small></span><button class="knapp" data-g="adm" data-v="planter" type="button" ${admLager().planter ? 'disabled' : ''}>Få</button></div>
     <div class="rad"><span class="stort">💰</span><span class="midt">1000 mynter</span><button class="knapp" data-g="adm" data-v="mynter" type="button">Få</button></div>
     <div class="rad"><span class="stort">⭐</span><span class="midt">Ett nivå opp<small>Du er på nivå ${s.nivaa}</small></span><button class="knapp" data-g="adm" data-v="nivaa" type="button">Få</button></div>`);
 }
@@ -1608,7 +1619,7 @@ function oppdaterAdmin(dt, t) {
     if (u.ret * b.position.x > 46) { scene.remove(b); adm.biler.splice(i, 1); } }
 }
 if (ADMIN) {
-  admSkinn();
+  admSkinn(); admPlanter();
   const kn = $('adminKnapp'); if (kn) { kn.hidden = false; kn.addEventListener('click', visAdmin); }
   $('handlingInnhold').addEventListener('click', e => {
     const k = e.target.closest('button[data-g="adm"]'); if (!k || k.disabled) return; const v = k.dataset.v;
@@ -1617,6 +1628,8 @@ if (ADMIN) {
     else if (v === 'x5') { adm.x5 = !adm.x5; adm.forrige = s.mynter; tegnPaaNytt(); melding(adm.x5 ? '✖️ 5 ganger mynter er på' : '5 ganger mynter er av'); }
     else if (v === 'skinn') { const id = k.dataset.id; if (!D.skinn[id]) return; s.skinn.eid[id] = true; const l = admLager(); l.skinn = [...new Set([...(l.skinn || []), id])]; try { localStorage.setItem('mb-admin', JSON.stringify(l)); } catch (e) {}
       L.velgSkinn(s, id); lagre(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding('🎂 Du fikk ' + D.skinn[id] + '!'); }
+    else if (v === 'bursdag') { admBursdag(); lagre(); plasserAlt(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding('🎉 Du fikk alle bursdagstingene!', 3200); }
+    else if (v === 'planter') { admLagre(l => { l.planter = true; }); admPlanter(); synk(true); tegnPaaNytt(); melding('🌱 Nå kan du plante alt!', 3200); }
     else if (v === 'mynter') { s.mynter += 1000; adm.forrige = s.mynter; lagre(); synk(); tegnPaaNytt(); }
     else if (v === 'nivaa') { const n0 = s.nivaa; for (let i = 0; i < 400 && s.nivaa === n0; i++) L.giXP(s, 5, naa()); lagre(); plasserAlt(); synk(true); tegnPaaNytt(); }
   });
