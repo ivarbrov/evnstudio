@@ -224,8 +224,10 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
   t('Feil typer i festen tåles', L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 4, arr: { bursdag: { levert: 'x' } }, skinn: 7 }), T0).arr.bursdag.levert === 0);
   { const j = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 8, mynter: 1000 }), T0), j7 = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 7, mynter: 5000 }), T0);
     t('Jordet kan kjøpes på nivå 8 for 1000 og lagres', L.kanKjopeOmrade(j7, 'jordet') === 'laast' && L.kjopOmrade(j, 'jordet').ok && j.mynter === 0 && L.valider(JSON.parse(JSON.stringify(j)), T0).omrader.jordet === true); }
-  { const o = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 10, mynter: 2500 }), T0);
-    t('Østjordet (nivå 10, 1500) krever Jordet først', L.kanKjopeOmrade(o, 'ostjordet') === 'krever' && L.kjopOmrade(o, 'jordet').ok && L.kjopOmrade(o, 'ostjordet').ok && o.mynter === 0 && L.valider(JSON.parse(JSON.stringify(o)), T0).omrader.ostjordet === true); }
+  { const o = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 10, mynter: 5000 }), T0);
+    t('Østjordet er låst på nivå 10 (kommer på nivå 16)', L.kanKjopeOmrade(o, 'ostjordet') === 'laast' && D.omrader.ostjordet.nivaa === 16 && D.omrader.ostjordet.krever === 'jordet');
+    o.nivaa = 16;
+    t('Østjordet (nivå 16, 4000) krever Jordet først', L.kanKjopeOmrade(o, 'ostjordet') === 'krever' && L.kjopOmrade(o, 'jordet').ok && L.kjopOmrade(o, 'ostjordet').ok && o.mynter === 0); }   /* lagring over nivåtaket (10) prøves når taket heves */
   t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);

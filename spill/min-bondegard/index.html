@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.20.0 – EVN Studio</title>
+<title>Min Bondegård 0.20.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -283,7 +283,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.20.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.20.1</div>
   </div>
 </div>
 
@@ -554,7 +554,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.20.0'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.20.1'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -899,12 +899,12 @@ const OMRADER = [
    poly: [[14.25, -11.8], [22.2, -11.8], [22.2, 10.35], [14.25, 10.35]]},
   /* 0.17.0 (Even 15.11 og 16.11): Jordet på andre siden av veien. Vanlig gress og trær til det kjøpes, som Enga. Nivå og pris står også i data.js */
   {nr: 4, navn: 'Jordet', nivaa: 8, pris: 1000, tema: 'jorde', skilt: [-2.4, 15.2, 0],
-   poly: [[-14.0, 15.1], [13.8, 15.1], [13.8, 29.9], [-14.0, 29.9]]},
-  /* 0.20.0 (Ivar 16.11): Østjordet, rett øst for Jordet. Kjøpes etter Jordet. Nivå og pris står også i data.js */
-  {nr: 5, navn: 'Østjordet', nivaa: 10, pris: 1500, tema: 'jorde2', skilt: [19.0, 15.2, 0],
-   poly: [[14.2, 15.1], [23.8, 15.1], [23.8, 29.9], [14.2, 29.9]]},
+   poly: [[-14.0, 15.1], [13.8, 15.1], [13.8, 22.9], [-14.0, 22.9]]},
+  /* 0.20.0–0.20.1 (Ivar 16.11): Østjordet, rett øst for Jordet. Kjøpes etter Jordet, fra nivå 16. Nivå og pris står også i data.js */
+  {nr: 5, navn: 'Østjordet', nivaa: 16, pris: 4000, tema: 'jorde2', skilt: [19.0, 15.2, 0],
+   poly: [[14.2, 15.1], [23.8, 15.1], [23.8, 22.9], [14.2, 22.9]]},
 ];
-const JORDE = {x0: -14.2, x1: 14.0, z0: 14.9, z1: 30.1}, JORDE2 = {x0: 14.0, x1: 24.0, z0: 14.9, z1: 30.1};   /* 0.19.0: Jordet er dypere, ca. 28 × 15 m. 0.20.0: Østjordet, ca. 10 × 15 m */
+const JORDE = {x0: -14.2, x1: 14.0, z0: 14.9, z1: 23.1}, JORDE2 = {x0: 14.0, x1: 24.0, z0: 14.9, z1: 23.1};   /* 0.20.1 (Ivar 16.11): Jordet ca. 28 × 8 m og Østjordet ca. 10 × 8 m. Bakre del kommer som eget kjøp på nivå 13 */
 const iJorde = (x, z) => x > JORDE.x0 - 0.6 && x < JORDE.x1 && z > JORDE.z0 - 0.3 && z < JORDE.z1 + 0.6;
 const iJorde2 = (x, z) => x >= JORDE2.x0 && x < JORDE2.x1 + 0.6 && z > JORDE2.z0 - 0.3 && z < JORDE2.z1 + 0.6;
 const jordeFlat = (x, z) => { const dd = Math.hypot(Math.max(JORDE.x0 - x, 0, x - JORDE2.x1), Math.max(JORDE.z0 - z, 0, z - JORDE.z1)); return 1 - THREE.MathUtils.smoothstep(dd, 0, 2.5); };
@@ -2031,7 +2031,7 @@ el.addEventListener('pointermove', e => { if (!pek.has(e.pointerId)) return; pek
   if (dra && window.spillDra && window.spillDra(e.clientX, e.clientY)) { flyttet = 99; return; } /* 0.8.4: dra ting som flyttes, ikke kameraet */
   if (dra) { const dx = e.clientX - dra.x, dy = e.clientY - dra.y; flyttet = Math.max(flyttet, Math.hypot(dx, dy)); const k = cam.dist / innerHeight * 0.75;
     const fx = new THREE.Vector3(Math.cos(cam.yaw), 0, -Math.sin(cam.yaw)), fz = new THREE.Vector3(Math.sin(cam.yaw), 0, Math.cos(cam.yaw));
-    cam.target.copy(dra.t).addScaledVector(fx, -dx * k).addScaledVector(fz, -dy * k * 1.35); cam.target.x = THREE.MathUtils.clamp(cam.target.x, -28, 32); cam.target.z = THREE.MathUtils.clamp(cam.target.z, -24, 30); plasserKamera(); } });
+    cam.target.copy(dra.t).addScaledVector(fx, -dx * k).addScaledVector(fz, -dy * k * 1.35); cam.target.x = THREE.MathUtils.clamp(cam.target.x, -28, 32); cam.target.z = THREE.MathUtils.clamp(cam.target.z, -24, 26); plasserKamera(); } });
 el.addEventListener('pointerup', e => { if (pek.size === 1 && flyttet < 8) trykk(e.clientX, e.clientY); pek.delete(e.pointerId); if (!pek.size) dra = null; });
 el.addEventListener('pointercancel', e => { pek.delete(e.pointerId); dra = null; });
 el.addEventListener('wheel', e => { e.preventDefault(); sistHjul = performance.now(); cam.dist = THREE.MathUtils.clamp(cam.dist * (1 + Math.sign(e.deltaY) * 0.1), 18, 95); plasserKamera(); }, {passive: false});

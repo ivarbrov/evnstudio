@@ -614,7 +614,7 @@ const STANDARD = {
   akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45]],
   festbord: [-2.2, 8.2], forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], silo: [-0.4, -10.0], tavle: [-2.3, 4.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
 };
-const JORD = [-13.7, 13.5, 15.4, 29.6], JORD_X1_OST = 23.5; const jordX1 = () => s.omrader && s.omrader.ostjordet ? JORD_X1_OST : JORD[1];   /* 0.20.0: Østjordet gjør Jordet bredere mot øst */   /* 0.17.0: der ting kan stå på Jordet: x0, x1, z0, z1 */
+const JORD = [-13.7, 13.5, 15.4, 22.6], JORD_X1_OST = 23.5; const jordX1 = () => s.omrader && s.omrader.ostjordet ? JORD_X1_OST : JORD[1];   /* 0.20.0: Østjordet gjør Jordet bredere mot øst */   /* 0.17.0: der ting kan stå på Jordet: x0, x1, z0, z1 */
 const GARD = {x0: -15.55, x1: 13.6, z0: -11.55, z1: 10.2}, GARD_X1 = 13.6, GARD_X1_ENGA = 22.0, GARD_X0 = -15.55, GARD_X0_SKOG = -24.0, SKOG_Z1 = -1.0;   /* 0.13.0: Skogkanten gjør gården bredere mot vest bak låven (bare der z < -1, så Rebus' lysning er fri) */   /* 0.9.8: gården blir bredere når Enga er kjøpt */
 let hinder = [];   // faste hindringer: [x0, x1, z0, z1]
 function finnHinder() {
@@ -1200,7 +1200,7 @@ function visDyr(u, art) {   /* hønsehuset og fjøset (0.9.8) bruker samme kort 
 }
 const OMR = {   /* 0.13.0: Enga og Skogkanten bruker samme kjøpskort */
   enga: {ikon: '🌿', midt: [18, 0, -1], tekst: 'En stor eng øst for gården. Da blir gården bredere, og du får plass til fjøs, beite og meieri.', eid: 'Enga er din. Her er det plass til fjøset og meieriet.', takk: 'Enga er din! 🌿 Nå er det plass til fjøs og meieri.'},
-  ostjordet: {ikon: '🌾', midt: [19, 0, 22], tekst: 'Mer jorde, rett øst for Jordet. Gjerdet imellom tas bort, så du får ett stort jorde.', eid: 'Østjordet er ditt. Her er det plass til mer.', takk: 'Østjordet er ditt! 🌾 Nå er jordet enda større.'},
+  ostjordet: {ikon: '🌾', midt: [19, 0, 19], tekst: 'Mer jorde, rett øst for Jordet. Gjerdet imellom tas bort, så du får ett stort jorde.', eid: 'Østjordet er ditt. Her er det plass til mer.', takk: 'Østjordet er ditt! 🌾 Nå er jordet enda større.'},
   jordet: {ikon: '🌻', midt: [0, 0, 19], tekst: 'Et stort jorde på andre siden av veien. Du får et nytt gjerde og plass til flere åkre og bygg.', eid: 'Jordet er ditt. Her er det plass til mer.', takk: 'Jordet er ditt! 🌻 Flytt åkre og bygg hit med ✋ Flytt.'},
   skogkanten: {ikon: '🌲', midt: [-19, 0, -6], tekst: 'Skogen bak låven. Trærne ryddes, gjerdet flyttes, og du får plass til grisebingen og mer.', eid: 'Skogkanten er din. Her er det plass til grisebingen.', takk: 'Skogkanten er din! 🌲 Nå er det plass til grisebingen.'}
 };
