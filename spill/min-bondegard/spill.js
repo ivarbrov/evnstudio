@@ -6,6 +6,9 @@ const L = window.MBLogikk, D = window.MB_DATA;
 const SPILLVERSJON = window.MB_VERSJON;
 const TESTMODUS = new URLSearchParams(location.search).has('test');
 if (TESTMODUS) document.body.classList.add('test');
+/* 0.18.0: admin, se nederst i fila */
+const ADMIN = !!window.MB_ADMIN || (TESTMODUS && new URLSearchParams(location.search).has('admin'));
+const adm = {x5: false, forrige: null, regn: [], biler: [], regnT: 0};
 const LAGRING = TESTMODUS ? 'evn-min-bondegard-test' : 'evn-min-bondegard-v1';
 const $ = id => document.getElementById(id);
 const naa = () => Date.now();
@@ -1490,6 +1493,7 @@ window.spillOppdater = (dt, t) => {
   if (pil && pil.visible && pil.userData.u) { const p = pil.userData.u.gruppe.position, h = pil.userData.u.hoyde || 3; pil.position.set(p.x, h + 1.2 + Math.abs(Math.sin(t * 4)) * 0.6, p.z); }
   if (kameraMaal) { cam.target.lerp(_p.set(kameraMaal.x, 0, kameraMaal.z), Math.min(1, dt * 5)); plasserKamera(); if (cam.target.distanceTo(_p) < 0.05) kameraMaal = null; }
   oppdaterBil(dt); oppdaterKunde(dt, t); oppdaterRev(dt, t);
+  if (ADMIN) oppdaterAdmin(dt, t);
   if (gaveVent > 0 && startet && !pauset) { gaveVent -= dt; if (gaveVent <= 0) leverGaver('Blomst'); }   /* kommer hun ikke innen ett minutt, står gaven der likevel */
   synkT += dt; if (synkT > 0.25) { synkT = 0; synk(); oppdaterTider(); }
   lagreT += dt; if (lagreT > 15 && startet) { lagreT = 0; lagre(); }
@@ -1566,4 +1570,55 @@ bygg();
 if (innerWidth < innerHeight) { cam.target.set(3.2, 0, -1.2); cam.dist = 74; plasserKamera(); }   /* høykant: hele tunet i bildet */
 lagAkerProto(); finnFasteTing(); finnHinder(); plasserAlt(); lagEgg(); synk(true);
 loop();
+
+/* ======================= Admin (0.18.0, Even 16.11) =======================
+   Bare i den private forhåndsvisningen (window.MB_ADMIN settes av byggeskriptet) og i testmodus med ?test&admin.
+   Finnes ikke for vanlige spillere på evnstudio.no. Det admin gir, er ikke en del av spillets økonomi. */
+const admLager = () => { try { return JSON.parse(localStorage.getItem('mb-admin') || '{}'); } catch (e) { return {}; } };
+function admSkinn() { (admLager().skinn || []).forEach(id => { if (D.skinn[id]) s.skinn.eid[id] = true; }); }
+function visAdmin() {
+  aapneHandling(null, '👑 Admin', () => `<p>Her bestemmer du. Dette finnes bare i testversjonen.</p>
+    <div class="rad"><span class="stort">🪙</span><span class="midt">Myntregn<small>Det regner mynter over gården</small></span><button class="knapp" data-g="adm" data-v="regn" type="button">Start</button></div>
+    <div class="rad"><span class="stort">🚚</span><span class="midt">Bilkaos<small>Alle bilene kommer på én gang</small></span><button class="knapp" data-g="adm" data-v="biler" type="button">Start</button></div>
+    <div class="rad"><span class="stort">✖️</span><span class="midt">5 ganger mynter<small>${adm.x5 ? 'Er på' : 'Er av'}</small></span><button class="knapp" data-g="adm" data-v="x5" type="button">${adm.x5 ? 'Slå av' : 'Slå på'}</button></div>
+    ${Object.keys(D.skinn).map(id => `<div class="rad"><span class="stort">🎂</span><span class="midt">${D.skinn[id]}<small>${s.skinn.eid[id] ? 'Du har den' : 'Festbil'}</small></span><button class="knapp" data-g="adm" data-v="skinn" data-id="${id}" type="button" ${s.skinn.eid[id] ? 'disabled' : ''}>Få</button></div>`).join('')}
+    <div class="rad"><span class="stort">💰</span><span class="midt">1000 mynter</span><button class="knapp" data-g="adm" data-v="mynter" type="button">Få</button></div>
+    <div class="rad"><span class="stort">⭐</span><span class="midt">Ett nivå opp<small>Du er på nivå ${s.nivaa}</small></span><button class="knapp" data-g="adm" data-v="nivaa" type="button">Få</button></div>`);
+}
+function admMyntregn() {
+  const geo = new THREE.CylinderGeometry(0.42, 0.42, 0.1, 16), mat = std({color: SRGB(0xffd23f), emissive: SRGB(0x8a6a00), metalness: 0.4, roughness: 0.3});
+  for (let i = 0; i < 90; i++) { const m = new THREE.Mesh(geo, mat); m.position.set(-14 + Math.random() * 30, 14 + Math.random() * 26, -9 + Math.random() * 19); m.rotation.set(Math.random() * 3, 0, Math.random() * 3); m.userData.v = 7 + Math.random() * 4; scene.add(m); adm.regn.push(m); }
+  adm.regnT = 0; s.mynter += 100; adm.forrige = s.mynter; lagre(); synk(); melding('🪙 Myntregn! +100 mynter', 3200);
+}
+function admBilkaos() {
+  if (adm.biler.length) return;
+  const lag = [() => lagLastebil(), () => lagLastebil('bursdag'), lagKundebil, () => lagLastebil('bursdag'), lagKundebil, () => lagLastebil(), lagKundebil, () => lagLastebil('bursdag')];
+  lag.forEach((f, i) => { const lakk0 = kunde.lakk, b = f(), ret = i % 2 ? -1 : 1; kunde.lakk = lakk0; b.visible = true; b.traverse(o => { const k = klikkbare.indexOf(o); if (k >= 0) klikkbare.splice(k, 1); });   /* bare til pynt: kan ikke trykkes på */ b.userData.ret = ret; b.userData.fart = 6 + (i * 37 % 5); b.userData.fase = i * 1.3;
+    b.position.set(-ret * (40 + i * 5), 0, VEI_Z + ret * 1.0); b.rotation.y = ret > 0 ? 0 : Math.PI; scene.add(b); adm.biler.push(b); });
+  melding('🚚 Bilkaos! Tut tut!', 3200);
+}
+function oppdaterAdmin(dt, t) {
+  if (adm.forrige === null) adm.forrige = s.mynter;
+  if (adm.x5 && s.mynter > adm.forrige) s.mynter += (s.mynter - adm.forrige) * 4;   /* 5 ganger mynter: det du tjener, ganges med fem */
+  adm.forrige = s.mynter;
+  for (let i = adm.regn.length - 1; i >= 0; i--) { const m = adm.regn[i]; m.position.y -= m.userData.v * dt; m.rotation.x += dt * 5; m.rotation.z += dt * 3; if (m.position.y < 0.1) { scene.remove(m); adm.regn.splice(i, 1); } }
+  if (adm.regn.length === 0 && adm.regnT === 0) adm.regnT = 1;
+  for (let i = adm.biler.length - 1; i >= 0; i--) { const b = adm.biler[i], u = b.userData; b.position.x += u.ret * u.fart * dt; b.position.y = Math.abs(Math.sin(t * 6 + u.fase)) * 0.25;
+    if (u.hjul) u.hjul.forEach(w => { w.rotation.z -= u.ret * u.fart * dt / 0.36; });
+    if (u.ret * b.position.x > 46) { scene.remove(b); adm.biler.splice(i, 1); } }
+}
+if (ADMIN) {
+  admSkinn();
+  const kn = $('adminKnapp'); if (kn) { kn.hidden = false; kn.addEventListener('click', visAdmin); }
+  $('handlingInnhold').addEventListener('click', e => {
+    const k = e.target.closest('button[data-g="adm"]'); if (!k || k.disabled) return; const v = k.dataset.v;
+    if (v === 'regn') { lukkHandling(); admMyntregn(); }
+    else if (v === 'biler') { lukkHandling(); admBilkaos(); }
+    else if (v === 'x5') { adm.x5 = !adm.x5; adm.forrige = s.mynter; tegnPaaNytt(); melding(adm.x5 ? '✖️ 5 ganger mynter er på' : '5 ganger mynter er av'); }
+    else if (v === 'skinn') { const id = k.dataset.id; if (!D.skinn[id]) return; s.skinn.eid[id] = true; const l = admLager(); l.skinn = [...new Set([...(l.skinn || []), id])]; try { localStorage.setItem('mb-admin', JSON.stringify(l)); } catch (e) {}
+      L.velgSkinn(s, id); lagre(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding('🎂 Du fikk ' + D.skinn[id] + '!'); }
+    else if (v === 'mynter') { s.mynter += 1000; adm.forrige = s.mynter; lagre(); synk(); tegnPaaNytt(); }
+    else if (v === 'nivaa') { const n0 = s.nivaa; for (let i = 0; i < 400 && s.nivaa === n0; i++) L.giXP(s, 5, naa()); lagre(); plasserAlt(); synk(true); tegnPaaNytt(); }
+  });
+}
 window.__spill = {finnVei, tingRekt, get s() { return s; }, L, D, ting, erLedig, finnLedigPlass, hinder: () => hinder, synk, lagre, bruk, get startet() { return startet; }, robotJobb, plasserAlt, gi, kunde, kundeTrykk};
