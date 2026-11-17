@@ -72,7 +72,7 @@
   // ---------- Matdyr på to bein satt sammen av deler (Even 16.–17.11.2026: «du må lage ferdig dyrene») ----------
   // Én fil per dyr (hode, armer, bein, hale) og én per mat (kroppen). Her settes de sammen for alle par som ikke har en egen, ferdig figur.
   // Matkroppen er laget ved referansemålene C_REF/A_REF og skaleres til dyrets mål. Laget av blender/matdyr_tobein_deler.py (tb_deler.json).
-  const TB_DELER = {"C_REF":[0.0,0.02,0.72],"A_REF":[0.4,0.34,0.43],"dyr":{"ku":{"C":[0,0.02,0.74],"A":[0.38,0.34,0.44],"matRot":0.0,"matFlytt":[0,0,0]},"gris":{"C":[0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"hval":{"C":[0,0.02,0.62],"A":[0.42,0.36,0.4],"matRot":0.0,"matFlytt":[0,0,0]},"hai":{"C":[0,0.02,0.66],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"sau":{"C":[0,0.02,0.72],"A":[0.4,0.36,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"skilpadde":{"C":[0,0.02,0.72],"A":[0.4,0.34,0.44],"matRot":3.141593,"matFlytt":[0,0.12,0]},"katt":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"hund":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"kanin":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"rev":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"panda":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"mus":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"bjørn":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"løve":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"tiger":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"ape":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]}},"mat":["banan","burger","is","jordbaer","milkshake","pizza","sjoko","smultring","spagetti","taco"]};
+  const TB_DELER = {"C_REF":[0.0,0.02,0.72],"A_REF":[0.4,0.34,0.43],"dyr":{"ku":{"C":[0,0.02,0.74],"A":[0.38,0.34,0.44],"matRot":0.0,"matFlytt":[0,0,0]},"gris":{"C":[0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"hval":{"C":[0,0.02,0.62],"A":[0.42,0.36,0.4],"matRot":0.0,"matFlytt":[0,0,0]},"hai":{"C":[0,0.02,0.66],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"sau":{"C":[0,0.02,0.72],"A":[0.4,0.36,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"skilpadde":{"C":[0,0.02,0.72],"A":[0.4,0.34,0.44],"matRot":3.141593,"matFlytt":[0,0.12,0]},"katt":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"hund":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"kanin":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"rev":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"panda":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"mus":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"bjørn":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"løve":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"tiger":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"ape":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"frosk":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"pingvin":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"elefant":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"hest":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]},"enhjørning":{"C":[0.0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0.0,"matFlytt":[0,0,0]}},"mat":["banan","burger","is","jordbaer","milkshake","pizza","sjoko","smultring","spagetti","taco"]};
   const TB_MAT_NAVN = { pizza: 'Pizza', taco: 'Taco', smultring: 'Smultring', spagetti: 'Spagetti', banan: 'Banan', burger: 'Burger', is: 'Is', sjoko: 'Sjoko', jordbaer: 'Jordbær', milkshake: 'Milkshake' };
   const tbCi = (dyr, mat) => { const ai = DATA.ANIMALS.findIndex(a => a[1] === dyr), fi = DATA.FOODS.findIndex(f => f[1] === TB_MAT_NAVN[mat]); return ai < 0 || fi < 0 ? -1 : ai * DATA.FOODS.length + fi; };
   function settSammen(dyrScene, matScene, md) {
@@ -81,7 +81,41 @@
     inn.position.set(-R[0], -R[2], R[1]);   // Blender (x, y, z) er (x, z, −y) i spillet
     ytre.add(inn); ytre.scale.set(md.A[0] / AR[0], md.A[2] / AR[2], md.A[1] / AR[1]);
     pivot.add(ytre); pivot.rotation.y = md.matRot; pivot.position.set(md.C[0] + md.matFlytt[0], md.C[2] + md.matFlytt[2], -(md.C[1] + md.matFlytt[1]));
-    pivot.name = 'matkropp'; sc.add(pivot); sc.updateMatrixWorld(true); return sc;
+    pivot.name = 'matkropp'; sc.add(pivot); sc.updateMatrixWorld(true); festDeler(sc, pivot); return sc;
+  }
+  // Even 17.11.2026: «Sørg for at armer og bein er festet til kroppen». Matkroppene har ulik form (kjeks, kjegle, ring),
+  // så her måles den faktiske kroppen: armene flyttes inn til kanten, og beina og halsen får et stykke som når helt inn i kroppen.
+  function festDeler(sc, kropp) {
+    const pkt = [], v = new T.Vector3();
+    kropp.traverse(o => { if (!o.isMesh) return; const p = o.geometry.attributes.position, steg = Math.max(1, Math.floor(p.count / 1500));
+      for (let i = 0; i < p.count; i += steg) pkt.push(v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld).clone()); });
+    if (!pkt.length) return;
+    const node = n => { let f = null; sc.traverse(o => { if (!f && o.name === n) f = o; }); return f; };
+    const matAv = o => { let m = null; o.traverse(c => { if (!m && c.isMesh) m = c.material; }); return m; };
+    const stykke = (nd, fra, til, r) => {   // sylinder fra punkt til punkt (sc-rom), lagt inn i noden så den følger bevegelsen
+      const a = nd.worldToLocal(fra.clone()), b = nd.worldToLocal(til.clone()), d = b.clone().sub(a), L = d.length(); if (L < 0.02) return;
+      const m = new T.Mesh(new T.CylinderGeometry(r, r, L, 12), matAv(nd)); m.position.copy(a).add(b).multiplyScalar(0.5);
+      m.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), d.normalize()); m.castShadow = true; m.name = 'feste'; nd.add(m);
+    };
+    const naermest = (p, filt) => { let best = null, bd = 1e9; for (const q of pkt) { if (!filt(q)) continue; const dd = q.distanceToSquared(p); if (dd < bd) { bd = dd; best = q; } } return best; };
+    // Armene: skulderen flyttes til kroppens kant i samme høyde
+    for (const [n, s] of [['vinge_v', -1], ['vinge_h', 1]]) {
+      const nd = node(n); if (!nd) continue; const y0 = nd.position.y; let w = -1;
+      for (const q of pkt) if (Math.abs(q.y - y0) < 0.09 && q.x * s > 0) w = Math.max(w, Math.abs(q.x));
+      if (w > 0.05) nd.position.x = s * (w - 0.03);
+    }
+    sc.updateMatrixWorld(true);
+    // Beina: et lårstykke fra toppen av beinet inn i nærmeste del av kroppen
+    for (const n of ['bein_vf', 'bein_hf']) {
+      const nd = node(n); if (!nd) continue; const topp = new T.Vector3().setFromMatrixPosition(nd.matrixWorld);
+      const q = naermest(topp, p => p.y >= topp.y - 0.02); if (!q) continue;
+      const inn = q.clone().lerp(new T.Vector3(0, q.y, q.z), 0.25);   // litt innenfor overflaten
+      if (topp.distanceTo(q) > 0.03) stykke(nd, topp.clone().add(new T.Vector3(0, -0.04, 0)), inn, 0.075);
+    }
+    // Halsen: hodet skal sitte på toppen av kroppen
+    const hd = node('hode');
+    if (hd) { const hals = new T.Vector3().setFromMatrixPosition(hd.matrixWorld), q = naermest(hals, p => p.y <= hals.y + 0.02 && Math.abs(p.x) < 0.2);
+      if (q && hals.y - q.y > 0.05) stykke(hd, hals.clone().add(new T.Vector3(0, 0.04, 0)), q.clone().lerp(new T.Vector3(0, q.y, q.z), 0.4), 0.11); }
   }
   function lastTobeinDeler() {
     if (!TOBEIN.length) return;

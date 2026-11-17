@@ -215,5 +215,95 @@ def ape_tobein(matkropp):
     hale = _halekurve(k['bak'], brun, [(0.05, 0.16, -0.12), (0.12, 0.3, 0.0), (0.06, 0.36, 0.2), (-0.04, 0.3, 0.26)], 0.028)
     return slaa_sammen('kropp', k['deler']), hode, _armer(C, A, brun, hud, 0.065) + _bein(under, brun, hud) + [hale]
 
-DYR = {'katt': katt_tobein, 'hund': hund_tobein, 'kanin': kanin_tobein, 'rev': rev_tobein, 'panda': panda_tobein, 'mus': mus_tobein, 'bjørn': bjorn_tobein, 'løve': love_tobein, 'tiger': tiger_tobein, 'ape': ape_tobein}
+def _nebb(hd, hx, hy, hz, farge, lengde=0.14, bred=0.08, ned=0.06):
+    o = prim('kjegle', 'nebb', farge, (0, 0, 0), (bred, bred * 0.7, lengde), vertices=20, ss=1)
+    o.data.transform(Matrix.Rotation(math.pi / 2, 4, 'X')); o.data.transform(Matrix.Translation((hx, hy - 0.22 - lengde * 0.3, hz - ned))); hd.append(o)
+
+def _vingearmer(C, A, farge, spiss=None):
+    """Vinger i stedet for armer (fugler). Navnene er de samme, så de svinger i takt med beina."""
+    armer = []
+    for s, navn in [(-1, 'vinge_v'), (1, 'vinge_h')]:
+        sx, sy, sz = A.x + 0.0, C.y, C.z + 0.14
+        v = prim('kule', navn + '_vinge', farge, (0, 0, 0), (0.06, 0.14, 0.24), segments=20, ring_count=12)
+        v.data.transform(Matrix.Rotation(s * 0.25, 4, 'Y')); v.data.transform(Matrix.Translation((s * (sx + 0.05), sy, sz - 0.18)))
+        d = [v]
+        if spiss is not None: d.append(prim('kule', navn + '_spiss', spiss, (s * (sx + 0.08), sy, sz - 0.38), (0.04, 0.09, 0.07), segments=12, ring_count=8))
+        armer.append(pivot(slaa_sammen(navn, d), (s * sx, sy, sz)))
+    return armer
+
+def _fuglebein(under, farge):
+    bein = []
+    for i, s in enumerate((-1, 1)):
+        bx = s * 0.15
+        b = [prim('syl', 'legg%d' % i, farge, (bx, 0, (under + 0.08) / 2 + 0.03), (0.035, 0.035, (under + 0.08) / 2), vertices=12, ss=1)]
+        for j, a in enumerate((-0.5, 0, 0.5)):
+            t = prim('kule', 'to%d%d' % (i, j), farge, (0, 0, 0), (0.025, 0.09, 0.022), segments=10, ring_count=6)
+            t.data.transform(Matrix.Rotation(a, 4, 'Z')); t.data.transform(Matrix.Translation((bx + math.sin(a) * 0.06, -0.06, 0.025))); b.append(t)
+        bein.append(pivot(slaa_sammen(['bein_vf', 'bein_hf'][i], b), (bx, 0, under + 0.06)))
+    return bein
+
+def frosk_tobein(matkropp):
+    gronn = mat('frosk', '#6cc24a', 0.55); lys = mat('frosk_lys', '#d9f2a0', 0.6); rosa = mat('frosk_munn', '#ff8fa3', 0.5)
+    C, A, k, hx, hy, hz, under = _start(matkropp)
+    hd = [_hodekule(gronn, hx, hy, hz - 0.03, (0.3, 0.24, 0.2)), prim('kule', 'hake', lys, (hx, hy - 0.12, hz - 0.1), (0.24, 0.15, 0.09), segments=28, ring_count=14)]
+    for s in (-1, 1):
+        hd.append(prim('kule', 'oyekule%d' % s, gronn, (hx + s * 0.13, hy - 0.08, hz + 0.15), (0.1, 0.1, 0.1), segments=24, ring_count=14))
+        hd += oye('oye%d' % s, (hx + s * 0.13, hy - 0.16, hz + 0.17), 0.065)
+        hd.append(kinn('kinn%d' % s, (hx + s * 0.2, hy - 0.17, hz - 0.04), 0.045))
+    hd.append(kurve('munn', [(hx - 0.14, hy - 0.22, hz - 0.06), (hx, hy - 0.25, hz - 0.1), (hx + 0.14, hy - 0.22, hz - 0.06)], 0.012, rosa))
+    hode = _hals_og_hode(hd, gronn, hx, hy, hz)
+    return slaa_sammen('kropp', k['deler']), hode, _armer(C, A, gronn, lys, 0.06) + _bein(under, gronn, lys, 0.2)
+
+def pingvin_tobein(matkropp):
+    svart = mat('pingvin', '#2f3542', 0.5); hvit = mat('pingvin_hvit', '#fbfaf6', 0.6); gul = mat('pingvin_nebb', '#ffb02e', 0.45)
+    C, A, k, hx, hy, hz, under = _start(matkropp)
+    hd = [_hodekule(svart, hx, hy, hz), prim('kule', 'ansikt', hvit, (hx, hy - 0.12, hz - 0.02), (0.2, 0.14, 0.18), segments=32, ring_count=16)]
+    _nebb(hd, hx, hy, hz, gul, 0.12, 0.07, 0.04)
+    hd += _ansikt(hx, hy, hz, 0.09, 0.07)
+    hode = _hals_og_hode(hd, svart, hx, hy, hz)
+    return slaa_sammen('kropp', k['deler']), hode, _vingearmer(C, A, svart) + _bein(under, svart, gul, 0.18)
+
+def elefant_tobein(matkropp):
+    gra = mat('elefant', '#a7b1c2', 0.6); rosa = mat('elefant_ore', '#f5b8c4', 0.55); hvit = mat('elefant_tann', '#fffaf0', 0.35)
+    C, A, k, hx, hy, hz, under = _start(matkropp)
+    hd = [_hodekule(gra, hx, hy, hz, (0.28, 0.25, 0.26))]
+    hd.append(kurve('snabel', [(hx, hy - 0.2, hz - 0.02), (hx, hy - 0.3, hz - 0.14), (hx, hy - 0.34, hz - 0.3), (hx, hy - 0.42, hz - 0.36)], 0.06, gra, avsmal=lambda u: 1 - 0.35 * u))
+    for s in (-1, 1):
+        hd.append(prim('kule', 'ore%d' % s, gra, (hx + s * 0.3, hy + 0.04, hz), (0.05, 0.2, 0.22), (0, 0, s * 0.5), segments=24, ring_count=12))
+        hd.append(prim('kule', 'oreinn%d' % s, rosa, (hx + s * 0.29, hy, hz), (0.03, 0.14, 0.16), (0, 0, s * 0.5), segments=20, ring_count=10))
+        o = prim('kjegle', 'tann%d' % s, hvit, (0, 0, 0), (0.03, 0.03, 0.09), vertices=12, ss=1)
+        o.data.transform(Matrix.Rotation(2.4, 4, 'X')); o.data.transform(Matrix.Translation((hx + s * 0.08, hy - 0.24, hz - 0.15))); hd.append(o)
+    hd += _ansikt(hx, hy, hz, 0.12, 0.07)
+    hode = _hals_og_hode(hd, gra, hx, hy, hz)
+    hale = _halekurve(k['bak'], gra, [(0, 0.1, -0.12), (0, 0.14, -0.26)], 0.02, mat('dusk', '#5b5f6b', 0.6), 0.04)
+    return slaa_sammen('kropp', k['deler']), hode, _armer(C, A, gra, gra, 0.085) + _bein(under, gra, mat('elefant_negl', '#e9e4da', 0.5)) + [hale]
+
+def _manke_hest(hd, hx, hy, hz, farge):
+    for i in range(6):
+        u = i / 5
+        hd.append(prim('kule', 'manke%d' % i, farge, (hx, hy + 0.12 + 0.04 * u, hz + 0.24 - 0.42 * u), (0.05, 0.08, 0.08), segments=14, ring_count=8))
+
+def hest_tobein(matkropp, enhjorning=False):
+    farge = mat('enhjorning' if enhjorning else 'hest', '#fbf7ff' if enhjorning else '#b47a4c', 0.55)
+    lys = mat('hest_mule', '#f2d6c4' if enhjorning else '#e7c3a0', 0.55); hov = mat('hov', '#c9a0ff' if enhjorning else '#4a3529', 0.5)
+    C, A, k, hx, hy, hz, under = _start(matkropp)
+    hd = [_hodekule(farge, hx, hy, hz + 0.02, (0.22, 0.24, 0.26)), prim('kule', 'mule', lys, (hx, hy - 0.23, hz - 0.1), (0.15, 0.13, 0.12), segments=28, ring_count=14)]
+    for s in (-1, 1): hd.append(prim('kule', 'nesebor%d' % s, mat('nesebor_h', '#7a5446', 0.5), (hx + s * 0.05, hy - 0.35, hz - 0.08), (0.02, 0.012, 0.025), segments=10, ring_count=6))
+    hd += _ansikt(hx, hy, hz, 0.12, 0.07) + _spisse_orer(hx, hy, hz, farge, lys, 0.12, 0.06, 0.1)
+    if enhjorning:
+        regn = [mat('regn%d' % i, c, 0.5) for i, c in enumerate(['#ff6b8b', '#ffb02e', '#ffe14d', '#6cd36c', '#5ab4ff', '#b18cff'])]
+        for i in range(6):
+            u = i / 5; hd.append(prim('kule', 'manke%d' % i, regn[i], (hx, hy + 0.12 + 0.04 * u, hz + 0.24 - 0.42 * u), (0.055, 0.08, 0.08), segments=14, ring_count=8))
+        h = prim('kjegle', 'horn', mat('horn_gull', '#ffd23f', 0.3, met=0.4), (0, 0, 0), (0.045, 0.045, 0.2), vertices=16, ss=1)
+        h.data.transform(Matrix.Rotation(-0.35, 4, 'X')); h.data.transform(Matrix.Translation((hx, hy - 0.1, hz + 0.33))); hd.append(h)
+    else:
+        _manke_hest(hd, hx, hy, hz, mat('hest_manke', '#5b3a2a', 0.65))
+    hode = _hals_og_hode(hd, farge, hx, hy, hz)
+    halef = regn[2] if enhjorning else mat('hest_manke', '#5b3a2a', 0.65)
+    hale = pivot(slaa_sammen('hale', [kurve('halestrå%d' % i, [tuple(k['bak']), tuple(k['bak'] + V((dx, 0.14, -0.1))), tuple(k['bak'] + V((dx * 2, 0.2, -0.32)))], 0.035, regn[i * 2] if enhjorning else halef) for i, dx in enumerate((-0.03, 0, 0.03))]), tuple(k['bak']))
+    return slaa_sammen('kropp', k['deler']), hode, _armer(C, A, farge, hov) + _bein(under, farge, hov) + [hale]
+
+def enhjorning_tobein(matkropp): return hest_tobein(matkropp, True)
+
+DYR = {'katt': katt_tobein, 'hund': hund_tobein, 'kanin': kanin_tobein, 'rev': rev_tobein, 'panda': panda_tobein, 'mus': mus_tobein, 'bjørn': bjorn_tobein, 'løve': love_tobein, 'tiger': tiger_tobein, 'ape': ape_tobein, 'frosk': frosk_tobein, 'pingvin': pingvin_tobein, 'elefant': elefant_tobein, 'hest': hest_tobein, 'enhjørning': enhjorning_tobein}
 MAAL = {d: (tuple(C_STD), tuple(A_STD), 0.0, (0, 0, 0)) for d in DYR}
