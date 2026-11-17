@@ -20,7 +20,7 @@ if (matchMedia('(pointer:coarse)').matches) document.documentElement.classList.a
 addEventListener('pointerdown', e => document.documentElement.classList.toggle('touch', e.pointerType === 'touch'), {passive: true, capture: true});
 
 // Det som er laget i denne versjonen. Resten av nivå 1–10 ligger i data.js og kommer i fase 2–4.
-const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot', 'gresskar'], bygg: ['forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken', 'grisebinge', 'paibakeri', 'sauefjos', 'festbord'], dyr: ['hone', 'ku', 'gris', 'sau'], omrader: ['enga', 'skogkanten', 'jordet', 'ostjordet', 'bakjordet']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
+const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot', 'gresskar'], bygg: ['forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken', 'grisebinge', 'paibakeri', 'sauefjos', 'vevstol', 'festbord'], dyr: ['hone', 'ku', 'gris', 'sau'], omrader: ['enga', 'skogkanten', 'jordet', 'ostjordet', 'bakjordet']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
 
 /* ======================= Lagring (F2, F3) ======================= */
 let s = null, lagringFeilet = false;
@@ -311,6 +311,22 @@ function lagPaibakeri() {   /* 0.23.0: lyst bakeri med blått tak og en stor pai
   mesh(new THREE.TorusGeometry(0.6, 0.07, 8, 22), fm(0xe8b76a, 0.85), 0, 0.12, 0, pg).rotation.x = Math.PI / 2;
   [-0.3, 0, 0.3].forEach(x => { mesh(new THREE.BoxGeometry(0.09, 0.04, 1.05), fm(0xe8b76a, 0.85), x, 0.16, 0, pg); mesh(new THREE.BoxGeometry(1.05, 0.04, 0.09), fm(0xe8b76a, 0.85), 0, 0.17, x, pg); });
   const sk = skiltTekst('Pai', 1.1); sk.position.set(0, 1.9, 1.34); g.add(sk);
+  bake(g); return g;
+}
+function lagVevstol() {   /* 0.24.0: åpent skur med en vevstol, et halvferdig teppe og garnnøster. Forslag, Even bestemmer utseendet */
+  const g = new THREE.Group();
+  mesh(avrundetBoks(3.3, 0.16, 3.0, 0.05, 1), fm(0xb9b0a2, 0.9), 0, 0.08, 0, g);
+  [[-1.5, -1.3], [1.5, -1.3], [-1.5, 1.3], [1.5, 1.3]].forEach(([x, z]) => mesh(avrundetBoks(0.16, 2.3, 0.16, 0.03, 1), MAT.brunPlank, x, 1.3, z, g));
+  mesh(teksturUV(new THREE.BoxGeometry(3.2, 2.2, 0.1), 1.4, 1), MAT.lysPlank, 0, 1.26, -1.35, g);
+  tak(g, 3.5, 3.1, 2.4, 0.95, MAT.tak2);
+  /* selve veven: to stolper, bom oppe og nede, renning og et stripete teppe */
+  [-0.75, 0.75].forEach(x => mesh(avrundetBoks(0.12, 1.7, 0.12, 0.02, 1), MAT.brunPlank, x, 1.0, 0.2, g));
+  mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.7, 10), MAT.brunPlank, 0, 1.8, 0.2, g).rotation.z = Math.PI / 2; mesh(new THREE.CylinderGeometry(0.09, 0.09, 1.7, 10), MAT.brunPlank, 0, 0.45, 0.2, g).rotation.z = Math.PI / 2;
+  for (let i = 0; i < 9; i++) mesh(new THREE.BoxGeometry(0.02, 1.3, 0.02), fm(0xf3eee3, 0.8), -0.6 + i * 0.15, 1.12, 0.2, g);
+  [0xe2493a, 0xf2c230, 0x3f8fd6, 0xe2493a, 0x4cb22c].forEach((f, i) => mesh(new THREE.BoxGeometry(1.34, 0.13, 0.05), fm(f, 0.85), 0, 0.56 + i * 0.13, 0.23, g));
+  [[1.05, 0.34, 0.9, 0xe2493a, 0.2], [0.75, 0.3, 1.1, 0x3f8fd6, 0.16], [1.2, 0.3, 0.55, 0xf2c230, 0.15]].forEach(([x, y, z, f, r]) => mesh(new THREE.SphereGeometry(r, 12, 10), fm(f, 0.9), x, y, z, g));
+  mesh(avrundetBoks(0.9, 0.12, 0.4, 0.03, 1), MAT.brunPlank, 0, 0.5, 0.95, g); [-0.35, 0.35].forEach(x => mesh(avrundetBoks(0.08, 0.4, 0.3, 0.02, 1), MAT.brunPlank, x, 0.3, 0.95, g));   /* krakk */
+  const sk = skiltTekst('Vevstol', 1.5); sk.position.set(0, 2.75, 1.56); g.add(sk);
   bake(g); return g;
 }
 function lagSilo() {
@@ -636,10 +652,10 @@ function oppdaterKunde(dt, t) {
 /* ======================= Ting på gården ======================= */
 // Alt spilleren kan trykke på. Åkre, forkvern, bakeri og silo kan flyttes. Låven, hønsehuset, beitet og markedsbua står fast i denne versjonen.
 const ting = new Map();
-const FOT = {festbord: [2.8, 2.2], forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], sukkerverk: [3.6, 3.4], popkorn: [3.0, 2.8], kjokken: [4.0, 3.8], grisebinge: [6.2, 7.4], sauefjos: [6.2, 7.4], paibakeri: [3.8, 3.4], silo: [3.0, 3.0], tavle: [2.2, 1.0], varebil: [2.2, 5.4]};
+const FOT = {festbord: [2.8, 2.2], forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], sukkerverk: [3.6, 3.4], popkorn: [3.0, 2.8], kjokken: [4.0, 3.8], grisebinge: [6.2, 7.4], sauefjos: [6.2, 7.4], paibakeri: [3.8, 3.4], vevstol: [3.6, 3.4], hundehus: [2.4, 2.4], silo: [3.0, 3.0], tavle: [2.2, 1.0], varebil: [2.2, 5.4]};
 const STANDARD = {
   akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45], [15.6, 1.55], [15.6, 5.0], [15.6, 8.45]],   /* 0.22.0: åker 13–15 (nivå 13) står på Enga. Er den ikke kjøpt, finner spillet nærmeste ledige plass */
-  festbord: [-2.2, 8.2], forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], paibakeri: [-10.5, 18.6], sauefjos: [3.5, 19.2],   /* 0.23.0: de nye byggene foreslås på Jordet. Er det ikke kjøpt, finner spillet nærmeste ledige plass */ silo: [-0.4, -10.0], tavle: [-2.3, 4.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
+  festbord: [-2.2, 8.2], forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], paibakeri: [-10.5, 18.6], sauefjos: [3.5, 19.2], vevstol: [-10.5, 26.0], hundehus: [-2.6, -2.4],   /* 0.23.0: de nye byggene foreslås på Jordet. Er det ikke kjøpt, finner spillet nærmeste ledige plass */ silo: [-0.4, -10.0], tavle: [-2.3, 4.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
 };
 const JORD = [-13.7, 13.5, 15.4, 22.6], JORD_X1_OST = 23.5, JORD_Z1_BAK = 29.6; const jordX1 = () => s.omrader && s.omrader.ostjordet ? JORD_X1_OST : JORD[1], jordZ1 = () => s.omrader && s.omrader.bakjordet ? JORD_Z1_BAK : JORD[3];   /* 0.22.0: Bakjordet gjør Jordet dypere. Sammen med Østjordet blir det en L */   /* 0.20.0: Østjordet gjør Jordet bredere mot øst */   /* 0.17.0: der ting kan stå på Jordet: x0, x1, z0, z1 */
 const GARD = {x0: -15.55, x1: 13.6, z0: -11.55, z1: 10.2}, GARD_X1 = 13.6, GARD_X1_ENGA = 22.0, GARD_X0 = -15.55, GARD_X0_SKOG = -24.0, SKOG_Z1 = -1.0;   /* 0.13.0: Skogkanten gjør gården bredere mot vest bak låven (bare der z < -1, så Rebus' lysning er fri) */   /* 0.9.8: gården blir bredere når Enga er kjøpt */
@@ -677,7 +693,7 @@ function plasser(t, x, z, r) { t.x = x; t.z = z; t.r = r || 0; t.plassert = true
 function plasserAlt() {
   synkArr();
   const enga = !!(s.omrader && s.omrader.enga), skog = !!(s.omrader && s.omrader.skogkanten); GARD.x1 = enga ? GARD_X1_ENGA : GARD_X1; GARD.x0 = skog ? GARD_X0_SKOG : GARD_X0;
-  if (window.mbEnga) window.mbEnga(enga); if (window.mbSkog) window.mbSkog(skog); if (window.mbJorde) window.mbJorde(s.omrader && s.omrader.jordet, s.omrader && s.omrader.ostjordet, s.omrader && s.omrader.bakjordet); synkHoner();
+  if (window.mbEnga) window.mbEnga(enga); if (window.mbSkog) window.mbSkog(skog); if (window.mbJorde) window.mbJorde(s.omrader && s.omrader.jordet, s.omrader && s.omrader.ostjordet, s.omrader && s.omrader.bakjordet); synkHoner(); synkHund();
   s.akre.forEach((f, i) => {
     let t = ting.get(f.id); if (!t) { t = lagAkerGruppe(f); ting.set(f.id, t); }
     if (f.x === null) { const [sx, sz] = STANDARD.akre[i] || [0, 0]; const p = finnLedigPlass(t, sx, sz) || [sx, sz]; f.x = p[0]; f.z = p[1]; }
@@ -714,7 +730,7 @@ function plasserAlt() {
   s.plasser.std = {x: 5, z: 0, r: 0};
   synkKyr(); synkPynt(); settGullgard(s.gaver.gullgard && s.gaver.gullPaa);
 }
-const MODELL = {festbord: lagFestbord, forkvern: lagForkvern, bakeri: lagBakeri, meieri: lagMeieri, fjos: lagFjos, sukkerverk: lagSukkerverk, popkorn: lagPopkorn, kjokken: lagKjokken, grisebinge: () => lagGrisebinge(false), sauefjos: () => lagGrisebinge(true), paibakeri: lagPaibakeri}, HOYDE = {festbord: 2.9, grisebinge: 3.2, sauefjos: 3.2, paibakeri: 4.2, forkvern: 3.6, bakeri: 4.2, meieri: 4.2, fjos: 4.6, sukkerverk: 4.8, popkorn: 4.0, kjokken: 4.4};
+const MODELL = {festbord: lagFestbord, forkvern: lagForkvern, bakeri: lagBakeri, meieri: lagMeieri, fjos: lagFjos, sukkerverk: lagSukkerverk, popkorn: lagPopkorn, kjokken: lagKjokken, grisebinge: () => lagGrisebinge(false), sauefjos: () => lagGrisebinge(true), paibakeri: lagPaibakeri, vevstol: lagVevstol}, HOYDE = {vevstol: 3.9, festbord: 2.9, grisebinge: 3.2, sauefjos: 3.2, paibakeri: 4.2, forkvern: 3.6, bakeri: 4.2, meieri: 4.2, fjos: 4.6, sukkerverk: 4.8, popkorn: 4.0, kjokken: 4.4};
 // Kyrne på beitet ved fjøset (0.9.8). Beitet følger fjøset når det flyttes eller snus.
 // 0.13.0: kyr og griser bruker samme kode. Beitet/bingen følger bygget når det flyttes eller snus
 const DYRHUS = {
@@ -904,6 +920,65 @@ function synkRevehus() {
   if (revehus || typeof hoyde !== 'function') return;
   revehus = lagRevehus(); revehus.position.set(REV_HUS[0], hoyde(REV_HUS[0], REV_HUS[1]), REV_HUS[1]); revehus.rotation.y = Math.PI / 2; revehus.userData.revehus = true; scene.add(revehus); eierAv(revehus); klikkbar(revehus);
 }
+/* 0.24.0 (Even 8.11 og 17.11): gårdshunden Syltetøy. Stor, gul og snill. Hun kommer på nivå 20, bor i hundehuset og følger roboten. Bare til pynt */
+let hund = null, hundSpor = [], hundSitt = 0, hundHopp = 0;
+function lagHundehus() {
+  const g = new THREE.Group(), W = 1.9, H = 1.1, Dd = 1.8;
+  mesh(avrundetBoks(W + 0.25, 0.12, Dd + 0.25, 0.04, 1), fm(0xb9b0a2, 0.9), 0, 0.06, 0, g);
+  mesh(teksturUV(new THREE.BoxGeometry(W, H, Dd), 1, 0.6), MAT.rodPlank, 0, 0.12 + H / 2, 0, g);
+  tak(g, W + 0.2, Dd, 0.12 + H, 0.8, MAT.tak);
+  mesh(new THREE.BoxGeometry(0.8, 0.7, 0.08), fm(0x2e2118, 0.95), 0, 0.12 + 0.35, Dd / 2 + 0.01, g);
+  const bue = mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.08, 16, 1, false, 0, Math.PI), fm(0x2e2118, 0.95), 0, 0.12 + 0.7, Dd / 2 + 0.01, g); bue.rotation.x = Math.PI / 2; bue.rotation.y = Math.PI / 2;
+  const sk = skiltTekst('Syltetøy', 1.3); sk.position.set(0, 0.12 + H + 0.33, Dd / 2 + 0.06); g.add(sk);
+  mesh(new THREE.CylinderGeometry(0.26, 0.2, 0.12, 14), fm(0x3f8fd6, 0.6), 0.95, 0.06, Dd / 2 + 0.5, g); mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.03, 14), fm(0x8a5a36, 0.9), 0.95, 0.12, Dd / 2 + 0.5, g);   /* matskål */
+  bake(g); return g;
+}
+function lagHund() {
+  const g = new THREE.Group(), K = new THREE.Group(); g.add(K);
+  const gul = fm(0xedb84a, 0.75), lys = fm(0xf8dc93, 0.75), mork = fm(0xc98a2c, 0.75), svart = fm(0x2a2320, 0.5);
+  mesh(new THREE.SphereGeometry(0.42, 20, 14), gul, 0, 0.72, 0, K).scale.set(1.55, 0.95, 0.95);
+  mesh(new THREE.SphereGeometry(0.3, 14, 10), lys, 0.42, 0.62, 0, K).scale.set(0.9, 1.0, 0.8);   /* lyst bryst */
+  const bein2 = [[0.42, 0.2], [0.42, -0.2], [-0.42, 0.2], [-0.42, -0.2]].map(([x, z]) => { const b = new THREE.Group(); b.position.set(x, 0.55, z); K.add(b); mesh(new THREE.CylinderGeometry(0.1, 0.085, 0.55, 10), gul, 0, -0.26, 0, b); mesh(new THREE.SphereGeometry(0.11, 10, 8), lys, 0.03, -0.52, 0, b).scale.set(1.25, 0.6, 1); return b; });
+  const hode = new THREE.Group(); hode.position.set(0.72, 1.05, 0); K.add(hode);
+  mesh(new THREE.SphereGeometry(0.33, 18, 14), gul, 0, 0, 0, hode);
+  mesh(avrundetBoks(0.34, 0.22, 0.26, 0.08, 2), lys, 0.3, -0.08, 0, hode); mesh(new THREE.SphereGeometry(0.07, 10, 8), svart, 0.47, -0.02, 0, hode);
+  mesh(new THREE.SphereGeometry(0.055, 8, 6), fm(0xe86a7a, 0.6), 0.36, -0.2, 0, hode).scale.set(1, 0.5, 1.2);   /* tunge */
+  [0.14, -0.14].forEach(z => { mesh(new THREE.SphereGeometry(0.055, 10, 8), svart, 0.26, 0.09, z, hode); mesh(new THREE.SphereGeometry(0.018, 6, 5), fm(0xffffff, 0.3), 0.3, 0.11, z, hode); });
+  const orer = [1, -1].map(sd => { const o = new THREE.Group(); o.position.set(-0.02, 0.2, sd * 0.27); hode.add(o); mesh(new THREE.SphereGeometry(0.16, 10, 8), mork, 0, -0.14, sd * 0.03, o).scale.set(0.7, 1.35, 0.4); return o; });
+  mesh(new THREE.TorusGeometry(0.25, 0.045, 8, 18), fm(0xd9362b, 0.6), 0.52, 0.86, 0, K).rotation.y = Math.PI / 2;   /* rødt halsbånd */
+  mesh(new THREE.SphereGeometry(0.06, 8, 6), fm(0xf2c230, 0.4), 0.6, 0.62, 0, K);
+  const hale = new THREE.Group(); hale.position.set(-0.6, 0.9, 0); K.add(hale); const hm = mesh(new THREE.ConeGeometry(0.11, 0.6, 10), gul, -0.16, 0.2, 0, hale); hm.rotation.z = 0.7;
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; } });
+  g.userData = {K, bein: bein2, hode, orer, hale, fase: 0, hund: true}; g.scale.setScalar(1.05); return g;
+}
+function synkHund() {
+  const skal = s.nivaa >= D.hund.nivaa;
+  let hh = ting.get('hundehus');
+  if (skal && !hh) { const g = lagHundehus(); scene.add(g); eierAv(g); klikkbar(g); hh = {type: 'hundehus', id: 'hundehus', gruppe: g, fot: FOT.hundehus, hoyde: 2.4}; ting.set('hundehus', hh); }
+  if (hh) { hh.gruppe.visible = skal; if (skal) { if (s.plasser.hundehus && !hh.plassert && !erLedig(hh, s.plasser.hundehus.x, s.plasser.hundehus.z, 0)) delete s.plasser.hundehus;
+    const ph = s.plasser.hundehus || (() => { const p = finnLedigPlass(hh, ...STANDARD.hundehus) || STANDARD.hundehus; return (s.plasser.hundehus = {x: p[0], z: p[1], r: 0}); })(); plasser(hh, ph.x, ph.z, ph.r || 0); } }
+  if (skal && !hund) { hund = lagHund(); scene.add(hund); eierAv(hund); klikkbar(hund); const p = hh ? [hh.x + 1.6, hh.z + 1.2] : [0, 0]; hund.position.set(p[0], 0, p[1]); hundSpor = []; }
+  if (hund) hund.visible = skal;
+}
+function oppdaterHund(dt, t) {
+  if (!hund || !hund.visible || typeof robot === 'undefined' || !robot) return;
+  const u = hund.userData, p = hund.position, rp = robot.position, siste = hundSpor[hundSpor.length - 1];
+  if (!siste || Math.hypot(rp.x - siste[0], rp.z - siste[1]) > 0.3) hundSpor.push([rp.x, rp.z]);   /* hunden går i robotens spor, så hun går utenom det roboten går utenom */
+  if (Math.hypot(rp.x - p.x, rp.z - p.z) > 28 || hundSpor.length > 160) { p.x = rp.x - 1.2; p.z = rp.z - 0.6; hundSpor = []; }
+  let gaar = false;
+  if (hundSpor.length > 5) { const m = hundSpor[0], dx = m[0] - p.x, dz = m[1] - p.z, d = Math.hypot(dx, dz), steg = dt * Math.min(7, 2.2 + hundSpor.length * 0.35);
+    if (d <= steg) { p.x = m[0]; p.z = m[1]; hundSpor.shift(); } else { p.x += dx / d * steg; p.z += dz / d * steg; hund.rotation.y = snuMot(hund.rotation.y, Math.atan2(-dz, dx), dt * 8); } gaar = true; }
+  else { const dx = rp.x - p.x, dz = rp.z - p.z; if (Math.hypot(dx, dz) > 0.5) hund.rotation.y = snuMot(hund.rotation.y, Math.atan2(-dz, dx), dt * 3); }
+  hundSitt = gaar ? 0 : hundSitt + dt; const sitt = THREE.MathUtils.smoothstep(hundSitt, 1.2, 1.8);
+  u.fase += dt * (gaar ? 13 : 0); const sv = gaar ? Math.sin(u.fase) * 0.55 : 0;
+  u.bein[0].rotation.z = sv; u.bein[3].rotation.z = sv; u.bein[1].rotation.z = -sv; u.bein[2].rotation.z = -sv;
+  u.bein[2].rotation.z += sitt * 1.2; u.bein[3].rotation.z += sitt * 1.2;
+  u.K.rotation.z = sitt * 0.42; u.K.position.y = (gaar ? Math.abs(Math.sin(u.fase)) * 0.05 : 0) - sitt * 0.16;
+  u.hale.rotation.y = Math.sin(t * (gaar ? 9 : 13)) * (gaar ? 0.35 : 0.7); u.hode.rotation.z = Math.sin(t * 1.3) * 0.06 - sitt * 0.3; u.orer.forEach((o, i) => { o.rotation.x = (i ? -1 : 1) * (0.1 + Math.abs(Math.sin(u.fase)) * 0.25); });
+  if (hundHopp > 0) { hundHopp = Math.max(0, hundHopp - dt); p.y = Math.sin((0.5 - hundHopp) / 0.5 * Math.PI) * 0.5; } else p.y = 0;
+  p.y += Math.max(typeof hoyde === 'function' ? hoyde(p.x, p.z) : 0, window.akerY ? window.akerY(p.x, p.z) : 0);
+}
+function hundTrykk() { hundHopp = 0.5; if (typeof visHjerte === 'function') visHjerte(hund.position.clone().setY(hund.position.y + 1.6)); melding('🐶 Voff! Syltetøy logrer med halen.', 2600); }
 const revInne = () => !!rev && revSted === 'hjem' && !revGang && s.oppl.steg >= OPPL.length && performance.now() > revUteTil;
 const REV_FART = 1.2, REV_TAKT = 1.3; window.revOpptatt = () => !!revGang;
 let revSted = 'hjem', revGang = null, revFlate = null, revY = 0.044, revKlar = false, revHjemEtter = 0;
@@ -1080,6 +1155,7 @@ function nyttTekst(n) {
   if (ECOIN_NIVAA[n.nivaa] && ecoins()) { const m = ecoins().milepael(ECOIN_NIVAA[n.nivaa]); if (m) nytt.push(`🪙 ${m.e} E-coins til roboten`); }
   n.avlinger.forEach(a => (I_SPILLET.avlinger.includes(a) ? nytt : senere).push(ikon(a) + ' ' + navn(a)));
   n.bygg.forEach(b => (I_SPILLET.bygg.includes(b) ? nytt : senere).push(D.bygg[b].ikon + ' ' + D.bygg[b].navn.replace(/^./, c => c.toLowerCase())));
+  if (D.hund && n.nivaa === D.hund.nivaa) nytt.push('🐶 gårdshunden Syltetøy');
   n.dyr.forEach(d => (I_SPILLET.dyr.includes(d) ? nytt : senere).push(D.dyr[d].ikon + ' ' + D.dyr[d].flertall.toLowerCase()));
   (n.flereDyr || []).forEach(f => nytt.push(D.dyr[f.art].ikon + ' ' + (f.antall === 1 ? 'en ' + D.dyr[f.art].navn.toLowerCase() + ' til' : f.antall + ' ' + D.dyr[f.art].flertall.toLowerCase() + ' til')));
   if (n.akre) nytt.push('🟫 ' + n.akre + ' nye åkre');
@@ -1430,8 +1506,8 @@ function startFlytt(u) {
   lukkHandling(); if (!u.fot) return;
   if (!fotMesh) { const g = new THREE.PlaneGeometry(1, 1); g.rotateX(-Math.PI / 2); fotMesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({color: 0x4cd137, transparent: true, opacity: 0.45, depthWrite: false})); fotMesh.renderOrder = 2; scene.add(fotMesh); }
   flytt = {u, x0: u.x, z0: u.z, r0: u.r, x: u.x, z: u.z, r: u.r};
-  $('flyttSnu').hidden = u.type === 'aker' || u.type === 'silo' || u.type === 'honsehus';
-  $('flyttLinje').classList.add('vis'); $('flyttTekst').textContent = `Dra, eller trykk der du vil ha ${u.type === 'aker' ? 'åkeren' : u.type === 'silo' ? 'siloen' : u.type === 'honsehus' ? 'hønsehuset' : u.type === 'pynt' ? D.gave.pyntNavn[u.pid].toLowerCase() : D.bygg[u.id].navn.toLowerCase()}. Grønt betyr ledig.`;
+  $('flyttSnu').hidden = u.type === 'aker' || u.type === 'silo' || u.type === 'honsehus' || u.type === 'hundehus';
+  $('flyttLinje').classList.add('vis'); $('flyttTekst').textContent = `Dra, eller trykk der du vil ha ${u.type === 'aker' ? 'åkeren' : u.type === 'silo' ? 'siloen' : u.type === 'honsehus' ? 'hønsehuset' : u.type === 'pynt' ? D.gave.pyntNavn[u.pid].toLowerCase() : u.type === 'hundehus' ? 'hundehuset' : D.bygg[u.id].navn.toLowerCase()}. Grønt betyr ledig.`;
   oppdaterFlytt(); $('flyttOk').focus({preventScroll: true});
 }
 function oppdaterFlytt() { const {u} = flytt; u.gruppe.position.set(flytt.x, 0, flytt.z); u.gruppe.rotation.y = flytt.r * Math.PI / 2;
@@ -1441,7 +1517,7 @@ function oppdaterFlytt() { const {u} = flytt; u.gruppe.position.set(flytt.x, 0, 
 function sluttFlytt(behold) {
   const {u} = flytt;
   if (behold && flytt.ok) { plasser(u, flytt.x, flytt.z, flytt.r);
-    if (u.type === 'aker') { const f = s.akre.find(a => a.id === u.id); f.x = u.x; f.z = u.z; } else if (u.type === 'bygg') { Object.assign(s.bygg[u.id], {x: u.x, z: u.z, r: u.r}); if (DYRHUS[u.id]) synkKyr(); } else if (u.type === 'silo') s.plasser.silo = {x: u.x, z: u.z, r: u.r}; else if (u.type === 'honsehus') { s.plasser.honsehus = {x: u.x, z: u.z, r: 0}; flyttHoner(u); } else if (u.type === 'pynt') s.gaver.pynt[u.pid] = {x: u.x, z: u.z, r: u.r};
+    if (u.type === 'aker') { const f = s.akre.find(a => a.id === u.id); f.x = u.x; f.z = u.z; } else if (u.type === 'bygg') { Object.assign(s.bygg[u.id], {x: u.x, z: u.z, r: u.r}); if (DYRHUS[u.id]) synkKyr(); } else if (u.type === 'silo') s.plasser.silo = {x: u.x, z: u.z, r: u.r}; else if (u.type === 'hundehus') s.plasser.hundehus = {x: u.x, z: u.z, r: u.r}; else if (u.type === 'honsehus') { s.plasser.honsehus = {x: u.x, z: u.z, r: 0}; flyttHoner(u); } else if (u.type === 'pynt') s.gaver.pynt[u.pid] = {x: u.x, z: u.z, r: u.r};
     lagre(); robotJobb(u); melding('Flyttet! ✋'); }
   else plasser(u, flytt.x0, flytt.z0, flytt.r0);
   flytt = null; fotMesh.visible = false; $('flyttLinje').classList.remove('vis');
@@ -1478,6 +1554,7 @@ function bruk(u) {
   else if (u.type === 'bygg' && DYRHUS[u.id] && s.bygg[u.id].eid) visDyr(u, DYRHUS[u.id].art);
   else if (u.type === 'bygg') visBygg(u);
   else if (u.type === 'silo' || u.type === 'laave') visLager();
+  else if (u.type === 'hundehus') aapneHandling(u, '🐶 Huset til Syltetøy', () => '<p>Her bor gårdshunden Syltetøy. Hun følger roboten rundt på gården. Trykk på henne, så blir hun glad!</p><div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt huset</button></div>');
   else if (u.type === 'marked') { visMarked(); fremOppl('marked'); }
   else if (u.type === 'varebil' && (arrNaa || Object.keys(s.skinn.eid).length)) visVarebil(u);
   else if (u.type === 'tavle' || (u.type === 'varebil' && ting.get('tavle'))) visTavle();
@@ -1489,6 +1566,7 @@ window.spillTrykk = (o, t, ray) => {
   if (!startet || pauset || undertrykkTrykk || draModus) return true;   /* et drag håndteres i sluttDra */
   if (flytt) { flyttTil(ray); return true; }
   if (o && o.userData.katt) { kundeTrykk(); return true; }
+  if (o && o === hund) { hundTrykk(); return true; }
   if (o && rev && (o === revehus || o === rev)) { if (revInne()) { revUteTil = performance.now() + 9000; rev.visible = true; revSett(...REV_HJEM); rev.rotation.y = Math.PI / 2 + 0.35; } o = rev; }   /* 0.23.0: et trykk på huset henter Rebus ut */
   if (o === rev) { if (s.oppl.steg >= OPPL.length && s.nivaa >= D.rebus.nivaa) visGate(); else { if (!revGang) hilsRev(false); visOppl(true); } return true; }
   if (o && o.userData.omrade && ['eng', 'skog', 'jorde', 'jorde2', 'jorde3'].includes(o.userData.omrade.tema)) { visOmradeKjop({eng: 'enga', skog: 'skogkanten', jorde: 'jordet', jorde2: 'ostjordet', jorde3: 'bakjordet'}[o.userData.omrade.tema]); return true; }
@@ -1553,7 +1631,7 @@ window.spillOppdater = (dt, t) => {
   for (const u of ikonListe()) u.ikon.position.y = u.ikon.userData.y0 + Math.sin(t * 3 + u.gruppe.position.x) * 0.12;
   if (pil && pil.visible && pil.userData.u) { const p = pil.userData.u.gruppe.position, h = pil.userData.u.hoyde || 3; pil.position.set(p.x, h + 1.2 + Math.abs(Math.sin(t * 4)) * 0.6, p.z); }
   if (kameraMaal) { cam.target.lerp(_p.set(kameraMaal.x, 0, kameraMaal.z), Math.min(1, dt * 5)); plasserKamera(); if (cam.target.distanceTo(_p) < 0.05) kameraMaal = null; }
-  oppdaterBil(dt); oppdaterKunde(dt, t); oppdaterRev(dt, t);
+  oppdaterBil(dt); oppdaterKunde(dt, t); oppdaterRev(dt, t); oppdaterHund(dt, t);
   if (ADMIN) oppdaterAdmin(dt, t);
   if (gaveVent > 0 && startet && !pauset) { gaveVent -= dt; if (gaveVent <= 0) leverGaver('Blomst'); }   /* kommer hun ikke innen ett minutt, står gaven der likevel */
   synkT += dt; if (synkT > 0.25) { synkT = 0; synk(); oppdaterTider(); }

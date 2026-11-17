@@ -1,4 +1,4 @@
-/* Min Bondegård – alle tall for nivå 1–16 på ett sted (nivå 11–13 kom i 0.22.0 og 14–16 i 0.23.0, pakke 1 og 2 i claude/min-bondegard-niva-11-20-plan.md).
+/* Min Bondegård – alle tall for nivå 1–20 på ett sted (nivå 11–13 kom i 0.22.0, 14–16 i 0.23.0 og 17–20 i 0.24.0, pakke 1–3 i claude/min-bondegard-niva-11-20-plan.md).
    Spillet (index.html), spillreglene (logikk.js), testene og simuleringen leser denne fila, så tallene ikke kan skli fra hverandre.
    Kilde: claude/min-bondegard-progresjon.md v3 (godkjent grunnlag 8.11.2026). Endrede tall krever ny simulering. */
 (function (rot) {
@@ -17,8 +17,8 @@
     dyr: {
       hone: { navn: 'Høne', flertall: 'Høner', ikon: '🐔', nivaa: 1,  spiser: 'honsefor', produkt: 'egg',    tid: 60,  xp: 1, start: 3, flere: { 11: 4 } },   // «flere»: antall dyr fra nivå (0.22.0)
       ku:   { navn: 'Ku',   flertall: 'Kyr',   ikon: '🐄', nivaa: 6,  spiser: 'kufor',    produkt: 'melk',   tid: 120, xp: 2, start: 2, hus: 'fjos', flere: { 13: 3 } },   // kyrne kommer når fjøset er kjøpt (Ivar 9.11 og 12.11)
-      gris: { navn: 'Gris', flertall: 'Griser', ikon: '🐖', nivaa: 10, spiser: 'grisefor', produkt: 'troffel', tid: 240, xp: 3, start: 2, hus: 'grisebinge' },
-      sau:  { navn: 'Sau',  flertall: 'Sauer', ikon: '🐑', nivaa: 16, spiser: 'sauefor',  produkt: 'ull',    tid: 300, xp: 4, start: 2, hus: 'sauefjos' }   // 0.23.0
+      gris: { navn: 'Gris', flertall: 'Griser', ikon: '🐖', nivaa: 10, spiser: 'grisefor', produkt: 'troffel', tid: 240, xp: 3, start: 2, hus: 'grisebinge', flere: { 18: 3 } },
+      sau:  { navn: 'Sau',  flertall: 'Sauer', ikon: '🐑', nivaa: 16, spiser: 'sauefor',  produkt: 'ull',    tid: 300, xp: 4, start: 2, hus: 'sauefjos', flere: { 19: 3 } }   // 0.23.0
     },
     // Varer som ikke er avlinger. Verdien til produserte varer regnes ut nedenfor (formelen i progresjonsplanen kap. 6).
     varer: {
@@ -32,6 +32,9 @@
       ull:      { navn: 'Ull',      ikon: '🧶', verdi: 32 },
       gulrotpai: { navn: 'Gulrotpai', ikon: '🥧' },
       kremkake:  { navn: 'Kremkake',  ikon: '🍰' },
+      lue:       { navn: 'Lue',       ikon: '🧢' },
+      genser:    { navn: 'Genser',    ikon: '🧥' },
+      gresskarbrod: { navn: 'Gresskarbrød', ikon: '🎃🍞' },
       brod:     { navn: 'Brød',     ikon: '🍞' },
       maisbrod: { navn: 'Maisbrød', ikon: '🥖' },
       flote:    { navn: 'Fløte',    ikon: '🍶' },
@@ -54,6 +57,9 @@
       sauefor:    { bygg: 'forkvern',   nivaa: 16, inn: { hvete: 3, erter: 1 },           tid: 90,  ut: 3 },
       gulrotpai:  { bygg: 'paibakeri',  nivaa: 14, inn: { gulrot: 3, egg: 1, hvete: 1 },  tid: 180, ut: 1 },
       kremkake:   { bygg: 'paibakeri',  nivaa: 14, inn: { flote: 2, egg: 2, sukker: 1 },  tid: 240, ut: 1 },
+      lue:        { bygg: 'vevstol',    nivaa: 17, inn: { ull: 1 },                       tid: 180, ut: 1 },
+      genser:     { bygg: 'vevstol',    nivaa: 17, inn: { ull: 2 },                       tid: 300, ut: 1 },
+      gresskarbrod: { bygg: 'bakeri',   nivaa: 18, inn: { gresskar: 1, hvete: 2, egg: 1 }, tid: 180, ut: 1 },
       brod:       { bygg: 'bakeri',     nivaa: 2,  inn: { hvete: 3 },                     tid: 60,  ut: 1 },
       maisbrod:   { bygg: 'bakeri',     nivaa: 7,  inn: { mais: 2, egg: 2 },              tid: 120, ut: 1 },
       flote:      { bygg: 'meieri',     nivaa: 6,  inn: { melk: 1 },                      tid: 60,  ut: 1 },
@@ -80,14 +86,16 @@
       grisebinge: { navn: 'Grisebinge',     ikon: '🐖', nivaa: 10, pris: 800, dyr: 'gris' },
       paibakeri:  { navn: 'Paibakeriet',    ikon: '🥧', nivaa: 14, pris: 3500 },   // 0.23.0. Priser fra progresjonsplanen kap. 6
       sauefjos:   { navn: 'Sauefjøs',       ikon: '🐑', nivaa: 16, pris: 3000, dyr: 'sau' },
+      vevstol:    { navn: 'Vevstolen',      ikon: '🧶', nivaa: 17, pris: 6000 },   // 0.24.0
       festbord:   { navn: 'Festbordet',     ikon: '🎉', nivaa: 3,  pris: 150, arr: 'bursdag' }   // kommer med Bursdagsfesten, ikke med nivået (Even 11.11: første maskin ca. 150)
     },
     koPlasser: 2,
-    xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325, 395, 460, 530, 605, 685],   // XP fra nivået til det neste. 11–15 fra progresjonsplanen kap. 5
-    maksNivaa: 16,
+    xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325, 395, 460, 530, 605, 685, 770, 855, 950, 1050],   // XP fra nivået til det neste. 11–19 fra progresjonsplanen kap. 5
+    maksNivaa: 20,
+    hund: { nivaa: 20, navn: 'Syltetøy' },   // 0.24.0 (Even 8.11 og 17.11): gårdshunden følger roboten fra nivå 20. Bare til pynt
     akre: { 1: 6, 3: 9, 5: 12, 13: 15 },        // antall åkre fra nivå
-    silo: { 1: 50, 9: 75, 15: 100 },             // plass til avlinger
-    lave: { 1: 50, 6: 75, 10: 100, 14: 125 },    // plass til alt annet
+    silo: { 1: 50, 9: 75, 15: 100, 19: 125 },             // plass til avlinger
+    lave: { 1: 50, 6: 75, 10: 100, 14: 125, 18: 150 },    // plass til alt annet
     startMynter: 50,
     startLager: { honsefor: 6, hvete: 4 },
     nyAvlingFro: 3,                     // en ny avling gir 3 frø når den låses opp
@@ -103,7 +111,7 @@
       ostjordet:  { navn: 'Østjordet',  nivaa: 16, pris: 4000, krever: 'jordet' },   // 0.20.1 (Ivar 16.11): utvidelsen øst for Jordet, fra nivå 16. Navn og pris er forslag
       jordet:     { navn: 'Jordet',     nivaa: 8,  pris: 1000 }   // 0.17.0 (Even 15.11): jordet på andre siden av veien. Nivå og pris er forslag og må godkjennes av en voksen
     },
-    innholdTil: 16,
+    innholdTil: 20,
     // Rebus' gåter (Even 13.11): svaret er varen. Spilleren gir Rebus varen. Lønn: pris × 2 + 10 mynter, 4 XP + nivået til varen. Ny gåte 3 minutter etter riktig svar
     // Gaveesker (Even 14.11, godkjent av Ivar 14.11): gratis, kan aldri kjøpes, sjansene vises åpent. Prosent per sjeldenhet.
     // Gaveesker (Even 14.11, godkjent av Ivar 14.11). Premier og sjanser fra Even 14.11 (0.12.1): [premie, prosent, mengde, sjeldenhet]
@@ -124,6 +132,9 @@
     arrPynt: ['bursdagspynt'],
     rebus: { nivaa: 2, pause: 180, myntFaktor: 1, myntPluss: 10, xp: 4 },   /* 0.15.1 (Even 15.11): du trenger ikke ha svaret på lager. Rebus tar ingen vare, så lønna er varens verdi mindre enn før (samme gevinst som før) */
     gater: {
+      lue: 'Jeg er strikket av ull og sitter på hodet ditt når det er kaldt. Hva er jeg?',
+      genser: 'Jeg har to ermer og er laget av ull. Du tar meg på når du fryser. Hva er jeg?',
+      gresskarbrod: 'Jeg er bakt i ovnen, og inni meg er det noe stort og oransje fra åkeren. Hva er jeg?',
       gresskar: 'Jeg er stor, rund og oransje, og jeg vokser på bakken. Om høsten skjærer noen ansikt i meg. Hva er jeg?',
       ull: 'Jeg vokser på sauen og er myk og varm. Av meg blir det garn og gensere. Hva er jeg?',
       gulrotpai: 'Jeg er rund og bakt i ovnen, og inni meg er det noe oransje fra åkeren. Hva er jeg?',
