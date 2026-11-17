@@ -806,7 +806,7 @@ function leverGaver(hvem) { const n = L.leverGaver(s); if (n) { melding(`🎁 ${
 function visGave(res) {
   aapneHandling(gaveT, '🎁 Gaveeske', () => { const n = L.klareGaver(s); let p = '';
     if (res) { const [nv, farge, ik] = SJ[res.sjeldenhet], ting2 = res.gullgard ? '✨ GULLGÅRDEN! ✨' : res.pynt ? `${D.gave.pyntNavn[res.pynt]} ✨ til gården` : res.bygg ? `${D.bygg[res.bygg].ikon} ${D.bygg[res.bygg].navn} gratis!` : res.bonus ? `🎁 Gratis i ${D.gave.bonusDager} dager!` : res.superhost ? `🌟 Superhøst! ${res.superhost} ${res.superhost === 1 ? 'åker er' : 'åkre er'} klare nå` : res.xp ? `⭐ ${res.xp} XP` : res.vare ? `${res.antall} ${ikon(res.vare)} ${navn(res.vare).toLowerCase()}` : `${res.mynter} 🪙`;
-      if (res.gullgard) p += '<p style="font-size:15px;text-align:center">Hele gården er gull! Du kan slå den av og på her.</p>';
+      if (res.gullgard) p += '<p style="font-size:15px;text-align:center">Alt det hvite på gården er gull! Du kan slå den av og på her.</p>';
       if (res.bonus) p += `<p style="font-size:15px;text-align:center">Gratis å plante og gratis forkvern i ${D.gave.bonusDager} dager.</p>`;
       if (res.bygg) p += `<p style="font-size:15px;text-align:center">${ting.get(res.bygg) ? 'Det står på gården nå.' : 'Det kommer når det blir ledig plass.'}</p>`;
       p += `<p style="text-align:center;font-size:15px;margin:0"><b style="color:${farge}">${ik} ${nv}</b></p><p style="text-align:center;font-size:24px;margin:6px 0 10px"><b>${ting2}</b></p>`; if (res.pynt) p += '<p style="font-size:15px;text-align:center">Gullpynten står på gården. Du kan flytte den.</p>'; }
@@ -818,10 +818,18 @@ function visGave(res) {
 }
 // Gullgården (legendarisk, Even 14.11): låve, bygg, tak og pynt får gullfarge. Kan slås av og på.
 let gullOrig = null, gullNaa = false;
-function settGullgard(paa) { paa = !!paa; if (paa === gullNaa) return; gullNaa = paa;
-  const mats = [MAT.rodPlank, MAT.tak, MAT.tak2, MAT.hvitTrim].filter(Boolean), gull = h => new THREE.Color(h).convertSRGBToLinear();
+function settGullgard(paa) { paa = !!paa; gullHvitt(paa); if (paa === gullNaa) return; gullNaa = paa;
+  const mats = [MAT.hvitTrim].filter(Boolean), gull = h => new THREE.Color(h).convertSRGBToLinear();   /* 0.24.2 (Even 17.11): bare det hvite blir gull. Vegger og tak beholder fargen sin */
   if (!gullOrig) gullOrig = mats.map(m => ({m, map: m.map, farge: m.color.clone(), met: m.metalness, ru: m.roughness}));
-  gullOrig.forEach((o, i) => { const m = o.m; if (paa) { m.map = null; m.color.copy(gull(i === 1 || i === 2 ? 0xe2ad1f : 0xffd54a)); m.metalness = 0.6; m.roughness = 0.32; } else { m.map = o.map; m.color.copy(o.farge); m.metalness = o.met; m.roughness = o.ru; } m.needsUpdate = true; }); }
+  gullOrig.forEach((o, i) => { const m = o.m; if (paa) { m.map = null; m.color.copy(gull(0xffcf33)); m.metalness = 0.7; m.roughness = 0.28; } else { m.map = o.map; m.color.copy(o.farge); m.metalness = o.met; m.roughness = o.ru; } m.needsUpdate = true; }); }
+/* 0.24.2: det hvite på byggene er bakt inn som farge per hjørne, så det må farges om der. Originalfargene tas vare på og settes tilbake når gullet slås av */
+function gullHvitt(paa) {
+  const hvit = new THREE.Color(0xf3eee3).convertSRGBToLinear(), gull = new THREE.Color(0xffc21a).convertSRGBToLinear(), sett = new Set();
+  for (const u of ting.values()) if (['bygg', 'laave', 'honsehus', 'silo', 'hundehus', 'marked', 'tavle'].includes(u.type)) [u.gruppe, u.hus].forEach(g => g && g.traverse(o => { if (o.isMesh && o.geometry && o.geometry.attributes.color) sett.add(o.geometry); }));
+  sett.forEach(geo => { const c = geo.attributes.color, a = c.array, n = c.itemSize;
+    if (paa && !geo.userData.gullOrig) { geo.userData.gullOrig = a.slice(); for (let i = 0; i < a.length; i += n) if (Math.abs(a[i] - hvit.r) < 0.035 && Math.abs(a[i + 1] - hvit.g) < 0.035 && Math.abs(a[i + 2] - hvit.b) < 0.035) { a[i] = gull.r; a[i + 1] = gull.g; a[i + 2] = gull.b; } c.needsUpdate = true; }
+    else if (!paa && geo.userData.gullOrig) { a.set(geo.userData.gullOrig); delete geo.userData.gullOrig; c.needsUpdate = true; } });
+}
 // Gullpynt fra superrare gaver. Bare pynt, kan flyttes.
 const PYNT_FOT = [1.4, 1.4];
 function lagPynt(id) { const g = new THREE.Group(), gull = std({color: SRGB(0xf5c542), metalness: 0.75, roughness: 0.25}), stein = fm(0xb9b0a2, 0.9);
