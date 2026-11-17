@@ -9,6 +9,7 @@ if (TESTMODUS) document.body.classList.add('test');
 /* 0.18.0: admin, se nederst i fila */
 /* 0.21.0 (Even 17.11, QA 17.11): admin finnes bare i den private forhåndsvisningen (MB_ADMIN) og på utviklerens egen maskin. Adressen ?test&admin virker ikke på evnstudio.no */
 const ADMIN = !!window.MB_ADMIN || (TESTMODUS && new URLSearchParams(location.search).has('admin') && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname));
+const admLager = () => { try { return JSON.parse(localStorage.getItem('mb-admin') || '{}'); } catch (e) { return {}; } };
 const adm = {gratis: false, x5: false, forrige: null, regn: [], biler: [], regnT: 0};
 const LAGRING = TESTMODUS ? 'evn-min-bondegard-test' : 'evn-min-bondegard-v1';
 const $ = id => document.getElementById(id);
@@ -1634,7 +1635,6 @@ loop();
 /* ======================= Admin (0.18.0, Even 16.11) =======================
    Bare i den private forhåndsvisningen (window.MB_ADMIN settes av byggeskriptet) og i testmodus med ?test&admin.
    Finnes ikke for vanlige spillere på evnstudio.no. Det admin gir, er ikke en del av spillets økonomi. */
-const admLager = () => { try { return JSON.parse(localStorage.getItem('mb-admin') || '{}'); } catch (e) { return {}; } };
 function admLagre(f) { const l = admLager(); f(l); try { localStorage.setItem('mb-admin', JSON.stringify(l)); } catch (e) {} }
 const admPlantNivaa = {}; for (const a in D.avlinger) admPlantNivaa[a] = D.avlinger[a].nivaa;   /* de vanlige nivåene, så «Slett» kan sette dem tilbake */
 function admPlanter() { const paa = !!admLager().planter; for (const a in D.avlinger) D.avlinger[a].nivaa = paa ? 1 : admPlantNivaa[a]; }   /* alle plantene kan plantes uansett nivå */
@@ -1672,6 +1672,7 @@ function visAdmin() {
     <div class="rad"><span class="stort">🐔</span><span class="midt">Kjempedyr<small>Dyrene blir kjempestore en liten stund</small></span><button class="knapp" data-g="adm" data-v="kjempe" type="button">Start</button></div>
     <div class="rad"><span class="stort">⏩</span><span class="midt">Alt ferdig nå<small>Åkre, dyr og bygg blir ferdige med en gang</small></span><button class="knapp" data-g="adm" data-v="ferdig" type="button">Start</button></div>
     <div class="rad"><span class="stort">✖️</span><span class="midt">5 ganger mynter<small>${adm.x5 ? 'Er på' : 'Er av'}</small></span><button class="knapp" data-g="adm" data-v="x5" type="button">${adm.x5 ? 'Slå av' : 'Slå på'}</button></div>
+    <div class="rad"><span class="stort">👑</span><span class="midt">Premium<small>${admLager().premium ? 'Er på: gullgård, superbonde og premium-pakka' : 'Gullgård, superbonde og premium-pakka. Gratis for deg'}</small></span><button class="knapp ${admLager().premium ? 'lys' : 'gronn'}" data-g="adm" data-v="premium" type="button">${admLager().premium ? 'Slå av' : 'Slå på'}</button></div>
     <div class="rad"><span class="stort">🚚</span><span class="midt">Biler<small>Få bilene og ta dem på</small></span><button class="knapp" data-g="adm" data-v="visBiler" type="button">Åpne</button></div>
     <div class="rad"><span class="stort">📦</span><span class="midt">Varer<small>Få varer rett i lageret</small></span><button class="knapp" data-g="adm" data-v="visVarer" type="button">Åpne</button></div>
     <div class="rad"><span class="stort">🏠</span><span class="midt">Bygg<small>Få byggene uten å betale</small></span><button class="knapp" data-g="adm" data-v="visBygg" type="button">Åpne</button></div>
@@ -1708,6 +1709,33 @@ function visAdmBygg() {
     liste.map(x => { const B = D.bygg[x], eid = s.bygg[x].eid; return `<div class="rad"><span class="stort">${B.ikon}</span><span class="midt">${B.navn}<small>${eid ? 'Du har det' : B.pris + ' 🪙 vanligvis'}</small></span><button class="knapp" data-g="adm" data-v="bygg" data-id="${x}" type="button" ${eid ? 'disabled' : ''}>Få</button><button class="knapp lys" data-g="adm" data-v="byggSlett" data-id="${x}" type="button" ${gitt.includes(x) && eid ? '' : 'disabled'}>Slett</button></div>`; }).join('') +
     '<div class="knapper"><button class="knapp lys" data-g="adm" data-v="tilbake" type="button">← Admin</button></div>'; });
 }
+/* 0.23.1 (Even 17.11): Premium i admin, gratis. Tre deler: gullgård med krone, superbonde (alt går dobbelt så fort og gir dobbelt XP) og premium-pakka (alle festbiler og all pynt).
+   Bare i testversjonen. Spillet har ingen premium for vanlige spillere, og ingenting kan kjøpes for ekte penger */
+const admXpSum = () => { let x = s.xp; for (let n = 1; n < s.nivaa; n++) x += D.xpNeste[n] || 0; return x; };
+function admPremium(paa) {
+  if (paa) {
+    const f = {gull: !!s.gaver.gullgard, gullPaa: !!s.gaver.gullPaa, skinn: [], pynt: []};
+    Object.keys(D.skinn).forEach(id => { if (!s.skinn.eid[id]) { s.skinn.eid[id] = true; f.skinn.push(id); } });
+    D.gave.pynt.concat(D.arrPynt).forEach(id => { if (!s.gaver.pynt[id]) { s.gaver.pynt[id] = {x: null, z: null, r: 0}; f.pynt.push(id); } });
+    s.gaver.gullgard = true; s.gaver.gullPaa = true;
+    admLagre(l => { l.premium = f; l.skinn = [...new Set([...(l.skinn || []), ...f.skinn])]; });
+  } else {
+    const f = admLager().premium; if (!f) return;
+    f.skinn.forEach(id => admSlettSkinn(id)); f.pynt.forEach(id => { delete s.gaver.pynt[id]; });
+    s.gaver.gullgard = f.gull; s.gaver.gullPaa = f.gull && f.gullPaa;
+    admLagre(l => { delete l.premium; });
+  }
+  adm.xpSum = admXpSum(); lagre(); plasserAlt(); if (bilKo.fase === 0) synkVarebil(); synk(true); synkKrone();
+}
+function synkKrone() { const k = $('krone'); if (k) k.hidden = !(ADMIN && admLager().premium); }
+function admSuperbonde(dt) {   /* alt som vokser eller lages, tar halv tid. XP du tjener, dobles */
+  const t0 = naa();
+  s.akre.forEach(f => { if (!f.avling) return; const halv = D.avlinger[f.avling].tid * 500; if (f.slutt - f.start > halv + 1) f.slutt = f.start + halv; });
+  for (const d in s.dyr) { const halv = D.dyr[d].tid * 500; s.dyr[d].forEach(x => { if (x.slutt && x.slutt - t0 > halv) x.slutt = t0 + halv; }); }
+  for (const x in s.bygg) { let forrige = 0; (s.bygg[x].ko || []).forEach(j => { const halv = D.oppskrifter[j.vare].tid * 500; if (j.slutt <= t0) { forrige = j.slutt; return; } const start = Math.max(forrige, Math.min(j.start, t0)); if (j.slutt - start > halv + 1) { j.start = start; j.slutt = start + halv; } forrige = j.slutt; }); }
+  const sum = admXpSum(); if (adm.xpSum === undefined) adm.xpSum = sum;
+  if (sum > adm.xpSum && s.nivaa < D.maksNivaa) { const ekstra = sum - adm.xpSum, nye = L.giXP(s, ekstra, t0); adm.xpSum = admXpSum(); if (nye.length) gi({nye}); } else adm.xpSum = sum;
+}
 function admMyntregn() {
   const geo = new THREE.CylinderGeometry(0.42, 0.42, 0.1, 16), mat = std({color: SRGB(0xffd23f), emissive: SRGB(0x8a6a00), metalness: 0.4, roughness: 0.3});
   for (let i = 0; i < 90; i++) { const m = new THREE.Mesh(geo, mat); m.position.set(-14 + Math.random() * 30, 14 + Math.random() * 26, -9 + Math.random() * 19); m.rotation.set(Math.random() * 3, 0, Math.random() * 3); m.userData.v = 7 + Math.random() * 4; scene.add(m); adm.regn.push(m); }
@@ -1721,6 +1749,7 @@ function admBilkaos() {
   melding('🚚 Bilkaos! Tut tut!', 3200);
 }
 function oppdaterAdmin(dt, t) {
+  if (admLager().premium) admSuperbonde(dt); else adm.xpSum = undefined;
   if (adm.forrige === null) adm.forrige = s.mynter;
   if (adm.x5 && s.mynter > adm.forrige) s.mynter += (s.mynter - adm.forrige) * 4;   /* 5 ganger mynter: det du tjener, ganges med fem */
   adm.forrige = s.mynter;
@@ -1735,7 +1764,7 @@ function oppdaterAdmin(dt, t) {
     if (u.ret * b.position.x > 46) { scene.remove(b); adm.biler.splice(i, 1); } }
 }
 if (ADMIN) {
-  admSkinn(); admPlanter();
+  admSkinn(); admPlanter(); synkKrone();
   const kn = $('adminKnapp'); if (kn) { kn.hidden = false; kn.addEventListener('click', visAdmin); }
 } else {
   const kn = $('bilKnapp'); if (kn) kn.addEventListener('click', visBiler);
@@ -1744,6 +1773,7 @@ if (ADMIN) {
   $('handlingInnhold').addEventListener('click', e => {
     const k = e.target.closest('button[data-g="adm"]'); if (!k || k.disabled) return; const v = k.dataset.v;
     if (v === 'regn') { lukkHandling(); admMyntregn(); }
+    else if (v === 'premium') { const paa = !admLager().premium; admPremium(paa); tegnPaaNytt(); melding(paa ? '👑 Premium er på! Gullgård, dobbel fart og dobbel XP.' : 'Premium er av', 3400); }
     else if (v === 'kjempe') { lukkHandling(); adm.kjempeT = 20; melding('🐔 Kjempedyr!', 3200); }
     else if (v === 'ferdig') { const t0 = naa(); s.akre.forEach(f => { if (f.avling && f.slutt > t0) f.slutt = t0; }); for (const d in s.dyr) s.dyr[d].forEach(x => { if (x.slutt && x.slutt > t0) x.slutt = t0; }); for (const x in s.bygg) (s.bygg[x].ko || []).forEach(j => { if (j.slutt > t0) { j.slutt = t0; j.start = Math.min(j.start, t0); } }); lagre(); synk(true); lukkHandling(); melding('⏩ Alt er ferdig!', 3200); }
     else if (v === 'biler') { lukkHandling(); admBilkaos(); }
