@@ -158,13 +158,20 @@
     // Våpenlinja over hurtiglinja følger hurtiglinja
     const hb = $('hotbar'), v = $('h2Vapen'); if (v && hb) v.hidden = hb.hidden;
     { const bk = $('h2Bygg'), rad = $('evnRad'), hud = $('hud'); if (bk && hud) { bk.hidden = hud.hidden || !hb || hb.hidden;
-        if (!bk.hidden && rad) { const r = rad.getBoundingClientRect(); bk.style.top = (r.bottom + 8) + 'px'; bk.style.right = Math.max(8, innerWidth - r.right) + 'px'; }
-        const kk = $('h2Kart'); if (kk) { kk.hidden = bk.hidden || !document.body.classList.contains('touchui');
-          // Kart ved siden av Bygg bare når det er plass til venstre for Bygg uten å treffe statusfeltet; ellers under Bygg
-          const stR = (document.querySelector('#hud > .panel') || bk).getBoundingClientRect().right, byggV = innerWidth - parseFloat(bk.style.right) - 56;
-          // Stående: alltid under Bygg, så knappen ikke hopper når ressursene endrer seg. Smal skjerm eller lite plass: også under Bygg.
-          if (!kk.hidden) { if (innerWidth < innerHeight || innerWidth < 380 || byggV - 8 - 56 < stR + 8) { kk.style.top = (parseFloat(bk.style.top) + 56 + 8) + 'px'; kk.style.right = bk.style.right; }
-            else { kk.style.top = bk.style.top; kk.style.right = (parseFloat(bk.style.right) + 56 + 8) + 'px'; } } } } }
+        const touch = document.body.classList.contains('touchui'), ligg = touch && innerWidth > innerHeight;
+        const S = ligg && innerHeight <= 430 ? 48 : 56;   // lav liggende skjerm: litt mindre knapper
+        bk.classList.toggle('liten', S === 48); const kk = $('h2Kart'); if (kk) kk.classList.toggle('liten', S === 48);
+        const stR = (document.querySelector('#hud > .panel') || bk).getBoundingClientRect().right;
+        // 2.0.12: Liggende mobil: Bygg og Kart står på rad med ⏸ øverst, så høyre side er fri for handlingsknappen og Hopp (Ivar 17.11.2026).
+        let påRad = false;
+        if (!bk.hidden && rad) { const r = rad.getBoundingClientRect();
+          if (ligg && r.left - 8 - 2 * S - 8 > stR + 8) { påRad = true; bk.style.top = r.top + 'px'; bk.style.right = (innerWidth - r.left + 8) + 'px'; }
+          else { bk.style.top = (r.bottom + 8) + 'px'; bk.style.right = Math.max(8, innerWidth - r.right) + 'px'; } }
+        if (kk) { kk.hidden = bk.hidden || !touch;
+          const byggV = innerWidth - parseFloat(bk.style.right) - S;
+          // Ellers: Kart ved siden av Bygg bare når det er plass uten å treffe statusfeltet. Stående alltid under Bygg, så knappen ikke hopper.
+          if (!kk.hidden) { if (!påRad && (innerWidth < innerHeight || innerWidth < 380 || byggV - 8 - S < stR + 8)) { kk.style.top = (parseFloat(bk.style.top) + S + 8) + 'px'; kk.style.right = bk.style.right; }
+            else { kk.style.top = bk.style.top; kk.style.right = (parseFloat(bk.style.right) + S + 8) + 'px'; } } } } }
     // 2.0.9: på mobil er Avslutt-lenken skjult (den ligger i pausen). Den skal da ikke kunne nås med Tab eller leses opp.
     { const a = $('evnAvslutt'), t = document.body.classList.contains('touchui'); if (a && (a.getAttribute('aria-hidden') === 'true') !== t) { if (t) { a.setAttribute('aria-hidden', 'true'); a.tabIndex = -1; } else { a.removeAttribute('aria-hidden'); a.removeAttribute('tabindex'); } } }
     // Ressurser: endret siste 4 s, fullt lager, eller ved (når hintet handler om bålet)

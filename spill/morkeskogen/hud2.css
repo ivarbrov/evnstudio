@@ -278,3 +278,13 @@ body.touchui #h2Dag #biome{max-width:72px;overflow:hidden;text-overflow:ellipsis
   background:rgba(255,204,0,.14);border:1px solid rgba(255,204,0,.5);color:#ffe7a3}
 @media (pointer:coarse) and (orientation:portrait){#startScreen .h2Snu{display:block}}
 @media (pointer:coarse) and (orientation:portrait) and (max-height:620px){#startScreen .h2Snu{padding:5px 10px;font-size:13px}}
+/* 2.0.12: lav liggende mobil – mindre Bygg/Kart og et mer kompakt statusfelt, så midten og høyre side er fri */
+#h2Bygg.liten,#h2Kart.liten{width:48px;height:48px;border-radius:14px}
+#h2Bygg.liten .ai,#h2Kart.liten .ai{font-size:20px}
+#h2Bygg.liten .at,#h2Kart.liten .at{font-size:10px}
+@media (pointer:coarse) and (orientation:landscape) and (max-height:430px){
+  body.touchui #hud > .panel:first-child{padding:5px 8px!important;gap:3px!important}
+  body.touchui #hud .bar{width:84px!important;height:8px}
+  body.touchui #h2Bunn{gap:5px}
+  body.touchui #h2Res .c,body.touchui #h2Bunn #h2Dag{font-size:12px;padding:2px 8px!important}
+}
