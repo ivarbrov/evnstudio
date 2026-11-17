@@ -67,8 +67,36 @@
     return Promise.all(TOBEIN.map(n => (TOBEIN_BARE_LAV ? EVNMiljo.lastGLB('modeller/' + n + '_lav.glb').then(l => [l, l])
       : Promise.all([EVNMiljo.lastGLB('modeller/' + n + '.glb'), EVNMiljo.lastGLB('modeller/' + n + '_lav.glb')]))
       .then(([full, lav]) => { if (full || lav) res.fig[n] = { full: full || lav, lav: lav || full }; })))
-      .then(() => { window.EVNTobeinKlar = true; document.dispatchEvent(new Event('evn-tobein-klar')); });
+      .then(lastTobeinDeler).then(() => { window.EVNTobeinKlar = true; document.dispatchEvent(new Event('evn-tobein-klar')); });
   }
+  // ---------- Matdyr på to bein satt sammen av deler (Even 16.–17.11.2026: «du må lage ferdig dyrene») ----------
+  // Én fil per dyr (hode, armer, bein, hale) og én per mat (kroppen). Her settes de sammen for alle par som ikke har en egen, ferdig figur.
+  // Matkroppen er laget ved referansemålene C_REF/A_REF og skaleres til dyrets mål. Laget av blender/matdyr_tobein_deler.py (tb_deler.json).
+  const TB_DELER = {"C_REF":[0,0.02,0.72],"A_REF":[0.4,0.34,0.43],"dyr":{"ku":{"C":[0,0.02,0.74],"A":[0.38,0.34,0.44],"matRot":0,"matFlytt":[0,0,0]},"gris":{"C":[0,0.02,0.72],"A":[0.4,0.34,0.42],"matRot":0,"matFlytt":[0,0,0]},"hval":{"C":[0,0.02,0.62],"A":[0.42,0.36,0.4],"matRot":0,"matFlytt":[0,0,0]},"hai":{"C":[0,0.02,0.66],"A":[0.4,0.34,0.42],"matRot":0,"matFlytt":[0,0,0]},"sau":{"C":[0,0.02,0.72],"A":[0.4,0.36,0.42],"matRot":0,"matFlytt":[0,0,0]},"skilpadde":{"C":[0,0.02,0.72],"A":[0.4,0.34,0.44],"matRot":3.141592653589793,"matFlytt":[0,0.12,0]}},"mat":["pizza","smultring","is","banan","burger","spagetti","taco","sjoko","jordbaer","milkshake"]};
+  const TB_MAT_NAVN = { pizza: 'Pizza', taco: 'Taco', smultring: 'Smultring', spagetti: 'Spagetti', banan: 'Banan', burger: 'Burger', is: 'Is', sjoko: 'Sjoko', jordbaer: 'Jordbær', milkshake: 'Milkshake' };
+  const tbCi = (dyr, mat) => { const ai = DATA.ANIMALS.findIndex(a => a[1] === dyr), fi = DATA.FOODS.findIndex(f => f[1] === TB_MAT_NAVN[mat]); return ai < 0 || fi < 0 ? -1 : ai * DATA.FOODS.length + fi; };
+  function settSammen(dyrScene, matScene, md) {
+    const R = TB_DELER.C_REF, AR = TB_DELER.A_REF, sc = new T.Group(); sc.add(dyrScene.clone(true));
+    const inn = new T.Group(), ytre = new T.Group(), pivot = new T.Group(); inn.add(matScene.clone(true));
+    inn.position.set(-R[0], -R[2], R[1]);   // Blender (x, y, z) er (x, z, −y) i spillet
+    ytre.add(inn); ytre.scale.set(md.A[0] / AR[0], md.A[2] / AR[2], md.A[1] / AR[1]);
+    pivot.add(ytre); pivot.rotation.y = md.matRot; pivot.position.set(md.C[0] + md.matFlytt[0], md.C[2] + md.matFlytt[2], -(md.C[1] + md.matFlytt[1]));
+    pivot.name = 'matkropp'; sc.add(pivot); sc.updateMatrixWorld(true); return sc;
+  }
+  function lastTobeinDeler() {
+    if (!TOBEIN.length) return;
+    const D = {}, Mt = {};
+    return Promise.all([...Object.keys(TB_DELER.dyr).map(n => EVNMiljo.lastGLB('modeller/tb_dyr_' + n + '.glb').then(l => { if (l) D[n] = l; })),
+      ...TB_DELER.mat.map(n => EVNMiljo.lastGLB('modeller/tb_mat_' + n + '.glb').then(l => { if (l) Mt[n] = l; }))]).then(() => {
+      const opptatt = new Set(Object.keys(NY_ID).filter(n => res.fig[n]).map(n => NY_ID[n]));   // egne, ferdige figurer går foran
+      for (const dn of Object.keys(D)) for (const mn of Object.keys(Mt)) {
+        const ci = tbCi(dn, mn); if (ci < 0 || opptatt.has(ci)) continue;
+        const n = 'tb_' + dn + '_' + mn, sc = settSammen(D[dn].scene, Mt[mn].scene, TB_DELER.dyr[dn]);
+        NY_ID[n] = ci; res.fig[n] = { full: { scene: sc }, lav: { scene: sc } };
+      }
+    }).catch(e => console.warn('tobein-deler', e));
+  }
+  const erTobein = n => TOBEIN_ID[n] !== undefined || /^tb_/.test(n);
 
   // ---------- Sammenslåing: én mesh per materiale (færre tegnekall på mobil) ----------
   function slaSammen(rot) {
@@ -198,7 +226,7 @@
     sett('hale', 0, gaar ? Math.sin(w * 0.9) * 0.35 : Math.sin(t * 3) * 0.35, 0);
     // Dyr på to bein svinger armene fram og tilbake i takt med beina, slik man går (Even 12.11.2026: «pizza kua går veldig rart»).
     // Før ble armene løftet ut til sidene samtidig, som vinger. Ekte vinger (pingvin) flakser fortsatt.
-    if (TOBEIN_ID[f.nokkel] !== undefined && !fire) {
+    if (erTobein(f.nokkel) && !fire) {
       const a = gaar ? Math.sin(w) * 0.45 : 0, ro = gaar ? 0 : Math.sin(t * 1.8) * 0.04;
       sett('vinge_v', -a, 0, -ro); sett('vinge_h', a, 0, ro);
       return;
@@ -1075,7 +1103,7 @@
     visMatdyr(); Object.assign(bane, { teta: kam.teta, fi: kam.fi, r: kam.r }); if (md.visning !== 'naert') bane.mal.copy(kam.mal); oppdaterKamera();
   });
   // For automatiske skjermbilder: ?fane=gard&niva=6 eller ?figur=burgersau&vis=spill
-  window.EVNIntern = { md, groft, GROFT, GROFT_X1, GROFT_Z, UTBUSKER, PORT_HALV, GANGFART, T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
+  window.EVNIntern = { md, nyFigur, NY_ID, groft, GROFT, GROFT_X1, GROFT_Z, UTBUSKER, PORT_HALV, GANGFART, T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
   window.EVNSpill = sp; window.EVNRobot = () => gd.robot; window.EVNSteg = steg; window.EVNSpor = SPOR; window.EVNVei = VEI; window.EVNGeo = { HX, HZ, EH, DEKKE, W, KX, KZ, A, B, LREP }; window.EVNBane = bane; window.EVNVegger = () => vegger;
   window.EVNVis = (o) => { if (o.fane === 'spill') { if (o.niva) sp.niva = sp.testNiva = o.niva; velgFane('spill'); return; } if (o.fane === 'gard') { if (o.niva) gd.niva = o.niva; if (o.neste !== undefined) gd.neste = o.neste; velgFane('gard'); if (o.teta !== undefined) { bane.teta = o.teta; oppdaterKamera(); } } else { if (o.figur) md.valgt = o.figur; if (o.vis) md.visning = o.vis; if (o.mobil) holder.classList.add('ramme'); storrelse(); velgFane('matdyr'); if (o.teta !== undefined) bane.teta = o.teta; } };
 })();
