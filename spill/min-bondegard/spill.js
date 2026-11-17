@@ -1614,6 +1614,8 @@ function visAdmin() {
   aapneHandling(null, '👑 Admin', () => `<p>Her bestemmer du. Dette finnes bare i testversjonen.</p>
     <div class="rad"><span class="stort">🪙</span><span class="midt">Myntregn<small>Det regner mynter over gården</small></span><button class="knapp" data-g="adm" data-v="regn" type="button">Start</button></div>
     <div class="rad"><span class="stort">🚚</span><span class="midt">Bilkaos<small>Alle bilene kommer på én gang</small></span><button class="knapp" data-g="adm" data-v="biler" type="button">Start</button></div>
+    <div class="rad"><span class="stort">🐔</span><span class="midt">Kjempedyr<small>Dyrene blir kjempestore en liten stund</small></span><button class="knapp" data-g="adm" data-v="kjempe" type="button">Start</button></div>
+    <div class="rad"><span class="stort">⏩</span><span class="midt">Alt ferdig nå<small>Åkre, dyr og bygg blir ferdige med en gang</small></span><button class="knapp" data-g="adm" data-v="ferdig" type="button">Start</button></div>
     <div class="rad"><span class="stort">✖️</span><span class="midt">5 ganger mynter<small>${adm.x5 ? 'Er på' : 'Er av'}</small></span><button class="knapp" data-g="adm" data-v="x5" type="button">${adm.x5 ? 'Slå av' : 'Slå på'}</button></div>
     <div class="rad"><span class="stort">🚚</span><span class="midt">Biler<small>Få bilene og ta dem på</small></span><button class="knapp" data-g="adm" data-v="visBiler" type="button">Åpne</button></div>
     <div class="rad"><span class="stort">📦</span><span class="midt">Varer<small>Få varer rett i lageret</small></span><button class="knapp" data-g="adm" data-v="visVarer" type="button">Åpne</button></div>
@@ -1659,8 +1661,8 @@ function admMyntregn() {
 function admBilkaos() {
   if (adm.biler.length) return;
   const lag = [() => lagLastebil(), () => lagLastebil('bursdag'), lagKundebil, () => lagLastebil('bursdag'), lagKundebil, () => lagLastebil(), lagKundebil, () => lagLastebil('bursdag')];
-  lag.forEach((f, i) => { const lakk0 = kunde.lakk, b = f(), ret = i % 2 ? -1 : 1; kunde.lakk = lakk0; b.visible = true; b.traverse(o => { const k = klikkbare.indexOf(o); if (k >= 0) klikkbare.splice(k, 1); });   /* bare til pynt: kan ikke trykkes på */ b.userData.ret = ret; b.userData.fart = 6 + (i * 37 % 5); b.userData.fase = i * 1.3;
-    b.position.set(-ret * (40 + i * 5), 0, VEI_Z + ret * 1.0); b.rotation.y = ret > 0 ? 0 : Math.PI; scene.add(b); adm.biler.push(b); });
+  lag.forEach((f, i) => { const lakk0 = kunde.lakk, b = f(), ret = i % 2 ? -1 : 1; kunde.lakk = lakk0; b.visible = true; b.traverse(o => { const k = klikkbare.indexOf(o); if (k >= 0) klikkbare.splice(k, 1); });   /* bare til pynt: kan ikke trykkes på */ b.userData.ret = ret; b.userData.fart = 7; b.userData.fase = i * 1.3;   /* 0.21.1 (Even 17.11): samme fart og 9 m mellom bilene i hver fil, så de ikke kjører gjennom hverandre */
+    b.position.set(-ret * (40 + Math.floor(i / 2) * 9), 0, VEI_Z + ret * 1.15); b.rotation.y = ret > 0 ? 0 : Math.PI; scene.add(b); adm.biler.push(b); });
   melding('🚚 Bilkaos! Tut tut!', 3200);
 }
 function oppdaterAdmin(dt, t) {
@@ -1669,6 +1671,10 @@ function oppdaterAdmin(dt, t) {
   adm.forrige = s.mynter;
   for (let i = adm.regn.length - 1; i >= 0; i--) { const m = adm.regn[i]; m.position.y -= m.userData.v * dt; m.rotation.x += dt * 5; m.rotation.z += dt * 3; if (m.position.y < 0.1) { scene.remove(m); adm.regn.splice(i, 1); } }
   if (adm.regn.length === 0 && adm.regnT === 0) adm.regnT = 1;
+  if (adm.kjempeT > 0 || adm.kjempeS > 1) {   /* kjempedyr: vokser mykt opp, og krymper mykt tilbake */
+    adm.kjempeT = Math.max(0, (adm.kjempeT || 0) - dt); const maal = adm.kjempeT > 0 ? 2.4 : 1; adm.kjempeS = (adm.kjempeS || 1) + (maal - (adm.kjempeS || 1)) * Math.min(1, dt * 3); if (Math.abs(adm.kjempeS - maal) < 0.01) adm.kjempeS = maal;
+    const alle = (window.__dyr && window.__dyr.alle) || []; alle.forEach(d => { const g = d.gruppe || d.g || d; if (g && g.scale) g.scale.setScalar((g.userData.admS0 || (g.userData.admS0 = g.scale.x)) * adm.kjempeS); });
+  }
   for (let i = adm.biler.length - 1; i >= 0; i--) { const b = adm.biler[i], u = b.userData; b.position.x += u.ret * u.fart * dt; b.position.y = Math.abs(Math.sin(t * 6 + u.fase)) * 0.25;
     if (u.hjul) u.hjul.forEach(w => { w.rotation.z -= u.ret * u.fart * dt / 0.36; });
     if (u.ret * b.position.x > 46) { scene.remove(b); adm.biler.splice(i, 1); } }
@@ -1683,6 +1689,8 @@ if (ADMIN) {
   $('handlingInnhold').addEventListener('click', e => {
     const k = e.target.closest('button[data-g="adm"]'); if (!k || k.disabled) return; const v = k.dataset.v;
     if (v === 'regn') { lukkHandling(); admMyntregn(); }
+    else if (v === 'kjempe') { lukkHandling(); adm.kjempeT = 20; melding('🐔 Kjempedyr!', 3200); }
+    else if (v === 'ferdig') { const t0 = naa(); s.akre.forEach(f => { if (f.avling && f.slutt > t0) f.slutt = t0; }); for (const d in s.dyr) s.dyr[d].forEach(x => { if (x.slutt && x.slutt > t0) x.slutt = t0; }); for (const x in s.bygg) (s.bygg[x].ko || []).forEach(j => { if (j.slutt > t0) { j.slutt = t0; j.start = Math.min(j.start, t0); } }); lagre(); synk(true); lukkHandling(); melding('⏩ Alt er ferdig!', 3200); }
     else if (v === 'biler') { lukkHandling(); admBilkaos(); }
     else if (v === 'x5') { adm.x5 = !adm.x5; adm.forrige = s.mynter; tegnPaaNytt(); melding(adm.x5 ? '✖️ 5 ganger mynter er på' : '5 ganger mynter er av'); }
     else if (v === 'skinn') { const id = k.dataset.id; if (!D.skinn[id]) return; s.skinn.eid[id] = true; admLagre(l => { l.skinn = [...new Set([...(l.skinn || []), id])]; });
