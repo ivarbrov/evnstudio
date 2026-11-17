@@ -1,4 +1,4 @@
-/* Min Bondegård – alle tall for nivå 1–13 på ett sted (nivå 11–13 kom i 0.22.0, pakke 1 i claude/min-bondegard-niva-11-20-plan.md).
+/* Min Bondegård – alle tall for nivå 1–16 på ett sted (nivå 11–13 kom i 0.22.0 og 14–16 i 0.23.0, pakke 1 og 2 i claude/min-bondegard-niva-11-20-plan.md).
    Spillet (index.html), spillreglene (logikk.js), testene og simuleringen leser denne fila, så tallene ikke kan skli fra hverandre.
    Kilde: claude/min-bondegard-progresjon.md v3 (godkjent grunnlag 8.11.2026). Endrede tall krever ny simulering. */
 (function (rot) {
@@ -10,13 +10,15 @@
       mais:      { navn: 'Mais',      ikon: '🌽', nivaa: 2, tid: 60,  verdi: 4, xp: 1, gratis: true },
       erter:     { navn: 'Erter',     ikon: '🫛', nivaa: 5, tid: 120, verdi: 6, xp: 2 },
       sukkerror: { navn: 'Sukkerrør', ikon: '🎋', nivaa: 7, tid: 180, verdi: 8, xp: 2 },
-      gulrot:    { navn: 'Gulrot',    ikon: '🥕', nivaa: 9, tid: 90,  verdi: 5, xp: 2 }
+      gulrot:    { navn: 'Gulrot',    ikon: '🥕', nivaa: 9, tid: 90,  verdi: 5, xp: 2 },
+      gresskar:  { navn: 'Gresskar',  ikon: '🎃', nivaa: 15, tid: 300, verdi: 15, xp: 4 }   // 0.23.0
     },
     // Dyr: ett for gir ett produkt etter «tid» sekunder. Et dyr uten for slutter bare å produsere (progresjonsregel F6).
     dyr: {
       hone: { navn: 'Høne', flertall: 'Høner', ikon: '🐔', nivaa: 1,  spiser: 'honsefor', produkt: 'egg',    tid: 60,  xp: 1, start: 3, flere: { 11: 4 } },   // «flere»: antall dyr fra nivå (0.22.0)
       ku:   { navn: 'Ku',   flertall: 'Kyr',   ikon: '🐄', nivaa: 6,  spiser: 'kufor',    produkt: 'melk',   tid: 120, xp: 2, start: 2, hus: 'fjos', flere: { 13: 3 } },   // kyrne kommer når fjøset er kjøpt (Ivar 9.11 og 12.11)
-      gris: { navn: 'Gris', flertall: 'Griser', ikon: '🐖', nivaa: 10, spiser: 'grisefor', produkt: 'troffel', tid: 240, xp: 3, start: 2, hus: 'grisebinge' }
+      gris: { navn: 'Gris', flertall: 'Griser', ikon: '🐖', nivaa: 10, spiser: 'grisefor', produkt: 'troffel', tid: 240, xp: 3, start: 2, hus: 'grisebinge' },
+      sau:  { navn: 'Sau',  flertall: 'Sauer', ikon: '🐑', nivaa: 16, spiser: 'sauefor',  produkt: 'ull',    tid: 300, xp: 4, start: 2, hus: 'sauefjos' }   // 0.23.0
     },
     // Varer som ikke er avlinger. Verdien til produserte varer regnes ut nedenfor (formelen i progresjonsplanen kap. 6).
     varer: {
@@ -26,6 +28,10 @@
       honsefor: { navn: 'Hønsefor', ikon: '🟡', erFor: true },
       kufor:    { navn: 'Kufor',    ikon: '🟤', erFor: true },
       grisefor: { navn: 'Grisefor', ikon: '🟠', erFor: true },
+      sauefor:  { navn: 'Sauefor',  ikon: '🟢', erFor: true },
+      ull:      { navn: 'Ull',      ikon: '🧶', verdi: 32 },
+      gulrotpai: { navn: 'Gulrotpai', ikon: '🥧' },
+      kremkake:  { navn: 'Kremkake',  ikon: '🍰' },
       brod:     { navn: 'Brød',     ikon: '🍞' },
       maisbrod: { navn: 'Maisbrød', ikon: '🥖' },
       flote:    { navn: 'Fløte',    ikon: '🍶' },
@@ -45,6 +51,9 @@
       honsefor:   { bygg: 'forkvern',   nivaa: 1,  inn: { hvete: 2 },                     tid: 30,  ut: 3 },
       kufor:      { bygg: 'forkvern',   nivaa: 6,  inn: { erter: 2, mais: 1 },            tid: 60,  ut: 3 },
       grisefor:   { bygg: 'forkvern',   nivaa: 10, inn: { gulrot: 2, erter: 1 },          tid: 60,  ut: 3 },
+      sauefor:    { bygg: 'forkvern',   nivaa: 16, inn: { hvete: 3, erter: 1 },           tid: 90,  ut: 3 },
+      gulrotpai:  { bygg: 'paibakeri',  nivaa: 14, inn: { gulrot: 3, egg: 1, hvete: 1 },  tid: 180, ut: 1 },
+      kremkake:   { bygg: 'paibakeri',  nivaa: 14, inn: { flote: 2, egg: 2, sukker: 1 },  tid: 240, ut: 1 },
       brod:       { bygg: 'bakeri',     nivaa: 2,  inn: { hvete: 3 },                     tid: 60,  ut: 1 },
       maisbrod:   { bygg: 'bakeri',     nivaa: 7,  inn: { mais: 2, egg: 2 },              tid: 120, ut: 1 },
       flote:      { bygg: 'meieri',     nivaa: 6,  inn: { melk: 1 },                      tid: 60,  ut: 1 },
@@ -69,19 +78,21 @@
       kjokken:    { navn: 'Gårdskjøkkenet', ikon: '🥞', nivaa: 9,  pris: 800 },
       fjos:       { navn: 'Fjøs og beite',  ikon: '🐄', nivaa: 6,  pris: 300, dyr: 'ku' },   // Ivar 12.11: 300 mynter, spilleren plasserer det selv
       grisebinge: { navn: 'Grisebinge',     ikon: '🐖', nivaa: 10, pris: 800, dyr: 'gris' },
+      paibakeri:  { navn: 'Paibakeriet',    ikon: '🥧', nivaa: 14, pris: 3500 },   // 0.23.0. Priser fra progresjonsplanen kap. 6
+      sauefjos:   { navn: 'Sauefjøs',       ikon: '🐑', nivaa: 16, pris: 3000, dyr: 'sau' },
       festbord:   { navn: 'Festbordet',     ikon: '🎉', nivaa: 3,  pris: 150, arr: 'bursdag' }   // kommer med Bursdagsfesten, ikke med nivået (Even 11.11: første maskin ca. 150)
     },
     koPlasser: 2,
-    xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325, 395, 460],   // XP fra nivået til det neste. 11–12 fra progresjonsplanen kap. 5
-    maksNivaa: 13,
+    xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325, 395, 460, 530, 605, 685],   // XP fra nivået til det neste. 11–15 fra progresjonsplanen kap. 5
+    maksNivaa: 16,
     akre: { 1: 6, 3: 9, 5: 12, 13: 15 },        // antall åkre fra nivå
-    silo: { 1: 50, 9: 75 },             // plass til avlinger
-    lave: { 1: 50, 6: 75, 10: 100 },    // plass til alt annet
+    silo: { 1: 50, 9: 75, 15: 100 },             // plass til avlinger
+    lave: { 1: 50, 6: 75, 10: 100, 14: 125 },    // plass til alt annet
     startMynter: 50,
     startLager: { honsefor: 6, hvete: 4 },
     nyAvlingFro: 3,                     // en ny avling gir 3 frø når den låses opp
     // Bestillinger (progresjonsplanen kap. 4 F5 og kap. 6). Tavla kommer på nivå 4. Antall bestillinger øker med nivået.
-    bestillinger: { nivaa: 4, plasser: { 4: 3, 7: 4, 10: 5 }, bytteForslag: 900, maksKjede: 600, myntFaktor: 1.6, xpFaktor: 0.6, xpPot: 0.85, minXP: 3 },
+    bestillinger: { nivaa: 4, plasser: { 4: 3, 7: 4, 10: 5, 15: 6 }, bytteForslag: 900, maksKjede: 600, myntFaktor: 1.6, xpFaktor: 0.6, xpPot: 0.85, minXP: 3 },
     // Kunder som kjører innom markedsbua (Even 11.11): ber om én vare og betaler markedspris (Ivar 11.11). Ingen straff om spilleren ikke har varen.
     kunder: { faktor: 1, pause: [70, 120], venter: 60 },
     // Områder spilleren kan kjøpe (Ivar 12.11: Enga på nivå 5 for 300). Skogkanten er med i fase 4.
@@ -92,7 +103,7 @@
       ostjordet:  { navn: 'Østjordet',  nivaa: 16, pris: 4000, krever: 'jordet' },   // 0.20.1 (Ivar 16.11): utvidelsen øst for Jordet, fra nivå 16. Navn og pris er forslag
       jordet:     { navn: 'Jordet',     nivaa: 8,  pris: 1000 }   // 0.17.0 (Even 15.11): jordet på andre siden av veien. Nivå og pris er forslag og må godkjennes av en voksen
     },
-    innholdTil: 13,
+    innholdTil: 16,
     // Rebus' gåter (Even 13.11): svaret er varen. Spilleren gir Rebus varen. Lønn: pris × 2 + 10 mynter, 4 XP + nivået til varen. Ny gåte 3 minutter etter riktig svar
     // Gaveesker (Even 14.11, godkjent av Ivar 14.11): gratis, kan aldri kjøpes, sjansene vises åpent. Prosent per sjeldenhet.
     // Gaveesker (Even 14.11, godkjent av Ivar 14.11). Premier og sjanser fra Even 14.11 (0.12.1): [premie, prosent, mengde, sjeldenhet]
@@ -113,6 +124,10 @@
     arrPynt: ['bursdagspynt'],
     rebus: { nivaa: 2, pause: 180, myntFaktor: 1, myntPluss: 10, xp: 4 },   /* 0.15.1 (Even 15.11): du trenger ikke ha svaret på lager. Rebus tar ingen vare, så lønna er varens verdi mindre enn før (samme gevinst som før) */
     gater: {
+      gresskar: 'Jeg er stor, rund og oransje, og jeg vokser på bakken. Om høsten skjærer noen ansikt i meg. Hva er jeg?',
+      ull: 'Jeg vokser på sauen og er myk og varm. Av meg blir det garn og gensere. Hva er jeg?',
+      gulrotpai: 'Jeg er rund og bakt i ovnen, og inni meg er det noe oransje fra åkeren. Hva er jeg?',
+      kremkake: 'Jeg er myk og søt, med hvit krem på toppen. Du får meg på fest. Hva er jeg?',
       sirup: 'Jeg er brun, søt og seig, og jeg renner sakte ned fra skjeen. Hva er jeg?',
       omelett: 'Jeg er laget av egg som er pisket og stekt i panna. Jeg er gul og flat. Hva er jeg?',
       smorpopkorn: 'Vi popper i gryta og får noe gult og godt smeltet over oss. Hva er vi?',

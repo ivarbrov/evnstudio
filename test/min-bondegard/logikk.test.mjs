@@ -8,8 +8,9 @@ const t = (navn, sant, info = '') => { if (sant) ok++; else { feil++; console.lo
 const S = 1000, T0 = 1_800_000_000_000;
 
 // --- Data ---
-const alleTider = [...Object.values(D.avlinger).map(a => a.tid), ...Object.values(D.dyr).map(a => a.tid), ...Object.values(D.oppskrifter).map(o => o.tid)];
-t('Ingen jobb over 4 min (B1)', Math.max(...alleTider) <= D.maksVentetid, Math.max(...alleTider));
+const tider = f => [...Object.values(D.avlinger).filter(f).map(a => a.tid), ...Object.values(D.dyr).filter(f).map(a => a.tid), ...Object.values(D.oppskrifter).filter(f).map(o => o.tid)];
+t('Ingen jobb over 4 min på nivå 1–10 (B1)', Math.max(...tider(x => x.nivaa <= 10)) <= D.maksVentetid, Math.max(...tider(x => x.nivaa <= 10)));
+t('Ingen jobb over 6 min på nivå 11–20 (progresjonsplanen kap. 3)', Math.max(...tider(x => x.nivaa > 10)) <= 360, Math.max(...tider(x => x.nivaa > 10)));
 t('Brød koster 14 mynter', D.pris('brod') === 14, D.pris('brod'));
 t('Hønsefôr er fôr og gir 0 XP', D.erFor('honsefor') && D.produktXP('honsefor') === 0);
 t('Alle råvarer i oppskrifter finnes', Object.values(D.oppskrifter).every(o => Object.keys(o.inn).every(v => D.avlinger[v] || D.varer[v])));
@@ -72,7 +73,15 @@ t('Brød gir 2 XP', r.ok && r.xp === 2 && s.lager.brod === 1);
 nye = L.giXP(s, 2000, T0);
 t('Stor XP gir flere nivåer på en gang', s.nivaa === 10 || nye.length > 1);
 t('Nivå 3 og 5 gir åkre', s.akre.length === 12);
-t('Maks nivå 13 (0.22.0), med 15 åkre og 4 høner', (() => { const x = L.ny(T0); L.giXP(x, 99999, T0); return x.nivaa === 13 && D.maksNivaa === 13 && x.akre.length === 15 && x.dyr.hone.length === 4; })());
+t('Maks nivå 16 (0.23.0), med 15 åkre og 4 høner', (() => { const x = L.ny(T0); L.giXP(x, 99999, T0); return x.nivaa === 16 && D.maksNivaa === 16 && x.akre.length === 15 && x.dyr.hone.length === 4; })());
+{ const x = L.ny(T0); L.giXP(x, 99999, T0); x.mynter = 20000;
+  t('Nivå 14–16: paibakeri og sauefjøs kan bygges, gresskar kan plantes', x.bygg.paibakeri && x.bygg.sauefjos && !x.dyr.sau && L.kanPlante(x, 0, 'gresskar', T0) === null && x.lager.gresskar === D.nyAvlingFro);
+  L.kjopBygg(x, 'paibakeri'); L.kjopBygg(x, 'sauefjos'); x.lager.gulrot = 3; x.lager.egg = 1; x.lager.hvete = 5; x.lager.erter = 1;
+  t('Sauene kommer med sauefjøset, og gulrotpai og sauefor kan lages', x.dyr.sau.length === 2 && L.produser(x, 'paibakeri', 'gulrotpai', T0).ok && L.produser(x, 'forkvern', 'sauefor', T0).ok);
+  x.lager.sauefor = 2; const m = L.mat(x, 'sau', T0), u = L.samleDyr(x, 'sau', T0 + 301 * S);
+  t('Sauer gir ull etter 5 min', m.ok && u.ok && x.lager.ull === 2);
+  t('Låve 125 fra nivå 14, silo 100 og 6 bestillinger fra nivå 15', L.kapasitet(x, 'lave') === 125 && L.kapasitet(x, 'silo') === 100 && D.ved(D.bestillinger.plasser, 16) === 6);
+  const v = L.valider(JSON.parse(JSON.stringify(x)), T0); t('Nivå 16 overlever lagring', v.nivaa === 16 && v.bygg.paibakeri.eid && v.dyr.sau.length === 2); }
 { const x = L.ny(T0); while (x.nivaa < 10) L.giXP(x, 5, T0); const h10 = x.dyr.hone.length; x.mynter = 5000; L.kjopOmrade(x, 'enga'); L.kjopBygg(x, 'fjos'); const k10 = x.dyr.ku.length;
   let n11 = null, n13 = null; while (x.nivaa < 13) { const nye = L.giXP(x, 5, T0); nye.forEach(n => { if (n.nivaa === 11) n11 = n; if (n.nivaa === 13) n13 = n; }); }
   t('Nivå 11 gir en høne til og sirup, nivå 13 en ku til, smørpopkorn og 3 åkre', h10 === 3 && k10 === 2 && x.dyr.hone.length === 4 && x.dyr.ku.length === 3 && n11.flereDyr[0].art === 'hone' && n11.oppskrifter.includes('sirup') && n13.flereDyr[0].art === 'ku' && n13.oppskrifter.includes('smorpopkorn') && n13.akre === 3);
