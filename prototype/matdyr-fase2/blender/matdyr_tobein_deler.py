@@ -63,7 +63,7 @@ def eksporter(rot, navn, lav=7000):
                               export_yup=True, export_texcoords=True, export_normals=True, export_materials='EXPORT', export_animations=False)
     print('EKSPORT', navn, 'trekanter', tri, '->', min(tri, lav))
 
-ASCII = lambda n: n.replace('ø', 'o').replace('å', 'a').replace('æ', 'ae')   # filnavn uten æøå
+ASCII = lambda n: n.replace('ø', 'o').replace('ö', 'o').replace('å', 'a').replace('æ', 'ae')   # filnavn uten æøå
 
 def lag_dyr(dyr):
     H.nullstill(); H.MATS.clear(); M._VAFFEL.clear(); H.rnd.seed(7)
