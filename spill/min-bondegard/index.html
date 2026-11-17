@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.26.0 – EVN Studio</title>
+<title>Min Bondegård 0.26.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -286,7 +286,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.26.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.26.1</div>
   </div>
 </div>
 
@@ -557,7 +557,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.26.0'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.26.1'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -927,8 +927,11 @@ const omradePanel = document.getElementById('omrade');
 let omradeVist = null, omradeTid = 0;
 function visOmrade(o) {
   omradePanel.querySelector('.tittel').textContent = 'Område ' + o.nr + ' · ' + o.navn;
-  omradePanel.querySelector('.nivaa').textContent = 'Låses opp på nivå ' + o.nivaa;
-  omradePanel.querySelector('.pris').textContent = o.pris.toLocaleString('nb-NO') + ' mynter';
+  /* 0.26.1 (Ivar 17.11): Elvebredden er ikke laget ennå. Kortet lover ikke lenger nivå og pris for noe som ikke kan kjøpes */
+  const senere = o.tema === 'elv';
+  omradePanel.querySelector('.nivaa').textContent = senere ? 'Kommer i en senere versjon' : 'Låses opp på nivå ' + o.nivaa;
+  omradePanel.querySelector('.pris').textContent = senere ? 'Her kommer fiskebrygga 🎣' : o.pris.toLocaleString('nb-NO') + ' mynter';
+  omradePanel.querySelector('.smaa').textContent = senere ? 'Du kan ikke kjøpe området ennå.' : 'Roboten rydder området når du kjøper det.';
   omradePanel.style.display = 'block'; OMRADER.forEach(a => { a.kant.material.color.set(a === o ? 0xffd23f : 0xfff6d8); a.kant.material.opacity = 0.32; }); omradeVist = o; omradeTid = 0;
 }
 function skjulOmrade() { omradePanel.style.display = 'none'; OMRADER.forEach(a => { a.kant.material.color.set(0xfff6d8); a.kant.material.opacity = 0.32; }); omradeVist = null; }
@@ -936,8 +939,8 @@ omradePanel.querySelector('button').onclick = skjulOmrade;
 function skiltTekstur(nivaa) { const c = document.createElement('canvas'); c.width = 256; c.height = 150; const x = c.getContext('2d');
   x.fillStyle = '#e9c88f'; x.fillRect(0, 0, 256, 150); x.strokeStyle = '#8a5a32'; x.lineWidth = 10; x.strokeRect(5, 5, 246, 140);
   x.fillStyle = 'rgba(120,80,40,.18)'; for (let i = 0; i < 5; i++) x.fillRect(0, 22 + i * 28, 256, 3);
-  x.fillStyle = '#5a2f14'; x.font = 'bold 44px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('Til salgs', 128, 56);
-  x.fillStyle = '#c0392b'; x.beginPath(); x.roundRect ? x.roundRect(64, 88, 128, 42, 12) : x.rect(64, 88, 128, 42); x.fill(); x.fillStyle = '#fff'; x.font = 'bold 28px system-ui,sans-serif'; x.fillText('Nivå ' + nivaa, 128, 110);
+  x.fillStyle = '#5a2f14'; x.font = 'bold 44px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(nivaa === 'senere' ? 'Kommer' : 'Til salgs', 128, 56);
+  x.fillStyle = '#c0392b'; x.beginPath(); x.roundRect ? x.roundRect(64, 88, 128, 42, 12) : x.rect(64, 88, 128, 42); x.fill(); x.fillStyle = '#fff'; x.font = 'bold 28px system-ui,sans-serif'; x.fillText(nivaa === 'senere' ? 'senere' : 'Nivå ' + nivaa, 128, 110);
   const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t; }
 function lagOmrader() {
   OMRADER.forEach(o => {
@@ -956,7 +959,7 @@ function lagOmrader() {
     const [sx, sz, sr] = o.skilt, s = new THREE.Group(); s.position.set(sx, hoyde(sx, sz), sz); s.rotation.y = sr; s.scale.setScalar(1.45); scene.add(s);
     mesh(avrundetBoks(0.12, 1.2, 0.12, 0.03, 1), MAT.brunPlank, 0, 0.6, -0.12, s);
     mesh(avrundetBoks(1.25, 0.76, 0.08, 0.03, 1), MAT.brunPlank, 0, 1.12, -0.03, s);
-    const front = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.67), std({map: skiltTekstur(o.nivaa), roughness: 0.85})); front.position.set(0, 1.12, 0.016); front.castShadow = true; s.add(front);
+    const front = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.67), std({map: skiltTekstur(o.tema === 'elv' ? 'senere' : o.nivaa), roughness: 0.85})); front.position.set(0, 1.12, 0.016); front.castShadow = true; s.add(front);
     s.rotation.z = 0.04; s.traverse(m => { if (m.isMesh) m.userData.eier = s; }); s.userData.omrade = o; klikkbar(s); o.skiltG = s;
     // små stikker med farget topp langs grensen, så det er lett å se hvor området går
     const stikk = []; o.poly.forEach(([x, z], i) => { if (i % 7) return; if (elvKant(x, z) < 0.6) return; const y = hoyde(x, z);
