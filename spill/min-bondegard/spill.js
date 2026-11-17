@@ -1580,9 +1580,29 @@ loop();
    Finnes ikke for vanlige spillere på evnstudio.no. Det admin gir, er ikke en del av spillets økonomi. */
 const admLager = () => { try { return JSON.parse(localStorage.getItem('mb-admin') || '{}'); } catch (e) { return {}; } };
 function admLagre(f) { const l = admLager(); f(l); try { localStorage.setItem('mb-admin', JSON.stringify(l)); } catch (e) {} }
-function admPlanter() { if (admLager().planter) for (const a in D.avlinger) D.avlinger[a].nivaa = 1; }   /* alle plantene kan plantes uansett nivå */
+const admPlantNivaa = {}; for (const a in D.avlinger) admPlantNivaa[a] = D.avlinger[a].nivaa;   /* de vanlige nivåene, så «Slett» kan sette dem tilbake */
+function admPlanter() { const paa = !!admLager().planter; for (const a in D.avlinger) D.avlinger[a].nivaa = paa ? 1 : admPlantNivaa[a]; }   /* alle plantene kan plantes uansett nivå */
+/* 0.20.3 (Even 17.11): «Slett» tar bort det admin har gitt. Det du har tjent selv, beholder du */
+function admSlettSkinn(id) {
+  admLagre(l => { l.skinn = (l.skinn || []).filter(x => x !== id); });
+  const tjent = Object.keys(D.arr).some(a => D.arr[a].trinn.some((tr, i) => tr.premie === 'skinn' && tr.skinn === id && i < L.arrTrinn(s, a)));
+  if (!tjent) { delete s.skinn.eid[id]; if (s.skinn.valgt === id) s.skinn.valgt = null; }
+  return !tjent;
+}
+function admSlettBursdag() {
+  const id = 'bursdag', A = D.arr[id], l = admLager(), f = l.bursdag; if (!f || !s.arr[id]) return false;
+  s.arr[id].levert = Math.min(s.arr[id].levert, f.levert);
+  const n = L.arrTrinn(s, id);
+  A.trinn.forEach((tr, i) => { if (i < n) return; if (tr.premie === 'skinn' && !(l.skinn || []).includes(tr.skinn)) { delete s.skinn.eid[tr.skinn]; if (s.skinn.valgt === tr.skinn) s.skinn.valgt = null; } if (tr.premie === 'pynt') delete s.gaver.pynt[tr.pynt]; });
+  if (!f.bord && s.bygg[A.bygg]) { s.bygg[A.bygg].eid = false; s.bygg[A.bygg].ko = []; }
+  s.lager[A.vare] = Math.max(0, (s.lager[A.vare] || 0) - 5);
+  admLagre(x => { delete x.bursdag; });
+  return true;
+}
 function admBursdag() {   /* alle premiene fra Bursdagsfesten, og Festbordet ferdig bygd */
-  const id = 'bursdag', A = D.arr[id]; for (let i = 0; i < 400 && s.nivaa < A.nivaa; i++) L.giXP(s, 5, naa());   /* festen krever nivå 3, ellers tas premiene ikke vare på i lagringen */
+  const id = 'bursdag', A = D.arr[id];
+  if (!admLager().bursdag) admLagre(l => { l.bursdag = {levert: s.arr[id] ? s.arr[id].levert : 0, bord: !!(s.bygg[A.bygg] && s.bygg[A.bygg].eid)}; });   /* husker hva du hadde fra før */
+  for (let i = 0; i < 400 && s.nivaa < A.nivaa; i++) L.giXP(s, 5, naa());   /* festen krever nivå 3, ellers tas premiene ikke vare på i lagringen */
   L.arrStart(s, id); s.arr[id].levert = Math.max(s.arr[id].levert, A.trinn[A.trinn.length - 1].n);
   if (s.bygg[A.bygg]) s.bygg[A.bygg].eid = true;
   A.trinn.forEach(tr => { if (tr.premie === 'skinn') s.skinn.eid[tr.skinn] = true; if (tr.premie === 'pynt' && !s.gaver.pynt[tr.pynt]) s.gaver.pynt[tr.pynt] = {x: null, z: null, r: 0}; });
@@ -1594,10 +1614,10 @@ function visAdmin() {
     <div class="rad"><span class="stort">🪙</span><span class="midt">Myntregn<small>Det regner mynter over gården</small></span><button class="knapp" data-g="adm" data-v="regn" type="button">Start</button></div>
     <div class="rad"><span class="stort">🚚</span><span class="midt">Bilkaos<small>Alle bilene kommer på én gang</small></span><button class="knapp" data-g="adm" data-v="biler" type="button">Start</button></div>
     <div class="rad"><span class="stort">✖️</span><span class="midt">5 ganger mynter<small>${adm.x5 ? 'Er på' : 'Er av'}</small></span><button class="knapp" data-g="adm" data-v="x5" type="button">${adm.x5 ? 'Slå av' : 'Slå på'}</button></div>
-    ${Object.keys(D.skinn).map(id => `<div class="rad"><span class="stort">🎂</span><span class="midt">${D.skinn[id]}<small>${s.skinn.eid[id] ? 'Du har den' : 'Festbil'}</small></span><button class="knapp" data-g="adm" data-v="skinn" data-id="${id}" type="button" ${s.skinn.eid[id] ? 'disabled' : ''}>Få</button></div>`).join('')}
-    <div class="rad"><span class="stort">🎉</span><span class="midt">Alle bursdagstingene<small>Festbordet, hatter, kake, bil og pynt</small></span><button class="knapp" data-g="adm" data-v="bursdag" type="button">Få</button></div>
-    <div class="rad"><span class="stort">🌱</span><span class="midt">Alle plantene<small>${admLager().planter ? 'Du kan plante alt' : 'Plant alt, uansett nivå'}</small></span><button class="knapp" data-g="adm" data-v="planter" type="button" ${admLager().planter ? 'disabled' : ''}>Få</button></div>
-    <div class="rad"><span class="stort">💰</span><span class="midt">1000 mynter</span><button class="knapp" data-g="adm" data-v="mynter" type="button">Få</button></div>
+    ${Object.keys(D.skinn).map(id => `<div class="rad"><span class="stort">🎂</span><span class="midt">${D.skinn[id]}<small>${s.skinn.eid[id] ? 'Du har den' : 'Festbil'}</small></span><button class="knapp" data-g="adm" data-v="skinn" data-id="${id}" type="button" ${s.skinn.eid[id] ? 'disabled' : ''}>Få</button><button class="knapp" data-g="adm" data-v="skinnSlett" data-id="${id}" type="button" ${(admLager().skinn || []).includes(id) ? '' : 'disabled'}>Slett</button></div>`).join('')}
+    <div class="rad"><span class="stort">🎉</span><span class="midt">Alle bursdagstingene<small>Festbordet, hatter, kake, bil og pynt</small></span><button class="knapp" data-g="adm" data-v="bursdag" type="button" ${admLager().bursdag ? 'disabled' : ''}>Få</button><button class="knapp" data-g="adm" data-v="bursdagSlett" type="button" ${admLager().bursdag ? '' : 'disabled'}>Slett</button></div>
+    <div class="rad"><span class="stort">🌱</span><span class="midt">Alle plantene<small>${admLager().planter ? 'Du kan plante alt' : 'Plant alt, uansett nivå'}</small></span><button class="knapp" data-g="adm" data-v="planter" type="button" ${admLager().planter ? 'disabled' : ''}>Få</button><button class="knapp" data-g="adm" data-v="planterSlett" type="button" ${admLager().planter ? '' : 'disabled'}>Slett</button></div>
+    <div class="rad"><span class="stort">💰</span><span class="midt">1000 mynter</span><button class="knapp" data-g="adm" data-v="mynter" type="button">Få</button><button class="knapp" data-g="adm" data-v="mynterSlett" type="button" ${s.mynter > 0 ? '' : 'disabled'}>Slett</button></div>
     <div class="rad"><span class="stort">⭐</span><span class="midt">Ett nivå opp<small>Du er på nivå ${s.nivaa}</small></span><button class="knapp" data-g="adm" data-v="nivaa" type="button">Få</button></div>`);
 }
 function admMyntregn() {
@@ -1634,6 +1654,10 @@ if (ADMIN) {
       L.velgSkinn(s, id); lagre(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding('🎂 Du fikk ' + D.skinn[id] + '!'); }
     else if (v === 'bursdag') { admBursdag(); lagre(); plasserAlt(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding('🎉 Du fikk alle bursdagstingene!', 3200); }
     else if (v === 'planter') { admLagre(l => { l.planter = true; }); admPlanter(); synk(true); tegnPaaNytt(); melding('🌱 Nå kan du plante alt!', 3200); }
+    else if (v === 'skinnSlett') { const id = k.dataset.id; const bort = admSlettSkinn(id); lagre(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding(bort ? '🗑️ ' + D.skinn[id] + ' er slettet' : 'Den har du tjent selv, så den beholder du'); }
+    else if (v === 'bursdagSlett') { if (admSlettBursdag()) { lagre(); plasserAlt(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding('🗑️ Bursdagstingene fra admin er slettet', 3200); } }
+    else if (v === 'planterSlett') { admLagre(l => { l.planter = false; }); admPlanter(); synk(true); tegnPaaNytt(); melding('🗑️ Plantene følger nivået igjen', 3200); }
+    else if (v === 'mynterSlett') { s.mynter = Math.max(0, s.mynter - 1000); adm.forrige = s.mynter; lagre(); synk(); tegnPaaNytt(); }
     else if (v === 'mynter') { s.mynter += 1000; adm.forrige = s.mynter; lagre(); synk(); tegnPaaNytt(); }
     else if (v === 'nivaa') { const n0 = s.nivaa; for (let i = 0; i < 400 && s.nivaa === n0; i++) L.giXP(s, 5, naa()); lagre(); plasserAlt(); synk(true); tegnPaaNytt(); }
   });
