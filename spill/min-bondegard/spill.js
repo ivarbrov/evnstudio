@@ -1013,9 +1013,13 @@ function oppdaterHund(dt, t) {
       else { const dx = m[0] - p.x, dz = m[1] - p.z, d = Math.hypot(dx, dz), steg = dt * 5.5; if (d <= steg) { p.x = m[0]; p.z = m[1]; J.vei.shift(); } else { p.x += dx / d * steg; p.z += dz / d * steg; hund.rotation.y = snuMot(hund.rotation.y, Math.atan2(-dz, dx), dt * 9); } gaar = true; } }
     else if (J.fase === 'graver') { J.t += dt; graver = 1; if (J.t > 2.6) { hundHaug = hundLagHaug(J.x, J.z); J.fase = 'venter'; melding('🐶 Syltetøy har funnet noe! Trykk på jordhaugen.', 3200); } }
   }
-  else if (hundSpor.length > 5) { const m = hundSpor[0], dx = m[0] - p.x, dz = m[1] - p.z, d = Math.hypot(dx, dz), steg = dt * Math.min(7, 2.2 + hundSpor.length * 0.35);
-    if (d <= steg) { p.x = m[0]; p.z = m[1]; hundSpor.shift(); } else { p.x += dx / d * steg; p.z += dz / d * steg; hund.rotation.y = snuMot(hund.rotation.y, Math.atan2(-dz, dx), dt * 8); } gaar = true; }
-  else { const dx = rp.x - p.x, dz = rp.z - p.z; if (Math.hypot(dx, dz) > 0.5) hund.rotation.y = snuMot(hund.rotation.y, Math.atan2(-dz, dx), dt * 3); }
+  else {   /* 0.25.1 (Even 17.11: «Syltetøy glitcher»): jevn fart etter hvor langt bak hun er, i stedet for å rykke fra punkt til punkt og stoppe mellom hvert */
+    const ekstra = hundSpor.length - 5, maal = ekstra > 0 ? Math.min(7, 0.8 + ekstra * 1.3) : 0; u.fart = (u.fart || 0) + (maal - (u.fart || 0)) * Math.min(1, dt * 5);
+    if (u.fart > 0.2 && hundSpor.length > 4) { let igjen = u.fart * dt; const x0 = p.x, z0 = p.z;
+      while (igjen > 0 && hundSpor.length > 4) { const m = hundSpor[0], dx = m[0] - p.x, dz = m[1] - p.z, d = Math.hypot(dx, dz); if (d <= igjen) { p.x = m[0]; p.z = m[1]; hundSpor.shift(); igjen -= d; } else { p.x += dx / d * igjen; p.z += dz / d * igjen; igjen = 0; } }
+      const ddx = p.x - x0, ddz = p.z - z0; if (Math.hypot(ddx, ddz) > 1e-4) hund.rotation.y = snuMot(hund.rotation.y, Math.atan2(-ddz, ddx), dt * 6); gaar = true; }
+    else { u.fart = 0; const dx = rp.x - p.x, dz = rp.z - p.z; if (Math.hypot(dx, dz) > 0.5) hund.rotation.y = snuMot(hund.rotation.y, Math.atan2(-dz, dx), dt * 2.5); } }
+  u.gaarT = gaar ? 0.3 : Math.max(0, (u.gaarT || 0) - dt); gaar = u.gaarT > 0;   /* beina stopper ikke og starter ikke for hvert lille opphold */
   hundSitt = gaar || graver ? 0 : hundSitt + dt; const sitt = THREE.MathUtils.smoothstep(hundSitt, 1.2, 1.8);
   u.fase += dt * (gaar ? 13 : 0); const sv = gaar ? Math.sin(u.fase) * 0.55 : 0;
   u.bein[0].rotation.z = sv; u.bein[3].rotation.z = sv; u.bein[1].rotation.z = -sv; u.bein[2].rotation.z = -sv;
@@ -1023,8 +1027,8 @@ function oppdaterHund(dt, t) {
   u.bein[2].rotation.z += sitt * 1.2; u.bein[3].rotation.z += sitt * 1.2;
   u.K.rotation.z = graver ? -0.3 : sitt * 0.42; u.K.position.y = (gaar ? Math.abs(Math.sin(u.fase)) * 0.05 : 0) - sitt * 0.16;
   u.hale.rotation.y = Math.sin(t * (gaar ? 9 : 13)) * (gaar ? 0.35 : 0.7); u.hode.rotation.z = Math.sin(t * 1.3) * 0.06 - sitt * 0.3; u.orer.forEach((o, i) => { o.rotation.x = (i ? -1 : 1) * (0.1 + Math.abs(Math.sin(u.fase)) * 0.25); });
-  if (hundHopp > 0) { hundHopp = Math.max(0, hundHopp - dt); p.y = Math.sin((0.5 - hundHopp) / 0.5 * Math.PI) * 0.5; } else p.y = 0;
-  p.y += Math.max(typeof hoyde === 'function' ? hoyde(p.x, p.z) : 0, window.akerY ? window.akerY(p.x, p.z) : 0);
+  const bakke = Math.max(typeof hoyde === 'function' ? hoyde(p.x, p.z) : 0, window.akerY ? window.akerY(p.x, p.z) : 0); u.bakke = u.bakke === undefined ? bakke : u.bakke + (bakke - u.bakke) * Math.min(1, dt * 10);   /* mykt opp på åkerkanten, som roboten */
+  p.y = u.bakke + (hundHopp > 0 ? Math.sin((0.5 - (hundHopp = Math.max(0, hundHopp - dt))) / 0.5 * Math.PI) * 0.5 : 0);
 }
 function hundTrykk() { if (hundJobb && hundJobb.fase === 'venter') { hundHentSkatt(); return; } if (hundJobb) { hundTrykkHopp(); return; } hundStartPinne(); }
 const revInne = () => !!rev && revSted === 'hjem' && !revGang && s.oppl.steg >= OPPL.length && performance.now() > revUteTil;
