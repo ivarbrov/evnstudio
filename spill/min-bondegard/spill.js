@@ -930,6 +930,35 @@ function synkRevehus() {
 }
 /* 0.24.0 (Even 8.11 og 17.11): gårdshunden Syltetøy. Stor, gul og snill. Hun kommer på nivå 20, bor i hundehuset og følger roboten. Bare til pynt */
 let hund = null, hundSpor = [], hundSitt = 0, hundHopp = 0;
+/* 0.25.0 (Even 17.11: «ekstra gøy»): Syltetøy har fått jobb. Av og til snuser hun seg fram til noe som er gravd ned, graver, og venter ved en liten jordhaug til du trykker på den.
+   Trykker du på henne, kaster roboten en pinne som hun henter. Skatten er liten (5–15 mynter eller 2 frø), kan ikke kjøpes, og blir liggende til du henter den. Tallene er forslag */
+const HUND_SKATT = {pause: [150, 240], mynter: [5, 15], fro: 2, froSjanse: 0.3};
+let hundJobb = null, hundNeste = 0, hundHaug = null, hundPinne = null;
+function hundLedigPunkt(avstand) { for (let i = 0; i < 24; i++) { const a = Math.random() * 6.28, r = avstand * (0.6 + Math.random() * 0.6), x = robot.position.x + Math.cos(a) * r, z = robot.position.z + Math.sin(a) * r;
+    let v = null;   /* stedet må kunne nås til fots. Det trenger ikke være ledig byggeplass */ try { v = finnVei({x: hund.position.x, z: hund.position.z}, [x - 0.3, x + 0.3, z - 0.3, z + 0.3], 0.6); } catch (e) {}
+    if (!v) try { v = finnVei({x: robot.position.x, z: robot.position.z}, [x - 0.3, x + 0.3, z - 0.3, z + 0.3], 0.6); } catch (e) {}   /* står hun selv inntil noe, går hun via roboten */
+    if (!v) continue; const vei = v.map(q => [q.x, q.z]), fra = vei.length ? vei[vei.length - 1] : [hund.position.x, hund.position.z], d = Math.hypot(x - fra[0], z - fra[1]) || 1;
+    vei.push([x - (x - fra[0]) / d * 0.9, z - (z - fra[1]) / d * 0.9]); return {x, z, vei}; } return null; }   /* hun stopper 0,9 m før stedet, så haugen eller pinnen ligger foran henne */
+function hundStartGrav() { const m = hundLedigPunkt(6); if (!m) { hundNeste = performance.now() + 20000; return; } hundJobb = {type: 'grav', fase: 'gaar', vei: m.vei, x: m.x, z: m.z, t: 0}; }
+function hundStartPinne() {
+  const m = hundLedigPunkt(7); if (!m) { hundTrykkHopp(); return; }
+  if (!hundPinne) { hundPinne = mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.7, 6), fm(0x8a5a36, 0.9), 0, 0, 0, scene); hundPinne.rotation.z = Math.PI / 2; }
+  hundPinne.visible = true; hund.userData.hode.remove(hundPinne); scene.add(hundPinne);
+  hundJobb = {type: 'pinne', fase: 'kast', vei: m.vei, x: m.x, z: m.z, t: 0, fra: [robot.position.x, robot.position.z]}; melding('🐶 Hent pinnen, Syltetøy!', 2200);
+}
+function hundTrykkHopp() { hundHopp = 0.5; if (typeof visHjerte === 'function') visHjerte(hund.position.clone().setY(hund.position.y + 1.6)); }
+function hundLagHaug(x, z) {
+  const g = new THREE.Group(); mesh(new THREE.SphereGeometry(0.42, 12, 8), fm(0x6b4a2e, 1), 0, 0, 0, g).scale.set(1.2, 0.45, 1.2); [[0.3, 0.1], [-0.25, 0.25], [0.05, -0.32]].forEach(([dx, dz]) => mesh(new THREE.SphereGeometry(0.12, 8, 6), fm(0x7d5836, 1), dx, 0.06, dz, g));
+  g.position.set(x, Math.max(hoyde(x, z), window.akerY ? window.akerY(x, z) : 0), z); g.userData.hundHaug = true; scene.add(g); eierAv(g); klikkbar(g); const ik = lagIkon(1.5); g.add(ik); settIkon(ik, '✨'); return g;
+}
+function hundHentSkatt() {
+  if (!hundHaug) return; const pos = hundHaug.position.clone().setY(hundHaug.position.y + 1.2); let tekst;
+  const avl = Object.keys(D.avlinger).filter(a => D.avlinger[a].nivaa <= s.nivaa);
+  if (Math.random() < HUND_SKATT.froSjanse && L.plass(s, 'silo') >= HUND_SKATT.fro) { const a = avl[Math.floor(Math.random() * avl.length)]; s.lager[a] = (s.lager[a] || 0) + HUND_SKATT.fro; tekst = '+' + HUND_SKATT.fro + ' ' + ikon(a); }
+  else { const m = HUND_SKATT.mynter[0] + Math.floor(Math.random() * (HUND_SKATT.mynter[1] - HUND_SKATT.mynter[0] + 1)); s.mynter += m; tekst = '+' + m + ' 🪙'; }
+  flyt(tekst, pos); const i = klikkbare.indexOf(hundHaug); if (i >= 0) klikkbare.splice(i, 1); scene.remove(hundHaug); hundHaug = null; hundJobb = null; hundNeste = performance.now() + (HUND_SKATT.pause[0] + Math.random() * (HUND_SKATT.pause[1] - HUND_SKATT.pause[0])) * 1000;
+  hundTrykkHopp(); melding('🐶 Flink bisk! Syltetøy fant noe til deg.', 2600); lagre(); synk();
+}
 function lagHundehus() {
   const g = new THREE.Group(), W = 1.9, H = 1.1, Dd = 1.8;
   mesh(avrundetBoks(W + 0.25, 0.12, Dd + 0.25, 0.04, 1), fm(0xb9b0a2, 0.9), 0, 0.06, 0, g);
@@ -973,20 +1002,31 @@ function oppdaterHund(dt, t) {
   const u = hund.userData, p = hund.position, rp = robot.position, siste = hundSpor[hundSpor.length - 1];
   if (!siste || Math.hypot(rp.x - siste[0], rp.z - siste[1]) > 0.3) hundSpor.push([rp.x, rp.z]);   /* hunden går i robotens spor, så hun går utenom det roboten går utenom */
   if (Math.hypot(rp.x - p.x, rp.z - p.z) > 28 || hundSpor.length > 160) { p.x = rp.x - 1.2; p.z = rp.z - 0.6; hundSpor = []; }
-  let gaar = false;
-  if (hundSpor.length > 5) { const m = hundSpor[0], dx = m[0] - p.x, dz = m[1] - p.z, d = Math.hypot(dx, dz), steg = dt * Math.min(7, 2.2 + hundSpor.length * 0.35);
+  let gaar = false, graver = 0;
+  if (!hundNeste) hundNeste = performance.now() + 45000;   /* første skatt litt etter at hun har kommet */
+  if (!hundJobb && !hundHaug && performance.now() > hundNeste && hundSpor.length <= 5) hundStartGrav();
+  if (hundJobb) { const J = hundJobb; hundSpor = [];
+    if (J.fase === 'kast') { J.t += dt / 0.9; const k = Math.min(1, J.t); hundPinne.position.set(J.fra[0] + (J.x - J.fra[0]) * k, 1.4 + Math.sin(k * Math.PI) * 2.2 - k * 1.3, J.fra[1] + (J.z - J.fra[1]) * k); hundPinne.rotation.y += dt * 12; if (k >= 1) { hundPinne.position.y = Math.max(hoyde(J.x, J.z), 0) + 0.06; J.fase = 'gaar'; } }
+    if (J.fase === 'gaar' || J.fase === 'hjem') { const m = J.vei[0];
+      if (!m) { if (J.type === 'grav') { J.fase = 'graver'; J.t = 0; } else if (J.fase === 'gaar') { scene.remove(hundPinne); u.hode.add(hundPinne); hundPinne.position.set(0.42, -0.14, 0); hundPinne.rotation.set(Math.PI / 2, 0, 0); let v = null; try { v = finnVei({x: p.x, z: p.z}, [rp.x - 0.4, rp.x + 0.4, rp.z - 0.4, rp.z + 0.4], 1.4); } catch (e) {} J.vei = v ? v.map(q => [q.x, q.z]) : []; J.fase = 'hjem'; }
+        else { hundPinne.visible = false; hundJobb = null; hundTrykkHopp(); } }
+      else { const dx = m[0] - p.x, dz = m[1] - p.z, d = Math.hypot(dx, dz), steg = dt * 5.5; if (d <= steg) { p.x = m[0]; p.z = m[1]; J.vei.shift(); } else { p.x += dx / d * steg; p.z += dz / d * steg; hund.rotation.y = snuMot(hund.rotation.y, Math.atan2(-dz, dx), dt * 9); } gaar = true; } }
+    else if (J.fase === 'graver') { J.t += dt; graver = 1; if (J.t > 2.6) { hundHaug = hundLagHaug(J.x, J.z); J.fase = 'venter'; melding('🐶 Syltetøy har funnet noe! Trykk på jordhaugen.', 3200); } }
+  }
+  else if (hundSpor.length > 5) { const m = hundSpor[0], dx = m[0] - p.x, dz = m[1] - p.z, d = Math.hypot(dx, dz), steg = dt * Math.min(7, 2.2 + hundSpor.length * 0.35);
     if (d <= steg) { p.x = m[0]; p.z = m[1]; hundSpor.shift(); } else { p.x += dx / d * steg; p.z += dz / d * steg; hund.rotation.y = snuMot(hund.rotation.y, Math.atan2(-dz, dx), dt * 8); } gaar = true; }
   else { const dx = rp.x - p.x, dz = rp.z - p.z; if (Math.hypot(dx, dz) > 0.5) hund.rotation.y = snuMot(hund.rotation.y, Math.atan2(-dz, dx), dt * 3); }
-  hundSitt = gaar ? 0 : hundSitt + dt; const sitt = THREE.MathUtils.smoothstep(hundSitt, 1.2, 1.8);
+  hundSitt = gaar || graver ? 0 : hundSitt + dt; const sitt = THREE.MathUtils.smoothstep(hundSitt, 1.2, 1.8);
   u.fase += dt * (gaar ? 13 : 0); const sv = gaar ? Math.sin(u.fase) * 0.55 : 0;
   u.bein[0].rotation.z = sv; u.bein[3].rotation.z = sv; u.bein[1].rotation.z = -sv; u.bein[2].rotation.z = -sv;
+  if (graver) { const gs = Math.sin(t * 22) * 0.7; u.bein[0].rotation.z = 0.5 + gs; u.bein[1].rotation.z = 0.5 - gs; }   /* graver med forbeina */
   u.bein[2].rotation.z += sitt * 1.2; u.bein[3].rotation.z += sitt * 1.2;
-  u.K.rotation.z = sitt * 0.42; u.K.position.y = (gaar ? Math.abs(Math.sin(u.fase)) * 0.05 : 0) - sitt * 0.16;
+  u.K.rotation.z = graver ? -0.3 : sitt * 0.42; u.K.position.y = (gaar ? Math.abs(Math.sin(u.fase)) * 0.05 : 0) - sitt * 0.16;
   u.hale.rotation.y = Math.sin(t * (gaar ? 9 : 13)) * (gaar ? 0.35 : 0.7); u.hode.rotation.z = Math.sin(t * 1.3) * 0.06 - sitt * 0.3; u.orer.forEach((o, i) => { o.rotation.x = (i ? -1 : 1) * (0.1 + Math.abs(Math.sin(u.fase)) * 0.25); });
   if (hundHopp > 0) { hundHopp = Math.max(0, hundHopp - dt); p.y = Math.sin((0.5 - hundHopp) / 0.5 * Math.PI) * 0.5; } else p.y = 0;
   p.y += Math.max(typeof hoyde === 'function' ? hoyde(p.x, p.z) : 0, window.akerY ? window.akerY(p.x, p.z) : 0);
 }
-function hundTrykk() { hundHopp = 0.5; if (typeof visHjerte === 'function') visHjerte(hund.position.clone().setY(hund.position.y + 1.6)); melding('🐶 Voff! Syltetøy logrer med halen.', 2600); }
+function hundTrykk() { if (hundJobb && hundJobb.fase === 'venter') { hundHentSkatt(); return; } if (hundJobb) { hundTrykkHopp(); return; } hundStartPinne(); }
 const revInne = () => !!rev && revSted === 'hjem' && !revGang && s.oppl.steg >= OPPL.length && performance.now() > revUteTil;
 const REV_FART = 1.2, REV_TAKT = 1.3; window.revOpptatt = () => !!revGang;
 let revSted = 'hjem', revGang = null, revFlate = null, revY = 0.044, revKlar = false, revHjemEtter = 0;
@@ -1575,6 +1615,7 @@ window.spillTrykk = (o, t, ray) => {
   if (flytt) { flyttTil(ray); return true; }
   if (o && o.userData.katt) { kundeTrykk(); return true; }
   if (o && o === hund) { hundTrykk(); return true; }
+  if (o && hundHaug && o === hundHaug) { hundHentSkatt(); return true; }
   if (o && rev && (o === revehus || o === rev)) { if (revInne()) { revUteTil = performance.now() + 9000; rev.visible = true; revSett(...REV_HJEM); rev.rotation.y = Math.PI / 2 + 0.35; } o = rev; }   /* 0.23.0: et trykk på huset henter Rebus ut */
   if (o === rev) { if (s.oppl.steg >= OPPL.length && s.nivaa >= D.rebus.nivaa) visGate(); else { if (!revGang) hilsRev(false); visOppl(true); } return true; }
   if (o && o.userData.omrade && ['eng', 'skog', 'jorde', 'jorde2', 'jorde3'].includes(o.userData.omrade.tema)) { visOmradeKjop({eng: 'enga', skog: 'skogkanten', jorde: 'jordet', jorde2: 'ostjordet', jorde3: 'bakjordet'}[o.userData.omrade.tema]); return true; }
