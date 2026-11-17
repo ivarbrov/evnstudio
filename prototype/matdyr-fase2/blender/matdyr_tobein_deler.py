@@ -14,6 +14,8 @@ import matdyr_hybrider as H
 import matdyr_modul as M
 import matdyr_tobein as T
 import matdyr_tobein_flere as F
+import matdyr_mat_flere as MF
+M.MAT.update(MF.MAT)
 T.DYR.update(F.DYR)
 
 UT = sys.argv[-1] if len(sys.argv) > 1 and not sys.argv[-1].endswith('.py') else '/tmp/tb_deler'

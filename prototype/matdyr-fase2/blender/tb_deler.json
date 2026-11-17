@@ -732,15 +732,30 @@
   }
  },
  "mat": [
+  "agurk",
   "banan",
+  "brokkoli",
+  "brus",
   "burger",
+  "gulrot",
   "is",
   "jordbaer",
+  "juice",
+  "kakao",
+  "kjeks",
+  "melke",
+  "melon",
   "milkshake",
+  "ost",
+  "pannekake",
   "pizza",
+  "polse",
+  "popcorn",
   "sjoko",
   "smultring",
   "spagetti",
-  "taco"
+  "sushi",
+  "taco",
+  "vaffel"
  ]
 }

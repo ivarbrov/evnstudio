@@ -161,6 +161,16 @@ ok('full gård: bytte med svakeste etter spørsmål, aldri automatisk (' + JSON.
 // Tobeinte matdyr lastes etter oppstart (QA 81c2fb8): gården og Matdyr-fanen bytter til dem når de er klare. ?tobein=0 slår dem av.
 const tb = await ev(`(async () => { for (let i = 0; i < 150 && !window.EVNTobeinKlar; i++) await new Promise(r => setTimeout(r, 200));
   const I = EVNIntern, ut = { klar: !!window.EVNTobeinKlar, n508: I.nyNavnFor(508), n700: I.nyNavnFor(700), n127: I.nyNavnFor(127), n52: I.nyNavnFor(52), n2: I.nyNavnFor(2), n227: I.nyNavnFor(227) };
+  // Alle matdyrene på to bein (Even 17.11.2026: «du må lage ferdig dyrene»): alle 1000 kombinasjonene har en figur på to bein,
+  // og armene, beina og hodet sitter i kroppen (Even 17.11.2026: «Sørg for at armer og bein er festet til kroppen»)
+  { const D = window.EVNMatdyrData, tbci = new Set(Object.keys(I.NY_ID).filter(n => /^tb_|2_|^shakeand$|^spagettipingvin$/.test(n) && I.nyNavnFor(I.NY_ID[n]))   /* Shakeand og Spagettipingvin går allerede på to bein */.map(n => I.NY_ID[n])); ut.alleTobein = tbci.size; ut.antallKombo = D.COMBOS.length;
+    const T = I.T, lose = [];
+    for (const n of ['tb_mus_ost', 'tb_elefant_is', 'tb_panda_smultring', 'tb_sjiraff_pannekake', 'tb_pingvin_sushi', 'tb_ku_melke', 'tb_krabbe_milkshake', 'tb_slange_is']) {
+      const f = I.nyFigur(n, 'lav'); f.g.updateMatrixWorld(true); const kropp = new T.Box3(), fin = o => { let m = null; f.kopi.traverse(c => { if (!m && c.name === o) m = c; }); return m; };
+      f.kopi.traverse(o => { if (o.name === 'matkropp') kropp.setFromObject(o); }); kropp.expandByScalar(0.06);
+      for (const d of ['vinge_v', 'vinge_h', 'bein_vf', 'bein_hf', 'hode']) { const o = fin(d); if (!o) continue; const b = new T.Box3().setFromObject(o); if (!b.intersectsBox(kropp)) lose.push(n + ':' + d); }
+    }
+    ut.lose = lose; }
   EVNVis({ fane: 'matdyr' }); await new Promise(r => setTimeout(r, 300)); ut.fane = document.getElementById('kort').textContent.includes('to bein');
   // Kameraet skal ikke hoppe når hendelsen kommer (QA 11a7594): både med en annen figur og med Donutku
   const b = I.bane; ut.kamera = [];
@@ -179,6 +189,7 @@ const tb = await ev(`(async () => { for (let i = 0; i < 150 && !window.EVNTobein
   return ut; })()`);
 if (/[?&]tobein=0/.test(process.argv[2] || '')) ok('?tobein=0: gamle figurer i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.n127 === 'donutku' && tb.n52 === null && tb.n2 === null && tb.n227 === null && !tb.fane);
 else ok('tobeinte lastes etter start og brukes i spill og Matdyr-fane (' + JSON.stringify(tb) + ')', tb.klar && tb.n508 === 'pilot_sau2_burger' && tb.n700 === 'pilot_skilpadde2_pizza' && tb.n127 === 'pilot_ku2_smultring' && tb.n52 === 'pilot_hai2_smultring' && tb.n2 === 'pilot_gris2_smultring' && tb.n227 === 'pilot_hval2_smultring' && tb.fane && tb.kamera.every(Boolean));
+if (!/[?&]tobein=0/.test(process.argv[2] || '')) ok('alle 1000 matdyr har figur på to bein, og armer, bein og hode sitter i kroppen (' + JSON.stringify({ alle: tb.alleTobein, av: tb.antallKombo, lose: tb.lose }) + ')', tb.alleTobein === tb.antallKombo && tb.lose.length === 0);
 // Pengene kommer automatisk (Even 14.11.2026). Den gamle pengesonen fra 12.11 finnes bare med ?samle=1.
 const sa = await ev(`(async () => { const P = EVNProto, S0 = JSON.parse(JSON.stringify(P.S())); S0.base = [127, 125]; S0.kasse = 0; P.sett(S0); EVNVis({ fane: 'spill' });
   const R = EVNRobot(), K = EVNIntern.krok; R.position.set(0, 0, 12); const p0 = P.S().penger; for (let i = 0; i < 90; i++) { EVNSteg(1 / 30); K.steg(1 / 30, i / 30); }
