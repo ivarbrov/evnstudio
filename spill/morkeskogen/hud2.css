@@ -273,3 +273,8 @@ body.touchui #h2Dag #biome{max-width:72px;overflow:hidden;text-overflow:ellipsis
   #menu #menuClose{padding:6px!important;min-height:36px}
   .h2NivaaTopp{padding:6px 10px;gap:3px}
 }
+/* Hint på startkortet: spillet er best liggende på mobil (vises bare på berøringsskjerm som holdes stående) */
+#startScreen .h2Snu{display:none;margin:0;padding:8px 12px;border-radius:12px;text-align:center;font-weight:700;
+  background:rgba(255,204,0,.14);border:1px solid rgba(255,204,0,.5);color:#ffe7a3}
+@media (pointer:coarse) and (orientation:portrait){#startScreen .h2Snu{display:block}}
+@media (pointer:coarse) and (orientation:portrait) and (max-height:620px){#startScreen .h2Snu{padding:5px 10px;font-size:13px}}
