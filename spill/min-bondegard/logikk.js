@@ -128,6 +128,8 @@
     if (!b || !o || o.bygg !== bygg) return 'ukjent';
     if (!b.eid) return 'ikke-bygd';
     if (o.nivaa > s.nivaa) return 'laast';
+    // 0.20.2 (QA 17.11): festens bygg lager bare ting mens festen er åpen. Ellers fyller festvarene låven uten å kunne sendes
+    if (D.bygg[bygg] && D.bygg[bygg].arr && D.arr[D.bygg[bygg].arr].maned !== maned(naa)) return 'stengt';
     if (o.krever && arrTrinn(s, o.krever.arr) < o.krever.trinn) return 'laast';
     if (uferdige(b, naa).length >= D.koPlasser) return 'ko-full';
     if (!(bygg === 'forkvern' && bonusAktiv(s, naa)) && !har(s, o.inn)) return 'mangler';
@@ -390,6 +392,10 @@
   // ---------- Årstidsfester (0.16.0, Even 11.11 og 15.11) ----------
   // Festen er åpen i sin måned. Spilleren lager festens vare og sender den med varebilen. Premiene kommer trinnvis etter hvor mye som er sendt.
   // Ingenting går tapt: det som er sendt, står til neste år, og premiene er permanente (hattene på dyrene vises bare i festmåneden).
+  // Måneden (1–12) for et tidspunkt. Testmodus kan overstyre med L.settManed(n)
+  var manedTest = null;
+  function maned(naa) { return manedTest || new Date(naa).getMonth() + 1; }
+  function settManed(n) { manedTest = n >= 1 && n <= 12 ? n : null; }
   function arrId(s, maned) { for (var id in D.arr) if (D.arr[id].maned === maned && s.nivaa >= D.arr[id].nivaa) return id; return null; }
   function arrStart(s, id) {
     var A = D.arr[id]; if (!A) return false;
@@ -433,7 +439,7 @@
     nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
     nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
-    arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
+    maned: maned, settManed: settManed, arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
     giDagsgave: giDagsgave, bonusAktiv: bonusAktiv, leverGaver: leverGaver, klareGaver: klareGaver, aapneGave: aapneGave
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;

@@ -228,6 +228,10 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
     t('Østjordet er låst på nivå 10 (kommer på nivå 16)', L.kanKjopeOmrade(o, 'ostjordet') === 'laast' && D.omrader.ostjordet.nivaa === 16 && D.omrader.ostjordet.krever === 'jordet');
     o.nivaa = 16;
     t('Østjordet (nivå 16, 4000) krever Jordet først', L.kanKjopeOmrade(o, 'ostjordet') === 'krever' && L.kjopOmrade(o, 'jordet').ok && L.kjopOmrade(o, 'ostjordet').ok && o.mynter === 0); }   /* lagring over nivåtaket (10) prøves når taket heves */
+  { const f = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 3, mynter: 500 }), T0); L.arrStart(f, 'bursdag'); f.bygg.festbord.eid = true; f.lager.hvete = 10; f.lager.mais = 10;
+    L.settManed(12); const des = L.kanProdusere(f, 'festbord', 'festhatt', T0), brod = L.kanProdusere(f, 'bakeri', 'brod', T0);
+    L.settManed(11); const nov = L.kanProdusere(f, 'festbord', 'festhatt', T0); L.settManed(null);
+    t('Festbordet lager hatter i november, men er stengt i desember (QA 17.11)', des === 'stengt' && nov !== 'stengt' && brod !== 'stengt'); }
   t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);

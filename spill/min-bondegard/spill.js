@@ -800,6 +800,7 @@ function visPynt(u) { aapneHandling(u, '✨ ' + D.gave.pyntNavn[u.pid], () => (D
 /* ======================= Årstidsfester (0.16.0, Even 11.11 og 15.11) ======================= */
 // Festen er åpen i sin måned. I testmodus kan måneden settes med ?test&maned=2
 const MANED = () => { const p = +new URLSearchParams(location.search).get('maned'); return TESTMODUS && p >= 1 && p <= 12 ? p : new Date().getMonth() + 1; };
+{ const p = +new URLSearchParams(location.search).get('maned'); L.settManed(TESTMODUS && p >= 1 && p <= 12 ? p : null); }   /* 0.20.2: reglene bruker samme måned som visningen */
 let arrNaa = null, arrNy = false;
 function synkArr() { arrNaa = L.arrId(s, MANED()); if (!arrNaa) return; if (!s.arr[arrNaa]) arrNy = true; L.arrStart(s, arrNaa); }
 function lagFestbord() {   /* et langbord med duk, festhatter, flagg og en ballong */
@@ -1227,6 +1228,7 @@ function visBygg(u) {
     p += opp.map(v => { const o = D.oppskrifter[v], g = L.kanProdusere(s, b, v, t);
       const inn = Object.keys(o.inn).map(k => `${o.inn[k]} ${ikon(k)}`).join(' + '), mangler = Object.keys(o.inn).filter(k => (s.lager[k] || 0) < o.inn[k]);
       return `<div class="rad"><span class="stort">${ikon(v)}</span><span class="midt">${o.ut > 1 ? o.ut + ' ' : ''}${navn(v)} · ${fmtTid(o.tid * 1000)}${D.produktXP(v) ? ' · +' + D.produktXP(v) + ' XP' : ''}<small class="${mangler.length ? 'mangler' : ''}">${inn}${mangler.length ? ' · du mangler ' + mangler.map(k => (o.inn[k] - (s.lager[k] || 0)) + ' ' + navn(k).toLowerCase()).join(', ') : ''}</small></span><button class="knapp gronn" data-g="lag" data-v="${v}" ${g ? 'disabled' : ''}>Lag</button></div>`; }).join('');
+    if (D.bygg[b].arr && D.arr[D.bygg[b].arr].maned !== MANED()) p += `<p style="font-size:15px">🔒 ${D.arr[D.bygg[b].arr].navn} er over for i år. ${D.bygg[b].navn} åpner igjen neste gang det er fest.</p>`;
     if (L.uferdige(sb, t).length >= D.koPlasser) p += '<p style="font-size:15px">Køen er full. Vent til en jobb er ferdig.</p>';
     return p + '<div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt</button></div>';
   });
@@ -1442,7 +1444,7 @@ window.spillTrykk = (o, t, ray) => {
 /* ======================= Tastatur (T2) ======================= */
 // Piltastene velger ting på gården (kameraet følger med), Enter bruker den. L åpner lageret.
 let valgtI = -1;
-function velgbare() { return [...s.akre.map(f => ting.get(f.id)), ...I_SPILLET.bygg.map(b => ting.get(b)), ting.get('honsehus'), ting.get('silo'), ting.get('marked'), ting.get('tavle')].filter(Boolean); }
+function velgbare() { return [...s.akre.map(f => ting.get(f.id)), ...I_SPILLET.bygg.map(b => ting.get(b)), ting.get('honsehus'), ting.get('silo'), ting.get('marked'), ting.get('tavle'), ting.get('varebil')].filter(Boolean); }   /* 0.20.2 (QA 17.11): varebilen kan velges med tastaturet, så festen kan brukes uten mus */
 let kameraMaal = null;
 addEventListener('keydown', e => {
   if (!startet || pauset || dialogApen() || $('evnPause') && $('evnPause').classList.contains('vis') || $('feil').classList.contains('vis')) return;
