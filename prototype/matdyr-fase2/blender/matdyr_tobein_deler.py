@@ -13,6 +13,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import matdyr_hybrider as H
 import matdyr_modul as M
 import matdyr_tobein as T
+import matdyr_tobein_flere as F
+T.DYR.update(F.DYR)
 
 UT = sys.argv[-1] if len(sys.argv) > 1 and not sys.argv[-1].endswith('.py') else '/tmp/tb_deler'
 os.makedirs(UT, exist_ok=True)
@@ -45,6 +47,7 @@ MAAL = {
     'sau': ((0, 0.02, 0.72), (0.4, 0.36, 0.42), 0.0, (0, 0, 0)),
     'skilpadde': ((0, 0.02, 0.72), (0.4, 0.34, 0.44), math.pi, (0, 0.12, 0)),
 }
+MAAL.update(F.MAAL)
 
 def eksporter(rot, navn, lav=7000):
     bpy.ops.object.select_all(action='DESELECT')
