@@ -63,12 +63,14 @@ def eksporter(rot, navn, lav=7000):
                               export_yup=True, export_texcoords=True, export_normals=True, export_materials='EXPORT', export_animations=False)
     print('EKSPORT', navn, 'trekanter', tri, '->', min(tri, lav))
 
+ASCII = lambda n: n.replace('ø', 'o').replace('å', 'a').replace('æ', 'ae')   # filnavn uten æøå
+
 def lag_dyr(dyr):
     H.nullstill(); H.MATS.clear(); M._VAFFEL.clear(); H.rnd.seed(7)
     kropp, hode, rest = T.DYR[dyr]('tom')
     beholdt = [o for o in [kropp] if fjern_tom(o)]   # faste kroppsdeler (ryggfinne, skilpaddekropp) blir igjen som 'kropp'
     rot = H.rot_node('tb_' + dyr); H.forelder(beholdt + [hode] + rest, rot)
-    eksporter(rot, 'tb_dyr_' + dyr, 5000)
+    eksporter(rot, 'tb_dyr_' + ASCII(dyr), 5000)
 
 def lag_mat(m):
     H.nullstill(); H.MATS.clear(); M._VAFFEL.clear(); H.rnd.seed(7)

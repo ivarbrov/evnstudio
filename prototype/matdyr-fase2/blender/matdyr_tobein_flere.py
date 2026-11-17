@@ -144,5 +144,76 @@ def panda_tobein(matkropp):
     hale = pivot(slaa_sammen('hale', [prim('kule', 'dusk', hvit, tuple(bk + V((0, 0.05, 0))), (0.07, 0.07, 0.07), segments=16, ring_count=10)]), tuple(bk))
     return slaa_sammen('kropp', k['deler']), hode, _armer(C, A, svart, svart, 0.08) + _bein(under, svart, svart) + [hale]
 
-DYR = {'katt': katt_tobein, 'hund': hund_tobein, 'kanin': kanin_tobein, 'rev': rev_tobein, 'panda': panda_tobein}
+def _snute_nese(hd, hx, hy, hz, snutefarge, nesefarge, bred=0.14, ut=0.18):
+    hd.append(prim('kule', 'snute', snutefarge, (hx, hy - ut, hz - 0.08), (bred, 0.1, 0.09), segments=28, ring_count=14))
+    hd.append(prim('kule', 'nese', nesefarge, (hx, hy - ut - 0.1, hz - 0.04), (0.045, 0.028, 0.032), segments=14, ring_count=8))
+
+def _halekurve(bk, farge, pkt, tykk=0.03, tupp=None, tuppr=0.05):
+    d = [kurve('halestrå', [tuple(bk + V(p)) for p in [(0, 0, 0)] + pkt], tykk, farge, avsmal=lambda u: 1 - 0.3 * u)]
+    if tupp is not None: d.append(prim('kule', 'haletupp', tupp, tuple(bk + V(pkt[-1])), (tuppr, tuppr, tuppr * 1.2), segments=16, ring_count=10))
+    return pivot(slaa_sammen('hale', d), tuple(bk))
+
+def mus_tobein(matkropp):
+    gra = mat('mus', '#b9b3c9', 0.6); rosa = mat('mus_rosa', '#ffb3c1', 0.5)
+    C, A, k, hx, hy, hz, under = _start(matkropp)
+    hd = [_hodekule(gra, hx, hy, hz, (0.25, 0.23, 0.23))]
+    snute = prim('kjegle', 'snute', gra, (0, 0, 0), (0.11, 0.1, 0.14), vertices=24, ss=1)
+    snute.data.transform(Matrix.Rotation(math.pi / 2, 4, 'X')); snute.data.transform(Matrix.Translation((hx, hy - 0.22, hz - 0.06))); hd.append(snute)
+    hd.append(prim('kule', 'nese', rosa, (hx, hy - 0.31, hz - 0.06), (0.035, 0.025, 0.03), segments=14, ring_count=8))
+    hd += _ansikt(hx, hy, hz) + _runde_orer(hx, hy, hz, gra, rosa, r=0.13, ut=0.21, opp=0.2)
+    hode = _hals_og_hode(hd, gra, hx, hy, hz)
+    hale = _halekurve(k['bak'], rosa, [(0.04, 0.14, -0.1), (0.1, 0.26, 0.0), (0.06, 0.34, 0.16)], 0.018)
+    return slaa_sammen('kropp', k['deler']), hode, _armer(C, A, gra, rosa, 0.06) + _bein(under, gra, rosa) + [hale]
+
+def bjorn_tobein(matkropp):
+    brun = mat('bjorn', '#8a5a3c', 0.65); lys = mat('bjorn_lys', '#d9b08c', 0.6); svart = mat('bjorn_nese', '#2b2630', 0.4)
+    C, A, k, hx, hy, hz, under = _start(matkropp)
+    hd = [_hodekule(brun, hx, hy, hz, (0.29, 0.25, 0.26))]
+    _snute_nese(hd, hx, hy, hz, lys, svart)
+    hd += _ansikt(hx, hy, hz, kinnfarge=False) + _runde_orer(hx, hy, hz, brun, lys) + [smil('smil', (hx, hy - 0.27, hz - 0.13), 0.04)]
+    hode = _hals_og_hode(hd, brun, hx, hy, hz)
+    hale = pivot(slaa_sammen('hale', [prim('kule', 'dusk', brun, tuple(k['bak'] + V((0, 0.05, 0))), (0.06, 0.06, 0.06), segments=14, ring_count=8)]), tuple(k['bak']))
+    return slaa_sammen('kropp', k['deler']), hode, _armer(C, A, brun, lys, 0.085) + _bein(under, brun, lys) + [hale]
+
+def love_tobein(matkropp):
+    gul = mat('love', '#e9b44c', 0.6); manke = mat('love_manke', '#b8622a', 0.7); lys = mat('love_lys', '#fbe6b8', 0.6); svart = mat('love_nese', '#5b3a2a', 0.4)
+    C, A, k, hx, hy, hz, under = _start(matkropp)
+    hd = [prim('kule', 'manke%d' % i, manke, (hx + 0.25 * math.cos(a), hy + 0.05, hz + 0.02 + 0.25 * math.sin(a)), (0.11, 0.08, 0.11), segments=16, ring_count=10)
+          for i, a in enumerate([j * 2 * math.pi / 12 for j in range(12)])]
+    hd.append(prim('kule', 'mankebak', manke, (hx, hy + 0.07, hz + 0.02), (0.3, 0.08, 0.3), segments=32, ring_count=16))
+    hd.append(_hodekule(gul, hx, hy, hz, (0.24, 0.22, 0.23)))
+    _snute_nese(hd, hx, hy, hz, lys, svart, 0.12, 0.17)
+    hd += _ansikt(hx, hy, hz, 0.1) + _runde_orer(hx, hy, hz, gul, lys, r=0.06, ut=0.17, opp=0.2) + [smil('smil', (hx, hy - 0.26, hz - 0.12), 0.04)]
+    hode = _hals_og_hode(hd, gul, hx, hy, hz)
+    hale = _halekurve(k['bak'], gul, [(0.03, 0.14, -0.12), (0.06, 0.3, -0.04), (0.04, 0.36, 0.12)], 0.025, manke, 0.06)
+    return slaa_sammen('kropp', k['deler']), hode, _armer(C, A, gul, lys) + _bein(under, gul, lys) + [hale]
+
+def tiger_tobein(matkropp):
+    oransje = mat('tiger', '#f08a2c', 0.6); stripe = mat('tiger_stripe', '#2b2630', 0.6); hvit = mat('tiger_hvit', '#fff6ea', 0.6); rosa = mat('tiger_nese', '#e8737d', 0.5)
+    C, A, k, hx, hy, hz, under = _start(matkropp)
+    hd = [_hodekule(oransje, hx, hy, hz)]
+    _snute_nese(hd, hx, hy, hz, hvit, rosa, 0.13, 0.17)
+    for i, dx in enumerate((-0.09, 0, 0.09)):
+        hd.append(prim('kule', 'stripe%d' % i, stripe, (hx + dx, hy - 0.05, hz + 0.22), (0.02, 0.09, 0.045), segments=10, ring_count=6))
+    for s in (-1, 1):
+        for j, dz in enumerate((0.02, -0.06)):
+            hd.append(prim('kule', 'kinnstripe%d%d' % (s, j), stripe, (hx + s * 0.24, hy - 0.06, hz + dz), (0.015, 0.06, 0.02), segments=8, ring_count=6))
+    hd += _ansikt(hx, hy, hz, kinnfarge=False) + _runde_orer(hx, hy, hz, oransje, hvit, r=0.07, ut=0.19, opp=0.2) + [smil('smil', (hx, hy - 0.26, hz - 0.12), 0.04)]
+    hode = _hals_og_hode(hd, oransje, hx, hy, hz)
+    pkt = [(0.03, 0.14, -0.1), (0.07, 0.28, 0.0), (0.05, 0.34, 0.16)]
+    hale = _halekurve(k['bak'], oransje, pkt, 0.03, stripe, 0.035)
+    return slaa_sammen('kropp', k['deler']), hode, _armer(C, A, oransje, hvit) + _bein(under, oransje, hvit) + [hale]
+
+def ape_tobein(matkropp):
+    brun = mat('ape', '#8d5b3a', 0.65); hud = mat('ape_hud', '#f1c9a0', 0.55); mork = mat('ape_mork', '#5b3a2a', 0.5)
+    C, A, k, hx, hy, hz, under = _start(matkropp)
+    hd = [_hodekule(brun, hx, hy, hz), prim('kule', 'ansikt', hud, (hx, hy - 0.14, hz - 0.01), (0.2, 0.13, 0.19), segments=32, ring_count=16),
+          prim('kule', 'mule', hud, (hx, hy - 0.22, hz - 0.1), (0.13, 0.09, 0.08), segments=24, ring_count=12)]
+    for s in (-1, 1): hd.append(prim('kule', 'nesebor%d' % s, mork, (hx + s * 0.03, hy - 0.31, hz - 0.07), (0.015, 0.01, 0.012), segments=8, ring_count=6))
+    hd += _ansikt(hx, hy, hz, 0.08, 0.06) + _runde_orer(hx, hy, hz, brun, hud, r=0.08, ut=0.27, opp=0.02) + [smil('smil', (hx, hy - 0.3, hz - 0.13), 0.05)]
+    hode = _hals_og_hode(hd, brun, hx, hy, hz)
+    hale = _halekurve(k['bak'], brun, [(0.05, 0.16, -0.12), (0.12, 0.3, 0.0), (0.06, 0.36, 0.2), (-0.04, 0.3, 0.26)], 0.028)
+    return slaa_sammen('kropp', k['deler']), hode, _armer(C, A, brun, hud, 0.065) + _bein(under, brun, hud) + [hale]
+
+DYR = {'katt': katt_tobein, 'hund': hund_tobein, 'kanin': kanin_tobein, 'rev': rev_tobein, 'panda': panda_tobein, 'mus': mus_tobein, 'bjørn': bjorn_tobein, 'løve': love_tobein, 'tiger': tiger_tobein, 'ape': ape_tobein}
 MAAL = {d: (tuple(C_STD), tuple(A_STD), 0.0, (0, 0, 0)) for d in DYR}
