@@ -164,11 +164,23 @@ const tb = await ev(`(async () => { for (let i = 0; i < 150 && !window.EVNTobein
   // Alle matdyrene på to bein (Even 17.11.2026: «du må lage ferdig dyrene»): alle 1000 kombinasjonene har en figur på to bein,
   // og armene, beina og hodet sitter i kroppen (Even 17.11.2026: «Sørg for at armer og bein er festet til kroppen»)
   { const D = window.EVNMatdyrData, tbci = new Set(Object.keys(I.NY_ID).filter(n => /^tb_|2_|^shakeand$|^spagettipingvin$/.test(n) && I.nyNavnFor(I.NY_ID[n]))   /* Shakeand og Spagettipingvin går allerede på to bein */.map(n => I.NY_ID[n])); ut.alleTobein = tbci.size; ut.antallKombo = D.COMBOS.length;
-    const T = I.T, lose = [];
-    for (const n of ['tb_mus_ost', 'tb_elefant_is', 'tb_panda_smultring', 'tb_sjiraff_pannekake', 'tb_pingvin_sushi', 'tb_ku_melke', 'tb_krabbe_milkshake', 'tb_slange_is']) {
-      const f = I.nyFigur(n, 'lav'); f.g.updateMatrixWorld(true); const kropp = new T.Box3(), fin = o => { let m = null; f.kopi.traverse(c => { if (!m && c.name === o) m = c; }); return m; };
-      f.kopi.traverse(o => { if (o.name === 'matkropp') kropp.setFromObject(o); }); kropp.expandByScalar(0.06);
-      for (const d of ['vinge_v', 'vinge_h', 'bein_vf', 'bein_hf', 'hode']) { const o = fin(d); if (!o) continue; const b = new T.Box3().setFromObject(o); if (!b.intersectsBox(kropp)) lose.push(n + ':' + d); }
+    // Korteste avstand fra hver del (armer, bein, hode, faste kroppsdeler) til matkroppen, for alle sammensatte figurer (QA 1be67aa: bokser fanget ikke svevende armer)
+    const T = I.T, lose = [], v = new T.Vector3();
+    const punkter = (rot, st0) => { const ut = []; rot.traverse(o => { if (!o.isMesh) return; const p = o.geometry.attributes.position, st = Math.max(1, Math.floor(p.count / st0));
+      for (let k = 0; k < p.count; k += st) ut.push(v.fromBufferAttribute(p, k).applyMatrix4(o.matrixWorld).clone()); }); return ut; };
+    for (const n of Object.keys(I.NY_ID).filter(k => /^tb_/.test(k))) {
+      const f = I.nyFigur(n, 'lav'); f.kopi.updateMatrixWorld(true); let kropp = null; const deler = {};
+      f.kopi.traverse(o => { if (o.name === 'matkropp') kropp = o; if (['vinge_v', 'vinge_h', 'bein_vf', 'bein_hf', 'hode', 'kropp'].includes(o.name) && !deler[o.name]) deler[o.name] = o; });
+      // matkroppens overflate: tilfeldige punkter på trekantene (vektet etter areal), så flate sider uten hjørnepunkter også telles
+      const kp = []; { const tri = []; let sum = 0; kropp.traverse(o => { if (!o.isMesh) return; const g = o.geometry, p = g.attributes.position, ix = g.index, n = ix ? ix.count : p.count;
+          for (let k = 0; k < n; k += 3) { const t = [0, 1, 2].map(j => v.fromBufferAttribute(p, ix ? ix.getX(k + j) : k + j).applyMatrix4(o.matrixWorld).clone());
+            const ar = t[1].clone().sub(t[0]).cross(t[2].clone().sub(t[0])).length() / 2; sum += ar; tri.push([t, sum]); } });
+        let fro = 7; const rnd = () => (fro = (fro * 16807) % 2147483647) / 2147483647;
+        for (let k = 0; k < 2500; k++) { const r0 = rnd() * sum; let lo = 0, hi = tri.length - 1; while (lo < hi) { const mid = (lo + hi) >> 1; if (tri[mid][1] < r0) lo = mid + 1; else hi = mid; }
+          const [t] = tri[lo]; let u = rnd(), w = rnd(); if (u + w > 1) { u = 1 - u; w = 1 - w; } kp.push(t[0].clone().add(t[1].clone().sub(t[0]).multiplyScalar(u)).add(t[2].clone().sub(t[0]).multiplyScalar(w))); } }
+      for (const [d, o] of Object.entries(deler)) { const dp = punkter(o, 120); let m = 1e9;
+        for (const a of dp) for (const b of kp) { const x = a.distanceToSquared(b); if (x < m) m = x; }
+        if (Math.sqrt(m) > 0.045) lose.push(n + ':' + d + ':' + Math.sqrt(m).toFixed(3)); }
     }
     ut.lose = lose; }
   EVNVis({ fane: 'matdyr' }); await new Promise(r => setTimeout(r, 300)); ut.fane = document.getElementById('kort').textContent.includes('to bein');

@@ -101,8 +101,9 @@
     const naermest = (p, filt) => { let best = null, bd = 1e9; for (const q of pkt) { if (!filt(q)) continue; const dd = q.distanceToSquared(p); if (dd < bd) { bd = dd; best = q; } } return best; };
     // Armene: skulderen flyttes til kroppens kant i samme høyde
     for (const [n, s] of [['vinge_v', -1], ['vinge_h', 1]]) {
-      const nd = node(n); if (!nd) continue; const y0 = nd.position.y; let w = -1;
-      for (const q of pkt) if (Math.abs(q.y - y0) < 0.09 && q.x * s > 0) w = Math.max(w, Math.abs(q.x));
+      const nd = node(n); if (!nd) continue; const y0 = nd.position.y, z0 = nd.position.z; let w = -1;
+      // bare punkter i samme høyde OG samme dybde som skulderen (QA 1be67aa: bananflikene stikker ut i en annen dybde)
+      for (const q of pkt) if (Math.abs(q.y - y0) < 0.09 && Math.abs(q.z - z0) < 0.1 && q.x * s > 0) w = Math.max(w, Math.abs(q.x));
       if (w > 0.05) nd.position.x = s * (w - 0.03);
     }
     sc.updateMatrixWorld(true);
@@ -113,6 +114,18 @@
       const inn = q.clone().lerp(new T.Vector3(0, q.y, q.z), 0.25);   // litt innenfor overflaten
       if (topp.distanceTo(q) > 0.03) stykke(nd, topp.clone().add(new T.Vector3(0, -0.04, 0)), inn, 0.075);
     }
+    // Til slutt: står en del (arm, finne, hode) fortsatt et stykke fra kroppen, får den et feste inn til nærmeste punkt
+    sc.updateMatrixWorld(true);
+    const delPkt = nd => { const ut = [], w = new T.Vector3(); nd.traverse(o => { if (!o.isMesh || o.name === 'feste') return; const p = o.geometry.attributes.position, st = Math.max(1, Math.floor(p.count / 300));
+      for (let i = 0; i < p.count; i += st) ut.push(w.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld).clone()); }); return ut; };
+    const avstand = nd => { let best = 1e9, a = null, b = null; const dp = delPkt(nd);
+      for (let i = 0; i < dp.length; i += 3) for (let j = 0; j < pkt.length; j += 2) { const d = dp[i].distanceToSquared(pkt[j]); if (d < best) { best = d; a = dp[i]; b = pkt[j]; } }
+      return { d: Math.sqrt(best), a, b }; };
+    for (const n of ['vinge_v', 'vinge_h', 'kropp']) {
+      const nd = node(n); if (!nd) continue; const r = avstand(nd); if (r.d < 0.035 || !r.a) continue;
+      if (n === 'kropp') { nd.position.add(r.b.clone().sub(r.a).multiplyScalar(1.15)); sc.updateMatrixWorld(true); }   // faste deler (haifinnen) flyttes inntil
+      else stykke(nd, r.a, r.b.clone().lerp(new T.Vector3(0, r.b.y, r.b.z), 0.15), 0.055);
+    }
     // Halsen: hodet skal sitte på toppen av kroppen
     const hd = node('hode');
     if (hd) {   // stikker maten opp over halsen (isen er høy), løftes hodet så det sitter oppå
@@ -120,7 +133,8 @@
       if (topp > hd.position.y + 0.04) { hd.position.y = topp - 0.04; sc.updateMatrixWorld(true); }
     }
     if (hd) { const hals = new T.Vector3().setFromMatrixPosition(hd.matrixWorld), q = naermest(hals, p => p.y <= hals.y + 0.02 && Math.abs(p.x) < 0.2);
-      if (q && hals.y - q.y > 0.05) stykke(hd, hals.clone().add(new T.Vector3(0, 0.04, 0)), q.clone().lerp(new T.Vector3(0, q.y, q.z), 0.4), 0.11); }
+      if (q && hals.y - q.y > 0.05) stykke(hd, hals.clone().add(new T.Vector3(0, 0.04, 0)), q.clone().lerp(new T.Vector3(0, q.y, q.z), 0.4), 0.11);
+      sc.updateMatrixWorld(true); const r = avstand(hd); if (r.a && r.d > 0.035) stykke(hd, r.a, r.b.clone().lerp(new T.Vector3(0, r.b.y, r.b.z), 0.3), 0.1); }
   }
   function lastTobeinDeler() {
     if (!TOBEIN.length) return;
@@ -1143,7 +1157,7 @@
     visMatdyr(); Object.assign(bane, { teta: kam.teta, fi: kam.fi, r: kam.r }); if (md.visning !== 'naert') bane.mal.copy(kam.mal); oppdaterKamera();
   });
   // For automatiske skjermbilder: ?fane=gard&niva=6 eller ?figur=burgersau&vis=spill
-  window.EVNIntern = { md, nyFigur, NY_ID, groft, GROFT, GROFT_X1, GROFT_Z, UTBUSKER, PORT_HALV, GANGFART, T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
+  window.EVNIntern = { md, NY_ID, groft, GROFT, GROFT_X1, GROFT_Z, UTBUSKER, PORT_HALV, GANGFART, T, scene, sol, renderer, camera, apneGrafikk, gd, sp, bane, krok, NIVA, EH, HX, HZ, A, BX, BZ, DEKKE, byggGard, byggVegger, forberedGjennom, settGjennom, plassPos, takPlass, knapp, spillAnim, oppdaterKamera, etasjeNavn, TOUCH, REDUSERT, robot: () => gd.robot, fane: () => fane, NOKLER, NY, KV, nyNavnFor, nyFigur, nySkala, nyFigurDeler, animerNy, verden: () => verden, gamleFigurDeler, figurDelerFor: () => { if (!figurDeler) lagFigurDeler(); return figurDeler; } };
   window.EVNSpill = sp; window.EVNRobot = () => gd.robot; window.EVNSteg = steg; window.EVNSpor = SPOR; window.EVNVei = VEI; window.EVNGeo = { HX, HZ, EH, DEKKE, W, KX, KZ, A, B, LREP }; window.EVNBane = bane; window.EVNVegger = () => vegger;
   window.EVNVis = (o) => { if (o.fane === 'spill') { if (o.niva) sp.niva = sp.testNiva = o.niva; velgFane('spill'); return; } if (o.fane === 'gard') { if (o.niva) gd.niva = o.niva; if (o.neste !== undefined) gd.neste = o.neste; velgFane('gard'); if (o.teta !== undefined) { bane.teta = o.teta; oppdaterKamera(); } } else { if (o.figur) md.valgt = o.figur; if (o.vis) md.visning = o.vis; if (o.mobil) holder.classList.add('ramme'); storrelse(); velgFane('matdyr'); if (o.teta !== undefined) bane.teta = o.teta; } };
 })();
