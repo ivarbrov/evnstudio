@@ -28,15 +28,17 @@
 
   // Det som følger med et nivå (også nivå 1 ved start). Returnerer det som er nytt, til feiringen.
   function giNivaa(s, n, naa) {
-    var nytt = { nivaa: n, mynter: 0, avlinger: [], dyr: [], bygg: [], oppskrifter: [], akre: 0 };
+    var nytt = { nivaa: n, mynter: 0, avlinger: [], dyr: [], flereDyr: [], bygg: [], oppskrifter: [], akre: 0 };
     if (n > 1) { var m = D.nivaaMynter(n); s.mynter += m; nytt.mynter = m; }
     var antall = D.ved(D.akre, n);
     while (s.akre.length < antall) { s.akre.push({ id: 'a' + (s.akre.length + 1), x: null, z: null, avling: null, start: 0, slutt: 0 }); nytt.akre++; }
     for (var a in D.avlinger) if (D.avlinger[a].nivaa === n) { nytt.avlinger.push(a); if (n > 1) s.lager[a] = (s.lager[a] || 0) + D.nyAvlingFro; }
     for (var d in D.dyr) if (D.dyr[d].nivaa === n && !s.dyr[d] && !D.dyr[d].hus) {
-      s.dyr[d] = []; for (var i = 0; i < D.dyr[d].start; i++) s.dyr[d].push({ slutt: null });
+      s.dyr[d] = []; for (var i = 0; i < D.dyrAntall(d, n); i++) s.dyr[d].push({ slutt: null });
       nytt.dyr.push(d);
     }
+    // 0.22.0: flere dyr av en art spilleren allerede har (en høne til på nivå 11, en ku til på nivå 13)
+    for (var d2 in s.dyr) { var mer = 0; while (s.dyr[d2].length < D.dyrAntall(d2, n)) { s.dyr[d2].push({ slutt: null }); mer++; } if (mer) nytt.flereDyr.push({ art: d2, antall: mer }); }
     for (var b in D.bygg) if (D.bygg[b].nivaa === n && !s.bygg[b] && !D.bygg[b].arr) {
       s.bygg[b] = { eid: D.bygg[b].pris === 0, x: null, z: null, r: 0, ko: [] };
       nytt.bygg.push(b);
@@ -165,7 +167,7 @@
     return { ok: true, dyr: nyeDyr };
   }
   // Et dyrehus gir dyrene sine når det er kjøpt (kyrne kommer med fjøset)
-  function giDyr(s, art) { if (s.dyr[art]) return 0; s.dyr[art] = []; for (var i = 0; i < D.dyr[art].start; i++) s.dyr[art].push({ slutt: null }); return D.dyr[art].start; }
+  function giDyr(s, art) { if (s.dyr[art]) return 0; var n = D.dyrAntall(art, s.nivaa); s.dyr[art] = []; for (var i = 0; i < n; i++) s.dyr[art].push({ slutt: null }); return n; }
   // ---------- Områder (Ivar 12.11) ----------
   function kanKjopeOmrade(s, id) {
     var O = D.omrader[id]; if (!O) return 'ukjent';
@@ -297,7 +299,8 @@
     }
     // Dyr: dyrehus som er kjøpt, gir dyrene sine. Kyr fra 0.9.x, der fjøset ikke fantes, tas ikke med.
     for (var hb in s.bygg) if (D.bygg[hb].dyr && s.bygg[hb].eid) giDyr(s, D.bygg[hb].dyr);
-    if (r.dyr && typeof r.dyr === 'object') for (var art in s.dyr) if (Array.isArray(r.dyr[art])) r.dyr[art].slice(0, 12).forEach(function (d, i) {
+    for (var da in s.dyr) while (s.dyr[da].length < D.dyrAntall(da, s.nivaa)) s.dyr[da].push({ slutt: null });   // 0.22.0: lagringer fra før får dyrene som hører til nivået
+    if (r.dyr && typeof r.dyr === 'object') for (var art in s.dyr) if (Array.isArray(r.dyr[art])) r.dyr[art].slice(0, D.dyrAntall(art, s.nivaa)).forEach(function (d, i) {
       if (i >= s.dyr[art].length) s.dyr[art].push({ slutt: null });
       s.dyr[art][i].slutt = d && typeof d.slutt === 'number' && isFinite(d.slutt) ? d.slutt : null;
     });

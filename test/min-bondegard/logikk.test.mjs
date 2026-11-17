@@ -72,7 +72,14 @@ t('Brød gir 2 XP', r.ok && r.xp === 2 && s.lager.brod === 1);
 nye = L.giXP(s, 2000, T0);
 t('Stor XP gir flere nivåer på en gang', s.nivaa === 10 || nye.length > 1);
 t('Nivå 3 og 5 gir åkre', s.akre.length === 12);
-t('Maks nivå 10', s.nivaa === 10);
+t('Maks nivå 13 (0.22.0), med 15 åkre og 4 høner', (() => { const x = L.ny(T0); L.giXP(x, 99999, T0); return x.nivaa === 13 && D.maksNivaa === 13 && x.akre.length === 15 && x.dyr.hone.length === 4; })());
+{ const x = L.ny(T0); while (x.nivaa < 10) L.giXP(x, 5, T0); const h10 = x.dyr.hone.length; x.mynter = 5000; L.kjopOmrade(x, 'enga'); L.kjopBygg(x, 'fjos'); const k10 = x.dyr.ku.length;
+  let n11 = null, n13 = null; while (x.nivaa < 13) { const nye = L.giXP(x, 5, T0); nye.forEach(n => { if (n.nivaa === 11) n11 = n; if (n.nivaa === 13) n13 = n; }); }
+  t('Nivå 11 gir en høne til og sirup, nivå 13 en ku til, smørpopkorn og 3 åkre', h10 === 3 && k10 === 2 && x.dyr.hone.length === 4 && x.dyr.ku.length === 3 && n11.flereDyr[0].art === 'hone' && n11.oppskrifter.includes('sirup') && n13.flereDyr[0].art === 'ku' && n13.oppskrifter.includes('smorpopkorn') && n13.akre === 3);
+  const v = L.valider(JSON.parse(JSON.stringify(x)), T0); t('Nivå 13 overlever lagring', v.nivaa === 13 && v.dyr.hone.length === 4 && v.dyr.ku.length === 3 && v.akre.length === 15);
+  const gml = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 12 }), T0); t('Eldre lagring på nivå 12 får den fjerde høna', gml.dyr.hone.length === 4);
+  t('Bakjordet (nivå 13, 2500) krever Jordet', L.kanKjopeOmrade(x, 'bakjordet') === 'krever' && L.kjopOmrade(x, 'jordet').ok && L.kjopOmrade(x, 'bakjordet').ok);
+  t('Verdier: sirup, omelett og smørpopkorn er verdt mer enn råvarene', D.verdi('sirup') > 24 && D.verdi('omelett') > 38 && D.verdi('smorpopkorn') > D.verdi('popkorn') + D.verdi('smor')); }
 
 // --- Lager (F4) ---
 s = L.ny(T0); s.lager.hvete = 49;
@@ -187,7 +194,7 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
 { const k = L.valider(JSON.parse(JSON.stringify(s)), T0); t('Gavene overlever lagring', k.gaver.uaapnet.length === 3 && k.gaver.dag === '2026-11-15'); }
 
 // --- Nivå 10: Skogkanten og griser (0.13.0) ---
-{ const s5 = L.ny(T0); L.giXP(s5, 2000, T0); s5.mynter = 3000;
+{ const s5 = L.ny(T0); while (s5.nivaa < 10) L.giXP(s5, 5, T0); s5.mynter = 3000;
   t('Nivå 10: grisebinge kan bygges, men ingen griser før den er kjøpt', s5.nivaa === 10 && s5.bygg.grisebinge && !s5.bygg.grisebinge.eid && !s5.dyr.gris);
   t('Skogkanten koster 1500', L.kjopOmrade(s5, 'skogkanten').ok && s5.mynter === 1500);
   const r5 = L.kjopBygg(s5, 'grisebinge'); t('Grisebingen koster 800 og gir 2 griser', r5.ok && r5.dyr === 2 && s5.dyr.gris.length === 2 && s5.mynter === 700);

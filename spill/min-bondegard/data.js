@@ -1,4 +1,4 @@
-/* Min Bondegård – alle tall for nivå 1–10 på ett sted.
+/* Min Bondegård – alle tall for nivå 1–13 på ett sted (nivå 11–13 kom i 0.22.0, pakke 1 i claude/min-bondegard-niva-11-20-plan.md).
    Spillet (index.html), spillreglene (logikk.js), testene og simuleringen leser denne fila, så tallene ikke kan skli fra hverandre.
    Kilde: claude/min-bondegard-progresjon.md v3 (godkjent grunnlag 8.11.2026). Endrede tall krever ny simulering. */
 (function (rot) {
@@ -14,8 +14,8 @@
     },
     // Dyr: ett for gir ett produkt etter «tid» sekunder. Et dyr uten for slutter bare å produsere (progresjonsregel F6).
     dyr: {
-      hone: { navn: 'Høne', flertall: 'Høner', ikon: '🐔', nivaa: 1,  spiser: 'honsefor', produkt: 'egg',    tid: 60,  xp: 1, start: 3 },
-      ku:   { navn: 'Ku',   flertall: 'Kyr',   ikon: '🐄', nivaa: 6,  spiser: 'kufor',    produkt: 'melk',   tid: 120, xp: 2, start: 2, hus: 'fjos' },   // kyrne kommer når fjøset er kjøpt (Ivar 9.11 og 12.11)
+      hone: { navn: 'Høne', flertall: 'Høner', ikon: '🐔', nivaa: 1,  spiser: 'honsefor', produkt: 'egg',    tid: 60,  xp: 1, start: 3, flere: { 11: 4 } },   // «flere»: antall dyr fra nivå (0.22.0)
+      ku:   { navn: 'Ku',   flertall: 'Kyr',   ikon: '🐄', nivaa: 6,  spiser: 'kufor',    produkt: 'melk',   tid: 120, xp: 2, start: 2, hus: 'fjos', flere: { 13: 3 } },   // kyrne kommer når fjøset er kjøpt (Ivar 9.11 og 12.11)
       gris: { navn: 'Gris', flertall: 'Griser', ikon: '🐖', nivaa: 10, spiser: 'grisefor', produkt: 'troffel', tid: 240, xp: 3, start: 2, hus: 'grisebinge' }
     },
     // Varer som ikke er avlinger. Verdien til produserte varer regnes ut nedenfor (formelen i progresjonsplanen kap. 6).
@@ -34,6 +34,9 @@
       sukker:   { navn: 'Sukker',   ikon: '🧂' },
       popkorn:  { navn: 'Popkorn',  ikon: '🍿' },
       pannekaker: { navn: 'Pannekaker', ikon: '🥞' },
+      sirup:      { navn: 'Sirup',      ikon: '🍯' },
+      omelett:    { navn: 'Omelett',    ikon: '🍳' },
+      smorpopkorn: { navn: 'Smørpopkorn', ikon: '🧈🍿' },
       festhatt:   { navn: 'Festhatt', ikon: '🥳', arr: 'bursdag' },   // 0.16.0: lages til Bursdagsfesten og sendes med varebilen. Kan ikke selges eller bestilles
       bursdagskake: { navn: 'Bursdagskake', ikon: '🎂' }
     },
@@ -50,6 +53,9 @@
       sukker:     { bygg: 'sukkerverk', nivaa: 7,  inn: { sukkerror: 1 },                 tid: 60,  ut: 1 },
       popkorn:    { bygg: 'popkorn',    nivaa: 8,  inn: { mais: 2 },                      tid: 60,  ut: 1 },
       pannekaker: { bygg: 'kjokken',    nivaa: 9,  inn: { egg: 2, melk: 1, sukker: 1 },   tid: 120, ut: 1 },
+      sirup:      { bygg: 'sukkerverk', nivaa: 11, inn: { sukkerror: 3 },                 tid: 150, ut: 1 },
+      omelett:    { bygg: 'kjokken',    nivaa: 12, inn: { egg: 3, melk: 1 },              tid: 90,  ut: 1 },
+      smorpopkorn: { bygg: 'popkorn',   nivaa: 13, inn: { popkorn: 1, smor: 1 },          tid: 120, ut: 1 },
       festhatt:   { bygg: 'festbord',   nivaa: 3,  inn: { hvete: 2, mais: 1 },            tid: 60,  ut: 1 },
       bursdagskake: { bygg: 'bakeri',   nivaa: 3,  inn: { hvete: 2, egg: 2 },             tid: 120, ut: 1, krever: { arr: 'bursdag', trinn: 2 } }   // premie i Bursdagsfesten
     },
@@ -66,9 +72,9 @@
       festbord:   { navn: 'Festbordet',     ikon: '🎉', nivaa: 3,  pris: 150, arr: 'bursdag' }   // kommer med Bursdagsfesten, ikke med nivået (Even 11.11: første maskin ca. 150)
     },
     koPlasser: 2,
-    xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325],
-    maksNivaa: 10,
-    akre: { 1: 6, 3: 9, 5: 12 },        // antall åkre fra nivå
+    xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325, 395, 460],   // XP fra nivået til det neste. 11–12 fra progresjonsplanen kap. 5
+    maksNivaa: 13,
+    akre: { 1: 6, 3: 9, 5: 12, 13: 15 },        // antall åkre fra nivå
     silo: { 1: 50, 9: 75 },             // plass til avlinger
     lave: { 1: 50, 6: 75, 10: 100 },    // plass til alt annet
     startMynter: 50,
@@ -82,10 +88,11 @@
     omrader: {
       enga:       { navn: 'Enga',       nivaa: 5,  pris: 300 },
       skogkanten: { navn: 'Skogkanten', nivaa: 10, pris: 1500 },
+      bakjordet:  { navn: 'Bakjordet',  nivaa: 13, pris: 2500, krever: 'jordet' },   // 0.22.0: bakre del av Jordet (plan 16.11). Navn og pris er forslag
       ostjordet:  { navn: 'Østjordet',  nivaa: 16, pris: 4000, krever: 'jordet' },   // 0.20.1 (Ivar 16.11): utvidelsen øst for Jordet, fra nivå 16. Navn og pris er forslag
       jordet:     { navn: 'Jordet',     nivaa: 8,  pris: 1000 }   // 0.17.0 (Even 15.11): jordet på andre siden av veien. Nivå og pris er forslag og må godkjennes av en voksen
     },
-    innholdTil: 10,
+    innholdTil: 13,
     // Rebus' gåter (Even 13.11): svaret er varen. Spilleren gir Rebus varen. Lønn: pris × 2 + 10 mynter, 4 XP + nivået til varen. Ny gåte 3 minutter etter riktig svar
     // Gaveesker (Even 14.11, godkjent av Ivar 14.11): gratis, kan aldri kjøpes, sjansene vises åpent. Prosent per sjeldenhet.
     // Gaveesker (Even 14.11, godkjent av Ivar 14.11). Premier og sjanser fra Even 14.11 (0.12.1): [premie, prosent, mengde, sjeldenhet]
@@ -106,6 +113,9 @@
     arrPynt: ['bursdagspynt'],
     rebus: { nivaa: 2, pause: 180, myntFaktor: 1, myntPluss: 10, xp: 4 },   /* 0.15.1 (Even 15.11): du trenger ikke ha svaret på lager. Rebus tar ingen vare, så lønna er varens verdi mindre enn før (samme gevinst som før) */
     gater: {
+      sirup: 'Jeg er brun, søt og seig, og jeg renner sakte ned fra skjeen. Hva er jeg?',
+      omelett: 'Jeg er laget av egg som er pisket og stekt i panna. Jeg er gul og flat. Hva er jeg?',
+      smorpopkorn: 'Vi popper i gryta og får noe gult og godt smeltet over oss. Hva er vi?',
       hvete: 'Jeg er gul og står i lange rader på åkeren. Blir jeg malt, blir jeg til mel og brød. Hva er jeg?',
       mais: 'Jeg har gule korn på en kolbe og grønne blader rundt meg. Hva er jeg?',
       erter: 'Jeg bor i en grønn belg sammen med søsknene mine. Vi er små, runde og grønne. Hva er jeg?',
@@ -129,6 +139,8 @@
     maksVentetid: 240                   // ingen jobb tar mer enn 4 minutter (planens beslutning B1, progresjonsplanen kap. 3)
   };
   D.nivaaMynter = function (n) { return 20 + 15 * n; };
+  // Hvor mange dyr av en art spilleren har på et nivå (0.22.0: en høne til på nivå 11, en ku til på nivå 13)
+  D.dyrAntall = function (art, nivaa) { var A = D.dyr[art]; return Math.max(A.start, A.flere ? D.ved(A.flere, nivaa) : 0); };
 
   // Verdien til en vare: avlinger og dyreprodukter har fast verdi. Produserte varer: råvarer × 1,3 + 1 mynt per 10 s, delt på antall.
   var cache = {};
