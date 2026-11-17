@@ -132,14 +132,14 @@
     if (D.bygg[bygg] && D.bygg[bygg].arr && D.arr[D.bygg[bygg].arr].maned !== maned(naa)) return 'stengt';
     if (o.krever && arrTrinn(s, o.krever.arr) < o.krever.trinn) return 'laast';
     if (uferdige(b, naa).length >= D.koPlasser) return 'ko-full';
-    if (!(bygg === 'forkvern' && bonusAktiv(s, naa)) && !har(s, o.inn)) return 'mangler';
+    if (!gratis && !(bygg === 'forkvern' && bonusAktiv(s, naa)) && !har(s, o.inn)) return 'mangler';
     return null;
   }
   function produser(s, bygg, vare, naa) {
     var g = kanProdusere(s, bygg, vare, naa); if (g) return { ok: false, grunn: g };
     var b = s.bygg[bygg], o = D.oppskrifter[vare], u = uferdige(b, naa);
     var start = u.length ? u[u.length - 1].slutt : naa;     // jobbene går etter hverandre
-    if (!(bygg === 'forkvern' && bonusAktiv(s, naa))) ta(s, o.inn);
+    if (!gratis && !(bygg === 'forkvern' && bonusAktiv(s, naa))) ta(s, o.inn);
     b.ko.push({ vare: vare, start: start, slutt: start + o.tid * 1000 });
     return { ok: true };
   }
@@ -393,6 +393,9 @@
   // Festen er åpen i sin måned. Spilleren lager festens vare og sender den med varebilen. Premiene kommer trinnvis etter hvor mye som er sendt.
   // Ingenting går tapt: det som er sendt, står til neste år, og premiene er permanente (hattene på dyrene vises bare i festmåneden).
   // Måneden (1–12) for et tidspunkt. Testmodus kan overstyre med L.settManed(n)
+  // Admin i testversjonen (0.21.0): lage uten råvarer. Av som standard, og slås bare på fra adminpanelet
+  var gratis = false;
+  function settGratis(b) { gratis = !!b; }
   var manedTest = null;
   function maned(naa) { return manedTest || new Date(naa).getMonth() + 1; }
   function settManed(n) { manedTest = n >= 1 && n <= 12 ? n : null; }
@@ -439,7 +442,7 @@
     nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
     nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
-    maned: maned, settManed: settManed, arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
+    maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
     giDagsgave: giDagsgave, bonusAktiv: bonusAktiv, leverGaver: leverGaver, klareGaver: klareGaver, aapneGave: aapneGave
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;

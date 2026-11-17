@@ -232,6 +232,9 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
     L.settManed(12); const des = L.kanProdusere(f, 'festbord', 'festhatt', T0), brod = L.kanProdusere(f, 'bakeri', 'brod', T0);
     L.settManed(11); const nov = L.kanProdusere(f, 'festbord', 'festhatt', T0); L.settManed(null);
     t('Festbordet lager hatter i november, men er stengt i desember (QA 17.11)', des === 'stengt' && nov !== 'stengt' && brod !== 'stengt'); }
+  { const f = L.valider(JSON.parse(JSON.stringify(L.ny(T0))), T0); f.lager.hvete = 0;
+    const uten = L.kanProdusere(f, 'forkvern', 'honsefor', T0); L.settGratis(true); const med = L.kanProdusere(f, 'forkvern', 'honsefor', T0), r = L.produser(f, 'forkvern', 'honsefor', T0); L.settGratis(false);
+    t('Lage uten råvarer er av som standard og virker bare når admin slår det på', uten === 'mangler' && med === null && r.ok && f.lager.hvete === 0 && L.kanProdusere(f, 'forkvern', 'honsefor', T0) === 'mangler'); }
   t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);

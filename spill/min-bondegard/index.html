@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.20.3 – EVN Studio</title>
+<title>Min Bondegård 0.21.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -55,8 +55,9 @@
   #hoyre { right:calc(10px + env(safe-area-inset-right)); }
   #hud[hidden], #hoyre[hidden] { display:none !important; }
   /* 0.18.0 (Even 16.11): admin-knappen, en A i regnbuefarger. Vises bare i testversjonen */
-  #adminKnapp { width:48px; height:48px; border-radius:50%; border:2px solid rgba(255,255,255,.3); background:var(--panel); box-shadow:0 2px 8px rgba(0,0,0,.2); cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; }
-  #adminKnapp[hidden] { display:none; }
+  #adminKnapp, #bilKnapp { width:48px; height:48px; border-radius:50%; border:2px solid rgba(255,255,255,.3); background:var(--panel); box-shadow:0 2px 8px rgba(0,0,0,.2); cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; }
+  #adminKnapp[hidden], #bilKnapp[hidden] { display:none; }
+  #bilKnapp { font-size:24px; }
   #adminKnapp span { font:400 30px 'Lilita One',system-ui,sans-serif; background:linear-gradient(90deg,#ff4d4d,#ff9f1c,#ffe14d,#4cd964,#3fa9f5,#b36bff); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; filter:drop-shadow(0 1px 0 rgba(0,0,0,.35)); }
   .pille { background:var(--panel); border:2px solid rgba(255,255,255,.3); border-radius:999px; padding:4px 14px 4px 6px; font:800 18px 'Nunito',system-ui,sans-serif; min-height:44px; display:flex; align-items:center; gap:6px; color:#fff; box-shadow:0 2px 8px rgba(0,0,0,.2); }
   .pille .ikon { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-size:20px; background:rgba(255,255,255,.18); }
@@ -219,6 +220,7 @@
   </div>
   <div class="pille" id="pMynter" title="Myntene dine"><span class="ikon" aria-hidden="true">🪙</span><span id="mynter">50</span><span class="vh"> mynter</span></div>
   <button id="adminKnapp" type="button" title="Admin" aria-label="Admin" hidden><span aria-hidden="true">A</span></button>
+  <button id="bilKnapp" type="button" title="Bilene dine" aria-label="Bilene dine" hidden><span aria-hidden="true">🚚</span></button>
 </div>
 <div id="hoyre" hidden>
   <button class="rund" id="tavleKnapp" type="button" title="Bestillinger (T)" aria-label="Bestillinger" hidden>📋</button>
@@ -283,7 +285,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.20.3</div>
+    <div class="evn-ver" id="versjon">Versjon 0.21.0</div>
   </div>
 </div>
 
@@ -554,7 +556,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.20.3'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.21.0'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';

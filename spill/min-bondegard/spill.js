@@ -7,8 +7,9 @@ const SPILLVERSJON = window.MB_VERSJON;
 const TESTMODUS = new URLSearchParams(location.search).has('test');
 if (TESTMODUS) document.body.classList.add('test');
 /* 0.18.0: admin, se nederst i fila */
-const ADMIN = !!window.MB_ADMIN || (TESTMODUS && new URLSearchParams(location.search).has('admin'));
-const adm = {x5: false, forrige: null, regn: [], biler: [], regnT: 0};
+/* 0.21.0 (Even 17.11, QA 17.11): admin finnes bare i den private forhåndsvisningen (MB_ADMIN) og på utviklerens egen maskin. Adressen ?test&admin virker ikke på evnstudio.no */
+const ADMIN = !!window.MB_ADMIN || (TESTMODUS && new URLSearchParams(location.search).has('admin') && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname));
+const adm = {gratis: false, x5: false, forrige: null, regn: [], biler: [], regnT: 0};
 const LAGRING = TESTMODUS ? 'evn-min-bondegard-test' : 'evn-min-bondegard-v1';
 const $ = id => document.getElementById(id);
 const naa = () => Date.now();
@@ -890,7 +891,7 @@ function visGate() {
   });
 }
 function synk(alt) {
-  synkGate(); synkGaver();
+  synkGate(); synkGaver(); synkBilknapp();
   const t = naa();
   for (const f of s.akre) { const u = ting.get(f.id); if (!u) continue; const st = akerStadie(f, t); if (st !== u.stadie || alt) { u.stadie = st; u.plante.visible = !!st; if (st) u.plante.geometry = PROTO[st]; } }
   const honer = s.dyr.hone || []; let klare = 0, sultne = 0;
@@ -1614,11 +1615,41 @@ function visAdmin() {
     <div class="rad"><span class="stort">🪙</span><span class="midt">Myntregn<small>Det regner mynter over gården</small></span><button class="knapp" data-g="adm" data-v="regn" type="button">Start</button></div>
     <div class="rad"><span class="stort">🚚</span><span class="midt">Bilkaos<small>Alle bilene kommer på én gang</small></span><button class="knapp" data-g="adm" data-v="biler" type="button">Start</button></div>
     <div class="rad"><span class="stort">✖️</span><span class="midt">5 ganger mynter<small>${adm.x5 ? 'Er på' : 'Er av'}</small></span><button class="knapp" data-g="adm" data-v="x5" type="button">${adm.x5 ? 'Slå av' : 'Slå på'}</button></div>
-    ${Object.keys(D.skinn).map(id => `<div class="rad"><span class="stort">🎂</span><span class="midt">${D.skinn[id]}<small>${s.skinn.eid[id] ? 'Du har den' : 'Festbil'}</small></span><button class="knapp" data-g="adm" data-v="skinn" data-id="${id}" type="button" ${s.skinn.eid[id] ? 'disabled' : ''}>Få</button><button class="knapp" data-g="adm" data-v="skinnSlett" data-id="${id}" type="button" ${(admLager().skinn || []).includes(id) ? '' : 'disabled'}>Slett</button></div>`).join('')}
+    <div class="rad"><span class="stort">🚚</span><span class="midt">Biler<small>Få bilene og ta dem på</small></span><button class="knapp" data-g="adm" data-v="visBiler" type="button">Åpne</button></div>
+    <div class="rad"><span class="stort">📦</span><span class="midt">Varer<small>Få varer rett i lageret</small></span><button class="knapp" data-g="adm" data-v="visVarer" type="button">Åpne</button></div>
+    <div class="rad"><span class="stort">🏠</span><span class="midt">Bygg<small>Få byggene uten å betale</small></span><button class="knapp" data-g="adm" data-v="visBygg" type="button">Åpne</button></div>
+    <div class="rad"><span class="stort">🆓</span><span class="midt">Lage uten råvarer<small>${adm.gratis ? 'Er på' : 'Er av'}</small></span><button class="knapp" data-g="adm" data-v="gratis" type="button">${adm.gratis ? 'Slå av' : 'Slå på'}</button></div>
     <div class="rad"><span class="stort">🎉</span><span class="midt">Alle bursdagstingene<small>Festbordet, hatter, kake, bil og pynt</small></span><button class="knapp" data-g="adm" data-v="bursdag" type="button" ${admLager().bursdag ? 'disabled' : ''}>Få</button><button class="knapp" data-g="adm" data-v="bursdagSlett" type="button" ${admLager().bursdag ? '' : 'disabled'}>Slett</button></div>
     <div class="rad"><span class="stort">🌱</span><span class="midt">Alle plantene<small>${admLager().planter ? 'Du kan plante alt' : 'Plant alt, uansett nivå'}</small></span><button class="knapp" data-g="adm" data-v="planter" type="button" ${admLager().planter ? 'disabled' : ''}>Få</button><button class="knapp" data-g="adm" data-v="planterSlett" type="button" ${admLager().planter ? '' : 'disabled'}>Slett</button></div>
     <div class="rad"><span class="stort">💰</span><span class="midt">1000 mynter</span><button class="knapp" data-g="adm" data-v="mynter" type="button">Få</button><button class="knapp" data-g="adm" data-v="mynterSlett" type="button" ${s.mynter > 0 ? '' : 'disabled'}>Slett</button></div>
     <div class="rad"><span class="stort">⭐</span><span class="midt">Ett nivå opp<small>Du er på nivå ${s.nivaa}</small></span><button class="knapp" data-g="adm" data-v="nivaa" type="button">Få</button></div>`);
+}
+/* 0.21.0 (Even 17.11): bilene. Vanlige spillere ser bilene de har fått, og kan bytte. Admin kan få dem gratis */
+const MANEDER = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+const festFor = id => Object.keys(D.arr).find(a => D.arr[a].trinn.some(tr => tr.premie === 'skinn' && tr.skinn === id));
+function visBiler() {
+  aapneHandling(null, '🚚 Bilene dine', () => {
+    const valgt = s.skinn.valgt || null, tilbake = ADMIN ? '<div class="knapper"><button class="knapp lys" data-g="adm" data-v="tilbake" type="button">← Admin</button></div>' : '';
+    const paa = id => `<button class="knapp ${valgt === id ? '' : 'gronn'}" data-g="skinn" data-v="${id || ''}" type="button" ${valgt === id ? 'disabled aria-pressed="true"' : ''}>${valgt === id ? 'På ✓' : 'Ta på'}</button>`;
+    let p = `<div class="rad"><span class="stort">🚚</span><span class="midt">Vanlig varebil<small>Den røde bilen</small></span>${paa(null)}</div>`;
+    p += Object.keys(D.skinn).map(id => { const a = festFor(id), A = a && D.arr[a], har = !!s.skinn.eid[id], fraAdmin = ADMIN && (admLager().skinn || []).includes(id);
+      const hvor = A ? `Premie i ${A.navn} i ${MANEDER[A.maned - 1]}` : 'Festbil';
+      return `<div class="rad"><span class="stort">${A ? A.ikon : '🚚'}</span><span class="midt">${D.skinn[id]}<small>${har ? 'Du har den' : '🔒 ' + hvor}</small></span>${har ? paa(id) : ADMIN ? `<button class="knapp" data-g="adm" data-v="skinn" data-id="${id}" type="button">Få</button>` : ''}${fraAdmin ? `<button class="knapp lys" data-g="adm" data-v="skinnSlett" data-id="${id}" type="button">Slett</button>` : ''}</div>`; }).join('');
+    Object.keys(D.arr).forEach(a => { const A = D.arr[a], st = s.arr[a]; if (!st) return;
+      p += `<p><b>${A.ikon} Resten av pakka fra ${A.navn}</b></p>` + A.trinn.filter(tr => tr.premie !== 'skinn').map(tr => `<div class="rad"><span class="stort">${st.levert >= tr.n ? '✅' : '🔒'}</span><span class="midt">${tr.tekst}<small>${st.levert >= tr.n ? 'Du har den' : `Send ${tr.n} ${ikon(A.vare)}`}</small></span></div>`).join(''); });
+    return p + tilbake; });
+}
+function synkBilknapp() { const kn = $('bilKnapp'); if (kn) kn.hidden = ADMIN || !startet || !(arrNaa || Object.keys(s.skinn.eid).length); }
+function visAdmVarer() {
+  aapneHandling(null, '📦 Varer', () => `<p>Trykk «Få» for å få 5 av en vare. «Slett» tar bort 5.</p>` +
+    Object.keys(D.avlinger).concat(Object.keys(D.varer).filter(v => !D.avlinger[v])).map(v => `<div class="rad"><span class="stort">${ikon(v)}</span><span class="midt">${navn(v)}<small>Du har ${s.lager[v] || 0}</small></span><button class="knapp" data-g="adm" data-v="vare" data-id="${v}" type="button">Få</button><button class="knapp lys" data-g="adm" data-v="vareSlett" data-id="${v}" type="button" ${(s.lager[v] || 0) > 0 ? '' : 'disabled'}>Slett</button></div>`).join('') +
+    '<div class="knapper"><button class="knapp lys" data-g="adm" data-v="tilbake" type="button">← Admin</button></div>');
+}
+function visAdmBygg() {
+  aapneHandling(null, '🏠 Bygg', () => { const gitt = admLager().bygg || [], liste = I_SPILLET.bygg.filter(x => s.bygg[x]);
+    return `<p>Her får du byggene du har låst opp, uten å betale. Gå opp i nivå for å låse opp flere.</p>` +
+    liste.map(x => { const B = D.bygg[x], eid = s.bygg[x].eid; return `<div class="rad"><span class="stort">${B.ikon}</span><span class="midt">${B.navn}<small>${eid ? 'Du har det' : B.pris + ' 🪙 vanligvis'}</small></span><button class="knapp" data-g="adm" data-v="bygg" data-id="${x}" type="button" ${eid ? 'disabled' : ''}>Få</button><button class="knapp lys" data-g="adm" data-v="byggSlett" data-id="${x}" type="button" ${gitt.includes(x) && eid ? '' : 'disabled'}>Slett</button></div>`; }).join('') +
+    '<div class="knapper"><button class="knapp lys" data-g="adm" data-v="tilbake" type="button">← Admin</button></div>'; });
 }
 function admMyntregn() {
   const geo = new THREE.CylinderGeometry(0.42, 0.42, 0.1, 16), mat = std({color: SRGB(0xffd23f), emissive: SRGB(0x8a6a00), metalness: 0.4, roughness: 0.3});
@@ -1645,13 +1676,25 @@ function oppdaterAdmin(dt, t) {
 if (ADMIN) {
   admSkinn(); admPlanter();
   const kn = $('adminKnapp'); if (kn) { kn.hidden = false; kn.addEventListener('click', visAdmin); }
+} else {
+  const kn = $('bilKnapp'); if (kn) kn.addEventListener('click', visBiler);
+}
+if (ADMIN) {
   $('handlingInnhold').addEventListener('click', e => {
     const k = e.target.closest('button[data-g="adm"]'); if (!k || k.disabled) return; const v = k.dataset.v;
     if (v === 'regn') { lukkHandling(); admMyntregn(); }
     else if (v === 'biler') { lukkHandling(); admBilkaos(); }
     else if (v === 'x5') { adm.x5 = !adm.x5; adm.forrige = s.mynter; tegnPaaNytt(); melding(adm.x5 ? '✖️ 5 ganger mynter er på' : '5 ganger mynter er av'); }
-    else if (v === 'skinn') { const id = k.dataset.id; if (!D.skinn[id]) return; s.skinn.eid[id] = true; const l = admLager(); l.skinn = [...new Set([...(l.skinn || []), id])]; try { localStorage.setItem('mb-admin', JSON.stringify(l)); } catch (e) {}
-      L.velgSkinn(s, id); lagre(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding('🎂 Du fikk ' + D.skinn[id] + '!'); }
+    else if (v === 'skinn') { const id = k.dataset.id; if (!D.skinn[id]) return; s.skinn.eid[id] = true; admLagre(l => { l.skinn = [...new Set([...(l.skinn || []), id])]; });
+      lagre(); synk(true); tegnPaaNytt(); melding('🚚 Du fikk ' + D.skinn[id] + '! Trykk «Ta på».'); }
+    else if (v === 'visBiler') visBiler();
+    else if (v === 'visVarer') visAdmVarer();
+    else if (v === 'visBygg') visAdmBygg();
+    else if (v === 'tilbake') visAdmin();
+    else if (v === 'gratis') { adm.gratis = !adm.gratis; L.settGratis(adm.gratis); tegnPaaNytt(); melding(adm.gratis ? '🆓 Nå kan du lage alt uten råvarer' : 'Nå trenger du råvarer igjen'); }
+    else if (v === 'vare' || v === 'vareSlett') { const id = k.dataset.id; if (!D.varer[id] && !D.avlinger[id]) return; s.lager[id] = Math.max(0, (s.lager[id] || 0) + (v === 'vare' ? 5 : -5)); lagre(); synk(true); tegnPaaNytt(); }
+    else if (v === 'bygg') { const id = k.dataset.id, sb = s.bygg[id]; if (!sb || sb.eid || !D.bygg[id]) return; sb.eid = true; admLagre(l => { l.bygg = [...new Set([...(l.bygg || []), id])]; }); lagre(); plasserAlt(); synk(true); tegnPaaNytt(); melding(D.bygg[id].ikon + ' Du fikk ' + D.bygg[id].navn + '!'); }
+    else if (v === 'byggSlett') { const id = k.dataset.id, sb = s.bygg[id]; if (!sb || !(admLager().bygg || []).includes(id)) return; sb.eid = false; sb.ko = []; admLagre(l => { l.bygg = (l.bygg || []).filter(x => x !== id); }); lagre(); plasserAlt(); synk(true); tegnPaaNytt(); melding('🗑️ ' + D.bygg[id].navn + ' er slettet'); }
     else if (v === 'bursdag') { admBursdag(); lagre(); plasserAlt(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding('🎉 Du fikk alle bursdagstingene!', 3200); }
     else if (v === 'planter') { admLagre(l => { l.planter = true; }); admPlanter(); synk(true); tegnPaaNytt(); melding('🌱 Nå kan du plante alt!', 3200); }
     else if (v === 'skinnSlett') { const id = k.dataset.id; const bort = admSlettSkinn(id); lagre(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding(bort ? '🗑️ ' + D.skinn[id] + ' er slettet' : 'Den har du tjent selv, så den beholder du'); }
