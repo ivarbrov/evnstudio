@@ -19,6 +19,7 @@
       best: { nr: 0, fro: (Math.floor(naa) % 2147483646) + 1, liste: [] },
       rebus: { gate: null, neste: naa, siste: [], loste: 0 },
       gaver: { uaapnet: [], dag: '', pynt: {} },
+      pynt: [], pyntNr: 0,   // 0.26.0: pynt fra pyntebutikken, hver med type og plass
       arr: {}, skinn: { eid: {}, valgt: null }
     };
     for (var k in D.startLager) s.lager[k] = D.startLager[k];
@@ -157,6 +158,10 @@
     }
     return { ok: n > 0, antall: n, varer: varer, xp: xp, nye: n ? giXP(s, xp, naa) : [], grunn: n ? null : full ? 'lave-full' : 'ingen-klare' };
   }
+  // ---------- Pyntebutikken (0.26.0) ----------
+  function kanKjopePynt(s, type) { var P = D.pynt[type]; if (!P) return 'ukjent'; if (s.nivaa < D.pyntNivaa) return 'laast'; if (s.pynt.length >= D.pyntMaks) return 'fullt'; if (s.mynter < P.pris) return 'mynter'; return null; }
+  function kjopPynt(s, type) { var g = kanKjopePynt(s, type); if (g) return { ok: false, grunn: g }; s.mynter -= D.pynt[type].pris; s.pyntNr++; var e = { id: 'k' + s.pyntNr, t: type, x: null, z: null, r: 0 }; s.pynt.push(e); return { ok: true, pynt: e }; }
+  function selgPynt(s, id) { for (var i = 0; i < s.pynt.length; i++) if (s.pynt[i].id === id) { var m = Math.floor(D.pynt[s.pynt[i].t].pris * D.pyntRetur); s.mynter += m; s.pynt.splice(i, 1); return { ok: true, mynter: m }; } return { ok: false, grunn: 'ukjent' }; }
   function kjopBygg(s, bygg) {
     var b = s.bygg[bygg], B = D.bygg[bygg];
     if (!b || !B) return { ok: false, grunn: 'laast' };
@@ -304,6 +309,7 @@
       if (i >= s.dyr[art].length) s.dyr[art].push({ slutt: null });
       s.dyr[art][i].slutt = d && typeof d.slutt === 'number' && isFinite(d.slutt) ? d.slutt : null;
     });
+    if (Array.isArray(r.pynt)) r.pynt.slice(0, D.pyntMaks).forEach(function (e) { if (!e || !D.pynt[e.t]) return; s.pyntNr++; var ok = typeof e.x === 'number' && typeof e.z === 'number' && isFinite(e.x) && isFinite(e.z); s.pynt.push({ id: 'k' + s.pyntNr, t: e.t, x: ok ? e.x : null, z: ok ? e.z : null, r: Math.max(0, Math.min(3, Math.floor(tall(e.r, 0)))) }); });
     if (r.plasser && typeof r.plasser === 'object') for (var p in r.plasser) { var q = r.plasser[p]; if (q && typeof q.x === 'number' && typeof q.z === 'number' && isFinite(q.x) && isFinite(q.z)) s.plasser[p] = { x: q.x, z: q.z, r: tall(q.r, 0) }; }
     // Bestillinger: bare kjente varer og rimelige antall. Mynter og XP regnes ut på nytt, så lagringen kan ikke gi mer enn reglene.
     if (r.best && typeof r.best === 'object') {
@@ -445,7 +451,7 @@
     nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
     nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
-    maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
+    kanKjopePynt: kanKjopePynt, kjopPynt: kjopPynt, selgPynt: selgPynt, maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
     giDagsgave: giDagsgave, bonusAktiv: bonusAktiv, leverGaver: leverGaver, klareGaver: klareGaver, aapneGave: aapneGave
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;

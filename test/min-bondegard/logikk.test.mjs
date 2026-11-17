@@ -256,6 +256,13 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
   { const f = L.valider(JSON.parse(JSON.stringify(L.ny(T0))), T0); f.lager.hvete = 0;
     const uten = L.kanProdusere(f, 'forkvern', 'honsefor', T0); L.settGratis(true); const med = L.kanProdusere(f, 'forkvern', 'honsefor', T0), r = L.produser(f, 'forkvern', 'honsefor', T0); L.settGratis(false);
     t('Lage uten råvarer er av som standard og virker bare når admin slår det på', uten === 'mangler' && med === null && r.ok && f.lager.hvete === 0 && L.kanProdusere(f, 'forkvern', 'honsefor', T0) === 'mangler'); }
+  { const x = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 2, mynter: 100 }), T0), n1 = L.ny(T0);
+    const laast = L.kanKjopePynt(n1, 'lykt'), k = L.kjopPynt(x, 'lykt'), k2 = L.kjopPynt(x, 'blomsterbed'), raad = L.kanKjopePynt(x, 'fontene');
+    t('Pyntebutikken: åpner på nivå 2, lykt 40 og blomsterbed 30, ikke råd til fontene', laast === 'laast' && k.ok && k2.ok && x.mynter === 30 && x.pynt.length === 2 && raad === 'mynter');
+    x.pynt[0].x = 3; x.pynt[0].z = 4; const v = L.valider(JSON.parse(JSON.stringify(x)), T0);
+    t('Kjøpt pynt overlever lagring med plass', v.pynt.length === 2 && v.pynt[0].t === 'lykt' && v.pynt[0].x === 3 && v.pynt[1].x === null);
+    const sg = L.selgPynt(x, x.pynt[0].id); t('Pynt selges tilbake for halv pris', sg.ok && sg.mynter === 20 && x.mynter === 50 && x.pynt.length === 1);
+    t('Ugyldig pynt i lagringen fjernes', L.valider(Object.assign(JSON.parse(JSON.stringify(x)), { pynt: [{ t: 'tull' }, null, { t: 'benk', x: 'a' }] }), T0).pynt.length === 1); }
   t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);

@@ -112,6 +112,19 @@
       jordet:     { navn: 'Jordet',     nivaa: 8,  pris: 1000 }   // 0.17.0 (Even 15.11): jordet på andre siden av veien. Nivå og pris er forslag og må godkjennes av en voksen
     },
     innholdTil: 20,
+    /* 0.26.0 Pyntebutikken (Even 17.11): pynt spilleren kjøper for mynter og setter der hun vil. Bare til pynt. Kan selges tilbake for halv pris.
+       Prisene og antallet er Claudes forslag og må godkjennes av en voksen. Ingenting koster ekte penger */
+    pynt: {
+      stakitt:     { navn: 'Hvitt stakitt', ikon: '🤍', pris: 15,  fot: [2.0, 0.5] },
+      hekk:        { navn: 'Hekk',          ikon: '🌳', pris: 25,  fot: [1.6, 0.9] },
+      blomsterbed: { navn: 'Blomsterbed',   ikon: '🌷', pris: 30,  fot: [1.6, 1.0] },
+      lykt:        { navn: 'Lykt',          ikon: '🏮', pris: 40,  fot: [0.7, 0.7] },
+      benk:        { navn: 'Benk',          ikon: '🪑', pris: 60,  fot: [1.8, 0.8] },
+      flagg:       { navn: 'Flaggstang',    ikon: '🚩', pris: 80,  fot: [0.8, 0.8] },
+      fuglebad:    { navn: 'Fuglebad',      ikon: '🐦', pris: 120, fot: [1.0, 1.0] },
+      fontene:     { navn: 'Fontene',       ikon: '⛲', pris: 400, fot: [2.2, 2.2] }
+    },
+    pyntNivaa: 2, pyntMaks: 40, pyntRetur: 0.5,
     // Rebus' gåter (Even 13.11): svaret er varen. Spilleren gir Rebus varen. Lønn: pris × 2 + 10 mynter, 4 XP + nivået til varen. Ny gåte 3 minutter etter riktig svar
     // Gaveesker (Even 14.11, godkjent av Ivar 14.11): gratis, kan aldri kjøpes, sjansene vises åpent. Prosent per sjeldenhet.
     // Gaveesker (Even 14.11, godkjent av Ivar 14.11). Premier og sjanser fra Even 14.11 (0.12.1): [premie, prosent, mengde, sjeldenhet]
