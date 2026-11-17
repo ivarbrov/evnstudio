@@ -288,3 +288,10 @@ body.touchui #h2Dag #biome{max-width:72px;overflow:hidden;text-overflow:ellipsis
   body.touchui #h2Bunn{gap:5px}
   body.touchui #h2Res .c,body.touchui #h2Bunn #h2Dag{font-size:12px;padding:2px 8px!important}
 }
+/* 2.0.12: statusfeltet blir aldri bredere enn plassen ved siden av ⏸/Bygg/Kart – ressursene bryter heller over flere linjer (QA e810a6d) */
+body.touchui #hud > .panel:first-child{box-sizing:border-box;max-width:calc(100vw - 112px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))!important}
+body.touchui #h2Bunn,body.touchui #h2Res{flex-wrap:wrap}
+body.touchui #h2Bunn #h2Dag{max-width:100%;box-sizing:border-box}
+@media (pointer:coarse) and (orientation:landscape){
+  body.touchui #hud > .panel:first-child{max-width:calc(100vw - 220px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))!important}
+}
