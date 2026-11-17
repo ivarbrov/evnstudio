@@ -1632,7 +1632,7 @@ window.spillOppdater = (dt, t) => {
   if (pil && pil.visible && pil.userData.u) { const p = pil.userData.u.gruppe.position, h = pil.userData.u.hoyde || 3; pil.position.set(p.x, h + 1.2 + Math.abs(Math.sin(t * 4)) * 0.6, p.z); }
   if (kameraMaal) { cam.target.lerp(_p.set(kameraMaal.x, 0, kameraMaal.z), Math.min(1, dt * 5)); plasserKamera(); if (cam.target.distanceTo(_p) < 0.05) kameraMaal = null; }
   oppdaterBil(dt); oppdaterKunde(dt, t); oppdaterRev(dt, t); oppdaterHund(dt, t);
-  if (ADMIN) oppdaterAdmin(dt, t);
+  if (ADMIN) { try { oppdaterAdmin(dt, t); } catch (e) { if (!adm.feilVist) { adm.feilVist = true; console.warn('admin', e); } } }   /* 0.24.1: en feil i admin skal aldri stoppe spillet */
   if (gaveVent > 0 && startet && !pauset) { gaveVent -= dt; if (gaveVent <= 0) leverGaver('Blomst'); }   /* kommer hun ikke innen ett minutt, står gaven der likevel */
   synkT += dt; if (synkT > 0.25) { synkT = 0; synk(); oppdaterTider(); }
   lagreT += dt; if (lagreT > 15 && startet) { lagreT = 0; lagre(); }
@@ -1789,7 +1789,7 @@ function visAdmBygg() {
 }
 /* 0.23.1 (Even 17.11): Premium i admin, gratis. Tre deler: gullgård med krone, superbonde (alt går dobbelt så fort og gir dobbelt XP) og premium-pakka (alle festbiler og all pynt).
    Bare i testversjonen. Spillet har ingen premium for vanlige spillere, og ingenting kan kjøpes for ekte penger */
-const admXpSum = () => { let x = s.xp; for (let n = 1; n < s.nivaa; n++) x += D.xpNeste[n] || 0; return x; };
+function admXpSum() { let x = s.xp; for (let n = 1; n < s.nivaa; n++) x += D.xpNeste[n] || 0; return x; }   /* 0.24.1: funksjon, ikke const. Den brukes fra første bilde, før resten av fila er lest */
 function admPremium(paa) {
   if (paa) {
     const f = {gull: !!s.gaver.gullgard, gullPaa: !!s.gaver.gullPaa, skinn: [], pynt: []};
