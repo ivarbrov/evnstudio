@@ -9,6 +9,7 @@ if (TESTMODUS) document.body.classList.add('test');
 /* 0.18.0: admin, se nederst i fila */
 /* 0.21.0 (Even 17.11, QA 17.11): admin finnes bare i den private forhåndsvisningen (MB_ADMIN) og på utviklerens egen maskin. Adressen ?test&admin virker ikke på evnstudio.no */
 const ADMIN = !!window.MB_ADMIN || (TESTMODUS && new URLSearchParams(location.search).has('admin') && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname));
+if (ADMIN) { window.MB_ZOOM_MAKS = 400; camera.far = 1200; camera.updateProjectionMatrix(); }   /* 0.27.1 (Even 18.11): admin kan zoome langt ut */
 const admLager = () => { try { return JSON.parse(localStorage.getItem('mb-admin') || '{}'); } catch (e) { return {}; } };
 const adm = {gratis: false, x5: false, forrige: null, regn: [], biler: [], regnT: 0};
 const LAGRING = TESTMODUS ? 'evn-min-bondegard-test' : 'evn-min-bondegard-v1';

@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.27.0 – EVN Studio</title>
+<title>Min Bondegård 0.27.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -286,7 +286,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.27.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.27.1</div>
   </div>
 </div>
 
@@ -557,7 +557,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.27.0'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.27.1'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -1665,7 +1665,7 @@ function himmel(farge, hor) { const c = document.createElement('canvas'); c.widt
 function settTid(t) {
   TID = t; const d = TIDER[t];
   scene.background = himmel(d.himmel, d.horisont);
-  scene.fog = new THREE.Fog(SRGB(d.horisont), 75, 175);
+  scene.fog = new THREE.Fog(SRGB(d.horisont), 75, 175); zoomTaake();
   sol.color.copy(SRGB(d.sol)); sol.intensity = d.solI;
   hemi.intensity = d.hemi; hemi.color.copy(SRGB(d.hemiT));
   if (VANN) { VANN.material.uniforms.himmel.value.copy(SRGB(d.horisont)); VANN.material.uniforms.lys.value = 0.62 + 0.38 * d.solI / 1.55; VANN.material.uniforms.tone.value.setRGB(1, 1, 1).lerp(SRGB(d.sol), t === 'dag' ? 0 : 0.45); }
@@ -2043,14 +2043,17 @@ let sistHjul = 0; const pek = new Map(); let dra = null, flyttet = 0, knip0 = 0,
 const el = renderer.domElement;
 el.addEventListener('pointerdown', e => { el.setPointerCapture(e.pointerId); pek.set(e.pointerId, {x: e.clientX, y: e.clientY}); flyttet = 0; if (pek.size === 1 && window.spillDraStart && window.spillDraStart(e.clientX, e.clientY)) return; /* 0.8.6: dra over åkre for å høste */ if (pek.size === 1) dra = {x: e.clientX, y: e.clientY, t: cam.target.clone()}; if (pek.size === 2) { const [a, b] = [...pek.values()]; knip0 = Math.hypot(a.x - b.x, a.y - b.y); dist0 = cam.dist; } });
 el.addEventListener('pointermove', e => { if (!pek.has(e.pointerId)) return; pek.set(e.pointerId, {x: e.clientX, y: e.clientY});
-  if (pek.size === 2) { const [a, b] = [...pek.values()]; cam.dist = THREE.MathUtils.clamp(dist0 * knip0 / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), 18, 95); flyttet = 99; plasserKamera(); return; }
+  if (pek.size === 2) { const [a, b] = [...pek.values()]; cam.dist = THREE.MathUtils.clamp(dist0 * knip0 / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), 18, zoomMaks()); zoomTaake(); flyttet = 99; plasserKamera(); return; }
   if (dra && window.spillDra && window.spillDra(e.clientX, e.clientY)) { flyttet = 99; return; } /* 0.8.4: dra ting som flyttes, ikke kameraet */
   if (dra) { const dx = e.clientX - dra.x, dy = e.clientY - dra.y; flyttet = Math.max(flyttet, Math.hypot(dx, dy)); const k = cam.dist / innerHeight * 0.75;
     const fx = new THREE.Vector3(Math.cos(cam.yaw), 0, -Math.sin(cam.yaw)), fz = new THREE.Vector3(Math.sin(cam.yaw), 0, Math.cos(cam.yaw));
     cam.target.copy(dra.t).addScaledVector(fx, -dx * k).addScaledVector(fz, -dy * k * 1.35); cam.target.x = THREE.MathUtils.clamp(cam.target.x, -28, 32); cam.target.z = THREE.MathUtils.clamp(cam.target.z, -24, 30); plasserKamera(); } });
 el.addEventListener('pointerup', e => { if (pek.size === 1 && flyttet < 8) trykk(e.clientX, e.clientY); pek.delete(e.pointerId); if (!pek.size) dra = null; });
 el.addEventListener('pointercancel', e => { pek.delete(e.pointerId); dra = null; });
-el.addEventListener('wheel', e => { e.preventDefault(); sistHjul = performance.now(); cam.dist = THREE.MathUtils.clamp(cam.dist * (1 + Math.sign(e.deltaY) * 0.1), 18, 95); plasserKamera(); }, {passive: false});
+/* 0.27.1 (Even 18.11): admin kan zoome mye lenger ut. Vanlige spillere har 95 som før. Tåka flyttes utover, så gården ikke blir grå */
+function zoomMaks() { return window.MB_ZOOM_MAKS || 95; }
+function zoomTaake() { if (!scene.fog) return; const e = Math.max(0, cam.dist - 95); scene.fog.near = 75 + e; scene.fog.far = 175 + e * 1.6; }
+el.addEventListener('wheel', e => { e.preventDefault(); sistHjul = performance.now(); cam.dist = THREE.MathUtils.clamp(cam.dist * (1 + Math.sign(e.deltaY) * 0.1), 18, zoomMaks()); zoomTaake(); plasserKamera(); }, {passive: false});
 let sistTrykk = 0;
 function trykk(x, y) { sistTrykk = performance.now(); ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
   const t = ray.intersectObjects(klikkbare, true)[0]; const o = t ? (t.object.userData.eier || t.object) : null;
