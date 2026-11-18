@@ -19,7 +19,7 @@
       ku:   { navn: 'Ku',   flertall: 'Kyr',   ikon: '🐄', nivaa: 6,  spiser: 'kufor',    produkt: 'melk',   tid: 120, xp: 2, start: 2, hus: 'fjos', flere: { 13: 3 } },   // kyrne kommer når fjøset er kjøpt (Ivar 9.11 og 12.11)
       gris: { navn: 'Gris', flertall: 'Griser', ikon: '🐖', nivaa: 10, spiser: 'grisefor', produkt: 'troffel', tid: 240, xp: 3, start: 2, hus: 'grisebinge', flere: { 18: 3 } },
       sau:  { navn: 'Sau',  flertall: 'Sauer', ikon: '🐑', nivaa: 16, spiser: 'sauefor',  produkt: 'ull',    tid: 300, xp: 4, start: 2, hus: 'sauefjos', flere: { 19: 3 } },   // 0.23.0
-      geit: { navn: 'Geit', flertall: 'Geiter', ikon: '🐐', nivaa: 21, spiser: 'geitefor', produkt: 'geitemelk', tid: 360, xp: 5, start: 2, hus: 'geitefjos' }   // 0.31.0 (Even 18.11). Tallene er forslag
+      geit: { navn: 'Geit', flertall: 'Geiter', ikon: '🐐', nivaa: 26, spiser: 'geitefor', produkt: 'geitemelk', tid: 360, xp: 5, start: 2, hus: 'geitefjos' }   // 0.31.0 (Even 18.11), flyttet til nivå 26 i 0.32.0 som i planen. Admin har dem i testversjonen. Tallene er forslag
     },
     // Varer som ikke er avlinger. Verdien til produserte varer regnes ut nedenfor (formelen i progresjonsplanen kap. 6).
     varer: {
@@ -32,6 +32,7 @@
       sauefor:  { navn: 'Sauefor',  ikon: '🟢', erFor: true },
       geitefor: { navn: 'Geitefor', ikon: '🟤', erFor: true },
       geitemelk: { navn: 'Geitemelk', ikon: '🍼', verdi: 40 },
+      eple:     { navn: 'Eple',     ikon: '🍎', verdi: 14, flertall: 'epler' },
       ull:      { navn: 'Ull',      ikon: '🧶', verdi: 32 },
       gulrotpai: { navn: 'Gulrotpai', ikon: '🥧' },
       kremkake:  { navn: 'Kremkake',  ikon: '🍰' },
@@ -61,7 +62,8 @@
       kufor:      { bygg: 'forkvern',   nivaa: 6,  inn: { erter: 2, mais: 1 },            tid: 60,  ut: 3 },
       grisefor:   { bygg: 'forkvern',   nivaa: 10, inn: { gulrot: 2, erter: 1 },          tid: 60,  ut: 3 },
       sauefor:    { bygg: 'forkvern',   nivaa: 16, inn: { hvete: 3, erter: 1 },           tid: 90,  ut: 3 },
-      geitefor:   { bygg: 'forkvern',   nivaa: 21, inn: { mais: 3, gulrot: 1 },           tid: 90,  ut: 3 },
+      eple:       { bygg: 'epletre',    nivaa: 21, inn: {},                               tid: 300, ut: 2 },   // 0.32.0: treet lager epler av seg selv
+      geitefor:   { bygg: 'forkvern',   nivaa: 26, inn: { mais: 3, gulrot: 1 },           tid: 90,  ut: 3 },
       gulrotpai:  { bygg: 'paibakeri',  nivaa: 14, inn: { gulrot: 3, egg: 1, hvete: 1 },  tid: 180, ut: 1 },
       kremkake:   { bygg: 'paibakeri',  nivaa: 14, inn: { flote: 2, egg: 2, sukker: 1 },  tid: 240, ut: 1 },
       lue:        { bygg: 'vevstol',    nivaa: 17, inn: { ull: 1 },                       tid: 180, ut: 1 },
@@ -93,7 +95,8 @@
       grisebinge: { navn: 'Grisebinge',     ikon: '🐖', nivaa: 10, pris: 800, dyr: 'gris' },
       paibakeri:  { navn: 'Paibakeriet',    ikon: '🥧', nivaa: 14, pris: 3500 },   // 0.23.0. Priser fra progresjonsplanen kap. 6
       sauefjos:   { navn: 'Sauefjøs',       ikon: '🐑', nivaa: 16, pris: 3000, dyr: 'sau' },
-      geitefjos:  { navn: 'Geitefjøs',      ikon: '🐐', nivaa: 21, pris: 8000, dyr: 'geit' },   // 0.31.0. Pris er forslag
+      geitefjos:  { navn: 'Geitefjøs',      ikon: '🐐', nivaa: 26, pris: 8000, dyr: 'geit' },   // 0.31.0. Pris er forslag
+      epletre:    { navn: 'Epletreet',      ikon: '🍎', nivaa: 21, pris: 3000, selv: 'eple' },   // 0.32.0 (Even 18.11): står for alltid og gir nye epler etter en stund. Pris er forslag
       vevstol:    { navn: 'Vevstolen',      ikon: '🧶', nivaa: 17, pris: 6000 },   // 0.24.0
       festbord:   { navn: 'Festbordet',     ikon: '🎉', nivaa: 3,  pris: 150, arr: 'bursdag' }   // kommer med Bursdagsfesten, ikke med nivået (Even 11.11: første maskin ca. 150)
     },
@@ -161,6 +164,7 @@
       genser: 'Jeg har to ermer og er laget av ull. Du tar meg på når du fryser. Hva er jeg?',
       gresskarbrod: 'Jeg er bakt i ovnen, og inni meg er det noe stort og oransje fra åkeren. Hva er jeg?',
       gresskar: 'Jeg er stor, rund og oransje, og jeg vokser på bakken. Om høsten skjærer noen ansikt i meg. Hva er jeg?',
+      eple: 'Jeg er rund og rød og vokser på et tre. Du kan spise meg rå eller bake meg i en pai. Hva er jeg?',
       geitemelk: 'Jeg er hvit og kommer fra et dyr med skjegg og horn. Av meg kan du lage ost. Hva er jeg?',
       ull: 'Jeg vokser på sauen og er myk og varm. Av meg blir det garn og gensere. Hva er jeg?',
       gulrotpai: 'Jeg er rund og bakt i ovnen, og inni meg er det noe oransje fra åkeren. Hva er jeg?',

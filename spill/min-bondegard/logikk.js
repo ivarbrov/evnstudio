@@ -135,6 +135,7 @@
     // 0.20.2 (QA 17.11): festens bygg lager bare ting mens festen er åpen. Ellers fyller festvarene låven uten å kunne sendes
     if (D.bygg[bygg] && D.bygg[bygg].arr && D.arr[D.bygg[bygg].arr].maned !== maned(naa)) return 'stengt';
     if (o.krever && arrTrinn(s, o.krever.arr) < o.krever.trinn) return 'laast';
+    if (D.bygg[bygg] && D.bygg[bygg].selv) return 'selv';   // 0.32.0: treet starter selv
     if (uferdige(b, naa).length >= D.koPlasser) return 'ko-full';
     if (!gratis && !(bygg === 'forkvern' && bonusAktiv(s, naa)) && !har(s, o.inn)) return 'mangler';
     return null;
@@ -147,6 +148,11 @@
     b.ko.push({ vare: vare, start: start, slutt: start + o.tid * 1000 });
     return { ok: true };
   }
+  // 0.32.0 Bygg som lager varen sin selv (epletreet, Even 18.11): når køen er tom, starter en ny runde. Frukten venter til den blir plukket
+  function selvStart(s, naa) { var n = 0;
+    for (var bg in D.bygg) { var v = D.bygg[bg].selv, sb = s.bygg[bg]; if (!v || !sb || !sb.eid || sb.ko.length) continue;
+      sb.ko.push({ vare: v, start: naa, slutt: naa + D.oppskrifter[v].tid * 1000 }); n++; }
+    return n; }
   function hentProdukter(s, bygg, naa) {
     var b = s.bygg[bygg], n = 0, xp = 0, varer = {}, full = false;
     if (!b) return { ok: false, grunn: 'ukjent' };
@@ -464,7 +470,7 @@
     nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
     nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
-    kanKaste: kanKaste, kast: kast, fiskKlar: fiskKlar, halInn: halInn, kanKjopePynt: kanKjopePynt, kjopPynt: kjopPynt, selgPynt: selgPynt, maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
+    kanKaste: kanKaste, kast: kast, fiskKlar: fiskKlar, halInn: halInn, kanKjopePynt: kanKjopePynt, kjopPynt: kjopPynt, selgPynt: selgPynt, maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, selvStart: selvStart, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
     giDagsgave: giDagsgave, bonusAktiv: bonusAktiv, leverGaver: leverGaver, klareGaver: klareGaver, aapneGave: aapneGave
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;

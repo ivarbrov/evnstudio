@@ -270,9 +270,17 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
     const tell = { abbor: 0, orret: 0, gjedde: 0 }; for (let i = 0; i < 600; i++) { x.lager = {}; L.kast(x, T0); tell[L.halInn(x, T0 + 100 * S).vare]++; }
     t('Fordeling ca. 60/30/10 over 600 fisk', tell.abbor > 300 && tell.abbor < 420 && tell.orret > 130 && tell.orret < 230 && tell.gjedde > 30 && tell.gjedde < 95, JSON.stringify(tell));
     t('Fisk kan selges, men kommer ikke i bestillinger', L.kanSelge('gjedde') && !L.bestPool(x).includes('abbor')); }
-  { const x = L.ny(T0); L.giXP(x, 99999, T0); x.mynter = 8000; const k = L.kjopBygg(x, 'geitefjos');
-    t('Geiter (0.31.0): geitefjøset på nivå 21 koster 8000 og gir 2 geiter', k.ok && x.mynter === 0 && x.dyr.geit.length === 2 && D.dyr.geit.produkt === 'geitemelk');
+  { const paPlan = D.bygg.geitefjos.nivaa === 26 && D.dyr.geit.nivaa === 26 && D.oppskrifter.geitefor.nivaa === 26;
+    D.bygg.geitefjos.nivaa = D.dyr.geit.nivaa = D.oppskrifter.geitefor.nivaa = 21;   /* slik admin har det i testversjonen */
+    const x = L.ny(T0); L.giXP(x, 99999, T0); x.mynter = 8000; const k = L.kjopBygg(x, 'geitefjos'); D.bygg.geitefjos.nivaa = D.dyr.geit.nivaa = D.oppskrifter.geitefor.nivaa = 26;
+    t('Geiter (0.31.0, nivå 26 fra 0.32.0): geitefjøset koster 8000 og gir 2 geiter', paPlan && k.ok && x.mynter === 0 && x.dyr.geit.length === 2 && D.dyr.geit.produkt === 'geitemelk');
     t('Geitefor lages i forkvernen av mais og gulrot, og geitemelk kan selges', D.oppskrifter.geitefor.bygg === 'forkvern' && D.erFor('geitefor') && L.kanSelge('geitemelk') && !L.kanSelge('geitefor') && !!D.gater.geitemelk); }
+  { const x = L.ny(T0); L.giXP(x, 99999, T0); x.mynter = 3000; const f0 = L.selvStart(x, T0), k = L.kjopBygg(x, 'epletre'), f1 = L.selvStart(x, T0), f2 = L.selvStart(x, T0 + 10 * S);
+    t('Epletreet (0.32.0): nivå 21, 3000 mynter, og starter selv når det er kjøpt', D.bygg.epletre.nivaa === 21 && f0 === 0 && k.ok && x.mynter === 0 && f1 === 1 && f2 === 0 && x.bygg.epletre.ko.length === 1);
+    t('Epletreet kan ikke startes for hånd', L.kanProdusere(x, 'epletre', 'eple', T0) === 'selv');
+    const tidlig = L.hentProdukter(x, 'epletre', T0 + 299 * S), h = L.hentProdukter(x, 'epletre', T0 + 3600 * S);
+    t('Eplene venter på treet, og 2 epler plukkes etter 300 s', !tidlig.ok && h.ok && x.lager.eple === 2 && x.bygg.epletre.ko.length === 0);
+    t('Etter plukking starter en ny runde, og epler kan selges', L.selvStart(x, T0 + 3600 * S) === 1 && x.bygg.epletre.ko[0].slutt === T0 + 3900 * S && L.kanSelge('eple') && !!D.gater.eple); }
   t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);
