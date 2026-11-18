@@ -1945,7 +1945,7 @@ function synkMusikknapp() { const kn = $('musikkKnapp'); if (!kn || !MUS) return
 function visMusikk() { aapneHandling(null, '🎵 Musikk', () => '<p>Velg hvilken sang du vil høre mens du spiller.</p><div class="knapper">' +
   ['gard', 'vinter'].map(v => `<button class="knapp ${MUS.valg === v ? 'gronn' : 'lys'}" data-g="mus" data-m="${v}" type="button">${SANG[v].ikon} ${SANG[v].navn}${MUS.valg === v ? ' ✓' : ''}</button>`).join('') +
   `<button class="knapp ${MUS.valg === 'av' ? 'gronn' : 'lys'}" data-g="mus" data-m="av" type="button">🔇 Ingen musikk${MUS.valg === 'av' ? ' ✓' : ''}</button></div>`); }
-['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, () => { if (!MUS.ctx) musStart(); }, {passive: true}));
+['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, () => { if (!MUS.ctx) musStart(); }, {passive: true, capture: true}));
 function synkBilknapp() { const kn = $('bilKnapp'); if (kn) kn.hidden = ADMIN || !startet || !(arrNaa || Object.keys(s.skinn.eid).length); }
 function visAdmVarer() {
   aapneHandling(null, '📦 Varer', () => `<p>Trykk «Få» for å få 5 av en vare. «Slett» tar bort 5.</p>` +
@@ -2017,8 +2017,8 @@ if (ADMIN) {
   const kn = $('adminKnapp'); if (kn) { kn.hidden = false; kn.addEventListener('click', visAdmin); }
 } else {
   const kn = $('bilKnapp'); if (kn) kn.addEventListener('click', visBiler);
-  const mk = $('musikkKnapp'); if (mk) mk.addEventListener('click', visMusikk);
 }
+{ const mk = $('musikkKnapp'); if (mk) mk.addEventListener('click', visMusikk); }   /* for alle, også admin (0.28.1: knappen virket ikke for admin) */
 if (ADMIN) {
   $('handlingInnhold').addEventListener('click', e => {
     const k = e.target.closest('button[data-g="adm"]'); if (!k || k.disabled) return; const v = k.dataset.v;
