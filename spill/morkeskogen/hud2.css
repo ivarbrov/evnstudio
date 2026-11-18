@@ -300,3 +300,7 @@ body.touchui #h2Bunn #h2Dag{max-width:100%;box-sizing:border-box}
   body.touchui #h2Dag #biome{max-width:15px;text-overflow:clip}
   body.touchui #h2Res .c small,body.touchui #h2Res .c b.f{display:none}
 }
+/* QA T4: fullt lager må synes uten farge – en full brikke beholder «/maks» (f.eks. 15/15) også på lave liggende skjermer */
+@media (pointer:coarse) and (orientation:landscape) and (max-height:430px){
+  body.touchui #h2Res .c.full small{display:inline}
+}
