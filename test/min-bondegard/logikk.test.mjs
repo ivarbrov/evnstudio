@@ -73,7 +73,7 @@ t('Brød gir 2 XP', r.ok && r.xp === 2 && s.lager.brod === 1);
 nye = L.giXP(s, 2000, T0);
 t('Stor XP gir flere nivåer på en gang', s.nivaa === 10 || nye.length > 1);
 t('Nivå 3 og 5 gir åkre', s.akre.length === 12);
-t('Maks nivå 21 (0.31.0), med 15 åkre og 4 høner', (() => { const x = L.ny(T0); L.giXP(x, 99999, T0); return x.nivaa === 21 && D.maksNivaa === 21 && x.akre.length === 15 && x.dyr.hone.length === 4; })());
+t('Maks nivå 22 (0.33.0), med 15 åkre og 4 høner', (() => { const x = L.ny(T0); L.giXP(x, 99999, T0); return x.nivaa === 22 && D.maksNivaa === 22 && x.akre.length === 15 && x.dyr.hone.length === 4; })());
 { const x = L.ny(T0); while (x.nivaa < 16) L.giXP(x, 5, T0); x.mynter = 20000;
   t('Nivå 14–16: paibakeri og sauefjøs kan bygges, gresskar kan plantes', x.bygg.paibakeri && x.bygg.sauefjos && !x.dyr.sau && L.kanPlante(x, 0, 'gresskar', T0) === null && x.lager.gresskar === D.nyAvlingFro);
   L.kjopBygg(x, 'paibakeri'); L.kjopBygg(x, 'sauefjos'); x.lager.gulrot = 3; x.lager.egg = 1; x.lager.hvete = 5; x.lager.erter = 1;
@@ -271,7 +271,7 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
     t('Fordeling ca. 60/30/10 over 600 fisk', tell.abbor > 300 && tell.abbor < 420 && tell.orret > 130 && tell.orret < 230 && tell.gjedde > 30 && tell.gjedde < 95, JSON.stringify(tell));
     t('Fisk kan selges, men kommer ikke i bestillinger', L.kanSelge('gjedde') && !L.bestPool(x).includes('abbor')); }
   { const paPlan = D.bygg.geitefjos.nivaa === 26 && D.dyr.geit.nivaa === 26 && D.oppskrifter.geitefor.nivaa === 26;
-    D.bygg.geitefjos.nivaa = D.dyr.geit.nivaa = D.oppskrifter.geitefor.nivaa = 21;   /* slik admin har det i testversjonen */
+    D.bygg.geitefjos.nivaa = D.dyr.geit.nivaa = D.oppskrifter.geitefor.nivaa = D.maksNivaa;   /* slik admin har det i testversjonen */
     const x = L.ny(T0); L.giXP(x, 99999, T0); x.mynter = 8000; const k = L.kjopBygg(x, 'geitefjos'); D.bygg.geitefjos.nivaa = D.dyr.geit.nivaa = D.oppskrifter.geitefor.nivaa = 26;
     t('Geiter (0.31.0, nivå 26 fra 0.32.0): geitefjøset koster 8000 og gir 2 geiter', paPlan && k.ok && x.mynter === 0 && x.dyr.geit.length === 2 && D.dyr.geit.produkt === 'geitemelk');
     t('Geitefor lages i forkvernen av mais og gulrot, og geitemelk kan selges', D.oppskrifter.geitefor.bygg === 'forkvern' && D.erFor('geitefor') && L.kanSelge('geitemelk') && !L.kanSelge('geitefor') && !!D.gater.geitemelk); }
@@ -281,6 +281,8 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
     const tidlig = L.hentProdukter(x, 'epletre', T0 + 299 * S), h = L.hentProdukter(x, 'epletre', T0 + 3600 * S);
     t('Eplene venter på treet, og 2 epler plukkes etter 300 s', !tidlig.ok && h.ok && x.lager.eple === 2 && x.bygg.epletre.ko.length === 0);
     t('Etter plukking starter en ny runde, og epler kan selges', L.selvStart(x, T0 + 3600 * S) === 1 && x.bygg.epletre.ko[0].slutt === T0 + 3900 * S && L.kanSelge('eple') && !!D.gater.eple); }
+  { const x = L.ny(T0); L.giXP(x, 99999, T0); x.mynter = 4000; const k = L.kjopBygg(x, 'bikube'); L.selvStart(x, T0); const h = L.hentProdukter(x, 'bikube', T0 + 360 * S);
+    t('Bikuben (0.33.0): nivå 22, 4000 mynter, og gir 1 honning etter 360 s', D.bygg.bikube.nivaa === 22 && k.ok && x.mynter === 0 && h.ok && x.lager.honning === 1 && D.pris('honning') === 30 && L.kanSelge('honning') && !!D.gater.honning); }
   t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);
