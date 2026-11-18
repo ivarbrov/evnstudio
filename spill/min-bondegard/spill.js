@@ -785,8 +785,9 @@ function lagEgg() { const g = new THREE.SphereGeometry(0.17, 12, 10); g.scale(1,
 
 /* ======================= Synk: tilstand → verden ======================= */
 /* ======================= Gaveesker (0.12.0, Even 14.11, godkjent av Ivar 14.11) ======================= */
-// Én gratis eske hver dag (Blomsterkatten har den med) og én per nytt nivå. Den står ved markedsbua til du åpner den. Sjansene står på kortet.
-const GAVE_PLASS = [-3.4, 6.7], SJ = {vanlig: ['Vanlig', '#8c8c8c', '⚪'], uvanlig: ['Uvanlig', '#2e9e48', '🟢'], sjelden: ['Sjelden', '#2f6fd6', '🔵'], superrar: ['Superrar', '#d4a017', '🟡'], legendarisk: ['Legendarisk', '#b03fd1', '🌈']};
+// Én gratis eske hver dag (Blomsterkatten har den med) og én per nytt nivå. Den står ved låven til du åpner den. Sjansene står på kortet.
+const GAVE_PLASS = [2.6, -5.8],   /* 0.29.1 (Even 18.11): ved siden av låven, mot siloen. Før: ved markedsbua */
+   SJ = {vanlig: ['Vanlig', '#8c8c8c', '⚪'], uvanlig: ['Uvanlig', '#2e9e48', '🟢'], sjelden: ['Sjelden', '#2f6fd6', '🔵'], superrar: ['Superrar', '#d4a017', '🟡'], legendarisk: ['Legendarisk', '#b03fd1', '🌈']};
 const PREMIENAVN = {mynter: 'mynter', xp: '75 XP', frovarer: 'frø eller varer', maskin: 'en maskin', superhost: 'superhøst', maned: 'gratis i 7 dager', pynt: 'gullpynt', gullgard: 'Gullgården'};
 let gaveT = null, gaveVent = 0;
 const iDag = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
@@ -803,7 +804,7 @@ function synkGaver() {
   if (!gaveT && n) { const g = lagGaveeske(); scene.add(g); eierAv(g); klikkbar(g); gaveT = {type: 'gave', id: 'gave', gruppe: g, hoyde: 1.6}; gaveT.ikon = lagIkon(gaveT.hoyde); g.add(gaveT.ikon); ting.set('gave', gaveT); g.position.set(GAVE_PLASS[0], hoyde(...GAVE_PLASS), GAVE_PLASS[1]); g.rotation.y = 0.4; }
   if (gaveT) { gaveT.gruppe.visible = n > 0; settIkon(gaveT.ikon, n ? '🎁' : null); }
 }
-function leverGaver(hvem) { const n = L.leverGaver(s); if (n) { melding(`🎁 ${hvem} har levert en gave! Den står ved markedsbua.`, 3400); lagre(); synkGaver(); } }
+function leverGaver(hvem) { const n = L.leverGaver(s); if (n) { melding(`🎁 ${hvem} har levert en gave! Den står ved låven.`, 3400); lagre(); synkGaver(); } }
 function visGave(res) {
   aapneHandling(gaveT, '🎁 Gaveeske', () => { const n = L.klareGaver(s); let p = '';
     if (res) { const [nv, farge, ik] = SJ[res.sjeldenhet], ting2 = res.gullgard ? '✨ GULLGÅRDEN! ✨' : res.pynt ? `${D.gave.pyntNavn[res.pynt]} ✨ til gården` : res.bygg ? `${D.bygg[res.bygg].ikon} ${D.bygg[res.bygg].navn} gratis!` : res.bonus ? `🎁 Gratis i ${D.gave.bonusDager} dager!` : res.superhost ? `🌟 Superhøst! ${res.superhost} ${res.superhost === 1 ? 'åker er' : 'åkre er'} klare nå` : res.xp ? `⭐ ${res.xp} XP` : res.vare ? `${res.antall} ${ikon(res.vare)} ${navn(res.vare).toLowerCase()}` : `${res.mynter} 🪙`;
@@ -1276,7 +1277,7 @@ function nyttTekst(n) {
   (n.flereDyr || []).forEach(f => nytt.push(D.dyr[f.art].ikon + ' ' + (f.antall === 1 ? 'en ' + D.dyr[f.art].navn.toLowerCase() + ' til' : f.antall + ' ' + D.dyr[f.art].flertall.toLowerCase() + ' til')));
   if (n.akre) nytt.push('🟫 ' + n.akre + ' nye åkre');
   if (n.tavle) nytt.push('📋 bestillinger og varebil');
-  if (s.oppl.steg >= OPPL.length) nytt.push('🎁 en gaveeske ved markedsbua');
+  if (s.oppl.steg >= OPPL.length) nytt.push('🎁 en gaveeske ved låven');
   (n.omrader || []).filter(o => I_SPILLET.omrader.includes(o)).forEach(o => nytt.push('🌿 ' + D.omrader[o].navn + ' kan kjøpes'));
   let t = '+' + n.mynter + ' 🪙'; if (nytt.length) t += ' · Nytt: ' + nytt.join(', ');
   if (senere.length) t += '<br><span style="font-size:15px;opacity:.8">Kommer i neste versjon: ' + senere.join(', ') + '</span>';
