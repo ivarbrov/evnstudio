@@ -295,3 +295,8 @@ body.touchui #h2Bunn #h2Dag{max-width:100%;box-sizing:border-box}
 @media (pointer:coarse) and (orientation:landscape){
   body.touchui #hud > .panel:first-child{max-width:calc(100vw - 220px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))!important}
 }
+/* 2.0.12: lav liggende mobil – ressurser og dag på én linje: bare ikon for området, uten «/maks» og «FULLT» (gull kant viser fullt lager) */
+@media (pointer:coarse) and (orientation:landscape) and (max-height:430px){
+  body.touchui #h2Dag #biome{max-width:15px;text-overflow:clip}
+  body.touchui #h2Res .c small,body.touchui #h2Res .c b.f{display:none}
+}
