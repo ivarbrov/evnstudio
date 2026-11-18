@@ -1,6 +1,6 @@
 // Service worker: gjør at spillet kan spilles uten internett etter første gang.
 // Øk versjonsnummeret når spillet oppdateres, så mobilen henter den nye versjonen.
-const CACHE = 'galaxy-era-v0.1.0';
+const CACHE = 'galaxy-era-v0.2.0';
 const FILER = ['./', 'index.html', 'manifest.json', 'ikoner/logo.png', 'ikoner/ikon-192.png', 'ikoner/ikon-512.png', 'ikoner/ikon-maskable-512.png', 'ikoner/apple-touch-icon.png', '../../ecoins/ecoins.js'];
 
 self.addEventListener('install', e => {

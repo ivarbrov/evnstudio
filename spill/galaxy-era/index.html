@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Galaxy Era – v0.1.0</title>
+<title>Galaxy Era – v0.2.0</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="ikoner/ikon-192.png">
 <link rel="apple-touch-icon" href="ikoner/apple-touch-icon.png">
@@ -177,7 +177,7 @@ addEventListener('keydown',function(){t(false);},true);})();
   <div class="lagret" id="menyLagret"></div>
   <div class="meny-intro">
   <img class="meny-maskot" src="../../bilder/robot-start-kamp-130.webp" srcset="../../bilder/robot-start-kamp-130.webp 1x, ../../bilder/robot-start-kamp-260.webp 2x" width="166" height="260" alt="" decoding="async" onerror="this.remove()">
-  <div class="maal" id="menyMaal">Forsvar basen på Merkur i 10 bølger og slå Solkjempen!</div>
+  <div class="maal" id="menyMaal">Forsvar basen på planetene i solsystemet! Klar 10 bølger for å reise videre.</div>
   </div>
   <ul id="menyStyring">
     <li class="bare-pc">⌨️ Gå: <b>W A S D</b> eller pilene</li>
@@ -200,7 +200,7 @@ addEventListener('keydown',function(){t(false);},true);})();
   <button class="andre" id="menyNyRunde" hidden>⭐ Ny runde – sterkere fiender</button>
   <button class="andre" id="menyEpoker" hidden>🪐 Velg planet</button>
   <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-  <div class="evn-ver">Versjon 0.1.0 · prøveversjon · Merkur</div>
+  <div class="evn-ver">Versjon 0.2.0 · prøveversjon · 8 planeter</div>
 </div></div>
 <div id="epokeKart" role="dialog" aria-modal="true" aria-labelledby="epokeTittel"><div class="boks">
   <span class="evn-merke">EVN STUDIO</span>
@@ -567,17 +567,24 @@ let kanonkuler = [], lyn = [];
 let ringer = [];
 // ===================== PLANETENE =====================
 // Evens beslutning 18.11.2026: alle planetene i solsystemet, i rekkefølge fra sola.
-// Hver planet: enkel, medium og vanskelig fiende + boss. Bare planeter med klar: true er spillbare ennå.
+// Hver planet: enkel, medium og vanskelig fiende + boss. Bare planeter med klar: true er spillbare (alle fra 0.2.0).
 const VERDENER = [null,
-  { navn: 'Merkur ☀️', ikon: '☀️', klar: true, fiender: ['solflamme', 'kratermonster', 'varmebot', 'solkjempen'], bossNavn: 'Solkjempen', bossTekst: '⚠️ Solkjempen kommer! ☀️',
+  { navn: 'Merkur ☀️', ikon: '☀️', klar: true, steinFarge: ['#b5a596', '#5e5049'], fiender: ['solflamme', 'kratermonster', 'varmebot', 'solkjempen'], bossNavn: 'Solkjempen', bossTekst: '⚠️ Solkjempen kommer! ☀️',
     bakke: 'merkur', hinder: 'stein', base: ['rgba(120,100,90,0.95)', 'rgba(95,78,70,0.85)'], vignett: 'rgba(60,15,0,0.55)', naer: 'lasersverd', avstand: 'laser' },
-  { navn: 'Venus 🟡', ikon: '🟡', fiender: ['syresnegl', 'skydrage', 'giftgolem', 'skydronningen'], bossNavn: 'Skydronningen' },
-  { navn: 'Jorden 🌍', ikon: '🌍', fiender: ['romvesenspeider', 'invasjonsbot', 'romvesenridder', 'moderskipet'], bossNavn: 'Moderskipet' },
-  { navn: 'Mars 🔴', ikon: '🔴', fiender: ['stovkryp', 'marsbille', 'sandormen', 'stovstormkongen'], bossNavn: 'Støvstormkongen' },
-  { navn: 'Jupiter 🟠', ikon: '🟠', fiender: ['gassboble', 'lynvesen', 'stormgigant', 'denrodestormen'], bossNavn: 'Den røde stormen' },
-  { navn: 'Saturn 🪐', ikon: '🪐', fiender: ['ringstein', 'isbille', 'ringvokteren', 'saturnkongen'], bossNavn: 'Saturnkongen' },
-  { navn: 'Uranus 🩵', ikon: '🩵', fiender: ['isglimt', 'vindspokelse', 'frostbot', 'iskjempen'], bossNavn: 'Iskjempen' },
-  { navn: 'Neptun 🔵', ikon: '🔵', fiender: ['havmanet', 'isblekksprut', 'dypkraken', 'neptunherskeren'], bossNavn: 'Neptunherskeren' }
+  { navn: 'Venus 🟡', ikon: '🟡', klar: true, fiender: ['syresnegl', 'skydrage', 'giftgolem', 'skydronningen'], bossNavn: 'Skydronningen', bossTekst: '⚠️ Skydronningen kommer! 🟡',
+    bakke: 'venus', hinder: 'stein', base: ['rgba(150,120,60,0.95)', 'rgba(120,95,45,0.85)'], vignett: 'rgba(70,60,0,0.5)', naer: 'lasersverd', avstand: 'laser', steinFarge: ['#e0c070', '#8a6a2a'] },
+  { navn: 'Jorden 🌍', ikon: '🌍', klar: true, fiender: ['romvesenspeider', 'invasjonsbot', 'romvesenridder', 'moderskipet'], bossNavn: 'Moderskipet', bossTekst: '⚠️ Moderskipet kommer! 🌍',
+    bakke: 'jord', hinder: 'tre', base: ['rgba(150,115,70,0.9)', 'rgba(130,100,60,0.75)'], vignett: 'rgba(0,10,20,0.5)', naer: 'lasersverd', avstand: 'laser' },
+  { navn: 'Mars 🔴', ikon: '🔴', klar: true, fiender: ['stovkryp', 'marsbille', 'sandormen', 'stovstormkongen'], bossNavn: 'Støvstormkongen', bossTekst: '⚠️ Støvstormkongen kommer! 🔴',
+    bakke: 'mars', hinder: 'stein', base: ['rgba(140,70,40,0.95)', 'rgba(115,55,30,0.85)'], vignett: 'rgba(50,10,0,0.55)', naer: 'lasersverd', avstand: 'laser', steinFarge: ['#d9774a', '#6e2a10'] },
+  { navn: 'Jupiter 🟠', ikon: '🟠', klar: true, fiender: ['gassboble', 'lynvesen', 'stormgigant', 'denrodestormen'], bossNavn: 'Den røde stormen', bossTekst: '⚠️ Den røde stormen kommer! 🟠',
+    bakke: 'jupiter', hinder: 'stein', base: ['rgba(160,110,70,0.95)', 'rgba(135,90,55,0.85)'], vignett: 'rgba(50,20,0,0.5)', naer: 'lasersverd', avstand: 'laser', steinFarge: ['#e3b58a', '#8a5226'] },
+  { navn: 'Saturn 🪐', ikon: '🪐', klar: true, fiender: ['ringstein', 'isbille', 'ringvokteren', 'saturnkongen'], bossNavn: 'Saturnkongen', bossTekst: '⚠️ Saturnkongen kommer! 🪐',
+    bakke: 'saturn', hinder: 'stein', base: ['rgba(160,140,90,0.95)', 'rgba(135,115,70,0.85)'], vignett: 'rgba(40,30,0,0.45)', naer: 'lasersverd', avstand: 'laser', steinFarge: ['#e8dcb8', '#8d7a4e'] },
+  { navn: 'Uranus 🩵', ikon: '🩵', klar: true, fiender: ['isglimt', 'vindspokelse', 'frostbot', 'iskjempen'], bossNavn: 'Iskjempen', bossTekst: '⚠️ Iskjempen kommer! 🩵',
+    bakke: 'uranus', hinder: 'stein', base: ['rgba(110,150,160,0.95)', 'rgba(90,125,135,0.85)'], vignett: 'rgba(0,30,40,0.5)', naer: 'lasersverd', avstand: 'laser', steinFarge: ['#e6fbff', '#6fb6c4'] },
+  { navn: 'Neptun 🔵', ikon: '🔵', klar: true, fiender: ['havmanet', 'isblekksprut', 'dypkraken', 'neptunherskeren'], bossNavn: 'Neptunherskeren', bossTekst: '⚠️ Neptunherskeren kommer! 🔵',
+    bakke: 'neptun', hinder: 'stein', base: ['rgba(70,90,140,0.95)', 'rgba(55,72,115,0.85)'], vignett: 'rgba(0,0,40,0.6)', naer: 'lasersverd', avstand: 'laser', steinFarge: ['#b3d4ff', '#2c4a8a'] },
 ];
 const ALLE_PLANETER = VERDENER.length - 1;
 const SISTE_VERDEN = VERDENER.filter(v => v && v.klar).length; // siste spillbare planet
@@ -597,6 +604,7 @@ function lagBakke(verden) {
   const b = bakke.getContext('2d');
   const type = VERDENER[verden].bakke;
   if (type === 'merkur') { lagMerkurBakke(b); return; }
+  if (PLANETBAKKE[type]) { lagPlanetBakke(b, PLANETBAKKE[type]); return; }
   if (type === 'skip') { lagSkipBakke(b); return; }
   if (type === 'rom') { lagRomBakke(b); return; }
   if (type === 'orken') { lagOrkenBakke(b); return; }
@@ -885,6 +893,35 @@ const FIENDETYPER = {
   kratermonster: { liv: 10, fart: 0.4,  skade: 3, penger: 6,  xp: 14, r: 23 },
   varmebot:      { liv: 9,  fart: 0.5,  skade: 2, penger: 9,  xp: 18, r: 20, skyter: true, skjold: true },
   solkjempen:    { liv: 30, fart: 0.35, skade: 4, penger: 30, xp: 60, r: 40, boss: true },
+  // Venus–Neptun (0.2.0): enkel, medium, vanskelig (skyter, har skjold) og boss
+  syresnegl:       { liv: 4,  fart: 0.7,  skade: 1, penger: 2,  xp: 5,  r: 14 },
+  skydrage:        { liv: 8,  fart: 0.65, skade: 3, penger: 6,  xp: 14, r: 20 },
+  giftgolem:       { liv: 9,  fart: 0.5,  skade: 2, penger: 9,  xp: 18, r: 20, skyter: true, skjold: true },
+  skydronningen:   { liv: 30, fart: 0.35, skade: 4, penger: 30, xp: 60, r: 40, boss: true },
+  romvesenspeider: { liv: 3,  fart: 0.9,  skade: 1, penger: 2,  xp: 5,  r: 14 },
+  invasjonsbot:    { liv: 10, fart: 0.45, skade: 3, penger: 6,  xp: 14, r: 22 },
+  romvesenridder:  { liv: 9,  fart: 0.5,  skade: 2, penger: 9,  xp: 18, r: 20, skyter: true, skjold: true },
+  moderskipet:     { liv: 30, fart: 0.35, skade: 4, penger: 30, xp: 60, r: 40, boss: true },
+  stovkryp:        { liv: 3,  fart: 0.9,  skade: 1, penger: 2,  xp: 5,  r: 14 },
+  marsbille:       { liv: 10, fart: 0.45, skade: 3, penger: 6,  xp: 14, r: 22 },
+  sandormen:       { liv: 12, fart: 0.55, skade: 2, penger: 9,  xp: 18, r: 20, skyter: true, skjold: true },
+  stovstormkongen: { liv: 30, fart: 0.35, skade: 4, penger: 30, xp: 60, r: 40, boss: true },
+  gassboble:       { liv: 4,  fart: 0.6,  skade: 1, penger: 2,  xp: 5,  r: 16 },
+  lynvesen:        { liv: 10, fart: 0.45, skade: 3, penger: 6,  xp: 14, r: 22 },
+  stormgigant:     { liv: 9,  fart: 0.5,  skade: 2, penger: 9,  xp: 18, r: 20, skyter: true, skjold: true },
+  denrodestormen:  { liv: 30, fart: 0.35, skade: 4, penger: 30, xp: 60, r: 40, boss: true },
+  ringstein:       { liv: 3,  fart: 0.9,  skade: 1, penger: 2,  xp: 5,  r: 14 },
+  isbille:         { liv: 10, fart: 0.45, skade: 3, penger: 6,  xp: 14, r: 22 },
+  ringvokteren:    { liv: 9,  fart: 0.5,  skade: 2, penger: 9,  xp: 18, r: 20, skyter: true, skjold: true },
+  saturnkongen:    { liv: 30, fart: 0.35, skade: 4, penger: 30, xp: 60, r: 40, boss: true },
+  isglimt:         { liv: 3,  fart: 0.9,  skade: 1, penger: 2,  xp: 5,  r: 14 },
+  vindspokelse:    { liv: 10, fart: 0.45, skade: 3, penger: 6,  xp: 14, r: 22 },
+  frostbot:        { liv: 9,  fart: 0.5,  skade: 2, penger: 9,  xp: 18, r: 20, skyter: true, skjold: true },
+  iskjempen:       { liv: 30, fart: 0.35, skade: 4, penger: 30, xp: 60, r: 40, boss: true },
+  havmanet:        { liv: 3,  fart: 0.9,  skade: 1, penger: 2,  xp: 5,  r: 14 },
+  isblekksprut:    { liv: 10, fart: 0.45, skade: 3, penger: 6,  xp: 14, r: 22 },
+  dypkraken:       { liv: 9,  fart: 0.5,  skade: 2, penger: 9,  xp: 18, r: 20, skyter: true, skjold: true },
+  neptunherskeren: { liv: 30, fart: 0.35, skade: 4, penger: 30, xp: 60, r: 40, boss: true },
   skjelett: { liv: 3, fart: 0.8, skade: 1, penger: 2, xp: 5,  r: 14 },
   troll:    { liv: 7, fart: 0.45, skade: 2, penger: 5, xp: 12, r: 24 },
   trollkonge: { liv: 30, fart: 0.35, skade: 4, penger: 30, xp: 60, r: 40, boss: true },
@@ -951,7 +988,7 @@ function lagre() {
   if (!helt) return;
   try {
     const d = {};
-    for (const k of ['niva', 'xp', 'penger', 'drikker', 'pynt', 'bygget', 'verden', 'portalApen', 'sjekkpunkt', 'alleKlart', 'murLiv', 'tarnLiv', 'vansk', 'runde', 'seiret', 'spilletid', 'bosser', 'dodsfall', 'basenavn', 'hoyesteVerden']) d[k] = helt[k];
+    for (const k of ['niva', 'xp', 'penger', 'drikker', 'pynt', 'bygget', 'verden', 'portalApen', 'sjekkpunkt', 'alleKlart', 'murLiv', 'tarnLiv', 'vansk', 'runde', 'seiret', 'spilletid', 'bosser', 'dodsfall', 'basenavn', 'hoyesteVerden', 'seiretPa']) d[k] = helt[k];
     d.epoker = 7;
     localStorage.setItem(LAGRE_NOKKEL, JSON.stringify(d));
   } catch (e) { /* lagring er ikke tilgjengelig – spillet virker likevel */ }
@@ -970,6 +1007,8 @@ function hentLagring() {
     if (!d.epoker && h.verden >= 5) { h.verden += 1; h.alleKlart = false; }
     if (!VERDENER[h.verden]) h.verden = 1;
     if (!VANSKELIGHET[h.vansk]) h.vansk = 'lett';
+    // Seieren gjelder siste spillbare planet. Kommer det nye planeter, er sluttkampen ikke vunnet ennå (0.1.0 hadde bare Merkur).
+    if (h.seiret && h.seiretPa !== SISTE_VERDEN) { h.seiret = false; h.alleKlart = false; }
     if (!h.hoyesteVerden) h.hoyesteVerden = (h.alleKlart || h.seiret) ? SISTE_VERDEN : h.verden; // lagringer fra før tidsreisen
     return h;
   } catch (e) { return null; }
@@ -1002,7 +1041,7 @@ function nyBolge() {
       // SLUTTKAMPEN: bossen på siste spillbare planet er mye sterkere og får hjelp underveis
       const sb = fiender[fiender.length - 1];
       sb.sluttboss = true; sb.liv = sb.maksLiv = sb.maksLiv * (SLUTTBOSS_LIV[helt.vansk] || 3); sb.r = 52; sb.fase = 0; sb.penger *= 3;
-      visTekst('⚠️ SLUTTKAMPEN! ' + epoke().bossNavn + ' vil brenne opp basen din! ☀️', helt.x, helt.y - 85, '#ff5252', 24);
+      visTekst('⚠️ SLUTTKAMPEN! ' + epoke().bossNavn + ' vil ta over hele solsystemet! ' + epoke().ikon, helt.x, helt.y - 85, '#ff5252', 24);
     } else visTekst(epoke().bossTekst, helt.x, helt.y - 85, '#ff5252', 26);
   }
 }
@@ -1571,7 +1610,7 @@ function oppdater() {
       for (let i = 0; i < f.penger; i++) mynter.push({ x: f.x + Math.random() * 20 - 10, y: f.y + Math.random() * 20 - 10, verdi: 1, tid: 0 });
       gaXp(f.xp);
       visTekst('+' + f.xp + ' XP', f.x, f.y - 20, '#7fd4ff');
-      lagPartikler(f.x, f.y, PARTIKKELFARGE[f.type], f.boss ? 60 : 25, f.boss ? 8 : 5);
+      lagPartikler(f.x, f.y, PARTIKKELFARGE[f.type] || (PLANETFIGUR[f.type] ? PLANETFIGUR[f.type][1].a : '#fff'), f.boss ? 60 : 25, f.boss ? 8 : 5);
       if (f.boss) visTekst('Du slo bossen! 🏆', f.x, f.y - 60, '#ffd54a', 28);
     }
   }
@@ -1757,7 +1796,7 @@ function sluttbossFase(f) {
 }
 let seierVent = 0;
 function vunnet() {
-  helt.seiret = true; helt.alleKlart = true;
+  helt.seiret = true; helt.alleKlart = true; helt.seiretPa = SISTE_VERDEN;
   visTekst('🏆 DU SLO ' + epoke().bossNavn.toUpperCase() + '! 🏆', helt.x, helt.y - 110, '#ffd54a', 32);
   for (const f of fiender) if (!f.sluttboss) { f.liv = 0; lagPartikler(f.x, f.y, '#ffd54a', 15, 4); }
   fiendeskudd = [];
@@ -1803,8 +1842,9 @@ function tegnKampestein(t) {
   skygge(t.x + 5, t.y + r * 0.5, r, r * 0.5);
   ctx.beginPath(); ctx.ellipse(t.x, t.y, r, r * 0.8, t.form * 2, 0, Math.PI * 2);
   const g = ctx.createRadialGradient(t.x - r * 0.4, t.y - r * 0.4, 2, t.x, t.y, r);
-  g.addColorStop(0, '#bdbdbd'); g.addColorStop(1, '#5d5d5d'); ctx.fillStyle = g; ctx.fill();
-  if (epoke().bakke !== 'merkur') { ctx.fillStyle = 'rgba(85,139,47,0.6)'; ctx.beginPath(); ctx.ellipse(t.x + r * 0.2, t.y - r * 0.4, r * 0.4, r * 0.2, 0.3, 0, Math.PI * 2); ctx.fill(); } // mose (ikke på Merkur)
+  const sf = epoke().steinFarge || ['#bdbdbd', '#5d5d5d'];
+  g.addColorStop(0, sf[0]); g.addColorStop(1, sf[1]); ctx.fillStyle = g; ctx.fill();
+  if (!epoke().steinFarge) { ctx.fillStyle = 'rgba(85,139,47,0.6)'; ctx.beginPath(); ctx.ellipse(t.x + r * 0.2, t.y - r * 0.4, r * 0.4, r * 0.2, 0.3, 0, Math.PI * 2); ctx.fill(); } // mose (ikke på Merkur)
 }
 
 function tegnSoyle(t) {
@@ -2572,8 +2612,382 @@ function tegnSolkjempen(f) {
   tegnKrone(f.x, f.y - r - 6, '#ffd54a');
 }
 
+// ===================== PLANET 2–8 (Galaxy Era 0.2.0) =====================
+// Figurene tegnes etter størrelsen f.r, så samme tegning kan brukes til små fiender og store bosser.
+// Hver fiende får en fargepalett: a = lys, b = mørk, c = detalj/øyne.
+function retningsvinkel(f) { return Math.atan2(f.retning ? f.retning.y : 0, f.retning ? f.retning.x : 1); }
+function oyne(x, y, r, avstand, farge, pupill) {
+  sirkel(x - avstand, y, r, farge || '#fff'); sirkel(x + avstand, y, r, farge || '#fff');
+  sirkel(x - avstand + r * 0.25, y, r * 0.5, pupill || '#111'); sirkel(x + avstand + r * 0.25, y, r * 0.5, pupill || '#111');
+}
+function kropp(f, x, y, r, p) { if (f.blink > 0) sirkel(x, y, r, '#fff'); else kule(x, y, r, p.a, p.b); }
+
+function tegnSnegl(f, p) {
+  const r = f.r, v = retningsvinkel(f), k = Math.sin(f.gaaTid * 0.2) * 0.08;
+  skygge(f.x, f.y + r * 0.7, r * 1.1, r * 0.35);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  ctx.fillStyle = f.blink > 0 ? '#fff' : p.b; ctx.beginPath(); ctx.ellipse(r * 0.2, 0, r * (1.1 + k), r * 0.45, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle = p.b; ctx.lineWidth = 2; ctx.beginPath();
+  ctx.moveTo(r * 0.9, -r * 0.2); ctx.lineTo(r * 1.35, -r * 0.55); ctx.moveTo(r * 0.9, r * 0.2); ctx.lineTo(r * 1.35, r * 0.55); ctx.stroke();
+  sirkel(r * 1.35, -r * 0.55, r * 0.16, p.c); sirkel(r * 1.35, r * 0.55, r * 0.16, p.c);
+  ctx.restore();
+  // skall med spiral
+  kropp(f, f.x - Math.cos(v) * r * 0.2, f.y - Math.sin(v) * r * 0.2 - r * 0.15, r * 0.75, { a: p.a, b: p.b });
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 2; ctx.beginPath();
+  const cx = f.x - Math.cos(v) * r * 0.2, cy = f.y - Math.sin(v) * r * 0.2 - r * 0.15;
+  for (let a = 0; a < 10; a += 0.3) ctx.lineTo(cx + Math.cos(a) * a * r * 0.065, cy + Math.sin(a) * a * r * 0.065);
+  ctx.stroke();
+}
+
+function tegnDrage(f, p) {
+  const r = f.r, v = retningsvinkel(f), vinge = Math.sin(f.gaaTid * 0.35) * 0.5;
+  skygge(f.x, f.y + r * 1.2, r * 0.9, r * 0.3);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  ctx.fillStyle = p.b;
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(-r * 0.4, s * r * (1.6 + vinge), -r * 1.1, s * r * (1.3 + vinge)); ctx.quadraticCurveTo(-r * 0.6, s * r * 0.5, 0, 0); ctx.fill(); }
+  ctx.strokeStyle = p.b; ctx.lineWidth = r * 0.25; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-r * 0.6, 0); ctx.quadraticCurveTo(-r * 1.3, Math.sin(f.gaaTid * 0.2) * r * 0.5, -r * 1.7, 0); ctx.stroke();
+  ctx.restore();
+  kropp(f, f.x, f.y, r * 0.8, p);
+  const hx = f.x + Math.cos(v) * r * 0.75, hy = f.y + Math.sin(v) * r * 0.75;
+  kropp(f, hx, hy, r * 0.5, p);
+  oyne(hx, hy - r * 0.1, r * 0.15, r * 0.2, p.c);
+}
+
+function tegnGolem(f, p) {
+  const r = f.r, steg = Math.sin(f.gaaTid * 0.2) * r * 0.12;
+  skygge(f.x, f.y + r, r * 1.1, r * 0.35);
+  for (const s of [-1, 1]) kropp(f, f.x + s * r * 0.95, f.y + r * 0.1 + s * steg, r * 0.38, p); // armer
+  if (f.blink > 0) sirkel(f.x, f.y, r * 0.9, '#fff');
+  else {
+    const g = ctx.createRadialGradient(f.x - r * 0.3, f.y - r * 0.3, 2, f.x, f.y, r);
+    g.addColorStop(0, p.a); g.addColorStop(1, p.b); ctx.fillStyle = g;
+    ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + 0.2, rr = r * (0.85 + (i % 3) * 0.05); ctx.lineTo(f.x + Math.cos(a) * rr, f.y + Math.sin(a) * rr); } ctx.closePath(); ctx.fill();
+  }
+  sirkel(f.x - r * 0.4, f.y + r * 0.35, r * 0.13, p.c); sirkel(f.x + r * 0.35, f.y - r * 0.5, r * 0.1, p.c); // flekker
+  sirkel(f.x - r * 0.25, f.y - r * 0.15, r * 0.14, p.c); sirkel(f.x + r * 0.25, f.y - r * 0.15, r * 0.14, p.c);
+  sirkel(f.x - r * 0.25, f.y - r * 0.15, r * 0.06, '#fff'); sirkel(f.x + r * 0.25, f.y - r * 0.15, r * 0.06, '#fff');
+}
+
+function tegnSpeider(f, p) {
+  const r = f.r, steg = Math.sin(f.gaaTid * 0.35) * 3;
+  skygge(f.x, f.y + r * 0.9, r * 0.85, r * 0.35);
+  ctx.strokeStyle = p.b; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(f.x - r * 0.35, f.y + r * 0.4); ctx.lineTo(f.x - r * 0.5, f.y + r * 0.95 + steg); ctx.moveTo(f.x + r * 0.35, f.y + r * 0.4); ctx.lineTo(f.x + r * 0.5, f.y + r * 0.95 - steg);
+  ctx.moveTo(f.x, f.y - r * 0.8); ctx.lineTo(f.x, f.y - r * 1.4); ctx.stroke();
+  sirkel(f.x, f.y - r * 1.45, r * 0.18, p.c);
+  kropp(f, f.x, f.y, r, p);
+  sirkel(f.x, f.y - r * 0.1, r * 0.42, '#fff'); sirkel(f.x + (f.retning ? f.retning.x * r * 0.15 : 0), f.y - r * 0.1, r * 0.22, '#111');
+}
+
+function tegnBot(f, p) {
+  const r = f.r, v = retningsvinkel(f);
+  skygge(f.x, f.y + r * 0.9, r, r * 0.35);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  ctx.fillStyle = '#37474f'; ctx.fillRect(-r * 0.9, -r, r * 1.8, r * 0.3); ctx.fillRect(-r * 0.9, r * 0.7, r * 1.8, r * 0.3);
+  const g = ctx.createLinearGradient(-r, -r, r, r);
+  g.addColorStop(0, f.blink > 0 ? '#fff' : p.a); g.addColorStop(1, f.blink > 0 ? '#fff' : p.b);
+  ctx.fillStyle = g; ctx.fillRect(-r * 0.75, -r * 0.75, r * 1.5, r * 1.5);
+  ctx.fillStyle = '#263238'; ctx.fillRect(r * 0.25, -r * 0.55, r * 0.4, r * 1.1);
+  ctx.fillStyle = f.sikter > 0 ? '#fff' : p.c; ctx.fillRect(r * 0.42, -r * 0.45, r * 0.15, r * 0.9);
+  ctx.restore();
+}
+
+function tegnRidder(f, p) {
+  const r = f.r, v = retningsvinkel(f), steg = Math.sin(f.gaaTid * 0.3) * 3;
+  skygge(f.x, f.y + r * 0.9, r, r * 0.35);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  ctx.strokeStyle = '#cfd8dc'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-r * 0.2, r * 0.8); ctx.lineTo(r * 1.6 + steg, r * 0.8); ctx.stroke(); // spyd
+  sirkel(r * 1.6 + steg, r * 0.8, 4, p.c);
+  ctx.fillStyle = '#90a4ae'; ctx.beginPath(); ctx.ellipse(r * 0.6, -r * 0.75, r * 0.3, r * 0.55, 0, 0, 7); ctx.fill(); // skjold
+  ctx.strokeStyle = p.c; ctx.lineWidth = 2; ctx.stroke();
+  ctx.restore();
+  kropp(f, f.x, f.y, r * 0.85, p);
+  ctx.fillStyle = '#78909c'; ctx.beginPath(); ctx.arc(f.x, f.y - r * 0.15, r * 0.7, Math.PI, 0); ctx.fill(); // hjelm
+  ctx.fillStyle = p.c; ctx.fillRect(f.x - r * 0.5, f.y - r * 0.2, r, r * 0.15);
+}
+
+function tegnUfo(f, p) {
+  const r = f.r, sveve = Math.sin(tid * 0.06) * r * 0.08;
+  skygge(f.x, f.y + r * 1.1, r * 1.3, r * 0.3);
+  const y = f.y + sveve;
+  if (f.blink > 0) { ctx.fillStyle = '#fff'; } else { const g = ctx.createLinearGradient(f.x, y - r * 0.4, f.x, y + r * 0.4); g.addColorStop(0, p.a); g.addColorStop(1, p.b); ctx.fillStyle = g; }
+  ctx.beginPath(); ctx.ellipse(f.x, y, r * 1.4, r * 0.5, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(150,230,255,0.8)'; ctx.beginPath(); ctx.ellipse(f.x, y - r * 0.3, r * 0.6, r * 0.5, 0, Math.PI, 0); ctx.fill();
+  sirkel(f.x, y - r * 0.45, r * 0.18, '#76ff03'); sirkel(f.x, y - r * 0.47, r * 0.07, '#111');
+  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + tid * 0.05; sirkel(f.x + Math.cos(a) * r * 1.15, y + Math.sin(a) * r * 0.35, r * 0.08, (i + Math.floor(tid / 10)) % 2 ? p.c : '#fff'); }
+}
+
+function tegnKryp(f, p) {
+  const r = f.r, v = retningsvinkel(f), steg = Math.sin(f.gaaTid * 0.5);
+  skygge(f.x, f.y + r * 0.6, r, r * 0.3);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  ctx.strokeStyle = p.b; ctx.lineWidth = 2;
+  for (const s of [-1, 1]) for (let k = 0; k < 3; k++) { const x0 = -r * 0.5 + k * r * 0.5; ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0 + (k % 2 ? steg : -steg) * 4, s * r * 1.2); ctx.stroke(); }
+  ctx.restore();
+  kropp(f, f.x, f.y, r * 0.8, p);
+  oyne(f.x + Math.cos(v) * r * 0.4, f.y + Math.sin(v) * r * 0.4 - r * 0.1, r * 0.2, r * 0.25, p.c);
+}
+
+function tegnBille(f, p) {
+  const r = f.r, v = retningsvinkel(f), steg = Math.sin(f.gaaTid * 0.4);
+  skygge(f.x, f.y + r * 0.8, r * 1.1, r * 0.35);
+  ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(v);
+  ctx.strokeStyle = '#212121'; ctx.lineWidth = 3;
+  for (const s of [-1, 1]) for (let k = 0; k < 3; k++) { const x0 = -r * 0.5 + k * r * 0.5; ctx.beginPath(); ctx.moveTo(x0, s * r * 0.5); ctx.lineTo(x0 + (k % 2 ? steg : -steg) * 5, s * r * 1.15); ctx.stroke(); }
+  ctx.fillStyle = '#212121'; ctx.beginPath(); ctx.arc(r * 0.8, 0, r * 0.35, 0, 7); ctx.fill();
+  ctx.strokeStyle = p.c; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(r * 1, -r * 0.15); ctx.lineTo(r * 1.45, -r * 0.4); ctx.moveTo(r * 1, r * 0.15); ctx.lineTo(r * 1.45, r * 0.4); ctx.stroke();
+  const g = ctx.createRadialGradient(-r * 0.2, -r * 0.3, 2, 0, 0, r);
+  g.addColorStop(0, f.blink > 0 ? '#fff' : p.a); g.addColorStop(1, f.blink > 0 ? '#fff' : p.b);
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(-r * 0.1, 0, r * 0.95, r * 0.75, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-r, 0); ctx.lineTo(r * 0.8, 0); ctx.stroke();
+  sirkel(-r * 0.4, -r * 0.35, r * 0.12, p.c); sirkel(-r * 0.4, r * 0.35, r * 0.12, p.c);
+  ctx.restore();
+}
+
+function tegnOrm(f, p) {
+  const r = f.r, v = retningsvinkel(f);
+  for (let i = 5; i >= 0; i--) {
+    const d = i * r * 0.55, w = Math.sin(f.gaaTid * 0.2 - i * 0.8) * r * 0.35;
+    const x = f.x - Math.cos(v) * d - Math.sin(v) * w, y = f.y - Math.sin(v) * d + Math.cos(v) * w;
+    const rr = r * (0.75 - i * 0.06);
+    if (i === 5) skygge(x, y + rr, rr, rr * 0.3);
+    kropp(f, x, y, rr, p);
+    if (i > 0) sirkel(x, y - rr * 0.3, rr * 0.15, 'rgba(0,0,0,0.25)');
+  }
+  const mx = f.x + Math.cos(v) * r * 0.4, my = f.y + Math.sin(v) * r * 0.4;
+  sirkel(mx, my, r * 0.35, '#3e2723');
+  for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; sirkel(mx + Math.cos(a) * r * 0.3, my + Math.sin(a) * r * 0.3, r * 0.07, '#fff'); }
+  oyne(f.x, f.y - r * 0.45, r * 0.13, r * 0.3, p.c);
+}
+
+function tegnStorm(f, p) {
+  const r = f.r;
+  skygge(f.x, f.y + r, r, r * 0.3);
+  for (let k = 0; k < 3; k++) {
+    ctx.strokeStyle = [p.a, p.b, p.c][k]; ctx.lineWidth = r * 0.18; ctx.lineCap = 'round'; ctx.beginPath();
+    for (let a = 0; a < 9; a += 0.2) { const rr = a / 9 * r * 1.1, w = a + tid * 0.08 + k * 2.1; ctx.lineTo(f.x + Math.cos(w) * rr, f.y + Math.sin(w) * rr * 0.8); }
+    ctx.stroke();
+  }
+  if (f.blink > 0) sirkel(f.x, f.y, r * 0.5, '#fff'); else kule(f.x, f.y, r * 0.5, p.a, p.b);
+  oyne(f.x, f.y - r * 0.1, r * 0.13, r * 0.22, '#fff', '#b71c1c');
+}
+
+function tegnBoble(f, p) {
+  const r = f.r, sveve = Math.sin(f.gaaTid * 0.12) * r * 0.15, y = f.y + sveve;
+  skygge(f.x, f.y + r * 1.2, r * 0.7, r * 0.25);
+  ctx.globalAlpha = 0.85;
+  if (f.blink > 0) sirkel(f.x, y, r, '#fff'); else kule(f.x, y, r, p.a, p.b);
+  ctx.globalAlpha = 1;
+  sirkel(f.x - r * 0.4, y - r * 0.45, r * 0.2, 'rgba(255,255,255,0.7)');
+  oyne(f.x, y, r * 0.17, r * 0.3, '#fff');
+  ctx.strokeStyle = p.c; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(f.x, y + r * 0.3, r * 0.2, 0.2, Math.PI - 0.2); ctx.stroke();
+}
+
+function tegnLynvesen(f, p) {
+  const r = f.r;
+  skygge(f.x, f.y + r, r * 0.8, r * 0.3);
+  ctx.strokeStyle = p.c; ctx.lineWidth = 2;
+  for (let k = 0; k < 5; k++) {
+    const a = k / 5 * Math.PI * 2 + tid * 0.1; ctx.beginPath(); ctx.moveTo(f.x, f.y);
+    for (let s = 1; s <= 4; s++) ctx.lineTo(f.x + Math.cos(a) * r * 0.4 * s + (Math.random() - 0.5) * 8, f.y + Math.sin(a) * r * 0.4 * s + (Math.random() - 0.5) * 8);
+    ctx.stroke();
+  }
+  ctx.fillStyle = f.blink > 0 ? '#fff' : p.a; ctx.beginPath();
+  for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, rr = i % 2 ? r * 0.55 : r; ctx.lineTo(f.x + Math.cos(a) * rr, f.y + Math.sin(a) * rr); }
+  ctx.closePath(); ctx.fill(); ctx.strokeStyle = p.b; ctx.stroke();
+  oyne(f.x, f.y, r * 0.15, r * 0.22, '#fff');
+}
+
+function tegnFlytestein(f, p) {
+  const r = f.r, sveve = Math.sin(f.gaaTid * 0.1) * r * 0.15;
+  skygge(f.x, f.y + r * 1.1, r * 0.8, r * 0.25);
+  const y = f.y + sveve;
+  if (f.blink > 0) sirkel(f.x, y, r * 0.85, '#fff');
+  else {
+    const g = ctx.createRadialGradient(f.x - r * 0.3, y - r * 0.3, 2, f.x, y, r); g.addColorStop(0, p.a); g.addColorStop(1, p.b); ctx.fillStyle = g;
+    ctx.beginPath(); for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2, rr = r * (0.75 + (i % 2) * 0.12); ctx.lineTo(f.x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); ctx.fill();
+  }
+  oyne(f.x, y - r * 0.1, r * 0.14, r * 0.22, p.c);
+  ctx.strokeStyle = p.c; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(f.x, y, r * 1.25, r * 0.3, -0.25, 0, 7); ctx.stroke();
+}
+
+function tegnVokter(f, p) {
+  const r = f.r;
+  skygge(f.x, f.y + r, r, r * 0.3);
+  ctx.strokeStyle = p.c; ctx.lineWidth = r * 0.15;
+  ctx.beginPath(); ctx.ellipse(f.x, f.y, r * 1.35, r * 0.4, -0.3, Math.PI, Math.PI * 2); ctx.stroke(); // ringen bak
+  kropp(f, f.x, f.y, r * 0.85, p);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(f.x - r * 0.55, f.y - r * 0.3, r * 1.1, r * 0.3);
+  sirkel(f.x - r * 0.25, f.y - r * 0.15, r * 0.1, p.c); sirkel(f.x + r * 0.25, f.y - r * 0.15, r * 0.1, p.c);
+  ctx.strokeStyle = p.c; ctx.lineWidth = r * 0.15;
+  ctx.beginPath(); ctx.ellipse(f.x, f.y, r * 1.35, r * 0.4, -0.3, 0, Math.PI); ctx.stroke(); // ringen foran
+}
+
+function tegnKrystall(f, p) {
+  const r = f.r, sveve = Math.sin(f.gaaTid * 0.15) * r * 0.15, y = f.y + sveve, snu = Math.sin(tid * 0.05) * 0.2;
+  skygge(f.x, f.y + r * 1.1, r * 0.6, r * 0.2);
+  ctx.save(); ctx.translate(f.x, y); ctx.rotate(snu);
+  ctx.fillStyle = f.blink > 0 ? '#fff' : p.a; ctx.beginPath(); ctx.moveTo(0, -r * 1.1); ctx.lineTo(r * 0.6, 0); ctx.lineTo(0, r * 1.1); ctx.lineTo(-r * 0.6, 0); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.moveTo(0, -r * 1.1); ctx.lineTo(r * 0.6, 0); ctx.lineTo(0, 0); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = p.b; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, -r * 1.1); ctx.lineTo(r * 0.6, 0); ctx.lineTo(0, r * 1.1); ctx.lineTo(-r * 0.6, 0); ctx.closePath(); ctx.stroke();
+  ctx.restore();
+  oyne(f.x, y, r * 0.13, r * 0.2, '#fff', p.c);
+}
+
+function tegnSpokelse(f, p) {
+  const r = f.r, sveve = Math.sin(f.gaaTid * 0.15) * 3, x = f.x, y = f.y + sveve;
+  ctx.globalAlpha = 0.85; ctx.fillStyle = f.blink > 0 ? '#fff' : p.a;
+  ctx.beginPath(); ctx.arc(x, y - r * 0.2, r * 0.8, Math.PI, 0);
+  for (let i = 0; i <= 4; i++) ctx.lineTo(x + r * 0.8 - i * r * 0.4, y + r * 0.7 + (i % 2 ? -r * 0.25 : 0) + Math.sin(tid * 0.2 + i) * 3);
+  ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+  ctx.strokeStyle = p.b; ctx.lineWidth = 2;
+  for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(x - r * 1.1, y - r * 0.4 + k * r * 0.4, r * 0.25, -1, 1); ctx.stroke(); } // vindkast
+  sirkel(x - r * 0.3, y - r * 0.25, r * 0.15, p.c); sirkel(x + r * 0.3, y - r * 0.25, r * 0.15, p.c);
+  ctx.fillStyle = p.c; ctx.beginPath(); ctx.ellipse(x, y + r * 0.15, r * 0.15, r * 0.2, 0, 0, 7); ctx.fill();
+}
+
+function tegnManet(f, p) {
+  const r = f.r, puls = Math.sin(f.gaaTid * 0.15) * r * 0.1, y = f.y - r * 0.2;
+  ctx.strokeStyle = p.b; ctx.lineWidth = 2;
+  for (let k = 0; k < 6; k++) { const x0 = f.x - r * 0.6 + k * r * 0.24; ctx.beginPath(); ctx.moveTo(x0, y); ctx.quadraticCurveTo(x0 + Math.sin(tid * 0.1 + k) * 6, y + r * 0.9, x0 + Math.sin(tid * 0.1 + k + 1) * 4, y + r * 1.5); ctx.stroke(); }
+  ctx.globalAlpha = 0.9; ctx.fillStyle = f.blink > 0 ? '#fff' : p.a;
+  ctx.beginPath(); ctx.ellipse(f.x, y, r * 0.85 + puls, r * 0.7, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+  sirkel(f.x - r * 0.25, y - r * 0.25, r * 0.1, p.c); sirkel(f.x + r * 0.25, y - r * 0.25, r * 0.1, p.c);
+}
+
+function tegnBlekk(f, p) {
+  const r = f.r;
+  skygge(f.x, f.y + r, r * 1.2, r * 0.35);
+  ctx.strokeStyle = p.b; ctx.lineWidth = r * 0.22; ctx.lineCap = 'round';
+  for (let i = 0; i < 8; i++) {
+    const a = Math.PI * 0.1 + i * Math.PI * 0.115, w = Math.sin(f.gaaTid * 0.15 + i) * r * 0.3;
+    ctx.beginPath(); ctx.moveTo(f.x + Math.cos(a) * r * 0.5, f.y + Math.sin(a) * r * 0.5);
+    ctx.quadraticCurveTo(f.x + Math.cos(a) * r * 1.2 + w, f.y + Math.sin(a) * r * 1.1, f.x + Math.cos(a) * r * 1.6, f.y + Math.sin(a) * r * 1.4 + w); ctx.stroke();
+  }
+  if (f.blink > 0) sirkel(f.x, f.y - r * 0.15, r * 0.85, '#fff'); else { ctx.beginPath(); ctx.ellipse(f.x, f.y - r * 0.2, r * 0.8, r, 0, 0, 7); const g = ctx.createRadialGradient(f.x - r * 0.3, f.y - r * 0.6, 2, f.x, f.y, r * 1.1); g.addColorStop(0, p.a); g.addColorStop(1, p.b); ctx.fillStyle = g; ctx.fill(); }
+  oyne(f.x, f.y, r * 0.18, r * 0.3, '#fff', p.c);
+}
+
+function tegnTrefork(x, y, r) {
+  ctx.strokeStyle = '#ffd54a'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x, y + r); ctx.lineTo(x, y - r);
+  ctx.moveTo(x - r * 0.35, y - r * 0.6); ctx.lineTo(x - r * 0.35, y - r * 0.95); ctx.moveTo(x + r * 0.35, y - r * 0.6); ctx.lineTo(x + r * 0.35, y - r * 0.95);
+  ctx.moveTo(x - r * 0.35, y - r * 0.6); ctx.lineTo(x + r * 0.35, y - r * 0.6); ctx.stroke();
+}
+
+// type: [tegning, farger { a: lys, b: mørk, c: detalj }, krone (boss)]
+const PLANETFIGUR = {
+  // Venus
+  syresnegl:      [tegnSnegl, { a: '#d4e157', b: '#827717', c: '#76ff03' }],
+  skydrage:       [tegnDrage, { a: '#fff59d', b: '#c0a030', c: '#ff6f00' }],
+  giftgolem:      [tegnGolem, { a: '#9ccc65', b: '#33691e', c: '#ccff00' }],
+  skydronningen:  [tegnDrage, { a: '#fff9c4', b: '#e6b800', c: '#d500f9' }, '#ea80fc'],
+  // Jorden
+  romvesenspeider:[tegnSpeider, { a: '#b2ff59', b: '#33691e', c: '#ffeb3b' }],
+  invasjonsbot:   [tegnBot, { a: '#cfd8dc', b: '#455a64', c: '#ff1744' }],
+  romvesenridder: [tegnRidder, { a: '#ce93d8', b: '#4a148c', c: '#00e5ff' }],
+  moderskipet:    [tegnUfo, { a: '#eceff1', b: '#546e7a', c: '#ff1744' }],
+  // Mars
+  stovkryp:       [tegnKryp, { a: '#ff8a65', b: '#8d3a1a', c: '#ffeb3b' }],
+  marsbille:      [tegnBille, { a: '#e57373', b: '#7f1d1d', c: '#ffcc80' }],
+  sandormen:      [tegnOrm, { a: '#d7a86e', b: '#7b4a1e', c: '#ff5722' }],
+  stovstormkongen:[tegnStorm, { a: '#ffab91', b: '#bf360c', c: '#d7a86e' }, '#ffd54a'],
+  // Jupiter
+  gassboble:      [tegnBoble, { a: '#ffe0b2', b: '#e65100', c: '#6d4c41' }],
+  lynvesen:       [tegnLynvesen, { a: '#fff176', b: '#f9a825', c: '#80d8ff' }],
+  stormgigant:    [tegnGolem, { a: '#ffcc80', b: '#a1521b', c: '#fff3e0' }],
+  denrodestormen: [tegnStorm, { a: '#ff7043', b: '#b71c1c', c: '#ffcc80' }, '#ffd54a'],
+  // Saturn
+  ringstein:      [tegnFlytestein, { a: '#d7ccc8', b: '#6d5c50', c: '#ffe082' }],
+  isbille:        [tegnBille, { a: '#e1f5fe', b: '#4f83a6', c: '#00e5ff' }],
+  ringvokteren:   [tegnVokter, { a: '#ffe082', b: '#a07a1c', c: '#fff8e1' }],
+  saturnkongen:   [tegnVokter, { a: '#fff3c4', b: '#b8860b', c: '#ffd54a' }, '#ffd54a'],
+  // Uranus
+  isglimt:        [tegnKrystall, { a: '#b2ebf2', b: '#00838f', c: '#006064' }],
+  vindspokelse:   [tegnSpokelse, { a: '#e0f7fa', b: '#80deea', c: '#263238' }],
+  frostbot:       [tegnBot, { a: '#e0f7fa', b: '#26a69a', c: '#00e5ff' }],
+  iskjempen:      [tegnGolem, { a: '#e0f7fa', b: '#4dd0e1', c: '#006064' }, '#80deea'],
+  // Neptun
+  havmanet:       [tegnManet, { a: 'rgba(129,212,250,0.85)', b: '#0277bd', c: '#e1f5fe' }],
+  isblekksprut:   [tegnBlekk, { a: '#b3e5fc', b: '#1565c0', c: '#0d47a1' }],
+  dypkraken:      [tegnBlekk, { a: '#5c6bc0', b: '#1a237e', c: '#ff1744' }],
+  neptunherskeren:[tegnBlekk, { a: '#4fc3f7', b: '#0d2a6b', c: '#ffd54a' }, '#ffd54a']
+};
+function tegnPlanetfigur(f) {
+  const d = PLANETFIGUR[f.type]; if (!d) return false;
+  d[0](f, d[1]);
+  if (d[2]) tegnKrone(f.x, f.y - f.r * (d[0] === tegnUfo ? 0.9 : 1.15) - 6, d[2]);
+  if (f.type === 'neptunherskeren') tegnTrefork(f.x + f.r * 1.2, f.y - f.r * 0.3, f.r * 0.8);
+  if (f.skjold && f.liv > f.maksLiv / 2) {
+    ctx.strokeStyle = 'rgba(128,216,255,' + (0.55 + Math.sin(tid * 0.15) * 0.2) + ')'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(f.x, f.y, f.r * 1.35 + 4, 0, Math.PI * 2); ctx.stroke();
+  }
+  return true;
+}
+
+// ===================== PLANETBAKKENE =====================
+// o: farger [øverst, nederst], flekker, kratere (antall), sprekker (farge), striper, skyer, pytter, ringer, sno, flekk (Jupiters røde flekk)
+function lagPlanetBakke(b, o) {
+  const W = VERDEN_BREDDE, H = VERDEN_HOYDE, naerBase = (x, y, ekstra) => Math.hypot(x - BASE_X, y - BASE_Y) < BASE_RADIUS + ekstra;
+  const g = b.createLinearGradient(0, 0, W, H); g.addColorStop(0, o.farger[0]); g.addColorStop(1, o.farger[1]);
+  b.fillStyle = g; b.fillRect(0, 0, W, H);
+  if (o.striper) for (let y = 0, i = 0; y < H; i++) {
+    const h = 40 + ((i * 53) % 90); b.fillStyle = o.striper[i % o.striper.length]; b.globalAlpha = 0.55; b.beginPath(); b.moveTo(0, y);
+    for (let x = 0; x <= W; x += 40) b.lineTo(x, y + Math.sin(x / 140 + i) * 14); for (let x = W; x >= 0; x -= 40) b.lineTo(x, y + h + Math.sin(x / 160 + i * 2) * 14);
+    b.closePath(); b.fill(); y += h;
+  }
+  b.globalAlpha = 1;
+  for (let i = 0; i < 1600; i++) {
+    b.fillStyle = o.flekker[i % o.flekker.length]; b.globalAlpha = 0.3;
+    b.beginPath(); b.ellipse(Math.random() * W, Math.random() * H, 8 + Math.random() * 40, 5 + Math.random() * 16, o.striper ? 0 : Math.random() * 3, 0, Math.PI * 2); b.fill();
+  }
+  b.globalAlpha = 1;
+  if (o.flekk) { // Jupiters røde flekk: en myk, virvlende storm
+    const f = o.flekk; b.save(); b.translate(f.x, f.y); b.scale(1.6, 1);
+    const fg = b.createRadialGradient(0, 0, 0, 0, 0, f.r); fg.addColorStop(0, 'rgba(190,60,35,0.85)'); fg.addColorStop(0.6, 'rgba(205,95,55,0.6)'); fg.addColorStop(1, 'rgba(220,140,90,0)');
+    b.fillStyle = fg; b.beginPath(); b.arc(0, 0, f.r, 0, 7); b.fill();
+    b.strokeStyle = 'rgba(255,215,180,0.35)'; b.lineWidth = 4; b.beginPath();
+    for (let a = 0; a < 14; a += 0.15) { const rr = a / 14 * f.r * 0.85; b.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } b.stroke(); b.restore();
+  }
+  if (o.pytter) for (let i = 0; i < 22; i++) {
+    const x = Math.random() * W, y = Math.random() * H, r = 20 + Math.random() * 50; if (naerBase(x, y, r + 20)) continue;
+    b.fillStyle = 'rgba(0,0,0,0.25)'; b.beginPath(); b.ellipse(x, y + 4, r + 6, r * 0.6 + 4, 0, 0, 7); b.fill();
+    b.fillStyle = o.pytter; b.beginPath(); b.ellipse(x, y, r, r * 0.6, 0, 0, 7); b.fill();
+    b.fillStyle = 'rgba(255,255,255,0.35)'; b.beginPath(); b.ellipse(x - r * 0.3, y - r * 0.2, r * 0.3, r * 0.1, 0, 0, 7); b.fill();
+  }
+  if (o.sprekker) { b.lineCap = 'round'; for (let i = 0; i < 24; i++) {
+    let x = Math.random() * W, y = Math.random() * H; if (naerBase(x, y, 60)) continue; b.strokeStyle = o.sprekker; b.lineWidth = 2.5; b.beginPath(); b.moveTo(x, y);
+    for (let k = 0; k < 6; k++) { x += (Math.random() - 0.5) * 80; y += (Math.random() - 0.5) * 80; b.lineTo(x, y); } b.stroke(); } }
+  for (let i = 0; i < (o.kratere || 0); i++) {
+    const x = Math.random() * W, y = Math.random() * H, r = 12 + Math.pow(Math.random(), 2) * 60; if (naerBase(x, y, r)) continue;
+    b.fillStyle = 'rgba(0,0,0,0.3)'; b.beginPath(); b.ellipse(x, y, r, r * 0.8, 0, 0, Math.PI * 2); b.fill();
+    b.strokeStyle = 'rgba(255,255,255,0.25)'; b.lineWidth = Math.max(2, r * 0.12); b.beginPath(); b.ellipse(x, y, r * 0.86, r * 0.68, 0, Math.PI * 0.95, Math.PI * 1.9); b.stroke();
+  }
+  if (o.ringer) { b.lineWidth = 26; for (let k = 0; k < 4; k++) { b.strokeStyle = ['rgba(90,70,40,0.18)', 'rgba(255,240,200,0.18)'][k % 2]; b.beginPath(); b.ellipse(W / 2, -H * 0.9, W * (0.8 + k * 0.07), H * (1.3 + k * 0.07), 0, 0, Math.PI); b.stroke(); } }
+  if (o.sno) for (let i = 0; i < 500; i++) { b.fillStyle = 'rgba(255,255,255,' + (0.3 + Math.random() * 0.5) + ')'; b.beginPath(); b.arc(Math.random() * W, Math.random() * H, 1 + Math.random() * 2, 0, 7); b.fill(); }
+  for (let i = 0; i < 200; i++) { // småstein
+    const x = Math.random() * W, y = Math.random() * H, r = 2 + Math.random() * 4;
+    b.fillStyle = 'rgba(0,0,0,0.18)'; b.beginPath(); b.ellipse(x + 2, y + 2, r, r * 0.6, 0, 0, 7); b.fill();
+    b.fillStyle = o.flekker[i % o.flekker.length]; b.beginPath(); b.ellipse(x, y, r, r * 0.6, 0, 0, 7); b.fill();
+  }
+  if (o.skyer) for (let i = 0; i < 30; i++) {
+    const x = Math.random() * W, y = Math.random() * H, r = 60 + Math.random() * 120, sg = b.createRadialGradient(x, y, 0, x, y, r);
+    sg.addColorStop(0, o.skyer); sg.addColorStop(1, 'rgba(0,0,0,0)'); b.fillStyle = sg; b.beginPath(); b.arc(x, y, r, 0, 7); b.fill();
+  }
+}
+const PLANETBAKKE = {
+  venus:   { farger: ['#d4a94e', '#8a6424'], flekker: ['#e0be6a', '#b98d3a', '#c99d48', '#a57a2c'], kratere: 25, sprekker: 'rgba(255,120,0,0.6)', pytter: 'rgba(180,230,30,0.85)', skyer: 'rgba(240,230,140,0.28)' },
+  mars:    { farger: ['#c1592c', '#7d2f14'], flekker: ['#d06a3a', '#a84a22', '#e08050', '#8f3a1a'], kratere: 55, skyer: 'rgba(230,140,90,0.22)' },
+  jupiter: { farger: ['#e8c9a0', '#b07040'], flekker: ['#f0d8b0', '#c98a50', '#e0b080'], striper: ['#f2dfc0', '#c47a3a', '#e8c49a', '#a85a2a', '#f6e6cc'], flekk: { x: 1300, y: 950, r: 110, farge: 'rgba(200,70,40,0.75)' } },
+  saturn:  { farger: ['#e9d9a6', '#b59a5c'], flekker: ['#f2e6bd', '#cdb57a', '#dcc68c'], striper: ['#f3e7c4', '#d8c08a', '#efe0b2'], kratere: 15, ringer: true },
+  uranus:  { farger: ['#a8e6ef', '#5bb8c8'], flekker: ['#c4f0f6', '#8ad6e2', '#e6fbfd'], kratere: 15, sprekker: 'rgba(255,255,255,0.75)', sno: true },
+  neptun:  { farger: ['#2f5fb8', '#142c66'], flekker: ['#3c6fd0', '#244a9c', '#4a80e0'], pytter: 'rgba(10,25,70,0.85)', sprekker: 'rgba(170,220,255,0.55)', sno: true }
+};
+
 function tegnFiende(f) {
-  if (f.type === 'solflamme') tegnSolflamme(f);
+  if (tegnPlanetfigur(f)) { /* Venus–Neptun */ }
+  else if (f.type === 'solflamme') tegnSolflamme(f);
   else if (f.type === 'kratermonster') tegnKratermonster(f);
   else if (f.type === 'varmebot') tegnVarmebot(f);
   else if (f.type === 'solkjempen') tegnSolkjempen(f);
@@ -3037,7 +3451,7 @@ function oppdaterMeny() {
   document.getElementById('menyEpoke').textContent = start ? VERDENSNAVN[helt.verden] : 'Du kom til bølge ' + bolge + '. Du starter igjen på bølge ' + (helt.sjekkpunkt + 1) + '.';
   document.getElementById('menyLagret').textContent = start ? (helt.niva > 1 || helt.verden > 1 ? '💾 Fortsetter der du slapp: nivå ' + helt.niva : '')
     : 'Du beholder nivå ' + helt.niva + ', ' + helt.penger + ' 💰 og alt i basen 🏰';
-  document.getElementById('menyMaal').textContent = start ? 'Forsvar basen på Merkur i 10 bølger og slå Solkjempen!' : 'Tips: Bygg i basen for å bli sterkere.';
+  document.getElementById('menyMaal').textContent = start ? 'Forsvar basen på planetene i solsystemet! Klar 10 bølger for å reise videre.' : 'Tips: Bygg i basen for å bli sterkere.';
   document.getElementById('menyStyring').style.display = start ? '' : 'none';
   document.getElementById('menyStart').textContent = start ? '▶ Start' : '▶ Prøv igjen';
   document.querySelector('#meny .evn-merke').style.display = start ? '' : 'none';
@@ -3054,7 +3468,7 @@ function oppdaterMeny() {
   if (tilstand === 'seier') {
     const v = vg();
     document.getElementById('menyTittel').textContent = '🏆 Du klarte det!';
-    document.getElementById('menyEpoke').textContent = 'Du slo ' + VERDENER[SISTE_VERDEN].bossNavn + ' og reddet ' + VERDENSNAVN[SISTE_VERDEN].split(' ')[0] + '! 🚀 ' + (SISTE_VERDEN < ALLE_PLANETER ? VERDENSNAVN[SISTE_VERDEN + 1].split(' ')[0] + ' kommer snart.' : '');
+    document.getElementById('menyEpoke').textContent = 'Du slo ' + VERDENER[SISTE_VERDEN].bossNavn + (SISTE_VERDEN === ALLE_PLANETER ? ' og reddet hele solsystemet – fra Merkur til Neptun! 🚀' : ' og reddet ' + VERDENSNAVN[SISTE_VERDEN].split(' ')[0] + '! 🚀 ' + (SISTE_VERDEN < ALLE_PLANETER ? VERDENSNAVN[SISTE_VERDEN + 1].split(' ')[0] + ' kommer snart.' : ''));
     lagretEl.textContent = '⏱️ ' + spilletidTekst(helt.spilletid || 0) + ' · ⭐ Nivå ' + helt.niva + ' · 👑 ' + (helt.bosser || 0) + ' bosser · 💀 ' + (helt.dodsfall || 0) + ' ganger slått ut · ' + v.ikon + ' ' + v.navn + ((helt.runde || 0) ? ' · Runde ' + (helt.runde + 1) : '');
     document.getElementById('menyMaal').textContent = 'Vil du spille videre, eller prøve en ny runde der fiendene er sterkere? Du beholder basen og nivået. Med «Velg planet» kan du spille en tidligere planet på nytt.';
     document.getElementById('menyStart').textContent = '♾️ Fortsett å spille';
