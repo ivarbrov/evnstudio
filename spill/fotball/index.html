@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>EVN Fotball 0.1.0 – EVN Studio</title>
+<title>EVN Fotball 0.1.1 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -145,7 +145,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.1.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.1.1</div>
   </div>
 </div>
 
@@ -444,7 +444,7 @@ window.EVNPause = function (cfg) {
 <script src="../../vendor/three-r128.min.js"></script>
 <script>
 'use strict';
-const VERSJON = '0.1.0';
+const VERSJON = '0.1.1';
 const TEST = location.hash === '#test';
 const LAGRING = TEST ? 'evn-fotball-test' : 'evn-fotball-v1';
 const LYD_NOKKEL = TEST ? 'evn-fotball-test-lyd' : 'evn-fotball-lyd';
@@ -456,11 +456,11 @@ const $ = id => document.getElementById(id);
 const KAMP_TID = 600, OMGANG = 300, PENGER_PER_MAAL = 10;
 const L = 20, B = 13, MAAL_B = 3, MAAL_H = 2.4;
 const LAG = [
-  { navn: 'Snegle United', ik: '🐌', farge: 0xf28c28, fart: 4.2, skudd: 0.5,  takling: 0.6, keeper: 0.35, premie: 30 },
-  { navn: 'Monster FC',    ik: '👾', farge: 0x8a4fd8, fart: 4.8, skudd: 0.6,  takling: 0.9, keeper: 0.45, premie: 60 },
-  { navn: 'Lyn Rovers',    ik: '⚡', farge: 0x3f8fcf, fart: 5.4, skudd: 0.7,  takling: 1.2, keeper: 0.55, premie: 100 },
-  { navn: 'Drage City',    ik: '🐉', farge: 0xd23b3b, fart: 6.0, skudd: 0.78, takling: 1.5, keeper: 0.65, premie: 160 },
-  { navn: 'Galaxy Stars',  ik: '🌌', farge: 0x2a2a6a, fart: 6.6, skudd: 0.86, takling: 1.9, keeper: 0.75, premie: 250 },
+  { navn: 'Snegle United', ik: '🐌', farge: 0xf28c28, fart: 3.4, skudd: 0.3,  takling: 0.25, keeper: 0.12, premie: 30 },
+  { navn: 'Monster FC',    ik: '👾', farge: 0x8a4fd8, fart: 4.0, skudd: 0.42, takling: 0.45, keeper: 0.25, premie: 60 },
+  { navn: 'Lyn Rovers',    ik: '⚡', farge: 0x3f8fcf, fart: 4.7, skudd: 0.55, takling: 0.7, keeper: 0.38, premie: 100 },
+  { navn: 'Drage City',    ik: '🐉', farge: 0xd23b3b, fart: 5.8, skudd: 0.65, takling: 1.0, keeper: 0.5, premie: 160 },
+  { navn: 'Galaxy Stars',  ik: '🌌', farge: 0x2a2a6a, fart: 6.6, skudd: 0.75, takling: 1.4, keeper: 0.62, premie: 250 },
 ];
 const OPPGR = [
   { id: 'fart',   navn: 'Fart',       ik: '👟', tekst: 'Robotene løper fortere',      priser: [40, 80, 150, 250, 400] },
@@ -601,9 +601,10 @@ function lagSpiller(kropp, hode, sko, pynt) {
 // Startplasser for laget som angriper mot +x (speiles for motstanderen)
 const FORMASJON = [{ x: -L + 1.3, z: 0, k: true }, { x: -10, z: -5 }, { x: -10, z: 5 }, { x: -2.5, z: -4 }, { x: -2.5, z: 4 }];
 let spillere = [];
-const valgtRing = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.15, 28), new THREE.MeshBasicMaterial({ color: 0xffe14a, transparent: true, opacity: 0.9, depthWrite: false }));
+const valgtRing = new THREE.Mesh(new THREE.RingGeometry(1.0, 1.45, 28), new THREE.MeshBasicMaterial({ color: 0xffe14a, transparent: true, opacity: 0.9, depthWrite: false }));
 valgtRing.rotation.x = -Math.PI / 2; valgtRing.position.y = 0.05; scene.add(valgtRing);
-const pil = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.6, 3), new THREE.MeshBasicMaterial({ color: 0xffe14a })); pil.rotation.x = Math.PI; scene.add(pil);
+const pil = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.9, 3), new THREE.MeshBasicMaterial({ color: 0xffe14a, depthTest: false })); pil.rotation.x = Math.PI; pil.renderOrder = 11; scene.add(pil);
+const duSkilt = (() => { const c = document.createElement('canvas'); c.width = 128; c.height = 64; const x = c.getContext('2d'); x.fillStyle = '#ffe14a'; x.beginPath(); if (x.roundRect) x.roundRect(4, 4, 120, 56, 28); else x.rect(4, 4, 120, 56); x.fill(); x.fillStyle = '#1d2440'; x.font = '800 38px Nunito, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('DU', 64, 34); const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false })); s.scale.set(1.4, 0.7, 1); s.renderOrder = 12; scene.add(s); return s; })();
 function byggLag(mot) {
   for (const s of spillere) scene.remove(s.mesh);
   spillere = [];
@@ -637,7 +638,7 @@ const ball = { pos: new THREE.Vector3(0, 0.3, 0), vel: new THREE.Vector3(), eier
 let kamp = null;        // { mot, motIdx, tid, stilling:[0,0], feiring, omgang }
 let spillTilstand = 'meny';
 let valgt = null, manueltBytte = 0;
-const fartFor = s => s.lag === 0 ? (s === valgt ? 6 + tilstand.niva.fart * 0.5 : 5 + tilstand.niva.fart * 0.35) : kamp.mot.fart;
+const fartFor = s => s.lag === 0 ? (s === valgt ? 7 + tilstand.niva.fart * 0.5 : 5.5 + tilstand.niva.fart * 0.35) : kamp.mot.fart;
 function avspark(lagSomStarter) {
   for (const s of spillere) { s.pos.set(s.base.x, 0, s.base.z); s.fart = 0; s.ingenBall = 0; s.retning = s.lag === 0 ? Math.PI / 2 : -Math.PI / 2; }
   ball.pos.set(0, 0.3, 0); ball.vel.set(0, 0, 0); ball.eier = null; ball.forbiKeeper = -1;
@@ -685,10 +686,15 @@ function skyt(s) {
   const mot = s.lag === 0;
   const presisjon = mot ? 0.55 + tilstand.niva.skudd * 0.08 : kamp.mot.skudd;
   const kraft = mot ? 19 + tilstand.niva.skudd * 2 : 17 + kamp.mot.skudd * 6;
-  let z = (Math.random() * 2 - 1) * (MAAL_B - 0.5);
-  if (s === valgt && Math.abs(inn.z) > 0.2) z = Math.sign(inn.z) * (MAAL_B - 0.7);
-  z += (Math.random() * 2 - 1) * (1 - presisjon) * 4;
-  spark(s, { x: maalX(s.lag) + (s.lag === 0 ? 2 : -2), z }, kraft, 2 + Math.random() * 2.5);
+  let z = (Math.random() * 2 - 1) * (MAAL_B - 0.5), hoyde = 2 + Math.random() * 2.5;
+  if (s === valgt) {
+    // Hjelp: sikt mot hjørnet lengst unna keeperen, og hold skuddet under tverrliggeren
+    const k = spillere.find(o => o.keeper && o.lag !== s.lag);
+    z = Math.abs(inn.z) > 0.2 ? Math.sign(inn.z) * (MAAL_B - 0.8) : (k && k.pos.z > 0 ? -(MAAL_B - 0.8) : MAAL_B - 0.8);
+    z += (Math.random() * 2 - 1) * (1 - (0.85 + tilstand.niva.skudd * 0.03)) * 3;
+    hoyde = 1 + Math.random() * 1.5;
+  } else z += (Math.random() * 2 - 1) * (1 - presisjon) * 4;
+  spark(s, { x: maalX(s.lag) + (s.lag === 0 ? 2 : -2), z }, s === valgt ? kraft + 3 : kraft, hoyde);
   LYD.spark();
 }
 function pasning(s) {
@@ -740,7 +746,7 @@ const lagApent = () => LAG_ID.some(id => $(id).classList.contains('vis'));
 function trykkSkudd() {
   if (spillTilstand !== 'spill' || lagApent() || kamp.feiring > 0 || !valgt) return;
   if (ball.eier === valgt) skyt(valgt);
-  else if (ball.eier && ball.eier.lag === 1 && valgt.pos.distanceTo(ball.eier.pos) < 1.8) takle(valgt, 0.6);
+  else if (ball.eier && ball.eier.lag === 1 && valgt.pos.distanceTo(ball.eier.pos) < 2.6 && tid > (window.__takleVent || 0)) { window.__takleVent = tid + 0.6; valgt.pos.lerp(ball.eier.pos, 0.6); takle(valgt, 0.9 - kamp.motIdx * 0.13); }
 }
 function trykkPasning() {
   if (spillTilstand !== 'spill' || lagApent() || kamp.feiring > 0 || !valgt) return;
@@ -812,7 +818,7 @@ function oppdater(dt) {
   if (ball.eier && ball.eier.lag === 0 && !ball.eier.keeper) valgt = ball.eier;
   else if (manueltBytte <= 0 && (!ball.eier || ball.eier.lag === 1)) {
     const nar = spillere.filter(o => o.lag === 0 && !o.keeper).sort((a, b) => a.pos.distanceTo(ball.pos) - b.pos.distanceTo(ball.pos))[0];
-    if (nar !== valgt && (!valgt || valgt.pos.distanceTo(ball.pos) - nar.pos.distanceTo(ball.pos) > 2.5)) valgt = nar;
+    if (nar !== valgt && (!valgt || valgt.pos.distanceTo(ball.pos) - nar.pos.distanceTo(ball.pos) > 1.0)) valgt = nar;
   }
   // Jagere: nærmeste utespiller på hvert lag går mot ballen
   const jager = [0, 1].map(lag => spillere.filter(o => o.lag === lag && !o.keeper && o !== valgt).sort((a, b) => a.pos.distanceTo(ball.pos) - b.pos.distanceTo(ball.pos))[0]);
@@ -822,7 +828,7 @@ function oppdater(dt) {
     const fart = fartFor(s), retning = s.lag === 0 ? 1 : -1;
     if (s === valgt) {
       flytt(s, inn.x, inn.z, fart, dt);
-      if (ball.eier && ball.eier.lag === 1 && s.pos.distanceTo(ball.eier.pos) < 1.0) takle(s, 2.5 * dt);
+      if (ball.eier && ball.eier.lag === 1 && s.pos.distanceTo(ball.eier.pos) < 1.3) takle(s, (6 - kamp.motIdx * 1.4) * dt);
       continue;
     }
     if (s.keeper) {
@@ -839,7 +845,7 @@ function oppdater(dt) {
       // Angrep med ball
       const gx = maalX(s.lag), avst = Math.hypot(gx - s.pos.x, s.pos.z);
       const press = spillere.some(o => o.lag !== s.lag && o.pos.distanceTo(s.pos) < 2);
-      if (avst < 11 && Math.random() < dt * 2.5) { skyt(s); continue; }
+      if (avst < (s.lag === 1 ? 8 : 11) && Math.random() < dt * (s.lag === 1 ? 1.2 : 2.5)) { skyt(s); continue; }
       if (press && Math.random() < dt * 1.5 && pasning(s)) continue;
       malTil(s, gx, Math.sin(tid * 0.8 + s.base.z) * 4, fart * 0.92, dt);
       continue;
@@ -850,7 +856,7 @@ function oppdater(dt) {
     } else if (s === jager[s.lag]) {
       const fram = ball.eier ? 0 : 0.25;
       malTil(s, ball.pos.x + ball.vel.x * fram, ball.pos.z + ball.vel.z * fram, fart, dt, 0.2);
-      if (ball.eier && ball.eier.lag !== s.lag && s.pos.distanceTo(ball.eier.pos) < 1.0) takle(s, (s.lag === 1 ? kamp.mot.takling : 1.0 + tilstand.niva.fart * 0.1) * dt);
+      if (ball.eier && ball.eier.lag !== s.lag && s.pos.distanceTo(ball.eier.pos) < 1.0) takle(s, (s.lag === 1 ? kamp.mot.takling * (ball.eier === valgt ? 0.5 : 1) : 1.0 + tilstand.niva.fart * 0.1) * dt);
     } else {
       malTil(s, Math.max(-L + 3, Math.min(L - 3, s.base.x + ball.pos.x * 0.45)), s.base.z + ball.pos.z * 0.25, fart * 0.7, dt);
     }
@@ -881,8 +887,8 @@ function oppdater(dt) {
     // Keeper-redning
     for (const k of spillere.filter(o => o.keeper)) {
       const mot = Math.sign(k.base.x) === Math.sign(ball.vel.x);
-      if (ball.forbiKeeper !== k.lag && mot && Math.hypot(ball.pos.x - k.pos.x, ball.pos.z - k.pos.z) < 1.6 && ball.pos.y < 2.6) {
-        const evne = k.lag === 0 ? 0.45 + tilstand.niva.keeper * 0.08 : kamp.mot.keeper;
+      const evne = k.lag === 0 ? 0.65 + tilstand.niva.keeper * 0.06 : kamp.mot.keeper;
+      if (ball.forbiKeeper !== k.lag && mot && Math.abs(ball.pos.x - k.pos.x) < 1.2 && Math.abs(ball.pos.z - k.pos.z) < 1.4 + evne * 2 && ball.pos.y < 2.6) {
         if (Math.random() < evne) { ball.eier = k; k.holdTid = 0; ball.vel.set(0, 0, 0); LYD.redning(); if (k.lag === 0) melding('🧤 Redning!', 1.2); }
         else ball.forbiKeeper = k.lag;
       }
@@ -890,7 +896,7 @@ function oppdater(dt) {
     // Plukke opp ballen
     if (!ball.eier && ball.pos.y < 1.2) {
       let best = null, bestA = 0.85;
-      for (const s of spillere) { if (s.ingenBall > 0 || s.keeper) continue; const a = Math.hypot(s.pos.x - ball.pos.x, s.pos.z - ball.pos.z); if (a < bestA) { bestA = a; best = s; } }
+      for (const s of spillere) { if (s.ingenBall > 0 || s.keeper) continue; const a = Math.hypot(s.pos.x - ball.pos.x, s.pos.z - ball.pos.z) - (s.lag === 0 ? (s === valgt ? 0.6 : 0.3) : 0); if (a < bestA) { bestA = a; best = s; } }
       if (best) { ball.eier = best; best.holdTid = 0; }
     }
   }
@@ -908,10 +914,11 @@ function animer(dt) {
   ballMesh.position.copy(ball.pos);
   const v = Math.hypot(ball.vel.x, ball.vel.z); ballKule.rotation.x += ball.vel.z * dt * 3; ballKule.rotation.z -= ball.vel.x * dt * 3;
   ballSkygge.position.set(ball.pos.x, 0.03, ball.pos.z);
-  if (valgt) { valgtRing.position.set(valgt.pos.x, 0.05, valgt.pos.z); pil.position.set(valgt.pos.x, 2.6 + Math.sin(tid * 6) * 0.1, valgt.pos.z); }
+  if (valgt) { valgtRing.position.set(valgt.pos.x, 0.05, valgt.pos.z); pil.position.set(valgt.pos.x, 2.6 + Math.sin(tid * 6) * 0.1, valgt.pos.z); duSkilt.position.set(valgt.pos.x, 3.5 + Math.sin(tid * 6) * 0.1, valgt.pos.z); }
 }
 function kamera(dt) {
-  tmp.set(ball.pos.x * 0.85, 21, ball.pos.z * 0.5 + 17);
+  const fx = valgt ? ball.pos.x * 0.6 + valgt.pos.x * 0.4 : ball.pos.x, fz = valgt ? ball.pos.z * 0.6 + valgt.pos.z * 0.4 : ball.pos.z;
+  tmp.set(fx * 0.9, 17, fz * 0.5 + 14);
   camera.position.lerp(tmp, Math.min(1, dt * 3));
   camera.lookAt(camera.position.x, 0, camera.position.z - 17);
 }
