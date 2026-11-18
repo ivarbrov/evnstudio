@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.30.0 – EVN Studio</title>
+<title>Min Bondegård 0.31.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -288,7 +288,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.30.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.31.0</div>
   </div>
 </div>
 
@@ -559,7 +559,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.30.0'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.31.0'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -1784,6 +1784,7 @@ const ART = {
   ku:      {sirk: [[0.62, 0.58], [-0.42, 0.56], [1.15, 0.28]], R: 0.85, fart: 0.5, sving: 1.0, amp: 0.3, vekt: 4, tur: [1.2, 3.5], stå: [4, 10], akt: ['beite', 'beite', 'se', 'tygge']},
   gris:    {sirk: [[0.4, 0.45], [-0.3, 0.44], [0.8, 0.22]], R: 0.65, fart: 0.75, sving: 1.9, amp: 0.5, vekt: 2, tur: [0.8, 3], stå: [2, 6], akt: ['snuse', 'snuse', 'se']},
   sau:     {sirk: [[0.38, 0.5], [-0.25, 0.5], [0.82, 0.18]], R: 0.65, fart: 0.6, sving: 1.5, amp: 0.42, vekt: 2, tur: [1, 3], stå: [3, 8], akt: ['beite', 'beite', 'se']},
+  geit:    {sirk: [[0.38, 0.5], [-0.25, 0.5], [0.82, 0.18]], R: 0.65, fart: 0.8, sving: 1.5, amp: 0.42, vekt: 2, tur: [1, 3], stå: [3, 8], akt: ['beite', 'beite', 'se']},
 };
 // Binger: indre flate (gjerdet trukket fra), hindringer som bokser [x0, x1, z0, z1] og steder dyret liker å gå til (se: retningen det snur seg mot)
 const BINGER = {};
@@ -1792,6 +1793,7 @@ function flyttBinge(b, dx, dz, dy = 0) { return {navn: b.navn + '+', y: (b.y || 
 lagBinge('hone', 2.8, 10.2, -4.8, -0.4, [[8.55, 9.65, -1.625, -1.175], [9.25, 9.95, -4.45, -3.75]], [{x: 8.5, z: -4.1, se: 0, akt: 'hakke'}, {x: 9.1, z: -2.4, se: -Math.PI / 2, akt: 'drikke'}]);
 lagBinge('ku', -15.7, -12.6, -0.2, 5.2, [[-15.2, -13.6, 0.3, 0.9]], [{x: -14.4, z: 2.35, se: Math.PI / 2, akt: 'krybbe'}]);
 lagBinge('gris', -12.6, -9.9, -0.2, 5.2, [], [{x: -11.25, z: 3.6, akt: 'gjorme'}]);
+lagBinge('geit', -9.9, -7.2, -0.2, 5.2, [], []);   /* 0.31.0: bare en reserve. Geitene bor i geitefjøsets egen binge */
 lagBinge('sau', -9.9, -7.2, -0.2, 5.2, [[-9.1, -8.1, 3.9, 4.9]], [{x: -8.6, z: 2.85, se: -Math.PI / 2, akt: 'drikke'}]);
 const alleDyr = [], brukteBinger = new Set();
 function startBevegelse(g, art, binge) {
@@ -1964,7 +1966,7 @@ function oppdaterDyrene(dt, t) {
   oppdaterBein();
   for (let i = hjerter.length - 1; i >= 0; i--) { const h = hjerter[i]; h.t += dt; h.sp.position.y += dt * 0.8; h.sp.material.opacity = 1 - h.t / 1.2; if (h.t > 1.2) { h.sp.visible = false; hjerter.splice(i, 1); } }
 }
-window.__dyr = {penetrasjon, alle: alleDyr, BINGER, oppdater: oppdaterDyrene, lag: (art, x, z, binge) => ({ku: lagKu, gris: lagGris, sau: lagSau})[art](x, z, binge), sirkler: g => sirkler(g, []).slice()};
+window.__dyr = {penetrasjon, alle: alleDyr, BINGER, oppdater: oppdaterDyrene, lag: (art, x, z, binge) => ({ku: lagKu, gris: lagGris, sau: lagSau, geit: lagGeit})[art](x, z, binge), sirkler: g => sirkler(g, []).slice()};
 
 const BEITE = {x0: -15.7, x1: -7.2, z0: -0.2, z1: 5.2}; // 0.5.5: større binger (Even 8.11)
 const dyr = [];
@@ -1978,7 +1980,7 @@ function lagOyne(hode, x, y, z, r, lokkMat) { const hvitO = fm(0xffffff, 0.3), p
 function bein(K, mat, hovMat, pos, h, r) { K.parent.userData.bein = {mat, hovMat, pos, h, r}; } /* 0.6.0: beina lages som animerte instanser i ferdigDyr */
 function dyrGruppe(x, z, rot, art, ekstra) { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g); const kropp = new THREE.Group(); g.add(kropp);
   g.userData = Object.assign({art, kropp, mal: new THREE.Vector3(x, 0, z), venter: rr(1, 4), blunk: rr(1, 4), ore: rr(2, 6), hopp: 0, beite: 0, fase: rr(0, 6)}, ekstra); return g; }
-const DYR_SKALA = {ku: 0.8, gris: 0.85, sau: 0.85};
+const DYR_SKALA = {ku: 0.8, gris: 0.85, sau: 0.85, geit: 0.82};
 function ferdigDyr(g, type, binge) { if (type) { g.scale.setScalar(DYR_SKALA[type]); g.userData.hjerteY *= DYR_SKALA[type]; } bakeDirekte(g.userData.kropp); bakeDirekte(g); const u = g.userData; [...u.orer, u.hale].forEach(d => d.traverse(o => { if (o.isMesh) o.castShadow = false; })); /* små deler kaster ikke skygge (færre tegnekall i skyggepasset) */ g.traverse(o => { if (o.isMesh) o.userData.eier = g; }); klikkbar(g); dyr.push(g);
   u.hodeX = u.hode.position.x; startBevegelse(g, type, binge); const b = u.bein; registrerBein(g, type, firbeinGeo(b.mat, b.hovMat, b.h, b.r), b.pos, b.h + 0.08, GANG4); return g; }
 
@@ -2022,6 +2024,25 @@ function lagGris(x, z, binge = BINGER.gris) {
   u.hale = new THREE.Group(); u.hale.position.set(-0.7, 0.75, 0); K.add(u.hale);
   const krolle = mesh(new THREE.TorusGeometry(0.08, 0.022, 6, 14, Math.PI * 1.7), rosa, -0.06, 0, 0, u.hale); krolle.rotation.y = Math.PI / 2; bakeDirekte(u.hale);
   u.hode = hode; return ferdigDyr(g, 'gris', binge);
+}
+/* 0.31.0 Geit (Even 18.11): samme stil som de andre dyrene. Lys, glatt kropp, to små horn, skjegg og en kort hale som står opp */
+function lagGeit(x, z, binge = BINGER.geit) {
+  const g = dyrGruppe(x, z, 2.6, 'dyr', {hjerteY: 1.9, hodeY: 1.02}); const u = g.userData, K = u.kropp;
+  const pels = fm(0xf1e9da, 0.85), flekk = fm(0xb98e62, 0.85), hov = fm(0x2e2a29, 0.6), kinn = fm(0xff9fa6, 0.6), horn = fm(0xd8c9a6, 0.6), mule = fm(0xe8c9b4, 0.7);
+  mesh(new THREE.SphereGeometry(0.5, 18, 14), pels, 0, 0.9, 0, K).scale.set(1.25, 0.9, 0.85);
+  mesh(new THREE.SphereGeometry(0.3, 12, 10), flekk, -0.22, 1.05, 0.2, K).scale.set(1.1, 0.6, 0.6);
+  bein(K, pels, hov, [[0.34, 0.2], [0.34, -0.2], [-0.34, 0.2], [-0.34, -0.2]], 0.5, 0.065);
+  const hode = new THREE.Group(); hode.position.set(0.74, u.hodeY + 0.12, 0); K.add(hode);
+  mesh(new THREE.SphereGeometry(0.25, 16, 12), pels, 0.04, -0.02, 0, hode).scale.set(1.2, 1.0, 0.88);
+  mesh(new THREE.SphereGeometry(0.13, 12, 10), mule, 0.27, -0.1, 0, hode).scale.set(1.0, 0.8, 0.95);
+  [0.15, -0.15].forEach(s => mesh(new THREE.SphereGeometry(0.05, 8, 6), kinn, 0.2, -0.09, s * 1.05, hode).scale.set(0.5, 0.7, 0.3));
+  [0.1, -0.1].forEach(s => { const h = mesh(new THREE.ConeGeometry(0.045, 0.3, 8), horn, -0.06, 0.3, s, hode); h.rotation.z = 0.55; h.rotation.x = s * 1.2; });
+  mesh(new THREE.ConeGeometry(0.06, 0.22, 8), pels, 0.2, -0.3, 0, hode).rotation.x = Math.PI;   /* skjegg */
+  bakeDirekte(hode);
+  u.orer = [1, -1].map(s => { const o = new THREE.Group(); o.position.set(-0.04, 0.06, s * 0.22); hode.add(o); const m = mesh(new THREE.SphereGeometry(0.11, 10, 8), pels, 0, 0, s * 0.09, o); m.scale.set(0.5, 0.3, 1.3); bakeDirekte(o); o.rotation.x = s * 0.45; return o; });
+  u.oyne = lagOyne(hode, 0.2, 0.07, 0.15, 0.072, pels);
+  u.hale = new THREE.Group(); u.hale.position.set(-0.62, 1.12, 0); K.add(u.hale); mesh(new THREE.SphereGeometry(0.09, 8, 6), pels, -0.04, 0.06, 0, u.hale).scale.set(0.7, 1.3, 0.7);
+  u.hode = hode; return ferdigDyr(g, 'geit', binge);
 }
 function lagSau(x, z, binge = BINGER.sau) {
   const g = dyrGruppe(x, z, 2.6, 'dyr', {hjerteY: 1.9, hodeY: 1.0}); const u = g.userData, K = u.kropp;

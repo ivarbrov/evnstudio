@@ -73,7 +73,7 @@ t('Brød gir 2 XP', r.ok && r.xp === 2 && s.lager.brod === 1);
 nye = L.giXP(s, 2000, T0);
 t('Stor XP gir flere nivåer på en gang', s.nivaa === 10 || nye.length > 1);
 t('Nivå 3 og 5 gir åkre', s.akre.length === 12);
-t('Maks nivå 20 (0.24.0), med 15 åkre og 4 høner', (() => { const x = L.ny(T0); L.giXP(x, 99999, T0); return x.nivaa === 20 && D.maksNivaa === 20 && x.akre.length === 15 && x.dyr.hone.length === 4; })());
+t('Maks nivå 21 (0.31.0), med 15 åkre og 4 høner', (() => { const x = L.ny(T0); L.giXP(x, 99999, T0); return x.nivaa === 21 && D.maksNivaa === 21 && x.akre.length === 15 && x.dyr.hone.length === 4; })());
 { const x = L.ny(T0); while (x.nivaa < 16) L.giXP(x, 5, T0); x.mynter = 20000;
   t('Nivå 14–16: paibakeri og sauefjøs kan bygges, gresskar kan plantes', x.bygg.paibakeri && x.bygg.sauefjos && !x.dyr.sau && L.kanPlante(x, 0, 'gresskar', T0) === null && x.lager.gresskar === D.nyAvlingFro);
   L.kjopBygg(x, 'paibakeri'); L.kjopBygg(x, 'sauefjos'); x.lager.gulrot = 3; x.lager.egg = 1; x.lager.hvete = 5; x.lager.erter = 1;
@@ -270,6 +270,9 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
     const tell = { abbor: 0, orret: 0, gjedde: 0 }; for (let i = 0; i < 600; i++) { x.lager = {}; L.kast(x, T0); tell[L.halInn(x, T0 + 100 * S).vare]++; }
     t('Fordeling ca. 60/30/10 over 600 fisk', tell.abbor > 300 && tell.abbor < 420 && tell.orret > 130 && tell.orret < 230 && tell.gjedde > 30 && tell.gjedde < 95, JSON.stringify(tell));
     t('Fisk kan selges, men kommer ikke i bestillinger', L.kanSelge('gjedde') && !L.bestPool(x).includes('abbor')); }
+  { const x = L.ny(T0); L.giXP(x, 99999, T0); x.mynter = 8000; const k = L.kjopBygg(x, 'geitefjos');
+    t('Geiter (0.31.0): geitefjøset på nivå 21 koster 8000 og gir 2 geiter', k.ok && x.mynter === 0 && x.dyr.geit.length === 2 && D.dyr.geit.produkt === 'geitemelk');
+    t('Geitefor lages i forkvernen av mais og gulrot, og geitemelk kan selges', D.oppskrifter.geitefor.bygg === 'forkvern' && D.erFor('geitefor') && L.kanSelge('geitemelk') && !L.kanSelge('geitefor') && !!D.gater.geitemelk); }
   t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);

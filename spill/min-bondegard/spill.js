@@ -21,7 +21,7 @@ if (matchMedia('(pointer:coarse)').matches) document.documentElement.classList.a
 addEventListener('pointerdown', e => document.documentElement.classList.toggle('touch', e.pointerType === 'touch'), {passive: true, capture: true});
 
 // Det som er laget i denne versjonen. Resten av nivå 1–10 ligger i data.js og kommer i fase 2–4.
-const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot', 'gresskar'], bygg: ['forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken', 'grisebinge', 'paibakeri', 'sauefjos', 'vevstol', 'festbord'], dyr: ['hone', 'ku', 'gris', 'sau'], omrader: ['enga', 'skogkanten', 'jordet', 'ostjordet', 'bakjordet', 'elvebredden']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
+const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot', 'gresskar'], bygg: ['forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken', 'grisebinge', 'paibakeri', 'sauefjos', 'vevstol', 'geitefjos', 'festbord'], dyr: ['hone', 'ku', 'gris', 'sau', 'geit'], omrader: ['enga', 'skogkanten', 'jordet', 'ostjordet', 'bakjordet', 'elvebredden']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
 
 /* ======================= Lagring (F2, F3) ======================= */
 let s = null, lagringFeilet = false;
@@ -293,7 +293,7 @@ function lagGrisebinge(sau) {   /* 0.23.0: sauefjøset bruker samme form, med gr
     for (let i = 0; i < n; i++) { const t = (i + 0.5) / n; [0.3, 0.62].forEach(y => lekter.push({geo: avrundetBoks(L / n + 0.1, 0.1, 0.06, 0.02, 1), m: M4(ax + (bx - ax) * t, y, az + (bz - az) * t, 0, rot, 0)})); } };
   side(x0, z0, x0, z1); side(x0, z1, x1, z1); side(x1, z1, x1, z0); side(x0, z0, -W / 2, z0); side(W / 2, z0, x1, z0);
   mesh(samle(stolper.map(d => ({geo: teksturUV(d.geo, 0.3, 1), m: d.m}))), MAT.brunPlank, 0, 0, 0, g); mesh(samle(lekter.map(d => ({geo: teksturUV(d.geo, 1, 0.2), m: d.m}))), MAT.lysPlank, 0, 0, 0, g);
-  const sk = skiltTekst(sau ? 'Sauer' : 'Griser', 1.2); sk.position.set(0.9, 1.25, zf + Dd / 2 + 0.05); g.add(sk);
+  const sk = skiltTekst(sau === 'geit' ? 'Geiter' : sau ? 'Sauer' : 'Griser', 1.2); sk.position.set(0.9, 1.25, zf + Dd / 2 + 0.05); g.add(sk);
   bake(g); return g;
 }
 function lagPaibakeri() {   /* 0.23.0: lyst bakeri med blått tak og en stor pai over døra. Forslag, Even bestemmer utseendet */
@@ -653,10 +653,10 @@ function oppdaterKunde(dt, t) {
 /* ======================= Ting på gården ======================= */
 // Alt spilleren kan trykke på. Åkre, forkvern, bakeri og silo kan flyttes. Låven, hønsehuset, beitet og markedsbua står fast i denne versjonen.
 const ting = new Map();
-const FOT = {festbord: [2.8, 2.2], forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], sukkerverk: [3.6, 3.4], popkorn: [3.0, 2.8], kjokken: [4.0, 3.8], grisebinge: [6.2, 7.4], sauefjos: [6.2, 7.4], paibakeri: [3.8, 3.4], vevstol: [3.6, 3.4], hundehus: [2.4, 2.4], silo: [3.0, 3.0], tavle: [2.2, 1.0], varebil: [2.2, 5.4]};
+const FOT = {festbord: [2.8, 2.2], forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], sukkerverk: [3.6, 3.4], popkorn: [3.0, 2.8], kjokken: [4.0, 3.8], grisebinge: [6.2, 7.4], sauefjos: [6.2, 7.4], geitefjos: [6.2, 7.4], paibakeri: [3.8, 3.4], vevstol: [3.6, 3.4], hundehus: [2.4, 2.4], silo: [3.0, 3.0], tavle: [2.2, 1.0], varebil: [2.2, 5.4]};
 const STANDARD = {
   akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45], [15.6, 1.55], [15.6, 5.0], [15.6, 8.45]],   /* 0.22.0: åker 13–15 (nivå 13) står på Enga. Er den ikke kjøpt, finner spillet nærmeste ledige plass */
-  festbord: [-2.2, 8.2], forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], paibakeri: [-10.5, 18.6], sauefjos: [3.5, 19.2], vevstol: [-10.5, 26.0], hundehus: [-2.6, -2.4],   /* 0.23.0: de nye byggene foreslås på Jordet. Er det ikke kjøpt, finner spillet nærmeste ledige plass */ silo: [-0.4, -10.0], tavle: [-2.3, 4.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
+  festbord: [-2.2, 8.2], forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], paibakeri: [-10.5, 18.6], sauefjos: [3.5, 19.2], geitefjos: [-6.5, 24.5], vevstol: [-10.5, 26.0], hundehus: [-2.6, -2.4],   /* 0.23.0: de nye byggene foreslås på Jordet. Er det ikke kjøpt, finner spillet nærmeste ledige plass */ silo: [-0.4, -10.0], tavle: [-2.3, 4.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
 };
 const JORD = [-13.7, 13.5, 15.4, 22.6], JORD_X1_OST = 23.5, JORD_Z1_BAK = 29.6; const jordX1 = () => s.omrader && s.omrader.ostjordet ? JORD_X1_OST : JORD[1], jordZ1 = () => s.omrader && s.omrader.bakjordet ? JORD_Z1_BAK : JORD[3];   /* 0.22.0: Bakjordet gjør Jordet dypere. Sammen med Østjordet blir det en L */   /* 0.20.0: Østjordet gjør Jordet bredere mot øst */   /* 0.17.0: der ting kan stå på Jordet: x0, x1, z0, z1 */
 const GARD = {x0: -15.55, x1: 13.6, z0: -11.55, z1: 10.2}, GARD_X1 = 13.6, GARD_X1_ENGA = 22.0, GARD_X0 = -15.55, GARD_X0_SKOG = -24.0, SKOG_Z1 = -1.0;   /* 0.13.0: Skogkanten gjør gården bredere mot vest bak låven (bare der z < -1, så Rebus' lysning er fri) */   /* 0.9.8: gården blir bredere når Enga er kjøpt */
@@ -731,15 +731,16 @@ function plasserAlt() {
   s.plasser.std = {x: 5, z: 0, r: 0};
   synkKyr(); synkPynt(); synkKjopPynt(); settGullgard(s.gaver.gullgard && s.gaver.gullPaa);
 }
-const MODELL = {festbord: lagFestbord, forkvern: lagForkvern, bakeri: lagBakeri, meieri: lagMeieri, fjos: lagFjos, sukkerverk: lagSukkerverk, popkorn: lagPopkorn, kjokken: lagKjokken, grisebinge: () => lagGrisebinge(false), sauefjos: () => lagGrisebinge(true), paibakeri: lagPaibakeri, vevstol: lagVevstol}, HOYDE = {vevstol: 3.9, festbord: 2.9, grisebinge: 3.2, sauefjos: 3.2, paibakeri: 4.2, forkvern: 3.6, bakeri: 4.2, meieri: 4.2, fjos: 4.6, sukkerverk: 4.8, popkorn: 4.0, kjokken: 4.4};
+const MODELL = {festbord: lagFestbord, forkvern: lagForkvern, bakeri: lagBakeri, meieri: lagMeieri, fjos: lagFjos, sukkerverk: lagSukkerverk, popkorn: lagPopkorn, kjokken: lagKjokken, grisebinge: () => lagGrisebinge(false), geitefjos: () => lagGrisebinge('geit'), sauefjos: () => lagGrisebinge(true), paibakeri: lagPaibakeri, vevstol: lagVevstol}, HOYDE = {vevstol: 3.9, festbord: 2.9, grisebinge: 3.2, geitefjos: 3.2, sauefjos: 3.2, paibakeri: 4.2, forkvern: 3.6, bakeri: 4.2, meieri: 4.2, fjos: 4.6, sukkerverk: 4.8, popkorn: 4.0, kjokken: 4.4};
 // Kyrne på beitet ved fjøset (0.9.8). Beitet følger fjøset når det flyttes eller snus.
 // 0.13.0: kyr og griser bruker samme kode. Beitet/bingen følger bygget når det flyttes eller snus
 const DYRHUS = {
   fjos: {art: 'ku', beite: FJOS_BEITE, krybbe: [-1.05, 1.05, -2.8, -2.2], st: [0, -1.35], steder: [], start: i => [i % 2 ? 1.8 : -1.8, 1.2 + i * 1.3]},
   grisebinge: {art: 'gris', beite: GRIS_BINGE, krybbe: [-0.9, 0.9, -1.35, -0.85], st: [0, -0.2], steder: [[1.0, 1.7, 'gjorme']], start: i => [i % 2 ? 1.3 : -1.3, 1.0 + i * 0.7]},
-  sauefjos: {art: 'sau', beite: GRIS_BINGE, krybbe: [-0.9, 0.9, -1.35, -0.85], st: [0, -0.2], steder: [], start: i => [i % 2 ? 1.3 : -1.3, 1.0 + i * 0.7]}
+  sauefjos: {art: 'sau', beite: GRIS_BINGE, krybbe: [-0.9, 0.9, -1.35, -0.85], st: [0, -0.2], steder: [], start: i => [i % 2 ? 1.3 : -1.3, 1.0 + i * 0.7]},
+  geitefjos: {art: 'geit', beite: GRIS_BINGE, krybbe: [-0.9, 0.9, -1.35, -0.85], st: [0, -0.2], steder: [], start: i => [i % 2 ? 1.3 : -1.3, 1.0 + i * 0.7]}
 };
-const dyrIHus = {fjos: [], grisebinge: [], sauefjos: []}, husBinge = {};
+const dyrIHus = {fjos: [], grisebinge: [], sauefjos: [], geitefjos: []}, husBinge = {};
 const kyr = dyrIHus.fjos;
 /* 0.22.0: flere høner enn de tre fra start (en til på nivå 11). De nye står ved siden av de andre i hønsegården */
 function synkHoner() { const n = Math.min(8, (s.dyr.hone || []).length); if (typeof hoener === 'undefined' || hoener.length < 3) return;
@@ -756,7 +757,7 @@ function synkDyrehus(hus) {
     if (!mesh2[i]) { const g = window.__dyr.lag(H.art, p[0], p[1], husBinge[hus]); eierAv(g); klikkbar(g); mesh2[i] = g; }
     else { mesh2[i].position.set(p[0], mesh2[i].position.y, p[1]); mesh2[i].userData.mal.set(p[0], 0, p[1]); } });
 }
-function synkKyr() { synkDyrehus('fjos'); synkDyrehus('grisebinge'); synkDyrehus('sauefjos'); }
+function synkKyr() { synkDyrehus('fjos'); synkDyrehus('grisebinge'); synkDyrehus('sauefjos'); synkDyrehus('geitefjos'); }
 // Faste ting fra testscenen
 const HUS0 = [6.5, -5.0];   /* hønsehusets midtpunkt i testscenen */
 const husRobotRekt = () => [BINGER.hone.x0, BINGER.hone.x1, BINGER.hone.z0, BINGER.hone.z1];   /* roboten stiller seg ved løpegården */
@@ -1316,7 +1317,7 @@ function plantPaa(i, avling) {
   const u = ting.get(s.akre[i].id); sprett.push({o: u.gruppe, t: 0}); robotJobb(u); return true;
 }
 const artFor = u => (D.bygg[u.id] && D.bygg[u.id].dyr) || 'hone';
-const FOR_TIPS = {hone: 'Lag hønsefor av hvete i forkvernen. ⚙️', ku: 'Lag kufor av erter og mais i forkvernen. ⚙️', gris: 'Lag grisefor av gulrot og erter i forkvernen. ⚙️', sau: 'Lag sauefor av hvete og erter i forkvernen. ⚙️'};
+const FOR_TIPS = {hone: 'Lag hønsefor av hvete i forkvernen. ⚙️', ku: 'Lag kufor av erter og mais i forkvernen. ⚙️', gris: 'Lag grisefor av gulrot og erter i forkvernen. ⚙️', sau: 'Lag sauefor av hvete og erter i forkvernen. ⚙️', geit: 'Lag geitefor av mais og gulrot i forkvernen. ⚙️'};
 function mat(u) {
   const art = artFor(u), r = L.mat(s, art, naa());
   if (r.ok) { flyt('🍽️ ×' + r.antall, midtAv(u, 3)); robotJobb(u); (art === 'hone' ? hoener : dyrIHus[u.id] || []).forEach((h, i) => setTimeout(() => { h.userData.hopp = 0.5; visHjerte(h.position.clone().add(new THREE.Vector3(0, art === 'ku' ? 2.6 : 1.8, 0))); }, 300 + i * 200)); gi(null); }
@@ -1434,7 +1435,7 @@ function visAker(u) {
 }
 function visDyr(u, art) {   /* hønsehuset og fjøset (0.9.8) bruker samme kort */
   const r = samleEgg(u), A = D.dyr[art], P = A.produkt, F = A.spiser;
-  aapneHandling(u, art === 'ku' ? '🐄 Fjøs og beite' : art === 'gris' ? '🐖 Grisebinge' : art === 'sau' ? '🐑 Sauefjøs' : '🐔 Hønsehuset', () => {
+  aapneHandling(u, art === 'ku' ? '🐄 Fjøs og beite' : art === 'gris' ? '🐖 Grisebinge' : art === 'sau' ? '🐑 Sauefjøs' : art === 'geit' ? '🐐 Geitefjøs' : '🐔 Hønsehuset', () => {
     const t = naa(), h = s.dyr[art] || [], sultne = h.filter(d => d.slutt === null).length, klare = h.filter(d => L.dyrStatus(d, t) === 'klar').length, fr = s.lager[F] || 0;
     const spiser = h.filter(d => L.dyrStatus(d, t) === 'spiser').map(d => d.slutt).sort((a, b) => a - b), pn = navn(P).toLowerCase();
     let p = `<p>${h.length} ${A.flertall.toLowerCase()}. ${sultne ? `${sultne} er sultne.` : 'Alle har fått mat.'}${spiser.length ? ` Neste ${pn} om <b data-slutt="${spiser[0]}">${fmtTid(spiser[0] - t)}</b>.` : ''}</p>`;
@@ -1673,6 +1674,7 @@ function tingFor(o) {
   if (o.userData.art2 === 'ku') return ting.get('fjos');
   if (o.userData.art2 === 'gris') return ting.get('grisebinge');
   if (o.userData.art2 === 'sau') return ting.get('sauefjos');
+  if (o.userData.art2 === 'geit') return ting.get('geitefjos');
   if (o.userData.kat === 'laave') return ting.get('laave');
   if (o.userData.kat === 'markedsbod') return ting.get('marked');
   return null;

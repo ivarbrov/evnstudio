@@ -18,7 +18,8 @@
       hone: { navn: 'Høne', flertall: 'Høner', ikon: '🐔', nivaa: 1,  spiser: 'honsefor', produkt: 'egg',    tid: 60,  xp: 1, start: 3, flere: { 11: 4 } },   // «flere»: antall dyr fra nivå (0.22.0)
       ku:   { navn: 'Ku',   flertall: 'Kyr',   ikon: '🐄', nivaa: 6,  spiser: 'kufor',    produkt: 'melk',   tid: 120, xp: 2, start: 2, hus: 'fjos', flere: { 13: 3 } },   // kyrne kommer når fjøset er kjøpt (Ivar 9.11 og 12.11)
       gris: { navn: 'Gris', flertall: 'Griser', ikon: '🐖', nivaa: 10, spiser: 'grisefor', produkt: 'troffel', tid: 240, xp: 3, start: 2, hus: 'grisebinge', flere: { 18: 3 } },
-      sau:  { navn: 'Sau',  flertall: 'Sauer', ikon: '🐑', nivaa: 16, spiser: 'sauefor',  produkt: 'ull',    tid: 300, xp: 4, start: 2, hus: 'sauefjos', flere: { 19: 3 } }   // 0.23.0
+      sau:  { navn: 'Sau',  flertall: 'Sauer', ikon: '🐑', nivaa: 16, spiser: 'sauefor',  produkt: 'ull',    tid: 300, xp: 4, start: 2, hus: 'sauefjos', flere: { 19: 3 } },   // 0.23.0
+      geit: { navn: 'Geit', flertall: 'Geiter', ikon: '🐐', nivaa: 21, spiser: 'geitefor', produkt: 'geitemelk', tid: 360, xp: 5, start: 2, hus: 'geitefjos' }   // 0.31.0 (Even 18.11). Tallene er forslag
     },
     // Varer som ikke er avlinger. Verdien til produserte varer regnes ut nedenfor (formelen i progresjonsplanen kap. 6).
     varer: {
@@ -29,6 +30,8 @@
       kufor:    { navn: 'Kufor',    ikon: '🟤', erFor: true },
       grisefor: { navn: 'Grisefor', ikon: '🟠', erFor: true },
       sauefor:  { navn: 'Sauefor',  ikon: '🟢', erFor: true },
+      geitefor: { navn: 'Geitefor', ikon: '🟤', erFor: true },
+      geitemelk: { navn: 'Geitemelk', ikon: '🍼', verdi: 40 },
       ull:      { navn: 'Ull',      ikon: '🧶', verdi: 32 },
       gulrotpai: { navn: 'Gulrotpai', ikon: '🥧' },
       kremkake:  { navn: 'Kremkake',  ikon: '🍰' },
@@ -58,6 +61,7 @@
       kufor:      { bygg: 'forkvern',   nivaa: 6,  inn: { erter: 2, mais: 1 },            tid: 60,  ut: 3 },
       grisefor:   { bygg: 'forkvern',   nivaa: 10, inn: { gulrot: 2, erter: 1 },          tid: 60,  ut: 3 },
       sauefor:    { bygg: 'forkvern',   nivaa: 16, inn: { hvete: 3, erter: 1 },           tid: 90,  ut: 3 },
+      geitefor:   { bygg: 'forkvern',   nivaa: 21, inn: { mais: 3, gulrot: 1 },           tid: 90,  ut: 3 },
       gulrotpai:  { bygg: 'paibakeri',  nivaa: 14, inn: { gulrot: 3, egg: 1, hvete: 1 },  tid: 180, ut: 1 },
       kremkake:   { bygg: 'paibakeri',  nivaa: 14, inn: { flote: 2, egg: 2, sukker: 1 },  tid: 240, ut: 1 },
       lue:        { bygg: 'vevstol',    nivaa: 17, inn: { ull: 1 },                       tid: 180, ut: 1 },
@@ -89,12 +93,13 @@
       grisebinge: { navn: 'Grisebinge',     ikon: '🐖', nivaa: 10, pris: 800, dyr: 'gris' },
       paibakeri:  { navn: 'Paibakeriet',    ikon: '🥧', nivaa: 14, pris: 3500 },   // 0.23.0. Priser fra progresjonsplanen kap. 6
       sauefjos:   { navn: 'Sauefjøs',       ikon: '🐑', nivaa: 16, pris: 3000, dyr: 'sau' },
+      geitefjos:  { navn: 'Geitefjøs',      ikon: '🐐', nivaa: 21, pris: 8000, dyr: 'geit' },   // 0.31.0. Pris er forslag
       vevstol:    { navn: 'Vevstolen',      ikon: '🧶', nivaa: 17, pris: 6000 },   // 0.24.0
       festbord:   { navn: 'Festbordet',     ikon: '🎉', nivaa: 3,  pris: 150, arr: 'bursdag' }   // kommer med Bursdagsfesten, ikke med nivået (Even 11.11: første maskin ca. 150)
     },
     koPlasser: 2,
-    xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325, 395, 460, 530, 605, 685, 770, 855, 950, 1050],   // XP fra nivået til det neste. 11–19 fra progresjonsplanen kap. 5
-    maksNivaa: 20,
+    xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325, 395, 460, 530, 605, 685, 770, 855, 950, 1050, 1150],   // XP fra nivået til det neste. 11–19 fra progresjonsplanen kap. 5
+    maksNivaa: 21,
     hund: { nivaa: 20, navn: 'Syltetøy' },   // 0.24.0 (Even 8.11 og 17.11): gårdshunden følger roboten fra nivå 20. Bare til pynt
     akre: { 1: 6, 3: 9, 5: 12, 13: 15 },        // antall åkre fra nivå
     silo: { 1: 50, 9: 75, 15: 100, 19: 125 },             // plass til avlinger
@@ -115,7 +120,7 @@
       ostjordet:  { navn: 'Østjordet',  nivaa: 16, pris: 4000, krever: 'jordet' },   // 0.20.1 (Ivar 16.11): utvidelsen øst for Jordet, fra nivå 16. Navn og pris er forslag
       jordet:     { navn: 'Jordet',     nivaa: 8,  pris: 1000 }   // 0.17.0 (Even 15.11): jordet på andre siden av veien. Nivå og pris er forslag og må godkjennes av en voksen
     },
-    innholdTil: 20,
+    innholdTil: 21,
     /* 0.26.0 Pyntebutikken (Even 17.11): pynt spilleren kjøper for mynter og setter der hun vil. Bare til pynt. Kan selges tilbake for halv pris.
        Prisene og antallet er Claudes forslag og må godkjennes av en voksen. Ingenting koster ekte penger */
     pynt: {
@@ -156,6 +161,7 @@
       genser: 'Jeg har to ermer og er laget av ull. Du tar meg på når du fryser. Hva er jeg?',
       gresskarbrod: 'Jeg er bakt i ovnen, og inni meg er det noe stort og oransje fra åkeren. Hva er jeg?',
       gresskar: 'Jeg er stor, rund og oransje, og jeg vokser på bakken. Om høsten skjærer noen ansikt i meg. Hva er jeg?',
+      geitemelk: 'Jeg er hvit og kommer fra et dyr med skjegg og horn. Av meg kan du lage ost. Hva er jeg?',
       ull: 'Jeg vokser på sauen og er myk og varm. Av meg blir det garn og gensere. Hva er jeg?',
       gulrotpai: 'Jeg er rund og bakt i ovnen, og inni meg er det noe oransje fra åkeren. Hva er jeg?',
       kremkake: 'Jeg er myk og søt, med hvit krem på toppen. Du får meg på fest. Hva er jeg?',
