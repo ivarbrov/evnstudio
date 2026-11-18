@@ -1521,7 +1521,9 @@ function borteTekst() {
 }
 $('startBtn').addEventListener('click', () => {
   if (startet) return;
-  startet = true; setTimeout(ecoinAvstem, 1500); $('start').classList.remove('vis'); $('last').style.display = 'none'; $('hud').hidden = false; $('hoyre').hidden = false; layoutHud(); setTimeout(layoutHud, 400);
+  startet = true; setTimeout(ecoinAvstem, 1500);
+  setTimeout(() => { const r = L.arrRydd(s, MANED()); if (r.antall) { lagre(); synk(true); melding(`🚚 Festen er over. Bilen hentet ${r.antall} ${r.antall === 1 ? 'festhatt' : 'festhatter'} som var til overs. Du fikk ${r.mynter} mynter.`, 6000); } }, 2500);   /* 0.21.2 */
+   $('start').classList.remove('vis'); $('last').style.display = 'none'; $('hud').hidden = false; $('hoyre').hidden = false; layoutHud(); setTimeout(layoutHud, 400);
   try { document.dispatchEvent(new Event('evn-start')); } catch (e) {}
   lagre(); synk(true);
   if (forste.reddet) melding('Den gamle lagringen kunne ikke leses. Den er tatt vare på, og du starter en ny gård.', 5000);

@@ -427,6 +427,16 @@
     premier.forEach(function (t) { if (t.premie === 'skinn') s.skinn.valgt = t.skinn; });
     return { ok: true, antall: n, mynter: m, xp: A.xp * n, premier: premier, nye: giXP(s, A.xp * n, naa) };
   }
+  /* 0.21.2 (QA 18.11, Even 18.11): festvarer som er til overs når festen er slutt, hentes av bilen. Spilleren får samme pris som i festen,
+     men ingen XP og ingen framgang i festen. Uferdige og ferdige varer i køen på festbygget regnes med. Da sperrer de ikke låven resten av året */
+  function arrRydd(s, maned) {
+    var antall = 0, mynter = 0;
+    for (var id in D.arr) { var A = D.arr[id]; if (A.maned === maned) continue;
+      var n = s.lager[A.vare] || 0; if (n > 0) delete s.lager[A.vare];
+      var bg = s.bygg[A.bygg]; if (bg && bg.ko && bg.ko.length) { bg.ko.forEach(function (j) { n += D.oppskrifter[j.vare] ? D.oppskrifter[j.vare].ut : 1; }); bg.ko = []; }
+      if (n > 0) { antall += n; mynter += D.pris(A.vare) * n; } }
+    s.mynter += mynter; return { antall: antall, mynter: mynter };
+  }
   function velgSkinn(s, id) { if (id && !s.skinn.eid[id]) return false; s.skinn.valgt = id || null; return true; }
 
   function mk(v, n) { var o = {}; o[v] = n; return o; }
@@ -442,7 +452,7 @@
     nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
     nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
-    maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
+    maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, arrHar: arrHar, arrLever: arrLever, arrRydd: arrRydd, velgSkinn: velgSkinn,
     giDagsgave: giDagsgave, bonusAktiv: bonusAktiv, leverGaver: leverGaver, klareGaver: klareGaver, aapneGave: aapneGave
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;

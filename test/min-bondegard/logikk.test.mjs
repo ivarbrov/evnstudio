@@ -235,6 +235,12 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
   { const f = L.valider(JSON.parse(JSON.stringify(L.ny(T0))), T0); f.lager.hvete = 0;
     const uten = L.kanProdusere(f, 'forkvern', 'honsefor', T0); L.settGratis(true); const med = L.kanProdusere(f, 'forkvern', 'honsefor', T0), r = L.produser(f, 'forkvern', 'honsefor', T0); L.settGratis(false);
     t('Lage uten råvarer er av som standard og virker bare når admin slår det på', uten === 'mangler' && med === null && r.ok && f.lager.hvete === 0 && L.kanProdusere(f, 'forkvern', 'honsefor', T0) === 'mangler'); }
+  { const x = L.ny(T0); while (x.nivaa < 3) L.giXP(x, 5, T0); L.arrStart(x, 'bursdag'); x.lager.festhatt = 40; x.bygg.festbord = { ko: [{ vare: 'festhatt', start: T0, slutt: T0 + 60 * S }] };
+    const m0 = x.mynter, xp0 = x.xp, lev0 = x.arr.bursdag.levert, iNov = L.arrRydd(x, 11);
+    t('Til overs: ingenting hentes mens festen er åpen', iNov.antall === 0 && x.lager.festhatt === 40 && x.mynter === m0);
+    const r = L.arrRydd(x, 12);
+    t('Til overs: bilen henter hattene i lager og kø etter festen, til vanlig festpris', r.antall === 41 && r.mynter === 41 * D.pris('festhatt') && x.mynter === m0 + r.mynter && !x.lager.festhatt && x.bygg.festbord.ko.length === 0);
+    t('Til overs: ingen XP og ingen framgang i festen', x.xp === xp0 && x.arr.bursdag.levert === lev0 && L.arrRydd(x, 12).antall === 0); }
   t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);
