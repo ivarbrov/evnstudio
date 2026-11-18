@@ -1910,26 +1910,25 @@ function visBiler() {
    Musikknappen står ved admin- og bilknappen og er for alle. Valget lagres i «mb-musikk». Musikken stopper i pause og når fanen er skjult */
 var MUS = {ctx: null, ut: null, valg: 'gard', timer: null, neste: 0, steg: 0};
 try { const v = localStorage.getItem('mb-musikk'); if (v === 'av' || v === 'gard' || v === 'vinter') MUS.valg = v; } catch (e) {}
-var SANG = {
-  gard: {navn: 'Gårdssangen', ikon: '🌻', stegTid: 60 / 116 / 2, takt: 8,
-    melodi: [72,0,76,79,76,0,72,0, 77,0,81,77,72,0,77,0, 79,0,83,79,74,0,79,81, 79,76,72,0,76,0,0,0, 81,0,76,81,84,0,81,0, 77,0,81,84,81,0,77,0, 74,77,79,83,86,0,83,79, 84,0,79,76,72,0,0,0],
-    akk: [[48,64,67], [53,65,69], [55,62,67], [48,64,67], [45,64,69], [53,65,69], [55,62,67], [48,64,67]]},
-  vinter: {navn: 'Vintersangen', ikon: '❄️', stegTid: 60 / 80 / 2, takt: 6,
-    melodi: [76,0,0,72,0,69, 77,0,0,72,0,69, 79,0,76,0,72,0, 74,0,0,0,71,74, 76,0,81,0,84,0, 81,0,0,77,0,72, 76,0,79,0,76,72, 74,0,0,0,0,0],
-    akk: [[45,60,64], [41,60,65], [48,60,64], [43,59,62], [45,60,64], [41,60,65], [48,60,64], [43,59,62]]}
+var SANG = {   /* 0.28.2 (Even 18.11: «stygg musikk», både lyd og melodi): nye melodier på fem toner (pentatonisk), mykere klang, lavere tempo og litt ekko */
+  gard: {navn: 'Gårdssangen', ikon: '🌻', stegTid: 60 / 100 / 2, takt: 8,
+    melodi: [76,0,79,0,81,79,76,0, 74,0,76,0,72,0,0,0, 81,0,84,0,81,79,76,0, 79,0,76,0,79,0,0,0, 81,0,84,0,86,84,81,0, 84,0,81,0,79,0,76,0, 74,0,79,0,74,76,79,0, 76,0,74,0,72,0,0,0],
+    akk: [[48,64,67], [48,64,67], [53,65,69], [48,64,67], [45,64,69], [53,65,69], [55,62,67], [48,64,67]]},
+  vinter: {navn: 'Vintersangen', ikon: '❄️', stegTid: 60 / 72 / 2, takt: 6,
+    melodi: [76,0,0,0,72,0, 69,0,0,0,72,0, 76,0,79,0,76,0, 74,0,0,0,0,0, 81,0,0,0,79,0, 76,0,0,0,72,0, 74,0,79,0,74,0, 69,0,0,0,0,0],
+    akk: [[45,60,64], [41,60,65], [48,60,64], [43,59,62], [45,60,64], [41,60,65], [43,59,62], [45,60,64]]}
 };
 function musHz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 function musTone(t, m, type, vol, a, d, over) { const c = MUS.ctx, o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = musHz(m) * (over || 1);
   g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); o.connect(g); g.connect(MUS.ut); o.start(t); o.stop(t + a + d + 0.05); }
 function musSteg(t) { const S = SANG[MUS.valg]; if (!S) return; const n = MUS.steg % S.melodi.length, i = n % S.takt, A = S.akk[Math.floor(n / S.takt) % S.akk.length], m = S.melodi[n];
-  if (MUS.valg === 'gard') {
-    if (m) { musTone(t, m, 'triangle', 0.22, 0.01, 0.28); musTone(t, m, 'square', 0.035, 0.005, 0.12); }
-    if (i === 0) musTone(t, A[0] - 12, 'triangle', 0.3, 0.01, 0.3); if (i === 4) musTone(t, A[0] - 5, 'triangle', 0.24, 0.01, 0.25);
-    if (i === 2 || i === 6) { musTone(t, A[1], 'sine', 0.07, 0.01, 0.14); musTone(t, A[2], 'sine', 0.07, 0.01, 0.14); }
-  } else {
-    if (m) { musTone(t, m, 'sine', 0.2, 0.004, 1.6); musTone(t, m, 'sine', 0.05, 0.004, 0.7, 3); musTone(t, m, 'sine', 0.025, 0.004, 0.4, 4.2); }   /* klokkespill */
-    if (i === 0) { musTone(t, A[0] - 12, 'sine', 0.22, 0.05, 1.8); A.forEach(x => musTone(t, x, 'triangle', 0.045, 0.3, 1.7)); }
-    if (i % 2 === 0) musTone(t, 108, 'sine', i === 0 ? 0.02 : 0.012, 0.002, 0.06);   /* små bjeller */
+  if (MUS.valg === 'gard') {   /* myk marimba, rolig bass og to stille akkordtoner */
+    if (m) { musTone(t, m, 'sine', 0.2, 0.006, 0.42); musTone(t, m, 'sine', 0.025, 0.004, 0.09, 4); }
+    if (i === 0) musTone(t, A[0] - 12, 'sine', 0.26, 0.02, 0.5); if (i === 4) musTone(t, A[0] - 5, 'sine', 0.18, 0.02, 0.4);
+    if (i === 2 || i === 6) { musTone(t, A[1], 'sine', 0.045, 0.01, 0.22); musTone(t, A[2], 'sine', 0.045, 0.01, 0.22); }
+  } else {   /* klokkespill med lang klang over en stille, myk akkord */
+    if (m) { musTone(t, m, 'sine', 0.17, 0.005, 2.0); musTone(t, m, 'sine', 0.035, 0.005, 0.8, 2); }
+    if (i === 0) { musTone(t, A[0] - 12, 'sine', 0.2, 0.08, 2.2); A.forEach(x => musTone(t, x, 'sine', 0.035, 0.5, 2.0)); }
   }
   MUS.steg++; }
 function musTikk() { const c = MUS.ctx; if (!c) return;
@@ -1938,7 +1937,9 @@ function musTikk() { const c = MUS.ctx; if (!c) return;
   if (MUS.neste < c.currentTime) MUS.neste = c.currentTime + 0.05;
   while (MUS.neste < c.currentTime + 0.35) { musSteg(MUS.neste); MUS.neste += SANG[MUS.valg].stegTid; } }
 function musStart() { if (MUS.valg === 'av' || !startet) return;   /* kalles etter et trykk, for nettleseren krever det før lyd */
-  try { if (!MUS.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; MUS.ctx = new AC(); MUS.ut = MUS.ctx.createGain(); MUS.ut.gain.value = 0.5; MUS.ut.connect(MUS.ctx.destination); }
+  try { if (!MUS.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; MUS.ctx = new AC(); const c = MUS.ctx, lp = c.createBiquadFilter(), ekko = c.createDelay(1), fb = c.createGain(), vaat = c.createGain(); MUS.ut = c.createGain(); MUS.ut.gain.value = 0.4;
+      lp.type = 'lowpass'; lp.frequency.value = 3200; ekko.delayTime.value = 0.32; fb.gain.value = 0.28; vaat.gain.value = 0.22;   /* demper skarpe toner og gir litt rom */
+      MUS.ut.connect(lp); lp.connect(c.destination); lp.connect(ekko); ekko.connect(fb); fb.connect(ekko); ekko.connect(vaat); vaat.connect(c.destination); }
     if (!MUS.timer) MUS.timer = setInterval(() => { try { musTikk(); } catch (e) {} }, 100); musTikk(); } catch (e) {} }
 function musVelg(v) { if (v !== 'av' && !SANG[v]) return; MUS.valg = v; MUS.steg = 0; MUS.neste = 0; try { localStorage.setItem('mb-musikk', v); } catch (e) {} musStart(); musTikk(); synkMusikknapp(); }
 function synkMusikknapp() { const kn = $('musikkKnapp'); if (!kn || !MUS) return; kn.hidden = !startet; kn.firstElementChild.textContent = MUS.valg === 'av' ? '🔇' : '🎵'; kn.setAttribute('aria-label', 'Musikk: ' + (MUS.valg === 'av' ? 'av' : SANG[MUS.valg].navn)); }
