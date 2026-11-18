@@ -84,9 +84,6 @@
   .dyrkort .nv { font-weight:800; font-size:15px; overflow-wrap:anywhere; }
   .dyrkort .ik { white-space:nowrap; overflow:hidden; }
   .dyrkort .sj { font-size:12px; font-weight:800; }
-  .dyrkort.er-bannet { position:relative; border-color:#ff4d5e !important; }
-  .dyrkort.er-bannet .ik { filter:grayscale(1); opacity:.6; }
-  .dyrkort .bannet { display:inline-block; background:#e0283c; color:#fff; font-size:12px; font-weight:900; border-radius:8px; padding:2px 8px; margin-bottom:4px; transform:rotate(-4deg); }
   .dyrkort.ukjent .ik { filter:grayscale(1) brightness(.4); }
   .kartkort { max-width:min(560px, calc(100vh - 40px)); padding:14px 16px; }
   #kartCanvas { width:100%; height:auto; aspect-ratio:1; display:block; margin:4px auto; max-width:calc(100vh - 230px); }
@@ -4131,16 +4128,15 @@ const DYR = [
   { id:'blomsterbie',  navn:'Blomsterbie',   ikon:'🌼🐝', sjelden:0, mynt:1,  sone:'eng',     tekst:'Surrer fra blomst til blomst og har en krone av blader.' },
   { id:'snopingvin',   navn:'Snøpingvin',    ikon:'❄️🐧', sjelden:0, mynt:1,  sone:'is',      tekst:'Glir på magen og har et varmt skjerf.' },
   { id:'perleoter',    navn:'Perleoter',     ikon:'🫧🦦', sjelden:0, mynt:1,  sone:'vann',    tekst:'Passer godt på en skinnende perle.' },
-  // Lynkatt er bannet (Evens beslutning 18.11.2026): ingen nye egg gir den. Har du den fra før, beholder du den.
-  { id:'lynkatt',      navn:'Lynkatt',       ikon:'⚡🐱', sjelden:1, mynt:2,  sone:'regnbue', bannet:true, tekst:'Løper så fort at det knitrer av lyn.' },
+  { id:'lynkatt',      navn:'Lynkatt',       ikon:'⚡🐱', sjelden:1, mynt:2,  sone:'regnbue', tekst:'Løper så fort at det knitrer av lyn.' },
   { id:'flammehest',   navn:'Flammehest',    ikon:'🔥🐴', sjelden:1, mynt:2,  sone:'vulkan',  tekst:'Har en manke av varme flammer som ikke brenner.' },
   { id:'vannskilpadde',navn:'Vannskilpadde', ikon:'💧🐢', sjelden:1, mynt:2,  sone:'vann',    tekst:'Bærer en liten innsjø på ryggen.' },
   { id:'regnbuesebra', navn:'Regnbuesebra',  ikon:'🌈🦓', sjelden:1, mynt:2,  sone:'regnbue', tekst:'Har striper i alle regnbuens farger.' },
   { id:'lavaogle',     navn:'Lavaøgle',      ikon:'🌋🦎', sjelden:1, mynt:2,  sone:'vulkan',  tekst:'Har lysende flekker og elsker varme steiner.' },
   { id:'stjerneugle',  navn:'Stjerneugle',   ikon:'🌟🦉', sjelden:2, mynt:5,  sone:'stjerne', tekst:'Har en stjerne på brystet som lyser.' },
   { id:'isdrage',      navn:'Isdrage',       ikon:'❄️🐉', sjelden:2, mynt:5,  sone:'is',      tekst:'Puster frost som blir til snøfnugg.' },
-  // Nye dyr 18.11.2026 (Claude fant på, Even ba om det): Godterigris tar Lynkatts plass, pluss to vanlige.
-  { id:'godterigris',  navn:'Godterigris',   ikon:'🍭🐷', sjelden:1, mynt:2,  sone:'regnbue', tekst:'Lukter jordbærgodteri og har en krøllete regnbuehale.' },
+  // Nye dyr 18.11.2026 (Claude fant på, Even ba om det). Alle er vanlige, så sjansen for Lynkatt i blått egg er den samme som før.
+  { id:'godterigris',  navn:'Godterigris',   ikon:'🍭🐷', sjelden:0, mynt:1,  sone:'regnbue', tekst:'Lukter jordbærgodteri og har en krøllete regnbuehale.' },
   { id:'snosel',       navn:'Snøsel',        ikon:'❄️🦭', sjelden:0, mynt:1,  sone:'is',      tekst:'Aker på magen over isen og ler hele veien.' },
   { id:'maanemus',     navn:'Månemus',       ikon:'🌙🐭', sjelden:0, mynt:1,  sone:'stjerne', tekst:'Har en liten måne på hodet som lyser om natta.' },
   { id:'maaneenhjorning', navn:'Måneenhjørning', ikon:'🌙🦄', sjelden:2, mynt:5, sone:'stjerne', tekst:'Hornet lyser som månen om natten.' },
@@ -4185,8 +4181,6 @@ const SJ = [
   { navn:'Legendarisk',    farge:'#ffc93c' },
 ];
 const DYR_ID = Object.fromEntries(DYR.map(d => [d.id, d]));
-const KAN_KLEKKES = DYR.filter(d => !d.bannet);            // dyr som kan komme ut av egg
-const iSamleboka = () => DYR.filter(d => !d.bannet || tilstand.funnet[d.id]);   // bannede dyr vises bare hvis du har dem
 
 // ======================================================
 //  Oppsett
@@ -5240,7 +5234,7 @@ function oppdaterHud() {
   $('mynt').textContent = Math.floor(tilstand.mynter);
   $('baer').textContent = tilstand.baer;
   $('matSum').textContent = Object.values(tilstand.mat).reduce((a, b) => a + b, 0);
-  { const bok = iSamleboka(); $('funnet').textContent = bok.filter(d => tilstand.funnet[d.id]).length + '/' + bok.length; }
+  $('funnet').textContent = Object.keys(tilstand.funnet).length + '/' + DYR.length;
 }
 function bump(id) { const e = $(id); e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); }
 
@@ -5285,10 +5279,10 @@ function oppdaterRedet(dt) {
   if (redeEgg.t >= KLEKK_TID) klekk();
 }
 function trekkDyr(type) {
-  if (EGG_ID[type]) { let r = Math.random(), s = 0; const sj = EGG_ID[type].sjanser; for (let i = 0; i < 4; i++) { s += sj[i]; if (r < s && sj[i] > 0) return velg(KAN_KLEKKES.filter(d => d.sjelden === i)); } return velg(KAN_KLEKKES.filter(d => d.sjelden === 0)); }
-  if (type === 'butikk') return velg(KAN_KLEKKES.filter(d => d.sjelden === (Math.random() < 0.75 ? 0 : 1)));
+  if (EGG_ID[type]) { let r = Math.random(), s = 0; const sj = EGG_ID[type].sjanser; for (let i = 0; i < 4; i++) { s += sj[i]; if (r < s && sj[i] > 0) return velg(DYR.filter(d => d.sjelden === i)); } return velg(DYR.filter(d => d.sjelden === 0)); }
+  if (type === 'butikk') return velg(DYR.filter(d => d.sjelden === (Math.random() < 0.75 ? 0 : 1)));
   if (Math.random() < INNST.ilddrevSjanse) return DYR_ID.ilddrev;
-  return velg(KAN_KLEKKES.filter(d => d.sjelden === 2));
+  return velg(DYR.filter(d => d.sjelden === 2));
 }
 function klekk() {
   const type = redeEgg.type; scene.remove(redeEgg.m); redeEgg = null; tilstand.eggKo.shift();
@@ -5299,7 +5293,7 @@ function klekk() {
   tilstand.funnet[def.id] = (tilstand.funnet[def.id] || 0) + 1; tilstand.klekket++;
   if (ny) try { if (window.EVNEcoins) {   // E-coins: første av hver art, og alle artene
     EVNEcoins.belonn('egg.art.' + def.id);
-    if (KAN_KLEKKES.every(x => tilstand.funnet[x.id])) EVNEcoins.belonn('egg.alle');
+    if (DYR.every(x => tilstand.funnet[x.id])) EVNEcoins.belonn('egg.alle');
   } } catch (e) {}
   const d = nyttDyr(def.id, 1, 0, new THREE.Vector3(NEST.x, 0, NEST.z + 0.5));
   d.hoppUt = 0; d.mal.copy(tilfeldigISone(def.sone)); d.vent = 0;
@@ -5417,7 +5411,7 @@ function giMat(d, poeng, hjerte) {
 }
 function byggMatbod() {
   $('matliste').innerHTML = MATTYPER.map(m => {
-    const dyr = iSamleboka().filter(d => d.sone === m.sone).map(d => tilstand.funnet[d.id] ? d.ikon.slice(-2) : '❓').join(' ');
+    const dyr = DYR.filter(d => d.sone === m.sone).map(d => tilstand.funnet[d.id] ? d.ikon.slice(-2) : '❓').join(' ');
     return `<div class="matrad"><span class="mi" aria-hidden="true">${m.ikon}</span><div><b>${m.navn}</b><small>${SONE_ID[m.sone].ikon} ${SONE_ID[m.sone].navn} · liker: ${dyr}</small><br><small>Du har: ${tilstand.fro[m.id] || 0} frø · ${tilstand.mat[m.id] || 0} mat</small></div>` +
       `<button type="button" data-kjop="fro" data-mat="${m.id}" ${tilstand.mynter < INNST.froPris ? 'disabled' : ''}>🌱 Frø<br>${INNST.froPris} 🪙</button>` +
       `<button type="button" data-kjop="mat" data-mat="${m.id}" ${tilstand.mynter < INNST.matPris ? 'disabled' : ''}>${m.ikon} Mat<br>${INNST.matPris} 🪙</button></div>`;
@@ -5570,11 +5564,9 @@ function tegnKart() {
 $('lukkBok').addEventListener('click', () => lukkLag('bok'));
 
 function byggBok() {
-  // Bannede dyr står alltid i boka med en BANNET-lapp (Evens ønske 18.11.2026)
   $('rutenett').innerHTML = DYR.map(d => {
-    const n = tilstand.funnet[d.id], s = SJ[d.sjelden], ban = d.bannet ? '<div class="bannet">🚫 BANNET</div>' : '';
-    return n ? `<div class="dyrkort${d.bannet ? ' er-bannet' : ''}" style="border-color:${s.farge}">${ban}<div class="ik">${d.ikon}</div><div class="nv">${d.navn}</div><div class="sj" style="color:${s.farge}">${s.navn}</div><div class="sj">${SONE_ID[d.sone].ikon} ${SONE_ID[d.sone].navn}</div><div class="sj">${d.sjelden >= 1 ? 'Spiser bare' : 'Liker'} ${MAT_FOR_SONE[d.sone].ikon}</div><div class="sj">Klekket: ${n}</div></div>`
-             : d.bannet ? `<div class="dyrkort er-bannet">${ban}<div class="ik">${d.ikon}</div><div class="nv">${d.navn}</div><div class="sj">Kan ikke klekkes lenger</div></div>`
+    const n = tilstand.funnet[d.id], s = SJ[d.sjelden];
+    return n ? `<div class="dyrkort" style="border-color:${s.farge}"><div class="ik">${d.ikon}</div><div class="nv">${d.navn}</div><div class="sj" style="color:${s.farge}">${s.navn}</div><div class="sj">${SONE_ID[d.sone].ikon} ${SONE_ID[d.sone].navn}</div><div class="sj">${d.sjelden >= 1 ? 'Spiser bare' : 'Liker'} ${MAT_FOR_SONE[d.sone].ikon}</div><div class="sj">Klekket: ${n}</div></div>`
              : `<div class="dyrkort ukjent"><div class="ik">❓</div><div class="nv">???</div><div class="sj" style="color:${s.farge}">${s.navn}</div></div>`;
   }).join('');
 }
@@ -5707,7 +5699,7 @@ function ecoinsAvstem() {
     if (!window.EVNEcoins) return;
     const ider = Object.keys(tilstand.funnet).filter(id => DYR_ID[id] && tilstand.funnet[id] > 0).map(id => 'egg.art.' + id);
     for (let i = 2; i <= parkNiva(); i++) ider.push('egg.park.' + i);
-    if (KAN_KLEKKES.every(x => tilstand.funnet[x.id])) ider.push('egg.alle');
+    if (DYR.every(x => tilstand.funnet[x.id])) ider.push('egg.alle');
     EVNEcoins.avstem(ider);
   } catch (e) {}
 }
