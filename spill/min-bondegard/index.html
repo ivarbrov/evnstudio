@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.26.1 – EVN Studio</title>
+<title>Min Bondegård 0.27.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -286,7 +286,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.26.1</div>
+    <div class="evn-ver" id="versjon">Versjon 0.27.0</div>
   </div>
 </div>
 
@@ -557,7 +557,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.26.1'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.27.0'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -928,7 +928,7 @@ let omradeVist = null, omradeTid = 0;
 function visOmrade(o) {
   omradePanel.querySelector('.tittel').textContent = 'Område ' + o.nr + ' · ' + o.navn;
   /* 0.26.1 (Ivar 17.11): Elvebredden er ikke laget ennå. Kortet lover ikke lenger nivå og pris for noe som ikke kan kjøpes */
-  const senere = o.tema === 'elv';
+  const senere = false;   /* 0.27.0: Elvebredden kan kjøpes */
   omradePanel.querySelector('.nivaa').textContent = senere ? 'Kommer i en senere versjon' : 'Låses opp på nivå ' + o.nivaa;
   omradePanel.querySelector('.pris').textContent = senere ? 'Her kommer fiskebrygga 🎣' : o.pris.toLocaleString('nb-NO') + ' mynter';
   omradePanel.querySelector('.smaa').textContent = senere ? 'Du kan ikke kjøpe området ennå.' : 'Roboten rydder området når du kjøper det.';
@@ -959,7 +959,7 @@ function lagOmrader() {
     const [sx, sz, sr] = o.skilt, s = new THREE.Group(); s.position.set(sx, hoyde(sx, sz), sz); s.rotation.y = sr; s.scale.setScalar(1.45); scene.add(s);
     mesh(avrundetBoks(0.12, 1.2, 0.12, 0.03, 1), MAT.brunPlank, 0, 0.6, -0.12, s);
     mesh(avrundetBoks(1.25, 0.76, 0.08, 0.03, 1), MAT.brunPlank, 0, 1.12, -0.03, s);
-    const front = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.67), std({map: skiltTekstur(o.tema === 'elv' ? 'senere' : o.nivaa), roughness: 0.85})); front.position.set(0, 1.12, 0.016); front.castShadow = true; s.add(front);
+    const front = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.67), std({map: skiltTekstur(o.nivaa), roughness: 0.85})); front.position.set(0, 1.12, 0.016); front.castShadow = true; s.add(front);
     s.rotation.z = 0.04; s.traverse(m => { if (m.isMesh) m.userData.eier = s; }); s.userData.omrade = o; klikkbar(s); o.skiltG = s;
     // små stikker med farget topp langs grensen, så det er lett å se hvor området går
     const stikk = []; o.poly.forEach(([x, z], i) => { if (i % 7) return; if (elvKant(x, z) < 0.6) return; const y = hoyde(x, z);
@@ -1378,6 +1378,9 @@ window.mbSkog = eid => { eid = !!eid; skogMesher.forEach(m => m.visible = !eid);
     [o.flate, o.skiltG].forEach(m => { const i = klikkbare.indexOf(m); if (eid && i >= 0) klikkbare.splice(i, 1); else if (!eid && i < 0 && m) klikkbare.push(m); }); }
   if (TERRENG && SKOG_FARGE.length && TERRENG.userData.skog !== eid) { const ca = TERRENG.geometry.attributes.color; if (!TERRENG.userData.skogFor) TERRENG.userData.skogFor = SKOG_FARGE.map(([i]) => [ca.getX(i), ca.getY(i), ca.getZ(i)]);
     SKOG_FARGE.forEach(([i, r, g, b], k) => { const f = eid ? [r, g, b] : TERRENG.userData.skogFor[k]; ca.setXYZ(i, f[0], f[1], f[2]); }); ca.needsUpdate = true; TERRENG.userData.skog = eid; } };
+/* 0.27.0: Elvebredden er kjøpt: skilt og omriss tas bort. Buskene og sivet blir stående, for området er til brygga og ikke til bygg */
+window.mbElv = eid => { eid = !!eid; const o = OMRADER.find(a => a.tema === 'elv'); if (!o) return; [o.skiltG, o.stikk, o.kant].forEach(m => { if (m) m.visible = !eid; });
+  [o.flate, o.skiltG].forEach(m => { const i = klikkbare.indexOf(m); if (eid && i >= 0) klikkbare.splice(i, 1); else if (!eid && i < 0 && m) klikkbare.push(m); }); };
 window.mbJorde = (eid, eid2, eid3) => { eid = !!eid; eid2 = !!eid2; eid3 = !!eid3; jordeMesher.forEach(m => m.visible = !eid); jorde2Mesher.forEach(m => m.visible = !eid2); jorde3Mesher.forEach(m => m.visible = !eid3);
   if (gjerdeJordeSor) gjerdeJordeSor.visible = eid && !eid3; if (gjerdeJorde3) gjerdeJorde3.visible = eid3;   /* 0.22.0: gjerdet mot Bakjordet tas bort når det er kjøpt */
   if (gjerdeJorde) gjerdeJorde.visible = eid; if (gjerdeJordeOst) gjerdeJordeOst.visible = eid && !eid2; if (gjerdeJorde2) gjerdeJorde2.visible = eid2;   /* 0.20.0: gjerdet mellom Jordet og Østjordet tas bort når begge er kjøpt */

@@ -19,6 +19,7 @@
       best: { nr: 0, fro: (Math.floor(naa) % 2147483646) + 1, liste: [] },
       rebus: { gate: null, neste: naa, siste: [], loste: 0 },
       gaver: { uaapnet: [], dag: '', pynt: {} },
+      fiske: { slutt: null },   // 0.27.0: snøret er ute til «slutt»
       pynt: [], pyntNr: 0,   // 0.26.0: pynt fra pyntebutikken, hver med type og plass
       arr: {}, skinn: { eid: {}, valgt: null }
     };
@@ -157,6 +158,17 @@
       legg(s, j.vare, ut); b.ko.splice(i, 1); n += ut; xp += D.produktXP(j.vare); varer[j.vare] = (varer[j.vare] || 0) + ut; s.stat.laget += ut;
     }
     return { ok: n > 0, antall: n, varer: varer, xp: xp, nye: n ? giXP(s, xp, naa) : [], grunn: n ? null : full ? 'lave-full' : 'ingen-klare' };
+  }
+  // ---------- Fiskebrygga (0.27.0) ----------
+  function kanKaste(s) { if (!s.omrader.elvebredden) return 'ikke-kjopt'; if (s.fiske.slutt !== null) return 'ute'; return null; }
+  function kast(s, naa) { var g = kanKaste(s); if (g) return { ok: false, grunn: g }; s.fiske.slutt = naa + D.fiske.tid * 1000; return { ok: true }; }
+  function fiskKlar(s, naa) { return s.fiske.slutt !== null && s.fiske.slutt <= naa; }
+  function halInn(s, naa) {
+    if (s.fiske.slutt === null) return { ok: false, grunn: 'ikke-kastet' }; if (s.fiske.slutt > naa) return { ok: false, grunn: 'venter' };
+    if (plass(s, 'lave') < 1) return { ok: false, grunn: 'lave-full' };
+    var sum = 0, i; for (i = 0; i < D.fiske.fisk.length; i++) sum += D.fiske.fisk[i][1]; var r = tilf(s) * sum, vare = D.fiske.fisk[0][0];
+    for (i = 0; i < D.fiske.fisk.length; i++) { r -= D.fiske.fisk[i][1]; if (r < 0) { vare = D.fiske.fisk[i][0]; break; } }
+    s.lager[vare] = (s.lager[vare] || 0) + 1; s.fiske.slutt = null; return { ok: true, vare: vare, xp: D.fiske.xp, nye: giXP(s, D.fiske.xp, naa) };
   }
   // ---------- Pyntebutikken (0.26.0) ----------
   function kanKjopePynt(s, type) { var P = D.pynt[type]; if (!P) return 'ukjent'; if (s.nivaa < D.pyntNivaa) return 'laast'; if (s.pynt.length >= D.pyntMaks) return 'fullt'; if (s.mynter < P.pris) return 'mynter'; return null; }
@@ -325,6 +337,7 @@
     } else s.best.liste = [];
     fyllBestillinger(s, naa);
     if (r.omrader && typeof r.omrader === 'object') for (var om in D.omrader) if (r.omrader[om] === true && s.nivaa >= D.omrader[om].nivaa) s.omrader[om] = true;
+    if (r.fiske && typeof r.fiske === 'object' && s.omrader.elvebredden && typeof r.fiske.slutt === 'number' && isFinite(r.fiske.slutt)) s.fiske.slutt = Math.min(r.fiske.slutt, naa + D.fiske.tid * 1000);
     if (r.rebus && typeof r.rebus === 'object') {
       if (typeof r.rebus.gate === 'string' && D.gater[r.rebus.gate] && D.nivaaFor(r.rebus.gate) <= s.nivaa) s.rebus.gate = r.rebus.gate;
       s.rebus.neste = Math.min(tall(r.rebus.neste, naa), naa + D.rebus.pause * 1000); s.rebus.loste = Math.max(0, Math.floor(tall(r.rebus.loste, 0)));
@@ -451,7 +464,7 @@
     nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
     nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
-    kanKjopePynt: kanKjopePynt, kjopPynt: kjopPynt, selgPynt: selgPynt, maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
+    kanKaste: kanKaste, kast: kast, fiskKlar: fiskKlar, halInn: halInn, kanKjopePynt: kanKjopePynt, kjopPynt: kjopPynt, selgPynt: selgPynt, maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
     giDagsgave: giDagsgave, bonusAktiv: bonusAktiv, leverGaver: leverGaver, klareGaver: klareGaver, aapneGave: aapneGave
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;

@@ -263,6 +263,13 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
     t('Kjøpt pynt overlever lagring med plass', v.pynt.length === 2 && v.pynt[0].t === 'lykt' && v.pynt[0].x === 3 && v.pynt[1].x === null);
     const sg = L.selgPynt(x, x.pynt[0].id); t('Pynt selges tilbake for halv pris', sg.ok && sg.mynter === 20 && x.mynter === 50 && x.pynt.length === 1);
     t('Ugyldig pynt i lagringen fjernes', L.valider(Object.assign(JSON.parse(JSON.stringify(x)), { pynt: [{ t: 'tull' }, null, { t: 'benk', x: 'a' }] }), T0).pynt.length === 1); }
+  { const x = L.ny(T0); while (x.nivaa < 18) L.giXP(x, 5, T0); x.mynter = 6000; const for1 = L.kast(x, T0), kj = L.kjopOmrade(x, 'elvebredden'), k1 = L.kast(x, T0), k2 = L.kast(x, T0), tidlig = L.halInn(x, T0 + 30 * S);
+    t('Fiskebrygga: krever Elvebredden (nivå 18, 6000), ett snøre om gangen, 90 s', for1.grunn === 'ikke-kjopt' && kj.ok && x.mynter === 0 && k1.ok && k2.grunn === 'ute' && tidlig.grunn === 'venter' && !L.fiskKlar(x, T0 + 89 * S) && L.fiskKlar(x, T0 + 90 * S));
+    const v = L.valider(JSON.parse(JSON.stringify(x)), T0 + 10 * S); t('Snøret overlever lagring', v.omrader.elvebredden === true && v.fiske.slutt === T0 + 90 * S);
+    const h = L.halInn(x, T0 + 600 * S); t('Fisken venter til du haler inn, og gir 1 fisk og 3 XP', h.ok && ['abbor', 'orret', 'gjedde'].includes(h.vare) && x.lager[h.vare] === 1 && h.xp === 3 && x.fiske.slutt === null);
+    const tell = { abbor: 0, orret: 0, gjedde: 0 }; for (let i = 0; i < 600; i++) { x.lager = {}; L.kast(x, T0); tell[L.halInn(x, T0 + 100 * S).vare]++; }
+    t('Fordeling ca. 60/30/10 over 600 fisk', tell.abbor > 300 && tell.abbor < 420 && tell.orret > 130 && tell.orret < 230 && tell.gjedde > 30 && tell.gjedde < 95, JSON.stringify(tell));
+    t('Fisk kan selges, men kommer ikke i bestillinger', L.kanSelge('gjedde') && !L.bestPool(x).includes('abbor')); }
   t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);

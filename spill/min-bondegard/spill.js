@@ -20,7 +20,7 @@ if (matchMedia('(pointer:coarse)').matches) document.documentElement.classList.a
 addEventListener('pointerdown', e => document.documentElement.classList.toggle('touch', e.pointerType === 'touch'), {passive: true, capture: true});
 
 // Det som er laget i denne versjonen. Resten av nivå 1–10 ligger i data.js og kommer i fase 2–4.
-const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot', 'gresskar'], bygg: ['forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken', 'grisebinge', 'paibakeri', 'sauefjos', 'vevstol', 'festbord'], dyr: ['hone', 'ku', 'gris', 'sau'], omrader: ['enga', 'skogkanten', 'jordet', 'ostjordet', 'bakjordet']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
+const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot', 'gresskar'], bygg: ['forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken', 'grisebinge', 'paibakeri', 'sauefjos', 'vevstol', 'festbord'], dyr: ['hone', 'ku', 'gris', 'sau'], omrader: ['enga', 'skogkanten', 'jordet', 'ostjordet', 'bakjordet', 'elvebredden']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
 
 /* ======================= Lagring (F2, F3) ======================= */
 let s = null, lagringFeilet = false;
@@ -693,7 +693,7 @@ function plasser(t, x, z, r) { t.x = x; t.z = z; t.r = r || 0; t.plassert = true
 function plasserAlt() {
   synkArr();
   const enga = !!(s.omrader && s.omrader.enga), skog = !!(s.omrader && s.omrader.skogkanten); GARD.x1 = enga ? GARD_X1_ENGA : GARD_X1; GARD.x0 = skog ? GARD_X0_SKOG : GARD_X0;
-  if (window.mbEnga) window.mbEnga(enga); if (window.mbSkog) window.mbSkog(skog); if (window.mbJorde) window.mbJorde(s.omrader && s.omrader.jordet, s.omrader && s.omrader.ostjordet, s.omrader && s.omrader.bakjordet); synkHoner(); synkHund();
+  if (window.mbEnga) window.mbEnga(enga); if (window.mbSkog) window.mbSkog(skog); if (window.mbJorde) window.mbJorde(s.omrader && s.omrader.jordet, s.omrader && s.omrader.ostjordet, s.omrader && s.omrader.bakjordet); if (window.mbElv) window.mbElv(s.omrader && s.omrader.elvebredden); synkBrygge(); synkHoner(); synkHund();
   s.akre.forEach((f, i) => {
     let t = ting.get(f.id); if (!t) { t = lagAkerGruppe(f); ting.set(f.id, t); }
     if (f.x === null) { const [sx, sz] = STANDARD.akre[i] || [0, 0]; const p = finnLedigPlass(t, sx, sz) || [sx, sz]; f.x = p[0]; f.z = p[1]; }
@@ -849,6 +849,40 @@ function synkPynt() {
     if (!t) { const g = lagPynt(id); scene.add(g); eierAv(g); klikkbar(g); t = {type: 'pynt', id: 'pynt-' + id, pid: id, gruppe: g, fot: PYNT_FOT, hoyde: id === 'bursdagspynt' ? 2.9 : 1.8}; t.ikon = lagIkon(t.hoyde); g.add(t.ikon); ting.set(t.id, t); }
     if (p.x === null) { const q = finnLedigPlass(t, -4.6, 3.6) || [-4.6, 3.6]; p.x = q[0]; p.z = q[1]; }
     plasser(t, p.x, p.z, p.r || 0); }
+}
+/* 0.27.0 Fiskebrygga (Even og Ivar 17.–18.11). Brygga står på fiskeplassen ved elva og kommer når Elvebredden er kjøpt.
+   «Kast og vent»: trykk på brygga, kast snøret, og hal inn når duppen hopper. Roboten går ikke dit, for brygga ligger utenfor gården */
+let brygge = null, dupp = null;
+function lagBrygge() {
+  const g = new THREE.Group(), tre = MAT.brunPlank, L = 5.2, W = 1.7;
+  for (let i = 0; i < 13; i++) mesh(teksturUV(avrundetBoks(W, 0.09, 0.36, 0.02, 1), 0.8, 0.2), tre, 0, 0, -0.2 - i * 0.4, g);
+  [[-0.75, -0.3], [0.75, -0.3], [-0.75, -2.6], [0.75, -2.6], [-0.75, -5.0], [0.75, -5.0]].forEach(([x, z]) => mesh(new THREE.CylinderGeometry(0.1, 0.11, 2.0, 8), tre, x, -0.75, z, g));
+  [-0.78, 0.78].forEach(x => mesh(avrundetBoks(0.1, 0.1, L, 0.02, 1), tre, x, -0.08, -L / 2 - 0.05, g));
+  mesh(new THREE.CylinderGeometry(0.24, 0.2, 0.36, 12), fm(0x4a7fb5, 0.6), 0.5, 0.23, -1.2, g); mesh(new THREE.TorusGeometry(0.2, 0.02, 6, 14, Math.PI), fm(0x8a8f96, 0.5), 0.5, 0.4, -1.2, g);   /* bøtte */
+  const stang = mesh(new THREE.CylinderGeometry(0.02, 0.035, 2.6, 6), fm(0x8a5a36, 0.8), -0.35, 1.0, -4.6, g); stang.rotation.x = -0.75;
+  mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.1, 10), fm(0x2e2a28, 0.5), -0.27, 0.42, -3.95, g).rotation.z = Math.PI / 2;
+  mesh(avrundetBoks(0.5, 0.3, 0.34, 0.04, 1), fm(0xc0392b, 0.7), -0.5, 0.2, -2.0, g);   /* fiskeskrin */
+  const sk = skiltTekst('Brygga', 1.3); sk.position.set(0, 1.5, -0.1); g.add(sk); [-0.5, 0.5].forEach(x => mesh(avrundetBoks(0.08, 1.4, 0.08, 0.02, 1), tre, x, 0.7, -0.14, g));
+  bake(g); return g;
+}
+function synkBrygge() {
+  const eid = !!(s.omrader && s.omrader.elvebredden);
+  if (eid && !brygge && typeof elvKant === 'function') {
+    const x = FISKEPLASS.x; let z = -13; while (z > -30 && elvKant(x, z) > 0.4) z -= 0.1;   /* bredden: der vannet begynner */
+    const g = lagBrygge(); g.position.set(x, VANN_Y + 0.5, z + 1.2); scene.add(g); eierAv(g); klikkbar(g); brygge = {gruppe: g, x, z: z + 1.2, ikon: lagIkon(2.6)}; g.add(brygge.ikon);
+    dupp = new THREE.Group(); mesh(new THREE.SphereGeometry(0.13, 10, 8), fm(0xe2332b, 0.5), 0, 0.05, 0, dupp); mesh(new THREE.SphereGeometry(0.13, 10, 8, 0, 6.3, 0, 1.6), fm(0xffffff, 0.5), 0, 0.06, 0, dupp); mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.3, 5), fm(0x2e2a28, 0.5), 0, 0.25, 0, dupp);
+    dupp.position.set(x - 0.35, VANN_Y, z + 1.2 - 6.6); scene.add(dupp);
+  }
+  if (brygge) { brygge.gruppe.visible = eid; if (dupp) dupp.visible = eid && s.fiske.slutt !== null; settIkon(brygge.ikon, eid && L.fiskKlar(s, naa()) ? '🎣' : null); }
+}
+function oppdaterBrygge(dt, t) { if (!dupp || !dupp.visible) return; const klar = L.fiskKlar(s, naa()); dupp.position.y = VANN_Y + (klar ? -0.08 + Math.abs(Math.sin(t * 9)) * 0.22 : Math.sin(t * 2.2) * 0.04); dupp.rotation.z = klar ? Math.sin(t * 9) * 0.3 : Math.sin(t * 1.7) * 0.08; }
+function visBrygge() {
+  aapneHandling(null, '🎣 Fiskebrygga', () => { const t0 = naa(), fisk = D.fiske.fisk.map(f => `${ikon(f[0])} ${navn(f[0])}: du har ${s.lager[f[0]] || 0}`).join(' · ');
+    let p = `<p>Her fisker du i elva. Du vet ikke hvilken fisk du får før du haler inn.</p><p style="font-size:15px">${fisk}</p>`;
+    if (s.fiske.slutt === null) p += '<p>Kast snøret og vent til duppen hopper.</p><div class="knapper"><button class="knapp gronn" data-g="kast" type="button">🎣 Kast snøret</button></div>';
+    else if (!L.fiskKlar(s, t0)) p += `<p>Duppen ligger i vannet. Fisken biter om ca. ${Math.max(1, Math.ceil((s.fiske.slutt - t0) / 1000))} sekunder. Du kan gjøre andre ting mens du venter.</p><div class="knapper"><button class="knapp lys" data-g="lukk" type="button">OK</button></div>`;
+    else p += `<p><b>Det napper!</b> ${L.plass(s, 'lave') < 1 ? 'Låven er full. Selg noe først, så haler du inn.' : 'Hal inn fisken.'}</p><div class="knapper"><button class="knapp gronn" data-g="hal" type="button" ${L.plass(s, 'lave') < 1 ? 'disabled' : ''}>🐟 Hal inn</button></div>`;
+    return p; });
 }
 /* 0.26.0 Pyntebutikken (Even 17.11): pynt kjøpt for mynter. Hver ting har sin egen plass og kan flyttes, snus og selges */
 function lagKjopPynt(type) {
@@ -1098,7 +1132,7 @@ function visGate() {
   });
 }
 function synk(alt) {
-  synkGate(); synkGaver(); synkBilknapp();
+  synkGate(); synkGaver(); synkBilknapp(); synkBrygge();
   const t = naa();
   for (const f of s.akre) { const u = ting.get(f.id); if (!u) continue; const st = akerStadie(f, t); if (st !== u.stadie || alt) { u.stadie = st; u.plante.visible = !!st; if (st) u.plante.geometry = PROTO[st]; } }
   const honer = s.dyr.hone || []; let klare = 0, sultne = 0;
@@ -1411,6 +1445,7 @@ function visDyr(u, art) {   /* hønsehuset og fjøset (0.9.8) bruker samme kort 
 }
 const OMR = {   /* 0.13.0: Enga og Skogkanten bruker samme kjøpskort */
   enga: {ikon: '🌿', midt: [18, 0, -1], tekst: 'En stor eng øst for gården. Da blir gården bredere, og du får plass til fjøs, beite og meieri.', eid: 'Enga er din. Her er det plass til fjøset og meieriet.', takk: 'Enga er din! 🌿 Nå er det plass til fjøs og meieri.'},
+  elvebredden: {ikon: '🎣', midt: [3, 0, -16], tekst: 'Stranda ved elva. Her får du en fiskebrygge, så du kan fiske abbor, ørret og gjedde.', eid: 'Elvebredden er din. Trykk på brygga for å fiske.', takk: 'Elvebredden er din! 🎣 Trykk på brygga for å fiske.'},
   bakjordet: {ikon: '🌻', midt: [0, 0, 26.5], tekst: 'Mer jorde bak Jordet. Gjerdet imellom tas bort, så det blir dobbelt så dypt.', eid: 'Bakjordet er ditt. Her er det plass til store bygg.', takk: 'Bakjordet er ditt! 🌻 Nå er Jordet dobbelt så stort.'},
   ostjordet: {ikon: '🌾', midt: [19, 0, 19], tekst: 'Mer jorde, rett øst for Jordet. Gjerdet imellom tas bort, så du får ett stort jorde.', eid: 'Østjordet er ditt. Her er det plass til mer.', takk: 'Østjordet er ditt! 🌾 Nå er jordet enda større.'},
   jordet: {ikon: '🌻', midt: [0, 0, 19], tekst: 'Et stort jorde på andre siden av veien. Du får et nytt gjerde og plass til flere åkre og bygg.', eid: 'Jordet er ditt. Her er det plass til mer.', takk: 'Jordet er ditt! 🌻 Flytt åkre og bygg hit med ✋ Flytt.'},
@@ -1474,6 +1509,9 @@ $('handlingInnhold').addEventListener('click', e => {
   if (g === 'skinn') { if (L.velgSkinn(s, k.dataset.v || null)) { lagre(); if (bilKo.fase === 0) { lukkHandling(); synkVarebil(); synk(true); sprett.push({o: bil, t: 0}); } else { melding('Bilen bytter utseende når den er hjemme igjen. 🚚'); tegnPaaNytt(); } } return; }
   if (g === 'tavle') { lukkHandling(); visTavle(); return; }
   if (g === 'flytt') { startFlytt(u); return; }
+  if (g === 'kast') { const r = L.kast(s, naa()); if (r.ok) { lagre(); synkBrygge(); tegnPaaNytt(); melding('🎣 Snøret er ute. Fisken biter om litt.', 2600); } return; }
+  if (g === 'hal') { const r = L.halInn(s, naa()); if (r.ok) { lukkHandling(); gi(r); flyt('+1 ' + ikon(r.vare), brygge.gruppe.position.clone().setY(brygge.gruppe.position.y + 2.2)); melding('🐟 Du fikk en ' + navn(r.vare).toLowerCase() + '!', 2800); lagre(); synkBrygge(); synk(true); } return; }
+  if (g === 'lukk') { lukkHandling(); return; }
   if (g === 'selgPynt') { const r = L.selgPynt(s, u.e.id); if (r.ok) { flyt('+' + r.mynter + ' 🪙', midtAv(u, 2)); lukkHandling(); synkKjopPynt(); lagre(); synk(true); } return; }
   if (g === 'marked') { lukkHandling(); visMarked(); return; }
   if (g === 'lager') { lukkHandling(); visLager(); return; }
@@ -1655,11 +1693,12 @@ window.spillTrykk = (o, t, ray) => {
   if (!startet || pauset || undertrykkTrykk || draModus) return true;   /* et drag håndteres i sluttDra */
   if (flytt) { flyttTil(ray); return true; }
   if (o && o.userData.katt) { kundeTrykk(); return true; }
+  if (o && brygge && o === brygge.gruppe) { kameraMaal = brygge.gruppe.position.clone(); visBrygge(); return true; }
   if (o && o === hund) { hundTrykk(); return true; }
   if (o && hundHaug && o === hundHaug) { hundHentSkatt(); return true; }
   if (o && rev && (o === revehus || o === rev)) { if (revInne()) { revUteTil = performance.now() + 9000; rev.visible = true; revSett(...REV_HJEM); rev.rotation.y = Math.PI / 2 + 0.35; } o = rev; }   /* 0.23.0: et trykk på huset henter Rebus ut */
   if (o === rev) { if (s.oppl.steg >= OPPL.length && s.nivaa >= D.rebus.nivaa) visGate(); else { if (!revGang) hilsRev(false); visOppl(true); } return true; }
-  if (o && o.userData.omrade && ['eng', 'skog', 'jorde', 'jorde2', 'jorde3'].includes(o.userData.omrade.tema)) { visOmradeKjop({eng: 'enga', skog: 'skogkanten', jorde: 'jordet', jorde2: 'ostjordet', jorde3: 'bakjordet'}[o.userData.omrade.tema]); return true; }
+  if (o && o.userData.omrade && ['eng', 'skog', 'jorde', 'jorde2', 'jorde3', 'elv'].includes(o.userData.omrade.tema)) { visOmradeKjop({eng: 'enga', skog: 'skogkanten', jorde: 'jordet', jorde2: 'ostjordet', jorde3: 'bakjordet', elv: 'elvebredden'}[o.userData.omrade.tema]); return true; }
   const u = tingFor(o);
   if (u) { if (o && o.userData.art) { o.userData.hopp = 0.4; } bruk(u); return true; }
   lukkHandling();
@@ -1721,7 +1760,7 @@ window.spillOppdater = (dt, t) => {
   for (const u of ikonListe()) u.ikon.position.y = u.ikon.userData.y0 + Math.sin(t * 3 + u.gruppe.position.x) * 0.12;
   if (pil && pil.visible && pil.userData.u) { const p = pil.userData.u.gruppe.position, h = pil.userData.u.hoyde || 3; pil.position.set(p.x, h + 1.2 + Math.abs(Math.sin(t * 4)) * 0.6, p.z); }
   if (kameraMaal) { cam.target.lerp(_p.set(kameraMaal.x, 0, kameraMaal.z), Math.min(1, dt * 5)); plasserKamera(); if (cam.target.distanceTo(_p) < 0.05) kameraMaal = null; }
-  oppdaterBil(dt); oppdaterKunde(dt, t); oppdaterRev(dt, t); oppdaterHund(dt, t);
+  oppdaterBil(dt); oppdaterKunde(dt, t); oppdaterRev(dt, t); oppdaterHund(dt, t); oppdaterBrygge(dt, t);
   if (ADMIN) { try { oppdaterAdmin(dt, t); } catch (e) { if (!adm.feilVist) { adm.feilVist = true; console.warn('admin', e); } } }   /* 0.24.1: en feil i admin skal aldri stoppe spillet */
   if (gaveVent > 0 && startet && !pauset) { gaveVent -= dt; if (gaveVent <= 0) leverGaver('Blomst'); }   /* kommer hun ikke innen ett minutt, står gaven der likevel */
   synkT += dt; if (synkT > 0.25) { synkT = 0; synk(); oppdaterTider(); }

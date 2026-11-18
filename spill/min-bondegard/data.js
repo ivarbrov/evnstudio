@@ -32,6 +32,9 @@
       ull:      { navn: 'Ull',      ikon: '🧶', verdi: 32 },
       gulrotpai: { navn: 'Gulrotpai', ikon: '🥧' },
       kremkake:  { navn: 'Kremkake',  ikon: '🍰' },
+      abbor:     { navn: 'Abbor',     ikon: '🐟', verdi: 10, fisk: true },   // 0.27.0: fisk fra brygga. Verdiene er forslag
+      orret:     { navn: 'Ørret',     ikon: '🐠', verdi: 18, fisk: true },
+      gjedde:    { navn: 'Gjedde',    ikon: '🐡', verdi: 30, fisk: true },
       lue:       { navn: 'Lue',       ikon: '🧢' },
       genser:    { navn: 'Genser',    ikon: '🧥' },
       gresskarbrod: { navn: 'Gresskarbrød', ikon: '🎃🍞' },
@@ -107,6 +110,7 @@
     omrader: {
       enga:       { navn: 'Enga',       nivaa: 5,  pris: 300 },
       skogkanten: { navn: 'Skogkanten', nivaa: 10, pris: 1500 },
+      elvebredden: { navn: 'Elvebredden', nivaa: 18, pris: 6000 },   // 0.27.0: med fiskebrygga (plan 8.11 og 17.11)
       bakjordet:  { navn: 'Bakjordet',  nivaa: 13, pris: 2500, krever: 'jordet' },   // 0.22.0: bakre del av Jordet (plan 16.11). Navn og pris er forslag
       ostjordet:  { navn: 'Østjordet',  nivaa: 16, pris: 4000, krever: 'jordet' },   // 0.20.1 (Ivar 16.11): utvidelsen øst for Jordet, fra nivå 16. Navn og pris er forslag
       jordet:     { navn: 'Jordet',     nivaa: 8,  pris: 1000 }   // 0.17.0 (Even 15.11): jordet på andre siden av veien. Nivå og pris er forslag og må godkjennes av en voksen
@@ -124,6 +128,9 @@
       fuglebad:    { navn: 'Fuglebad',      ikon: '🐦', pris: 120, fot: [1.0, 1.0] },
       fontene:     { navn: 'Fontene',       ikon: '⛲', pris: 400, fot: [2.2, 2.2] }
     },
+    /* 0.27.0 Fiskebrygga (Even og Ivar 17.–18.11): «kast og vent». Roboten kaster snøret, og etter en stund er det fisk på kroken.
+       Ingen tidsfrist: fisken venter til du haler inn. Hvilken fisk det blir, er tilfeldig. Tallene er forslag */
+    fiske: { tid: 90, xp: 3, fisk: [['abbor', 60], ['orret', 30], ['gjedde', 10]] },
     pyntNivaa: 2, pyntMaks: 40, pyntRetur: 0.5,
     // Rebus' gåter (Even 13.11): svaret er varen. Spilleren gir Rebus varen. Lønn: pris × 2 + 10 mynter, 4 XP + nivået til varen. Ny gåte 3 minutter etter riktig svar
     // Gaveesker (Even 14.11, godkjent av Ivar 14.11): gratis, kan aldri kjøpes, sjansene vises åpent. Prosent per sjeldenhet.
