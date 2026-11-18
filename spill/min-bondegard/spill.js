@@ -1133,7 +1133,7 @@ function visGate() {
   });
 }
 function synk(alt) {
-  synkGate(); synkGaver(); synkBilknapp(); synkBrygge();
+  synkGate(); synkGaver(); synkBilknapp(); synkMusikknapp(); synkBrygge();
   const t = naa();
   for (const f of s.akre) { const u = ting.get(f.id); if (!u) continue; const st = akerStadie(f, t); if (st !== u.stadie || alt) { u.stadie = st; u.plante.visible = !!st; if (st) u.plante.geometry = PROTO[st]; } }
   const honer = s.dyr.hone || []; let klare = 0, sultne = 0;
@@ -1510,6 +1510,7 @@ $('handlingInnhold').addEventListener('click', e => {
   if (g === 'skinn') { if (L.velgSkinn(s, k.dataset.v || null)) { lagre(); if (bilKo.fase === 0) { lukkHandling(); synkVarebil(); synk(true); sprett.push({o: bil, t: 0}); } else { melding('Bilen bytter utseende når den er hjemme igjen. 🚚'); tegnPaaNytt(); } } return; }
   if (g === 'tavle') { lukkHandling(); visTavle(); return; }
   if (g === 'flytt') { startFlytt(u); return; }
+  if (g === 'mus') { musVelg(k.dataset.m); tegnPaaNytt(); return; }
   if (g === 'kast') { const r = L.kast(s, naa()); if (r.ok) { lagre(); synkBrygge(); tegnPaaNytt(); melding('🎣 Snøret er ute. Fisken biter om litt.', 2600); } return; }
   if (g === 'hal') { const r = L.halInn(s, naa()); if (r.ok) { lukkHandling(); gi(r); flyt('+1 ' + ikon(r.vare), brygge.gruppe.position.clone().setY(brygge.gruppe.position.y + 2.2)); melding('🐟 Du fikk en ' + navn(r.vare).toLowerCase() + '!', 2800); lagre(); synkBrygge(); synk(true); } return; }
   if (g === 'lukk') { lukkHandling(); return; }
@@ -1905,6 +1906,46 @@ function visBiler() {
       p += `<p><b>${A.ikon} Resten av pakka fra ${A.navn}</b></p>` + A.trinn.filter(tr => tr.premie !== 'skinn').map(tr => `<div class="rad"><span class="stort">${st.levert >= tr.n ? '✅' : '🔒'}</span><span class="midt">${tr.tekst}<small>${st.levert >= tr.n ? 'Du har den' : `Send ${tr.n} ${ikon(A.vare)}`}</small></span></div>`).join(''); });
     return p + tilbake; });
 }
+/* 0.28.0 Musikk (Even 18.11): to egne melodier laget i koden med Web Audio. Ingen lydfiler og ingen lånt musikk.
+   Musikknappen står ved admin- og bilknappen og er for alle. Valget lagres i «mb-musikk». Musikken stopper i pause og når fanen er skjult */
+var MUS = {ctx: null, ut: null, valg: 'gard', timer: null, neste: 0, steg: 0};
+try { const v = localStorage.getItem('mb-musikk'); if (v === 'av' || v === 'gard' || v === 'vinter') MUS.valg = v; } catch (e) {}
+var SANG = {
+  gard: {navn: 'Gårdssangen', ikon: '🌻', stegTid: 60 / 116 / 2, takt: 8,
+    melodi: [72,0,76,79,76,0,72,0, 77,0,81,77,72,0,77,0, 79,0,83,79,74,0,79,81, 79,76,72,0,76,0,0,0, 81,0,76,81,84,0,81,0, 77,0,81,84,81,0,77,0, 74,77,79,83,86,0,83,79, 84,0,79,76,72,0,0,0],
+    akk: [[48,64,67], [53,65,69], [55,62,67], [48,64,67], [45,64,69], [53,65,69], [55,62,67], [48,64,67]]},
+  vinter: {navn: 'Vintersangen', ikon: '❄️', stegTid: 60 / 80 / 2, takt: 6,
+    melodi: [76,0,0,72,0,69, 77,0,0,72,0,69, 79,0,76,0,72,0, 74,0,0,0,71,74, 76,0,81,0,84,0, 81,0,0,77,0,72, 76,0,79,0,76,72, 74,0,0,0,0,0],
+    akk: [[45,60,64], [41,60,65], [48,60,64], [43,59,62], [45,60,64], [41,60,65], [48,60,64], [43,59,62]]}
+};
+function musHz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+function musTone(t, m, type, vol, a, d, over) { const c = MUS.ctx, o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = musHz(m) * (over || 1);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); o.connect(g); g.connect(MUS.ut); o.start(t); o.stop(t + a + d + 0.05); }
+function musSteg(t) { const S = SANG[MUS.valg]; if (!S) return; const n = MUS.steg % S.melodi.length, i = n % S.takt, A = S.akk[Math.floor(n / S.takt) % S.akk.length], m = S.melodi[n];
+  if (MUS.valg === 'gard') {
+    if (m) { musTone(t, m, 'triangle', 0.22, 0.01, 0.28); musTone(t, m, 'square', 0.035, 0.005, 0.12); }
+    if (i === 0) musTone(t, A[0] - 12, 'triangle', 0.3, 0.01, 0.3); if (i === 4) musTone(t, A[0] - 5, 'triangle', 0.24, 0.01, 0.25);
+    if (i === 2 || i === 6) { musTone(t, A[1], 'sine', 0.07, 0.01, 0.14); musTone(t, A[2], 'sine', 0.07, 0.01, 0.14); }
+  } else {
+    if (m) { musTone(t, m, 'sine', 0.2, 0.004, 1.6); musTone(t, m, 'sine', 0.05, 0.004, 0.7, 3); musTone(t, m, 'sine', 0.025, 0.004, 0.4, 4.2); }   /* klokkespill */
+    if (i === 0) { musTone(t, A[0] - 12, 'sine', 0.22, 0.05, 1.8); A.forEach(x => musTone(t, x, 'triangle', 0.045, 0.3, 1.7)); }
+    if (i % 2 === 0) musTone(t, 108, 'sine', i === 0 ? 0.02 : 0.012, 0.002, 0.06);   /* små bjeller */
+  }
+  MUS.steg++; }
+function musTikk() { const c = MUS.ctx; if (!c) return;
+  if (pauset || document.hidden || !startet || MUS.valg === 'av') { if (c.state === 'running') c.suspend(); return; }
+  if (c.state === 'suspended') { c.resume(); return; }
+  if (MUS.neste < c.currentTime) MUS.neste = c.currentTime + 0.05;
+  while (MUS.neste < c.currentTime + 0.35) { musSteg(MUS.neste); MUS.neste += SANG[MUS.valg].stegTid; } }
+function musStart() { if (MUS.valg === 'av' || !startet) return;   /* kalles etter et trykk, for nettleseren krever det før lyd */
+  try { if (!MUS.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; MUS.ctx = new AC(); MUS.ut = MUS.ctx.createGain(); MUS.ut.gain.value = 0.5; MUS.ut.connect(MUS.ctx.destination); }
+    if (!MUS.timer) MUS.timer = setInterval(() => { try { musTikk(); } catch (e) {} }, 100); musTikk(); } catch (e) {} }
+function musVelg(v) { if (v !== 'av' && !SANG[v]) return; MUS.valg = v; MUS.steg = 0; MUS.neste = 0; try { localStorage.setItem('mb-musikk', v); } catch (e) {} musStart(); musTikk(); synkMusikknapp(); }
+function synkMusikknapp() { const kn = $('musikkKnapp'); if (!kn || !MUS) return; kn.hidden = !startet; kn.firstElementChild.textContent = MUS.valg === 'av' ? '🔇' : '🎵'; kn.setAttribute('aria-label', 'Musikk: ' + (MUS.valg === 'av' ? 'av' : SANG[MUS.valg].navn)); }
+function visMusikk() { aapneHandling(null, '🎵 Musikk', () => '<p>Velg hvilken sang du vil høre mens du spiller.</p><div class="knapper">' +
+  ['gard', 'vinter'].map(v => `<button class="knapp ${MUS.valg === v ? 'gronn' : 'lys'}" data-g="mus" data-m="${v}" type="button">${SANG[v].ikon} ${SANG[v].navn}${MUS.valg === v ? ' ✓' : ''}</button>`).join('') +
+  `<button class="knapp ${MUS.valg === 'av' ? 'gronn' : 'lys'}" data-g="mus" data-m="av" type="button">🔇 Ingen musikk${MUS.valg === 'av' ? ' ✓' : ''}</button></div>`); }
+['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, () => { if (!MUS.ctx) musStart(); }, {passive: true}));
 function synkBilknapp() { const kn = $('bilKnapp'); if (kn) kn.hidden = ADMIN || !startet || !(arrNaa || Object.keys(s.skinn.eid).length); }
 function visAdmVarer() {
   aapneHandling(null, '📦 Varer', () => `<p>Trykk «Få» for å få 5 av en vare. «Slett» tar bort 5.</p>` +
@@ -1976,6 +2017,7 @@ if (ADMIN) {
   const kn = $('adminKnapp'); if (kn) { kn.hidden = false; kn.addEventListener('click', visAdmin); }
 } else {
   const kn = $('bilKnapp'); if (kn) kn.addEventListener('click', visBiler);
+  const mk = $('musikkKnapp'); if (mk) mk.addEventListener('click', visMusikk);
 }
 if (ADMIN) {
   $('handlingInnhold').addEventListener('click', e => {
