@@ -1135,7 +1135,7 @@ function visGate() {
   });
 }
 function synk(alt) {
-  synkGate(); synkGaver(); synkBilknapp(); synkMusikknapp(); synkBrygge();
+  synkGate(); synkGaver(); synkBilknapp(); synkMusikknapp(); synkBildeknapp(); synkBrygge();
   const t = naa();
   for (const f of s.akre) { const u = ting.get(f.id); if (!u) continue; const st = akerStadie(f, t); if (st !== u.stadie || alt) { u.stadie = st; u.plante.visible = !!st; if (st) u.plante.geometry = PROTO[st]; } }
   const honer = s.dyr.hone || []; let klare = 0, sultne = 0;
@@ -1512,6 +1512,7 @@ $('handlingInnhold').addEventListener('click', e => {
   if (g === 'skinn') { if (L.velgSkinn(s, k.dataset.v || null)) { lagre(); if (bilKo.fase === 0) { lukkHandling(); synkVarebil(); synk(true); sprett.push({o: bil, t: 0}); } else { melding('Bilen bytter utseende når den er hjemme igjen. 🚚'); tegnPaaNytt(); } } return; }
   if (g === 'tavle') { lukkHandling(); visTavle(); return; }
   if (g === 'flytt') { startFlytt(u); return; }
+  if (g === 'nyttBilde') { lukkHandling(); setTimeout(visBilde, 350); return; }
   if (g === 'mus') { musVelg(k.dataset.m); tegnPaaNytt(); return; }
   if (g === 'kast') { const r = L.kast(s, naa()); if (r.ok) { lagre(); synkBrygge(); tegnPaaNytt(); melding('🎣 Snøret er ute. Fisken biter om litt.', 2600); } return; }
   if (g === 'hal') { const r = L.halInn(s, naa()); if (r.ok) { lukkHandling(); gi(r); flyt('+1 ' + ikon(r.vare), brygge.gruppe.position.clone().setY(brygge.gruppe.position.y + 2.2)); melding('🐟 Du fikk en ' + navn(r.vare).toLowerCase() + '!', 2800); lagre(); synkBrygge(); synk(true); } return; }
@@ -1950,6 +1951,25 @@ function visMusikk() { aapneHandling(null, '🎵 Musikk', () => '<p>Velg hvilken
   ['gard', 'vinter'].map(v => `<button class="knapp ${MUS.valg === v ? 'gronn' : 'lys'}" data-g="mus" data-m="${v}" type="button">${SANG[v].ikon} ${SANG[v].navn}${MUS.valg === v ? ' ✓' : ''}</button>`).join('') +
   `<button class="knapp ${MUS.valg === 'av' ? 'gronn' : 'lys'}" data-g="mus" data-m="av" type="button">🔇 Ingen musikk${MUS.valg === 'av' ? ' ✓' : ''}</button></div>`); }
 ['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, () => { if (!MUS.ctx) musStart(); }, {passive: true, capture: true}));
+/* 0.30.0 Bildeknapp (Even 18.11): ta et bilde av gården og vis det til venner. Bildet lages på enheten og sendes ikke noe sted.
+   Spilleren lagrer det selv. Navnet på spillet og nivået står nederst i bildet */
+let bildeUrl = null;
+function taBilde() {
+  try { renderer.render(scene, camera);   /* tegn og kopier i samme omgang, ellers er lerretet tomt */
+    const k = renderer.domElement, W = Math.min(1600, k.width), H = Math.round(W * k.height / k.width), c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d'); x.drawImage(k, 0, 0, W, H);
+    const h = Math.round(H * 0.075); x.fillStyle = 'rgba(31,74,28,.88)'; x.fillRect(0, H - h, W, h);
+    x.fillStyle = '#fff'; x.textBaseline = 'middle'; x.font = `800 ${Math.round(h * 0.5)}px Nunito, system-ui, sans-serif`; x.fillText('Min Bondegård · nivå ' + s.nivaa, Math.round(h * 0.45), H - h / 2);
+    x.textAlign = 'right'; x.font = `700 ${Math.round(h * 0.4)}px Nunito, system-ui, sans-serif`; x.fillText('evnstudio.no', W - Math.round(h * 0.45), H - h / 2);
+    bildeUrl = c.toDataURL('image/jpeg', 0.9); return true; } catch (e) { bildeUrl = null; return false; } }
+function visBilde() {
+  const ok = taBilde();
+  aapneHandling(null, '📷 Bilde av gården', () => ok ? `<p>Her er bildet av gården din. Du kan lagre det og vise det til noen.</p>
+    <img src="${bildeUrl}" alt="Bilde av gården din" style="width:100%;border-radius:12px;display:block;margin:6px 0 10px">
+    <div class="knapper"><a class="knapp gronn" href="${bildeUrl}" download="min-bondegard.jpg" style="text-decoration:none;text-align:center">💾 Lagre bildet</a><button class="knapp lys" data-g="nyttBilde" type="button">📷 Ta et nytt</button></div>
+    <p style="font-size:14px">Virker ikke «Lagre»? Hold fingeren på bildet, eller høyreklikk, og velg «Lagre bilde».</p>`
+    : '<p>Det gikk ikke å ta bilde akkurat nå. Prøv en gang til.</p>'); }
+function synkBildeknapp() { const kn = $('bildeKnapp'); if (kn) kn.hidden = !startet; }
 function synkBilknapp() { const kn = $('bilKnapp'); if (kn) kn.hidden = ADMIN || !startet || !(arrNaa || Object.keys(s.skinn.eid).length); }
 function visAdmVarer() {
   aapneHandling(null, '📦 Varer', () => `<p>Trykk «Få» for å få 5 av en vare. «Slett» tar bort 5.</p>` +
@@ -2022,7 +2042,7 @@ if (ADMIN) {
 } else {
   const kn = $('bilKnapp'); if (kn) kn.addEventListener('click', visBiler);
 }
-{ const mk = $('musikkKnapp'); if (mk) mk.addEventListener('click', visMusikk); }   /* for alle, også admin (0.28.1: knappen virket ikke for admin) */
+{ const mk = $('musikkKnapp'); if (mk) mk.addEventListener('click', visMusikk); const bk = $('bildeKnapp'); if (bk) bk.addEventListener('click', visBilde); }   /* for alle, også admin (0.28.1: knappen virket ikke for admin) */
 if (ADMIN) {
   $('handlingInnhold').addEventListener('click', e => {
     const k = e.target.closest('button[data-g="adm"]'); if (!k || k.disabled) return; const v = k.dataset.v;
