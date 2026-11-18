@@ -84,6 +84,9 @@
   .dyrkort .nv { font-weight:800; font-size:15px; overflow-wrap:anywhere; }
   .dyrkort .ik { white-space:nowrap; overflow:hidden; }
   .dyrkort .sj { font-size:12px; font-weight:800; }
+  .dyrkort.er-bannet { position:relative; border-color:#ff4d5e !important; }
+  .dyrkort.er-bannet .ik { filter:grayscale(1); opacity:.6; }
+  .dyrkort .bannet { display:inline-block; background:#e0283c; color:#fff; font-size:12px; font-weight:900; border-radius:8px; padding:2px 8px; margin-bottom:4px; transform:rotate(-4deg); }
   .dyrkort.ukjent .ik { filter:grayscale(1) brightness(.4); }
   .kartkort { max-width:min(560px, calc(100vh - 40px)); padding:14px 16px; }
   #kartCanvas { width:100%; height:auto; aspect-ratio:1; display:block; margin:4px auto; max-width:calc(100vh - 230px); }
@@ -5567,9 +5570,11 @@ function tegnKart() {
 $('lukkBok').addEventListener('click', () => lukkLag('bok'));
 
 function byggBok() {
-  $('rutenett').innerHTML = iSamleboka().map(d => {
-    const n = tilstand.funnet[d.id], s = SJ[d.sjelden];
-    return n ? `<div class="dyrkort" style="border-color:${s.farge}"><div class="ik">${d.ikon}</div><div class="nv">${d.navn}</div><div class="sj" style="color:${s.farge}">${s.navn}</div><div class="sj">${SONE_ID[d.sone].ikon} ${SONE_ID[d.sone].navn}</div><div class="sj">${d.sjelden >= 1 ? 'Spiser bare' : 'Liker'} ${MAT_FOR_SONE[d.sone].ikon}</div><div class="sj">Klekket: ${n}</div></div>`
+  // Bannede dyr står alltid i boka med en BANNET-lapp (Evens ønske 18.11.2026)
+  $('rutenett').innerHTML = DYR.map(d => {
+    const n = tilstand.funnet[d.id], s = SJ[d.sjelden], ban = d.bannet ? '<div class="bannet">🚫 BANNET</div>' : '';
+    return n ? `<div class="dyrkort${d.bannet ? ' er-bannet' : ''}" style="border-color:${s.farge}">${ban}<div class="ik">${d.ikon}</div><div class="nv">${d.navn}</div><div class="sj" style="color:${s.farge}">${s.navn}</div><div class="sj">${SONE_ID[d.sone].ikon} ${SONE_ID[d.sone].navn}</div><div class="sj">${d.sjelden >= 1 ? 'Spiser bare' : 'Liker'} ${MAT_FOR_SONE[d.sone].ikon}</div><div class="sj">Klekket: ${n}</div></div>`
+             : d.bannet ? `<div class="dyrkort er-bannet">${ban}<div class="ik">${d.ikon}</div><div class="nv">${d.navn}</div><div class="sj">Kan ikke klekkes lenger</div></div>`
              : `<div class="dyrkort ukjent"><div class="ik">❓</div><div class="nv">???</div><div class="sj" style="color:${s.farge}">${s.navn}</div></div>`;
   }).join('');
 }
