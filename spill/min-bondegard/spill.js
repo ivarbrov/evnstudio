@@ -874,6 +874,7 @@ function synkBrygge() {
     dupp = new THREE.Group(); mesh(new THREE.SphereGeometry(0.13, 10, 8), fm(0xe2332b, 0.5), 0, 0.05, 0, dupp); mesh(new THREE.SphereGeometry(0.13, 10, 8, 0, 6.3, 0, 1.6), fm(0xffffff, 0.5), 0, 0.06, 0, dupp); mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.3, 5), fm(0x2e2a28, 0.5), 0, 0.25, 0, dupp);
     dupp.position.set(x - 0.35, VANN_Y, z + 1.2 - 6.6); scene.add(dupp);
   }
+  if (window.mbIsHull) window.mbIsHull(brygge ? brygge.x - 0.35 : 0, brygge ? brygge.z - 6.6 : 0, eid && !!brygge);
   if (brygge) { brygge.gruppe.visible = eid; if (dupp) dupp.visible = eid && s.fiske.slutt !== null; settIkon(brygge.ikon, eid && L.fiskKlar(s, naa()) ? '🎣' : null); }
 }
 function oppdaterBrygge(dt, t) { if (!dupp || !dupp.visible) return; const klar = L.fiskKlar(s, naa()); dupp.position.y = VANN_Y + (klar ? -0.08 + Math.abs(Math.sin(t * 9)) * 0.22 : Math.sin(t * 2.2) * 0.04); dupp.rotation.z = klar ? Math.sin(t * 9) * 0.3 : Math.sin(t * 1.7) * 0.08; }
@@ -1876,6 +1877,7 @@ function admBursdag() {   /* alle premiene fra Bursdagsfesten, og Festbordet fer
 function admSkinn() { (admLager().skinn || []).forEach(id => { if (D.skinn[id]) s.skinn.eid[id] = true; }); }
 function visAdmin() {
   aapneHandling(null, '👑 Admin', () => `<p>Her bestemmer du. Dette finnes bare i testversjonen.</p>
+    <div class="rad"><span class="stort">❄️</span><span class="midt">Vinter i Elvedal<small>${admLager().vinter ? 'Er på: snø, snøfall og is på elva' : 'Snø, snøfall og is på elva. Første test'}</small></span><button class="knapp ${admLager().vinter ? 'lys' : 'gronn'}" data-g="adm" data-v="vinter" type="button">${admLager().vinter ? 'Slå av' : 'Slå på'}</button></div>
     <div class="rad"><span class="stort">🪙</span><span class="midt">Myntregn<small>Det regner mynter over gården</small></span><button class="knapp" data-g="adm" data-v="regn" type="button">Start</button></div>
     <div class="rad"><span class="stort">🚚</span><span class="midt">Bilkaos<small>Alle bilene kommer på én gang</small></span><button class="knapp" data-g="adm" data-v="biler" type="button">Start</button></div>
     <div class="rad"><span class="stort">🐔</span><span class="midt">Kjempedyr<small>Dyrene blir kjempestore en liten stund</small></span><button class="knapp" data-g="adm" data-v="kjempe" type="button">Start</button></div>
@@ -2014,7 +2016,7 @@ function oppdaterAdmin(dt, t) {
     if (u.ret * b.position.x > 46) { scene.remove(b); adm.biler.splice(i, 1); } }
 }
 if (ADMIN) {
-  admSkinn(); admPlanter(); synkKrone();
+  admSkinn(); admPlanter(); synkKrone(); if (admLager().vinter && window.mbVinter) window.mbVinter(true);
   const kn = $('adminKnapp'); if (kn) { kn.hidden = false; kn.addEventListener('click', visAdmin); }
 } else {
   const kn = $('bilKnapp'); if (kn) kn.addEventListener('click', visBiler);
@@ -2024,6 +2026,7 @@ if (ADMIN) {
   $('handlingInnhold').addEventListener('click', e => {
     const k = e.target.closest('button[data-g="adm"]'); if (!k || k.disabled) return; const v = k.dataset.v;
     if (v === 'regn') { lukkHandling(); admMyntregn(); }
+    else if (v === 'vinter') { const paa = !admLager().vinter; admLagre(l => { l.vinter = paa; }); if (window.mbVinter) window.mbVinter(paa); synkBrygge(); lukkHandling(); melding(paa ? '❄️ Nå er det vinter i Elvedal!' : 'Vinteren er slått av', 3000); }
     else if (v === 'premium') { const paa = !admLager().premium; admPremium(paa); tegnPaaNytt(); melding(paa ? '👑 Premium er på! Gullgård, dobbel fart og dobbel XP.' : 'Premium er av', 3400); }
     else if (v === 'kjempe') { lukkHandling(); adm.kjempeT = 20; melding('🐔 Kjempedyr!', 3200); }
     else if (v === 'ferdig') { const t0 = naa(); s.akre.forEach(f => { if (f.avling && f.slutt > t0) f.slutt = t0; }); for (const d in s.dyr) s.dyr[d].forEach(x => { if (x.slutt && x.slutt > t0) x.slutt = t0; }); for (const x in s.bygg) (s.bygg[x].ko || []).forEach(j => { if (j.slutt > t0) { j.slutt = t0; j.start = Math.min(j.start, t0); } }); lagre(); synk(true); lukkHandling(); melding('⏩ Alt er ferdig!', 3200); }

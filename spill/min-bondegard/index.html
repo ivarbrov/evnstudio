@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.28.2 – EVN Studio</title>
+<title>Min Bondegård 0.29.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -287,7 +287,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.28.2</div>
+    <div class="evn-ver" id="versjon">Versjon 0.29.0</div>
   </div>
 </div>
 
@@ -558,7 +558,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.28.2'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.29.0'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -849,6 +849,29 @@ function lagTerreng() {
 
 /* Vann: én stripe med egen shader. Fargen følger den faktiske dybden (lyst og grønnblått ved kanten, mørkere blått der det er dypt),
    strømmen er animert langs elva, og kanten tones ut med et lyst skumbånd. Ingen ekstra tegnekall eller teksturer. */
+/* 0.29.0 Vinter i Elvedal, første test (Even 18.11): snø på bakken, takene og trærne, snøfall og is på elva med et hull ved brygga.
+   Bare utseende. Slås på med admin i testversjonen. Sommerfargene lagres og settes tilbake når vinteren slås av */
+let VINTER = false, snoFall = null, isHull = null;
+window.mbVinter = paa => { paa = !!paa; if (paa === VINTER || !TERRENG) return; VINTER = paa;
+  const ca = TERRENG.geometry.attributes.color, pp = TERRENG.geometry.attributes.position, U = TERRENG.userData;
+  if (paa) { U.sommer = ca.array.slice(); U.kart = TERRENG.material.map; TERRENG.material.map = null;
+    for (let i = 0; i < pp.count; i++) { const x = pp.getX(i), z = pp.getZ(i), k = elvKant(x, z); if (k < 0.2) continue;
+      const m = Math.min(1, (k - 0.2) / 1.2) * 0.92, n = 0.9 + vstoy(x * 0.2, 3, z * 0.2) * 0.12;
+      ca.setXYZ(i, ca.getX(i) * 0.6 * (1 - m) + 0.7 * n * m, ca.getY(i) * 0.6 * (1 - m) + 0.74 * n * m, ca.getZ(i) * 0.6 * (1 - m) + 0.83 * n * m); }
+  } else if (U.sommer) { ca.array.set(U.sommer); TERRENG.material.map = U.kart; }
+  ca.needsUpdate = true; TERRENG.material.needsUpdate = true;
+  if (MAT.tak) { if (paa) { MAT.tak.userData.kart = MAT.tak.map; MAT.tak.map = null; MAT.tak.color.setRGB(0.9, 0.93, 0.98); } else { MAT.tak.map = MAT.tak.userData.kart; MAT.tak.color.setRGB(1, 1, 1); } MAT.tak.needsUpdate = true; }
+  if (_bladMat) _bladMat.emissive.setRGB(paa ? 0.42 : 0, paa ? 0.46 : 0, paa ? 0.52 : 0);   /* rim og snø på bladene */
+  if (VANN) { const u = VANN.material.uniforms; if (paa) { U.grunt = u.grunt.value.clone(); U.dyp = u.dyp.value.clone(); u.grunt.value.copy(SRGB(0xe6f4fb)); u.dyp.value.copy(SRGB(0xb5d9ee)); } else if (U.grunt) { u.grunt.value.copy(U.grunt); u.dyp.value.copy(U.dyp); } }
+  if (paa && !snoFall) { const N = KVAL === 'mobil' ? 500 : 1400, pos = new Float32Array(N * 3); for (let i = 0; i < N; i++) { pos[i * 3] = (Math.random() - 0.5) * 80; pos[i * 3 + 1] = Math.random() * 32; pos[i * 3 + 2] = (Math.random() - 0.5) * 80; }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    snoFall = new THREE.Points(g, new THREE.PointsMaterial({color: 0xffffff, size: 0.3, transparent: true, opacity: 0.9, depthWrite: false})); snoFall.frustumCulled = false; scene.add(snoFall);
+    isHull = new THREE.Group(); const hull = new THREE.Mesh(new THREE.CircleGeometry(0.95, 20), new THREE.MeshBasicMaterial({color: 0x1d5c92})), kant = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.2, 20), new THREE.MeshBasicMaterial({color: 0xffffff}));
+    [hull, kant].forEach(m => { m.rotation.x = -Math.PI / 2; m.renderOrder = 3; isHull.add(m); }); scene.add(isHull); }
+  if (snoFall) snoFall.visible = paa; if (isHull) isHull.visible = false; };
+window.mbIsHull = (x, z, vis) => { if (!isHull) return; isHull.visible = VINTER && !!vis; isHull.position.set(x, VANN_Y + 0.03, z); };   /* hullet i isen ved fiskebrygga */
+function oppdaterVinter(dt, t) { if (!snoFall || !snoFall.visible) return; snoFall.position.set(cam.target.x, 0, cam.target.z);
+  const p = snoFall.geometry.attributes.position; for (let i = 0; i < p.count; i++) { let y = p.getY(i) - dt * (1.6 + (i % 7) * 0.22); if (y < 0) y += 32; p.setY(i, y); p.setX(i, p.getX(i) + Math.sin(t * 0.7 + i) * dt * 0.5); } p.needsUpdate = true; }
 function lagVann() {
   const nx = KVAL === 'mobil' ? 180 : 240, nz = 14, L = 220;
   const pos = [], dyb = [], idx = [];
@@ -2361,7 +2384,8 @@ function loop(ts) {
   if (robot && window.akerY) { const ty = window.akerY(robot.position.x, robot.position.z); robot.position.y += (ty - robot.position.y) * Math.min(1, dt * 12); }   /* 0.15.3 (Even 15.11): roboten står oppå jorda i åkeren, så beina synes */
   oppdaterDyrene(dt, t); if (window.spillOppdater) window.spillOppdater(dt, t);
   for (let i = sprett.length - 1; i >= 0; i--) { const s = sprett[i]; s.t += dt; const k = Math.sin(Math.min(s.t / 0.35, 1) * Math.PI); if (s.o.userData.skala0 === undefined) s.o.userData.skala0 = s.o.scale.x; const base = s.o.userData.skala0; s.o.scale.setScalar(base * (1 + k * 0.08)); if (s.t > 0.35) { s.o.scale.setScalar(base); sprett.splice(i, 1); } }
-  if (VANN) VANN.material.uniforms.tid.value = t;
+  if (VANN && !VINTER) VANN.material.uniforms.tid.value = t;   /* isen står stille */
+  oppdaterVinter(dt, t);
   if (omradeVist) { omradeTid += dt; omradeVist.kant.material.opacity = 0.65 + 0.3 * Math.sin(omradeTid * 5); }
   if (regn && regn.visible) { const p = regn.geometry.attributes.position; for (let i = 0; i < p.count; i += 2) { let y = p.getY(i) - dt * 22; if (y < 0) y += 30; p.setY(i, y); p.setY(i + 1, y - 0.6); } p.needsUpdate = true; regn.position.set(cam.target.x, 0, cam.target.z); }
   if (konfetti.im.visible) { konfetti.t += dt; konfetti.data.forEach((d, i) => { d.v.y -= 9 * dt; d.v.multiplyScalar(0.985); d.p.addScaledVector(d.v, dt); if (d.p.y < 0.05) { d.p.y = 0.05; d.v.set(0, 0, 0); } d.r.x += dt * d.w; d.r.y += dt * d.w * 0.7; m4.makeRotationFromEuler(d.r).setPosition(d.p); konfetti.im.setMatrixAt(i, m4); }); konfetti.im.instanceMatrix.needsUpdate = true; if (konfetti.t > 4.6) konfetti.im.visible = false; }
