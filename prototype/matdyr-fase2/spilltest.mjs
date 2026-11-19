@@ -181,6 +181,9 @@ const tb = await ev(`(async () => { for (let i = 0; i < 150 && !window.EVNTobein
       for (const [d, o] of Object.entries(deler)) { const dp = punkter(o, 120); let m = 1e9;
         for (const a of dp) for (const b of kp) { const x = a.distanceToSquared(b); if (x < m) m = x; }
         if (Math.sqrt(m) > 0.045) lose.push(n + ':' + d + ':' + Math.sqrt(m).toFixed(3)); }
+      // QA ff085b6: halsfestet skal gå rett ned, ikke på skrå som en stump ved ansiktet (lengre enn 8 cm og mer enn 35° fra loddrett)
+      if (deler.hode) deler.hode.traverse(o => { if (o.name !== 'feste') return; const L = o.geometry.parameters.height, ak = new T.Vector3(0, 1, 0).transformDirection(o.matrixWorld);
+        if (L > 0.08 && Math.abs(ak.y) < Math.cos(35 * Math.PI / 180)) lose.push(n + ':skraahals:' + L.toFixed(2)); });
     }
     ut.lose = lose; }
   EVNVis({ fane: 'matdyr' }); await new Promise(r => setTimeout(r, 300)); ut.fane = document.getElementById('kort').textContent.includes('to bein');

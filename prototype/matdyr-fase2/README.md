@@ -408,3 +408,9 @@ Uten flagget er fordelingen, lagringen og spillet som før. B3 (uendrede sjelden
   - Spilltesten sjekker at alle 1000 har figur på to bein, og at armer, bein og hode sitter i kroppen for åtte vanskelige par.
   - Kontaktark: `tobein-pulje2.png` … `tobein-pulje8.png`.
 - **Etter QA 1be67aa (18.11.2026):** Armene på Banan-figurene hang løst, fordi skulderen ble flyttet til bananflikene i en annen dybde. Nå regnes bare punkter i samme høyde og dybde som skulderen. Til slutt får hver del (arm, finne, hode) som fortsatt står mer enn 3,5 cm fra kroppen, et feste inn til nærmeste punkt, og faste deler som haifinnen flyttes inntil. Spilltesten måler nå korteste avstand fra hver del til matkroppens overflate (tilfeldige punkter på trekantene) for alle 980 sammensatte figurer, med grense 4,5 cm; den feiler på 1be67aa. Kontaktark: `tobein-feste.png`.
+
+## Etter QA ff085b6 (19.11.2026)
+- Halsen går nå rett ned fra hodet til kroppen under. Det skrå festet ble en stump ved ansiktet på Ost-figurene.
+- Finnes det ingen kropp rett under hodet, flyttes hodet inntil kroppen, slik haifinnen gjør.
+- Testen feiler nå hvis et halsstykke er lengre enn 8 cm og står mer enn 35° fra loddrett.
+- Kontaktark: `tobein-hals.png`.

@@ -132,9 +132,18 @@
       let topp = -1e9; for (const q of pkt) if (Math.abs(q.x) < 0.14 && Math.abs(q.z - hd.position.z) < 0.18) topp = Math.max(topp, q.y);
       if (topp > hd.position.y + 0.04) { hd.position.y = topp - 0.04; sc.updateMatrixWorld(true); }
     }
-    if (hd) { const hals = new T.Vector3().setFromMatrixPosition(hd.matrixWorld), q = naermest(hals, p => p.y <= hals.y + 0.02 && Math.abs(p.x) < 0.2);
-      if (q && hals.y - q.y > 0.05) stykke(hd, hals.clone().add(new T.Vector3(0, 0.04, 0)), q.clone().lerp(new T.Vector3(0, q.y, q.z), 0.4), 0.11);
-      sc.updateMatrixWorld(true); const r = avstand(hd); if (r.a && r.d > 0.035) stykke(hd, r.a, r.b.clone().lerp(new T.Vector3(0, r.b.y, r.b.z), 0.3), 0.1); }
+    if (hd) { const hals = new T.Vector3().setFromMatrixPosition(hd.matrixWorld);
+      // halsen går rett ned til kroppen under hodet (QA ff085b6: et skrått stykke ble en stump ved ansiktet)
+      let under = -1e9; for (const p of pkt) if (p.y <= hals.y + 0.02 && Math.abs(p.x - hals.x) < 0.12 && Math.abs(p.z - hals.z) < 0.12) under = Math.max(under, p.y);
+      if (under > -1e8 && hals.y - under > 0.05 && hals.y - under < 0.5) stykke(hd, hals.clone().add(new T.Vector3(0, 0.04, 0)), new T.Vector3(hals.x, under - 0.03, hals.z), 0.11);
+      sc.updateMatrixWorld(true); let r = avstand(hd);
+      // QA ff085b6: et skrått feste til nærmeste punkt ble en stump ved ansiktet (osteblokken). Nå: rett ned til kroppen under hodet,
+      // og finnes ingen kropp rett under, flyttes hodet inntil kroppen slik haifinnen gjør.
+      if (r.a && r.d > 0.035) { let topp = -1e9; for (const p of pkt) if (p.y <= hals.y && Math.abs(p.x - hals.x) < 0.12 && Math.abs(p.z - hals.z) < 0.12) topp = Math.max(topp, p.y);
+        if (topp > -1e8 && hals.y - topp < 0.35) stykke(hd, hals.clone().add(new T.Vector3(0, 0.04, 0)), new T.Vector3(hals.x, topp - 0.03, hals.z), 0.1);
+        else { hd.position.add(hd.parent.worldToLocal(r.b.clone()).sub(hd.parent.worldToLocal(r.a.clone())).multiplyScalar(1.1)); }
+        sc.updateMatrixWorld(true); r = avstand(hd);
+        if (r.a && r.d > 0.035) { hd.position.add(hd.parent.worldToLocal(r.b.clone()).sub(hd.parent.worldToLocal(r.a.clone())).multiplyScalar(1.1)); sc.updateMatrixWorld(true); } } }
   }
   function lastTobeinDeler() {
     if (!TOBEIN.length) return;
