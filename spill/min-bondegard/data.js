@@ -119,7 +119,15 @@
     kunder: { faktor: 1, pause: [70, 120], venter: 0 },   // 0.34.0 (Even 19.11): Blomst blir til hun har fått det hun vil ha. venter: 0 betyr ingen tidsfrist
     /* 0.34.0 Naboer (Even 19.11): roboter i andre farger som kommer på besøk og vil kjøpe én, to eller tre ting. De venter til de har fått det.
        Først ute er tvillingen Bleep, som er lys gul. Gnist (oransje), Dråpe (blå), Bolt (rød) og Spire (grønn) kommer senere. Tallene er forslag */
-    naboer: { nivaa: 4, pause: [100, 170], faktor: 1, maksTing: 3, liste: { bleep: { navn: 'Bleep', farge: 0xffec86, hjerte: '💛' } } },
+    naboer: { nivaa: 4, pause: [100, 170], faktor: 1, maksTing: 3, likerSjanse: 0.7,
+      /* 0.35.0: alle fem naboene. «liker» er favoritten: bygget varen lages i, eller 'avling'. Sju av ti ønsker er en favoritt når spilleren kan lage en.
+         Bleep har ingen favoritt ennå. Bolt skulle ha for til dyrene, men for kan ikke selges i spillet, så han har heller ingen før det er avklart */
+      liste: {
+        bleep: { navn: 'Bleep', farge: 0xffec86, hjerte: '💛' },
+        gnist: { navn: 'Gnist', farge: 0xff8a1f, hjerte: '🧡', liker: ['bakeri', 'paibakeri'] },
+        drape: { navn: 'Dråpe', farge: 0x3d8bff, hjerte: '💙', liker: ['meieri', 'ku'] },
+        bolt:  { navn: 'Bolt',  farge: 0xe5382e, hjerte: '❤️' },
+        spire: { navn: 'Spire', farge: 0x3fb54a, hjerte: '💚', liker: ['avling'] } } },
     // Områder spilleren kan kjøpe (Ivar 12.11: Enga på nivå 5 for 300). Skogkanten er med i fase 4.
     omrader: {
       enga:       { navn: 'Enga',       nivaa: 5,  pris: 300 },

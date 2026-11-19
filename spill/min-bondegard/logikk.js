@@ -282,11 +282,17 @@
   // ---------- Naboer på besøk (0.34.0, Even 19.11) ----------
   // En nabo ber om én, to eller tre ulike varer spilleren kan lage. Prisen regnes ut her, så den alltid følger reglene.
   function naboPris(liste) { var m = 0; for (var i = 0; i < liste.length; i++) m += Math.round(D.pris(liste[i].vare) * liste[i].antall * D.naboer.faktor); return m; }
+  // 0.35.0: favoritten til en nabo er varer fra bestemte bygg, produktet til et dyr, eller avlinger
+  function naboLiker(hvem, v) { var N = D.naboer.liste[hvem], l = N && N.liker; if (!l) return false;
+    if (D.avlinger[v]) return l.indexOf('avling') >= 0; var o = D.oppskrifter[v]; if (o && l.indexOf(o.bygg) >= 0) return true;
+    for (var a in D.dyr) if (D.dyr[a].produkt === v && l.indexOf(a) >= 0) return true; return false; }
+  function nesteNabo(s) { var ids = Object.keys(D.naboer.liste); return ids[Math.floor(tilf(s) * ids.length)]; }
   function nyNabo(s, hvem) {
     if (!D.naboer.liste[hvem] || s.nivaa < D.naboer.nivaa) return null;
     var pool = bestPool(s).slice(); if (!pool.length) return null;
     var n = Math.min(pool.length, 1 + Math.floor(tilf(s) * D.naboer.maksTing)), liste = [];
-    for (var i = 0; i < n; i++) { var v = pool.splice(Math.floor(tilf(s) * pool.length), 1)[0]; liste.push({ vare: v, antall: D.avlinger[v] ? 2 + Math.floor(tilf(s) * 3) : 1 + Math.floor(tilf(s) * 2) }); }
+    for (var i = 0; i < n; i++) { var fav = pool.filter(function (x) { return naboLiker(hvem, x); }), fra = fav.length && tilf(s) < D.naboer.likerSjanse ? fav : pool;
+      var v = fra[Math.floor(tilf(s) * fra.length)]; pool.splice(pool.indexOf(v), 1); liste.push({ vare: v, antall: D.avlinger[v] ? 2 + Math.floor(tilf(s) * 3) : 1 + Math.floor(tilf(s) * 2) }); }
     return { hvem: hvem, liste: liste, mynter: naboPris(liste) };
   }
   function selgTilNabo(s, o) {
@@ -487,7 +493,7 @@
     uferdige: uferdige, kanProdusere: kanProdusere, produser: produser, hentProdukter: hentProdukter, kjopBygg: kjopBygg,
     kanLage: kanLage, bestPool: bestPool, nyBestilling: nyBestilling, bestPlasser: bestPlasser, fyllBestillinger: fyllBestillinger, kanLevere: kanLevere, lever: lever, byttBestilling: byttBestilling, boerByttes: boerByttes,
     giDyr: giDyr, kanKjopeOmrade: kanKjopeOmrade, kjopOmrade: kjopOmrade,
-    nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris, nyNabo: nyNabo, selgTilNabo: selgTilNabo,
+    nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris, nyNabo: nyNabo, selgTilNabo: selgTilNabo, naboLiker: naboLiker, nesteNabo: nesteNabo,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
     nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
     kanKaste: kanKaste, kast: kast, fiskKlar: fiskKlar, halInn: halInn, kanKjopePynt: kanKjopePynt, kjopPynt: kjopPynt, selgPynt: selgPynt, maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, selvStart: selvStart, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,

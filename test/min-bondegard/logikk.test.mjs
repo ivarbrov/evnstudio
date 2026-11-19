@@ -292,7 +292,14 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
     x.lager.egg = 2; const r = L.selgTilNabo(x, o);
     t('Naboen betaler vanlig pris for alt på lista', r.ok && r.mynter === D.pris('hvete') * 3 + D.pris('egg') * 2 && x.mynter === m0 + r.mynter && !x.lager.hvete && !x.lager.egg);
     t('Naboen tar ikke imot juks: for, samme vare to ganger eller for lang liste', !L.selgTilNabo(x, { hvem: 'bleep', liste: [{ vare: 'honsefor', antall: 1 }] }).ok && !L.selgTilNabo(x, { hvem: 'bleep', liste: [{ vare: 'hvete', antall: 1 }, { vare: 'hvete', antall: 1 }] }).ok && !L.selgTilNabo(x, { hvem: 'bleep', liste: [1, 2, 3, 4].map(() => ({ vare: 'hvete', antall: 1 })) }).ok);
-    t('Blomst har ingen tidsfrist (Even 19.11)', D.kunder.venter === 0); }
+    t('Blomst har ingen tidsfrist (Even 19.11)', D.kunder.venter === 0);
+    t('Fem naboer (0.35.0): Bleep, Gnist, Dråpe, Bolt og Spire', Object.keys(D.naboer.liste).join() === 'bleep,gnist,drape,bolt,spire' && ['Bleep', 'Gnist', 'Dråpe', 'Bolt', 'Spire'].every((n, i) => Object.values(D.naboer.liste)[i].navn === n));
+    while (x.nivaa < 10) L.giXP(x, 50, T0); const sett = {}; for (let i = 0; i < 400; i++) sett[L.nesteNabo(x)] = 1;
+    t('Alle fem kan komme', Object.keys(sett).length === 5);
+    t('Favoritter: Gnist liker bakeriet, Dråpe melk og meieri, Spire avlinger', L.naboLiker('gnist', 'brod') && !L.naboLiker('gnist', 'hvete') && L.naboLiker('drape', 'melk') && L.naboLiker('drape', 'smor') && !L.naboLiker('drape', 'brod') && L.naboLiker('spire', 'hvete') && !L.naboLiker('spire', 'egg') && !L.naboLiker('bleep', 'hvete') && !L.naboLiker('bolt', 'hvete'));
+    let fav = 0, alle = 0; for (let i = 0; i < 400; i++) L.nyNabo(x, 'spire').liste.forEach(l => { alle++; if (D.avlinger[l.vare]) fav++; });
+    t('Spire ber oftest om avlinger, men ikke bare', fav / alle > 0.6 && fav / alle < 0.98, (fav / alle).toFixed(2));
+    let dobbel = false; for (let i = 0; i < 300; i++) { const v = L.nyNabo(x, 'gnist').liste.map(l => l.vare); if (new Set(v).size !== v.length) dobbel = true; } t('Favoritter gir aldri samme vare to ganger', !dobbel); }
   t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);

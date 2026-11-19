@@ -638,19 +638,19 @@ function kundeGaaende(dt, t) { const u = katt.userData;
 }
 /* 0.34.0 Naboer (Even 19.11). Bleep er tvillingen til roboten vår, i lys gul. Han kommer gående inn fra veien, ber om én, to eller tre ting,
    og blir stående til han har fått dem. Han og Blomst kommer aldri samtidig. Traktor og varebil, og de fire andre naboene, kommer senere */
-const nabo = {fase: 'borte', t: null, g: null, mixer: null, klipp: {}, aktiv: null, onske: null, vei: [], laster: false, hvem: 'bleep'};
+const nabo = {fase: 'borte', t: null, g: null, mixer: null, klipp: {}, aktiv: null, onske: null, vei: [], laster: false, hvem: 'bleep', mat: []};
 const naboBoble = document.getElementById('naboBoble'), NABO_STAA = new THREE.Vector3(KUNDE_STOPP + 3.2, 0, KUNDE_Z - 0.7);   /* i veikanten ved gårdsbua, et stykke fra der Blomst pleier å stå */
 function naboSpill(navn) { const k = nabo.klipp[navn] || nabo.klipp.Idle; if (!k || !nabo.mixer) return; const a = nabo.mixer.clipAction(k); if (nabo.aktiv === a) return; a.reset().fadeIn(0.2).play(); if (nabo.aktiv) nabo.aktiv.fadeOut(0.2); nabo.aktiv = a; }
 function naboLast() { if (nabo.laster || nabo.g) return; nabo.laster = true;
   new THREE.GLTFLoader().load(ROBOT_URL, gl => { const g = gl.scene, b0 = new THREE.Box3().setFromObject(g); g.scale.setScalar(1.9 / (b0.max.y - b0.min.y));
-    const lys = SRGB(D.naboer.liste[nabo.hvem].farge).multiplyScalar(0.72);   /* robotens materialer er mørke i lineære verdier og lyses opp av scenelyset. Uten demping blir fargen utbrent */
-    g.traverse(o => { if (!o.isMesh) return; o.castShadow = true; o.material = o.material.clone(); if (o.material.name === 'Main') o.material.color.copy(lys); });   /* bare hovedfargen byttes. Grått, svart og øyne er som hos roboten vår */
+    g.traverse(o => { if (!o.isMesh) return; o.castShadow = true; o.material = o.material.clone(); if (o.material.name === 'Main') nabo.mat.push(o.material); });   /* bare hovedfargen byttes, og den settes for hvert besøk i naboStart. Grått, svart og øyne er som hos roboten vår */
     const treff = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 2.4, 10), new THREE.MeshBasicMaterial({visible: false})); treff.position.y = 1.2 / g.scale.y; treff.scale.setScalar(1 / g.scale.y); g.add(treff); treff.userData.eier = g; klikkbar(treff);
     g.visible = false; scene.add(g); nabo.g = g; nabo.mixer = new THREE.AnimationMixer(g); gl.animations.forEach(a => { nabo.klipp[a.name] = a; }); nabo.laster = false; }, undefined, () => { nabo.laster = false; nabo.t = 120; }); }
 function naboTekst() { const o = nabo.onske, N = D.naboer.liste[o.hvem], ting = o.liste.map(l => `${l.antall} ${ikon(l.vare)} ${navn(l.vare).toLowerCase()}`);
   return `<b>${N.navn}:</b> ${ting.length > 1 ? ting.slice(0, -1).join(', ') + ' og ' + ting[ting.length - 1] : ting[0]}, takk!<small>Trykk for å selge · ${o.mynter} 🪙</small>`; }
 function naboSi(html) { naboBoble.innerHTML = html || naboTekst(); naboBoble.style.display = 'block'; }
-function naboStart() { if (!nabo.g) { naboLast(); nabo.t = 3; return; } nabo.onske = L.nyNabo(s, nabo.hvem); if (!nabo.onske) { nabo.t = 30; return; }
+function naboStart() { if (!nabo.g) { naboLast(); nabo.t = 3; return; } nabo.hvem = L.nesteNabo(s); nabo.onske = L.nyNabo(s, nabo.hvem); if (!nabo.onske) { nabo.t = 30; return; }
+  const farge = SRGB(D.naboer.liste[nabo.hvem].farge).multiplyScalar(0.72); nabo.mat.forEach(m => m.color.copy(farge));   /* 0.35.0: samme robot, ny farge for hver nabo. Dempes fordi robotens materialer lyses opp av scenelyset */
   const g = nabo.g; g.position.set(-27, hoyde(-27, KUNDE_Z), KUNDE_Z); g.rotation.y = Math.PI / 2; g.visible = true;
   nabo.vei = [new THREE.Vector3(-13.0, 0, KUNDE_Z), NABO_STAA.clone()]; nabo.fase = 'inn'; nabo.t = 0; naboSpill('Walking');
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) { g.position.set(NABO_STAA.x, hoyde(NABO_STAA.x, NABO_STAA.z), NABO_STAA.z); nabo.vei = []; } }
