@@ -631,19 +631,57 @@ $('kattBoble').addEventListener('click', kundeTrykk);
 $('kattBoble').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); kundeTrykk(); } });
 function kundeGaaende(dt, t) { const u = katt.userData;
   if (kunde.fase === 'inn') { if (u.tilst === 'staar') { kunde.fase = 'venter'; kunde.t = 0; leverGaver('Blomst'); } }
-  else if (kunde.fase === 'venter') { if (!kunde.sagt) { kunde.sagt = true; kundeSi(); } kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; } }
+  else if (kunde.fase === 'venter') { if (!kunde.sagt) { kunde.sagt = true; kundeSi(); } kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (D.kunder.venter && kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; }   /* 0.34.0: venter er 0, så hun blir til hun har fått varen */ }
   else if (kunde.fase === 'takk') { kunde.t += dt; if (kunde.t > 1.8) { kunde.fase = 'hjem'; kattBobleTid = 0.01; Object.assign(u, {tilst: 'gaar', vei: [new THREE.Vector3(-12.5, 0, KUNDE_Z), new THREE.Vector3(-27, 0, KUNDE_Z)], etter: 'kundeUt'}); } }
   else if (kunde.fase === 'hjem') { if (u.tilst === 'staar') { kunde.fase = 'borte'; kunde.gaaende = false; kunde.t = D.kunder.pause[0] + Math.random() * (D.kunder.pause[1] - D.kunder.pause[0]); } }
   oppdaterKatt(dt, t);
 }
+/* 0.34.0 Naboer (Even 19.11). Bleep er tvillingen til roboten vår, i lys gul. Han kommer gående inn fra veien, ber om én, to eller tre ting,
+   og blir stående til han har fått dem. Han og Blomst kommer aldri samtidig. Traktor og varebil, og de fire andre naboene, kommer senere */
+const nabo = {fase: 'borte', t: null, g: null, mixer: null, klipp: {}, aktiv: null, onske: null, vei: [], laster: false, hvem: 'bleep'};
+const naboBoble = document.getElementById('naboBoble'), NABO_STAA = new THREE.Vector3(KUNDE_STOPP + 3.2, 0, KUNDE_Z - 0.7);   /* i veikanten ved gårdsbua, et stykke fra der Blomst pleier å stå */
+function naboSpill(navn) { const k = nabo.klipp[navn] || nabo.klipp.Idle; if (!k || !nabo.mixer) return; const a = nabo.mixer.clipAction(k); if (nabo.aktiv === a) return; a.reset().fadeIn(0.2).play(); if (nabo.aktiv) nabo.aktiv.fadeOut(0.2); nabo.aktiv = a; }
+function naboLast() { if (nabo.laster || nabo.g) return; nabo.laster = true;
+  new THREE.GLTFLoader().load(ROBOT_URL, gl => { const g = gl.scene, b0 = new THREE.Box3().setFromObject(g); g.scale.setScalar(1.9 / (b0.max.y - b0.min.y));
+    const lys = SRGB(D.naboer.liste[nabo.hvem].farge).multiplyScalar(0.72);   /* robotens materialer er mørke i lineære verdier og lyses opp av scenelyset. Uten demping blir fargen utbrent */
+    g.traverse(o => { if (!o.isMesh) return; o.castShadow = true; o.material = o.material.clone(); if (o.material.name === 'Main') o.material.color.copy(lys); });   /* bare hovedfargen byttes. Grått, svart og øyne er som hos roboten vår */
+    const treff = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 2.4, 10), new THREE.MeshBasicMaterial({visible: false})); treff.position.y = 1.2 / g.scale.y; treff.scale.setScalar(1 / g.scale.y); g.add(treff); treff.userData.eier = g; klikkbar(treff);
+    g.visible = false; scene.add(g); nabo.g = g; nabo.mixer = new THREE.AnimationMixer(g); gl.animations.forEach(a => { nabo.klipp[a.name] = a; }); nabo.laster = false; }, undefined, () => { nabo.laster = false; nabo.t = 120; }); }
+function naboTekst() { const o = nabo.onske, N = D.naboer.liste[o.hvem], ting = o.liste.map(l => `${l.antall} ${ikon(l.vare)} ${navn(l.vare).toLowerCase()}`);
+  return `<b>${N.navn}:</b> ${ting.length > 1 ? ting.slice(0, -1).join(', ') + ' og ' + ting[ting.length - 1] : ting[0]}, takk!<small>Trykk for å selge · ${o.mynter} 🪙</small>`; }
+function naboSi(html) { naboBoble.innerHTML = html || naboTekst(); naboBoble.style.display = 'block'; }
+function naboStart() { if (!nabo.g) { naboLast(); nabo.t = 3; return; } nabo.onske = L.nyNabo(s, nabo.hvem); if (!nabo.onske) { nabo.t = 30; return; }
+  const g = nabo.g; g.position.set(-27, hoyde(-27, KUNDE_Z), KUNDE_Z); g.rotation.y = Math.PI / 2; g.visible = true;
+  nabo.vei = [new THREE.Vector3(-13.0, 0, KUNDE_Z), NABO_STAA.clone()]; nabo.fase = 'inn'; nabo.t = 0; naboSpill('Walking');
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { g.position.set(NABO_STAA.x, hoyde(NABO_STAA.x, NABO_STAA.z), NABO_STAA.z); nabo.vei = []; } }
+function naboGaa(dt) { const g = nabo.g, m = nabo.vei[0]; if (!m) return true; const dx = m.x - g.position.x, dz = m.z - g.position.z, d = Math.hypot(dx, dz), steg = 2.6 * dt;
+  if (d <= steg) { g.position.x = m.x; g.position.z = m.z; nabo.vei.shift(); } else { g.position.x += dx / d * steg; g.position.z += dz / d * steg; g.rotation.y = snuMot(g.rotation.y, Math.atan2(dx, dz), dt * 8); }
+  g.position.y = hoyde(g.position.x, g.position.z); return !nabo.vei.length; }
+function naboTrykk() { if (nabo.fase !== 'venter') return; const N = D.naboer.liste[nabo.onske.hvem], r = L.selgTilNabo(s, nabo.onske);
+  if (!r.ok) { if (r.grunn !== 'mangler') return; naboSpill('No'); const ml = r.mangler.map(m => m.antall + ' ' + navn(m.vare).toLowerCase()); naboSi(`Du mangler ${ml.length > 1 ? ml.slice(0, -1).join(', ') + ' og ' + ml[ml.length - 1] : ml[0]}. Jeg venter! ${N.hjerte}`); setTimeout(() => { if (nabo.fase === 'venter') { naboSi(); naboSpill('Idle'); } }, 2800); return; }
+  const pos = nabo.g.position.clone().setY(nabo.g.position.y + 2.6); visHjerte(pos); flyt('+' + r.mynter + ' 🪙', pos); naboSi(`Takk, nabo! ${N.hjerte} +${r.mynter} 🪙`); naboSpill('ThumbsUp'); nabo.fase = 'takk'; nabo.t = 0; gi(null); const m = ting.get('marked'); if (m) robotJobb(m); }
+naboBoble.addEventListener('click', naboTrykk);
+naboBoble.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); naboTrykk(); } });
+function oppdaterNabo(dt, t) {
+  if (!startet) return;
+  if (nabo.fase === 'borte') { if (s.nivaa < D.naboer.nivaa || s.oppl.steg < OPPL.length) return;
+    if (nabo.t === null) { nabo.t = (D.naboer.pause[0] + Math.random() * (D.naboer.pause[1] - D.naboer.pause[0])) * (ADMIN ? 0.15 : 1); naboLast(); }
+    nabo.t -= dt; if (nabo.t <= 0 && kunde.fase === 'borte' && bilKo.fase === 0) naboStart(); return; }
+  const g = nabo.g; nabo.mixer.update(dt);
+  if (nabo.fase === 'inn') { if (naboGaa(dt)) { nabo.fase = 'venter'; naboSpill('Wave'); naboSi(); setTimeout(() => { if (nabo.fase === 'venter') naboSpill('Idle'); }, 1800); } }
+  else if (nabo.fase === 'venter') { g.rotation.y = snuMot(g.rotation.y, Math.PI / 4, dt * 3); }
+  else if (nabo.fase === 'takk') { nabo.t += dt; if (nabo.t > 2.0) { nabo.fase = 'hjem'; naboBoble.style.display = 'none'; nabo.vei = [new THREE.Vector3(-13.0, 0, KUNDE_Z), new THREE.Vector3(-27, 0, KUNDE_Z)]; naboSpill('Walking'); if (matchMedia('(prefers-reduced-motion: reduce)').matches) nabo.vei = []; } }
+  else if (nabo.fase === 'hjem') { if (naboGaa(dt)) { g.visible = false; nabo.fase = 'borte'; nabo.t = null; } }
+  if (naboBoble.style.display === 'block') { tmp.copy(g.position); tmp.y += 2.5; tmp.project(camera); naboBoble.style.transform = `translate3d(${Math.round(Math.min(innerWidth - 118, Math.max(118, (tmp.x + 1) / 2 * innerWidth)))}px, ${Math.round((1 - tmp.y) / 2 * innerHeight)}px, 0) translate(-50%, -100%)`; }
+}
 function oppdaterKunde(dt, t) {
   if (!startet) return;
-  if (kunde.fase === 'borte') { if (s.oppl.steg < 3 && s.nivaa < 2) return;   /* ikke midt i den første opplæringen */ kunde.t -= dt; if (kunde.t <= 0 && bilKo.fase === 0) kundeStart(); return; }
+  if (kunde.fase === 'borte') { if (s.oppl.steg < 3 && s.nivaa < 2) return;   /* ikke midt i den første opplæringen */ kunde.t -= dt; if (kunde.t <= 0 && bilKo.fase === 0 && nabo.fase === 'borte') kundeStart(); return; }   /* 0.34.0: én gjest om gangen */
   if (kunde.gaaende) { kundeGaaende(dt, t); return; }
   const b = kunde.bil;
   if (b && b.userData.hjul) { const dx = b.position.x - (b.userData.sx === undefined ? b.position.x : b.userData.sx); b.userData.sx = b.position.x; if (Math.abs(dx) < 5) b.userData.hjul.forEach(w => { w.rotation.z -= dx / 0.36; }); }   /* Even 15.11: hjulene til Blomst ruller */
   if (kunde.fase === 'inn') { const igjen = KUNDE_STOPP - b.position.x; b.position.x += Math.max(1.2, Math.min(7, igjen * 1.2)) * dt; if (b.position.x >= KUNDE_STOPP) { b.position.x = KUNDE_STOPP; kunde.fase = 'venter'; kunde.t = 0; leverGaver('Blomst'); } }
-  else if (kunde.fase === 'venter') { if (!kunde.sagt && kunde.anim >= 1) { kunde.sagt = true; kundeSi(); } kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; } }
+  else if (kunde.fase === 'venter') { if (!kunde.sagt && kunde.anim >= 1) { kunde.sagt = true; kundeSi(); } kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (D.kunder.venter && kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; }   /* 0.34.0: venter er 0, så hun blir til hun har fått varen */ }
   else if (kunde.fase === 'takk') { kunde.t += dt; if (kunde.t > 1.8) { kunde.fase = 'hjem'; kunde.t = 0; } }
   else if (kunde.fase === 'hjem') { kunde.t += dt; if (kunde.mal === 0 && kunde.anim >= 1) { kunde.fase = 'ut'; kattBobleTid = 0.01; if (matchMedia('(prefers-reduced-motion: reduce)').matches) b.position.x = 99; } }
   else if (kunde.fase === 'ut') { katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 2, dt * 4); const borte = b.position.x - KUNDE_STOPP; b.position.x += Math.max(1.2, Math.min(8, 1.2 + borte * 1.2)) * dt; if (b.position.x > 34) { b.visible = false; kattBoble.style.display = 'none'; kunde.fase = 'borte'; kunde.t = D.kunder.pause[0] + Math.random() * (D.kunder.pause[1] - D.kunder.pause[0]); } }
@@ -1735,6 +1773,7 @@ window.spillTrykk = (o, t, ray) => {
   if (flytt) { flyttTil(ray); return true; }
   if (o && o.userData.katt) { kundeTrykk(); return true; }
   if (o && brygge && o === brygge.gruppe) { kameraMaal = brygge.gruppe.position.clone(); visBrygge(); return true; }
+  if (o && nabo.g && o === nabo.g) { naboTrykk(); return true; }
   if (o && o === hund) { hundTrykk(); return true; }
   if (o && hundHaug && o === hundHaug) { hundHentSkatt(); return true; }
   if (o && rev && (o === revehus || o === rev)) { if (revInne()) { revUteTil = performance.now() + 9000; rev.visible = true; revSett(...REV_HJEM); rev.rotation.y = Math.PI / 2 + 0.35; } o = rev; }   /* 0.23.0: et trykk på huset henter Rebus ut */
@@ -1801,7 +1840,7 @@ window.spillOppdater = (dt, t) => {
   for (const u of ikonListe()) u.ikon.position.y = u.ikon.userData.y0 + Math.sin(t * 3 + u.gruppe.position.x) * 0.12;
   if (pil && pil.visible && pil.userData.u) { const p = pil.userData.u.gruppe.position, h = pil.userData.u.hoyde || 3; pil.position.set(p.x, h + 1.2 + Math.abs(Math.sin(t * 4)) * 0.6, p.z); }
   if (kameraMaal) { cam.target.lerp(_p.set(kameraMaal.x, 0, kameraMaal.z), Math.min(1, dt * 5)); plasserKamera(); if (cam.target.distanceTo(_p) < 0.05) kameraMaal = null; }
-  oppdaterBil(dt); oppdaterKunde(dt, t); oppdaterRev(dt, t); oppdaterHund(dt, t); oppdaterBrygge(dt, t); if ((epleTikk += dt) > 1) { epleTikk = 0; synkEpletre(); } oppdaterBier(t);
+  oppdaterBil(dt); oppdaterKunde(dt, t); oppdaterNabo(dt, t); oppdaterRev(dt, t); oppdaterHund(dt, t); oppdaterBrygge(dt, t); if ((epleTikk += dt) > 1) { epleTikk = 0; synkEpletre(); } oppdaterBier(t);
   if (ADMIN) { try { oppdaterAdmin(dt, t); } catch (e) { if (!adm.feilVist) { adm.feilVist = true; console.warn('admin', e); } } }   /* 0.24.1: en feil i admin skal aldri stoppe spillet */
   if (gaveVent > 0 && startet && !pauset) { gaveVent -= dt; if (gaveVent <= 0) leverGaver('Blomst'); }   /* kommer hun ikke innen ett minutt, står gaven der likevel */
   synkT += dt; if (synkT > 0.25) { synkT = 0; synk(); oppdaterTider(); }

@@ -283,6 +283,16 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
     t('Etter plukking starter en ny runde, og epler kan selges', L.selvStart(x, T0 + 3600 * S) === 1 && x.bygg.epletre.ko[0].slutt === T0 + 3900 * S && L.kanSelge('eple') && !!D.gater.eple); }
   { const x = L.ny(T0); L.giXP(x, 99999, T0); x.mynter = 4000; const k = L.kjopBygg(x, 'bikube'); L.selvStart(x, T0); const h = L.hentProdukter(x, 'bikube', T0 + 360 * S);
     t('Bikuben (0.33.0): nivå 22, 4000 mynter, og gir 1 honning etter 360 s', D.bygg.bikube.nivaa === 22 && k.ok && x.mynter === 0 && h.ok && x.lager.honning === 1 && D.pris('honning') === 30 && L.kanSelge('honning') && !!D.gater.honning); }
+  { const x = L.ny(T0), tidlig = L.nyNabo(x, 'bleep'); while (x.nivaa < 6) L.giXP(x, 10, T0);
+    let ok = true, antall = {1: 0, 2: 0, 3: 0}; for (let i = 0; i < 300; i++) { const o = L.nyNabo(x, 'bleep'); antall[o.liste.length]++; const varer = o.liste.map(l => l.vare);
+      if (o.hvem !== 'bleep' || new Set(varer).size !== varer.length || varer.some(v => D.erFor(v) || !L.bestPool(x).includes(v)) || o.mynter !== o.liste.reduce((m, l) => m + D.pris(l.vare) * l.antall, 0)) ok = false; }
+    t('Naboer (0.34.0): Bleep kommer fra nivå 4 og ber om én, to eller tre ulike varer spilleren kan lage', tidlig === null && ok && antall[1] > 40 && antall[2] > 40 && antall[3] > 40 && L.nyNabo(x, 'ukjent') === null, JSON.stringify(antall));
+    const o = { hvem: 'bleep', liste: [{ vare: 'hvete', antall: 3 }, { vare: 'egg', antall: 2 }] }; x.lager = { hvete: 3, egg: 1 }; const m0 = x.mynter, mangler = L.selgTilNabo(x, o);
+    t('Naboen får ingenting før alt er der, og sier hva som mangler', !mangler.ok && mangler.grunn === 'mangler' && mangler.mangler.length === 1 && mangler.mangler[0].vare === 'egg' && mangler.mangler[0].antall === 1 && x.lager.hvete === 3 && x.mynter === m0);
+    x.lager.egg = 2; const r = L.selgTilNabo(x, o);
+    t('Naboen betaler vanlig pris for alt på lista', r.ok && r.mynter === D.pris('hvete') * 3 + D.pris('egg') * 2 && x.mynter === m0 + r.mynter && !x.lager.hvete && !x.lager.egg);
+    t('Naboen tar ikke imot juks: for, samme vare to ganger eller for lang liste', !L.selgTilNabo(x, { hvem: 'bleep', liste: [{ vare: 'honsefor', antall: 1 }] }).ok && !L.selgTilNabo(x, { hvem: 'bleep', liste: [{ vare: 'hvete', antall: 1 }, { vare: 'hvete', antall: 1 }] }).ok && !L.selgTilNabo(x, { hvem: 'bleep', liste: [1, 2, 3, 4].map(() => ({ vare: 'hvete', antall: 1 })) }).ok);
+    t('Blomst har ingen tidsfrist (Even 19.11)', D.kunder.venter === 0); }
   t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);

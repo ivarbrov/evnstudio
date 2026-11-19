@@ -279,6 +279,26 @@
     return { ok: true, antall: n, mynter: m };
   }
 
+  // ---------- Naboer på besøk (0.34.0, Even 19.11) ----------
+  // En nabo ber om én, to eller tre ulike varer spilleren kan lage. Prisen regnes ut her, så den alltid følger reglene.
+  function naboPris(liste) { var m = 0; for (var i = 0; i < liste.length; i++) m += Math.round(D.pris(liste[i].vare) * liste[i].antall * D.naboer.faktor); return m; }
+  function nyNabo(s, hvem) {
+    if (!D.naboer.liste[hvem] || s.nivaa < D.naboer.nivaa) return null;
+    var pool = bestPool(s).slice(); if (!pool.length) return null;
+    var n = Math.min(pool.length, 1 + Math.floor(tilf(s) * D.naboer.maksTing)), liste = [];
+    for (var i = 0; i < n; i++) { var v = pool.splice(Math.floor(tilf(s) * pool.length), 1)[0]; liste.push({ vare: v, antall: D.avlinger[v] ? 2 + Math.floor(tilf(s) * 3) : 1 + Math.floor(tilf(s) * 2) }); }
+    return { hvem: hvem, liste: liste, mynter: naboPris(liste) };
+  }
+  function selgTilNabo(s, o) {
+    if (!o || !D.naboer.liste[o.hvem] || !Array.isArray(o.liste) || !o.liste.length || o.liste.length > D.naboer.maksTing) return { ok: false, grunn: 'ukjent' };
+    var liste = [], sett = {}, mangler = [], i;
+    for (i = 0; i < o.liste.length; i++) { var v = o.liste[i].vare; if (sett[v] || !(D.avlinger[v] || D.varer[v]) || D.erFor(v)) return { ok: false, grunn: 'ukjent' }; sett[v] = true;
+      var n = Math.max(1, Math.min(6, Math.floor(o.liste[i].antall) || 1)); liste.push({ vare: v, antall: n }); if ((s.lager[v] || 0) < n) mangler.push({ vare: v, antall: n - (s.lager[v] || 0) }); }
+    if (mangler.length) return { ok: false, grunn: 'mangler', mangler: mangler };
+    for (i = 0; i < liste.length; i++) ta(s, mk(liste[i].vare, liste[i].antall));
+    var m = naboPris(liste); s.mynter += m; s.stat.kunder++; return { ok: true, mynter: m, liste: liste };
+  }
+
   // ---------- Tid ----------
   // Ingen ventetid kan bli lengre enn jobben selv. Det hindrer at en klokke som har gått bakover, låser spillet.
   function normaliserTid(s, naa) {
@@ -467,7 +487,7 @@
     uferdige: uferdige, kanProdusere: kanProdusere, produser: produser, hentProdukter: hentProdukter, kjopBygg: kjopBygg,
     kanLage: kanLage, bestPool: bestPool, nyBestilling: nyBestilling, bestPlasser: bestPlasser, fyllBestillinger: fyllBestillinger, kanLevere: kanLevere, lever: lever, byttBestilling: byttBestilling, boerByttes: boerByttes,
     giDyr: giDyr, kanKjopeOmrade: kanKjopeOmrade, kjopOmrade: kjopOmrade,
-    nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris,
+    nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris, nyNabo: nyNabo, selgTilNabo: selgTilNabo,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
     nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
     kanKaste: kanKaste, kast: kast, fiskKlar: fiskKlar, halInn: halInn, kanKjopePynt: kanKjopePynt, kjopPynt: kjopPynt, selgPynt: selgPynt, maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, selvStart: selvStart, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
