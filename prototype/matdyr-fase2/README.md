@@ -414,3 +414,8 @@ Uten flagget er fordelingen, lagringen og spillet som før. B3 (uendrede sjelden
 - Finnes det ingen kropp rett under hodet, flyttes hodet inntil kroppen, slik haifinnen gjør.
 - Testen feiler nå hvis et halsstykke er lengre enn 8 cm og står mer enn 35° fra loddrett.
 - Kontaktark: `tobein-hals.png`.
+
+## Etter QA 8c652ac (19.11.2026)
+- Punktene på matkroppen trekkes nå jevnt over overflaten, ikke bare fra hjørnene. På osteklossen fantes toppflaten derfor ikke, og hodet ble flyttet ut på et hjørne. Nå står hodet midt oppå.
+- Testen feiler hvis hodet er flyttet mer enn 8 cm sidelengs fra plassen i dyremodellen.
+- `tobein-hals.png` er oppdatert.

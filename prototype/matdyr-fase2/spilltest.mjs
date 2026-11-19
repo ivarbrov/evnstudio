@@ -184,6 +184,8 @@ const tb = await ev(`(async () => { for (let i = 0; i < 150 && !window.EVNTobein
       // QA ff085b6: halsfestet skal gå rett ned, ikke på skrå som en stump ved ansiktet (lengre enn 8 cm og mer enn 35° fra loddrett)
       if (deler.hode) deler.hode.traverse(o => { if (o.name !== 'feste') return; const L = o.geometry.parameters.height, ak = new T.Vector3(0, 1, 0).transformDirection(o.matrixWorld);
         if (L > 0.08 && Math.abs(ak.y) < Math.cos(35 * Math.PI / 180)) lose.push(n + ':skraahals:' + L.toFixed(2)); });
+      // QA 8c652ac: hodet skal ikke flyttes sidelengs ut på et hjørne (mer enn 8 cm fra plassen i dyremodellen)
+      if (deler.hode && deler.hode.userData.p0) { const p0 = deler.hode.userData.p0, p = deler.hode.position, dxz = Math.hypot(p.x - p0.x, p.z - p0.z); if (dxz > 0.08) lose.push(n + ':hodeskjevt:' + dxz.toFixed(2)); }
     }
     ut.lose = lose; }
   EVNVis({ fane: 'matdyr' }); await new Promise(r => setTimeout(r, 300)); ut.fane = document.getElementById('kort').textContent.includes('to bein');

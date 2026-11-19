@@ -87,9 +87,14 @@
   // Even 17.11.2026: «Sørg for at armer og bein er festet til kroppen». Matkroppene har ulik form (kjeks, kjegle, ring),
   // så her måles den faktiske kroppen: armene flyttes inn til kanten, og beina og halsen får et stykke som når helt inn i kroppen.
   function festDeler(sc, kropp) {
-    const pkt = [], v = new T.Vector3();
-    kropp.traverse(o => { if (!o.isMesh) return; const p = o.geometry.attributes.position, steg = Math.max(1, Math.floor(p.count / 1500));
-      for (let i = 0; i < p.count; i += steg) pkt.push(v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld).clone()); });
+    // Punkter jevnt fordelt på kroppens overflate (QA 8c652ac: osteklossen har bare hjørnepunkter, så toppflaten «fantes ikke»)
+    const pkt = [], v = new T.Vector3(), tri = []; let sum = 0;
+    kropp.traverse(o => { if (!o.isMesh) return; const g = o.geometry, p = g.attributes.position, ix = g.index, n = ix ? ix.count : p.count;
+      for (let k = 0; k + 2 < n; k += 3) { const t = [0, 1, 2].map(j => v.fromBufferAttribute(p, ix ? ix.getX(k + j) : k + j).applyMatrix4(o.matrixWorld).clone());
+        sum += t[1].clone().sub(t[0]).cross(t[2].clone().sub(t[0])).length() / 2; tri.push([t, sum]); } });
+    let fro = 11; const rnd = () => (fro = (fro * 16807) % 2147483647) / 2147483647;
+    for (let k = 0; k < 2500 && tri.length; k++) { const r0 = rnd() * sum; let lo = 0, hi = tri.length - 1; while (lo < hi) { const mid = (lo + hi) >> 1; if (tri[mid][1] < r0) lo = mid + 1; else hi = mid; }
+      const [t] = tri[lo]; let u = rnd(), w = rnd(); if (u + w > 1) { u = 1 - u; w = 1 - w; } pkt.push(t[0].clone().add(t[1].clone().sub(t[0]).multiplyScalar(u)).add(t[2].clone().sub(t[0]).multiplyScalar(w))); }
     if (!pkt.length) return;
     const node = n => { let f = null; sc.traverse(o => { if (!f && o.name === n) f = o; }); return f; };
     const matAv = o => { let m = null; o.traverse(c => { if (!m && c.isMesh) m = c.material; }); return m; };
@@ -127,7 +132,7 @@
       else stykke(nd, r.a, r.b.clone().lerp(new T.Vector3(0, r.b.y, r.b.z), 0.15), 0.055);
     }
     // Halsen: hodet skal sitte på toppen av kroppen
-    const hd = node('hode');
+    const hd = node('hode'); if (hd) hd.userData.p0 = hd.position.clone();
     if (hd) {   // stikker maten opp over halsen (isen er høy), løftes hodet så det sitter oppå
       let topp = -1e9; for (const q of pkt) if (Math.abs(q.x) < 0.14 && Math.abs(q.z - hd.position.z) < 0.18) topp = Math.max(topp, q.y);
       if (topp > hd.position.y + 0.04) { hd.position.y = topp - 0.04; sc.updateMatrixWorld(true); }
