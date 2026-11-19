@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>EVN Fotball 0.1.1 – EVN Studio</title>
+<title>EVN Fotball 0.2.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -145,7 +145,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.1.1</div>
+    <div class="evn-ver" id="versjon">Versjon 0.2.0</div>
   </div>
 </div>
 
@@ -441,10 +441,17 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script src="../../vendor/three-r128.min.js"></script>
+<script src="three-r187.global.js"></script>
+<script type="importmap">{ "imports": { "three": "./jsm/three-shim.js" } }</script>
+<script type="module">
+import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
+import { clone } from './jsm/utils/SkeletonUtils.js';
+window.EVNModell = { GLTFLoader, klon: clone };
+window.dispatchEvent(new Event('evn-modell-klar'));
+</script>
 <script>
 'use strict';
-const VERSJON = '0.1.1';
+const VERSJON = '0.2.0';
 const TEST = location.hash === '#test';
 const LAGRING = TEST ? 'evn-fotball-test' : 'evn-fotball-v1';
 const LYD_NOKKEL = TEST ? 'evn-fotball-test-lyd' : 'evn-fotball-lyd';
@@ -530,51 +537,96 @@ oppdaterLydKnapp();
 // ======================================================
 const canvas = $('c');
 let renderer;
-try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); } catch (e) { renderer = null; }
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); } catch (e) { renderer = null; }
 if (!renderer) { $('feil').querySelector('p').textContent = 'Nettleseren din klarer ikke å vise 3D. Prøv en annen nettleser.'; $('feil').classList.add('vis'); throw new Error('Ingen WebGL'); }
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+const LAV = matchMedia('(pointer:coarse)').matches;   // mobil og nettbrett: litt lavere oppløsning og skyggekart
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, LAV ? 1.5 : 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x9fd0ef);
-const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 200);
-scene.add(new THREE.HemisphereLight(0xffffff, 0x4a7a3a, 0.85));
-const sol = new THREE.DirectionalLight(0xffffff, 0.6); sol.position.set(10, 40, 20); scene.add(sol);
+function lerret(w, h, tegn) { const c = document.createElement('canvas'); c.width = w; c.height = h; tegn(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; }
+scene.background = lerret(4, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#3f8fd8'); g.addColorStop(0.55, '#9fd3f2'); g.addColorStop(1, '#e8f5fb'); x.fillStyle = g; x.fillRect(0, 0, w, h); });
+scene.fog = new THREE.Fog(0xcfe9f6, 70, 150);
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 300);
+scene.add(new THREE.HemisphereLight(0xdff1ff, 0x4a6b3a, 1.15));
+const sol = new THREE.DirectionalLight(0xfff1dc, 2.7); sol.position.set(14, 32, 18); scene.add(sol); scene.add(sol.target);
+sol.castShadow = true; sol.shadow.mapSize.set(LAV ? 1024 : 2048, LAV ? 1024 : 2048);
+Object.assign(sol.shadow.camera, { left: -28, right: 28, top: 22, bottom: -22, near: 5, far: 90 }); sol.shadow.camera.updateProjectionMatrix();
+sol.shadow.bias = -0.0004; sol.shadow.normalBias = 0.03; sol.shadow.radius = 3;
 function storrelse() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w < h ? 72 : 50; camera.updateProjectionMatrix(); }
 addEventListener('resize', storrelse); storrelse();
 
-const M = c => new THREE.MeshLambertMaterial({ color: c });
+const M = (c, r) => new THREE.MeshStandardMaterial({ color: c, roughness: r === undefined ? 0.75 : r, metalness: 0 });
 const geo = { kule: new THREE.SphereGeometry(1, 16, 12), boks: new THREE.BoxGeometry(1, 1, 1), kjegle: new THREE.ConeGeometry(1, 1, 10), syl: new THREE.CylinderGeometry(1, 1, 1, 12) };
 function mesh(g, farge, sx, sy, sz, x, y, z, foreldre) {
   const m = new THREE.Mesh(g, typeof farge === 'number' ? M(farge) : farge);
-  m.scale.set(sx, sy, sz); m.position.set(x || 0, y || 0, z || 0); if (foreldre) foreldre.add(m); return m;
+  m.scale.set(sx, sy, sz); m.position.set(x || 0, y || 0, z || 0); m.castShadow = m.receiveShadow = true; if (foreldre) foreldre.add(m); return m;
 }
 const skyggeMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false });
 function skygge(foreldre, r) { const s = new THREE.Mesh(new THREE.CircleGeometry(r, 16), skyggeMat); s.rotation.x = -Math.PI / 2; s.position.y = 0.02; foreldre.add(s); return s; }
 
-// Banen
-mesh(geo.boks, 0x3f8a3a, 120, 0.1, 100, 0, -0.06, 0, scene);
-for (let i = 0; i < 10; i++) mesh(geo.boks, i % 2 ? 0x56b04a : 0x4ea544, 2 * L / 10, 0.02, 2 * B, -L + L / 10 + i * 2 * L / 10, 0, 0, scene);
-const hvit = new THREE.MeshBasicMaterial({ color: 0xffffff });
-const linje = (x, z, sx, sz) => mesh(geo.boks, hvit, sx, 0.03, sz, x, 0.02, z, scene);
-linje(0, -B, 2 * L, 0.15); linje(0, B, 2 * L, 0.15); linje(-L, 0, 0.15, 2 * B); linje(L, 0, 0.15, 2 * B); linje(0, 0, 0.15, 2 * B);
-const sirkel = new THREE.Mesh(new THREE.RingGeometry(3.4, 3.6, 40), hvit); sirkel.rotation.x = -Math.PI / 2; sirkel.position.y = 0.03; scene.add(sirkel);
-for (const s of [-1, 1]) { linje(s * (L - 4), 0, 0.15, 12); linje(s * (L - 2), -6, 4, 0.15); linje(s * (L - 2), 6, 4, 0.15); }
-// Vant rundt banen (ballen spretter tilbake)
-const vant = M(0xffffff);
-mesh(geo.boks, vant, 2 * L + 1, 0.8, 0.3, 0, 0.4, -B - 0.5, scene); mesh(geo.boks, vant, 2 * L + 1, 0.8, 0.3, 0, 0.4, B + 0.5, scene);
-for (const s of [-1, 1]) for (const z of [-1, 1]) mesh(geo.boks, vant, 0.3, 0.8, B - MAAL_B, s * (L + 0.5), 0.4, z * (MAAL_B + (B - MAAL_B) / 2), scene);
+// Banen: gress med striper og linjer malt rett i teksturen
+const ytre = new THREE.Mesh(new THREE.PlaneGeometry(260, 220), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, map: (() => { const t = lerret(256, 256, (x, w, h) => { x.fillStyle = '#3a7a33'; x.fillRect(0, 0, w, h); for (let i = 0; i < 2600; i++) { x.fillStyle = Math.random() < 0.5 ? 'rgba(20,60,20,.25)' : 'rgba(120,180,90,.18)'; x.fillRect(Math.random() * w, Math.random() * h, 2, 2); } }); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(40, 34); return t; })() }));
+ytre.rotation.x = -Math.PI / 2; ytre.position.y = -0.02; ytre.receiveShadow = true; scene.add(ytre);
+const BANE_W = 2 * L + 4, BANE_H = 2 * B + 4;
+const baneTeks = lerret(2048, 1280, (x, w, h) => {
+  const sx = w / BANE_W, sz = h / BANE_H, px = v => (v + BANE_W / 2) * sx, pz = v => (v + BANE_H / 2) * sz;
+  x.fillStyle = '#4d9e40'; x.fillRect(0, 0, w, h);
+  for (let i = 0; i < 12; i++) { x.fillStyle = i % 2 ? '#56ab47' : '#4a993d'; x.fillRect(px(-L) + i * (2 * L * sx / 12), 0, 2 * L * sx / 12 + 1, h); }
+  for (let i = 0; i < 30000; i++) { x.fillStyle = Math.random() < 0.5 ? 'rgba(25,70,20,.13)' : 'rgba(170,220,120,.10)'; x.fillRect(Math.random() * w, Math.random() * h, 2, 3); }
+  x.strokeStyle = 'rgba(255,255,255,.92)'; x.lineWidth = 0.16 * sx; x.lineCap = 'round';
+  const r = (a, b, c, d) => x.strokeRect(px(a), pz(b), (c - a) * sx, (d - b) * sz);
+  r(-L, -B, L, B); x.beginPath(); x.moveTo(px(0), pz(-B)); x.lineTo(px(0), pz(B)); x.stroke();
+  x.beginPath(); x.arc(px(0), pz(0), 3.5 * sx, 0, 6.283); x.stroke();
+  x.fillStyle = '#fff'; x.beginPath(); x.arc(px(0), pz(0), 0.25 * sx, 0, 6.283); x.fill();
+  for (const s of [-1, 1]) { r(s > 0 ? L - 4 : -L, -6, s > 0 ? L : -L + 4, 6); r(s > 0 ? L - 1.8 : -L, -4, s > 0 ? L : -L + 1.8, 4); x.beginPath(); x.arc(px(s * (L - 3)), pz(0), 0.2 * sx, 0, 6.283); x.fill(); }
+  for (const [cx, cz] of [[-L, -B], [L, -B], [-L, B], [L, B]]) { x.beginPath(); x.arc(px(cx), pz(cz), 0.8 * sx, 0, 6.283); x.stroke(); }
+});
+const bane = new THREE.Mesh(new THREE.PlaneGeometry(BANE_W, BANE_H), new THREE.MeshStandardMaterial({ map: baneTeks, roughness: 0.95 }));
+bane.rotation.x = -Math.PI / 2; bane.receiveShadow = true; scene.add(bane);
+// Vant med reklame (ballen spretter tilbake)
+function reklame(lengde) {
+  const t = lerret(1024, 64, (x, w, h) => { const ord = ['EVN', 'FOTBALL', 'STUDIO', '⚽']; const n = 8; for (let i = 0; i < n; i++) { x.fillStyle = ['#1d2440', '#ffcc00', '#2b6cff', '#e84393'][i % 4]; x.fillRect(i * w / n, 0, w / n, h); x.fillStyle = i % 4 === 1 ? '#1d2440' : '#fff'; x.font = '800 30px Nunito, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(ord[i % 4], i * w / n + w / n / 2, h / 2 + 2); } });
+  t.wrapS = THREE.RepeatWrapping; t.repeat.set(Math.max(1, Math.round(lengde / 16)), 1); return new THREE.MeshStandardMaterial({ map: t, roughness: 0.55 });
+}
+const vantLang = reklame(2 * L + 1), vantKort = reklame(B - MAAL_B);
+mesh(geo.boks, vantLang, 2 * L + 1, 0.8, 0.3, 0, 0.4, -B - 0.5, scene); mesh(geo.boks, vantLang, 2 * L + 1, 0.8, 0.3, 0, 0.4, B + 0.5, scene);
+for (const s of [-1, 1]) for (const z of [-1, 1]) { const v = mesh(geo.boks, vantKort, B - MAAL_B, 0.8, 0.3, s * (L + 0.5), 0.4, z * (MAAL_B + (B - MAAL_B) / 2), scene); v.rotation.y = Math.PI / 2; }
 // Mål
+const stolpe = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.2 });
 for (const s of [-1, 1]) {
   const g = new THREE.Group(); g.position.x = s * L; scene.add(g);
-  mesh(geo.syl, 0xffffff, 0.12, MAAL_H, 0.12, 0, MAAL_H / 2, -MAAL_B, g); mesh(geo.syl, 0xffffff, 0.12, MAAL_H, 0.12, 0, MAAL_H / 2, MAAL_B, g);
-  const tverr = mesh(geo.syl, 0xffffff, 0.12, 2 * MAAL_B, 0.12, 0, MAAL_H, 0, g); tverr.rotation.x = Math.PI / 2;
-  const nett = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, side: THREE.DoubleSide, wireframe: true });
-  const bak = new THREE.Mesh(new THREE.PlaneGeometry(2 * MAAL_B, MAAL_H, 12, 5), nett); bak.rotation.y = Math.PI / 2; bak.position.set(s * 1.5, MAAL_H / 2, 0); g.add(bak);
-  const topp = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2 * MAAL_B, 3, 12), nett); topp.rotation.x = Math.PI / 2; topp.position.set(s * 0.75, MAAL_H, 0); g.add(topp);
+  mesh(geo.syl, stolpe, 0.12, MAAL_H, 0.12, 0, MAAL_H / 2, -MAAL_B, g); mesh(geo.syl, stolpe, 0.12, MAAL_H, 0.12, 0, MAAL_H / 2, MAAL_B, g);
+  const tverr = mesh(geo.syl, stolpe, 0.12, 2 * MAAL_B, 0.12, 0, MAAL_H, 0, g); tverr.rotation.x = Math.PI / 2;
+  const nettTeks = lerret(64, 64, (x, w, h) => { x.strokeStyle = 'rgba(255,255,255,.85)'; x.lineWidth = 3; for (let i = 0; i <= w; i += 16) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, h); x.stroke(); x.beginPath(); x.moveTo(0, i); x.lineTo(w, i); x.stroke(); } });
+  nettTeks.wrapS = nettTeks.wrapT = THREE.RepeatWrapping; nettTeks.repeat.set(8, 3);
+  const nett = new THREE.MeshStandardMaterial({ map: nettTeks, transparent: true, side: THREE.DoubleSide, depthWrite: false, roughness: 0.8 });
+  const bak = new THREE.Mesh(new THREE.PlaneGeometry(2 * MAAL_B, MAAL_H), nett); bak.rotation.y = Math.PI / 2; bak.position.set(s * 1.5, MAAL_H / 2, 0); g.add(bak);
+  const topp = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 2 * MAAL_B), nett); topp.rotation.x = Math.PI / 2; topp.position.set(s * 0.75, MAAL_H, 0); g.add(topp);
+  for (const z of [-1, 1]) { const side = new THREE.Mesh(new THREE.PlaneGeometry(1.5, MAAL_H), nett); side.position.set(s * 0.75, MAAL_H / 2, z * MAAL_B); g.add(side); }
 }
-// Tribuner med publikum
+// Tribuner i trinn, med tak og publikum
+const betong = M(0x9aa5b1, 0.9), sete = [M(0x2b6cff, 0.6), M(0xffcc00, 0.6)];
+const publikum = [];
 for (const z of [-1, 1]) {
-  const t = mesh(geo.boks, 0x5a6472, 2 * L + 12, 3, 5, 0, 1.5, z * (B + 4.5), scene);
-  for (let i = 0; i < 60; i++) mesh(geo.kule, [0xff5a5a, 0xffd23f, 0x4fb3ff, 0xffffff, 0x7dff5a][i % 5], 0.35, 0.35, 0.35, -L - 4 + i * (2 * L + 8) / 60, 3.3 + (i % 2) * 0.5, z * (B + 3.5 + (i % 3)), scene);
+  for (let r = 0; r < 4; r++) {
+    mesh(geo.boks, betong, 2 * L + 14, 0.8 + r * 0.8, 1.4, 0, (0.8 + r * 0.8) / 2, z * (B + 2.4 + r * 1.4), scene);
+    mesh(geo.boks, sete[r % 2], 2 * L + 12, 0.15, 0.6, 0, 0.88 + r * 0.8, z * (B + 2.2 + r * 1.4), scene);
+  }
+  mesh(geo.boks, M(0xe6ebf0, 0.5), 2 * L + 16, 0.25, 7, 0, 6.5, z * (B + 5.5), scene);
+  for (const x of [-L - 6, -L / 2, 0, L / 2, L + 6]) mesh(geo.boks, M(0x5a6472, 0.6), 0.3, 6.5, 0.3, x, 3.25, z * (B + 8.2), scene);
+  const n = 220, kropp = new THREE.CapsuleGeometry(0.22, 0.35, 4, 8);
+  const inst = new THREE.InstancedMesh(kropp, new THREE.MeshStandardMaterial({ roughness: 0.8 }), n);
+  const mtx = new THREE.Matrix4(), farger = [0xff5a5a, 0xffd23f, 0x4fb3ff, 0xffffff, 0x7dff5a, 0xe84393, 0xff9f43];
+  for (let i = 0; i < n; i++) { const r = i % 4, x = -L - 5 + Math.random() * (2 * L + 10); mtx.makeTranslation(x, 1.45 + r * 0.8, z * (B + 2.2 + r * 1.4)); inst.setMatrixAt(i, mtx); inst.setColorAt(i, new THREE.Color(farger[(Math.random() * farger.length) | 0])); }
+  inst.castShadow = false; scene.add(inst); publikum.push(inst);
+}
+// Flomlys i hjørnene
+for (const [x, z] of [[-L - 7, -B - 9], [L + 7, -B - 9], [-L - 7, B + 9], [L + 7, B + 9]]) {
+  mesh(geo.syl, M(0x8a96a3, 0.5), 0.25, 14, 0.25, x, 7, z, scene);
+  const p = mesh(geo.boks, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff6d8, emissiveIntensity: 1.5 }), 2.2, 1.2, 0.3, x, 14.2, z, scene);
+  p.lookAt(0, 0, 0);
 }
 
 // ======================================================
@@ -598,6 +650,69 @@ function lagSpiller(kropp, hode, sko, pynt) {
   g.userData = { k, armV, armH, benV, benH };
   return g;
 }
+// Den ekte EVN-roboten (robot-v2.glb fra Mørkeskogen, CC0). Boksroboten over brukes til modellen er lastet.
+let robotMal = null, robotSkala = 1, robotY = 0;
+const ROBOT_HOYDE = 1.85;
+function lastRobot() {
+  if (!window.EVNModell) { addEventListener('evn-modell-klar', lastRobot, { once: true }); return; }
+  const loader = new window.EVNModell.GLTFLoader();
+  const ferdig = gltf => {
+    robotMal = gltf;
+    const boks = new THREE.Box3().setFromObject(gltf.scene);
+    robotSkala = ROBOT_HOYDE / (boks.max.y - boks.min.y); robotY = -boks.min.y * robotSkala;
+    byttTilRobot();
+  };
+  const feil = e => console.warn('EVN Fotball: fant ikke robotmodellen, bruker enkel robot', e);
+  if (window.EVN_ROBOT_B64) {
+    const bin = atob(window.EVN_ROBOT_B64), buf = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    loader.parse(buf.buffer, '', ferdig, feil);
+  } else loader.load('modeller/helt-robot-v2.glb', ferdig, undefined, feil);
+}
+function lagRobotSpiller(farge, pynt) {
+  const rot = new THREE.Group(), m = window.EVNModell.klon(robotMal.scene);
+  m.scale.setScalar(robotSkala); m.position.y = robotY; rot.add(m);
+  m.traverse(o => {
+    if (!o.isMesh) return;
+    o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false;
+    o.material = o.material.clone();
+    if (o.material.name === 'Main') o.material.color.setHex(farge);
+    if (pynt === 'diamant' && o.material.name === 'Main') { o.material.metalness = 0.3; o.material.roughness = 0.15; o.material.emissive = new THREE.Color(0x4fb3ff); o.material.emissiveIntensity = 0.25; }
+  });
+  // Pynt på hodet (skins er bare utseende)
+  const hode = m.getObjectByName('Head');
+  if (hode && pynt) {
+    m.updateMatrixWorld(true); const sk = new THREE.Vector3(); hode.getWorldScale(sk);
+    const feste = new THREE.Group(); feste.scale.setScalar(1 / sk.x); hode.add(feste);
+    if (pynt === 'lyn') { for (const z of [-1, 1]) { const l = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.35, 4), new THREE.MeshStandardMaterial({ color: 0xffe14a, emissive: 0xffd23f, emissiveIntensity: 0.6 })); l.position.set(z * 0.18, 0.55, 0); l.rotation.z = -z * 0.5; feste.add(l); } }
+    if (pynt === 'flamme') { const f = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.5, 10), new THREE.MeshBasicMaterial({ color: 0xff8a1c })); f.position.y = 0.62; feste.add(f); const f2 = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.32, 10), new THREE.MeshBasicMaterial({ color: 0xffe14a })); f2.position.y = 0.58; feste.add(f2); }
+    if (pynt === 'diamant') { const d = new THREE.Mesh(new THREE.OctahedronGeometry(0.14), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x8fe3ff, emissiveIntensity: 0.8, roughness: 0.1 })); d.position.y = 0.62; feste.add(d); }
+    if (pynt === 'love') { const man = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.13, 10, 24), M(0xd9822b, 0.9)); man.position.set(0, 0.25, -0.05); feste.add(man); }
+    if (pynt === 'keeper') { const caps = new THREE.Mesh(new THREE.SphereGeometry(0.26, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), M(0x222222, 0.6)); caps.position.y = 0.36; feste.add(caps); }
+  }
+  const mix = new THREE.AnimationMixer(m), klipp = {};
+  for (const a of robotMal.animations) klipp[a.name] = mix.clipAction(a);
+  klipp.Idle.play();
+  rot.userData = { robot: true, mix, klipp, aktiv: klipp.Idle };
+  return rot;
+}
+function spillerModell(lag, keeper, mot) {
+  const skin = SKINS.find(s => s.id === tilstand.skin) || SKINS[0];
+  if (robotMal) {
+    if (lag === 0) return keeper ? (tilstand.loveKeeper ? lagRobotSpiller(0xffcc00, 'love') : lagRobotSpiller(0xe84393, 'keeper')) : lagRobotSpiller(skin.kropp, skin.pynt);
+    return lagRobotSpiller(keeper ? 0x333333 : mot.farge, keeper ? 'keeper' : null);
+  }
+  if (lag === 0) return keeper ? (tilstand.loveKeeper ? lagSpiller(0xffcc00, 0xffcc00, 0x555555, 'love') : lagSpiller(0xe84393, 0xffcc00, 0x555555, 'keeper')) : lagSpiller(skin.kropp, skin.hode, skin.sko, skin.pynt);
+  return lagSpiller(keeper ? 0x222222 : mot.farge, mot.farge, 0x222222, keeper ? 'keeper' : null);
+}
+function byttTilRobot() {
+  const mot = kamp ? kamp.mot : LAG[0];
+  for (const s of spillere) { scene.remove(s.mesh); s.mesh = spillerModell(s.lag, s.keeper, mot); s.mesh.position.copy(s.pos); s.mesh.rotation.y = s.retning; scene.add(s.mesh); }
+}
+function settAnim(u, navn, skala) {
+  const ny = u.klipp[navn]; if (!ny) return;
+  if (ny !== u.aktiv) { ny.reset().setEffectiveWeight(1).fadeIn(0.18).play(); u.aktiv.fadeOut(0.18); u.aktiv = ny; }
+  ny.timeScale = skala || 1;
+}
 // Startplasser for laget som angriper mot +x (speiles for motstanderen)
 const FORMASJON = [{ x: -L + 1.3, z: 0, k: true }, { x: -10, z: -5 }, { x: -10, z: 5 }, { x: -2.5, z: -4 }, { x: -2.5, z: 4 }];
 let spillere = [];
@@ -611,11 +726,7 @@ function byggLag(mot) {
   const skin = SKINS.find(s => s.id === tilstand.skin) || SKINS[0];
   for (let lag = 0; lag < 2; lag++) {
     FORMASJON.forEach((f, i) => {
-      let m;
-      if (lag === 0) {
-        if (f.k) m = tilstand.loveKeeper ? lagSpiller(0xffcc00, 0xffcc00, 0x555555, 'love') : lagSpiller(0xe84393, 0xffcc00, 0x555555, 'keeper');
-        else m = lagSpiller(skin.kropp, skin.hode, skin.sko, skin.pynt);
-      } else m = lagSpiller(f.k ? 0x222222 : mot.farge, mot.farge, 0x222222, f.k ? 'keeper' : null);
+      const m = spillerModell(lag, !!f.k, mot);
       const s = lag === 0 ? 1 : -1;
       const sp = { lag, keeper: !!f.k, base: { x: f.x * s, z: f.z }, pos: new THREE.Vector3(f.x * s, 0, f.z), retning: s > 0 ? Math.PI / 2 : -Math.PI / 2, fart: 0, mesh: m, ingenBall: 0, holdTid: 0 };
       m.position.copy(sp.pos); scene.add(m); spillere.push(sp);
@@ -627,9 +738,15 @@ function byggLag(mot) {
 // Ballen
 // ======================================================
 const ballMesh = new THREE.Group(); scene.add(ballMesh);
-const ballKule = mesh(geo.kule, 0xffffff, 0.3, 0.3, 0.3, 0, 0, 0, ballMesh);
-for (let i = 0; i < 6; i++) { const p = mesh(geo.kule, 0x111111, 0.1, 0.1, 0.1, 0, 0, 0, ballKule); const v = i / 6 * Math.PI * 2; p.position.set(Math.cos(v) * 0.9, Math.sin(i * 1.7) * 0.5, Math.sin(v) * 0.9); }
-const ballSkygge = new THREE.Mesh(new THREE.CircleGeometry(0.3, 12), skyggeMat); ballSkygge.rotation.x = -Math.PI / 2; ballSkygge.position.y = 0.03; scene.add(ballSkygge);
+const ballTeks = lerret(512, 256, (x, w, h) => {
+  x.fillStyle = '#fafafa'; x.fillRect(0, 0, w, h);
+  const femkant = (cx, cy, r) => { x.beginPath(); for (let i = 0; i < 5; i++) { const v = -Math.PI / 2 + i * 2 * Math.PI / 5; x.lineTo(cx + Math.cos(v) * r * 1.4, cy + Math.sin(v) * r); } x.closePath(); x.fill(); };
+  x.fillStyle = '#1b1b1b';
+  for (let rad = 0; rad < 4; rad++) for (let i = 0; i < 6; i++) femkant((i + (rad % 2) * 0.5) * w / 6, 18 + rad * h / 3.2, 20);
+});
+const ballKule = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 20), new THREE.MeshStandardMaterial({ map: ballTeks, roughness: 0.45 }));
+ballKule.castShadow = true; ballMesh.add(ballKule);
+const ballSkygge = new THREE.Mesh(new THREE.CircleGeometry(0.3, 12), skyggeMat); ballSkygge.rotation.x = -Math.PI / 2; ballSkygge.position.y = 0.03; ballSkygge.visible = false; scene.add(ballSkygge);
 const ball = { pos: new THREE.Vector3(0, 0.3, 0), vel: new THREE.Vector3(), eier: null, forbiKeeper: -1 };
 
 // ======================================================
@@ -906,11 +1023,22 @@ function animer(dt) {
   for (const s of spillere) {
     s.mesh.position.copy(s.pos);
     let d = s.retning - s.mesh.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d)); s.mesh.rotation.y += d * Math.min(1, dt * 12);
-    const u = s.mesh.userData, f = Math.min(1, s.fart / 5), sv = Math.sin(tid * 13 + s.base.z) * 0.7 * f;
+    const u = s.mesh.userData;
+    const feirer = kamp && kamp.feiring > 0, vant = feirer && s.lag === (kamp.nesteAvspark === 1 ? 0 : 1);
+    if (u.robot) {
+      if (feirer) settAnim(u, vant ? (s.keeper ? 'Jump' : 'Dance') : 'No');
+      else if (s.fart > 4.2) settAnim(u, 'Running', s.fart / 6.5);
+      else if (s.fart > 0.4) settAnim(u, 'Walking', Math.max(0.7, s.fart / 2.5));
+      else settAnim(u, 'Idle');
+      u.mix.update(dt);
+      continue;
+    }
+    const f = Math.min(1, s.fart / 5), sv = Math.sin(tid * 13 + s.base.z) * 0.7 * f;
     u.benV.rotation.x = sv; u.benH.rotation.x = -sv; u.armV.rotation.x = -sv; u.armH.rotation.x = sv;
     u.k.position.y = Math.abs(Math.sin(tid * 13)) * 0.08 * f;
-    if (kamp && kamp.feiring > 0 && s.lag === (kamp.nesteAvspark === 1 ? 0 : 1)) u.k.position.y = Math.abs(Math.sin(tid * 10 + s.base.z)) * 0.5;
+    if (vant) u.k.position.y = Math.abs(Math.sin(tid * 10 + s.base.z)) * 0.5;
   }
+  for (const p of publikum) p.position.y = kamp && kamp.feiring > 0 ? Math.abs(Math.sin(tid * 9)) * 0.35 : 0;
   ballMesh.position.copy(ball.pos);
   const v = Math.hypot(ball.vel.x, ball.vel.z); ballKule.rotation.x += ball.vel.z * dt * 3; ballKule.rotation.z -= ball.vel.x * dt * 3;
   ballSkygge.position.set(ball.pos.x, 0.03, ball.pos.z);
@@ -918,9 +1046,9 @@ function animer(dt) {
 }
 function kamera(dt) {
   const fx = valgt ? ball.pos.x * 0.6 + valgt.pos.x * 0.4 : ball.pos.x, fz = valgt ? ball.pos.z * 0.6 + valgt.pos.z * 0.4 : ball.pos.z;
-  tmp.set(fx * 0.9, 17, fz * 0.5 + 14);
+  tmp.set(fx * 0.9, 13.5, fz * 0.5 + 15);
   camera.position.lerp(tmp, Math.min(1, dt * 3));
-  camera.lookAt(camera.position.x, 0, camera.position.z - 17);
+  camera.lookAt(camera.position.x, 0.5, camera.position.z - 15.5);
 }
 let meldTimer = 0;
 function melding(html, sek) { $('melding').innerHTML = html; $('melding').classList.add('vis'); meldTimer = sek || 2.5; }
@@ -1045,6 +1173,7 @@ EVNNullstill({
   vis: () => $('start').classList.contains('vis')
 });
 byggLag(LAG[0]);
+lastRobot();
 camera.position.set(0, 20, 30); camera.lookAt(0, 0, 0);
 requestAnimationFrame(loop);
 window.__spill = { tilstand, ball, get spillere() { return spillere; }, get kamp() { return kamp; }, get valgt() { return valgt; }, startKamp, sluttKamp, skyt, pasning, maalScoret, lagre, LAG, SKINS };
