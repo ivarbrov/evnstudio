@@ -1879,11 +1879,12 @@ function openLootChest(o) {
 }
 
 // ---------- Søvn ----------
-// Om kvelden og natten kan du sove i halmsenga. Natten går da fort (rundt 30 sekunder for en hel natt), og ingen kan skade deg.
+// Om kvelden og natten kan du sove i halmsenga. Som i Minecraft er natten over på et par sekunder (Ivar 19.11.2026), og ingen kan skade deg.
+const SOVETID = 3;   // sekunder i senga før det er morgen, uansett når på kvelden du legger deg
 function goSleep(b) {
   const ph = phaseInfo(g.time), endNight = DAY + DUSK + NIGHT;
   if (ph.p < DAY - 15) { toast('Du er ikke trøtt ennå 🙂 Kom tilbake når det blir kveld 🌙'); g.p.cool = 0.8; return; }
-  const left = endNight + 3 - ph.p, dur = 6 + 24 * left / (DUSK + NIGHT);
+  const left = endNight + 3 - ph.p, dur = SOVETID;
   g.sleep = { b, k: left / dur, t: 0, z: 0 }; g.monsters.forEach(m => m.leave = true);
   toast('😴 God natt … Zzz'); sfx('select');
 }

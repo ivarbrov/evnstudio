@@ -21,7 +21,7 @@
     // 2.0.12: «⭐ Nivå» er en knapp som viser hva nivåene gir (som i Min Bondegård)
     { const nv = v.lastChild; nv.classList.add('h2NivaaKnapp'); nv.setAttribute('role', 'button'); nv.tabIndex = 0; nv.title = 'Se hva nivåene gir'; nv.setAttribute('aria-label', 'Nivå. Trykk for å se hva du får på neste nivå');
       nv.append(Object.assign(document.createElement('span'), { className: 'pil', textContent: ' ›' }));
-      const apne = e => { e.preventDefault(); e.stopPropagation(); if (typeof window.EVN2_nivaa === 'function') window.EVN2_nivaa(); };
+      const apne = e => { e.preventDefault(); e.stopPropagation(); if (typeof window.EVN2_nivaa === 'function') window.EVN2_nivaa(); nv.blur(); };   // QA 08310a2: slipp fokus, så mellomrom hopper etter at menyen er lukket
       nv.addEventListener('click', apne); nv.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') apne(e); }); }
     // 2.0.12: fast 🔨 Bygg-knapp øverst til høyre, under ⏸ (som i Min Bondegård)
     { const bk = document.createElement('button'); bk.id = 'h2Bygg'; bk.type = 'button'; bk.title = 'Bygg (B)'; bk.setAttribute('aria-label', 'Bygg'); bk.hidden = true;
