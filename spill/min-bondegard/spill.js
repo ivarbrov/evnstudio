@@ -844,6 +844,32 @@ function synkGaver() {
   if (!gaveT && n) { const g = lagGaveeske(); scene.add(g); eierAv(g); klikkbar(g); gaveT = {type: 'gave', id: 'gave', gruppe: g, hoyde: 1.6}; gaveT.ikon = lagIkon(gaveT.hoyde); g.add(gaveT.ikon); ting.set('gave', gaveT); g.position.set(GAVE_PLASS[0], hoyde(...GAVE_PLASS), GAVE_PLASS[1]); g.rotation.y = 0.4; }
   if (gaveT) { gaveT.gruppe.visible = n > 0; settIkon(gaveT.ikon, n ? '🎁' : null); }
 }
+/* 0.36.0 Julenissebrevet (Even 20.11): et brev fra julenissen som forteller om Vinter i Elvedal. Det dukker opp på skjermen første gang,
+   og ligger etterpå i postkassa ved innkjørselen. Foreløpig bare i testversjonen, når admin har slått på vinteren. Eventet selv er ikke bygd.
+   Teksten er godkjent av Even 20.11. Tallene og den daglige gaven er forslag til en voksen har godkjent dem */
+var postT = null;
+const POST_PLASS = [KUNDE_STOPP + 7.6, VEI_Z - 5.2];
+const BREV = `<div class="brev"><p><b>Kjære bonde!</b></p>
+  <p>I morgen kommer vinteren til Elvedal. Da blir gården din hvit av snø, og det blir is på elva. ❄️</p>
+  <p>Jeg trenger hjelp til å lage julegaver. Slik gjør du det:</p>
+  <ol><li>Lag <b>gavepapir</b> av hvete i gavepapirmaskinen.</li><li>Pakk inn en ting du har laget, i gavemaskinen.</li><li><b>Lever gaven.</b> Da får du en <b>pepperkake</b>.</li></ol>
+  <p>Jo flere pepperkaker du får, jo finere blir juletreet. Du kan også få nisseluer til dyrene, oppskrift på pepperkakehus og julepynt til gården. Den som får 250 pepperkaker, får <b>julesleden</b>! 🛷</p>
+  <p>Rebus har bygd en <b>snømann</b> til deg. Han har vintergåter. ⛄</p>
+  <p>Husk <b>julekalenderen</b>. Det er én luke hver dag fram til julaften, og i luke 24 ligger det noe ekstra fint. ⭐</p>
+  <p>Fra 1. til 24. desember får du en gave hver dag. Jeg og reinsdyret mitt kommer med den til gården. 🦌🎁</p>
+  <p>God jul!<br><b>Hilsen julenissen 🎅</b></p></div>`;
+function brevPaa() { return ADMIN && !!admLager().vinter; }
+function lagPostkasse() { const g = new THREE.Group(), tre = fm(0x8a5a33, 0.9), rod = fm(0xd8372e, 0.55), gul = fm(0xffd23f, 0.5), hvit = fm(0xffffff, 0.9);
+  mesh(new THREE.CylinderGeometry(0.07, 0.08, 1.0, 8), tre, 0, 0.5, 0, g); mesh(avrundetBoks(0.5, 0.34, 0.72, 0.08, 2), rod, 0, 1.15, 0, g);
+  mesh(new THREE.BoxGeometry(0.04, 0.3, 0.06), gul, 0.27, 1.3, 0.2, g); mesh(new THREE.BoxGeometry(0.04, 0.14, 0.2), gul, 0.27, 1.42, 0.13, g);   /* flagget er oppe: det er post */
+  mesh(avrundetBoks(0.54, 0.09, 0.76, 0.04, 2), hvit, 0, 1.35, 0, g);   /* snø på lokket */
+  bake(g); return g; }
+function synkPost() {
+  const paa = brevPaa();
+  if (!postT && paa) { const g = lagPostkasse(); scene.add(g); eierAv(g); klikkbar(g); postT = {type: 'post', id: 'post', gruppe: g, hoyde: 1.9}; postT.ikon = lagIkon(postT.hoyde); g.add(postT.ikon); ting.set('post', postT); g.position.set(POST_PLASS[0], hoyde(...POST_PLASS), POST_PLASS[1]); g.rotation.y = -0.5; }
+  if (postT) { postT.gruppe.visible = paa; settIkon(postT.ikon, paa && !admLager().brevLest ? '💌' : null); }
+}
+function visBrev() { aapneHandling(postT, '💌 Brev fra julenissen', () => BREV); if (!admLager().brevLest) { admLagre(l => { l.brevLest = true; }); synkPost(); } }
 function leverGaver(hvem) { const n = L.leverGaver(s); if (n) { melding(`🎁 ${hvem} har levert en gave! Den står ved låven.`, 3400); lagre(); synkGaver(); } }
 function visGave(res) {
   aapneHandling(gaveT, '🎁 Gaveeske', () => { const n = L.klareGaver(s); let p = '';
@@ -1765,6 +1791,7 @@ function bruk(u) {
   else if (u.type === 'tavle' || (u.type === 'varebil' && ting.get('tavle'))) visTavle();
   else if (u.type === 'varebil') melding(`🚚 Dette er varebilen din. Fra nivå ${D.bestillinger.nivaa} kjører den ut med bestillingene.`, 3200);
   else if (u.type === 'gave') visGave();
+  else if (u.type === 'post') visBrev();
   else if (u.type === 'pynt') visPynt(u);
   else if (u.type === 'kpynt') visKjopPynt(u);
 }
@@ -2113,7 +2140,7 @@ function oppdaterAdmin(dt, t) {
     if (u.ret * b.position.x > 46) { scene.remove(b); adm.biler.splice(i, 1); } }
 }
 if (ADMIN) {
-  admSkinn(); admPlanter(); synkKrone(); if (admLager().vinter && window.mbVinter) window.mbVinter(true);
+  admSkinn(); admPlanter(); synkKrone(); if (admLager().vinter && window.mbVinter) window.mbVinter(true); synkPost();
   const kn = $('adminKnapp'); if (kn) { kn.hidden = false; kn.addEventListener('click', visAdmin); }
 } else {
   const kn = $('bilKnapp'); if (kn) kn.addEventListener('click', visBiler);
@@ -2123,7 +2150,7 @@ if (ADMIN) {
   $('handlingInnhold').addEventListener('click', e => {
     const k = e.target.closest('button[data-g="adm"]'); if (!k || k.disabled) return; const v = k.dataset.v;
     if (v === 'regn') { lukkHandling(); admMyntregn(); }
-    else if (v === 'vinter') { const paa = !admLager().vinter; admLagre(l => { l.vinter = paa; }); if (window.mbVinter) window.mbVinter(paa); synkBrygge(); lukkHandling(); melding(paa ? '❄️ Nå er det vinter i Elvedal!' : 'Vinteren er slått av', 3000); }
+    else if (v === 'vinter') { const paa = !admLager().vinter; admLagre(l => { l.vinter = paa; }); if (window.mbVinter) window.mbVinter(paa); synkBrygge(); lukkHandling(); if (paa) admLagre(l => { l.brevLest = false; }); synkPost(); melding(paa ? '❄️ Nå er det vinter i Elvedal!' : 'Vinteren er slått av', 3000); if (paa) setTimeout(() => { if (brevPaa() && !pauset && !$('handling').classList.contains('vis')) visBrev(); }, 1800); }   /* 0.36.0: brevet fra julenissen kommer når vinteren slås på */
     else if (v === 'premium') { const paa = !admLager().premium; admPremium(paa); tegnPaaNytt(); melding(paa ? '👑 Premium er på! Gullgård, dobbel fart og dobbel XP.' : 'Premium er av', 3400); }
     else if (v === 'kjempe') { lukkHandling(); adm.kjempeT = 20; melding('🐔 Kjempedyr!', 3200); }
     else if (v === 'ferdig') { const t0 = naa(); s.akre.forEach(f => { if (f.avling && f.slutt > t0) f.slutt = t0; }); for (const d in s.dyr) s.dyr[d].forEach(x => { if (x.slutt && x.slutt > t0) x.slutt = t0; }); for (const x in s.bygg) (s.bygg[x].ko || []).forEach(j => { if (j.slutt > t0) { j.slutt = t0; j.start = Math.min(j.start, t0); } }); lagre(); synk(true); lukkHandling(); melding('⏩ Alt er ferdig!', 3200); }
