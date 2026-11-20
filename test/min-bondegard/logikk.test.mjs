@@ -297,6 +297,7 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
     while (x.nivaa < 10) L.giXP(x, 50, T0); const sett = {}; for (let i = 0; i < 400; i++) sett[L.nesteNabo(x)] = 1;
     t('Alle fem kan komme', Object.keys(sett).length === 5);
     t('Favoritter: Gnist liker bakeriet, Dråpe melk og meieri, Spire avlinger', L.naboLiker('gnist', 'brod') && !L.naboLiker('gnist', 'hvete') && L.naboLiker('drape', 'melk') && L.naboLiker('drape', 'smor') && !L.naboLiker('drape', 'brod') && L.naboLiker('spire', 'hvete') && !L.naboLiker('spire', 'egg') && !L.naboLiker('bleep', 'hvete') && !L.naboLiker('bolt', 'hvete'));
+    t('Bolt liker ting fra dyrene (0.35.1): egg, melk, ull og honning', ['egg', 'melk', 'ull', 'honning', 'geitemelk'].every(v => L.naboLiker('bolt', v)) && !L.naboLiker('bolt', 'brod') && !L.naboLiker('bolt', 'smor'));
     let fav = 0, alle = 0; for (let i = 0; i < 400; i++) L.nyNabo(x, 'spire').liste.forEach(l => { alle++; if (D.avlinger[l.vare]) fav++; });
     t('Spire ber oftest om avlinger, men ikke bare', fav / alle > 0.6 && fav / alle < 0.98, (fav / alle).toFixed(2));
     let dobbel = false; for (let i = 0; i < 300; i++) { const v = L.nyNabo(x, 'gnist').liste.map(l => l.vare); if (new Set(v).size !== v.length) dobbel = true; } t('Favoritter gir aldri samme vare to ganger', !dobbel); }
