@@ -49,7 +49,15 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 - **0.9.1** (ikke publisert): Rettinger etter QA av 0.9.0. 📋-knappen er skjult før nivå 4. Bestillingene er lesbare på smale skjermer. Meldingen etter levering vises over dialogen. To raske trykk sender ikke to bestillinger. Fokus går til neste «Send». Tilfeldige bestillinger regnes med heltall (`Math.imul`). Med redusert bevegelse kjører ikke lastebilen over skjermen.
 - **0.9.2** (ikke publisert): Lastebilen kjører saktere (høyst 8–9 m/s). Etter ett trykk på «Plant» står kortet klart på nærmeste tomme åker, så det går fort å så to sorter om hverandre (Ivar 11.11).
 - **0.9.3** (ikke publisert): Byggemenyen sier «Kommer i neste versjon av spillet» for fjøs og grisebinge når nivået er nådd, i stedet for lås og nivå.
-- **0.39.1** (foreslått publisert): Rebus begynner å bygge snømannen 21. november, ti dager før Vinter i Elvedal, i stedet for den siste uka (Even og Ivar 21.11).
+- **0.39.2** (foreslått publisert): Rettet etter QA av 0.39.1 (`qa/rapporter/2026-11-21-min-bondegard-1f38a3a.md`), etter ønske fra Ivar 21.11:
+  - Festens bygg (Festbordet, Gavepapirmaskinen og Gavemaskinen) står bare på gården i festmåneden. Står noe der når festen kommer igjen, får bygget en ny ledig plass.
+  - Bygg over maksnivået (geitefjøset, nivå 26) vises ikke i byggemenyen.
+  - Meldinger som kommer eller vises mens spillet er pauset, vises når pausen er over.
+  - Startkortet: Start synes på 320×568, og «Tilbake» synes i liggende mobil (740×360 og 568×320).
+  - Urimelige myntetall i lagringen kuttes ved 1 milliard.
+  - Kommentarene i `data.js` sier at tallene er godkjent av Ivar 21.11.
+  - Ikke rettet her: avvikene i den felles `statistikk.js` (ST2, ST4, ST5) og en setning om bildeknappen på personvernsiden, fordi det er felles filer. Feilmeldingene i konsollen uten WebGL (spillet viser riktig melding) er ikke rettet.
+- **0.39.1** (ikke publisert): Rebus begynner å bygge snømannen 21. november, ti dager før Vinter i Elvedal, i stedet for den siste uka (Even og Ivar 21.11).
 - **0.39.0** (ikke publisert, Ivar 21.11: «alt til og med 0.38.0»): Samler 0.21.2–0.21.3 fra Bursdagsfest-grenen og 0.22.0–0.38.0. Bilen som henter festvarer som er til overs, tar nå alle varer og køer som hører til festen, også gavepapir og julegaver etter desember. Meldingen sier hva som ble hentet. Ellers ingen nye funksjoner.
 - **0.38.0** (ikke publisert): **Snømannen, julenissen og julekalenderen** (Even 20.–21.11). Alt bare til pynt, bortsett fra kalenderlukene.
   - ⛄ Snømannen: den siste uka i november bygger Rebus en snømann ved huset sitt, litt hver dag. Trykker du på den, står det hvor lenge det er til Vinter i Elvedal, i dager, timer, minutter og sekunder. I desember står snømannen med nisselue der Rebus venter, og gir vintergåtene med samme lønn som Rebus. Rebus er tilbake i januar. Admin: «Nedtelling» viser den nå.

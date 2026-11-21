@@ -37,7 +37,7 @@
       ull:      { navn: 'Ull',      ikon: '🧶', verdi: 32 },
       gulrotpai: { navn: 'Gulrotpai', ikon: '🥧' },
       kremkake:  { navn: 'Kremkake',  ikon: '🍰' },
-      abbor:     { navn: 'Abbor',     ikon: '🐟', verdi: 10, fisk: true },   // 0.27.0: fisk fra brygga. Verdiene er forslag
+      abbor:     { navn: 'Abbor',     ikon: '🐟', verdi: 10, fisk: true },   // 0.27.0: fisk fra brygga. Verdiene er godkjent av Ivar 21.11
       orret:     { navn: 'Ørret',     ikon: '🐠', verdi: 18, fisk: true },
       gjedde:    { navn: 'Gjedde',    ikon: '🐡', verdi: 30, fisk: true },
       lue:       { navn: 'Lue',       ikon: '🧢' },
@@ -56,7 +56,7 @@
       smorpopkorn: { navn: 'Smørpopkorn', ikon: '🧈🍿' },
       festhatt:   { navn: 'Festhatt', ikon: '🥳', arr: 'bursdag' },   // 0.16.0: lages til Bursdagsfesten og sendes med varebilen. Kan ikke selges eller bestilles
       bursdagskake: { navn: 'Bursdagskake', ikon: '🎂' },
-      /* 0.37.0 Vinter i Elvedal (Even 18.–20.11). Gavepapir og julegaver kan ikke selges eller bestilles. Alle tall er forslag til en voksen har godkjent dem */
+      /* 0.37.0 Vinter i Elvedal (Even 18.–20.11). Gavepapir og julegaver kan ikke selges eller bestilles. Tallene er godkjent av Ivar 21.11 */
       gavepapir:  { navn: 'Gavepapir', ikon: '📜', arr: 'jul', flertall: 'gavepapir' },
       julegave:   { navn: 'Julegave',  ikon: '🎁', arr: 'jul', verdi: 18, flertall: 'julegaver' },
       pepperkakehus: { navn: 'Pepperkakehus', ikon: '🏠' }
@@ -105,12 +105,12 @@
       grisebinge: { navn: 'Grisebinge',     ikon: '🐖', nivaa: 10, pris: 800, dyr: 'gris' },
       paibakeri:  { navn: 'Paibakeriet',    ikon: '🥧', nivaa: 14, pris: 3500 },   // 0.23.0. Priser fra progresjonsplanen kap. 6
       sauefjos:   { navn: 'Sauefjøs',       ikon: '🐑', nivaa: 16, pris: 3000, dyr: 'sau' },
-      geitefjos:  { navn: 'Geitefjøs',      ikon: '🐐', nivaa: 26, pris: 8000, dyr: 'geit' },   // 0.31.0. Pris er forslag
-      bikube:     { navn: 'Bikuben',        ikon: '🐝', nivaa: 22, pris: 4000, selv: 'honning', vent: 'Ny honning er klar om', klar: 'Honningen er klar!' },   // 0.33.0 (Even 18.11): gul bikube av halm. Pris er forslag
-      epletre:    { navn: 'Epletreet',      ikon: '🍎', nivaa: 21, pris: 3000, selv: 'eple', vent: 'Nye epler er modne om', klar: 'Eplene er modne!' },   // 0.32.0 (Even 18.11): står for alltid og gir nye epler etter en stund. Pris er forslag
+      geitefjos:  { navn: 'Geitefjøs',      ikon: '🐐', nivaa: 26, pris: 8000, dyr: 'geit' },   // 0.31.0. Pris godkjent av Ivar 21.11
+      bikube:     { navn: 'Bikuben',        ikon: '🐝', nivaa: 22, pris: 4000, selv: 'honning', vent: 'Ny honning er klar om', klar: 'Honningen er klar!' },   // 0.33.0 (Even 18.11): gul bikube av halm. Pris godkjent av Ivar 21.11
+      epletre:    { navn: 'Epletreet',      ikon: '🍎', nivaa: 21, pris: 3000, selv: 'eple', vent: 'Nye epler er modne om', klar: 'Eplene er modne!' },   // 0.32.0 (Even 18.11): står for alltid og gir nye epler etter en stund. Pris godkjent av Ivar 21.11
       vevstol:    { navn: 'Vevstolen',      ikon: '🧶', nivaa: 17, pris: 6000 },   // 0.24.0
       festbord:   { navn: 'Festbordet',     ikon: '🎉', nivaa: 3,  pris: 150, arr: 'bursdag' },   // kommer med Bursdagsfesten, ikke med nivået (Even 11.11: første maskin ca. 150)
-      // 0.37.0 Vinter i Elvedal (Even 18.11). Prisene er forslag. Juletreet er gratis og kommer med eventet. «tre»: står bare i desember, og for alltid når treet er ditt
+      // 0.37.0 Vinter i Elvedal (Even 18.11). Prisene er godkjent av Ivar 21.11. Juletreet er gratis og kommer med eventet. «tre»: står bare i desember, og for alltid når treet er ditt
       gavepapirmaskin: { navn: 'Gavepapirmaskinen', ikon: '📜', nivaa: 3, pris: 150, arr: 'jul' },
       gavemaskin:      { navn: 'Gavemaskinen',      ikon: '🎁', nivaa: 3, pris: 250, arr: 'jul' },
       juletre:         { navn: 'Juletreet',         ikon: '🎄', nivaa: 3, pris: 0,   arr: 'jul', tre: true },
@@ -131,7 +131,7 @@
     // Kunder som kjører innom markedsbua (Even 11.11): ber om én vare og betaler markedspris (Ivar 11.11). Ingen straff om spilleren ikke har varen.
     kunder: { faktor: 1, pause: [70, 120], venter: 0 },   // 0.34.0 (Even 19.11): Blomst blir til hun har fått det hun vil ha. venter: 0 betyr ingen tidsfrist
     /* 0.34.0 Naboer (Even 19.11): roboter i andre farger som kommer på besøk og vil kjøpe én, to eller tre ting. De venter til de har fått det.
-       Først ute er tvillingen Bleep, som er lys gul. Gnist (oransje), Dråpe (blå), Bolt (rød) og Spire (grønn) kommer senere. Tallene er forslag */
+       Først ute er tvillingen Bleep, som er lys gul. Gnist (oransje), Dråpe (blå), Bolt (rød) og Spire (grønn) kommer senere. Tallene er godkjent av Ivar 21.11 */
     naboer: { nivaa: 4, pause: [100, 170], faktor: 1, maksTing: 3, likerSjanse: 0.7,
       /* 0.35.0: alle fem naboene. «liker» er favoritten: bygget varen lages i, eller 'avling'. Sju av ti ønsker er en favoritt når spilleren kan lage en.
          Bleep har ingen favoritt ennå. Bolt skulle først ha for til dyrene, men for kan ikke selges i spillet. Even valgte ting fra dyrene i stedet (20.11) */
@@ -146,13 +146,13 @@
       enga:       { navn: 'Enga',       nivaa: 5,  pris: 300 },
       skogkanten: { navn: 'Skogkanten', nivaa: 10, pris: 1500 },
       elvebredden: { navn: 'Elvebredden', nivaa: 18, pris: 6000 },   // 0.27.0: med fiskebrygga (plan 8.11 og 17.11)
-      bakjordet:  { navn: 'Bakjordet',  nivaa: 13, pris: 2500, krever: 'jordet' },   // 0.22.0: bakre del av Jordet (plan 16.11). Navn og pris er forslag
-      ostjordet:  { navn: 'Østjordet',  nivaa: 16, pris: 4000, krever: 'jordet' },   // 0.20.1 (Ivar 16.11): utvidelsen øst for Jordet, fra nivå 16. Navn og pris er forslag
-      jordet:     { navn: 'Jordet',     nivaa: 8,  pris: 1000 }   // 0.17.0 (Even 15.11): jordet på andre siden av veien. Nivå og pris er forslag og må godkjennes av en voksen
+      bakjordet:  { navn: 'Bakjordet',  nivaa: 13, pris: 2500, krever: 'jordet' },   // 0.22.0: bakre del av Jordet (plan 16.11). Navn og pris er godkjent av Ivar 21.11
+      ostjordet:  { navn: 'Østjordet',  nivaa: 16, pris: 4000, krever: 'jordet' },   // 0.20.1 (Ivar 16.11): utvidelsen øst for Jordet, fra nivå 16. Navn og pris er godkjent av Ivar 21.11
+      jordet:     { navn: 'Jordet',     nivaa: 8,  pris: 1000 }   // 0.17.0 (Even 15.11): jordet på andre siden av veien. Nivå og pris er godkjent av Ivar 21.11
     },
     innholdTil: 22,
     /* 0.26.0 Pyntebutikken (Even 17.11): pynt spilleren kjøper for mynter og setter der hun vil. Bare til pynt. Kan selges tilbake for halv pris.
-       Prisene og antallet er Claudes forslag og må godkjennes av en voksen. Ingenting koster ekte penger */
+       Prisene og antallet er godkjent av Ivar 21.11. Ingenting koster ekte penger */
     pynt: {
       stakitt:     { navn: 'Hvitt stakitt', ikon: '🤍', pris: 15,  fot: [2.0, 0.5] },
       hekk:        { navn: 'Hekk',          ikon: '🌳', pris: 25,  fot: [1.6, 0.9] },
@@ -164,7 +164,7 @@
       fontene:     { navn: 'Fontene',       ikon: '⛲', pris: 400, fot: [2.2, 2.2] }
     },
     /* 0.27.0 Fiskebrygga (Even og Ivar 17.–18.11): «kast og vent». Roboten kaster snøret, og etter en stund er det fisk på kroken.
-       Ingen tidsfrist: fisken venter til du haler inn. Hvilken fisk det blir, er tilfeldig. Tallene er forslag */
+       Ingen tidsfrist: fisken venter til du haler inn. Hvilken fisk det blir, er tilfeldig. Tallene er godkjent av Ivar 21.11 */
     fiske: { tid: 90, xp: 3, fisk: [['abbor', 60], ['orret', 30], ['gjedde', 10]] },
     pyntNivaa: 2, pyntMaks: 40, pyntRetur: 0.5,
     // Rebus' gåter (Even 13.11): svaret er varen. Spilleren gir Rebus varen. Lønn: pris × 2 + 10 mynter, 4 XP + nivået til varen. Ny gåte 3 minutter etter riktig svar
@@ -177,19 +177,19 @@
       pyntNavn: { gullhone: 'Gullhøne', gullegg: 'Gullegg', gullgulrot: 'Gullgulrot', gullstjerne: 'Gullstjerne', regnbue: 'Regnbue', gullfontene: 'Gullfontene', bursdagspynt: 'Ballonger og kake' } },
     /* 0.16.0 Årstidsfester (Even 11.11 og 15.11, rammene godkjent av Ivar 12.11 og 15.11). Festen er åpen i sin måned hvert år.
        Det du har sendt, blir med til neste år, og ingenting går tapt. Premiene kommer trinnvis og er bare til pynt, bortsett fra oppskriften.
-       Tallene (antall hatter per trinn, pris på Festbordet, mynter og XP per hatt) er Claudes forslag og må godkjennes av en voksen før publisering. */
+       Tallene (antall hatter per trinn, pris på Festbordet, mynter og XP per hatt) er godkjent av Ivar 21.11. */
     arr: {
       bursdag: { navn: 'Bursdagsfesten', ikon: '🎂', maned: 11, nivaa: 3, vare: 'festhatt', bygg: 'festbord', xp: 2,
         trinn: [ { n: 5, premie: 'hatter', tekst: 'Dyrene får festhatter i november' }, { n: 15, premie: 'oppskrift', vare: 'bursdagskake', tekst: 'Ny oppskrift: bursdagskake i bakeriet' },
                  { n: 30, premie: 'skinn', skinn: 'bursdag', tekst: 'Bursdagsbilen: nytt utseende til varebilen' }, { n: 50, premie: 'pynt', pynt: 'bursdagspynt', tekst: 'Pynt til gården: ballonger og kake' } ] },
       /* 0.37.0 Vinter i Elvedal (Even 18.11). Du lager gavepapir av hvete, pakker inn en ting du har laget, og legger gaven under juletreet. Hver gave er én pepperkake.
-         Even har bestemt 250 for julesleden og at treet er ditt ved 100. Resten av tallene er Claudes forslag og må godkjennes av en voksen */
+         Even har bestemt 250 for julesleden og at treet er ditt ved 100. Resten av tallene er godkjent av Ivar 21.11 */
       jul: { navn: 'Vinter i Elvedal', ikon: '🎄', maned: 12, nivaa: 3, vare: 'julegave', bygg: 'gavemaskin', tre: 'juletre', xp: 2, poeng: 'pepperkake',
         trinn: [ { n: 10, premie: 'hatter', hatt: 'nisse', tekst: 'Dyrene får nisseluer i desember' }, { n: 40, premie: 'oppskrift', vare: 'pepperkakehus', tekst: 'Ny oppskrift: pepperkakehus i bakeriet' },
                  { n: 100, premie: 'tre', tekst: 'Juletreet er ditt for alltid' }, { n: 250, premie: 'skinn', skinn: 'jul', tekst: 'Julesleden: nytt utseende til varebilen' } ] }
     },
     skinn: { bursdag: 'Bursdagsbilen', jul: 'Julesleden' },
-    /* 0.38.0 Julekalenderen (Even 20.11: en blanding, og noe ekstra fint i luke 24). Innholdet er Claudes forslag og må godkjennes av en voksen.
+    /* 0.38.0 Julekalenderen (Even 20.11: en blanding, og noe ekstra fint i luke 24). Innholdet er godkjent av Ivar 21.11.
        mynter: mynter. gavepapir/julegave: varer til eventet. pepperkaker: teller som gaver under treet. stjerne: gullstjernen på juletreet og mynter */
     kal: { luker: [ ['mynter', 25], ['gavepapir', 4], ['julegave', 2], ['mynter', 30], ['pepperkaker', 2], ['gavepapir', 4], ['mynter', 35], ['julegave', 2],
                     ['pepperkaker', 3], ['mynter', 40], ['gavepapir', 6], ['julegave', 3], ['mynter', 45], ['pepperkaker', 3], ['gavepapir', 6], ['mynter', 50],

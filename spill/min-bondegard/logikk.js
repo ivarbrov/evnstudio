@@ -333,7 +333,7 @@
     s.nivaa = Math.max(1, Math.min(D.maksNivaa, Math.floor(tall(r.nivaa, 1))));
     // gi alt som følger med nivåene opp til lagret nivå (åkre, dyr, bygg), uten mynter og frø
     for (var n = 2; n <= s.nivaa; n++) { var m = s.mynter; var l = JSON.stringify(s.lager); giNivaa(s, n, naa); s.mynter = m; s.lager = JSON.parse(l); }
-    s.xp = Math.max(0, tall(r.xp, 0)); s.mynter = Math.max(0, Math.floor(tall(r.mynter, D.startMynter)));
+    s.xp = Math.max(0, tall(r.xp, 0)); s.mynter = Math.min(1e9, Math.max(0, Math.floor(tall(r.mynter, D.startMynter))));   // 0.39.2 (QA 21.11): urimelige tall kuttes
     s.seq = Math.max(0, Math.floor(tall(r.seq, 0))); s.opprettet = tall(r.opprettet, naa); s.sist = tall(r.sist, naa);
     s.lager = {};
     if (r.lager && typeof r.lager === 'object') for (var v in r.lager) if ((D.avlinger[v] || D.varer[v]) && tall(r.lager[v], 0) > 0) s.lager[v] = Math.min(9999, Math.floor(r.lager[v]));   // urimelige tall kuttes (QA 9.11)
