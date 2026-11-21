@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.41.0 – EVN Studio</title>
+<title>Min Bondegård 0.42.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -297,7 +297,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.41.0</div>
+    <div class="evn-ver" id="versjon">Versjon 0.42.0</div>
   </div>
 </div>
 
@@ -568,7 +568,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.41.0'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.42.0'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -943,10 +943,14 @@ const OMRADER = [
   /* 0.20.0–0.20.1 (Ivar 16.11): Østjordet, rett øst for Jordet. Kjøpes etter Jordet, fra nivå 16. Nivå og pris står også i data.js */
   {nr: 5, navn: 'Østjordet', nivaa: 16, pris: 4000, tema: 'jorde2', skilt: [19.0, 15.2, 0],
    poly: [[14.2, 15.1], [23.8, 15.1], [23.8, 22.9], [14.2, 22.9]]},
+  /* 0.42.0 (Even 21.11: «mer plass til å bygge»): Frukthagen, hjørnet mellom Østjordet og Bakjordet. Står sist, så tilfeldighetene for de andre er uendret */
+  {nr: 7, navn: 'Frukthagen', nivaa: 21, pris: 6000, tema: 'jorde4', skilt: [19.0, 23.9, 0],
+   poly: [[14.2, 23.3], [23.8, 23.3], [23.8, 29.9], [14.2, 29.9]]},
 ];
-const JORDE = {x0: -14.2, x1: 14.0, z0: 14.9, z1: 23.1}, JORDE2 = {x0: 14.0, x1: 24.0, z0: 14.9, z1: 23.1}, JORDE3 = {x0: -14.2, x1: 14.0, z0: 23.1, z1: 30.1};   /* 0.20.1 (Ivar 16.11): Jordet ca. 28 × 8 m og Østjordet ca. 10 × 8 m. Bakre del kommer som eget kjøp på nivå 13 */
+const JORDE = {x0: -14.2, x1: 14.0, z0: 14.9, z1: 23.1}, JORDE2 = {x0: 14.0, x1: 24.0, z0: 14.9, z1: 23.1}, JORDE3 = {x0: -14.2, x1: 14.0, z0: 23.1, z1: 30.1}, JORDE4 = {x0: 14.0, x1: 24.0, z0: 23.1, z1: 30.1};   /* 0.20.1 (Ivar 16.11): Jordet ca. 28 × 8 m og Østjordet ca. 10 × 8 m. Bakre del kommer som eget kjøp på nivå 13 */
 const iJorde = (x, z) => x > JORDE.x0 - 0.6 && x < JORDE.x1 && z > JORDE.z0 - 0.3 && z < JORDE.z1 + 0.6;
 const iJorde3 = (x, z) => x > JORDE3.x0 - 0.6 && x < JORDE3.x1 + 0.6 && z >= JORDE.z1 + 0.6 && z < JORDE3.z1 + 0.6;   /* 0.22.0: Bakjordet */
+const iJorde4 = (x, z) => x >= JORDE3.x1 + 0.6 && x < JORDE4.x1 + 0.6 && z >= JORDE2.z1 + 0.6 && z < JORDE4.z1 + 0.6;   /* 0.42.0: Frukthagen */
 const iJorde2 = (x, z) => x >= JORDE2.x0 && x < JORDE2.x1 + 0.6 && z > JORDE2.z0 - 0.3 && z < JORDE2.z1 + 0.6;
 const jordeFlat = (x, z) => { const dd = Math.hypot(Math.max(JORDE.x0 - x, 0, x - JORDE2.x1), Math.max(JORDE.z0 - z, 0, z - (x < JORDE3.x1 ? JORDE3.z1 : JORDE.z1))); return 1 - THREE.MathUtils.smoothstep(dd, 0, 2.5); };
 const ENGA = {x0: 14, x1: 22.4, z0: -12, z1: 10.6};
@@ -1017,11 +1021,11 @@ function plassLedig(x, z) {
   return true;
 }
 const RUTE = 18; const ruter = new Map();
-const ruterBlad = new Map(), bladMesher = [], engaMesher = [], skogMesher = [], jordeMesher = [], jorde2Mesher = [], jorde3Mesher = [];
-function iRuteBlad(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : iJorde(x, z) ? 'jorde' : iJorde2(x, z) ? 'jorde2' : iJorde3(x, z) ? 'jorde3' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterBlad.has(k)) ruterBlad.set(k, []); ruterBlad.get(k).push(...del); }
+const ruterBlad = new Map(), bladMesher = [], engaMesher = [], skogMesher = [], jordeMesher = [], jorde2Mesher = [], jorde3Mesher = [], jorde4Mesher = [];
+function iRuteBlad(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : iJorde(x, z) ? 'jorde' : iJorde2(x, z) ? 'jorde2' : iJorde3(x, z) ? 'jorde3' : iJorde4(x, z) ? 'jorde4' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterBlad.has(k)) ruterBlad.set(k, []); ruterBlad.get(k).push(...del); }
 const ruterLett = new Map(); /* 0.8.12 tiltak 1: løvdotter som ikke kaster skygge på mobil */
-function iRuteLett(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : iJorde(x, z) ? 'jorde' : iJorde2(x, z) ? 'jorde2' : iJorde3(x, z) ? 'jorde3' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterLett.has(k)) ruterLett.set(k, []); ruterLett.get(k).push(...del); }
-function iRute(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : iJorde(x, z) ? 'jorde' : iJorde2(x, z) ? 'jorde2' : iJorde3(x, z) ? 'jorde3' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruter.has(k)) ruter.set(k, []); ruter.get(k).push(...del); }
+function iRuteLett(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : iJorde(x, z) ? 'jorde' : iJorde2(x, z) ? 'jorde2' : iJorde3(x, z) ? 'jorde3' : iJorde4(x, z) ? 'jorde4' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterLett.has(k)) ruterLett.set(k, []); ruterLett.get(k).push(...del); }
+function iRute(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : iJorde(x, z) ? 'jorde' : iJorde2(x, z) ? 'jorde2' : iJorde3(x, z) ? 'jorde3' : iJorde4(x, z) ? 'jorde4' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruter.has(k)) ruter.set(k, []); ruter.get(k).push(...del); }
 const skyggeBlob = [];
 // sveiser like hjørner (sømmen i kule- og dreiegeometri), slik at normalene blir myke uten synlige skjøter
 function sveis(g) { const p = g.attributes.position, kart = new Map(), ny = []; for (let i = 0; i < p.count; i++) { const k = Math.round(p.getX(i) * 1e4) + ',' + Math.round(p.getY(i) * 1e4) + ',' + Math.round(p.getZ(i) * 1e4); if (!kart.has(k)) kart.set(k, i); ny.push(kart.get(k)); }
@@ -1314,9 +1318,9 @@ function lagVegetasjon() {
   for (let z = -11; z < 10; z += rr(2.2, 4.5)) busk(15.3, z, rr(0.6, 0.95), rnd() < 0.25 ? 'baer' : 'rund', j++);
   lagGjengroing();
   lagElvebredd();
-  ruterBlad.forEach((del, k) => { const me = mesh(samleIndeksert(del), bladMat()); bladMesher.push(me); if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); if (k === 'jorde') jordeMesher.push(me); if (k === 'jorde2') jorde2Mesher.push(me); if (k === 'jorde3') jorde3Mesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = KVAL !== 'mobil' && Math.hypot(bs.x, bs.z) < 34; }); // 0.7.4: på mobil kaster bladkortene ikke skygge; kronenes kjerner gjør det fortsatt
-  ruterLett.forEach((del, k) => { const me = mesh(samle(del), MAT.vertex); me.castShadow = false; if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); if (k === 'jorde') jordeMesher.push(me); if (k === 'jorde2') jorde2Mesher.push(me); if (k === 'jorde3') jorde3Mesher.push(me); });
-  ruter.forEach((del, k) => { const me = mesh(samle(del), MAT.vertex); if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); if (k === 'jorde') jordeMesher.push(me); if (k === 'jorde2') jorde2Mesher.push(me); if (k === 'jorde3') jorde3Mesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = Math.hypot(bs.x, bs.z) < 34; }); // bare ruter nær gården kaster skygge
+  ruterBlad.forEach((del, k) => { const me = mesh(samleIndeksert(del), bladMat()); bladMesher.push(me); if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); if (k === 'jorde') jordeMesher.push(me); if (k === 'jorde2') jorde2Mesher.push(me); if (k === 'jorde3') jorde3Mesher.push(me); if (k === 'jorde4') jorde4Mesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = KVAL !== 'mobil' && Math.hypot(bs.x, bs.z) < 34; }); // 0.7.4: på mobil kaster bladkortene ikke skygge; kronenes kjerner gjør det fortsatt
+  ruterLett.forEach((del, k) => { const me = mesh(samle(del), MAT.vertex); me.castShadow = false; if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); if (k === 'jorde') jordeMesher.push(me); if (k === 'jorde2') jorde2Mesher.push(me); if (k === 'jorde3') jorde3Mesher.push(me); if (k === 'jorde4') jorde4Mesher.push(me); });
+  ruter.forEach((del, k) => { const me = mesh(samle(del), MAT.vertex); if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); if (k === 'jorde') jordeMesher.push(me); if (k === 'jorde2') jorde2Mesher.push(me); if (k === 'jorde3') jorde3Mesher.push(me); if (k === 'jorde4') jorde4Mesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = Math.hypot(bs.x, bs.z) < 34; }); // bare ruter nær gården kaster skygge
   lagFjernskog();
   [[-7, -6, 7.5], [6.5, -8, 3.2], [-10.5, 8, 2.6], [-12.9, -1.8, 2.2]].forEach(b => skyggeBlob.push(b));
   const bg = new THREE.PlaneGeometry(1, 1); bg.rotateX(-Math.PI / 2); const blobs = new THREE.InstancedMesh(bg, MAT.blob, skyggeBlob.length); const bm = new THREE.Matrix4();
@@ -1405,7 +1409,7 @@ function lagGressOgBlomster() {
 }
 
 /* ======================= Gjerde ======================= */
-let gjerdeOst = null, gjerdeEnga = null, gjerdeVest = null, gjerdeSkog = null, gjerdeJorde = null, gjerdeJordeOst = null, gjerdeJorde2 = null, gjerdeJordeSor = null, gjerdeJorde3 = null; const rrStd = (a, b) => rr(a, b);
+let gjerdeOst = null, gjerdeEnga = null, gjerdeVest = null, gjerdeSkog = null, gjerdeJorde = null, gjerdeJordeOst = null, gjerdeJorde2 = null, gjerdeJordeSor = null, gjerdeJorde3 = null, gjerdeJorde3Ost = null, gjerdeJorde2Sor = null, gjerdeJorde4 = null; const rrStd = (a, b) => rr(a, b);
 /* 0.9.8: spillet sier fra når Enga er kjøpt. Da forsvinner vegetasjonen, skiltet og gjerdet mot gården, og det nye gjerdet kommer */
 window.mbSkog = eid => { eid = !!eid; skogMesher.forEach(m => m.visible = !eid); if (gjerdeVest) gjerdeVest.visible = !eid; if (gjerdeSkog) gjerdeSkog.visible = eid;
   const o = OMRADER.find(a => a.tema === 'skog'); if (o) { [o.skiltG, o.stikk, o.kant].forEach(m => { if (m) m.visible = !eid; });
@@ -1415,10 +1419,11 @@ window.mbSkog = eid => { eid = !!eid; skogMesher.forEach(m => m.visible = !eid);
 /* 0.27.0: Elvebredden er kjøpt: skilt og omriss tas bort. Buskene og sivet blir stående, for området er til brygga og ikke til bygg */
 window.mbElv = eid => { eid = !!eid; const o = OMRADER.find(a => a.tema === 'elv'); if (!o) return; [o.skiltG, o.stikk, o.kant].forEach(m => { if (m) m.visible = !eid; });
   [o.flate, o.skiltG].forEach(m => { const i = klikkbare.indexOf(m); if (eid && i >= 0) klikkbare.splice(i, 1); else if (!eid && i < 0 && m) klikkbare.push(m); }); };
-window.mbJorde = (eid, eid2, eid3) => { eid = !!eid; eid2 = !!eid2; eid3 = !!eid3; jordeMesher.forEach(m => m.visible = !eid); jorde2Mesher.forEach(m => m.visible = !eid2); jorde3Mesher.forEach(m => m.visible = !eid3);
+window.mbJorde = (eid, eid2, eid3, eid4) => { eid = !!eid; eid2 = !!eid2; eid3 = !!eid3; eid4 = !!eid4; jordeMesher.forEach(m => m.visible = !eid); jorde2Mesher.forEach(m => m.visible = !eid2); jorde3Mesher.forEach(m => m.visible = !eid3); jorde4Mesher.forEach(m => m.visible = !eid4);
+  if (gjerdeJorde3Ost) gjerdeJorde3Ost.visible = eid3 && !eid4; if (gjerdeJorde2Sor) gjerdeJorde2Sor.visible = eid2 && !eid4; if (gjerdeJorde4) gjerdeJorde4.visible = eid4;   /* 0.42.0: Frukthagen tar bort gjerdene mot Bakjordet og Østjordet */
   if (gjerdeJordeSor) gjerdeJordeSor.visible = eid && !eid3; if (gjerdeJorde3) gjerdeJorde3.visible = eid3;   /* 0.22.0: gjerdet mot Bakjordet tas bort når det er kjøpt */
   if (gjerdeJorde) gjerdeJorde.visible = eid; if (gjerdeJordeOst) gjerdeJordeOst.visible = eid && !eid2; if (gjerdeJorde2) gjerdeJorde2.visible = eid2;   /* 0.20.0: gjerdet mellom Jordet og Østjordet tas bort når begge er kjøpt */
-  [['jorde', eid], ['jorde2', eid2], ['jorde3', eid3]].forEach(([tema, e]) => { const o = OMRADER.find(a => a.tema === tema); if (!o) return; [o.skiltG, o.stikk, o.kant].forEach(m => { if (m) m.visible = !e; });
+  [['jorde', eid], ['jorde2', eid2], ['jorde3', eid3], ['jorde4', eid4]].forEach(([tema, e]) => { const o = OMRADER.find(a => a.tema === tema); if (!o) return; [o.skiltG, o.stikk, o.kant].forEach(m => { if (m) m.visible = !e; });
     [o.flate, o.skiltG].forEach(m => { const i = klikkbare.indexOf(m); if (e && i >= 0) klikkbare.splice(i, 1); else if (!e && i < 0 && m) klikkbare.push(m); }); }); };
 window.mbEnga = eid => { engaMesher.forEach(m => m.visible = !eid); if (gjerdeOst) gjerdeOst.visible = !eid; if (gjerdeEnga) gjerdeEnga.visible = !!eid;
   const o = OMRADER.find(a => a.tema === 'eng'); if (!o) return; [o.skiltG, o.stikk, o.kant].forEach(m => { if (m) m.visible = !eid; });
@@ -1443,9 +1448,11 @@ function lagGjerde() {
   linje(JORDE.x0, JORDE.z0, -7.2, JORDE.z0, jo, rr4); linje(-3.8, JORDE.z0, JORDE.x1, JORDE.z0, jo, rr4); linje(JORDE.x0, JORDE.z1, JORDE.x0, JORDE.z0, jo, rr4);
   gjerdeJorde = mesh(samle(jo), MAT.vertex); gjerdeJorde.visible = false;
   const joS = [], jo3 = []; linje(JORDE.x1, JORDE.z1, JORDE.x0, JORDE.z1, joS, rr4); gjerdeJordeSor = mesh(samle(joS), MAT.vertex); gjerdeJordeSor.visible = false;
-  linje(JORDE3.x1, JORDE3.z0, JORDE3.x1, JORDE3.z1, jo3, rr4); linje(JORDE3.x1, JORDE3.z1, JORDE3.x0, JORDE3.z1, jo3, rr4); linje(JORDE3.x0, JORDE3.z1, JORDE3.x0, JORDE3.z0, jo3, rr4); gjerdeJorde3 = mesh(samle(jo3), MAT.vertex); gjerdeJorde3.visible = false;
+  const jo3o = []; linje(JORDE3.x1, JORDE3.z0, JORDE3.x1, JORDE3.z1, jo3o, rr4); gjerdeJorde3Ost = mesh(samle(jo3o), MAT.vertex); gjerdeJorde3Ost.visible = false; linje(JORDE3.x1, JORDE3.z1, JORDE3.x0, JORDE3.z1, jo3, rr4);   /* 0.42.0: østsiden av Bakjordet er eget gjerde, så den kan tas bort når Frukthagen er kjøpt */ linje(JORDE3.x0, JORDE3.z1, JORDE3.x0, JORDE3.z0, jo3, rr4); gjerdeJorde3 = mesh(samle(jo3), MAT.vertex); gjerdeJorde3.visible = false;
   const jo1 = [], jo2 = []; linje(JORDE.x1, JORDE.z0, JORDE.x1, JORDE.z1, jo1, rr4); gjerdeJordeOst = mesh(samle(jo1), MAT.vertex); gjerdeJordeOst.visible = false;
-  linje(JORDE2.x0, JORDE2.z0, JORDE2.x1, JORDE2.z0, jo2, rr4); linje(JORDE2.x1, JORDE2.z0, JORDE2.x1, JORDE2.z1, jo2, rr4); linje(JORDE2.x1, JORDE2.z1, JORDE2.x0, JORDE2.z1, jo2, rr4); gjerdeJorde2 = mesh(samle(jo2), MAT.vertex); gjerdeJorde2.visible = false;
+  linje(JORDE2.x0, JORDE2.z0, JORDE2.x1, JORDE2.z0, jo2, rr4); linje(JORDE2.x1, JORDE2.z0, JORDE2.x1, JORDE2.z1, jo2, rr4); gjerdeJorde2 = mesh(samle(jo2), MAT.vertex); gjerdeJorde2.visible = false;
+  const jo2s = [], jo4 = []; linje(JORDE2.x1, JORDE2.z1, JORDE2.x0, JORDE2.z1, jo2s, rr4); gjerdeJorde2Sor = mesh(samle(jo2s), MAT.vertex); gjerdeJorde2Sor.visible = false;
+  linje(JORDE4.x1, JORDE4.z0, JORDE4.x1, JORDE4.z1, jo4, rr4); linje(JORDE4.x1, JORDE4.z1, JORDE4.x0, JORDE4.z1, jo4, rr4); gjerdeJorde4 = mesh(samle(jo4), MAT.vertex); gjerdeJorde4.visible = false;   /* 0.42.0: Frukthagen */
 }
 
 /* ======================= Låve ======================= */

@@ -157,7 +157,8 @@
       skogkanten: { navn: 'Skogkanten', nivaa: 10, pris: 1500 },
       elvebredden: { navn: 'Elvebredden', nivaa: 18, pris: 6000 },   // 0.27.0: med fiskebrygga (plan 8.11 og 17.11)
       bakjordet:  { navn: 'Bakjordet',  nivaa: 13, pris: 2500, krever: 'jordet' },   // 0.22.0: bakre del av Jordet (plan 16.11). Navn og pris er godkjent av Ivar 21.11
-      ostjordet:  { navn: 'Østjordet',  nivaa: 16, pris: 4000, krever: 'jordet' },   // 0.20.1 (Ivar 16.11): utvidelsen øst for Jordet, fra nivå 16. Navn og pris er godkjent av Ivar 21.11
+      ostjordet:  { navn: 'Østjordet',  nivaa: 16, pris: 4000, krever: 'jordet' },
+      frukthagen: { navn: 'Frukthagen', nivaa: 21, pris: 6000, krever: 'bakjordet', krever2: 'ostjordet' },   // 0.42.0 (Even 18. og 21.11: «mer plass til å bygge»): hjørnet mellom Østjordet og Bakjordet. Nivå og pris er forslag   // 0.20.1 (Ivar 16.11): utvidelsen øst for Jordet, fra nivå 16. Navn og pris er godkjent av Ivar 21.11
       jordet:     { navn: 'Jordet',     nivaa: 8,  pris: 1000 }   // 0.17.0 (Even 15.11): jordet på andre siden av veien. Nivå og pris er godkjent av Ivar 21.11
     },
     innholdTil: 25,

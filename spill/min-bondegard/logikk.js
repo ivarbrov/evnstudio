@@ -199,7 +199,7 @@
   // ---------- Områder (Ivar 12.11) ----------
   function kanKjopeOmrade(s, id) {
     var O = D.omrader[id]; if (!O) return 'ukjent';
-    if (s.omrader[id]) return 'eid'; if (s.nivaa < O.nivaa) return 'laast'; if (O.krever && !s.omrader[O.krever]) return 'krever'; if (s.mynter < O.pris) return 'mynter';
+    if (s.omrader[id]) return 'eid'; if (s.nivaa < O.nivaa) return 'laast'; if (O.krever && !s.omrader[O.krever]) return 'krever'; if (O.krever2 && !s.omrader[O.krever2]) return 'krever'; if (s.mynter < O.pris) return 'mynter';
     return null;
   }
   function kjopOmrade(s, id) { var g = kanKjopeOmrade(s, id); if (g) return { ok: false, grunn: g }; s.mynter -= D.omrader[id].pris; s.omrader[id] = true; return { ok: true }; }

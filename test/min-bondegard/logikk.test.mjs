@@ -373,6 +373,8 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
   t('Nivå 24: blåbærbusken koster 3500 og gir 3 blåbær etter 240 s av seg selv', D.bygg.blabaerbusk.nivaa === 24 && k.ok && x.mynter === 0 && h.ok && x.lager.blabaer === 3 && L.kanProdusere(x, 'blabaerbusk', 'blabaer', T0) === 'selv');
   t('Nivå 24: syltetøy på kjøkkenet av blåbær og sukker', D.oppskrifter.syltetoy.bygg === 'kjokken' && D.oppskrifter.syltetoy.inn.blabaer === 3 && D.oppskrifter.syltetoy.inn.sukker === 1);
   t('Nivå 25: honningkake i bakeriet, og større silo og låve', D.oppskrifter.honningkake.bygg === 'bakeri' && D.oppskrifter.honningkake.nivaa === 25 && L.plass(x, 'silo') + Object.keys(x.lager).filter(v => D.avlinger[v]).reduce((a, v) => a + x.lager[v], 0) === 150 && D.lave[25] === 175);
+  { const y = L.ny(T0); L.giXP(y, 99999, T0); y.mynter = 20000; y.omrader.jordet = true; y.omrader.bakjordet = true;
+    t('Frukthagen (0.42.0): nivå 21, 6000 mynter, krever både Bakjordet og Østjordet', D.omrader.frukthagen.nivaa === 21 && L.kanKjopeOmrade(y, 'frukthagen') === 'krever' && (y.omrader.ostjordet = true) && L.kjopOmrade(y, 'frukthagen').ok && y.mynter === 14000 && L.valider(JSON.parse(JSON.stringify(y)), T0).omrader.frukthagen === true); }
   t('Nye varer har gåter', ['potet', 'blabaer', 'eplepai', 'syltetoy', 'honningkake'].every(v => !!D.gater[v]));
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);

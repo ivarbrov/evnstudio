@@ -22,7 +22,7 @@ if (matchMedia('(pointer:coarse)').matches) document.documentElement.classList.a
 addEventListener('pointerdown', e => document.documentElement.classList.toggle('touch', e.pointerType === 'touch'), {passive: true, capture: true});
 
 // Det som er laget i denne versjonen. Resten av nivå 1–10 ligger i data.js og kommer i fase 2–4.
-const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot', 'gresskar', 'potet'], bygg: ['blabaerbusk', 'julekalender', 'forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken', 'grisebinge', 'paibakeri', 'sauefjos', 'vevstol', 'geitefjos', 'epletre', 'bikube', 'festbord', 'gavepapirmaskin', 'gavemaskin', 'juletre'], dyr: ['hone', 'ku', 'gris', 'sau', 'geit'], omrader: ['enga', 'skogkanten', 'jordet', 'ostjordet', 'bakjordet', 'elvebredden']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
+const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot', 'gresskar', 'potet'], bygg: ['blabaerbusk', 'julekalender', 'forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken', 'grisebinge', 'paibakeri', 'sauefjos', 'vevstol', 'geitefjos', 'epletre', 'bikube', 'festbord', 'gavepapirmaskin', 'gavemaskin', 'juletre'], dyr: ['hone', 'ku', 'gris', 'sau', 'geit'], omrader: ['enga', 'skogkanten', 'jordet', 'ostjordet', 'bakjordet', 'elvebredden', 'frukthagen']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
 
 /* ======================= Lagring (F2, F3) ======================= */
 let s = null, lagringFeilet = false;
@@ -707,7 +707,7 @@ const STANDARD = {
   gavepapirmaskin: [-6.6, 8.4], gavemaskin: [-9.8, 8.4], juletre: [-1.2, 1.4], julekalender: [-10.0, 5.0],   /* 0.37.0 Vinter i Elvedal: maskinene ved porten, treet midt på tunet */
   festbord: [-2.2, 8.2], forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], paibakeri: [-10.5, 18.6], sauefjos: [3.5, 19.2], geitefjos: [-6.5, 24.5], epletre: [9.5, 9.5], bikube: [12.2, 9.5], vevstol: [-10.5, 26.0], hundehus: [-2.6, -2.4],   /* 0.23.0: de nye byggene foreslås på Jordet. Er det ikke kjøpt, finner spillet nærmeste ledige plass */ silo: [-0.4, -10.0], tavle: [-2.3, 4.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
 };
-const JORD = [-13.7, 13.5, 15.4, 22.6], JORD_X1_OST = 23.5, JORD_Z1_BAK = 29.6; const jordX1 = () => s.omrader && s.omrader.ostjordet ? JORD_X1_OST : JORD[1], jordZ1 = () => s.omrader && s.omrader.bakjordet ? JORD_Z1_BAK : JORD[3];   /* 0.22.0: Bakjordet gjør Jordet dypere. Sammen med Østjordet blir det en L */   /* 0.20.0: Østjordet gjør Jordet bredere mot øst */   /* 0.17.0: der ting kan stå på Jordet: x0, x1, z0, z1 */
+const JORD = [-13.7, 13.5, 15.4, 22.6], JORD_X1_OST = 23.5, JORD_Z1_BAK = 29.6; const frukt = () => !!(s.omrader && s.omrader.frukthagen); const jordX1 = () => s.omrader && s.omrader.ostjordet ? JORD_X1_OST : JORD[1], jordZ1 = () => s.omrader && s.omrader.bakjordet ? JORD_Z1_BAK : JORD[3];   /* 0.22.0: Bakjordet gjør Jordet dypere. Sammen med Østjordet blir det en L */   /* 0.20.0: Østjordet gjør Jordet bredere mot øst */   /* 0.17.0: der ting kan stå på Jordet: x0, x1, z0, z1 */
 const GARD = {x0: -15.55, x1: 13.6, z0: -11.55, z1: 10.2}, GARD_X1 = 13.6, GARD_X1_ENGA = 22.0, GARD_X0 = -15.55, GARD_X0_SKOG = -24.0, SKOG_Z1 = -1.0;   /* 0.13.0: Skogkanten gjør gården bredere mot vest bak låven (bare der z < -1, så Rebus' lysning er fri) */   /* 0.9.8: gården blir bredere når Enga er kjøpt */
 let hinder = [];   // faste hindringer: [x0, x1, z0, z1]
 function finnHinder() {
@@ -723,7 +723,7 @@ function fotRekt(t, x, z, r) { const [w, d] = t.fot; const [a, b] = (r || 0) % 2
 const overlapp = (p, q) => p[0] < q[1] - 0.02 && p[1] > q[0] + 0.02 && p[2] < q[3] - 0.02 && p[3] > q[2] + 0.02;
 function erLedig(t, x, z, r) {
   const p = fotRekt(t, x, z, r);
-  const paJordet = s.omrader && s.omrader.jordet && p[0] >= JORD[0] && p[2] >= JORD[2] && ((p[1] <= jordX1() && p[3] <= JORD[3]) || (p[1] <= JORD[1] && p[3] <= jordZ1()));   /* 0.17.0: Jordet over veien er en egen del av gården */
+  const paJordet = s.omrader && s.omrader.jordet && p[0] >= JORD[0] && p[2] >= JORD[2] && ((p[1] <= jordX1() && p[3] <= JORD[3]) || (p[1] <= JORD[1] && p[3] <= jordZ1()) || (frukt() && p[1] <= JORD_X1_OST && p[3] <= JORD_Z1_BAK));   /* 0.42.0: med Frukthagen er hele firkanten din. 0.17.0: Jordet over veien er en egen del av gården */
   if (!paJordet && (p[0] < GARD.x0 || p[1] > GARD.x1 || p[2] < GARD.z0 || p[3] > GARD.z1)) return false;
   if (!paJordet && p[0] < GARD_X0 && p[3] > SKOG_Z1) return false;   /* Skogkanten-delen går bare bak låven */
   if (hinder.some(h => overlapp(p, h))) return false;
@@ -743,7 +743,7 @@ function plasser(t, x, z, r) { t.x = x; t.z = z; t.r = r || 0; t.plassert = true
 function plasserAlt() {
   synkArr();
   const enga = !!(s.omrader && s.omrader.enga), skog = !!(s.omrader && s.omrader.skogkanten); GARD.x1 = enga ? GARD_X1_ENGA : GARD_X1; GARD.x0 = skog ? GARD_X0_SKOG : GARD_X0;
-  if (window.mbEnga) window.mbEnga(enga); if (window.mbSkog) window.mbSkog(skog); if (window.mbJorde) window.mbJorde(s.omrader && s.omrader.jordet, s.omrader && s.omrader.ostjordet, s.omrader && s.omrader.bakjordet); if (window.mbElv) window.mbElv(s.omrader && s.omrader.elvebredden); synkBrygge(); synkHoner(); synkHund();
+  if (window.mbEnga) window.mbEnga(enga); if (window.mbSkog) window.mbSkog(skog); if (window.mbJorde) window.mbJorde(s.omrader && s.omrader.jordet, s.omrader && s.omrader.ostjordet, s.omrader && s.omrader.bakjordet, frukt()); if (window.mbElv) window.mbElv(s.omrader && s.omrader.elvebredden); synkBrygge(); synkHoner(); synkHund();
   s.akre.forEach((f, i) => {
     let t = ting.get(f.id); if (!t) { t = lagAkerGruppe(f); ting.set(f.id, t); }
     if (f.x === null) { const [sx, sz] = STANDARD.akre[i] || [0, 0]; const p = finnLedigPlass(t, sx, sz) || [sx, sz]; f.x = p[0]; f.z = p[1]; }
@@ -1567,7 +1567,7 @@ function stengtKart() {
   /* 0.17.0: sør for gården er alt stengt, bortsett fra gårdsveien over veien og Jordet når det er kjøpt */
   const jordet = !!(s.omrader && s.omrader.jordet);
   for (let i = 0; i < NX; i++) { const x = RX0 + i * RUTENETT; for (let j = 0; j < NZ; j++) { const z = GARD.z0 + j * RUTENETT; if (z <= GARD.z1 + 0.3) continue;
-    const overgang = jordet && Math.abs(x + 5.5) < 1.3 && z < JORD[2] + 0.2, inne = jordet && x > JORD[0] - 0.4 && z > JORD[2] - 0.4 && ((x < jordX1() + 0.4 && z < JORD[3] + 0.4) || (x < JORD[1] + 0.4 && z < jordZ1() + 0.4));
+    const overgang = jordet && Math.abs(x + 5.5) < 1.3 && z < JORD[2] + 0.2, inne = jordet && x > JORD[0] - 0.4 && z > JORD[2] - 0.4 && ((x < jordX1() + 0.4 && z < JORD[3] + 0.4) || (x < JORD[1] + 0.4 && z < jordZ1() + 0.4) || (frukt() && x < JORD_X1_OST + 0.4 && z < JORD_Z1_BAK + 0.4));
     if (!overgang && !inne) stengt[i * NZ + j] = 1; } }
   return stengt;
 }
@@ -1810,6 +1810,7 @@ const OMR = {   /* 0.13.0: Enga og Skogkanten bruker samme kjøpskort */
   enga: {ikon: '🌿', midt: [18, 0, -1], tekst: 'En stor eng øst for gården. Da blir gården bredere, og du får plass til fjøs, beite og meieri.', eid: 'Enga er din. Her er det plass til fjøset og meieriet.', takk: 'Enga er din! 🌿 Nå er det plass til fjøs og meieri.'},
   elvebredden: {ikon: '🎣', midt: [3, 0, -16], tekst: 'Stranda ved elva. Her får du en fiskebrygge, så du kan fiske abbor, ørret og gjedde.', eid: 'Elvebredden er din. Trykk på brygga for å fiske.', takk: 'Elvebredden er din! 🎣 Trykk på brygga for å fiske.'},
   bakjordet: {ikon: '🌻', midt: [0, 0, 26.5], tekst: 'Mer jorde bak Jordet. Gjerdet imellom tas bort, så det blir dobbelt så dypt.', eid: 'Bakjordet er ditt. Her er det plass til store bygg.', takk: 'Bakjordet er ditt! 🌻 Nå er Jordet dobbelt så stort.'},
+  frukthagen: {ikon: '🍎', midt: [19, 0, 26.5], tekst: 'Hjørnet mellom Østjordet og Bakjordet. Gjerdene tas bort, så hele jordet blir én stor firkant med plass til trær, busker og bikuber.', eid: 'Frukthagen er din. Her er det plass til mer.', takk: 'Frukthagen er din! 🍎 Nå er hele jordet ditt.'},
   ostjordet: {ikon: '🌾', midt: [19, 0, 19], tekst: 'Mer jorde, rett øst for Jordet. Gjerdet imellom tas bort, så du får ett stort jorde.', eid: 'Østjordet er ditt. Her er det plass til mer.', takk: 'Østjordet er ditt! 🌾 Nå er jordet enda større.'},
   jordet: {ikon: '🌻', midt: [0, 0, 19], tekst: 'Et stort jorde på andre siden av veien. Du får et nytt gjerde og plass til flere åkre og bygg.', eid: 'Jordet er ditt. Her er det plass til mer.', takk: 'Jordet er ditt! 🌻 Flytt åkre og bygg hit med ✋ Flytt.'},
   skogkanten: {ikon: '🌲', midt: [-19, 0, -6], tekst: 'Skogen bak låven. Trærne ryddes, gjerdet flyttes, og du får plass til grisebingen og mer.', eid: 'Skogkanten er din. Her er det plass til grisebingen.', takk: 'Skogkanten er din! 🌲 Nå er det plass til grisebingen.'}
@@ -1820,7 +1821,7 @@ function visOmradeKjop(id) {
     const g = L.kanKjopeOmrade(s, id);
     return `<p>${O.tekst}</p>
       <div class="knapper"><button class="knapp gronn" data-g="kjopOmrade" data-o="${id}" ${g ? 'disabled' : ''}>${O.ikon} Kjøp for ${E.pris} 🪙</button></div>
-      ${g === 'krever' ? `<p style="font-size:15px">🔒 Kjøp ${D.omrader[E.krever].navn} først.</p>` : g === 'laast' ? `<p style="font-size:15px">🔒 ${E.navn} kan kjøpes på nivå ${E.nivaa}.</p>` : g === 'mynter' ? `<p style="font-size:15px">Du har ${s.mynter} 🪙. Selg noe i markedsbua for å få flere.</p>` : ''}`; });
+      ${g === 'krever' ? `<p style="font-size:15px">🔒 Kjøp ${[E.krever, E.krever2].filter(k => k && !s.omrader[k]).map(k => D.omrader[k].navn).join(' og ')} først.</p>` : g === 'laast' ? `<p style="font-size:15px">🔒 ${E.navn} kan kjøpes på nivå ${E.nivaa}.</p>` : g === 'mynter' ? `<p style="font-size:15px">Du har ${s.mynter} 🪙. Selg noe i markedsbua for å få flere.</p>` : ''}`; });
 }
 const visEnga = () => visOmradeKjop('enga');
 function visBygg(u) {
@@ -2081,7 +2082,7 @@ window.spillTrykk = (o, t, ray) => {
   if (o && hundHaug && o === hundHaug) { hundHentSkatt(); return true; }
   if (o && rev && (o === revehus || o === rev)) { if (revInne()) { revUteTil = performance.now() + 9000; rev.visible = true; revSett(...REV_HJEM); rev.rotation.y = Math.PI / 2 + 0.35; } o = rev; }   /* 0.23.0: et trykk på huset henter Rebus ut */
   if (o === rev) { if (s.oppl.steg >= OPPL.length && s.nivaa >= D.rebus.nivaa) visGate(); else { if (!revGang) hilsRev(false); visOppl(true); } return true; }
-  if (o && o.userData.omrade && ['eng', 'skog', 'jorde', 'jorde2', 'jorde3', 'elv'].includes(o.userData.omrade.tema)) { visOmradeKjop({eng: 'enga', skog: 'skogkanten', jorde: 'jordet', jorde2: 'ostjordet', jorde3: 'bakjordet', elv: 'elvebredden'}[o.userData.omrade.tema]); return true; }
+  if (o && o.userData.omrade && ['eng', 'skog', 'jorde', 'jorde2', 'jorde3', 'jorde4', 'elv'].includes(o.userData.omrade.tema)) { visOmradeKjop({eng: 'enga', skog: 'skogkanten', jorde: 'jordet', jorde2: 'ostjordet', jorde3: 'bakjordet', jorde4: 'frukthagen', elv: 'elvebredden'}[o.userData.omrade.tema]); return true; }
   const u = tingFor(o);
   if (u) { if (o && o.userData.art) { o.userData.hopp = 0.4; } bruk(u); return true; }
   lukkHandling();
