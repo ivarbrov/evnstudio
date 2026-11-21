@@ -339,5 +339,23 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
   L.settManed(null);
   t('Ivar må godkjenne tallene: 10, 40, 100, 250 pepperkaker, maskinene 150 og 250, gaven 18 mynter', J.trinn.map(x => x.n).join() === '10,40,100,250' && D.bygg.gavepapirmaskin.pris === 150 && D.bygg.gavemaskin.pris === 250 && D.pris('julegave') === 18);
 }
+// 0.38.0 Julekalenderen (Even 20.11)
+{
+  const k = L.ny(T0); k.nivaa = 5; const des = Date.UTC(2026, 11, 5, 12), nov = Date.UTC(2026, 10, 30, 12);
+  t('Julekalenderen har 24 luker, og luke 24 gir stjernen', D.kal.luker.length === 24 && D.kal.luker[23][0] === 'stjerne');
+  t('Kalenderen er stengt i november', L.kanAapneLuke(k, 1, nov) === 'stengt');
+  t('Luker etter dagens dato er låst', L.kanAapneLuke(k, 6, des) === 'senere' && L.kanAapneLuke(k, 5, des) === null);
+  const m0 = k.mynter, r = L.aapneLuke(k, 1, des);
+  t('Luke 1 gir mynter, og kan bare åpnes én gang', r.ok && k.mynter === m0 + D.kal.luker[0][1] && L.aapneLuke(k, 1, des).grunn === 'apnet');
+  t('Tidligere luker kan åpnes senere, også i romjula', L.aapneLuke(k, 2, Date.UTC(2026, 11, 28, 12)).ok && k.lager.gavepapir === D.kal.luker[1][1]);
+  const lev = (k.arr.jul && k.arr.jul.levert) || 0; L.aapneLuke(k, 5, des);
+  t('Pepperkaker fra kalenderen teller som gaver under treet', k.arr.jul.levert === lev + D.kal.luker[4][1]);
+  t('Luke 24 åpnes først på julaften, og gir gullstjernen', L.kanAapneLuke(k, 24, Date.UTC(2026, 11, 23, 12)) === 'senere' && L.aapneLuke(k, 24, Date.UTC(2026, 11, 24, 12)).ok && k.kal.stjerne);
+  const lagret = L.valider(JSON.parse(JSON.stringify(k)), T0);
+  t('Lukene og stjernen overlever lagring', lagret.kal.apnet.length === 4 && lagret.kal.stjerne && lagret.kal.aar === 2026);
+  t('Rare luker i lagringen tas bort', L.valider({ v: 1, nivaa: 5, kal: { aar: 2026, apnet: [0, 25, 3, 3, 'x'] } }, T0).kal.apnet.join() === '3');
+  L.aapneLuke(k, 3, Date.UTC(2027, 11, 3, 12));
+  t('Neste år starter kalenderen på nytt, men stjernen blir', k.kal.aar === 2027 && k.kal.apnet.join() === '3' && k.kal.stjerne);
+}
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);
 process.exit(feil ? 1 : 0);

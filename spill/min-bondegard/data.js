@@ -113,7 +113,8 @@
       // 0.37.0 Vinter i Elvedal (Even 18.11). Prisene er forslag. Juletreet er gratis og kommer med eventet. «tre»: står bare i desember, og for alltid når treet er ditt
       gavepapirmaskin: { navn: 'Gavepapirmaskinen', ikon: '📜', nivaa: 3, pris: 150, arr: 'jul' },
       gavemaskin:      { navn: 'Gavemaskinen',      ikon: '🎁', nivaa: 3, pris: 250, arr: 'jul' },
-      juletre:         { navn: 'Juletreet',         ikon: '🎄', nivaa: 3, pris: 0,   arr: 'jul', tre: true }
+      juletre:         { navn: 'Juletreet',         ikon: '🎄', nivaa: 3, pris: 0,   arr: 'jul', tre: true },
+      julekalender:    { navn: 'Julekalenderen',    ikon: '📅', nivaa: 3, pris: 0,   arr: 'jul', kal: true }   // 0.38.0: står bare i desember
     },
     koPlasser: 2,
     xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325, 395, 460, 530, 605, 685, 770, 855, 950, 1050, 1150, 1260],   // XP fra nivået til det neste. 11–19 fra progresjonsplanen kap. 5
@@ -188,6 +189,11 @@
                  { n: 100, premie: 'tre', tekst: 'Juletreet er ditt for alltid' }, { n: 250, premie: 'skinn', skinn: 'jul', tekst: 'Julesleden: nytt utseende til varebilen' } ] }
     },
     skinn: { bursdag: 'Bursdagsbilen', jul: 'Julesleden' },
+    /* 0.38.0 Julekalenderen (Even 20.11: en blanding, og noe ekstra fint i luke 24). Innholdet er Claudes forslag og må godkjennes av en voksen.
+       mynter: mynter. gavepapir/julegave: varer til eventet. pepperkaker: teller som gaver under treet. stjerne: gullstjernen på juletreet og mynter */
+    kal: { luker: [ ['mynter', 25], ['gavepapir', 4], ['julegave', 2], ['mynter', 30], ['pepperkaker', 2], ['gavepapir', 4], ['mynter', 35], ['julegave', 2],
+                    ['pepperkaker', 3], ['mynter', 40], ['gavepapir', 6], ['julegave', 3], ['mynter', 45], ['pepperkaker', 3], ['gavepapir', 6], ['mynter', 50],
+                    ['julegave', 3], ['pepperkaker', 4], ['mynter', 55], ['gavepapir', 8], ['julegave', 4], ['pepperkaker', 5], ['mynter', 60], ['stjerne', 100] ] },
     arrPynt: ['bursdagspynt'],
     rebus: { nivaa: 2, pause: 180, myntFaktor: 1, myntPluss: 10, xp: 4 },   /* 0.15.1 (Even 15.11): du trenger ikke ha svaret på lager. Rebus tar ingen vare, så lønna er varens verdi mindre enn før (samme gevinst som før) */
     gater: {

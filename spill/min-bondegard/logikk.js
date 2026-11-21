@@ -21,7 +21,7 @@
       gaver: { uaapnet: [], dag: '', pynt: {} },
       fiske: { slutt: null },   // 0.27.0: snøret er ute til «slutt»
       pynt: [], pyntNr: 0,   // 0.26.0: pynt fra pyntebutikken, hver med type og plass
-      arr: {}, skinn: { eid: {}, valgt: null }
+      arr: {}, skinn: { eid: {}, valgt: null }, kal: { aar: 0, apnet: [], stjerne: false }
     };
     for (var k in D.startLager) s.lager[k] = D.startLager[k];
     giNivaa(s, 1, naa);
@@ -345,6 +345,8 @@
     // Årstidsfester (0.16.0): antall sendt er det eneste som lagres. Premiene regnes ut fra tallet, så lagringen kan ikke gi mer enn reglene.
     if (r.arr && typeof r.arr === 'object') for (var aid in D.arr) { var ra = r.arr[aid]; if (!ra || typeof ra !== 'object' || s.nivaa < D.arr[aid].nivaa) continue;
       arrStart(s, aid); s.arr[aid].levert = Math.max(0, Math.min(9999, Math.floor(tall(ra.levert, 0)))); arrPremier(s, aid, 0); }
+    if (r.kal && typeof r.kal === 'object') { s.kal.aar = Math.floor(tall(r.kal.aar, 0)); s.kal.stjerne = r.kal.stjerne === true;   // 0.38.0 julekalenderen
+      if (Array.isArray(r.kal.apnet)) r.kal.apnet.forEach(function (d) { d = Math.floor(tall(d, 0)); if (d >= 1 && d <= 24 && s.kal.apnet.indexOf(d) < 0) s.kal.apnet.push(d); }); }
     if (r.skinn && typeof r.skinn === 'object' && typeof r.skinn.valgt === 'string' && s.skinn.eid[r.skinn.valgt]) s.skinn.valgt = r.skinn.valgt; else if (r.skinn && r.skinn.valgt === null) s.skinn.valgt = null;
     if (r.bygg && typeof r.bygg === 'object') for (var b in s.bygg) { var rb = r.bygg[b]; if (!rb || typeof rb !== 'object') continue;
       var sb = s.bygg[b]; sb.eid = sb.eid || rb.eid === true;
@@ -462,7 +464,7 @@
   function arrStart(s, id) {
     var A = D.arr[id]; if (!A) return false;
     if (!s.arr[id]) s.arr[id] = { levert: 0 };
-    for (var b in D.bygg) if (D.bygg[b].arr === id && !s.bygg[b]) s.bygg[b] = { eid: !!D.bygg[b].tre, x: null, z: null, r: 0, ko: [] };   // 0.37.0: alle eventbygg. Juletreet er gratis og står der med en gang
+    for (var b in D.bygg) if (D.bygg[b].arr === id && !s.bygg[b]) s.bygg[b] = { eid: !!(D.bygg[b].tre || D.bygg[b].kal), x: null, z: null, r: 0, ko: [] };   // 0.37.0: alle eventbygg. Juletreet er gratis og står der med en gang
     return true;
   }
   function arrTrinn(s, id) { var a = s.arr && s.arr[id], n = 0; if (!a || !D.arr[id]) return 0; D.arr[id].trinn.forEach(function (t) { if (a.levert >= t.n) n++; }); return n; }
@@ -486,6 +488,27 @@
     premier.forEach(function (t) { if (t.premie === 'skinn') s.skinn.valgt = t.skinn; });
     return { ok: true, antall: n, mynter: m, xp: A.xp * n, premier: premier, nye: giXP(s, A.xp * n, naa) };
   }
+  // ---------- Julekalenderen (0.38.0, Even 20.11) ----------
+  // 24 luker i desember. Dagens luke og alle tidligere luker kan åpnes, også i romjula, så ingen taper på å stå over en dag (forslag fra Claude).
+  // Innholdet er forslag til en voksen har godkjent det. Luke 24 gir gullstjernen til toppen av juletreet, og den beholdes
+  var dagTest = null;
+  function settDag(n) { dagTest = n >= 1 && n <= 31 ? n : null; }
+  function kalAar(s, naa) { var aar = new Date(naa).getFullYear(); if (s.kal.aar !== aar) { s.kal.aar = aar; s.kal.apnet = []; } }
+  function kanAapneLuke(s, dag, naa) {
+    if (maned(naa) !== 12) return 'stengt'; if (s.nivaa < D.arr.jul.nivaa) return 'laast'; if (!(dag >= 1 && dag <= 24)) return 'ukjent';
+    kalAar(s, naa); if (s.kal.apnet.indexOf(dag) >= 0) return 'apnet'; if (dag > (dagTest || new Date(naa).getDate())) return 'senere';
+    return null;
+  }
+  function aapneLuke(s, dag, naa) {
+    var g = kanAapneLuke(s, dag, naa); if (g) return { ok: false, grunn: g };
+    var L2 = D.kal.luker[dag - 1], r = { ok: true, dag: dag, type: L2[0], antall: L2[1], mynter: 0, premier: [] };
+    s.kal.apnet.push(dag);
+    if (L2[0] === 'mynter') { s.mynter += L2[1]; r.mynter = L2[1]; }
+    else if (L2[0] === 'pepperkaker') { arrStart(s, 'jul'); var f = arrTrinn(s, 'jul'); s.arr.jul.levert = Math.min(9999, s.arr.jul.levert + L2[1]); r.premier = arrPremier(s, 'jul', f); r.premier.forEach(function (t) { if (t.premie === 'skinn') s.skinn.valgt = t.skinn; }); }
+    else if (L2[0] === 'stjerne') { s.kal.stjerne = true; s.mynter += L2[1]; r.mynter = L2[1]; }
+    else { s.lager[L2[0]] = Math.min(9999, (s.lager[L2[0]] || 0) + L2[1]); r.vare = L2[0]; }   // varer i lageret, også om låven er full
+    return r;
+  }
   function velgSkinn(s, id) { if (id && !s.skinn.eid[id]) return false; s.skinn.valgt = id || null; return true; }
 
   function mk(v, n) { var o = {}; o[v] = n; return o; }
@@ -501,7 +524,7 @@
     nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris, nyNabo: nyNabo, selgTilNabo: selgTilNabo, naboLiker: naboLiker, nesteNabo: nesteNabo,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
     nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
-    kanKaste: kanKaste, kast: kast, fiskKlar: fiskKlar, halInn: halInn, kanKjopePynt: kanKjopePynt, kjopPynt: kjopPynt, selgPynt: selgPynt, maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, pakkbar: pakkbar, pakkbare: pakkbare, arrTrinn: arrTrinn, selvStart: selvStart, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
+    kanKaste: kanKaste, kast: kast, fiskKlar: fiskKlar, halInn: halInn, kanKjopePynt: kanKjopePynt, kjopPynt: kjopPynt, selgPynt: selgPynt, maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, settDag: settDag, kanAapneLuke: kanAapneLuke, aapneLuke: aapneLuke, pakkbar: pakkbar, pakkbare: pakkbare, arrTrinn: arrTrinn, selvStart: selvStart, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
     giDagsgave: giDagsgave, bonusAktiv: bonusAktiv, leverGaver: leverGaver, klareGaver: klareGaver, aapneGave: aapneGave
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;
