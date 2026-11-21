@@ -22,7 +22,7 @@ if (matchMedia('(pointer:coarse)').matches) document.documentElement.classList.a
 addEventListener('pointerdown', e => document.documentElement.classList.toggle('touch', e.pointerType === 'touch'), {passive: true, capture: true});
 
 // Det som er laget i denne versjonen. Resten av nivå 1–10 ligger i data.js og kommer i fase 2–4.
-const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot', 'gresskar'], bygg: ['julekalender', 'forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken', 'grisebinge', 'paibakeri', 'sauefjos', 'vevstol', 'geitefjos', 'epletre', 'bikube', 'festbord', 'gavepapirmaskin', 'gavemaskin', 'juletre'], dyr: ['hone', 'ku', 'gris', 'sau', 'geit'], omrader: ['enga', 'skogkanten', 'jordet', 'ostjordet', 'bakjordet', 'elvebredden']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
+const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot', 'gresskar', 'potet'], bygg: ['blabaerbusk', 'julekalender', 'forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken', 'grisebinge', 'paibakeri', 'sauefjos', 'vevstol', 'geitefjos', 'epletre', 'bikube', 'festbord', 'gavepapirmaskin', 'gavemaskin', 'juletre'], dyr: ['hone', 'ku', 'gris', 'sau', 'geit'], omrader: ['enga', 'skogkanten', 'jordet', 'ostjordet', 'bakjordet', 'elvebredden']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
 
 /* ======================= Lagring (F2, F3) ======================= */
 let s = null, lagringFeilet = false;
@@ -132,6 +132,13 @@ function lagAkerProto() {
       for (let bl = 0; bl < 5; bl++) { const a = bl / 5 * 6.28 + k + r, rr = 0.22 + hash(bl, r, k) * 0.16; d.push({geo: gbladG, m: M4(px + Math.cos(a) * rr, 0.33 + hash(bl, k, r) * 0.08, pz + Math.sin(a) * rr, 0.25, a, 0, moden ? 1 : 0.75, 1, moden ? 1 : 0.75), farge: bl % 2 ? 0x4f9e3c : 0x62b148}); }
       const st = moden ? 1 + hash(r, k, 13) * 0.35 : 0.42; d.push({geo: gkG, m: M4(px, 0.28 + 0.15 * st, pz, 0, hash(k, r, 14) * 3, 0, st, st, st), farge: moden ? (hash(r, k, 15) > 0.5 ? 0xf08a24 : 0xe9781c) : 0x8fbf4a}, {geo: stilkG, m: M4(px, 0.28 + 0.33 * st, pz), farge: 0x5a7a2e}); }
     PROTO[moden ? 'gresskar3' : 'gresskar2'] = samle(d); });
+  // potet (0.41.0): lave, buskete planter med hvite blomster. Modne har brune poteter i jorda
+  const ptopG = new THREE.SphereGeometry(0.2, 8, 6), pblomG = new THREE.SphereGeometry(0.045, 6, 4), potG = new THREE.SphereGeometry(0.09, 8, 6); potG.scale(1.25, 0.8, 1);
+  [false, true].forEach(moden => { const d = []; fure((x, z, r, k) => { const hh = (moden ? 1 : 0.7) * (0.85 + hash(x, z, 16) * 0.3);
+      d.push({geo: ptopG, m: M4(x, 0.3 + 0.12 * hh, z, 0, k, 0, 1.15, hh * 0.9, 1.15), farge: k % 2 ? 0x4c9a3c : 0x5aa844}, {geo: ptopG, m: M4(x + 0.06, 0.3 + 0.3 * hh, z - 0.04, 0, k * 2, 0, 0.75, 0.7 * hh, 0.75), farge: 0x66b34e});
+      if (moden) { for (let b = 0; b < 3; b++) { const a = b * 2.1 + k; d.push({geo: pblomG, m: M4(x + Math.cos(a) * 0.12, 0.3 + 0.42 * hh, z + Math.sin(a) * 0.12), farge: 0xfaf6ea}); }
+        d.push({geo: potG, m: M4(x + 0.18, 0.29, z + 0.1, 0, k, 0), farge: 0xb98a4e}, {geo: potG, m: M4(x - 0.16, 0.29, z - 0.12, 0, k + 2, 0), farge: 0xa77a42}); } });
+    PROTO[moden ? 'potet3' : 'potet2'] = samle(d); });
 }
 function lagAkerGruppe(f) {
   const g = new THREE.Group(); scene.add(g);
@@ -693,9 +700,10 @@ function oppdaterKunde(dt, t) {
 /* ======================= Ting på gården ======================= */
 // Alt spilleren kan trykke på. Åkre, forkvern, bakeri og silo kan flyttes. Låven, hønsehuset, beitet og markedsbua står fast i denne versjonen.
 const ting = new Map();
-const FOT = {julekalender: [2.4, 1.4], gavepapirmaskin: [2.6, 2.4], gavemaskin: [2.8, 2.6], juletre: [2.6, 2.6], festbord: [2.8, 2.2], forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], sukkerverk: [3.6, 3.4], popkorn: [3.0, 2.8], kjokken: [4.0, 3.8], grisebinge: [6.2, 7.4], sauefjos: [6.2, 7.4], geitefjos: [6.2, 7.4], epletre: [2.6, 2.6], bikube: [2.2, 2.2], paibakeri: [3.8, 3.4], vevstol: [3.6, 3.4], hundehus: [2.4, 2.4], silo: [3.0, 3.0], tavle: [2.2, 1.0], varebil: [2.2, 5.4]};
+const FOT = {blabaerbusk: [2.2, 2.2], julekalender: [2.4, 1.4], gavepapirmaskin: [2.6, 2.4], gavemaskin: [2.8, 2.6], juletre: [2.6, 2.6], festbord: [2.8, 2.2], forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], sukkerverk: [3.6, 3.4], popkorn: [3.0, 2.8], kjokken: [4.0, 3.8], grisebinge: [6.2, 7.4], sauefjos: [6.2, 7.4], geitefjos: [6.2, 7.4], epletre: [2.6, 2.6], bikube: [2.2, 2.2], paibakeri: [3.8, 3.4], vevstol: [3.6, 3.4], hundehus: [2.4, 2.4], silo: [3.0, 3.0], tavle: [2.2, 1.0], varebil: [2.2, 5.4]};
 const STANDARD = {
   akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45], [15.6, 1.55], [15.6, 5.0], [15.6, 8.45]],   /* 0.22.0: åker 13–15 (nivå 13) står på Enga. Er den ikke kjøpt, finner spillet nærmeste ledige plass */
+  blabaerbusk: [12.2, 12.6],   /* 0.41.0: ved epletreet og bikuben */
   gavepapirmaskin: [-6.6, 8.4], gavemaskin: [-9.8, 8.4], juletre: [-1.2, 1.4], julekalender: [-10.0, 5.0],   /* 0.37.0 Vinter i Elvedal: maskinene ved porten, treet midt på tunet */
   festbord: [-2.2, 8.2], forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], paibakeri: [-10.5, 18.6], sauefjos: [3.5, 19.2], geitefjos: [-6.5, 24.5], epletre: [9.5, 9.5], bikube: [12.2, 9.5], vevstol: [-10.5, 26.0], hundehus: [-2.6, -2.4],   /* 0.23.0: de nye byggene foreslås på Jordet. Er det ikke kjøpt, finner spillet nærmeste ledige plass */ silo: [-0.4, -10.0], tavle: [-2.3, 4.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
 };
@@ -775,7 +783,7 @@ function plasserAlt() {
   s.plasser.std = {x: 5, z: 0, r: 0};
   synkKyr(); synkPynt(); synkKjopPynt(); settGullgard(s.gaver.gullgard && s.gaver.gullPaa);
 }
-const MODELL = {gavepapirmaskin: lagGavepapirmaskin, gavemaskin: lagGavemaskin, juletre: () => lagJuletre(treTrinn(), treStjerne()), julekalender: lagJulekalender, festbord: lagFestbord, forkvern: lagForkvern, bakeri: lagBakeri, meieri: lagMeieri, fjos: lagFjos, sukkerverk: lagSukkerverk, popkorn: lagPopkorn, kjokken: lagKjokken, grisebinge: () => lagGrisebinge(false), geitefjos: () => lagGrisebinge('geit'), epletre: lagEpletre, bikube: lagBikube, sauefjos: () => lagGrisebinge(true), paibakeri: lagPaibakeri, vevstol: lagVevstol}, HOYDE = {julekalender: 3.2, gavepapirmaskin: 3.4, gavemaskin: 3.6, juletre: 5.2, vevstol: 3.9, festbord: 2.9, grisebinge: 3.2, geitefjos: 3.2, epletre: 4.4, bikube: 2.9, sauefjos: 3.2, paibakeri: 4.2, forkvern: 3.6, bakeri: 4.2, meieri: 4.2, fjos: 4.6, sukkerverk: 4.8, popkorn: 4.0, kjokken: 4.4};
+const MODELL = {blabaerbusk: lagBlabaerbusk, gavepapirmaskin: lagGavepapirmaskin, gavemaskin: lagGavemaskin, juletre: () => lagJuletre(treTrinn(), treStjerne()), julekalender: lagJulekalender, festbord: lagFestbord, forkvern: lagForkvern, bakeri: lagBakeri, meieri: lagMeieri, fjos: lagFjos, sukkerverk: lagSukkerverk, popkorn: lagPopkorn, kjokken: lagKjokken, grisebinge: () => lagGrisebinge(false), geitefjos: () => lagGrisebinge('geit'), epletre: lagEpletre, bikube: lagBikube, sauefjos: () => lagGrisebinge(true), paibakeri: lagPaibakeri, vevstol: lagVevstol}, HOYDE = {blabaerbusk: 2.4, julekalender: 3.2, gavepapirmaskin: 3.4, gavemaskin: 3.6, juletre: 5.2, vevstol: 3.9, festbord: 2.9, grisebinge: 3.2, geitefjos: 3.2, epletre: 4.4, bikube: 2.9, sauefjos: 3.2, paibakeri: 4.2, forkvern: 3.6, bakeri: 4.2, meieri: 4.2, fjos: 4.6, sukkerverk: 4.8, popkorn: 4.0, kjokken: 4.4};
 // Kyrne på beitet ved fjøset (0.9.8). Beitet følger fjøset når det flyttes eller snus.
 // 0.13.0: kyr og griser bruker samme kode. Beitet/bingen følger bygget når det flyttes eller snus
 const DYRHUS = {
@@ -1345,7 +1353,16 @@ function lagEpletre() {
   for (let k = 0; k < 12; k++) { const a = k * 2.4, hoy = k % 3, r = hoy === 2 ? 1.0 : hoy === 1 ? 1.5 : 1.62; mesh(new THREE.SphereGeometry(0.2, 10, 8), rod, Math.cos(a) * r, hoy === 2 ? 3.45 : hoy === 1 ? 2.85 : 2.2, Math.sin(a) * r, epler); }   /* utenpå krona, så de synes fra alle kanter */
   epler.visible = false; g.add(epler); g.userData.epler = epler; return g;
 }
-function synkEpletre() { const t = naa(); for (const b of ['epletre', 'bikube']) { const u = ting.get(b), sb = s.bygg[b]; if (u && sb && u.gruppe.userData.epler) u.gruppe.userData.epler.visible = !!sb.eid && sb.ko.some(j => t >= j.slutt); } }
+function lagBlabaerbusk() {   /* 0.41.0: en rund, grønn busk på et lite jordbed. Blåbærene synes når de er modne */
+  const g = new THREE.Group(), blad = fm(0x3f8f3a, 0.9), blad2 = fm(0x56a646, 0.9);
+  const ring = new THREE.CircleGeometry(1.05, 20); ring.rotateX(-Math.PI / 2); mesh(ring, fm(0x7a5a38, 1), 0, 0.03, 0, g, false).receiveShadow = true;
+  [[0, 0.75, 0, 0.8, blad], [0.55, 0.6, 0.2, 0.55, blad2], [-0.5, 0.62, -0.15, 0.58, blad2], [0.1, 1.2, -0.1, 0.55, blad], [-0.2, 0.6, 0.55, 0.5, blad2], [0.3, 0.55, -0.55, 0.5, blad]].forEach(([x, y, z, r, m]) => mesh(new THREE.SphereGeometry(r, 14, 10), m, x, y, z, g));
+  bake(g);
+  const baer = new THREE.Group(), bla = fm(0x3b4fae, 0.35);
+  for (let k = 0; k < 26; k++) { const a = k * 2.39, y = 0.45 + (k % 5) * 0.19, r = 0.95 - Math.abs(y - 0.8) * 0.5; mesh(new THREE.SphereGeometry(0.09, 8, 6), bla, Math.cos(a) * r, y, Math.sin(a) * r, baer); }
+  baer.visible = false; g.add(baer); g.userData.epler = baer; return g;
+}
+function synkEpletre() { const t = naa(); for (const b of ['epletre', 'bikube', 'blabaerbusk']) { const u = ting.get(b), sb = s.bygg[b]; if (u && sb && u.gruppe.userData.epler) u.gruppe.userData.epler.visible = !!sb.eid && sb.ko.some(j => t >= j.slutt); } }
 /* 0.33.0 Bikuben (Even 18.11): gul bikube av halm på en liten benk, med bier som surrer rundt. Honningkrukka vises når honningen er klar */
 function lagBikube() {
   const g = new THREE.Group(), halm = fm(0xe9b93f, 0.95), halm2 = fm(0xd9a32c, 0.95), tre = MAT.brunPlank;

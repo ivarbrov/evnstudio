@@ -11,7 +11,8 @@
       erter:     { navn: 'Erter',     ikon: '🫛', nivaa: 5, tid: 120, verdi: 6, xp: 2 },
       sukkerror: { navn: 'Sukkerrør', ikon: '🎋', nivaa: 7, tid: 180, verdi: 8, xp: 2 },
       gulrot:    { navn: 'Gulrot',    ikon: '🥕', nivaa: 9, tid: 90,  verdi: 5, xp: 2 },
-      gresskar:  { navn: 'Gresskar',  ikon: '🎃', nivaa: 15, tid: 300, verdi: 15, xp: 4 }   // 0.23.0
+      gresskar:  { navn: 'Gresskar',  ikon: '🎃', nivaa: 15, tid: 300, verdi: 15, xp: 4 },   // 0.23.0
+      potet:     { navn: 'Potet',     ikon: '🥔', nivaa: 23, tid: 240, verdi: 12, xp: 3, flertall: 'poteter' }   // 0.41.0 (Even 18.11: poteter på nivå 23). Tallene er forslag
     },
     // Dyr: ett for gir ett produkt etter «tid» sekunder. Et dyr uten for slutter bare å produsere (progresjonsregel F6).
     dyr: {
@@ -34,6 +35,10 @@
       geitemelk: { navn: 'Geitemelk', ikon: '🍼', verdi: 40 },
       eple:     { navn: 'Eple',     ikon: '🍎', verdi: 14, flertall: 'epler' },
       honning:  { navn: 'Honning',  ikon: '🍯', verdi: 30 },
+      blabaer:  { navn: 'Blåbær',   ikon: '🫐', verdi: 9, flertall: 'blåbær' },   // 0.41.0: blåbærbusken på nivå 24
+      eplepai:  { navn: 'Eplepai',  ikon: '🍎🥧' },
+      syltetoy: { navn: 'Blåbærsyltetøy', ikon: '🫐🫙' },
+      honningkake: { navn: 'Honningkake', ikon: '🍯🍰' },
       ull:      { navn: 'Ull',      ikon: '🧶', verdi: 32 },
       gulrotpai: { navn: 'Gulrotpai', ikon: '🥧' },
       kremkake:  { navn: 'Kremkake',  ikon: '🍰' },
@@ -68,6 +73,10 @@
       grisefor:   { bygg: 'forkvern',   nivaa: 10, inn: { gulrot: 2, erter: 1 },          tid: 60,  ut: 3 },
       sauefor:    { bygg: 'forkvern',   nivaa: 16, inn: { hvete: 3, erter: 1 },           tid: 90,  ut: 3 },
       eple:       { bygg: 'epletre',    nivaa: 21, inn: {},                               tid: 300, ut: 2 },
+      blabaer:    { bygg: 'blabaerbusk', nivaa: 24, inn: {},                             tid: 240, ut: 3 },   // 0.41.0: busken lager blåbær selv
+      eplepai:    { bygg: 'paibakeri',  nivaa: 23, inn: { eple: 3, hvete: 2, egg: 1 },    tid: 240, ut: 1 },   // 0.41.0
+      syltetoy:   { bygg: 'kjokken',    nivaa: 24, inn: { blabaer: 3, sukker: 1 },        tid: 180, ut: 1 },   // 0.41.0
+      honningkake: { bygg: 'bakeri',    nivaa: 25, inn: { honning: 1, hvete: 2, egg: 2 }, tid: 210, ut: 1 },   // 0.41.0
       honning:    { bygg: 'bikube',     nivaa: 22, inn: {},                               tid: 360, ut: 1 },   // 0.33.0: biene lager honningen selv   // 0.32.0: treet lager epler av seg selv
       geitefor:   { bygg: 'forkvern',   nivaa: 26, inn: { mais: 3, gulrot: 1 },           tid: 90,  ut: 3 },
       gulrotpai:  { bygg: 'paibakeri',  nivaa: 14, inn: { gulrot: 3, egg: 1, hvete: 1 },  tid: 180, ut: 1 },
@@ -107,6 +116,7 @@
       sauefjos:   { navn: 'Sauefjøs',       ikon: '🐑', nivaa: 16, pris: 3000, dyr: 'sau' },
       geitefjos:  { navn: 'Geitefjøs',      ikon: '🐐', nivaa: 26, pris: 8000, dyr: 'geit' },   // 0.31.0. Pris godkjent av Ivar 21.11
       bikube:     { navn: 'Bikuben',        ikon: '🐝', nivaa: 22, pris: 4000, selv: 'honning', vent: 'Ny honning er klar om', klar: 'Honningen er klar!' },   // 0.33.0 (Even 18.11): gul bikube av halm. Pris godkjent av Ivar 21.11
+      blabaerbusk: { navn: 'Blåbærbusken',  ikon: '🫐', nivaa: 24, pris: 3500, selv: 'blabaer', vent: 'Nye blåbær er modne om', klar: 'Blåbærene er modne!' },   // 0.41.0: står for alltid, som epletreet. Pris er forslag
       epletre:    { navn: 'Epletreet',      ikon: '🍎', nivaa: 21, pris: 3000, selv: 'eple', vent: 'Nye epler er modne om', klar: 'Eplene er modne!' },   // 0.32.0 (Even 18.11): står for alltid og gir nye epler etter en stund. Pris godkjent av Ivar 21.11
       vevstol:    { navn: 'Vevstolen',      ikon: '🧶', nivaa: 17, pris: 6000 },   // 0.24.0
       festbord:   { navn: 'Festbordet',     ikon: '🎉', nivaa: 3,  pris: 150, arr: 'bursdag' },   // kommer med Bursdagsfesten, ikke med nivået (Even 11.11: første maskin ca. 150)
@@ -117,12 +127,12 @@
       julekalender:    { navn: 'Julekalenderen',    ikon: '📅', nivaa: 3, pris: 0,   arr: 'jul', kal: true }   // 0.38.0: står bare i desember
     },
     koPlasser: 2,
-    xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325, 395, 460, 530, 605, 685, 770, 855, 950, 1050, 1150, 1260],   // XP fra nivået til det neste. 11–19 fra progresjonsplanen kap. 5
-    maksNivaa: 22,
+    xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325, 395, 460, 530, 605, 685, 770, 855, 950, 1050, 1150, 1260, 1380, 1500, 1630],   // 0.41.0: nivå 22–25 er forslag   // XP fra nivået til det neste. 11–19 fra progresjonsplanen kap. 5
+    maksNivaa: 25,
     hund: { nivaa: 20, navn: 'Syltetøy' },   // 0.24.0 (Even 8.11 og 17.11): gårdshunden følger roboten fra nivå 20. Bare til pynt
     akre: { 1: 6, 3: 9, 5: 12, 13: 15 },        // antall åkre fra nivå
-    silo: { 1: 50, 9: 75, 15: 100, 19: 125 },             // plass til avlinger
-    lave: { 1: 50, 6: 75, 10: 100, 14: 125, 18: 150 },    // plass til alt annet
+    silo: { 1: 50, 9: 75, 15: 100, 19: 125, 25: 150 },   // 0.41.0: større silo på nivå 25 (forslag)             // plass til avlinger
+    lave: { 1: 50, 6: 75, 10: 100, 14: 125, 18: 150, 25: 175 },   // 0.41.0: større låve på nivå 25 (forslag)    // plass til alt annet
     startMynter: 50,
     startLager: { honsefor: 6, hvete: 4 },
     nyAvlingFro: 3,                     // en ny avling gir 3 frø når den låses opp
@@ -150,7 +160,7 @@
       ostjordet:  { navn: 'Østjordet',  nivaa: 16, pris: 4000, krever: 'jordet' },   // 0.20.1 (Ivar 16.11): utvidelsen øst for Jordet, fra nivå 16. Navn og pris er godkjent av Ivar 21.11
       jordet:     { navn: 'Jordet',     nivaa: 8,  pris: 1000 }   // 0.17.0 (Even 15.11): jordet på andre siden av veien. Nivå og pris er godkjent av Ivar 21.11
     },
-    innholdTil: 22,
+    innholdTil: 25,
     /* 0.26.0 Pyntebutikken (Even 17.11): pynt spilleren kjøper for mynter og setter der hun vil. Bare til pynt. Kan selges tilbake for halv pris.
        Prisene og antallet er godkjent av Ivar 21.11. Ingenting koster ekte penger */
     pynt: {
@@ -203,6 +213,11 @@
       gresskar: 'Jeg er stor, rund og oransje, og jeg vokser på bakken. Om høsten skjærer noen ansikt i meg. Hva er jeg?',
       honning: 'Jeg er gyllen, søt og klissete, og det er biene som lager meg. Hva er jeg?',
       eple: 'Jeg er rund og rød og vokser på et tre. Du kan spise meg rå eller bake meg i en pai. Hva er jeg?',
+      potet: 'Jeg vokser under jorda, og du kan koke, steke eller mose meg. Hva er jeg?',
+      blabaer: 'Jeg er liten, rund og blå, og jeg vokser på en busk. Hva er jeg?',
+      eplepai: 'Jeg er laget av epler, og jeg kommer varm ut av paibakeriet. Hva er jeg?',
+      syltetoy: 'Jeg er blå og søt, og du har meg på brødskiva. Hva er jeg?',
+      honningkake: 'Jeg er en kake laget med noe biene lager. Hva er jeg?',
       geitemelk: 'Jeg er hvit og kommer fra et dyr med skjegg og horn. Av meg kan du lage ost. Hva er jeg?',
       ull: 'Jeg vokser på sauen og er myk og varm. Av meg blir det garn og gensere. Hva er jeg?',
       gulrotpai: 'Jeg er rund og bakt i ovnen, og inni meg er det noe oransje fra åkeren. Hva er jeg?',

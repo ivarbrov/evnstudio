@@ -73,7 +73,7 @@ t('Brød gir 2 XP', r.ok && r.xp === 2 && s.lager.brod === 1);
 nye = L.giXP(s, 2000, T0);
 t('Stor XP gir flere nivåer på en gang', s.nivaa === 10 || nye.length > 1);
 t('Nivå 3 og 5 gir åkre', s.akre.length === 12);
-t('Maks nivå 22 (0.33.0), med 15 åkre og 4 høner', (() => { const x = L.ny(T0); L.giXP(x, 99999, T0); return x.nivaa === 22 && D.maksNivaa === 22 && x.akre.length === 15 && x.dyr.hone.length === 4; })());
+t('Maks nivå 25 (0.41.0), med 15 åkre og 4 høner', (() => { const x = L.ny(T0); L.giXP(x, 99999, T0); return x.nivaa === 25 && D.maksNivaa === 25 && x.akre.length === 15 && x.dyr.hone.length === 4; })());
 { const x = L.ny(T0); while (x.nivaa < 16) L.giXP(x, 5, T0); x.mynter = 20000;
   t('Nivå 14–16: paibakeri og sauefjøs kan bygges, gresskar kan plantes', x.bygg.paibakeri && x.bygg.sauefjos && !x.dyr.sau && L.kanPlante(x, 0, 'gresskar', T0) === null && x.lager.gresskar === D.nyAvlingFro);
   L.kjopBygg(x, 'paibakeri'); L.kjopBygg(x, 'sauefjos'); x.lager.gulrot = 3; x.lager.egg = 1; x.lager.hvete = 5; x.lager.erter = 1;
@@ -364,6 +364,16 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
   t('Rare luker i lagringen tas bort', L.valider({ v: 1, nivaa: 5, kal: { aar: 2026, apnet: [0, 25, 3, 3, 'x'] } }, T0).kal.apnet.join() === '3');
   L.aapneLuke(k, 3, Date.UTC(2027, 11, 3, 12));
   t('Neste år starter kalenderen på nytt, men stjernen blir', k.kal.aar === 2027 && k.kal.apnet.join() === '3' && k.kal.stjerne);
+}
+// 0.41.0 Nivå 23–25 (Even 18. og 21.11)
+{
+  const x = L.ny(T0); L.giXP(x, 99999, T0); x.mynter = 3500;
+  t('Nivå 23: poteter kan plantes, og eplepai lages i paibakeriet', D.avlinger.potet.nivaa === 23 && D.oppskrifter.eplepai.bygg === 'paibakeri' && D.oppskrifter.eplepai.nivaa === 23 && L.kanSelge('potet') && L.kanSelge('eplepai'));
+  const k = L.kjopBygg(x, 'blabaerbusk'); L.selvStart(x, T0); const h = L.hentProdukter(x, 'blabaerbusk', T0 + 240 * S);
+  t('Nivå 24: blåbærbusken koster 3500 og gir 3 blåbær etter 240 s av seg selv', D.bygg.blabaerbusk.nivaa === 24 && k.ok && x.mynter === 0 && h.ok && x.lager.blabaer === 3 && L.kanProdusere(x, 'blabaerbusk', 'blabaer', T0) === 'selv');
+  t('Nivå 24: syltetøy på kjøkkenet av blåbær og sukker', D.oppskrifter.syltetoy.bygg === 'kjokken' && D.oppskrifter.syltetoy.inn.blabaer === 3 && D.oppskrifter.syltetoy.inn.sukker === 1);
+  t('Nivå 25: honningkake i bakeriet, og større silo og låve', D.oppskrifter.honningkake.bygg === 'bakeri' && D.oppskrifter.honningkake.nivaa === 25 && L.plass(x, 'silo') + Object.keys(x.lager).filter(v => D.avlinger[v]).reduce((a, v) => a + x.lager[v], 0) === 150 && D.lave[25] === 175);
+  t('Nye varer har gåter', ['potet', 'blabaer', 'eplepai', 'syltetoy', 'honningkake'].every(v => !!D.gater[v]));
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);
 process.exit(feil ? 1 : 0);
