@@ -1,4 +1,4 @@
-# EVN Game QA: Min Bondegård 0.39.1
+# EVN Game QA: Min Bondegård (min-bondegard) 0.39.1
 Grunnlag: agent 2.2 (utkast), standard 1.2 utkast / gjeldende 1.1 (119ac87f3b1a36769c7e1339cc640fe3c895880f), commit 1f38a3ab861b2c2d249a2e9fd7eaee2f98b48d2b
 Testkvittering: evn1 commit=1f38a3ab861b2c2d249a2e9fd7eaee2f98b48d2b tester=a2c245a8816b arbeidstre=rent statisk=ok royk=ok statistikk=ikke-innfort ui=ikke-innfort ecoins=ok
 Nivå: full – versjonen foreslås publisert. Den har nytt innhold, nye lagringsfelt (fiske, pynt, arr, skinn, kal), musikk og adminfunksjoner siden 0.15.11 på main.
@@ -6,6 +6,7 @@ Testet: Lokalt på 127.0.0.1:8791 med worktreet `/home/claude/wt-vinter` som rot
 - **Metode:** Museklikk, tastetrykk og berøring var syntetiske. Testtilstanden ble satt opp med `window.__spill` i egne, midlertidige profiler. Datoene ble flyttet med en `Date`-overstyring i testprofilen.
 - **Størrelser:** 1280×800 med mus. 375×812, 740×360, 320×568 og 568×320 med emulert berøring.
 - **Ny commit underveis:** Kontrollen begynte på 021b12b. Da 1f38a3a kom, kjørte jeg `test/kjor.mjs`, `logikk.test.mjs`, `sim-jul.mjs` og alle nettleserskriptene (a1–a4, a5b, a6) på nytt på 1f38a3a. Statistikktestene (a7, a7b) gikk allerede mot 0.39.1. Alle resultater under gjelder 1f38a3a, bortsett fra der det står noe annet.
+- **Rapportcommiten:** Grenen står nå på bc98faf. Den legger bare til `qa/rapporter/2026-11-21-min-bondegard-1f38a3a.md`, så siste kodeendring er fortsatt 1f38a3a. Testene er ikke kjørt på nytt.
 - **Automatiske tester:** `test/kjor.mjs` ga 99 ok, 0 feil, 0 varsel og 2 ikke innført (exit 0). Den gikk samtidig med mine nettleserskript. `logikk.test.mjs` ga 204 ok og 0 feil. `sim-jul.mjs` kjørte uten feil.
 - **Forrige versjon:** Lagringen på nivå 10 fra 0.15.11 (fra `/tmp/qa-mb213/gml-n10.json`, laget fra main b48b6d1). Den er ikke laget på nytt.
 - **Betingede krav:** Jeg har lagt B1 (spillet har nå musikk) og B3 til grunn.
@@ -110,4 +111,4 @@ JA MED FORBEHOLD – F1, F2 og F3 er testet på 1f38a3a uten kritiske feil, med 
 - Y1, T4, ekte berøring og B3 er ikke testet.
 - Tallene som koden kaller «forslag», bør en voksen bekrefte.
 
-Testserveren på 8791 er stoppet, og profilmappene er slettet. Jeg har ikke endret repoet, og arbeidstreet er rent på 1f38a3a. Skript, utdata og skjermbilder ligger i `/tmp/qa-mb39/`: `skript/`, `*-1f38.ut` for den nye committen og `bilder/`. Utskriften fra `test/kjor.mjs` for 1f38a3a ligger i `/tmp/qa-mb39/kjor-1f38a3a.log`. Ingenting i rapporten bygger på lagret minne.
+Testserveren på 8791 er stoppet, og profilmappene er slettet. Jeg har ikke endret repoet, og arbeidstreet er rent på bc98faf. Skript, utdata og skjermbilder ligger i `/tmp/qa-mb39/`: `skript/`, `*-1f38.ut` for 1f38a3a og `bilder/`. Utskriften fra `test/kjor.mjs` for 1f38a3a ligger i `/tmp/qa-mb39/kjor-1f38a3a.log`. Ingenting i rapporten bygger på lagret minne.
