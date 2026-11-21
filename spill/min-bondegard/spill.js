@@ -916,31 +916,73 @@ function snoTrykk() { if (snoTrinn() === 6) visGate(); else visNedtelling(); }
 /* ---------- 0.38.0 Julenissen og reinsdyret (Even 20.11) ----------
    I desember går de langs veien foran gården og vinker. Trykker du på dem, sier nissen «God jul!» og reinsdyret hopper.
    Har du julesleden, trekker reinsdyret den. Bare til pynt. Gaven fra nissen hver dag venter på en voksen */
-function lagRein(g, x = 0, y = 0, z = 0) { const r = new THREE.Group(); r.position.set(x, y, z); g.add(r); const brun = fm(0x8a5a33, 0.85), lys = fm(0xd9b98c, 0.85), mork = fm(0x3a2418, 0.9);
-  const kropp = mesh(new THREE.CylinderGeometry(0.32, 0.3, 1.2, 12), brun, 0, 1.1, 0, r); kropp.rotation.x = Math.PI / 2;
-  [0.6, -0.6].forEach(bz => mesh(new THREE.SphereGeometry(0.32, 12, 10), brun, 0, 1.1, bz, r));
-  const ben = [[0.2, 0.42], [-0.2, 0.42], [0.2, -0.42], [-0.2, -0.42]].map(([bx, bz]) => { const b = new THREE.Group(); b.position.set(bx, 1.0, bz); r.add(b); mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.9, 8), brun, 0, -0.45, 0, b); mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.1, 8), mork, 0, -0.9, 0, b); return b; });
-  const hals = mesh(new THREE.CylinderGeometry(0.14, 0.18, 0.6, 10), brun, 0, 1.5, 0.72, r); hals.rotation.x = 0.6;
-  mesh(new THREE.SphereGeometry(0.22, 12, 10), brun, 0, 1.78, 0.92, r).scale.set(1, 0.95, 1.25); mesh(new THREE.SphereGeometry(0.12, 10, 8), lys, 0, 1.72, 1.18, r);
-  mesh(new THREE.SphereGeometry(0.07, 8, 6), fm(0xe0473a, 0.3), 0, 1.75, 1.28, r);
-  [-0.1, 0.1].forEach(ex => mesh(new THREE.SphereGeometry(0.035, 6, 5), mork, ex, 1.86, 1.1, r));
-  [-1, 1].forEach(sd => { const h = new THREE.Group(); h.position.set(sd * 0.1, 1.95, 0.88); h.rotation.z = sd * -0.45; r.add(h); mesh(new THREE.CylinderGeometry(0.025, 0.03, 0.45, 6), lys, 0, 0.22, 0, h);
-    [[0.12, 0.3], [-0.06, 0.38]].forEach(([gx, gy]) => { const gr = mesh(new THREE.CylinderGeometry(0.02, 0.025, 0.22, 6), lys, gx * sd, gy, 0.05, h); gr.rotation.z = sd * -0.8; }); });
-  mesh(new THREE.SphereGeometry(0.1, 8, 6), fm(0xffffff, 0.9), 0, 1.2, -0.85, r);
-  r.userData.ben = ben; return r; }
-function lagNisse(g, x = 0, y = 0, z = 0) { const n = new THREE.Group(); n.position.set(x, y, z); g.add(n); const rod = fm(0xd8262f, 0.55), hvit = fm(0xffffff, 0.95), hud = fm(0xf2c6a0, 0.8);
-  mesh(new THREE.CylinderGeometry(0.26, 0.32, 0.55, 12), rod, 0, 0.28, 0, n); mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.08, 12), fm(0x222226, 0.6), 0, 0.12, 0, n);
-  mesh(new THREE.SphereGeometry(0.2, 12, 10), hud, 0, 0.72, 0, n); mesh(new THREE.SphereGeometry(0.17, 10, 8), hvit, 0, 0.62, 0.1, n).scale.set(1.1, 1.1, 0.8);
-  mesh(new THREE.ConeGeometry(0.2, 0.42, 12), rod, 0, 0.98, -0.03, n).rotation.x = -0.25; mesh(new THREE.CylinderGeometry(0.21, 0.21, 0.07, 12), hvit, 0, 0.82, 0, n); mesh(new THREE.SphereGeometry(0.06, 8, 6), hvit, 0, 1.17, -0.12, n);
-  const arm = new THREE.Group(); arm.position.set(0.3, 0.48, 0); n.add(arm); mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.4, 8), rod, 0, 0.2, 0, arm); mesh(new THREE.SphereGeometry(0.07, 8, 6), hvit, 0, 0.42, 0, arm);
-  mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.36, 8), rod, -0.3, 0.32, 0.05, n).rotation.z = 0.5;
-  n.userData.arm = arm; return n; }
+/* 0.40.0 (Even 21.11: «julenissen og Rudolf er stygg», valgte å lage begge på nytt): rundere og søtere, i samme stil som roboten og Rebus.
+   Store øyne med glans, myke former, tydelige farger. Reinsdyret har stort gevir, lys mule, rød nese, hvit bringe og seletøy med bjelle */
+function oyePar(g, x, y, z, r, avst, rot = 0) {   /* store blanke øyne som hos Rebus */
+  const hvit = fm(0xffffff, 0.35), sort = fm(0x1d1a22, 0.25), glans = new THREE.MeshBasicMaterial({color: 0xffffff});
+  [-1, 1].forEach(sd => { const o = new THREE.Group(); o.position.set(x + sd * avst, y, z); o.rotation.y = rot; g.add(o);
+    mesh(new THREE.SphereGeometry(r, 16, 12), hvit, 0, 0, 0, o).scale.set(1, 1.15, 0.6);
+    mesh(new THREE.SphereGeometry(r * 0.62, 14, 10), sort, 0, -r * 0.08, r * 0.3, o).scale.set(1, 1.15, 0.6);
+    mesh(new THREE.SphereGeometry(r * 0.2, 8, 6), glans, r * 0.18, r * 0.22, r * 0.55, o, false); });
+}
+function lagRein(g, x = 0, y = 0, z = 0) {
+  const r = new THREE.Group(); r.position.set(x, y, z); g.add(r);
+  const brun = fm(0x9a6236, 0.8), lys = fm(0xf1e3cc, 0.8), mork = fm(0x4a2c1a, 0.85), gevir = fm(0xe9d2a6, 0.7), rod = fm(0xd8262f, 0.45), gull = fm(0xffc93c, 0.3);
+  const kropp = mesh(new THREE.SphereGeometry(0.55, 20, 16), brun, 0, 0.92, -0.05, r); kropp.scale.set(0.8, 0.74, 1.18);
+  mesh(new THREE.SphereGeometry(0.42, 16, 12), lys, 0, 0.86, 0.34, r).scale.set(0.68, 0.72, 0.72);   /* lys bringe */
+  const ben = [[0.22, 0.38], [-0.22, 0.38], [0.22, -0.48], [-0.22, -0.48]].map(([bx, bz]) => { const b = new THREE.Group(); b.position.set(bx, 0.68, bz); r.add(b);
+    mesh(new THREE.CylinderGeometry(0.12, 0.1, 0.56, 10), brun, 0, -0.28, 0, b); mesh(new THREE.SphereGeometry(0.12, 10, 8), mork, 0, -0.6, 0.02, b).scale.set(1, 0.7, 1.2); return b; });
+  mesh(new THREE.SphereGeometry(0.12, 10, 8), lys, 0, 1.12, -0.72, r);   /* hale */
+  const hode = new THREE.Group(); hode.position.set(0, 1.5, 0.62); r.add(hode);
+  mesh(new THREE.CylinderGeometry(0.17, 0.24, 0.5, 12), brun, 0, -0.25, -0.12, hode).rotation.x = 0.35;   /* hals */
+  mesh(new THREE.SphereGeometry(0.36, 18, 14), brun, 0, 0.05, 0, hode).scale.set(1, 0.95, 1);
+  mesh(new THREE.SphereGeometry(0.22, 14, 10), lys, 0, -0.06, 0.28, hode).scale.set(1.05, 0.85, 0.9);   /* mule */
+  mesh(new THREE.SphereGeometry(0.07, 12, 10), rod, 0, -0.01, 0.5, hode);   /* rød nese */
+  oyePar(hode, 0, 0.12, 0.27, 0.085, 0.14);
+  [-1, 1].forEach(sd => { const o = mesh(new THREE.SphereGeometry(0.12, 10, 8), brun, sd * 0.33, 0.14, -0.05, hode); o.scale.set(0.5, 0.35, 1); o.rotation.z = sd * 0.6;   /* ører */
+    const gv = new THREE.Group(); gv.position.set(sd * 0.16, 0.32, -0.05); gv.rotation.z = sd * -0.35; hode.add(gv);   /* gevir */
+    mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.55, 8), gevir, 0, 0.27, 0, gv);
+    [[0.25, 0.14, 0.9], [0.42, 0.12, 0.5], [0.52, 0.1, -0.2]].forEach(([gy, gl, a]) => { const t = mesh(new THREE.CylinderGeometry(0.03, 0.035, gl * 2, 8), gevir, sd * gl * Math.sin(a) * 0.9, gy, gl * Math.cos(a) * 0.5, gv); t.rotation.z = sd * -a; t.rotation.x = 0.3; });
+    mesh(new THREE.SphereGeometry(0.045, 8, 6), gevir, 0, 0.55, 0, gv); });
+  /* seletøy: rød krage med gullbjelle */
+  mesh(new THREE.TorusGeometry(0.22, 0.05, 8, 18), rod, 0, 1.3, 0.5, r).rotation.x = Math.PI / 2 - 0.4;
+  mesh(new THREE.SphereGeometry(0.08, 12, 10), gull, 0, 1.18, 0.68, r);
+  const sal = mesh(new THREE.SphereGeometry(0.47, 18, 10, 0, Math.PI * 2, 0, 0.9), rod, 0, 0.9, -0.12, r); sal.scale.set(0.84, 0.78, 0.8);   /* sal-teppe */
+  r.userData.ben = ben; return r;
+}
+function lagNisse(g, x = 0, y = 0, z = 0) {
+  const n = new THREE.Group(); n.position.set(x, y, z); g.add(n);
+  const rod = fm(0xd8262f, 0.5), hvit = fm(0xffffff, 0.9), hud = fm(0xf5c9a4, 0.7), sort = fm(0x222226, 0.5), gull = fm(0xffc93c, 0.3);
+  mesh(new THREE.SphereGeometry(0.34, 18, 14), rod, 0, 0.3, 0, n).scale.set(1, 0.95, 0.9);   /* rund kropp */
+  mesh(new THREE.TorusGeometry(0.31, 0.06, 8, 20), sort, 0, 0.28, 0, n).rotation.x = Math.PI / 2;   /* belte */
+  mesh(avrundetBoks(0.13, 0.11, 0.05, 0.02, 1), gull, 0, 0.28, 0.31, n);
+  mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.4, 8), hvit, 0, 0.42, 0.29, n).rotation.x = 0.1;   /* pelskant foran */
+  /* hode */
+  mesh(new THREE.SphereGeometry(0.26, 18, 14), hud, 0, 0.82, 0, n);
+  oyePar(n, 0, 0.88, 0.21, 0.065, 0.09);
+  mesh(new THREE.SphereGeometry(0.06, 10, 8), fm(0xf2a08a, 0.6), 0, 0.8, 0.26, n);   /* nese */
+  [-1, 1].forEach(sd => mesh(new THREE.SphereGeometry(0.05, 8, 6), fm(0xf7a6a6, 0.8), sd * 0.15, 0.78, 0.2, n));   /* røde kinn */
+  /* skjegg av hvite kuler */
+  [[0, 0.66, 0.18, 0.17], [-0.13, 0.7, 0.15, 0.12], [0.13, 0.7, 0.15, 0.12], [0, 0.55, 0.2, 0.13], [-0.09, 0.59, 0.19, 0.1], [0.09, 0.59, 0.19, 0.1]].forEach(([bx, by, bz, br]) => mesh(new THREE.SphereGeometry(br, 12, 10), hvit, bx, by, bz, n));
+  mesh(new THREE.TorusGeometry(0.06, 0.025, 6, 12, Math.PI), hvit, 0, 0.74, 0.24, n).rotation.z = Math.PI;   /* bart */
+  /* lue med hvit kant og dusk som henger */
+  mesh(new THREE.TorusGeometry(0.25, 0.07, 10, 22), hvit, 0, 0.98, 0, n).rotation.x = Math.PI / 2;
+  const lue = new THREE.Group(); lue.position.set(0, 1.0, 0); lue.rotation.x = -0.35; n.add(lue);
+  mesh(new THREE.ConeGeometry(0.25, 0.5, 18), rod, 0, 0.25, -0.02, lue); mesh(new THREE.SphereGeometry(0.08, 10, 8), hvit, 0, 0.5, -0.02, lue);
+  /* armer med votter */
+  const arm = new THREE.Group(); arm.position.set(0.3, 0.45, 0); n.add(arm);
+  mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.34, 10), rod, 0, 0.17, 0, arm); mesh(new THREE.SphereGeometry(0.09, 10, 8), sort, 0, 0.38, 0, arm);
+  const arm2 = new THREE.Group(); arm2.position.set(-0.3, 0.45, 0); arm2.rotation.z = 0.5; n.add(arm2);
+  mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.34, 10), rod, 0, -0.17, 0, arm2); mesh(new THREE.SphereGeometry(0.09, 10, 8), sort, 0, -0.36, 0, arm2);
+  [-1, 1].forEach(sd => mesh(avrundetBoks(0.14, 0.12, 0.22, 0.05, 2), sort, sd * 0.16, 0.02, 0.06, n));   /* støvler */
+  n.userData.arm = arm; return n;
+}
 var nisseG = null, nisseX = -12, nisseRetn = 1, nisseHopp = 0, nisseRein = null, nisseFigur = null;
 const NISSE_X = [-13, 12];
 function oppdaterNisse(dt, t) {
   const paa = MANED() === 12 && s.nivaa >= D.arr.jul.nivaa && !(s.skinn && s.skinn.valgt === 'jul' && bilKo.fase !== 0);   /* mens sleden er ute, er det de som trekker den */
   if (!paa) { if (nisseG) nisseG.visible = false; return; }
-  if (!nisseG) { nisseG = new THREE.Group(); nisseRein = lagRein(nisseG); nisseFigur = lagNisse(nisseG, 0, 1.38, -0.1); scene.add(nisseG); eierAv(nisseG); klikkbar(nisseG); }
+  if (!nisseG) { nisseG = new THREE.Group(); nisseRein = lagRein(nisseG); nisseFigur = lagNisse(nisseG, 0, 1.3, -0.25); scene.add(nisseG); eierAv(nisseG); klikkbar(nisseG); }
   nisseG.visible = true; const redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!redusert) { nisseX += nisseRetn * dt * 0.9; if (nisseX > NISSE_X[1]) nisseRetn = -1; if (nisseX < NISSE_X[0]) nisseRetn = 1; }
   nisseHopp = Math.max(0, nisseHopp - dt * 1.6);
@@ -1174,7 +1216,7 @@ function lagSlede() {   /* 0.37.0 Julesleden: rød slede med gull, meier og gave
   mesh(new THREE.SphereGeometry(0.45, 12, 10), fm(0x9b6b3c, 0.9), -1.55, 2.25, 0.2, g).scale.set(1, 1.2, 1);   // sekk med gaver
   const sk = skiltTekst('God jul', 1.4); sk.position.set(-0.3, 1.1, 0.92); g.add(sk);
   /* 0.38.0 (Even 20.11): reinsdyret trekker sleden, og julenissen sitter på setet */
-  const rein = lagRein(g, 3.6, 0, 0); rein.rotation.y = Math.PI / 2; const nis = lagNisse(g, -0.9, 1.62, 0); nis.rotation.y = Math.PI / 2;
+  const rein = lagRein(g, 3.6, 0, 0); rein.rotation.y = Math.PI / 2; const nis = lagNisse(g, -0.9, 1.68, 0); nis.rotation.y = Math.PI / 2;
   [0.22, -0.22].forEach(z => { const l = mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.0, 5), fm(0x5a3a22, 0.8), 2.3, 1.25, z, g); l.rotation.z = Math.PI / 2 - 0.08; });
   g.userData.rein = rein;
   return g;

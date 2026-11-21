@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.39.2 – EVN Studio</title>
+<title>Min Bondegård 0.40.0 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -94,7 +94,7 @@
   .knapper { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
   .knapper .knapp { flex:1 1 auto; }
   .ko { display:flex; gap:8px; margin:8px 0 2px; }
-  .kal { display:grid; grid-template-columns:repeat(6, 1fr); gap:6px; margin:10px 0; }   /* 0.39.2 julekalenderen */
+  .kal { display:grid; grid-template-columns:repeat(6, 1fr); gap:6px; margin:10px 0; }   /* 0.38.0 julekalenderen */
   .luke { min-height:48px; border-radius:10px; border:2px solid #c81f2a; background:#fff; font:700 17px system-ui; color:#7a1018; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2px; }
   .luke small { font-size:15px; } .luke.klar { background:#ffd23f; border-color:#b8860b; color:#3a2418; cursor:pointer; animation:lukePuls 1.6s ease-in-out infinite; } .luke.apnet { background:#f3e7d3; border-color:#d8c4a4; color:#8a7560; } .luke:disabled { cursor:default; }
   @keyframes lukePuls { 50% { transform:scale(1.06); } } @media (prefers-reduced-motion: reduce) { .luke.klar { animation:none; } }
@@ -297,7 +297,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.39.2</div>
+    <div class="evn-ver" id="versjon">Versjon 0.40.0</div>
   </div>
 </div>
 
@@ -568,7 +568,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.39.2'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.40.0'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
