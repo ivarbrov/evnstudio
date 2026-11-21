@@ -301,6 +301,12 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
     let fav = 0, alle = 0; for (let i = 0; i < 400; i++) L.nyNabo(x, 'spire').liste.forEach(l => { alle++; if (D.avlinger[l.vare]) fav++; });
     t('Spire ber oftest om avlinger, men ikke bare', fav / alle > 0.6 && fav / alle < 0.98, (fav / alle).toFixed(2));
     let dobbel = false; for (let i = 0; i < 300; i++) { const v = L.nyNabo(x, 'gnist').liste.map(l => l.vare); if (new Set(v).size !== v.length) dobbel = true; } t('Favoritter gir aldri samme vare to ganger', !dobbel); }
+  { const x = L.ny(T0); while (x.nivaa < 3) L.giXP(x, 5, T0); L.arrStart(x, 'bursdag'); x.lager.festhatt = 40; x.bygg.festbord = { ko: [{ vare: 'festhatt', start: T0, slutt: T0 + 60 * S }] };
+    const m0 = x.mynter, xp0 = x.xp, lev0 = x.arr.bursdag.levert, iNov = L.arrRydd(x, 11);
+    t('Til overs: ingenting hentes mens festen er åpen', iNov.antall === 0 && x.lager.festhatt === 40 && x.mynter === m0);
+    const r = L.arrRydd(x, 12);
+    t('Til overs: bilen henter hattene i lager og kø etter festen, til vanlig festpris', r.antall === 41 && r.mynter === 41 * D.pris('festhatt') && x.mynter === m0 + r.mynter && !x.lager.festhatt && x.bygg.festbord.ko.length === 0);
+    t('Til overs: ingen XP og ingen framgang i festen', x.xp === xp0 && x.arr.bursdag.levert === lev0 && L.arrRydd(x, 12).antall === 0); }
   t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
 }
 // 0.37.0 Vinter i Elvedal (Even 18.–20.11)
@@ -336,6 +342,8 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
   t('Ved 250 får du julesleden, og den tas på', k.skinn.eid.jul && k.skinn.valgt === 'jul' && r2.premier.some(x => x.skinn === 'jul'));
   const lagret = L.valider(JSON.parse(JSON.stringify(k)), T0);
   t('Pepperkakene, treet og sleden overlever lagring', lagret.arr.jul.levert === 250 && lagret.skinn.eid.jul && lagret.bygg.juletre.eid && lagret.bygg.gavemaskin.eid);
+  { const y = L.ny(T0); y.nivaa = 5; L.arrStart(y, 'jul'); y.lager = { gavepapir: 3, julegave: 2, brod: 1 }; y.bygg.gavepapirmaskin.ko = [{ vare: 'gavepapir', start: T0, slutt: T0 + 45 * S }]; const m0 = y.mynter;
+    t('Etter desember henter bilen gavepapir og julegaver som er til overs, også i køen', L.arrRydd(y, 12).antall === 0 && (() => { const r = L.arrRydd(y, 1); return r.antall === 7 && r.varer.gavepapir === 5 && r.varer.julegave === 2 && !y.lager.gavepapir && !y.lager.julegave && y.lager.brod === 1 && y.bygg.gavepapirmaskin.ko.length === 0 && y.mynter === m0 + 5 * D.pris('gavepapir') + 2 * D.pris('julegave'); })()); }
   L.settManed(null);
   t('Ivar må godkjenne tallene: 10, 40, 100, 250 pepperkaker, maskinene 150 og 250, gaven 18 mynter', J.trinn.map(x => x.n).join() === '10,40,100,250' && D.bygg.gavepapirmaskin.pris === 150 && D.bygg.gavemaskin.pris === 250 && D.pris('julegave') === 18);
 }

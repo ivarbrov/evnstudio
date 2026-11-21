@@ -509,6 +509,18 @@
     else { s.lager[L2[0]] = Math.min(9999, (s.lager[L2[0]] || 0) + L2[1]); r.vare = L2[0]; }   // varer i lageret, også om låven er full
     return r;
   }
+  /* 0.21.2 (QA 18.11, Even 18.11): festvarer som er til overs når festen er slutt, hentes av bilen. Spilleren får samme pris som i festen,
+     men ingen XP og ingen framgang i festen. Uferdige og ferdige varer i køen på festbyggene regnes med. Da sperrer de ikke låven resten av året.
+     0.39.0: alle varer og bygg som hører til festen (Vinter i Elvedal har gavepapir og julegaver, og to maskiner) */
+  function arrRydd(s, maned) {
+    var antall = 0, mynter = 0, varer = {};
+    for (var id in D.arr) { var A = D.arr[id]; if (A.maned === maned) continue;
+      for (var v in D.varer) { if (D.varer[v].arr !== id) continue; var n = s.lager[v] || 0; if (n > 0) { delete s.lager[v]; varer[v] = (varer[v] || 0) + n; } }
+      for (var b in D.bygg) { var bg = s.bygg[b]; if (D.bygg[b].arr !== id || !bg || !bg.ko || !bg.ko.length) continue;
+        bg.ko.forEach(function (j) { if (j && D.oppskrifter[j.vare]) varer[j.vare] = (varer[j.vare] || 0) + D.oppskrifter[j.vare].ut; }); bg.ko = []; } }
+    for (var w in varer) { antall += varer[w]; mynter += D.pris(w) * varer[w]; }
+    s.mynter += mynter; return { antall: antall, mynter: mynter, varer: varer };
+  }
   function velgSkinn(s, id) { if (id && !s.skinn.eid[id]) return false; s.skinn.valgt = id || null; return true; }
 
   function mk(v, n) { var o = {}; o[v] = n; return o; }
@@ -524,7 +536,7 @@
     nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris, nyNabo: nyNabo, selgTilNabo: selgTilNabo, naboLiker: naboLiker, nesteNabo: nesteNabo,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
     nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
-    kanKaste: kanKaste, kast: kast, fiskKlar: fiskKlar, halInn: halInn, kanKjopePynt: kanKjopePynt, kjopPynt: kjopPynt, selgPynt: selgPynt, maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, settDag: settDag, kanAapneLuke: kanAapneLuke, aapneLuke: aapneLuke, pakkbar: pakkbar, pakkbare: pakkbare, arrTrinn: arrTrinn, selvStart: selvStart, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
+    kanKaste: kanKaste, kast: kast, fiskKlar: fiskKlar, halInn: halInn, kanKjopePynt: kanKjopePynt, kjopPynt: kjopPynt, selgPynt: selgPynt, maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, settDag: settDag, kanAapneLuke: kanAapneLuke, aapneLuke: aapneLuke, pakkbar: pakkbar, pakkbare: pakkbare, arrTrinn: arrTrinn, selvStart: selvStart, arrHar: arrHar, arrLever: arrLever, arrRydd: arrRydd, velgSkinn: velgSkinn,
     giDagsgave: giDagsgave, bonusAktiv: bonusAktiv, leverGaver: leverGaver, klareGaver: klareGaver, aapneGave: aapneGave
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;

@@ -2104,11 +2104,16 @@ function borteTekst() {
 }
 $('startBtn').addEventListener('click', () => {
   if (startet) return;
-  startet = true; setTimeout(ecoinAvstem, 1500); $('start').classList.remove('vis'); $('last').style.display = 'none'; $('hud').hidden = false; $('hoyre').hidden = false; layoutHud(); setTimeout(layoutHud, 400);
+  startet = true; setTimeout(ecoinAvstem, 1500);
+  const ryddet = L.arrRydd(s, MANED());   /* 0.21.2. 0.21.3 (QA 18.11): ryddes før «Mens du var borte» telles. Meldingen venter til spillet ikke er pauset */
+   $('start').classList.remove('vis'); $('last').style.display = 'none'; $('hud').hidden = false; $('hoyre').hidden = false; layoutHud(); setTimeout(layoutHud, 400);
   try { document.dispatchEvent(new Event('evn-start')); } catch (e) {}
   lagre(); synk(true);
   if (forste.reddet) melding('Den gamle lagringen kunne ikke leses. Den er tatt vare på, og du starter en ny gård.', 5000);
-  else { const b = borteTekst(); if (b) melding(b, 5000); }
+  else { const b = borteTekst();
+    if (ryddet.antall) { const vis = () => { if (pauset) { setTimeout(vis, 500); return; }   /* venter til pausekortet er borte, og til revens tips har fått plassen sin */
+        melding(`🚚 Festen er over. Bilen hentet ${Object.keys(ryddet.varer).map(v => ryddet.varer[v] + ' ' + (ryddet.varer[v] === 1 ? navn(v).toLowerCase() : (D.varer[v].flertall || navn(v).toLowerCase() + 'er'))).join(' og ')} som var til overs. Du fikk ${ryddet.mynter} mynter.`, 6000); if (b) setTimeout(() => melding(b, 5000), 6300); }; setTimeout(vis, 1500); }
+    else if (b) melding(b, 5000); }
   if (s.oppl.steg < OPPL.length) setTimeout(() => { visOppl(); if (rev && s.oppl.steg === 0) hilsRev(false); }, 600);
   try { renderer.domElement.focus({preventScroll: true}); } catch (e) {}
 });

@@ -57,7 +57,7 @@
       festhatt:   { navn: 'Festhatt', ikon: '🥳', arr: 'bursdag' },   // 0.16.0: lages til Bursdagsfesten og sendes med varebilen. Kan ikke selges eller bestilles
       bursdagskake: { navn: 'Bursdagskake', ikon: '🎂' },
       /* 0.37.0 Vinter i Elvedal (Even 18.–20.11). Gavepapir og julegaver kan ikke selges eller bestilles. Alle tall er forslag til en voksen har godkjent dem */
-      gavepapir:  { navn: 'Gavepapir', ikon: '📜', arr: 'jul' },
+      gavepapir:  { navn: 'Gavepapir', ikon: '📜', arr: 'jul', flertall: 'gavepapir' },
       julegave:   { navn: 'Julegave',  ikon: '🎁', arr: 'jul', verdi: 18, flertall: 'julegaver' },
       pepperkakehus: { navn: 'Pepperkakehus', ikon: '🏠' }
     },
