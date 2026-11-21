@@ -754,7 +754,7 @@ function plasserAlt() {
   for (const b in s.bygg) { const sb = s.bygg[b]; if (sb && !sb.eid && sb.x !== null && FOT[b] && overlapp(fotRekt({fot: FOT[b]}, sb.x, sb.z, sb.r), fotRekt(si, si.x, si.z, si.r))) { sb.x = null; sb.z = null; if (ting.has(b)) { const t = ting.get(b); t.plassert = false; } } }   /* 0.15.11 (QA 15.11): en byggeplass som står oppå siloen, får ny plass */
   for (const b of I_SPILLET.bygg) { const sb = s.bygg[b]; if (!sb) continue; let t = ting.get(b);
     if (D.bygg[b].arr && !treSynlig(b)) { if (t) { t.gruppe.visible = false; t.plassert = false; } continue; }   /* 0.39.2 (QA 21.11): festens bygg står bare i festmåneden */
-    if (t && !t.plassert && sb.x !== null && [...ting.values()].some(u => u !== t && u.plassert && u.fot && overlapp(fotRekt(t, sb.x, sb.z, sb.r), fotRekt(u, u.x, u.z, u.r)))) { sb.x = null; sb.z = null; }   /* står noe der nå, får bygget ny plass */   /* 0.37.0: juletreet står i desember, og hele året når det er ditt */
+    if (D.bygg[b].arr && (!t || !t.plassert) && sb.x !== null && festPlassOpptatt(b, sb)) { sb.x = null; sb.z = null; if (t) t.plassert = false; }   /* 0.39.3 (QA 21.11): står noe der nå, også etter omlasting, får bygget ny plass */   /* 0.37.0: juletreet står i desember, og hele året når det er ditt */
     if (!t && sb.x === null && !finnLedigPlass({fot: FOT[b], r: 0}, ...STANDARD[b])) continue;   /* 0.9.8: ingen ledig plass ennå. Byggemenyen foreslår å kjøpe Enga */
     const modell = sb.eid ? 'bygd' + (D.bygg[b].tre ? treTrinn() + (treStjerne() ? '*' : '') : '') + (D.bygg[b].kal ? s.kal.apnet.length : '') : 'plass';
     if (t && t.modell !== modell) { scene.remove(t.gruppe); const i = klikkbare.indexOf(t.gruppe); if (i >= 0) klikkbare.splice(i, 1); ting.delete(b); t = null; }
@@ -1113,6 +1113,13 @@ function lagFestbord() {   /* et langbord med duk, festhatter, flagg og en ballo
 var vinterVist = null;
 function treTrinn() { return s && s.arr && s.arr.jul ? Math.min(3, L.arrTrinn(s, 'jul')) : 0; }   // 0 bart tre, 1 kuler, 2 lys, 3 gaver under. 0.38.0: stjernen kommer fra luke 24
 const treStjerne = () => !!(s && s.kal && s.kal.stjerne);
+function festPlassOpptatt(b, sb) {   /* 0.39.3: ser både på det som står på gården nå og på lagrede plasser for bygg som ikke er plassert ennå */
+  const meg = fotRekt({fot: FOT[b]}, sb.x, sb.z, sb.r);
+  for (const u of ting.values()) if (u.id !== b && u.plassert && u.fot && overlapp(meg, fotRekt(u, u.x, u.z, u.r))) return true;
+  for (const b2 in s.bygg) { const s2 = s.bygg[b2]; if (b2 === b || !s2 || s2.x === null || !FOT[b2] || (D.bygg[b2] && D.bygg[b2].arr && !treSynlig(b2))) continue;
+    if (overlapp(meg, fotRekt({fot: FOT[b2]}, s2.x, s2.z, s2.r))) return true; }
+  for (const f of s.akre) if (f.x !== null && overlapp(meg, [f.x - STR / 2, f.x + STR / 2, f.z - STR / 2, f.z + STR / 2])) return true;
+  return false; }
 function treSynlig(b) { const a = D.bygg[b].arr; return arrNaa === a || (!!D.bygg[b].tre && L.arrHar(s, a, 'tre')); }   /* 0.38.0: julekalenderen står bare i desember. 0.39.2 (QA 21.11): det gjør festmaskinene også */
 function synkVinterManed() { const paa = MANED() === 12; if (paa === vinterVist || !window.mbVinter) return; vinterVist = paa; window.mbVinter(paa); synkBrygge(); }   /* snø i desember. Bare utseende */
 function gaveBoks(w, c, band, x, y, z, g, r = 0) { const b = new THREE.Group(); b.position.set(x, y, z); b.rotation.y = r; g.add(b);
@@ -1472,8 +1479,8 @@ function oppdaterHud() {
   if (visteMynter !== null && visteMynter !== s.mynter) { const p = $('pMynter'); p.classList.remove('bump'); void p.offsetWidth; p.classList.add('bump'); }
   visteMynter = s.mynter; $('mynter').textContent = s.mynter;
 }
-var meldingVent = null;
-function melding(tekst, ms = 2600) { if (pauset) { meldingVent = [tekst, ms]; return; }   /* 0.39.2 (QA 21.11): meldinger venter til pausen er over */
+var meldingVent = [];
+function melding(tekst, ms = 2600) { if (pauset) { meldingVent.push([tekst, ms]); return; }   /* 0.39.2 (QA 21.11): meldinger venter til pausen er over */
   const m = $('melding'); m.textContent = tekst; const rt = $('revTips'), rr = rt ? rt.getBoundingClientRect() : null; m.style.top = rr && rr.height > 0 && rr.top < innerHeight / 2 ? Math.round(rr.bottom + 6) + 'px' : hudBunn ? hudBunn + 'px' : '';   /* 0.8.15: meldingen legger seg under revens tips, ikke oppå */ m.classList.add('vis'); clearTimeout(melding.t); melding.t = setTimeout(() => m.classList.remove('vis'), ms); }
 const _p = new THREE.Vector3();
 function flyt(tekst, pos, forsink = 0) {
@@ -2138,8 +2145,8 @@ window.__evnP = EVNPause({
   kanPause: () => startet && !$('feil').classList.contains('vis'),
   // Aktiv spilletid (ST2): ikke i pause, ikke med lageret eller markedsbua åpen, ikke før spillet er startet
   aktiv: () => startet && !pauset && !dialogApen(),
-  pause: () => { { const m = $('melding'); if (m.classList.contains('vis')) { meldingVent = [m.textContent, 3500]; m.classList.remove('vis'); clearTimeout(melding.t); } } pauset = true; if (draModus) { const m = draModus; draModus = null; draIkon(null); undertrykkTrykk = true; if (m.n) gi(m.type === 'host' ? {xp: m.xp, nye: m.nye} : null, midtAv(ting.get(s.akre[[...m.ferdige][0]].id), 2.2)); } lagre(); if (flytt) sluttFlytt(false); dialoger.forEach(id => { if ($(id).classList.contains('vis')) { $(id).classList.remove('vis'); if (window.EVNPauseInert) EVNPauseInert(null); } }); lukkHandling(); },   /* QA 9.11 (T2): pausen legger seg ikke over en åpen dialog */
-  fortsett: () => { pauset = false; undertrykkTrykk = false; L.normaliserTid(s, naa()); synk(true); if (meldingVent) { const [mt, mm] = meldingVent; meldingVent = null; setTimeout(() => melding(mt, mm), 300); } },
+  pause: () => { { const m = $('melding'); if (m.classList.contains('vis')) { meldingVent.push([m.textContent, 3500]); m.classList.remove('vis'); clearTimeout(melding.t); } } pauset = true; if (draModus) { const m = draModus; draModus = null; draIkon(null); undertrykkTrykk = true; if (m.n) gi(m.type === 'host' ? {xp: m.xp, nye: m.nye} : null, midtAv(ting.get(s.akre[[...m.ferdige][0]].id), 2.2)); } lagre(); if (flytt) sluttFlytt(false); dialoger.forEach(id => { if ($(id).classList.contains('vis')) { $(id).classList.remove('vis'); if (window.EVNPauseInert) EVNPauseInert(null); } }); lukkHandling(); },   /* QA 9.11 (T2): pausen legger seg ikke over en åpen dialog */
+  fortsett: () => { pauset = false; undertrykkTrykk = false; L.normaliserTid(s, naa()); synk(true); if (meldingVent.length) { const ko = meldingVent.slice(-3); meldingVent = []; let ms = 300; ko.forEach(([mt, mm]) => { setTimeout(() => { if (!pauset) melding(mt, Math.min(mm, 3500)); else meldingVent.push([mt, mm]); }, ms); ms += Math.min(mm, 3500) + 200; }); } },   /* 0.39.3: alle meldingene vises etter hverandre, høyst de tre siste */
   lagre,
   styring: () => document.documentElement.classList.contains('touch')
     ? '👆 Trykk på en åker, et dyr eller et hus<br>✋ Dra med én finger for å flytte deg<br>🤏 Knip med to fingre for å zoome<br>📦 Lageret: knappen øverst til høyre<br>🦊 Trykk på Rebus for et tips'

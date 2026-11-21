@@ -49,7 +49,8 @@ Evens gårdsspill. Hay Day er kvalitetsreferanse for spillopplevelsen, men innho
 - **0.9.1** (ikke publisert): Rettinger etter QA av 0.9.0. 📋-knappen er skjult før nivå 4. Bestillingene er lesbare på smale skjermer. Meldingen etter levering vises over dialogen. To raske trykk sender ikke to bestillinger. Fokus går til neste «Send». Tilfeldige bestillinger regnes med heltall (`Math.imul`). Med redusert bevegelse kjører ikke lastebilen over skjermen.
 - **0.9.2** (ikke publisert): Lastebilen kjører saktere (høyst 8–9 m/s). Etter ett trykk på «Plant» står kortet klart på nærmeste tomme åker, så det går fort å så to sorter om hverandre (Ivar 11.11).
 - **0.9.3** (ikke publisert): Byggemenyen sier «Kommer i neste versjon av spillet» for fjøs og grisebinge når nivået er nådd, i stedet for lås og nivå.
-- **0.39.2** (foreslått publisert): Rettet etter QA av 0.39.1 (`qa/rapporter/2026-11-21-min-bondegard-1f38a3a.md`), etter ønske fra Ivar 21.11:
+- **0.39.3** (foreslått publisert): Rettet etter QA av 0.39.2 (`qa/rapporter/2026-11-21-min-bondegard-40ec338.md`). Når et festbygg kommer tilbake i festmåneden, sjekkes plassen også etter omlasting, mot lagrede plasser for andre bygg og mot åkrene. Står noe der, får festbygget en ny ledig plass. Alle meldinger som kommer under pause, vises etter hverandre når spillet fortsetter (høyst de tre siste).
+- **0.39.2** (ikke publisert): Rettet etter QA av 0.39.1 (`qa/rapporter/2026-11-21-min-bondegard-1f38a3a.md`), etter ønske fra Ivar 21.11:
   - Festens bygg (Festbordet, Gavepapirmaskinen og Gavemaskinen) står bare på gården i festmåneden. Står noe der når festen kommer igjen, får bygget en ny ledig plass.
   - Bygg over maksnivået (geitefjøset, nivå 26) vises ikke i byggemenyen.
   - Meldinger som kommer eller vises mens spillet er pauset, vises når pausen er over.
