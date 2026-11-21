@@ -6,6 +6,13 @@ const L = window.MBLogikk, D = window.MB_DATA;
 const SPILLVERSJON = window.MB_VERSJON;
 const TESTMODUS = new URLSearchParams(location.search).has('test');
 if (TESTMODUS) document.body.classList.add('test');
+/* 0.18.0: admin, se nederst i fila */
+/* 0.21.0 (Even 17.11, QA 17.11): admin finnes bare i den private forhåndsvisningen (MB_ADMIN) og på utviklerens egen maskin. Adressen ?test&admin virker ikke på evnstudio.no */
+const ADMIN = !!window.MB_ADMIN || (TESTMODUS && new URLSearchParams(location.search).has('admin') && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname));
+if (ADMIN) { D.dyr.geit.nivaa = D.oppskrifter.geitefor.nivaa = D.bygg.geitefjos.nivaa = D.maksNivaa; }   /* 0.32.0 (Even 18.11): geitene hører til nivå 26, men admin har dem i testversjonen mens nivåene bygges */
+if (ADMIN) { window.MB_ZOOM_MAKS = 400; camera.far = 1200; camera.updateProjectionMatrix(); }   /* 0.27.1 (Even 18.11): admin kan zoome langt ut */
+const admLager = () => { try { return JSON.parse(localStorage.getItem('mb-admin') || '{}'); } catch (e) { return {}; } };
+const adm = {gratis: false, x5: false, forrige: null, regn: [], biler: [], regnT: 0};
 const LAGRING = TESTMODUS ? 'evn-min-bondegard-test' : 'evn-min-bondegard-v1';
 const $ = id => document.getElementById(id);
 const naa = () => Date.now();
@@ -15,7 +22,7 @@ if (matchMedia('(pointer:coarse)').matches) document.documentElement.classList.a
 addEventListener('pointerdown', e => document.documentElement.classList.toggle('touch', e.pointerType === 'touch'), {passive: true, capture: true});
 
 // Det som er laget i denne versjonen. Resten av nivå 1–10 ligger i data.js og kommer i fase 2–4.
-const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot'], bygg: ['forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken', 'grisebinge'], dyr: ['hone', 'ku', 'gris'], omrader: ['enga', 'skogkanten']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
+const I_SPILLET = {avlinger: ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot', 'gresskar'], bygg: ['julekalender', 'forkvern', 'bakeri', 'meieri', 'fjos', 'sukkerverk', 'popkorn', 'kjokken', 'grisebinge', 'paibakeri', 'sauefjos', 'vevstol', 'geitefjos', 'epletre', 'bikube', 'festbord', 'gavepapirmaskin', 'gavemaskin', 'juletre'], dyr: ['hone', 'ku', 'gris', 'sau', 'geit'], omrader: ['enga', 'skogkanten', 'jordet', 'ostjordet', 'bakjordet', 'elvebredden']};   /* 0.9.8: meieri, fjøs og kyr (Ivar 12.11) */
 
 /* ======================= Lagring (F2, F3) ======================= */
 let s = null, lagringFeilet = false;
@@ -119,6 +126,12 @@ function lagAkerProto() {
       for (let b = 0; b < 6; b++) { const a = b / 6 * 6.28 + k; d.push({geo: toppG, m: M4(x, 0.3, z, Math.sin(a) * 0.45, 0, Math.cos(a) * 0.45, 1, hh, 1), farge: b % 2 ? 0x5cb346 : 0x4aa23a}); }
       if (moden) d.push({geo: rotG, m: M4(x, 0.3, z), farge: 0xf08a24}); });
     PROTO[moden ? 'gulrot3' : 'gulrot2'] = samle(d); });
+  // gresskar (0.23.0): ranker med store blader langs bakken. Modne har store, oransje gresskar
+  const gbladG = new THREE.CircleGeometry(0.2, 7); gbladG.rotateX(-Math.PI / 2); const gkG = new THREE.SphereGeometry(0.2, 10, 8); gkG.scale(1, 0.78, 1); const stilkG = new THREE.CylinderGeometry(0.025, 0.035, 0.12, 5);
+  [false, true].forEach(moden => { const d = []; for (let r = 0; r < 3; r++) for (let k = 0; k < 3; k++) { const px = -STR / 2 + 0.6 + k * 0.92 + (hash(r, k, 11) - 0.5) * 0.2, pz = -STR / 2 + 0.6 + r * 0.92 + (hash(k, r, 12) - 0.5) * 0.2;
+      for (let bl = 0; bl < 5; bl++) { const a = bl / 5 * 6.28 + k + r, rr = 0.22 + hash(bl, r, k) * 0.16; d.push({geo: gbladG, m: M4(px + Math.cos(a) * rr, 0.33 + hash(bl, k, r) * 0.08, pz + Math.sin(a) * rr, 0.25, a, 0, moden ? 1 : 0.75, 1, moden ? 1 : 0.75), farge: bl % 2 ? 0x4f9e3c : 0x62b148}); }
+      const st = moden ? 1 + hash(r, k, 13) * 0.35 : 0.42; d.push({geo: gkG, m: M4(px, 0.28 + 0.15 * st, pz, 0, hash(k, r, 14) * 3, 0, st, st, st), farge: moden ? (hash(r, k, 15) > 0.5 ? 0xf08a24 : 0xe9781c) : 0x8fbf4a}, {geo: stilkG, m: M4(px, 0.28 + 0.33 * st, pz), farge: 0x5a7a2e}); }
+    PROTO[moden ? 'gresskar3' : 'gresskar2'] = samle(d); });
 }
 function lagAkerGruppe(f) {
   const g = new THREE.Group(); scene.add(g);
@@ -264,23 +277,58 @@ function lagFjos() {   /* 0.9.8: lite rødt fjøs bak og et inngjerdet beite for
   const sk = skiltTekst('Fjøs', 1.3); sk.position.set(0, 2.45, zp + 0.05); g.add(sk);
   bake(g); return g;
 }
-function lagGrisebinge() {   /* 0.13.0: lite grisehus med skråtak bak, og en inngjerdet binge med gjørmepytt og trau foran (ca. 6 × 7 m) */
+function lagGrisebinge(sau) {   /* 0.23.0: sauefjøset bruker samme form, med gress i stedet for gjørme, lyse vegger og høy i krybba */   /* 0.13.0: lite grisehus med skråtak bak, og en inngjerdet binge med gjørmepytt og trau foran (ca. 6 × 7 m) */
   const g = new THREE.Group(), W = 4.2, Dd = 1.9, zf = -2.55;
-  const bunn = new THREE.PlaneGeometry(5.8, 5.0); bunn.rotateX(-Math.PI / 2); mesh(bunn, fm(0xa98b5e, 1), 0, 0.03, 0.95, g, false).receiveShadow = true;
-  const gj = new THREE.CircleGeometry(1.0, 22); gj.rotateX(-Math.PI / 2); mesh(gj, std({color: SRGB(0x6b4a2e), roughness: 0.25}), 1.0, 0.045, 1.7, g, false).scale.set(1.3, 1, 0.85);   /* gjørmepytt */
+  const bunn = new THREE.PlaneGeometry(5.8, 5.0); bunn.rotateX(-Math.PI / 2); mesh(bunn, fm(sau ? 0x8fcf5e : 0xa98b5e, 1), 0, 0.03, 0.95, g, false).receiveShadow = true;
+  if (!sau) { const gj = new THREE.CircleGeometry(1.0, 22); gj.rotateX(-Math.PI / 2); mesh(gj, std({color: SRGB(0x6b4a2e), roughness: 0.25}), 1.0, 0.045, 1.7, g, false).scale.set(1.3, 1, 0.85); }   /* gjørmepytt */
   const hs = new THREE.Group(); hs.position.z = zf; g.add(hs);
-  mesh(teksturUV(new THREE.BoxGeometry(W, 1.6, Dd), W / 2, 0.8), MAT.brunPlank, 0, 0.8, 0, hs);
-  const tk = mesh(teksturUV(new THREE.BoxGeometry(W + 0.4, 0.14, Dd + 0.6), 2, 1), MAT.tak2, 0, 1.85, 0.1, hs); tk.rotation.x = 0.28;
+  mesh(teksturUV(new THREE.BoxGeometry(W, 1.6, Dd), W / 2, 0.8), sau ? MAT.lysPlank : MAT.brunPlank, 0, 0.8, 0, hs);
+  const tk = mesh(teksturUV(new THREE.BoxGeometry(W + 0.4, 0.14, Dd + 0.6), 2, 1), sau ? MAT.tak : MAT.tak2, 0, 1.85, 0.1, hs); tk.rotation.x = 0.28;
   mesh(new THREE.BoxGeometry(1.0, 1.0, 0.06), fm(0x3a2a1c, 0.9), -0.9, 0.5, Dd / 2 + 0.01, hs);   /* døråpning */
   [-W / 2 + 0.08, W / 2 - 0.08].forEach(x => mesh(avrundetBoks(0.14, 1.6, 0.14, 0.03, 1), MAT.hvitTrim, x, 0.8, Dd / 2 + 0.03, hs));
-  mesh(teksturUV(avrundetBoks(1.8, 0.35, 0.45, 0.05, 1), 1, 0.3), MAT.brunPlank, 0, 0.2, -1.1, g); mesh(new THREE.BoxGeometry(1.6, 0.06, 0.32), fm(0xd99a3e, 0.9), 0, 0.38, -1.1, g);   /* trau med for */
+  mesh(teksturUV(avrundetBoks(1.8, 0.35, 0.45, 0.05, 1), 1, 0.3), MAT.brunPlank, 0, 0.2, -1.1, g); mesh(new THREE.BoxGeometry(1.6, 0.06, 0.32), fm(sau ? 0x9fbf45 : 0xd99a3e, 0.9), 0, 0.38, -1.1, g);   /* trau med for */
+  if (sau) [[-1.7, 2.4], [1.9, 0.3]].forEach(([x, z]) => mesh(new THREE.SphereGeometry(0.34, 10, 8), fm(0xe6cf7a, 0.95), x, 0.2, z, g).scale.set(1.2, 0.7, 1));   /* høyballer */
   const stolper = [], lekter = [], [x0, x1, z0, z1] = [-2.9, 2.9, -1.6, 3.5];
   const side = (ax, az, bx, bz) => { const L = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(L / 1.4)), rot = Math.atan2(-(bz - az), bx - ax);
     for (let i = 0; i <= n; i++) { const t = i / n; stolper.push({geo: avrundetBoks(0.15, 0.85, 0.15, 0.04, 1), m: M4(ax + (bx - ax) * t, 0.42, az + (bz - az) * t)}); }
     for (let i = 0; i < n; i++) { const t = (i + 0.5) / n; [0.3, 0.62].forEach(y => lekter.push({geo: avrundetBoks(L / n + 0.1, 0.1, 0.06, 0.02, 1), m: M4(ax + (bx - ax) * t, y, az + (bz - az) * t, 0, rot, 0)})); } };
   side(x0, z0, x0, z1); side(x0, z1, x1, z1); side(x1, z1, x1, z0); side(x0, z0, -W / 2, z0); side(W / 2, z0, x1, z0);
   mesh(samle(stolper.map(d => ({geo: teksturUV(d.geo, 0.3, 1), m: d.m}))), MAT.brunPlank, 0, 0, 0, g); mesh(samle(lekter.map(d => ({geo: teksturUV(d.geo, 1, 0.2), m: d.m}))), MAT.lysPlank, 0, 0, 0, g);
-  const sk = skiltTekst('Griser', 1.2); sk.position.set(0.9, 1.25, zf + Dd / 2 + 0.05); g.add(sk);
+  const sk = skiltTekst(sau === 'geit' ? 'Geiter' : sau ? 'Sauer' : 'Griser', 1.2); sk.position.set(0.9, 1.25, zf + Dd / 2 + 0.05); g.add(sk);
+  bake(g); return g;
+}
+function lagPaibakeri() {   /* 0.23.0: lyst bakeri med blått tak og en stor pai over døra. Forslag, Even bestemmer utseendet */
+  const g = new THREE.Group();
+  mesh(teksturUV(new THREE.BoxGeometry(3.2, 2.0, 2.6), 1.4, 0.9), MAT.lysPlank, 0, 1.1, 0, g);
+  mesh(avrundetBoks(3.4, 0.2, 2.8, 0.05, 1), fm(0xb9b0a2, 0.9), 0, 0.1, 0, g);
+  tak(g, 3.4, 2.6, 2.1, 1.15, MAT.tak);
+  [[-1.6], [1.6]].forEach(([x]) => mesh(avrundetBoks(0.12, 2.0, 0.12, 0.02, 1), MAT.hvitTrim, x, 1.1, 1.33, g));
+  mesh(teksturUV(new THREE.BoxGeometry(0.8, 1.35, 0.08), 0.35, 0.5), MAT.brunPlank, 0.75, 0.8, 1.32, g);
+  mesh(new THREE.BoxGeometry(0.9, 0.7, 0.06), MAT.glass, -0.7, 1.25, 1.32, g);
+  [[1.0, 0.1, -0.7, 1.62], [1.0, 0.1, -0.7, 0.88], [0.1, 0.8, -1.18, 1.25], [0.1, 0.8, -0.22, 1.25]].forEach(([w, h, x, y]) => mesh(new THREE.BoxGeometry(w, h, 0.1), MAT.hvitTrim, x, y, 1.36, g));
+  mesh(avrundetBoks(0.5, 1.3, 0.5, 0.05, 1), fm(0xb5553a, 0.9), -0.9, 3.0, -0.4, g); mesh(avrundetBoks(0.62, 0.14, 0.62, 0.04, 1), fm(0x8f3f2b, 0.9), -0.9, 3.68, -0.4, g);
+  /* den store paien: form, fyll og flettet lokk */
+  const pg = new THREE.Group(); pg.position.set(0, 2.75, 1.45); pg.rotation.x = 1.15; g.add(pg);
+  mesh(new THREE.CylinderGeometry(0.62, 0.5, 0.22, 20), fm(0xd9a25a, 0.85), 0, 0, 0, pg); mesh(new THREE.CylinderGeometry(0.56, 0.56, 0.06, 20), fm(0xf08a24, 0.7), 0, 0.12, 0, pg);
+  mesh(new THREE.TorusGeometry(0.6, 0.07, 8, 22), fm(0xe8b76a, 0.85), 0, 0.12, 0, pg).rotation.x = Math.PI / 2;
+  [-0.3, 0, 0.3].forEach(x => { mesh(new THREE.BoxGeometry(0.09, 0.04, 1.05), fm(0xe8b76a, 0.85), x, 0.16, 0, pg); mesh(new THREE.BoxGeometry(1.05, 0.04, 0.09), fm(0xe8b76a, 0.85), 0, 0.17, x, pg); });
+  const sk = skiltTekst('Pai', 1.1); sk.position.set(0, 1.9, 1.34); g.add(sk);
+  bake(g); return g;
+}
+function lagVevstol() {   /* 0.24.0: åpent skur med en vevstol, et halvferdig teppe og garnnøster. Forslag, Even bestemmer utseendet */
+  const g = new THREE.Group();
+  mesh(avrundetBoks(3.3, 0.16, 3.0, 0.05, 1), fm(0xb9b0a2, 0.9), 0, 0.08, 0, g);
+  [[-1.5, -1.3], [1.5, -1.3], [-1.5, 1.3], [1.5, 1.3]].forEach(([x, z]) => mesh(avrundetBoks(0.16, 2.3, 0.16, 0.03, 1), MAT.brunPlank, x, 1.3, z, g));
+  mesh(teksturUV(new THREE.BoxGeometry(3.2, 2.2, 0.1), 1.4, 1), MAT.lysPlank, 0, 1.26, -1.35, g);
+  tak(g, 3.5, 3.1, 2.4, 0.95, MAT.tak2);
+  /* selve veven: to stolper, bom oppe og nede, renning og et stripete teppe */
+  [-0.75, 0.75].forEach(x => mesh(avrundetBoks(0.12, 1.7, 0.12, 0.02, 1), MAT.brunPlank, x, 1.0, 0.2, g));
+  mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.7, 10), MAT.brunPlank, 0, 1.8, 0.2, g).rotation.z = Math.PI / 2; mesh(new THREE.CylinderGeometry(0.09, 0.09, 1.7, 10), MAT.brunPlank, 0, 0.45, 0.2, g).rotation.z = Math.PI / 2;
+  for (let i = 0; i < 9; i++) mesh(new THREE.BoxGeometry(0.02, 1.3, 0.02), fm(0xf3eee3, 0.8), -0.6 + i * 0.15, 1.12, 0.2, g);
+  [0xe2493a, 0xf2c230, 0x3f8fd6, 0xe2493a, 0x4cb22c].forEach((f, i) => mesh(new THREE.BoxGeometry(1.34, 0.13, 0.05), fm(f, 0.85), 0, 0.56 + i * 0.13, 0.23, g));
+  [[1.05, 0.34, 0.9, 0xe2493a, 0.2], [0.75, 0.3, 1.1, 0x3f8fd6, 0.16], [1.2, 0.3, 0.55, 0xf2c230, 0.15]].forEach(([x, y, z, f, r]) => mesh(new THREE.SphereGeometry(r, 12, 10), fm(f, 0.9), x, y, z, g));
+  mesh(avrundetBoks(0.9, 0.12, 0.4, 0.03, 1), MAT.brunPlank, 0, 0.5, 0.95, g); [-0.35, 0.35].forEach(x => mesh(avrundetBoks(0.08, 0.4, 0.3, 0.02, 1), MAT.brunPlank, x, 0.3, 0.95, g));   /* krakk */
+  const sk = skiltTekst('Vevstol', 1.5); sk.position.set(0, 2.75, 1.56); g.add(sk);
   bake(g); return g;
 }
 function lagSilo() {
@@ -316,18 +364,22 @@ function lagTavle() {
   return g;
 }
 let bil = null; const bilKo = {n: 0, fase: 0, t: 0}, BIL_Z = VEI_Z + 1.0;   /* 0.15.5: litt lenger ut, så varebilen ikke kjører gjennom bilen til Blomst */   /* lastebilen holder ytre felt, kundene kjører innerst mot gården */
-function lagLastebil() {
-  const g = new THREE.Group(), rod = fm(0xd9463a, 0.5), lys = fm(0xfff6e3, 0.6), mork = fm(0x3a3a40, 0.7);
+function lagLastebil(skinn) {
+  if (skinn === 'jul') { const g = lagSlede(); g.userData.skinn = 'jul'; g.visible = false; scene.add(g); return g; }   /* 0.37.0 Julesleden */
+  const fest = skinn === 'bursdag', g = new THREE.Group(), rod = fm(fest ? 0x4caf50 : 0xd9463a, 0.5), lys = fm(0xfff6e3, 0.6), mork = fm(0x3a3a40, 0.7);
   mesh(avrundetBoks(1.5, 1.35, 1.7, 0.2, 3), rod, 1.35, 1.25, 0, g);                       // førerhus
   mesh(avrundetBoks(0.9, 0.7, 1.75, 0.15, 3), rod, 2.25, 0.9, 0, g);                        // panser
   mesh(new THREE.BoxGeometry(0.06, 0.6, 1.3), fm(0xbfe3f2, 0.2), 2.11, 1.5, 0, g);          // frontrute
   mesh(avrundetBoks(3.0, 0.2, 1.9, 0.05, 1), MAT.brunPlank, -0.9, 0.75, 0, g);              // plan
   [[-0.9, 1.15, 0.92, 3.0, 0.08], [-0.9, 1.15, -0.92, 3.0, 0.08], [-2.38, 1.15, 0, 0.08, 1.9]].forEach(([x, y, z, w, d]) => mesh(avrundetBoks(w, 0.7, d, 0.03, 1), MAT.lysPlank, x, y, z, g));
-  [[-1.6, 0.3, 0], [-0.5, -0.35, 0], [-1.58, 0.28, 0.25]].forEach(([x, z, r], i) => { const k = mesh(avrundetBoks(0.7, 0.55, 0.7, 0.05, 1), MAT.brunPlank, x, 1.15 + (i === 2 ? 0.55 : 0), z, g); k.rotation.y = r; });   // kasser. 0.15.6 (Even 15.11: «eska flyr»): den øverste står rett oppå den nederste
+  /* 0.16.0 Bursdagsbilen (Evens tegning 15.11): grønn bil, tre røde ballonger bak og gaver på planet */
+  if (fest) { [[0xe0473a, 0xffd23f], [0x3d8bd9, 0xffffff], [0xf39c34, 0xe0473a]].forEach(([c, b], i) => { const x = -1.7 + i * 0.75, z = i === 1 ? -0.3 : 0.3; mesh(avrundetBoks(0.6, 0.5, 0.6, 0.05, 1), fm(c, 0.6), x, 1.12, z, g); mesh(new THREE.BoxGeometry(0.62, 0.52, 0.12), fm(b, 0.5), x, 1.12, z, g); mesh(new THREE.BoxGeometry(0.12, 0.52, 0.62), fm(b, 0.5), x, 1.12, z, g); });
+    [[-2.3, 0.55, 2.9], [-2.3, 0, 3.3], [-2.3, -0.55, 2.8]].forEach(([x, z, y]) => { mesh(new THREE.CylinderGeometry(0.012, 0.012, y - 1.5, 4), fm(0xffffff, 0.8), x, (y + 1.5) / 2, z, g); mesh(new THREE.SphereGeometry(0.3, 14, 12), fm(0xe0473a, 0.35), x, y + 0.28, z, g).scale.set(1, 1.2, 1); }); }
+  else [[-1.6, 0.3, 0], [-0.5, -0.35, 0], [-1.58, 0.28, 0.25]].forEach(([x, z, r], i) => { const k = mesh(avrundetBoks(0.7, 0.55, 0.7, 0.05, 1), MAT.brunPlank, x, 1.15 + (i === 2 ? 0.55 : 0), z, g); k.rotation.y = r; });   // kasser. 0.15.6 (Even 15.11: «eska flyr»): den øverste står rett oppå den nederste
   [[1.9, 0.95], [1.9, -0.95], [-1.6, 0.95], [-1.6, -0.95]].forEach(([x, z]) => { const h = mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 14), mork, x, 0.42, z, g); h.rotation.x = Math.PI / 2; const n = mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.32, 10), lys, x, 0.42, z, g); n.rotation.x = Math.PI / 2; });
   [0.55, -0.55].forEach(z => mesh(new THREE.SphereGeometry(0.13, 8, 6), fm(0xfff2a8, 0.3), 2.7, 0.95, z, g));
-  const sk = skiltTekst('Min gård', 1.5); sk.position.set(-0.9, 1.2, 0.97); g.add(sk);
-  g.visible = false; scene.add(g); return g;
+  const sk = skiltTekst(fest ? 'EVN har bursdag' : 'Min gård', fest ? 2.4 : 1.5); sk.position.set(-0.9, 1.2, 0.97); g.add(sk);
+  g.userData.skinn = skinn || null; g.visible = false; scene.add(g); return g;
 }
 /* 0.15.0 (Even 15.11): varebilen er gårdens egen. Den står parkert på gården, kjører ut med varene når en bestilling leveres, og kommer tilbake.
    Skinn fra årstidsbilene (bursdag, valentin osv.) kommer senere og bytter bare utseendet. Bare til pynt: reglene er allerede brukt. */
@@ -335,7 +387,9 @@ const VAREBIL_PLASS = [-5.5, 1.7];   /* Even 15.11: lenger bak, helt inntil låv
 let varebilT = null;
 window.akerY = (x, z) => { for (const u of ting.values()) if (u.type === 'aker' && u.plassert && Math.abs(x - u.x) < STR / 2 - 0.1 && Math.abs(z - u.z) < STR / 2 - 0.1) return 0.27; return 0; };   /* høyden på jorda i åkeren */
 function synkVarebil() {
-  if (!bil) bil = lagLastebil();
+  const sk = (s.skinn && s.skinn.valgt) || null;   /* 0.16.0: skinnet byttes når bilen står parkert */
+  if (bil && bil.userData.skinn !== sk && bilKo.fase === 0) { scene.remove(bil); const i = klikkbare.indexOf(bil); if (i >= 0) klikkbare.splice(i, 1); ting.delete('varebil'); varebilT = null; bil = null; }
+  if (!bil) bil = lagLastebil(sk);
   if (!varebilT) { varebilT = {type: 'varebil', id: 'varebil', gruppe: bil, fot: FOT.varebil, hoyde: 2.6}; ting.set('varebil', varebilT); eierAv(bil); klikkbar(bil); varebilT.ikon = lagIkon(varebilT.hoyde); bil.add(varebilT.ikon); }
   if (!varebilT.plassert) { plasser(varebilT, ...VAREBIL_PLASS, 0); bil.visible = true; bil.rotation.y = -Math.PI / 2; }
 }
@@ -360,7 +414,7 @@ function oppdaterBil(dt) {
   if (Math.hypot(m[0] - bil.position.x, m[1] - bil.position.z) < (sist ? 0.02 : 0.5)) { bilKo.i++;
     if (bilKo.i >= bilKo.vei.length) {
       if (bilKo.fase === 1) { bilKo.fase = 2; bilKo.t = 0; bil.visible = false; }
-      else { const igjen = bilKo.n > 1; bilKo.fase = 0; bilKo.n = 0; plasser(varebilT, varebilT.x, varebilT.z, 0); bil.rotation.y = -Math.PI / 2; if (igjen) kjorLastebil(); } } }   /* QA 15.11: en levering mens bilen var ute gir en ny tur */
+      else { const igjen = bilKo.n > 1; bilKo.fase = 0; bilKo.n = 0; plasser(varebilT, varebilT.x, varebilT.z, 0); bil.rotation.y = -Math.PI / 2; synkVarebil(); if (igjen) kjorLastebil(); } } }   /* QA 15.11: en levering mens bilen var ute gir en ny tur */
   bil.position.y = hoyde(bil.position.x, bil.position.z) + Math.abs(Math.sin((bil.position.x + bil.position.z) * 1.7)) * 0.04;
 }
 
@@ -578,19 +632,57 @@ $('kattBoble').addEventListener('click', kundeTrykk);
 $('kattBoble').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); kundeTrykk(); } });
 function kundeGaaende(dt, t) { const u = katt.userData;
   if (kunde.fase === 'inn') { if (u.tilst === 'staar') { kunde.fase = 'venter'; kunde.t = 0; leverGaver('Blomst'); } }
-  else if (kunde.fase === 'venter') { if (!kunde.sagt) { kunde.sagt = true; kundeSi(); } kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; } }
+  else if (kunde.fase === 'venter') { if (!kunde.sagt) { kunde.sagt = true; kundeSi(); } kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (D.kunder.venter && kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; }   /* 0.34.0: venter er 0, så hun blir til hun har fått varen */ }
   else if (kunde.fase === 'takk') { kunde.t += dt; if (kunde.t > 1.8) { kunde.fase = 'hjem'; kattBobleTid = 0.01; Object.assign(u, {tilst: 'gaar', vei: [new THREE.Vector3(-12.5, 0, KUNDE_Z), new THREE.Vector3(-27, 0, KUNDE_Z)], etter: 'kundeUt'}); } }
   else if (kunde.fase === 'hjem') { if (u.tilst === 'staar') { kunde.fase = 'borte'; kunde.gaaende = false; kunde.t = D.kunder.pause[0] + Math.random() * (D.kunder.pause[1] - D.kunder.pause[0]); } }
   oppdaterKatt(dt, t);
 }
+/* 0.34.0 Naboer (Even 19.11). Bleep er tvillingen til roboten vår, i lys gul. Han kommer gående inn fra veien, ber om én, to eller tre ting,
+   og blir stående til han har fått dem. Han og Blomst kommer aldri samtidig. Traktor og varebil, og de fire andre naboene, kommer senere */
+const nabo = {fase: 'borte', t: null, g: null, mixer: null, klipp: {}, aktiv: null, onske: null, vei: [], laster: false, hvem: 'bleep', mat: []};
+const naboBoble = document.getElementById('naboBoble'), NABO_STAA = new THREE.Vector3(KUNDE_STOPP + 3.2, 0, KUNDE_Z - 0.7);   /* i veikanten ved gårdsbua, et stykke fra der Blomst pleier å stå */
+function naboSpill(navn) { const k = nabo.klipp[navn] || nabo.klipp.Idle; if (!k || !nabo.mixer) return; const a = nabo.mixer.clipAction(k); if (nabo.aktiv === a) return; a.reset().fadeIn(0.2).play(); if (nabo.aktiv) nabo.aktiv.fadeOut(0.2); nabo.aktiv = a; }
+function naboLast() { if (nabo.laster || nabo.g) return; nabo.laster = true;
+  new THREE.GLTFLoader().load(ROBOT_URL, gl => { const g = gl.scene, b0 = new THREE.Box3().setFromObject(g); g.scale.setScalar(1.9 / (b0.max.y - b0.min.y));
+    g.traverse(o => { if (!o.isMesh) return; o.castShadow = true; o.material = o.material.clone(); if (o.material.name === 'Main') nabo.mat.push(o.material); });   /* bare hovedfargen byttes, og den settes for hvert besøk i naboStart. Grått, svart og øyne er som hos roboten vår */
+    const treff = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 2.4, 10), new THREE.MeshBasicMaterial({visible: false})); treff.position.y = 1.2 / g.scale.y; treff.scale.setScalar(1 / g.scale.y); g.add(treff); treff.userData.eier = g; klikkbar(treff);
+    g.visible = false; scene.add(g); nabo.g = g; nabo.mixer = new THREE.AnimationMixer(g); gl.animations.forEach(a => { nabo.klipp[a.name] = a; }); nabo.laster = false; }, undefined, () => { nabo.laster = false; nabo.t = 120; }); }
+function naboTekst() { const o = nabo.onske, N = D.naboer.liste[o.hvem], ting = o.liste.map(l => `${l.antall} ${ikon(l.vare)} ${navn(l.vare).toLowerCase()}`);
+  return `<b>${N.navn}:</b> ${ting.length > 1 ? ting.slice(0, -1).join(', ') + ' og ' + ting[ting.length - 1] : ting[0]}, takk!<small>Trykk for å selge · ${o.mynter} 🪙</small>`; }
+function naboSi(html) { naboBoble.innerHTML = html || naboTekst(); naboBoble.style.display = 'block'; }
+function naboStart() { if (!nabo.g) { naboLast(); nabo.t = 3; return; } nabo.hvem = L.nesteNabo(s); nabo.onske = L.nyNabo(s, nabo.hvem); if (!nabo.onske) { nabo.t = 30; return; }
+  const farge = SRGB(D.naboer.liste[nabo.hvem].farge).multiplyScalar(0.72); nabo.mat.forEach(m => m.color.copy(farge));   /* 0.35.0: samme robot, ny farge for hver nabo. Dempes fordi robotens materialer lyses opp av scenelyset */
+  const g = nabo.g; g.position.set(-27, hoyde(-27, KUNDE_Z), KUNDE_Z); g.rotation.y = Math.PI / 2; g.visible = true;
+  nabo.vei = [new THREE.Vector3(-13.0, 0, KUNDE_Z), NABO_STAA.clone()]; nabo.fase = 'inn'; nabo.t = 0; naboSpill('Walking');
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { g.position.set(NABO_STAA.x, hoyde(NABO_STAA.x, NABO_STAA.z), NABO_STAA.z); nabo.vei = []; } }
+function naboGaa(dt) { const g = nabo.g, m = nabo.vei[0]; if (!m) return true; const dx = m.x - g.position.x, dz = m.z - g.position.z, d = Math.hypot(dx, dz), steg = 2.6 * dt;
+  if (d <= steg) { g.position.x = m.x; g.position.z = m.z; nabo.vei.shift(); } else { g.position.x += dx / d * steg; g.position.z += dz / d * steg; g.rotation.y = snuMot(g.rotation.y, Math.atan2(dx, dz), dt * 8); }
+  g.position.y = hoyde(g.position.x, g.position.z); return !nabo.vei.length; }
+function naboTrykk() { if (nabo.fase !== 'venter') return; const N = D.naboer.liste[nabo.onske.hvem], r = L.selgTilNabo(s, nabo.onske);
+  if (!r.ok) { if (r.grunn !== 'mangler') return; naboSpill('No'); const ml = r.mangler.map(m => m.antall + ' ' + navn(m.vare).toLowerCase()); naboSi(`Du mangler ${ml.length > 1 ? ml.slice(0, -1).join(', ') + ' og ' + ml[ml.length - 1] : ml[0]}. Jeg venter! ${N.hjerte}`); setTimeout(() => { if (nabo.fase === 'venter') { naboSi(); naboSpill('Idle'); } }, 2800); return; }
+  const pos = nabo.g.position.clone().setY(nabo.g.position.y + 2.6); visHjerte(pos); flyt('+' + r.mynter + ' 🪙', pos); naboSi(`Takk, nabo! ${N.hjerte} +${r.mynter} 🪙`); naboSpill('ThumbsUp'); nabo.fase = 'takk'; nabo.t = 0; gi(null); const m = ting.get('marked'); if (m) robotJobb(m); }
+naboBoble.addEventListener('click', naboTrykk);
+naboBoble.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); naboTrykk(); } });
+function oppdaterNabo(dt, t) {
+  if (!startet) return;
+  if (nabo.fase === 'borte') { if (s.nivaa < D.naboer.nivaa || s.oppl.steg < OPPL.length) return;
+    if (nabo.t === null) { nabo.t = (D.naboer.pause[0] + Math.random() * (D.naboer.pause[1] - D.naboer.pause[0])) * (ADMIN ? 0.15 : 1); naboLast(); }
+    nabo.t -= dt; if (nabo.t <= 0 && kunde.fase === 'borte' && bilKo.fase === 0) naboStart(); return; }
+  const g = nabo.g; nabo.mixer.update(dt);
+  if (nabo.fase === 'inn') { if (naboGaa(dt)) { nabo.fase = 'venter'; naboSpill('Wave'); naboSi(); setTimeout(() => { if (nabo.fase === 'venter') naboSpill('Idle'); }, 1800); } }
+  else if (nabo.fase === 'venter') { g.rotation.y = snuMot(g.rotation.y, Math.PI / 4, dt * 3); }
+  else if (nabo.fase === 'takk') { nabo.t += dt; if (nabo.t > 2.0) { nabo.fase = 'hjem'; naboBoble.style.display = 'none'; nabo.vei = [new THREE.Vector3(-13.0, 0, KUNDE_Z), new THREE.Vector3(-27, 0, KUNDE_Z)]; naboSpill('Walking'); if (matchMedia('(prefers-reduced-motion: reduce)').matches) nabo.vei = []; } }
+  else if (nabo.fase === 'hjem') { if (naboGaa(dt)) { g.visible = false; nabo.fase = 'borte'; nabo.t = null; } }
+  if (naboBoble.style.display === 'block') { tmp.copy(g.position); tmp.y += 2.5; tmp.project(camera); naboBoble.style.transform = `translate3d(${Math.round(Math.min(innerWidth - 118, Math.max(118, (tmp.x + 1) / 2 * innerWidth)))}px, ${Math.round((1 - tmp.y) / 2 * innerHeight)}px, 0) translate(-50%, -100%)`; }
+}
 function oppdaterKunde(dt, t) {
   if (!startet) return;
-  if (kunde.fase === 'borte') { if (s.oppl.steg < 3 && s.nivaa < 2) return;   /* ikke midt i den første opplæringen */ kunde.t -= dt; if (kunde.t <= 0 && bilKo.fase === 0) kundeStart(); return; }
+  if (kunde.fase === 'borte') { if (s.oppl.steg < 3 && s.nivaa < 2) return;   /* ikke midt i den første opplæringen */ kunde.t -= dt; if (kunde.t <= 0 && bilKo.fase === 0 && nabo.fase === 'borte') kundeStart(); return; }   /* 0.34.0: én gjest om gangen */
   if (kunde.gaaende) { kundeGaaende(dt, t); return; }
   const b = kunde.bil;
   if (b && b.userData.hjul) { const dx = b.position.x - (b.userData.sx === undefined ? b.position.x : b.userData.sx); b.userData.sx = b.position.x; if (Math.abs(dx) < 5) b.userData.hjul.forEach(w => { w.rotation.z -= dx / 0.36; }); }   /* Even 15.11: hjulene til Blomst ruller */
   if (kunde.fase === 'inn') { const igjen = KUNDE_STOPP - b.position.x; b.position.x += Math.max(1.2, Math.min(7, igjen * 1.2)) * dt; if (b.position.x >= KUNDE_STOPP) { b.position.x = KUNDE_STOPP; kunde.fase = 'venter'; kunde.t = 0; leverGaver('Blomst'); } }
-  else if (kunde.fase === 'venter') { if (!kunde.sagt && kunde.anim >= 1) { kunde.sagt = true; kundeSi(); } kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; } }
+  else if (kunde.fase === 'venter') { if (!kunde.sagt && kunde.anim >= 1) { kunde.sagt = true; kundeSi(); } kunde.t += dt; katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 4, dt * 3); if (D.kunder.venter && kunde.t > D.kunder.venter) { kundeSi('Kanskje neste gang! 👋'); kunde.fase = 'takk'; kunde.t = 0; }   /* 0.34.0: venter er 0, så hun blir til hun har fått varen */ }
   else if (kunde.fase === 'takk') { kunde.t += dt; if (kunde.t > 1.8) { kunde.fase = 'hjem'; kunde.t = 0; } }
   else if (kunde.fase === 'hjem') { kunde.t += dt; if (kunde.mal === 0 && kunde.anim >= 1) { kunde.fase = 'ut'; kattBobleTid = 0.01; if (matchMedia('(prefers-reduced-motion: reduce)').matches) b.position.x = 99; } }
   else if (kunde.fase === 'ut') { katt.rotation.y = snuMot(katt.rotation.y, Math.PI / 2, dt * 4); const borte = b.position.x - KUNDE_STOPP; b.position.x += Math.max(1.2, Math.min(8, 1.2 + borte * 1.2)) * dt; if (b.position.x > 34) { b.visible = false; kattBoble.style.display = 'none'; kunde.fase = 'borte'; kunde.t = D.kunder.pause[0] + Math.random() * (D.kunder.pause[1] - D.kunder.pause[0]); } }
@@ -601,11 +693,13 @@ function oppdaterKunde(dt, t) {
 /* ======================= Ting på gården ======================= */
 // Alt spilleren kan trykke på. Åkre, forkvern, bakeri og silo kan flyttes. Låven, hønsehuset, beitet og markedsbua står fast i denne versjonen.
 const ting = new Map();
-const FOT = {forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], sukkerverk: [3.6, 3.4], popkorn: [3.0, 2.8], kjokken: [4.0, 3.8], grisebinge: [6.2, 7.4], silo: [3.0, 3.0], tavle: [2.2, 1.0], varebil: [2.2, 5.4]};
+const FOT = {julekalender: [2.4, 1.4], gavepapirmaskin: [2.6, 2.4], gavemaskin: [2.8, 2.6], juletre: [2.6, 2.6], festbord: [2.8, 2.2], forkvern: [3.0, 2.8], bakeri: [3.8, 3.4], meieri: [3.6, 3.4], fjos: [8.2, 11.4], sukkerverk: [3.6, 3.4], popkorn: [3.0, 2.8], kjokken: [4.0, 3.8], grisebinge: [6.2, 7.4], sauefjos: [6.2, 7.4], geitefjos: [6.2, 7.4], epletre: [2.6, 2.6], bikube: [2.2, 2.2], paibakeri: [3.8, 3.4], vevstol: [3.6, 3.4], hundehus: [2.4, 2.4], silo: [3.0, 3.0], tavle: [2.2, 1.0], varebil: [2.2, 5.4]};
 const STANDARD = {
-  akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45]],
-  forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], silo: [-0.4, -10.0], tavle: [-2.3, 4.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
+  akre: [[1.5, 1.55], [4.95, 1.55], [8.4, 1.55], [1.5, 5.0], [4.95, 5.0], [8.4, 5.0], [1.5, 8.45], [4.95, 8.45], [8.4, 8.45], [11.85, 1.55], [11.85, 5.0], [11.85, 8.45], [15.6, 1.55], [15.6, 5.0], [15.6, 8.45]],   /* 0.22.0: åker 13–15 (nivå 13) står på Enga. Er den ikke kjøpt, finner spillet nærmeste ledige plass */
+  gavepapirmaskin: [-6.6, 8.4], gavemaskin: [-9.8, 8.4], juletre: [-1.2, 1.4], julekalender: [-10.0, 5.0],   /* 0.37.0 Vinter i Elvedal: maskinene ved porten, treet midt på tunet */
+  festbord: [-2.2, 8.2], forkvern: [0.7, -5.4], bakeri: [-11.5, 2.5], meieri: [16.4, 7.6], fjos: [17.8, -4.5], sukkerverk: [15.6, 3.6], popkorn: [19.8, 3.4], kjokken: [20.0, 7.7], grisebinge: [-20.0, -6.0], paibakeri: [-10.5, 18.6], sauefjos: [3.5, 19.2], geitefjos: [-6.5, 24.5], epletre: [9.5, 9.5], bikube: [12.2, 9.5], vevstol: [-10.5, 26.0], hundehus: [-2.6, -2.4],   /* 0.23.0: de nye byggene foreslås på Jordet. Er det ikke kjøpt, finner spillet nærmeste ledige plass */ silo: [-0.4, -10.0], tavle: [-2.3, 4.6]   /* 0.9.7 (Ivar 12.11): siloen helt inntil låven, lenger bak */
 };
+const JORD = [-13.7, 13.5, 15.4, 22.6], JORD_X1_OST = 23.5, JORD_Z1_BAK = 29.6; const jordX1 = () => s.omrader && s.omrader.ostjordet ? JORD_X1_OST : JORD[1], jordZ1 = () => s.omrader && s.omrader.bakjordet ? JORD_Z1_BAK : JORD[3];   /* 0.22.0: Bakjordet gjør Jordet dypere. Sammen med Østjordet blir det en L */   /* 0.20.0: Østjordet gjør Jordet bredere mot øst */   /* 0.17.0: der ting kan stå på Jordet: x0, x1, z0, z1 */
 const GARD = {x0: -15.55, x1: 13.6, z0: -11.55, z1: 10.2}, GARD_X1 = 13.6, GARD_X1_ENGA = 22.0, GARD_X0 = -15.55, GARD_X0_SKOG = -24.0, SKOG_Z1 = -1.0;   /* 0.13.0: Skogkanten gjør gården bredere mot vest bak låven (bare der z < -1, så Rebus' lysning er fri) */   /* 0.9.8: gården blir bredere når Enga er kjøpt */
 let hinder = [];   // faste hindringer: [x0, x1, z0, z1]
 function finnHinder() {
@@ -621,8 +715,9 @@ function fotRekt(t, x, z, r) { const [w, d] = t.fot; const [a, b] = (r || 0) % 2
 const overlapp = (p, q) => p[0] < q[1] - 0.02 && p[1] > q[0] + 0.02 && p[2] < q[3] - 0.02 && p[3] > q[2] + 0.02;
 function erLedig(t, x, z, r) {
   const p = fotRekt(t, x, z, r);
-  if (p[0] < GARD.x0 || p[1] > GARD.x1 || p[2] < GARD.z0 || p[3] > GARD.z1) return false;
-  if (p[0] < GARD_X0 && p[3] > SKOG_Z1) return false;   /* Skogkanten-delen går bare bak låven */
+  const paJordet = s.omrader && s.omrader.jordet && p[0] >= JORD[0] && p[2] >= JORD[2] && ((p[1] <= jordX1() && p[3] <= JORD[3]) || (p[1] <= JORD[1] && p[3] <= jordZ1()));   /* 0.17.0: Jordet over veien er en egen del av gården */
+  if (!paJordet && (p[0] < GARD.x0 || p[1] > GARD.x1 || p[2] < GARD.z0 || p[3] > GARD.z1)) return false;
+  if (!paJordet && p[0] < GARD_X0 && p[3] > SKOG_Z1) return false;   /* Skogkanten-delen går bare bak låven */
   if (hinder.some(h => overlapp(p, h))) return false;
   for (const [id, u] of ting) if (u !== t && u.fot && u.plassert && overlapp(p, fotRekt(u, u.x, u.z, u.r))) return false;
   return true;
@@ -630,14 +725,17 @@ function erLedig(t, x, z, r) {
 function finnLedigPlass(t, nx, nz) {
   if (erLedig(t, nx, nz, t.r)) return [nx, nz];
   let best = null, bd = 1e9;
-  for (let x = GARD.x0; x <= GARD.x1; x += 0.25) for (let z = GARD.z0; z <= GARD.z1; z += 0.25) { const d = (x - nx) ** 2 + (z - nz) ** 2; if (d < bd && erLedig(t, x, z, t.r)) { bd = d; best = [x, z]; } }
+  const zMaks = s.omrader && s.omrader.jordet ? jordZ1() : GARD.z1;
+  const xMaks = s.omrader && s.omrader.jordet ? Math.max(GARD.x1, jordX1()) : GARD.x1;
+  for (let x = GARD.x0; x <= xMaks; x += 0.25) for (let z = GARD.z0; z <= zMaks; z += 0.25) { const d = (x - nx) ** 2 + (z - nz) ** 2; if (d < bd && erLedig(t, x, z, t.r)) { bd = d; best = [x, z]; } }
   return best;
 }
 function plasser(t, x, z, r) { t.x = x; t.z = z; t.r = r || 0; t.plassert = true; t.gruppe.position.set(x, 0, z); t.gruppe.rotation.y = t.r * Math.PI / 2; t.gruppe.updateMatrixWorld(true); }
 // Leser plasseringen fra lagringen. Har en ting ingen plass ennå (ny åker, nytt bygg), får den standardplassen eller nærmeste ledige plass.
 function plasserAlt() {
+  synkArr();
   const enga = !!(s.omrader && s.omrader.enga), skog = !!(s.omrader && s.omrader.skogkanten); GARD.x1 = enga ? GARD_X1_ENGA : GARD_X1; GARD.x0 = skog ? GARD_X0_SKOG : GARD_X0;
-  if (window.mbEnga) window.mbEnga(enga); if (window.mbSkog) window.mbSkog(skog);
+  if (window.mbEnga) window.mbEnga(enga); if (window.mbSkog) window.mbSkog(skog); if (window.mbJorde) window.mbJorde(s.omrader && s.omrader.jordet, s.omrader && s.omrader.ostjordet, s.omrader && s.omrader.bakjordet); if (window.mbElv) window.mbElv(s.omrader && s.omrader.elvebredden); synkBrygge(); synkHoner(); synkHund();
   s.akre.forEach((f, i) => {
     let t = ting.get(f.id); if (!t) { t = lagAkerGruppe(f); ting.set(f.id, t); }
     if (f.x === null) { const [sx, sz] = STANDARD.akre[i] || [0, 0]; const p = finnLedigPlass(t, sx, sz) || [sx, sz]; f.x = p[0]; f.z = p[1]; }
@@ -655,14 +753,17 @@ function plasserAlt() {
   plasser(si, ps.x, ps.z, ps.r);
   for (const b in s.bygg) { const sb = s.bygg[b]; if (sb && !sb.eid && sb.x !== null && FOT[b] && overlapp(fotRekt({fot: FOT[b]}, sb.x, sb.z, sb.r), fotRekt(si, si.x, si.z, si.r))) { sb.x = null; sb.z = null; if (ting.has(b)) { const t = ting.get(b); t.plassert = false; } } }   /* 0.15.11 (QA 15.11): en byggeplass som står oppå siloen, får ny plass */
   for (const b of I_SPILLET.bygg) { const sb = s.bygg[b]; if (!sb) continue; let t = ting.get(b);
+    if (D.bygg[b].arr && !treSynlig(b)) { if (t) { t.gruppe.visible = false; t.plassert = false; } continue; }   /* 0.39.2 (QA 21.11): festens bygg står bare i festmåneden */
+    if (D.bygg[b].arr && (!t || !t.plassert) && sb.x !== null && festPlassOpptatt(b, sb)) { sb.x = null; sb.z = null; if (t) t.plassert = false; }   /* 0.39.3 (QA 21.11): står noe der nå, også etter omlasting, får bygget ny plass */   /* 0.37.0: juletreet står i desember, og hele året når det er ditt */
     if (!t && sb.x === null && !finnLedigPlass({fot: FOT[b], r: 0}, ...STANDARD[b])) continue;   /* 0.9.8: ingen ledig plass ennå. Byggemenyen foreslår å kjøpe Enga */
-    const modell = sb.eid ? 'bygd' : 'plass';
+    const modell = sb.eid ? 'bygd' + (D.bygg[b].tre ? treTrinn() + (treStjerne() ? '*' : '') : '') + (D.bygg[b].kal ? s.kal.apnet.length : '') : 'plass';
     if (t && t.modell !== modell) { scene.remove(t.gruppe); const i = klikkbare.indexOf(t.gruppe); if (i >= 0) klikkbare.splice(i, 1); ting.delete(b); t = null; }
     if (!t) { const g = sb.eid ? MODELL[b]() : lagByggeplass(D.bygg[b].navn.replace(/ og beite$/, '').replace(/et$|en$|a$/, '')); scene.add(g); eierAv(g); klikkbar(g);
       t = {type: 'bygg', id: b, gruppe: g, fot: FOT[b], hoyde: sb.eid ? HOYDE[b] : 3.0, modell}; t.ikon = lagIkon(t.hoyde); g.add(t.ikon); ting.set(b, t); }
     if (sb.x === null) { const [sx, sz] = STANDARD[b]; const p = finnLedigPlass(t, sx, sz) || [sx, sz]; sb.x = p[0]; sb.z = p[1]; }
-    plasser(t, sb.x, sb.z, sb.r);
+    plasser(t, sb.x, sb.z, sb.r); t.gruppe.visible = true;
   }
+  synkVinterManed(); if (typeof POST_PLASS !== 'undefined') synkPost();
   // Bestillingstavla kommer på nivå 4, ved gårdsveien. Den får nærmeste ledige plass hvis noe står der.
   if (s.nivaa >= D.bestillinger.nivaa) { let tv = ting.get('tavle');
     if (!tv) { const g = lagTavle(); scene.add(g); eierAv(g); klikkbar(g); tv = {type: 'tavle', id: 'tavle', gruppe: g, fot: FOT.tavle, hoyde: 3.1}; tv.ikon = lagIkon(tv.hoyde); g.add(tv.ikon); ting.set('tavle', tv); }
@@ -672,17 +773,22 @@ function plasserAlt() {
   synkVarebil();
   { const h = ting.get('honsehus'), ph = s.plasser.honsehus; if (h && ph && (ph.x !== h.x || ph.z !== h.z)) { plasser(h, ph.x, ph.z, 0); flyttHoner(h); } }
   s.plasser.std = {x: 5, z: 0, r: 0};
-  synkKyr(); synkPynt(); settGullgard(s.gaver.gullgard && s.gaver.gullPaa);
+  synkKyr(); synkPynt(); synkKjopPynt(); settGullgard(s.gaver.gullgard && s.gaver.gullPaa);
 }
-const MODELL = {forkvern: lagForkvern, bakeri: lagBakeri, meieri: lagMeieri, fjos: lagFjos, sukkerverk: lagSukkerverk, popkorn: lagPopkorn, kjokken: lagKjokken, grisebinge: lagGrisebinge}, HOYDE = {grisebinge: 3.2, forkvern: 3.6, bakeri: 4.2, meieri: 4.2, fjos: 4.6, sukkerverk: 4.8, popkorn: 4.0, kjokken: 4.4};
+const MODELL = {gavepapirmaskin: lagGavepapirmaskin, gavemaskin: lagGavemaskin, juletre: () => lagJuletre(treTrinn(), treStjerne()), julekalender: lagJulekalender, festbord: lagFestbord, forkvern: lagForkvern, bakeri: lagBakeri, meieri: lagMeieri, fjos: lagFjos, sukkerverk: lagSukkerverk, popkorn: lagPopkorn, kjokken: lagKjokken, grisebinge: () => lagGrisebinge(false), geitefjos: () => lagGrisebinge('geit'), epletre: lagEpletre, bikube: lagBikube, sauefjos: () => lagGrisebinge(true), paibakeri: lagPaibakeri, vevstol: lagVevstol}, HOYDE = {julekalender: 3.2, gavepapirmaskin: 3.4, gavemaskin: 3.6, juletre: 5.2, vevstol: 3.9, festbord: 2.9, grisebinge: 3.2, geitefjos: 3.2, epletre: 4.4, bikube: 2.9, sauefjos: 3.2, paibakeri: 4.2, forkvern: 3.6, bakeri: 4.2, meieri: 4.2, fjos: 4.6, sukkerverk: 4.8, popkorn: 4.0, kjokken: 4.4};
 // Kyrne på beitet ved fjøset (0.9.8). Beitet følger fjøset når det flyttes eller snus.
 // 0.13.0: kyr og griser bruker samme kode. Beitet/bingen følger bygget når det flyttes eller snus
 const DYRHUS = {
   fjos: {art: 'ku', beite: FJOS_BEITE, krybbe: [-1.05, 1.05, -2.8, -2.2], st: [0, -1.35], steder: [], start: i => [i % 2 ? 1.8 : -1.8, 1.2 + i * 1.3]},
-  grisebinge: {art: 'gris', beite: GRIS_BINGE, krybbe: [-0.9, 0.9, -1.35, -0.85], st: [0, -0.2], steder: [[1.0, 1.7, 'gjorme']], start: i => [i % 2 ? 1.3 : -1.3, 1.0 + i * 0.7]}
+  grisebinge: {art: 'gris', beite: GRIS_BINGE, krybbe: [-0.9, 0.9, -1.35, -0.85], st: [0, -0.2], steder: [[1.0, 1.7, 'gjorme']], start: i => [i % 2 ? 1.3 : -1.3, 1.0 + i * 0.7]},
+  sauefjos: {art: 'sau', beite: GRIS_BINGE, krybbe: [-0.9, 0.9, -1.35, -0.85], st: [0, -0.2], steder: [], start: i => [i % 2 ? 1.3 : -1.3, 1.0 + i * 0.7]},
+  geitefjos: {art: 'geit', beite: GRIS_BINGE, krybbe: [-0.9, 0.9, -1.35, -0.85], st: [0, -0.2], steder: [], start: i => [i % 2 ? 1.3 : -1.3, 1.0 + i * 0.7]}
 };
-const dyrIHus = {fjos: [], grisebinge: []}, husBinge = {};
+const dyrIHus = {fjos: [], grisebinge: [], sauefjos: [], geitefjos: []}, husBinge = {};
 const kyr = dyrIHus.fjos;
+/* 0.22.0: flere høner enn de tre fra start (en til på nivå 11). De nye står ved siden av de andre i hønsegården */
+function synkHoner() { const n = Math.min(8, (s.dyr.hone || []).length); if (typeof hoener === 'undefined' || hoener.length < 3) return;
+  while (hoener.length < n) { const a = hoener[0].position, c = hoener[2].position, i = hoener.length; hoener.push(lagHone((a.x + c.x) / 2 + (i - 3) * 0.7, Math.min(a.z, c.z) - 0.2 + (i % 2) * 0.5, 1)); } }
 function synkDyrehus(hus) {
   const H = DYRHUS[hus], u = ting.get(hus), liste = s.dyr[H.art] || []; if (!u || !s.bygg[hus] || !s.bygg[hus].eid || !window.__dyr) return;
   const a = (u.r || 0) * Math.PI / 2, c = Math.cos(a), sn = Math.sin(a), V = (x, z) => [u.x + x * c + z * sn, u.z - x * sn + z * c];
@@ -695,7 +801,7 @@ function synkDyrehus(hus) {
     if (!mesh2[i]) { const g = window.__dyr.lag(H.art, p[0], p[1], husBinge[hus]); eierAv(g); klikkbar(g); mesh2[i] = g; }
     else { mesh2[i].position.set(p[0], mesh2[i].position.y, p[1]); mesh2[i].userData.mal.set(p[0], 0, p[1]); } });
 }
-function synkKyr() { synkDyrehus('fjos'); synkDyrehus('grisebinge'); }
+function synkKyr() { synkDyrehus('fjos'); synkDyrehus('grisebinge'); synkDyrehus('sauefjos'); synkDyrehus('geitefjos'); }
 // Faste ting fra testscenen
 const HUS0 = [6.5, -5.0];   /* hønsehusets midtpunkt i testscenen */
 const husRobotRekt = () => [BINGER.hone.x0, BINGER.hone.x1, BINGER.hone.z0, BINGER.hone.z1];   /* roboten stiller seg ved løpegården */
@@ -724,8 +830,9 @@ function lagEgg() { const g = new THREE.SphereGeometry(0.17, 12, 10); g.scale(1,
 
 /* ======================= Synk: tilstand → verden ======================= */
 /* ======================= Gaveesker (0.12.0, Even 14.11, godkjent av Ivar 14.11) ======================= */
-// Én gratis eske hver dag (Blomsterkatten har den med) og én per nytt nivå. Den står ved markedsbua til du åpner den. Sjansene står på kortet.
-const GAVE_PLASS = [-3.4, 6.7], SJ = {vanlig: ['Vanlig', '#8c8c8c', '⚪'], uvanlig: ['Uvanlig', '#2e9e48', '🟢'], sjelden: ['Sjelden', '#2f6fd6', '🔵'], superrar: ['Superrar', '#d4a017', '🟡'], legendarisk: ['Legendarisk', '#b03fd1', '🌈']};
+// Én gratis eske hver dag (Blomsterkatten har den med) og én per nytt nivå. Den står ved låven til du åpner den. Sjansene står på kortet.
+const GAVE_PLASS = [2.6, -5.8],   /* 0.29.1 (Even 18.11): ved siden av låven, mot siloen. Før: ved markedsbua */
+   SJ = {vanlig: ['Vanlig', '#8c8c8c', '⚪'], uvanlig: ['Uvanlig', '#2e9e48', '🟢'], sjelden: ['Sjelden', '#2f6fd6', '🔵'], superrar: ['Superrar', '#d4a017', '🟡'], legendarisk: ['Legendarisk', '#b03fd1', '🌈']};
 const PREMIENAVN = {mynter: 'mynter', xp: '75 XP', frovarer: 'frø eller varer', maskin: 'en maskin', superhost: 'superhøst', maned: 'gratis i 7 dager', pynt: 'gullpynt', gullgard: 'Gullgården'};
 let gaveT = null, gaveVent = 0;
 const iDag = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
@@ -742,11 +849,139 @@ function synkGaver() {
   if (!gaveT && n) { const g = lagGaveeske(); scene.add(g); eierAv(g); klikkbar(g); gaveT = {type: 'gave', id: 'gave', gruppe: g, hoyde: 1.6}; gaveT.ikon = lagIkon(gaveT.hoyde); g.add(gaveT.ikon); ting.set('gave', gaveT); g.position.set(GAVE_PLASS[0], hoyde(...GAVE_PLASS), GAVE_PLASS[1]); g.rotation.y = 0.4; }
   if (gaveT) { gaveT.gruppe.visible = n > 0; settIkon(gaveT.ikon, n ? '🎁' : null); }
 }
-function leverGaver(hvem) { const n = L.leverGaver(s); if (n) { melding(`🎁 ${hvem} har levert en gave! Den står ved markedsbua.`, 3400); lagre(); synkGaver(); } }
+/* ---------- 0.38.0 Julekalenderen (Even 20.11). Innholdet er forslag ---------- */
+const LUKE_IKON = {mynter: '🪙', gavepapir: '📜', julegave: '🎁', pepperkaker: '🍪', stjerne: '⭐'};
+function lagJulekalender() {   /* et rødt treskap med 24 små luker og en kule på toppen */
+  const g = new THREE.Group(), rod = fm(0xc81f2a, 0.5), gull = fm(0xffc93c, 0.35);
+  [-0.95, 0.95].forEach(x => mesh(new THREE.CylinderGeometry(0.07, 0.08, 1.0, 8), MAT.brunPlank, x, 0.5, 0, g));
+  mesh(avrundetBoks(2.3, 1.9, 0.3, 0.08, 2), rod, 0, 1.85, 0, g);
+  const sh = new THREE.Shape(); sh.moveTo(-1.3, 0); sh.lineTo(1.3, 0); sh.lineTo(0, 0.55); sh.lineTo(-1.3, 0);
+  const tg = new THREE.ExtrudeGeometry(sh, {depth: 0.36, bevelEnabled: false}); tg.translate(0, 0, -0.18); mesh(tg, fm(0xffffff, 0.9), 0, 2.8, 0, g);
+  const apnet = (s && s.kal && s.kal.apnet) || [];
+  for (let i = 0; i < 24; i++) { const kol = i % 6, rad = Math.floor(i / 6), x = -0.85 + kol * 0.34, y = 2.55 - rad * 0.4;
+    mesh(new THREE.BoxGeometry(0.26, 0.3, 0.04), apnet.includes(i + 1) ? fm(0x3a2418, 0.9) : [fm(0xfff6e3, 0.7), fm(0xffd23f, 0.5), fm(0x4caf50, 0.6)][i % 3], x, y, 0.17, g); }
+  mesh(new THREE.SphereGeometry(0.14, 10, 8), gull, 0, 3.42, 0, g);
+  const treff = new THREE.Mesh(new THREE.BoxGeometry(2.4, 3.4, 1.0), new THREE.MeshBasicMaterial({visible: false})); treff.position.y = 1.7; g.add(treff);
+  return g; }
+function visKalender(u) {
+  aapneHandling(u, '📅 Julekalenderen', () => { const t = naa();
+    let p = '<p>Én luke hver dag fram til julaften. Har du gått glipp av en dag, kan du åpne den senere. I luke 24 ligger det noe ekstra fint. ⭐</p><div class="kal">';
+    for (let d = 1; d <= 24; d++) { const g = L.kanAapneLuke(s, d, t), L2 = D.kal.luker[d - 1];
+      p += g === 'apnet' ? `<button class="luke apnet" type="button" disabled aria-label="Luke ${d} er åpnet">${d}<small>${LUKE_IKON[L2[0]] || ikon(L2[0])}</small></button>`
+        : g ? `<button class="luke" type="button" disabled aria-label="Luke ${d} kan åpnes ${d}. desember">${d}<small>🔒</small></button>`
+        : `<button class="luke klar" type="button" data-g="luke" data-v="${d}" aria-label="Åpne luke ${d}">${d}</button>`; }
+    return p + '</div><div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt</button></div>'; });
+}
+function lukeTekst(r) { return r.type === 'stjerne' ? `⭐ Gullstjernen til toppen av juletreet, og ${r.mynter} 🪙!` : r.type === 'mynter' ? `${r.mynter} 🪙` : r.type === 'pepperkaker' ? `${r.antall} 🍪 pepperkaker` : `${r.antall} ${ikon(r.vare)} ${(D.varer[r.vare].flertall || navn(r.vare).toLowerCase())}`; }
+
+/* ---------- 0.38.0 Snømannen (Even 20.11) ----------
+   Den siste uka i november bygger Rebus en snømann ved huset sitt, litt hver dag. Trykker du på den, ser du hvor lenge det er til Vinter i Elvedal.
+   I desember står snømannen med nisselue der Rebus pleier å vente, og gir vintergåtene. Rebus er tilbake når snøen er borte */
+var snoG = null, snoNokkel = '';
+const SNO_BYGG = [-15.6, 6.4], DAG_MS = 86400000;
+const vinterSno = () => MANED() === 12 && s.oppl.steg >= OPPL.length && s.nivaa >= D.rebus.nivaa;
+function julStart() { const n = new Date(naa()); return new Date(n.getMonth() === 11 ? n.getFullYear() + 1 : n.getFullYear(), 11, 1).getTime(); }   /* 1. desember kl. 00 */
+function snoTrinn() {
+  if (vinterSno()) return 6; if (MANED() === 12) return -1; if (ADMIN && admLager().ned) return 4;   /* admin kan se nedtellingen før den siste uka */
+  if (MANED() !== 11 || s.nivaa < D.arr.jul.nivaa) return -1;
+  const d = Math.ceil((julStart() - naa()) / DAG_MS); return d <= 10 ? Math.min(5, Math.floor((10 - d) * 5 / 9)) : -1; }   /* 0.39.1 (Even og Ivar 21.11): Rebus begynner 21. november, ti dager før */   /* admin kan se nedtellingen før den siste uka */
+function lagSnomann(n) {
+  const g = new THREE.Group(), sno = fm(0xffffff, 0.95), kull = fm(0x222226, 0.8), rod = fm(0xd8262f, 0.5);
+  const ball = (r, y) => mesh(new THREE.SphereGeometry(r, 18, 14), sno, 0, y, 0, g);
+  if (n === 0) ball(0.35, 0.3);
+  else { ball(0.62, 0.55); if (n >= 2) ball(0.45, 1.45); if (n >= 3) ball(0.33, 2.1); }
+  if (n >= 4) { [-0.11, 0.11].forEach(x => mesh(new THREE.SphereGeometry(0.045, 8, 6), kull, x, 2.18, 0.29, g)); mesh(new THREE.ConeGeometry(0.06, 0.32, 10), fm(0xf08a24, 0.6), 0, 2.1, 0.45, g).rotation.x = Math.PI / 2;
+    [1.6, 1.4, 1.2].forEach(y => mesh(new THREE.SphereGeometry(0.05, 8, 6), kull, 0, y, 0.44, g)); }
+  if (n >= 5) { [-1, 1].forEach(sd => { const a = mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.9, 6), MAT.brunPlank, sd * 0.72, 1.65, 0, g); a.rotation.z = sd * -1.0; });
+    mesh(new THREE.TorusGeometry(0.33, 0.07, 8, 18), fm(0x3d8bd9, 0.7), 0, 1.82, 0, g).rotation.x = Math.PI / 2; mesh(new THREE.BoxGeometry(0.14, 0.42, 0.06), fm(0x3d8bd9, 0.7), 0.18, 1.6, 0.3, g); }
+  if (n >= 6) { const lue = new THREE.Group(); lue.position.set(0, 2.32, 0); lue.rotation.z = 0.25; g.add(lue);
+    mesh(new THREE.ConeGeometry(0.3, 0.6, 16), rod, 0, 0.3, 0, lue); mesh(new THREE.CylinderGeometry(0.33, 0.34, 0.1, 16), sno, 0, 0.02, 0, lue); mesh(new THREE.SphereGeometry(0.09, 8, 6), sno, 0, 0.62, 0, lue); }
+  const treff = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 2.8, 8), new THREE.MeshBasicMaterial({visible: false})); treff.position.y = 1.3; g.add(treff);
+  return g; }
+function synkSnomann() {
+  if (typeof hoyde !== 'function' || !s) return;
+  const n = snoTrinn(), plass = n === 6 ? REV_GARD : SNO_BYGG, k = n + '|' + plass;
+  if (k === snoNokkel) return; snoNokkel = k;
+  if (snoG) { scene.remove(snoG); const i = klikkbare.indexOf(snoG); if (i >= 0) klikkbare.splice(i, 1); snoG = null; }
+  if (n < 0) return;
+  snoG = lagSnomann(n); snoG.position.set(plass[0], hoyde(plass[0], plass[1]), plass[1]); snoG.rotation.y = n === 6 ? Math.PI / 4 : Math.PI / 2; scene.add(snoG); eierAv(snoG); klikkbar(snoG); }
+function fmtNed(ms) { if (ms <= 0) return 'nå!'; const sek = Math.floor(ms / 1000), d = Math.floor(sek / 86400), ti = Math.floor(sek % 86400 / 3600), mi = Math.floor(sek % 3600 / 60), se = sek % 60;
+  const del = [d ? d + (d === 1 ? ' dag' : ' dager') : '', ti ? ti + (ti === 1 ? ' time' : ' timer') : '', mi ? mi + (mi === 1 ? ' minutt' : ' minutter') : '', se + (se === 1 ? ' sekund' : ' sekunder')].filter(x => x);
+  return del.length > 1 ? del.slice(0, -1).join(', ') + ' og ' + del[del.length - 1] : del[0]; }
+function visNedtelling() {
+  aapneHandling(null, '⛄ Snømannen', () => `<p>Rebus bygger en snømann! Han blir ferdig til Vinter i Elvedal. ❄️</p><p style="font-size:19px;line-height:1.35">Vinter i Elvedal starter om<br><b data-ned="${julStart()}">${fmtNed(julStart() - naa())}</b></p>`);
+}
+function snoTrykk() { if (snoTrinn() === 6) visGate(); else visNedtelling(); }
+
+/* ---------- 0.38.0 Julenissen og reinsdyret (Even 20.11) ----------
+   I desember går de langs veien foran gården og vinker. Trykker du på dem, sier nissen «God jul!» og reinsdyret hopper.
+   Har du julesleden, trekker reinsdyret den. Bare til pynt. Gaven fra nissen hver dag venter på en voksen */
+function lagRein(g, x = 0, y = 0, z = 0) { const r = new THREE.Group(); r.position.set(x, y, z); g.add(r); const brun = fm(0x8a5a33, 0.85), lys = fm(0xd9b98c, 0.85), mork = fm(0x3a2418, 0.9);
+  const kropp = mesh(new THREE.CylinderGeometry(0.32, 0.3, 1.2, 12), brun, 0, 1.1, 0, r); kropp.rotation.x = Math.PI / 2;
+  [0.6, -0.6].forEach(bz => mesh(new THREE.SphereGeometry(0.32, 12, 10), brun, 0, 1.1, bz, r));
+  const ben = [[0.2, 0.42], [-0.2, 0.42], [0.2, -0.42], [-0.2, -0.42]].map(([bx, bz]) => { const b = new THREE.Group(); b.position.set(bx, 1.0, bz); r.add(b); mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.9, 8), brun, 0, -0.45, 0, b); mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.1, 8), mork, 0, -0.9, 0, b); return b; });
+  const hals = mesh(new THREE.CylinderGeometry(0.14, 0.18, 0.6, 10), brun, 0, 1.5, 0.72, r); hals.rotation.x = 0.6;
+  mesh(new THREE.SphereGeometry(0.22, 12, 10), brun, 0, 1.78, 0.92, r).scale.set(1, 0.95, 1.25); mesh(new THREE.SphereGeometry(0.12, 10, 8), lys, 0, 1.72, 1.18, r);
+  mesh(new THREE.SphereGeometry(0.07, 8, 6), fm(0xe0473a, 0.3), 0, 1.75, 1.28, r);
+  [-0.1, 0.1].forEach(ex => mesh(new THREE.SphereGeometry(0.035, 6, 5), mork, ex, 1.86, 1.1, r));
+  [-1, 1].forEach(sd => { const h = new THREE.Group(); h.position.set(sd * 0.1, 1.95, 0.88); h.rotation.z = sd * -0.45; r.add(h); mesh(new THREE.CylinderGeometry(0.025, 0.03, 0.45, 6), lys, 0, 0.22, 0, h);
+    [[0.12, 0.3], [-0.06, 0.38]].forEach(([gx, gy]) => { const gr = mesh(new THREE.CylinderGeometry(0.02, 0.025, 0.22, 6), lys, gx * sd, gy, 0.05, h); gr.rotation.z = sd * -0.8; }); });
+  mesh(new THREE.SphereGeometry(0.1, 8, 6), fm(0xffffff, 0.9), 0, 1.2, -0.85, r);
+  r.userData.ben = ben; return r; }
+function lagNisse(g, x = 0, y = 0, z = 0) { const n = new THREE.Group(); n.position.set(x, y, z); g.add(n); const rod = fm(0xd8262f, 0.55), hvit = fm(0xffffff, 0.95), hud = fm(0xf2c6a0, 0.8);
+  mesh(new THREE.CylinderGeometry(0.26, 0.32, 0.55, 12), rod, 0, 0.28, 0, n); mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.08, 12), fm(0x222226, 0.6), 0, 0.12, 0, n);
+  mesh(new THREE.SphereGeometry(0.2, 12, 10), hud, 0, 0.72, 0, n); mesh(new THREE.SphereGeometry(0.17, 10, 8), hvit, 0, 0.62, 0.1, n).scale.set(1.1, 1.1, 0.8);
+  mesh(new THREE.ConeGeometry(0.2, 0.42, 12), rod, 0, 0.98, -0.03, n).rotation.x = -0.25; mesh(new THREE.CylinderGeometry(0.21, 0.21, 0.07, 12), hvit, 0, 0.82, 0, n); mesh(new THREE.SphereGeometry(0.06, 8, 6), hvit, 0, 1.17, -0.12, n);
+  const arm = new THREE.Group(); arm.position.set(0.3, 0.48, 0); n.add(arm); mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.4, 8), rod, 0, 0.2, 0, arm); mesh(new THREE.SphereGeometry(0.07, 8, 6), hvit, 0, 0.42, 0, arm);
+  mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.36, 8), rod, -0.3, 0.32, 0.05, n).rotation.z = 0.5;
+  n.userData.arm = arm; return n; }
+var nisseG = null, nisseX = -12, nisseRetn = 1, nisseHopp = 0, nisseRein = null, nisseFigur = null;
+const NISSE_X = [-13, 12];
+function oppdaterNisse(dt, t) {
+  const paa = MANED() === 12 && s.nivaa >= D.arr.jul.nivaa && !(s.skinn && s.skinn.valgt === 'jul' && bilKo.fase !== 0);   /* mens sleden er ute, er det de som trekker den */
+  if (!paa) { if (nisseG) nisseG.visible = false; return; }
+  if (!nisseG) { nisseG = new THREE.Group(); nisseRein = lagRein(nisseG); nisseFigur = lagNisse(nisseG, 0, 1.38, -0.1); scene.add(nisseG); eierAv(nisseG); klikkbar(nisseG); }
+  nisseG.visible = true; const redusert = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!redusert) { nisseX += nisseRetn * dt * 0.9; if (nisseX > NISSE_X[1]) nisseRetn = -1; if (nisseX < NISSE_X[0]) nisseRetn = 1; }
+  nisseHopp = Math.max(0, nisseHopp - dt * 1.6);
+  const z = VEI_Z + 2.9; nisseG.position.set(nisseX, hoyde(nisseX, z) + Math.sin(nisseHopp * Math.PI) * 0.9, z); nisseG.rotation.y = snuMot(nisseG.rotation.y, nisseRetn > 0 ? Math.PI / 2 : -Math.PI / 2, dt * 3);
+  if (!redusert) nisseRein.userData.ben.forEach((b, i) => { b.rotation.x = Math.sin(t * 6 + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI / 2 : 0)) * 0.4; });
+  nisseFigur.userData.arm.rotation.z = -0.6 - Math.max(0, Math.sin(t * 4)) * (nisseHopp > 0 ? 1.4 : 0.6);   /* vinker */
+}
+function nisseTrykk() { nisseHopp = 1; melding('🎅 Ho ho ho! God jul fra julenissen og reinsdyret! 🦌', 3200); }
+
+/* 0.36.0 Julenissebrevet (Even 20.11): et brev fra julenissen som forteller om Vinter i Elvedal. Det dukker opp på skjermen første gang,
+   og ligger etterpå i postkassa ved innkjørselen. Foreløpig bare i testversjonen, når admin har slått på vinteren. Eventet selv er ikke bygd.
+   Teksten er godkjent av Even 20.11. Tallene og den daglige gaven er forslag til en voksen har godkjent dem */
+var postT = null;
+var POST_PLASS = [KUNDE_STOPP + 7.6, VEI_Z - 5.2];
+const BREV = `<div class="brev"><p><b>Kjære bonde!</b></p>
+  <p>I morgen kommer vinteren til Elvedal. Da blir gården din hvit av snø, og det blir is på elva. ❄️</p>
+  <p>Jeg trenger hjelp til å lage julegaver. Slik gjør du det:</p>
+  <ol><li>Lag <b>gavepapir</b> av hvete i gavepapirmaskinen.</li><li>Pakk inn en ting du har laget, i gavemaskinen.</li><li><b>Lever gaven.</b> Da får du en <b>pepperkake</b>.</li></ol>
+  <p>Jo flere pepperkaker du får, jo finere blir juletreet. Du kan også få nisseluer til dyrene, oppskrift på pepperkakehus og julepynt til gården. Den som får 250 pepperkaker, får <b>julesleden</b>! 🛷</p>
+  <p>Rebus har bygd en <b>snømann</b> til deg. Han har vintergåter. ⛄</p>
+  <p>Husk <b>julekalenderen</b>. Det er én luke hver dag fram til julaften, og i luke 24 ligger det noe ekstra fint. ⭐</p>
+  <p>Fra 1. til 24. desember får du en gave hver dag. Jeg og reinsdyret mitt kommer med den til gården. 🦌🎁</p>
+  <p>God jul!<br><b>Hilsen julenissen 🎅</b></p></div>`;
+function brevPaa() { return ADMIN && !!admLager().vinter; }
+function lagPostkasse() { const g = new THREE.Group(), tre = fm(0x8a5a33, 0.9), rod = fm(0xd8372e, 0.55), gul = fm(0xffd23f, 0.5), hvit = fm(0xffffff, 0.9);
+  mesh(new THREE.CylinderGeometry(0.07, 0.08, 1.0, 8), tre, 0, 0.5, 0, g); mesh(avrundetBoks(0.5, 0.34, 0.72, 0.08, 2), rod, 0, 1.15, 0, g);
+  mesh(new THREE.BoxGeometry(0.04, 0.3, 0.06), gul, 0.27, 1.3, 0.2, g); mesh(new THREE.BoxGeometry(0.04, 0.14, 0.2), gul, 0.27, 1.42, 0.13, g);   /* flagget er oppe: det er post */
+  mesh(avrundetBoks(0.54, 0.09, 0.76, 0.04, 2), hvit, 0, 1.35, 0, g);   /* snø på lokket */
+  bake(g); return g; }
+function synkPost() {
+  const paa = brevPaa();
+  if (!postT && paa) { const g = lagPostkasse(); scene.add(g); eierAv(g); klikkbar(g); postT = {type: 'post', id: 'post', gruppe: g, hoyde: 1.9, fot: [1.0, 1.0]}; postT.ikon = lagIkon(postT.hoyde); g.add(postT.ikon); ting.set('post', postT); }
+  if (postT && paa) { postT.plassert = false; const p = finnLedigPlass(postT, ...POST_PLASS) || POST_PLASS; plasser(postT, p[0], p[1], 0); }   /* 0.37.0: postkassa finner en ledig plass, så maskinene ikke står oppå den */
+  if (postT) { postT.gruppe.visible = paa; if (!paa) postT.plassert = false; settIkon(postT.ikon, paa && !admLager().brevLest ? '💌' : null); }
+}
+function visBrev() { aapneHandling(postT, '💌 Brev fra julenissen', () => BREV); if (!admLager().brevLest) { admLagre(l => { l.brevLest = true; }); synkPost(); } }
+function leverGaver(hvem) { const n = L.leverGaver(s); if (n) { melding(`🎁 ${hvem} har levert en gave! Den står ved låven.`, 3400); lagre(); synkGaver(); } }
 function visGave(res) {
   aapneHandling(gaveT, '🎁 Gaveeske', () => { const n = L.klareGaver(s); let p = '';
     if (res) { const [nv, farge, ik] = SJ[res.sjeldenhet], ting2 = res.gullgard ? '✨ GULLGÅRDEN! ✨' : res.pynt ? `${D.gave.pyntNavn[res.pynt]} ✨ til gården` : res.bygg ? `${D.bygg[res.bygg].ikon} ${D.bygg[res.bygg].navn} gratis!` : res.bonus ? `🎁 Gratis i ${D.gave.bonusDager} dager!` : res.superhost ? `🌟 Superhøst! ${res.superhost} ${res.superhost === 1 ? 'åker er' : 'åkre er'} klare nå` : res.xp ? `⭐ ${res.xp} XP` : res.vare ? `${res.antall} ${ikon(res.vare)} ${navn(res.vare).toLowerCase()}` : `${res.mynter} 🪙`;
-      if (res.gullgard) p += '<p style="font-size:15px;text-align:center">Hele gården er gull! Du kan slå den av og på her.</p>';
+      if (res.gullgard) p += '<p style="font-size:15px;text-align:center">Alt det hvite på gården er gull! Du kan slå den av og på her.</p>';
       if (res.bonus) p += `<p style="font-size:15px;text-align:center">Gratis å plante og gratis forkvern i ${D.gave.bonusDager} dager.</p>`;
       if (res.bygg) p += `<p style="font-size:15px;text-align:center">${ting.get(res.bygg) ? 'Det står på gården nå.' : 'Det kommer når det blir ledig plass.'}</p>`;
       p += `<p style="text-align:center;font-size:15px;margin:0"><b style="color:${farge}">${ik} ${nv}</b></p><p style="text-align:center;font-size:24px;margin:6px 0 10px"><b>${ting2}</b></p>`; if (res.pynt) p += '<p style="font-size:15px;text-align:center">Gullpynten står på gården. Du kan flytte den.</p>'; }
@@ -758,10 +993,18 @@ function visGave(res) {
 }
 // Gullgården (legendarisk, Even 14.11): låve, bygg, tak og pynt får gullfarge. Kan slås av og på.
 let gullOrig = null, gullNaa = false;
-function settGullgard(paa) { paa = !!paa; if (paa === gullNaa) return; gullNaa = paa;
-  const mats = [MAT.rodPlank, MAT.tak, MAT.tak2, MAT.hvitTrim].filter(Boolean), gull = h => new THREE.Color(h).convertSRGBToLinear();
+function settGullgard(paa) { paa = !!paa; gullHvitt(paa); if (paa === gullNaa) return; gullNaa = paa;
+  const mats = [MAT.hvitTrim].filter(Boolean), gull = h => new THREE.Color(h).convertSRGBToLinear();   /* 0.24.2 (Even 17.11): bare det hvite blir gull. Vegger og tak beholder fargen sin */
   if (!gullOrig) gullOrig = mats.map(m => ({m, map: m.map, farge: m.color.clone(), met: m.metalness, ru: m.roughness}));
-  gullOrig.forEach((o, i) => { const m = o.m; if (paa) { m.map = null; m.color.copy(gull(i === 1 || i === 2 ? 0xe2ad1f : 0xffd54a)); m.metalness = 0.6; m.roughness = 0.32; } else { m.map = o.map; m.color.copy(o.farge); m.metalness = o.met; m.roughness = o.ru; } m.needsUpdate = true; }); }
+  gullOrig.forEach((o, i) => { const m = o.m; if (paa) { m.map = null; m.color.copy(gull(0xffcf33)); m.metalness = 0.7; m.roughness = 0.28; } else { m.map = o.map; m.color.copy(o.farge); m.metalness = o.met; m.roughness = o.ru; } m.needsUpdate = true; }); }
+/* 0.24.2: det hvite på byggene er bakt inn som farge per hjørne, så det må farges om der. Originalfargene tas vare på og settes tilbake når gullet slås av */
+function gullHvitt(paa) {
+  const hvit = new THREE.Color(0xf3eee3).convertSRGBToLinear(), gull = new THREE.Color(0xffc21a).convertSRGBToLinear(), sett = new Set();
+  for (const u of ting.values()) if (['bygg', 'laave', 'honsehus', 'silo', 'hundehus', 'marked', 'tavle'].includes(u.type)) [u.gruppe, u.hus].forEach(g => g && g.traverse(o => { if (o.isMesh && o.geometry && o.geometry.attributes.color) sett.add(o.geometry); }));
+  sett.forEach(geo => { const c = geo.attributes.color, a = c.array, n = c.itemSize;
+    if (paa && !geo.userData.gullOrig) { geo.userData.gullOrig = a.slice(); for (let i = 0; i < a.length; i += n) if (Math.abs(a[i] - hvit.r) < 0.035 && Math.abs(a[i + 1] - hvit.g) < 0.035 && Math.abs(a[i + 2] - hvit.b) < 0.035) { a[i] = gull.r; a[i + 1] = gull.g; a[i + 2] = gull.b; } c.needsUpdate = true; }
+    else if (!paa && geo.userData.gullOrig) { a.set(geo.userData.gullOrig); delete geo.userData.gullOrig; c.needsUpdate = true; } });
+}
 // Gullpynt fra superrare gaver. Bare pynt, kan flyttes.
 const PYNT_FOT = [1.4, 1.4];
 function lagPynt(id) { const g = new THREE.Group(), gull = std({color: SRGB(0xf5c542), metalness: 0.75, roughness: 0.25}), stein = fm(0xb9b0a2, 0.9);
@@ -770,25 +1013,234 @@ function lagPynt(id) { const g = new THREE.Group(), gull = std({color: SRGB(0xf5
   else if (id === 'gullegg') { mesh(new THREE.TorusGeometry(0.34, 0.1, 8, 20), fm(0xc9a35a, 1), 0, 0.42, 0, g).rotation.x = Math.PI / 2; mesh(new THREE.SphereGeometry(0.3, 18, 14), gull, 0, 0.75, 0, g).scale.set(1, 1.3, 1); }
   else if (id === 'gullgulrot') { const k = mesh(new THREE.ConeGeometry(0.2, 0.9, 12), gull, 0, 0.82, 0, g); k.rotation.z = Math.PI; for (let i = 0; i < 4; i++) { const b = mesh(new THREE.ConeGeometry(0.05, 0.4, 5), gull, Math.cos(i * 1.6) * 0.06, 1.42, Math.sin(i * 1.6) * 0.06, g); b.rotation.set(Math.sin(i * 1.6) * 0.4, 0, Math.cos(i * 1.6) * 0.4); } }
   else if (id === 'regnbue') { [0xe0473a, 0xf39c34, 0xf7d23e, 0x5cb85c, 0x3d8bd9, 0x8e5cc7].forEach((c, i) => { const b = mesh(new THREE.TorusGeometry(0.62 - i * 0.07, 0.04, 8, 28, Math.PI), fm(c, 0.6), 0, 0.36, 0, g); }); [-0.6, 0.6].forEach(x => mesh(new THREE.SphereGeometry(0.16, 10, 8), fm(0xffffff, 0.9), x, 0.42, 0, g).scale.set(1.3, 0.8, 1)); }
+  else if (id === 'bursdagspynt') { const krem = fm(0xfff1d6, 0.6), rosa = fm(0xff8fb8, 0.5); mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.26, 18), krem, 0, 0.48, 0, g); mesh(new THREE.CylinderGeometry(0.43, 0.43, 0.06, 18), rosa, 0, 0.5, 0, g); mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.22, 16), krem, 0, 0.72, 0, g); mesh(new THREE.CylinderGeometry(0.29, 0.29, 0.05, 16), rosa, 0, 0.74, 0, g);
+    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 6), fm(0x3d8bd9, 0.5), Math.cos(a) * 0.16, 0.91, Math.sin(a) * 0.16, g); mesh(new THREE.SphereGeometry(0.03, 6, 5), fm(0xffd23f, 0.3), Math.cos(a) * 0.16, 1.01, Math.sin(a) * 0.16, g); }
+    [[0xe0473a, 0.5, 0.1, 2.0], [0xffd23f, -0.45, 0.2, 2.25], [0x3d8bd9, 0.05, -0.5, 2.15]].forEach(([c, x, z, y]) => { const p = mesh(new THREE.CylinderGeometry(0.012, 0.012, y - 0.3, 4), fm(0xffffff, 0.8), x * 0.8, (y + 0.3) / 2, z * 0.8, g); p.rotation.set(-z * 0.2, 0, x * 0.2); mesh(new THREE.SphereGeometry(0.24, 14, 12), fm(c, 0.35), x, y + 0.2, z, g).scale.set(1, 1.2, 1); }); }
   else if (id === 'gullfontene') { mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.2, 18), gull, 0, 0.45, 0, g); mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.04, 18), std({color: SRGB(0x5bb6e0), roughness: 0.15}), 0, 0.56, 0, g); mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.55, 8), gull, 0, 0.8, 0, g); mesh(new THREE.CylinderGeometry(0.24, 0.18, 0.1, 14), gull, 0, 1.08, 0, g); mesh(new THREE.SphereGeometry(0.1, 10, 8), std({color: SRGB(0x8fd3f2), roughness: 0.1}), 0, 1.2, 0, g); }
   else { const st = new THREE.Shape(); for (let i = 0; i < 10; i++) { const a = Math.PI / 2 + i * Math.PI / 5, rr2 = i % 2 ? 0.17 : 0.42; st[i ? 'lineTo' : 'moveTo'](Math.cos(a) * rr2, Math.sin(a) * rr2); } const sg = new THREE.ExtrudeGeometry(st, {depth: 0.14, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 2}); sg.translate(0, 0, -0.07); mesh(sg, gull, 0, 0.85, 0, g); mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.3, 6), gull, 0, 0.45, 0, g); }
   return g; }
 function synkPynt() {
-  for (const id of D.gave.pynt) { const p = s.gaver.pynt[id]; if (!p) continue; let t = ting.get('pynt-' + id);
-    if (!t) { const g = lagPynt(id); scene.add(g); eierAv(g); klikkbar(g); t = {type: 'pynt', id: 'pynt-' + id, pid: id, gruppe: g, fot: PYNT_FOT, hoyde: 1.8}; t.ikon = lagIkon(t.hoyde); g.add(t.ikon); ting.set(t.id, t); }
+  for (const id of D.gave.pynt.concat(D.arrPynt)) { const p = s.gaver.pynt[id]; if (!p) continue; let t = ting.get('pynt-' + id);
+    if (!t) { const g = lagPynt(id); scene.add(g); eierAv(g); klikkbar(g); t = {type: 'pynt', id: 'pynt-' + id, pid: id, gruppe: g, fot: PYNT_FOT, hoyde: id === 'bursdagspynt' ? 2.9 : 1.8}; t.ikon = lagIkon(t.hoyde); g.add(t.ikon); ting.set(t.id, t); }
     if (p.x === null) { const q = finnLedigPlass(t, -4.6, 3.6) || [-4.6, 3.6]; p.x = q[0]; p.z = q[1]; }
     plasser(t, p.x, p.z, p.r || 0); }
 }
-function visPynt(u) { aapneHandling(u, '✨ ' + D.gave.pyntNavn[u.pid], () => '<p>Superrar gullpynt fra en gaveeske. Den er bare til pynt.</p><div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt</button></div>'); }
+/* 0.27.0 Fiskebrygga (Even og Ivar 17.–18.11). Brygga står på fiskeplassen ved elva og kommer når Elvebredden er kjøpt.
+   «Kast og vent»: trykk på brygga, kast snøret, og hal inn når duppen hopper. Roboten går ikke dit, for brygga ligger utenfor gården */
+let brygge = null, dupp = null;
+function lagBrygge() {
+  const g = new THREE.Group(), tre = MAT.brunPlank, L = 5.2, W = 1.7;
+  for (let i = 0; i < 13; i++) mesh(teksturUV(avrundetBoks(W, 0.09, 0.36, 0.02, 1), 0.8, 0.2), tre, 0, 0, -0.2 - i * 0.4, g);
+  [[-0.75, -0.3], [0.75, -0.3], [-0.75, -2.6], [0.75, -2.6], [-0.75, -5.0], [0.75, -5.0]].forEach(([x, z]) => mesh(new THREE.CylinderGeometry(0.1, 0.11, 2.0, 8), tre, x, -0.75, z, g));
+  [-0.78, 0.78].forEach(x => mesh(avrundetBoks(0.1, 0.1, L, 0.02, 1), tre, x, -0.08, -L / 2 - 0.05, g));
+  mesh(new THREE.CylinderGeometry(0.24, 0.2, 0.36, 12), fm(0x4a7fb5, 0.6), 0.5, 0.23, -1.2, g); mesh(new THREE.TorusGeometry(0.2, 0.02, 6, 14, Math.PI), fm(0x8a8f96, 0.5), 0.5, 0.4, -1.2, g);   /* bøtte */
+  const stang = mesh(new THREE.CylinderGeometry(0.02, 0.035, 2.6, 6), fm(0x8a5a36, 0.8), -0.35, 1.0, -4.6, g); stang.rotation.x = -0.75;
+  mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.1, 10), fm(0x2e2a28, 0.5), -0.27, 0.42, -3.95, g).rotation.z = Math.PI / 2;
+  mesh(avrundetBoks(0.5, 0.3, 0.34, 0.04, 1), fm(0xc0392b, 0.7), -0.5, 0.2, -2.0, g);   /* fiskeskrin */
+  const sk = skiltTekst('Brygga', 1.3); sk.position.set(0, 1.5, -0.1); g.add(sk); [-0.5, 0.5].forEach(x => mesh(avrundetBoks(0.08, 1.4, 0.08, 0.02, 1), tre, x, 0.7, -0.14, g));
+  bake(g); return g;
+}
+function synkBrygge() {
+  const eid = !!(s.omrader && s.omrader.elvebredden);
+  if (eid && !brygge && typeof elvKant === 'function') {
+    const x = FISKEPLASS.x; let z = -13; while (z > -30 && elvKant(x, z) > 0.4) z -= 0.1;   /* bredden: der vannet begynner */
+    const g = lagBrygge(); g.position.set(x, VANN_Y + 0.5, z + 1.2); scene.add(g); eierAv(g); klikkbar(g); brygge = {gruppe: g, x, z: z + 1.2, ikon: lagIkon(2.6)}; g.add(brygge.ikon);
+    dupp = new THREE.Group(); mesh(new THREE.SphereGeometry(0.13, 10, 8), fm(0xe2332b, 0.5), 0, 0.05, 0, dupp); mesh(new THREE.SphereGeometry(0.13, 10, 8, 0, 6.3, 0, 1.6), fm(0xffffff, 0.5), 0, 0.06, 0, dupp); mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.3, 5), fm(0x2e2a28, 0.5), 0, 0.25, 0, dupp);
+    dupp.position.set(x - 0.35, VANN_Y, z + 1.2 - 6.6); scene.add(dupp);
+  }
+  if (window.mbIsHull) window.mbIsHull(brygge ? brygge.x - 0.35 : 0, brygge ? brygge.z - 6.6 : 0, eid && !!brygge);
+  if (brygge) { brygge.gruppe.visible = eid; if (dupp) dupp.visible = eid && s.fiske.slutt !== null; settIkon(brygge.ikon, eid && L.fiskKlar(s, naa()) ? '🎣' : null); }
+}
+function oppdaterBrygge(dt, t) { if (!dupp || !dupp.visible) return; const klar = L.fiskKlar(s, naa()); dupp.position.y = VANN_Y + (klar ? -0.08 + Math.abs(Math.sin(t * 9)) * 0.22 : Math.sin(t * 2.2) * 0.04); dupp.rotation.z = klar ? Math.sin(t * 9) * 0.3 : Math.sin(t * 1.7) * 0.08; }
+function visBrygge() {
+  aapneHandling(null, '🎣 Fiskebrygga', () => { const t0 = naa(), fisk = D.fiske.fisk.map(f => `${ikon(f[0])} ${navn(f[0])}: du har ${s.lager[f[0]] || 0}`).join(' · ');
+    let p = `<p>Her fisker du i elva. Du vet ikke hvilken fisk du får før du haler inn.</p><p style="font-size:15px">${fisk}</p>`;
+    if (s.fiske.slutt === null) p += '<p>Kast snøret og vent til duppen hopper.</p><div class="knapper"><button class="knapp gronn" data-g="kast" type="button">🎣 Kast snøret</button></div>';
+    else if (!L.fiskKlar(s, t0)) p += `<p>Duppen ligger i vannet. Fisken biter om ca. ${Math.max(1, Math.ceil((s.fiske.slutt - t0) / 1000))} sekunder. Du kan gjøre andre ting mens du venter.</p><div class="knapper"><button class="knapp lys" data-g="lukk" type="button">OK</button></div>`;
+    else p += `<p><b>Det napper!</b> ${L.plass(s, 'lave') < 1 ? 'Låven er full. Selg noe først, så haler du inn.' : 'Hal inn fisken.'}</p><div class="knapper"><button class="knapp gronn" data-g="hal" type="button" ${L.plass(s, 'lave') < 1 ? 'disabled' : ''}>🐟 Hal inn</button></div>`;
+    return p; });
+}
+/* 0.26.0 Pyntebutikken (Even 17.11): pynt kjøpt for mynter. Hver ting har sin egen plass og kan flyttes, snus og selges */
+function lagKjopPynt(type) {
+  const g = new THREE.Group(), hvit = fm(0xf3eee3, 0.7), stein = fm(0xb9b0a2, 0.9), tre = MAT.brunPlank, gronn = fm(0x4fae45, 0.9);
+  if (type === 'stakitt') { [-0.8, -0.4, 0, 0.4, 0.8].forEach(x => { mesh(avrundetBoks(0.16, 0.8, 0.06, 0.02, 1), hvit, x, 0.42, 0, g); mesh(new THREE.ConeGeometry(0.1, 0.16, 4), hvit, x, 0.9, 0, g).rotation.y = Math.PI / 4; }); [0.3, 0.62].forEach(y => mesh(new THREE.BoxGeometry(1.96, 0.08, 0.05), hvit, 0, y, -0.04, g)); }
+  else if (type === 'hekk') { mesh(avrundetBoks(1.5, 0.9, 0.75, 0.3, 3), gronn, 0, 0.5, 0, g); [[-0.5, 0.95, 0.1], [0.1, 1.0, -0.1], [0.55, 0.92, 0.05]].forEach(([x, y, z]) => mesh(new THREE.SphereGeometry(0.28, 10, 8), fm(0x62bd4c, 0.9), x, y, z, g)); }
+  else if (type === 'blomsterbed') { mesh(avrundetBoks(1.55, 0.3, 0.95, 0.06, 1), tre, 0, 0.15, 0, g); mesh(new THREE.BoxGeometry(1.4, 0.08, 0.8), fm(0x5d3d24, 1), 0, 0.3, 0, g);
+    [0xe2493a, 0xf2c230, 0xff8fb8, 0xffffff, 0x8e5cc7, 0xf39c34, 0xe2493a, 0xf2c230].forEach((f, i) => { const x = -0.55 + (i % 4) * 0.37, z = i < 4 ? -0.2 : 0.2; mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 5), gronn, x, 0.47, z, g); mesh(new THREE.SphereGeometry(0.11, 8, 6), fm(f, 0.6), x, 0.66, z, g); }); }
+  else if (type === 'lykt') { mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.14, 10), stein, 0, 0.07, 0, g); mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.9, 8), fm(0x2e2a28, 0.6), 0, 1.05, 0, g); mesh(avrundetBoks(0.34, 0.4, 0.34, 0.05, 1), std({color: SRGB(0xffe9a3), emissive: SRGB(0xffc94a), emissiveIntensity: 0.9, roughness: 0.4}), 0, 2.15, 0, g); mesh(new THREE.ConeGeometry(0.3, 0.2, 4), fm(0x2e2a28, 0.6), 0, 2.45, 0, g).rotation.y = Math.PI / 4; }
+  else if (type === 'benk') { mesh(teksturUV(avrundetBoks(1.7, 0.1, 0.5, 0.03, 1), 1, 0.3), tre, 0, 0.5, 0.05, g); mesh(teksturUV(avrundetBoks(1.7, 0.5, 0.08, 0.03, 1), 1, 0.3), tre, 0, 0.85, -0.22, g); [-0.7, 0.7].forEach(x => mesh(avrundetBoks(0.1, 0.5, 0.5, 0.02, 1), fm(0x2e2a28, 0.6), x, 0.25, 0.02, g)); }
+  else if (type === 'flagg') { mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.16, 10), stein, 0, 0.08, 0, g); mesh(new THREE.CylinderGeometry(0.04, 0.05, 4.2, 8), hvit, 0, 2.2, 0, g); mesh(new THREE.SphereGeometry(0.08, 8, 6), fm(0xf2c230, 0.4), 0, 4.34, 0, g);
+    mesh(new THREE.BoxGeometry(1.1, 0.7, 0.03), fm(0x4cb22c, 0.8), 0.6, 3.85, 0, g); mesh(new THREE.BoxGeometry(1.1, 0.16, 0.035), fm(0xf2c230, 0.8), 0.6, 3.85, 0, g); }   /* gårdens eget flagg: grønt med gul stripe */
+  else if (type === 'fuglebad') { mesh(new THREE.CylinderGeometry(0.3, 0.38, 0.14, 14), stein, 0, 0.07, 0, g); mesh(new THREE.CylinderGeometry(0.1, 0.14, 0.8, 10), stein, 0, 0.5, 0, g); mesh(new THREE.CylinderGeometry(0.48, 0.3, 0.16, 16), stein, 0, 0.96, 0, g); mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.03, 16), std({color: SRGB(0x6cb7e0), roughness: 0.15}), 0, 1.04, 0, g);
+    mesh(new THREE.SphereGeometry(0.1, 10, 8), fm(0xe2493a, 0.7), 0.3, 1.14, 0.1, g).scale.set(1.3, 1, 1); mesh(new THREE.SphereGeometry(0.06, 8, 6), fm(0xe2493a, 0.7), 0.42, 1.22, 0.1, g); mesh(new THREE.ConeGeometry(0.02, 0.06, 5), fm(0xf2a72e, 0.5), 0.5, 1.22, 0.1, g).rotation.z = -Math.PI / 2; }
+  else if (type === 'fontene') { mesh(new THREE.CylinderGeometry(1.05, 1.1, 0.4, 22), stein, 0, 0.2, 0, g); mesh(new THREE.CylinderGeometry(0.92, 0.92, 0.04, 22), std({color: SRGB(0x6cb7e0), roughness: 0.15}), 0, 0.4, 0, g); mesh(new THREE.CylinderGeometry(0.14, 0.2, 1.0, 10), stein, 0, 0.9, 0, g); mesh(new THREE.CylinderGeometry(0.5, 0.3, 0.14, 16), stein, 0, 1.4, 0, g); mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.03, 16), std({color: SRGB(0x6cb7e0), roughness: 0.15}), 0, 1.47, 0, g);
+    mesh(new THREE.SphereGeometry(0.13, 10, 8), std({color: SRGB(0xa9dcf5), roughness: 0.1}), 0, 1.72, 0, g).scale.set(1, 1.6, 1); }
+  bake(g); return g;
+}
+const KP_HOYDE = {stakitt: 1.4, hekk: 1.7, blomsterbed: 1.3, lykt: 3.0, benk: 1.6, flagg: 4.8, fuglebad: 1.8, fontene: 2.5};
+function synkKjopPynt() {
+  const finnes = new Set(s.pynt.map(e => 'kp-' + e.id));
+  for (const [id, u] of [...ting]) if (u.type === 'kpynt' && !finnes.has(id)) { scene.remove(u.gruppe); u.gruppe.traverse(o => { const i = klikkbare.indexOf(o); if (i >= 0) klikkbare.splice(i, 1); }); const i = klikkbare.indexOf(u.gruppe); if (i >= 0) klikkbare.splice(i, 1); ting.delete(id); }
+  for (const e of s.pynt) { let u = ting.get('kp-' + e.id);
+    if (!u) { const g = lagKjopPynt(e.t); scene.add(g); eierAv(g); klikkbar(g); u = {type: 'kpynt', id: 'kp-' + e.id, e, gruppe: g, fot: D.pynt[e.t].fot, hoyde: KP_HOYDE[e.t] || 1.8}; u.ikon = lagIkon(u.hoyde); g.add(u.ikon); ting.set(u.id, u); }
+    u.e = e; if (e.x === null) { const q = finnLedigPlass(u, robot ? robot.position.x : 0, robot ? robot.position.z + 2 : 3) || [0, 3]; e.x = q[0]; e.z = q[1]; }
+    plasser(u, e.x, e.z, e.r || 0); }
+}
+function visKjopPynt(u) { const P = D.pynt[u.e.t], retur = Math.floor(P.pris * D.pyntRetur);
+  aapneHandling(u, P.ikon + ' ' + P.navn, () => `<p>Fra pyntebutikken. Den er bare til pynt.</p><div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt</button><button class="knapp lys" data-g="selgPynt">Selg for ${retur} 🪙</button></div>`); }
+function visPynt(u) { aapneHandling(u, '✨ ' + D.gave.pyntNavn[u.pid], () => (D.arrPynt.includes(u.pid) ? '<p>Premie fra Bursdagsfesten. Den er bare til pynt. 🎈</p>' : '<p>Superrar gullpynt fra en gaveeske. Den er bare til pynt.</p>') + '<div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt</button></div>'); }
+
+/* ======================= Årstidsfester (0.16.0, Even 11.11 og 15.11) ======================= */
+// Festen er åpen i sin måned. I testmodus kan måneden settes med ?test&maned=2
+const MANED = () => { if (ADMIN && admLager().vinter) return 12; const p = +new URLSearchParams(location.search).get('maned'); return TESTMODUS && p >= 1 && p <= 12 ? p : new Date().getMonth() + 1; };   /* 0.37.0: admin-bryteren «Vinter i Elvedal» gjør det desember */
+function settReglerManed() { const p = +new URLSearchParams(location.search).get('maned'); L.settManed(ADMIN && admLager().vinter ? 12 : TESTMODUS && p >= 1 && p <= 12 ? p : null); }
+settReglerManed();   /* 0.20.2: reglene bruker samme måned som visningen */   /* 0.20.2: reglene bruker samme måned som visningen */
+let arrNaa = null, arrNy = false;
+function synkArr() { arrNaa = L.arrId(s, MANED()); if (!arrNaa) return; if (!s.arr[arrNaa]) arrNy = true; L.arrStart(s, arrNaa); }
+function lagFestbord() {   /* et langbord med duk, festhatter, flagg og en ballong */
+  const g = new THREE.Group(), duk = fm(0xfff6e3, 0.7), rod = fm(0xe0473a, 0.5), gul = fm(0xffd23f, 0.5), bla = fm(0x3d8bd9, 0.5);
+  mesh(avrundetBoks(2.3, 0.12, 1.3, 0.05, 2), duk, 0, 0.92, 0, g); mesh(new THREE.BoxGeometry(2.32, 0.3, 1.32), fm(0xff8fb8, 0.7), 0, 0.74, 0, g);
+  [[-1.0, -0.5], [1.0, -0.5], [-1.0, 0.5], [1.0, 0.5]].forEach(([x, z]) => mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.9, 8), MAT.brunPlank, x, 0.45, z, g));
+  [[-0.7, 0.1, rod, gul], [0, -0.15, bla, rod], [0.7, 0.15, gul, bla]].forEach(([x, z, c, d]) => { mesh(new THREE.ConeGeometry(0.2, 0.5, 14), c, x, 1.23, z, g); mesh(new THREE.SphereGeometry(0.06, 8, 6), d, x, 1.5, z, g); });
+  [-1.25, 1.25].forEach(x => mesh(new THREE.CylinderGeometry(0.04, 0.05, 2.3, 8), MAT.brunPlank, x, 1.15, -0.72, g));
+  for (let i = 0; i < 7; i++) { const x = -0.96 + i * 0.32, f = mesh(new THREE.ConeGeometry(0.13, 0.28, 3), [rod, gul, bla][i % 3], x, 2.08 - Math.sin(i / 6 * Math.PI) * 0.16, -0.72, g); f.rotation.x = Math.PI; f.scale.z = 0.2; }
+  mesh(new THREE.CylinderGeometry(0.012, 0.012, 1.0, 4), fm(0xffffff, 0.8), 1.25, 2.55, -0.72, g); mesh(new THREE.SphereGeometry(0.28, 14, 12), fm(0xe0473a, 0.35), 1.25, 3.2, -0.72, g).scale.set(1, 1.2, 1);
+  return g;
+}
+/* ======================= Vinter i Elvedal (0.37.0, Even 18.–20.11) =======================
+   Du lager gavepapir av hvete, pakker inn en ting du har laget, og legger gaven under juletreet. Hver gave er én pepperkake.
+   Treet får mer pynt for hvert trinn. Alle tall er forslag til en voksen har godkjent dem. Julekalenderen, snømannen og nissen kommer senere */
+var vinterVist = null;
+function treTrinn() { return s && s.arr && s.arr.jul ? Math.min(3, L.arrTrinn(s, 'jul')) : 0; }   // 0 bart tre, 1 kuler, 2 lys, 3 gaver under. 0.38.0: stjernen kommer fra luke 24
+const treStjerne = () => !!(s && s.kal && s.kal.stjerne);
+function festPlassOpptatt(b, sb) {   /* 0.39.3: ser både på det som står på gården nå og på lagrede plasser for bygg som ikke er plassert ennå */
+  const meg = fotRekt({fot: FOT[b]}, sb.x, sb.z, sb.r);
+  for (const u of ting.values()) if (u.id !== b && u.plassert && u.fot && overlapp(meg, fotRekt(u, u.x, u.z, u.r))) return true;
+  for (const b2 in s.bygg) { const s2 = s.bygg[b2]; if (b2 === b || !s2 || s2.x === null || !FOT[b2] || (D.bygg[b2] && D.bygg[b2].arr && !treSynlig(b2))) continue;
+    if (overlapp(meg, fotRekt({fot: FOT[b2]}, s2.x, s2.z, s2.r))) return true; }
+  for (const f of s.akre) if (f.x !== null && overlapp(meg, [f.x - STR / 2, f.x + STR / 2, f.z - STR / 2, f.z + STR / 2])) return true;
+  return false; }
+function treSynlig(b) { const a = D.bygg[b].arr; return arrNaa === a || (!!D.bygg[b].tre && L.arrHar(s, a, 'tre')); }   /* 0.38.0: julekalenderen står bare i desember. 0.39.2 (QA 21.11): det gjør festmaskinene også */
+function synkVinterManed() { const paa = MANED() === 12; if (paa === vinterVist || !window.mbVinter) return; vinterVist = paa; window.mbVinter(paa); synkBrygge(); }   /* snø i desember. Bare utseende */
+function gaveBoks(w, c, band, x, y, z, g, r = 0) { const b = new THREE.Group(); b.position.set(x, y, z); b.rotation.y = r; g.add(b);
+  mesh(avrundetBoks(w, w * 0.8, w, w * 0.08, 1), fm(c, 0.55), 0, w * 0.4, 0, b); mesh(new THREE.BoxGeometry(w + 0.02, w * 0.82, w * 0.16), fm(band, 0.45), 0, w * 0.4, 0, b); mesh(new THREE.BoxGeometry(w * 0.16, w * 0.82, w + 0.02), fm(band, 0.45), 0, w * 0.4, 0, b);
+  [-1, 1].forEach(sd => { const l = mesh(new THREE.TorusGeometry(w * 0.16, w * 0.05, 6, 12), fm(band, 0.45), sd * w * 0.12, w * 0.88, 0, b); l.rotation.y = Math.PI / 2; l.rotation.x = sd * 0.5; });
+  return b; }
+function lagJuletre(n, stj) {
+  const g = new THREE.Group(), gronn = fm(0x2f7d3f, 0.85), mork = fm(0x23633a, 0.85), sno = fm(0xffffff, 0.9);
+  mesh(new THREE.CylinderGeometry(0.22, 0.28, 0.8, 10), MAT.brunPlank, 0, 0.4, 0, g);
+  mesh(new THREE.CylinderGeometry(0.62, 0.7, 0.36, 14), fm(0xc0392b, 0.6), 0, 0.18, 0, g);   // potte
+  [[1.35, 1.5, 1.15, gronn], [1.08, 1.3, 2.05, mork], [0.8, 1.1, 2.85, gronn], [0.5, 0.9, 3.55, mork]].forEach(([r, h, y, m]) => { mesh(new THREE.ConeGeometry(r, h, 16), m, 0, y, 0, g); mesh(new THREE.ConeGeometry(r * 0.55, h * 0.35, 16), sno, 0, y + h * 0.36, 0, g); });
+  if (n >= 1) [[0.95, 1.05, 0], [0.75, 1.5, 2.1], [0.85, 1.85, 4.2], [0.6, 2.4, 1.0], [0.55, 2.8, 3.3], [0.35, 3.3, 5.3], [1.0, 1.0, 3.0], [0.7, 2.0, 5.6]].forEach(([r, y, a], i) =>
+    mesh(new THREE.SphereGeometry(0.13, 10, 8), fm([0xe0473a, 0xffd23f, 0x3d8bd9][i % 3], 0.25), Math.cos(a) * r, y, Math.sin(a) * r, g));   // kuler
+  if (n >= 2) { const lys = new THREE.MeshBasicMaterial({color: SRGB(0xfff3a0)});
+    for (let i = 0; i < 26; i++) { const k = i / 26, y = 0.95 + k * 2.7, r = 1.2 * (1 - k * 0.82), a = k * Math.PI * 7; mesh(new THREE.SphereGeometry(0.06, 6, 5), lys, Math.cos(a) * r, y, Math.sin(a) * r, g, false); } }
+  if (n >= 3) [[0.95, 0.5, 0xe0473a, 0xffd23f, 0.3], [-0.9, 0.7, 0x3d8bd9, 0xffffff, -0.2], [0.15, 1.1, 0x4caf50, 0xe0473a, 0.6], [-0.4, -1.0, 0xffd23f, 0xe0473a, 0.1]].forEach(([x, z, c, b, r], i) => gaveBoks(0.42 + (i % 2) * 0.12, c, b, x, 0, z, g, r));
+  if (stj) { const st = new THREE.Shape(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 0.16 : 0.38, a = i / 10 * Math.PI * 2 + Math.PI / 2; st[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r, Math.sin(a) * r); }
+    const sg = new THREE.ExtrudeGeometry(st, {depth: 0.1, bevelEnabled: false}); sg.translate(0, 0, -0.05); mesh(sg, new THREE.MeshBasicMaterial({color: SRGB(0xffd23f)}), 0, 4.32, 0, g); }
+  else mesh(new THREE.ConeGeometry(0.08, 0.3, 8), mork, 0, 4.15, 0, g);
+  const treff = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 4.4, 8), new THREE.MeshBasicMaterial({visible: false})); treff.position.y = 2.2; g.add(treff);
+  return g;
+}
+function lagGavepapirmaskin() {   /* en maskin med en stor rull gavepapir på toppen */
+  const g = new THREE.Group(), rod = fm(0xd8372e, 0.5), gul = fm(0xffd23f, 0.45), hvit = fm(0xfff6e3, 0.7);
+  mesh(avrundetBoks(2.2, 0.3, 1.9, 0.06, 2), MAT.brunPlank, 0, 0.15, 0, g);
+  mesh(avrundetBoks(1.7, 1.3, 1.5, 0.15, 3), rod, 0, 0.95, 0, g);
+  mesh(new THREE.BoxGeometry(1.72, 0.14, 1.52), gul, 0, 1.25, 0, g);
+  [-0.45, 0.45].forEach(z => mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6, 8), gul, 0, 1.85, z, g));
+  const rull = new THREE.Group(); rull.position.set(0, 2.15, 0); rull.rotation.x = Math.PI / 2; g.add(rull);
+  mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.2, 18), hvit, 0, 0, 0, rull);
+  for (let i = 0; i < 5; i++) mesh(new THREE.CylinderGeometry(0.425, 0.425, 0.1, 18), rod, 0, -0.5 + i * 0.25, 0, rull);
+  mesh(new THREE.BoxGeometry(1.0, 0.04, 0.9), hvit, 0.95, 0.68, 0, g).rotation.z = -0.2;   // papiret kommer ut
+  [[0.95, 0.76, -0.2], [0.95, 0.76, 0.2]].forEach(([x, y, z]) => mesh(new THREE.BoxGeometry(0.9, 0.012, 0.06), rod, x, y, z, g).rotation.z = -0.2);
+  mesh(new THREE.SphereGeometry(0.1, 10, 8), fm(0x4caf50, 0.3), -0.55, 1.35, 0.76, g);
+  return g;
+}
+function lagGavemaskin() {   /* en grønn maskin med en stor sløyfe og ferdige gaver på et bånd */
+  const g = new THREE.Group(), gronn = fm(0x3a9a4c, 0.5), rod = fm(0xe0473a, 0.45), mork = fm(0x3a3a40, 0.7);
+  mesh(avrundetBoks(2.4, 0.3, 2.1, 0.06, 2), MAT.brunPlank, 0, 0.15, 0, g);
+  mesh(avrundetBoks(1.7, 1.6, 1.6, 0.18, 3), gronn, -0.2, 1.1, 0, g);
+  mesh(new THREE.BoxGeometry(1.72, 1.62, 0.2), rod, -0.2, 1.1, 0, g); mesh(new THREE.BoxGeometry(0.2, 1.62, 1.62), rod, -0.2, 1.1, 0, g);
+  [-1, 1].forEach(sd => { const l = mesh(new THREE.TorusGeometry(0.34, 0.11, 8, 16), rod, -0.2 + sd * 0.3, 2.1, 0, g); l.rotation.y = Math.PI / 2; l.rotation.x = sd * 0.45; });
+  mesh(new THREE.SphereGeometry(0.14, 10, 8), rod, -0.2, 2.0, 0, g);
+  mesh(new THREE.BoxGeometry(1.1, 0.12, 0.8), mork, 1.05, 0.55, 0, g);   // bånd
+  gaveBoks(0.36, 0xffd23f, 0xe0473a, 0.85, 0.61, 0, g); gaveBoks(0.3, 0x3d8bd9, 0xffffff, 1.35, 0.61, 0.1, g, 0.4);
+  return g;
+}
+function lagSlede() {   /* 0.37.0 Julesleden: rød slede med gull, meier og gaver. Reinsdyret kommer med julekalenderen */
+  const g = new THREE.Group(), rod = fm(0xc81f2a, 0.4), gull = fm(0xffc93c, 0.3), mork = fm(0x5a3a22, 0.8);
+  mesh(avrundetBoks(3.4, 0.9, 1.8, 0.25, 3), rod, -0.3, 1.05, 0, g);
+  mesh(avrundetBoks(0.9, 1.5, 1.8, 0.3, 3), rod, -1.75, 1.45, 0, g);   // høy rygg bak
+  mesh(avrundetBoks(0.5, 0.9, 1.7, 0.2, 3), rod, 1.25, 1.35, 0, g).rotation.z = -0.5;   // fronten bøyer opp
+  [[-0.3, 1.52, 0.91, 3.4, 0.06], [-0.3, 1.52, -0.91, 3.4, 0.06]].forEach(([x, y, z, w, d]) => mesh(new THREE.BoxGeometry(w, 0.1, d), gull, x, y, z, g));
+  mesh(avrundetBoks(1.2, 0.25, 1.5, 0.08, 2), fm(0x2f7d3f, 0.7), -0.9, 1.55, 0, g);   // sete
+  [0.82, -0.82].forEach(z => { mesh(new THREE.BoxGeometry(3.8, 0.1, 0.12), gull, -0.1, 0.18, z, g);
+    const krok = mesh(new THREE.TorusGeometry(0.35, 0.06, 8, 16, Math.PI * 1.2), gull, 1.8, 0.55, z, g); krok.rotation.z = -Math.PI * 0.55;
+    [-1.4, -0.2, 0.9].forEach(x => mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.55, 6), mork, x, 0.45, z * 0.95, g)); });
+  gaveBoks(0.6, 0x3d8bd9, 0xffd23f, 0.35, 1.5, 0.3, g, 0.3); gaveBoks(0.5, 0xffd23f, 0xe0473a, 0.5, 1.5, -0.4, g, -0.2); gaveBoks(0.42, 0x4caf50, 0xffffff, 0.4, 1.98, 0.0, g, 0.5);
+  mesh(new THREE.SphereGeometry(0.45, 12, 10), fm(0x9b6b3c, 0.9), -1.55, 2.25, 0.2, g).scale.set(1, 1.2, 1);   // sekk med gaver
+  const sk = skiltTekst('God jul', 1.4); sk.position.set(-0.3, 1.1, 0.92); g.add(sk);
+  /* 0.38.0 (Even 20.11): reinsdyret trekker sleden, og julenissen sitter på setet */
+  const rein = lagRein(g, 3.6, 0, 0); rein.rotation.y = Math.PI / 2; const nis = lagNisse(g, -0.9, 1.62, 0); nis.rotation.y = Math.PI / 2;
+  [0.22, -0.22].forEach(z => { const l = mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.0, 5), fm(0x5a3a22, 0.8), 2.3, 1.25, z, g); l.rotation.z = Math.PI / 2 - 0.08; });
+  g.userData.rein = rein;
+  return g;
+}
+const ARR_TEKST = {
+  bursdag: {intro: A => `EVN Studio har bursdag i november! Lag ${navn(A.vare).toLowerCase()}er ${ikon(A.vare)} i Festbordet, og send dem med varebilen.`, sendt: 'Du har sendt', knapp: '🚚 Send', slutt: 'Festen er åpen hele november. Det du har sendt, blir med til neste år.'},
+  jul: {intro: () => 'Lag 📜 gavepapir av hvete i Gavepapirmaskinen. Pakk inn en ting du har laget i Gavemaskinen. Legg gavene under juletreet, så kjører varebilen dem til naboene. Hver gave er én 🍪 pepperkake.', sendt: 'Du har', knapp: '🎁 Legg under treet', slutt: 'Vinter i Elvedal varer hele desember. Pepperkakene dine blir med til neste år.'}
+};
+function arrDel(A, id) {   /* premietrinnene, felles for varebilen (Bursdagsfesten) og juletreet (Vinter i Elvedal) */
+  const a = s.arr[id], T = ARR_TEKST[id] || ARR_TEKST.bursdag, har = s.lager[A.vare] || 0, enhet = A.poeng ? '🍪' : ikon(A.vare);
+  let p = `<p>${T.intro(A)}</p><p><b>${T.sendt} ${a.levert} ${enhet}${A.poeng ? (a.levert === 1 ? ' pepperkake' : ' pepperkaker') : ''}.</b></p>`;
+  p += A.trinn.map(tr => `<div class="rad"><span class="stort">${a.levert >= tr.n ? '✅' : '🎁'}</span><span class="midt">${tr.tekst}<small>${a.levert >= tr.n ? 'Du har fått den!' : `${tr.n} ${enhet} · ${tr.n - a.levert} igjen`}</small></span></div>`).join('');
+  p += `<div class="knapper"><button class="knapp gronn" data-g="arrSend" ${har ? '' : 'disabled'}>${T.knapp}${har ? ' ' + har + ' ' + ikon(A.vare) : ''}</button></div>`;
+  if (!har) { const fb = s.bygg[A.bygg], O = D.oppskrifter[A.vare], B = D.bygg[A.bygg];
+    p += `<p style="font-size:15px">${fb && fb.eid ? `Du har ingen ${D.varer[A.vare].flertall || navn(A.vare).toLowerCase() + 'er'} nå. Lag dem i ${B.navn} av ${Object.keys(O.inn).map(k => O.inn[k] + ' ' + ikon(k)).join(' + ')}${O.pakk ? ' + en ting du har laget' : ''}.` : `Bygg ${B.navn} ${B.ikon} først. Det koster ${B.pris} 🪙.`}</p>`; }
+  return p + `<p style="font-size:15px">${T.slutt}</p>`;
+}
+function visJuletre(u) {
+  const A = D.arr.jul;
+  aapneHandling(u, '🎄 Juletreet', () => {
+    if (arrNaa !== 'jul') return `<p>Juletreet er ditt for alltid. 🎄 Det har ${['ingen pynt', 'kuler', 'kuler og lys', 'kuler, lys og gaver', 'kuler, lys, gaver og stjerne'][treTrinn()]}.</p><p style="font-size:15px">${A.navn} kommer tilbake i desember.</p><div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt</button></div>`;
+    return arrDel(A, 'jul') + '<div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt</button></div>'; });
+}
+let pakkValg = null;   /* hva gavemaskinen pakker inn. Huskes til du bytter */
+function pakkRad() { const liste = L.pakkbare(s); if (!liste.includes(pakkValg)) pakkValg = liste[0] || null;
+  if (!pakkValg) return '<p style="font-size:15px">🎁 Du har ingen ting å pakke inn. Lag noe i et annet bygg først, for eksempel brød 🍞 i bakeriet.</p>';
+  return `<div class="rad"><span class="stort">${ikon(pakkValg)}</span><span class="midt">Pakker inn: ${navn(pakkValg).toLowerCase()}<small>Du har ${s.lager[pakkValg]}${liste.length > 1 ? ` · du kan velge mellom ${liste.length} ting` : ''}</small></span>${liste.length > 1 ? '<button class="knapp lys" data-g="pakkBytt" type="button">Bytt</button>' : ''}</div>`; }
+// Festhatter på dyrene: vises i festmåneden når første premie er nådd. 0.37.0: nisseluer i desember
+function synkDyrehatter() {
+  if (!window.__dyr) return; const paa = !!arrNaa && L.arrHar(s, arrNaa, 'hatter'), tr = paa && D.arr[arrNaa].trinn.find(x => x.premie === 'hatter'), type = (tr && tr.hatt) || 'fest';
+  for (const g of window.__dyr.alle) { const u = g.userData, a = u.art2 || u.art; if (!u.hode || !['hone', 'ku', 'gris'].includes(a)) continue;
+    if (paa && u.festhatt && u.hattType !== type) { u.hode.remove(u.festhatt); u.festhatt = null; }
+    if (paa && !u.festhatt) { const r = a === 'hone' ? 0.31 : a === 'ku' ? 0.42 : 0.38, h = new THREE.Group(), farger = [0xe0473a, 0x3d8bd9, 0xffd23f, 0x8e5cc7], c = type === 'nisse' ? 0xd8262f : farger[window.__dyr.alle.indexOf(g) % 4];
+      mesh(new THREE.ConeGeometry(r * 0.55, r * 1.5, 14), fm(c, 0.5), 0, r * 0.75, 0, h); mesh(new THREE.SphereGeometry(r * (type === 'nisse' ? 0.22 : 0.18), 8, 6), fm(0xffffff, type === 'nisse' ? 0.95 : 0.6), 0, r * 1.52, 0, h);
+      if (type === 'nisse') mesh(new THREE.CylinderGeometry(r * 0.6, r * 0.62, r * 0.22, 14), fm(0xffffff, 0.95), 0, r * 0.08, 0, h);   /* nisselue: rød med hvit kant og dusk */
+      h.position.set(-r * 0.1, r * 0.82, 0); h.rotation.z = type === 'nisse' ? 0.3 : 0.12; u.hode.add(h); u.festhatt = h; u.hattType = type; }
+    if (u.festhatt) u.festhatt.visible = paa; }
+}
+function visVarebil(u) {
+  const A = arrNaa && D.arr[arrNaa];
+  aapneHandling(u, A ? A.ikon + ' ' + A.navn : '🚚 Varebilen', () => {
+    let p = '';
+    if (A && A.tre) p += `<p>${A.ikon} Gavene legger du under juletreet. Da kjører varebilen dem til naboene. Du har ${s.arr[arrNaa].levert} 🍪 ${s.arr[arrNaa].levert === 1 ? 'pepperkake' : 'pepperkaker'}.</p><div class="knapper"><button class="knapp gronn" data-g="visTre" type="button">🎄 Gå til juletreet</button></div>`;
+    else if (A) p += arrDel(A, arrNaa);
+    const eide = Object.keys(s.skinn.eid);
+    if (eide.length) p += '<p><b>Utseende på bilen</b></p><div class="knapper">' + [null, ...eide].map(id => `<button class="knapp ${(s.skinn.valgt || null) === id ? '' : 'lys'}" data-g="skinn" data-v="${id || ''}" ${(s.skinn.valgt || null) === id ? 'aria-pressed="true"' : ''}>${id ? D.skinn[id] : 'Vanlig bil'}${(s.skinn.valgt || null) === id ? ' ✓' : ''}</button>`).join('') + '</div>';
+    if (ting.get('tavle')) p += '<div class="knapper"><button class="knapp lys" data-g="tavle">📋 Bestillinger</button></div>';
+    return p; });
+}
 
 /* ======================= Rebus' gåter (0.11.0, Even 13.11) ======================= */
 // Rebus står i skogkanten med et spørsmålstegn over seg når han har en gåte. Du svarer ved å gi ham det gåten handler om.
 let revIkon = null, gateFor = undefined;
 function synkGate() {
   const t = naa(), aktiv = s.oppl.steg >= OPPL.length && s.nivaa >= D.rebus.nivaa, g = aktiv ? L.harGate(s, t) : null;
-  if (gateFor !== undefined && g && g !== gateFor) { melding('🦊 Rebus har en ny gåte! Trykk på ham i skogkanten.', 3400); lagre(); }
+  if (gateFor !== undefined && g && g !== gateFor) { melding(vinterSno() ? '⛄ Snømannen har en ny vintergåte!' : '🦊 Rebus har en ny gåte! Han kommer ut av huset sitt.', 3400); lagre(); }
   const forste = !revKlar; gateFor = g;
   if (rev) { revKlar = true; if (!revIkon) { revIkon = lagIkon(0); scene.add(revIkon); } settIkon(revIkon, g ? '❓' : null);
+    if (vinterSno()) return;
     const paaGard = !!g || performance.now() < revHjemEtter;   /* 0.11.1 (Even 13.11): Rebus går inn på gården når han har en gåte, og hjem igjen etterpå */
     if (paaGard && revSted !== 'gard' && (!revGang || revGang.hjem)) revGaa(false, forste); else if (!paaGard && revSted !== 'hjem' && (!revGang || !revGang.hjem)) revGaa(true, forste); }
 }
@@ -796,28 +1248,187 @@ function synkGate() {
 const REV_HJEM = [-17.6, 4.0], REV_GARD = [-8.0, 1.3];   /* 0.15.3 (Even 15.11): Rebus venter ved benken foran låven, ikke ved porten */
 /* 0.15.0 (Even 15.11: «forbedre gåingen til Rebus»): farten passer skrittene i gåklippet. Klippet flytter foten ca. 0,5 m per halve skritt på 1,07 s,
    altså ca. 0,9 m/s. Han går 1,2 m/s, og klippet spilles 1,3 ganger så fort, så føttene ikke sklir. Svingene er mykere, og han blir ikke avbrutt av vinking mens han går */
+/* 0.23.0 (Even 17.11: «Rebus flytter inn»): Rebus har et lite hus i skogkanten. Han er inne når han ikke har en gåte, og kommer ut av døra når han har en.
+   Mens opplæringen pågår, står han utenfor som før. Trykker du på huset, kommer han ut og hilser */
+const REV_HUS = [-19.4, 4.0]; let revehus = null, revUteTil = 0;
+function lagRevehus() {
+  const g = new THREE.Group(), W = 2.3, H = 1.5, Dd = 2.0;
+  mesh(avrundetBoks(W + 0.3, 0.16, Dd + 0.3, 0.05, 1), fm(0xb9b0a2, 0.9), 0, 0.08, 0, g);
+  mesh(teksturUV(new THREE.BoxGeometry(W, H, Dd), 1.1, 0.75), MAT.brunPlank, 0, 0.16 + H / 2, 0, g);
+  tak(g, W + 0.2, Dd, 0.16 + H, 1.0, MAT.tak2);
+  mesh(new THREE.BoxGeometry(0.95, 1.05, 0.08), fm(0x2e2118, 0.95), 0, 0.16 + 0.525, Dd / 2 + 0.01, g);   /* døråpningen */
+  const bue = mesh(new THREE.CylinderGeometry(0.475, 0.475, 0.08, 18, 1, false, 0, Math.PI), fm(0x2e2118, 0.95), 0, 0.16 + 1.05, Dd / 2 + 0.01, g); bue.rotation.x = Math.PI / 2; bue.rotation.y = Math.PI / 2;
+  [-0.56, 0.56].forEach(x => mesh(avrundetBoks(0.12, 1.1, 0.1, 0.02, 1), MAT.hvitTrim, x, 0.16 + 0.55, Dd / 2 + 0.05, g));
+  const sk = skiltTekst('Rebus', 1.1); sk.position.set(0, 0.16 + H + 0.42, Dd / 2 + 0.06); g.add(sk);
+  mesh(new THREE.CylinderGeometry(0.2, 0.15, 0.26, 10), fm(0xc8683a, 0.9), 1.0, 0.13, Dd / 2 + 0.45, g);   /* blomsterpotte */
+  [[0xf2c230, 0], [0xf08a24, 2.1], [0xffffff, 4.2]].forEach(([f, a]) => mesh(new THREE.SphereGeometry(0.1, 8, 6), fm(f, 0.7), 1.0 + Math.cos(a) * 0.1, 0.36, Dd / 2 + 0.45 + Math.sin(a) * 0.1, g));
+  bake(g); return g;
+}
+function synkRevehus() {
+  if (revehus || typeof hoyde !== 'function') return;
+  revehus = lagRevehus(); revehus.position.set(REV_HUS[0], hoyde(REV_HUS[0], REV_HUS[1]), REV_HUS[1]); revehus.rotation.y = Math.PI / 2; revehus.userData.revehus = true; scene.add(revehus); eierAv(revehus); klikkbar(revehus);
+}
+/* 0.24.0 (Even 8.11 og 17.11): gårdshunden Syltetøy. Stor, gul og snill. Hun kommer på nivå 20, bor i hundehuset og følger roboten. Bare til pynt */
+let hund = null, hundSpor = [], hundSitt = 0, hundHopp = 0;
+/* 0.25.0 (Even 17.11: «ekstra gøy»): Syltetøy har fått jobb. Av og til snuser hun seg fram til noe som er gravd ned, graver, og venter ved en liten jordhaug til du trykker på den.
+   Trykker du på henne, kaster roboten en pinne som hun henter. Skatten er liten (5–15 mynter eller 2 frø), kan ikke kjøpes, og blir liggende til du henter den. Tallene er forslag */
+const HUND_SKATT = {pause: [150, 240], mynter: [5, 15], fro: 2, froSjanse: 0.3};
+let hundJobb = null, hundNeste = 0, hundHaug = null, hundPinne = null;
+function hundLedigPunkt(avstand) { for (let i = 0; i < 24; i++) { const a = Math.random() * 6.28, r = avstand * (0.6 + Math.random() * 0.6), x = robot.position.x + Math.cos(a) * r, z = robot.position.z + Math.sin(a) * r;
+    let v = null;   /* stedet må kunne nås til fots. Det trenger ikke være ledig byggeplass */ try { v = finnVei({x: hund.position.x, z: hund.position.z}, [x - 0.3, x + 0.3, z - 0.3, z + 0.3], 0.6); } catch (e) {}
+    if (!v) try { v = finnVei({x: robot.position.x, z: robot.position.z}, [x - 0.3, x + 0.3, z - 0.3, z + 0.3], 0.6); } catch (e) {}   /* står hun selv inntil noe, går hun via roboten */
+    if (!v) continue; const vei = v.map(q => [q.x, q.z]), fra = vei.length ? vei[vei.length - 1] : [hund.position.x, hund.position.z], d = Math.hypot(x - fra[0], z - fra[1]) || 1;
+    vei.push([x - (x - fra[0]) / d * 0.9, z - (z - fra[1]) / d * 0.9]); return {x, z, vei}; } return null; }   /* hun stopper 0,9 m før stedet, så haugen eller pinnen ligger foran henne */
+function hundStartGrav() { const m = hundLedigPunkt(6); if (!m) { hundNeste = performance.now() + 20000; return; } hundJobb = {type: 'grav', fase: 'gaar', vei: m.vei, x: m.x, z: m.z, t: 0}; }
+function hundStartPinne() {
+  const m = hundLedigPunkt(7); if (!m) { hundTrykkHopp(); return; }
+  if (!hundPinne) { hundPinne = mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.7, 6), fm(0x8a5a36, 0.9), 0, 0, 0, scene); hundPinne.rotation.z = Math.PI / 2; }
+  hundPinne.visible = true; hund.userData.hode.remove(hundPinne); scene.add(hundPinne);
+  hundJobb = {type: 'pinne', fase: 'kast', vei: m.vei, x: m.x, z: m.z, t: 0, fra: [robot.position.x, robot.position.z]}; melding('🐶 Hent pinnen, Syltetøy!', 2200);
+}
+function hundTrykkHopp() { hundHopp = 0.5; if (typeof visHjerte === 'function') visHjerte(hund.position.clone().setY(hund.position.y + 1.6)); }
+function hundLagHaug(x, z) {
+  const g = new THREE.Group(); mesh(new THREE.SphereGeometry(0.42, 12, 8), fm(0x6b4a2e, 1), 0, 0, 0, g).scale.set(1.2, 0.45, 1.2); [[0.3, 0.1], [-0.25, 0.25], [0.05, -0.32]].forEach(([dx, dz]) => mesh(new THREE.SphereGeometry(0.12, 8, 6), fm(0x7d5836, 1), dx, 0.06, dz, g));
+  g.position.set(x, Math.max(hoyde(x, z), window.akerY ? window.akerY(x, z) : 0), z); g.userData.hundHaug = true; scene.add(g); eierAv(g); klikkbar(g); const ik = lagIkon(1.5); g.add(ik); settIkon(ik, '✨'); return g;
+}
+function hundHentSkatt() {
+  if (!hundHaug) return; const pos = hundHaug.position.clone().setY(hundHaug.position.y + 1.2); let tekst;
+  const avl = Object.keys(D.avlinger).filter(a => D.avlinger[a].nivaa <= s.nivaa);
+  if (Math.random() < HUND_SKATT.froSjanse && L.plass(s, 'silo') >= HUND_SKATT.fro) { const a = avl[Math.floor(Math.random() * avl.length)]; s.lager[a] = (s.lager[a] || 0) + HUND_SKATT.fro; tekst = '+' + HUND_SKATT.fro + ' ' + ikon(a); }
+  else { const m = HUND_SKATT.mynter[0] + Math.floor(Math.random() * (HUND_SKATT.mynter[1] - HUND_SKATT.mynter[0] + 1)); s.mynter += m; tekst = '+' + m + ' 🪙'; }
+  flyt(tekst, pos); const i = klikkbare.indexOf(hundHaug); if (i >= 0) klikkbare.splice(i, 1); scene.remove(hundHaug); hundHaug = null; hundJobb = null; hundNeste = performance.now() + (HUND_SKATT.pause[0] + Math.random() * (HUND_SKATT.pause[1] - HUND_SKATT.pause[0])) * 1000;
+  hundTrykkHopp(); melding('🐶 Flink bisk! Syltetøy fant noe til deg.', 2600); lagre(); synk();
+}
+/* 0.32.0 Epletreet (Even 18.11): står for alltid. De røde eplene vises når de er modne, og blir borte når de er plukket */
+function lagEpletre() {
+  const g = new THREE.Group(), blad = fm(0x5fae3e, 0.9), blad2 = fm(0x4a9634, 0.9);
+  mesh(new THREE.CylinderGeometry(0.2, 0.3, 1.9, 10), MAT.brunPlank, 0, 0.95, 0, g);
+  [[0, 2.7, 0, 1.25, blad], [0.75, 2.4, 0.25, 0.85, blad2], [-0.7, 2.45, -0.2, 0.9, blad2], [0.1, 3.4, -0.1, 0.8, blad], [-0.1, 2.5, 0.75, 0.8, blad]].forEach(([x, y, z, r, m]) => mesh(new THREE.SphereGeometry(r, 14, 10), m, x, y, z, g));
+  const ring = new THREE.CircleGeometry(1.2, 20); ring.rotateX(-Math.PI / 2); mesh(ring, fm(0x7a5a38, 1), 0, 0.03, 0, g, false).receiveShadow = true;
+  bake(g);
+  const epler = new THREE.Group(), rod = fm(0xd9382e, 0.45);
+  for (let k = 0; k < 12; k++) { const a = k * 2.4, hoy = k % 3, r = hoy === 2 ? 1.0 : hoy === 1 ? 1.5 : 1.62; mesh(new THREE.SphereGeometry(0.2, 10, 8), rod, Math.cos(a) * r, hoy === 2 ? 3.45 : hoy === 1 ? 2.85 : 2.2, Math.sin(a) * r, epler); }   /* utenpå krona, så de synes fra alle kanter */
+  epler.visible = false; g.add(epler); g.userData.epler = epler; return g;
+}
+function synkEpletre() { const t = naa(); for (const b of ['epletre', 'bikube']) { const u = ting.get(b), sb = s.bygg[b]; if (u && sb && u.gruppe.userData.epler) u.gruppe.userData.epler.visible = !!sb.eid && sb.ko.some(j => t >= j.slutt); } }
+/* 0.33.0 Bikuben (Even 18.11): gul bikube av halm på en liten benk, med bier som surrer rundt. Honningkrukka vises når honningen er klar */
+function lagBikube() {
+  const g = new THREE.Group(), halm = fm(0xe9b93f, 0.95), halm2 = fm(0xd9a32c, 0.95), tre = MAT.brunPlank;
+  mesh(avrundetBoks(1.5, 0.12, 1.1, 0.03, 1), tre, 0, 0.62, 0, g); [[-0.6, -0.4], [0.6, -0.4], [-0.6, 0.4], [0.6, 0.4]].forEach(([x, z]) => mesh(avrundetBoks(0.12, 0.6, 0.12, 0.02, 1), tre, x, 0.3, z, g));
+  [[0.52, 0.86], [0.5, 1.06], [0.45, 1.26], [0.37, 1.45], [0.26, 1.62], [0.13, 1.76]].forEach(([r, y], i) => mesh(new THREE.TorusGeometry(r, 0.115, 8, 20), i % 2 ? halm2 : halm, -0.15, y, 0, g).rotation.x = Math.PI / 2);
+  mesh(new THREE.SphereGeometry(0.42, 14, 10), halm2, -0.15, 1.15, 0, g).scale.set(1, 1.5, 1);
+  mesh(new THREE.CircleGeometry(0.12, 12), fm(0x2e2a28, 0.9), -0.15, 0.95, 0.63, g, false);   /* flygehullet */
+  [[0.9, 0.9, 0xf06aa8], [1.05, 0.5, 0xffd23f], [-1.0, 0.8, 0xffffff]].forEach(([x, z, c]) => { mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.4, 5), fm(0x4a9634, 0.9), x, 0.2, z, g); mesh(new THREE.SphereGeometry(0.1, 8, 6), fm(c, 0.6), x, 0.44, z, g); });
+  bake(g);
+  const krukke = new THREE.Group(); mesh(new THREE.CylinderGeometry(0.16, 0.14, 0.3, 12), fm(0xf2a81d, 0.3), 0.5, 0.83, 0.25, krukke); mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.06, 12), fm(0xf3eee3, 0.6), 0.5, 1.0, 0.25, krukke);
+  krukke.visible = false; g.add(krukke); g.userData.epler = krukke;
+  const bier = []; for (let k = 0; k < 6; k++) { const bie = new THREE.Group(); mesh(new THREE.SphereGeometry(0.055, 8, 6), fm(0xffd23f, 0.5), 0, 0, 0, bie).scale.set(1.4, 1, 1); mesh(new THREE.SphereGeometry(0.04, 6, 5), fm(0x2e2a28, 0.6), 0.06, 0, 0, bie); g.add(bie); bier.push(bie); }
+  g.userData.bier = bier; return g;
+}
+function oppdaterBier(t) { const u = ting.get('bikube'); if (!u || !u.gruppe.userData.bier || !u.gruppe.visible) return;
+  u.gruppe.userData.bier.forEach((bie, k) => { const a = t * (1.3 + k * 0.23) + k * 1.9, r = 0.75 + 0.3 * Math.sin(t * 0.7 + k); bie.position.set(-0.15 + Math.cos(a) * r, 1.3 + 0.45 * Math.sin(t * 1.9 + k * 2.1), Math.sin(a) * r); bie.rotation.y = -a - Math.PI / 2; }); }
+function lagHundehus() {
+  const g = new THREE.Group(), W = 1.9, H = 1.1, Dd = 1.8;
+  mesh(avrundetBoks(W + 0.25, 0.12, Dd + 0.25, 0.04, 1), fm(0xb9b0a2, 0.9), 0, 0.06, 0, g);
+  mesh(teksturUV(new THREE.BoxGeometry(W, H, Dd), 1, 0.6), MAT.rodPlank, 0, 0.12 + H / 2, 0, g);
+  tak(g, W + 0.2, Dd, 0.12 + H, 0.8, MAT.tak);
+  mesh(new THREE.BoxGeometry(0.8, 0.7, 0.08), fm(0x2e2118, 0.95), 0, 0.12 + 0.35, Dd / 2 + 0.01, g);
+  const bue = mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.08, 16, 1, false, 0, Math.PI), fm(0x2e2118, 0.95), 0, 0.12 + 0.7, Dd / 2 + 0.01, g); bue.rotation.x = Math.PI / 2; bue.rotation.y = Math.PI / 2;
+  const sk = skiltTekst('Syltetøy', 1.3); sk.position.set(0, 0.12 + H + 0.33, Dd / 2 + 0.06); g.add(sk);
+  mesh(new THREE.CylinderGeometry(0.26, 0.2, 0.12, 14), fm(0x3f8fd6, 0.6), 0.95, 0.06, Dd / 2 + 0.5, g); mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.03, 14), fm(0x8a5a36, 0.9), 0.95, 0.12, Dd / 2 + 0.5, g);   /* matskål */
+  bake(g); return g;
+}
+function lagHund() {
+  const g = new THREE.Group(), K = new THREE.Group(); g.add(K);
+  const gul = fm(0xedb84a, 0.75), lys = fm(0xf8dc93, 0.75), mork = fm(0xc98a2c, 0.75), svart = fm(0x2a2320, 0.5);
+  mesh(new THREE.SphereGeometry(0.42, 20, 14), gul, 0, 0.72, 0, K).scale.set(1.55, 0.95, 0.95);
+  mesh(new THREE.SphereGeometry(0.3, 14, 10), lys, 0.42, 0.62, 0, K).scale.set(0.9, 1.0, 0.8);   /* lyst bryst */
+  const bein2 = [[0.42, 0.2], [0.42, -0.2], [-0.42, 0.2], [-0.42, -0.2]].map(([x, z]) => { const b = new THREE.Group(); b.position.set(x, 0.55, z); K.add(b); mesh(new THREE.CylinderGeometry(0.1, 0.085, 0.55, 10), gul, 0, -0.26, 0, b); mesh(new THREE.SphereGeometry(0.11, 10, 8), lys, 0.03, -0.52, 0, b).scale.set(1.25, 0.6, 1); return b; });
+  const hode = new THREE.Group(); hode.position.set(0.72, 1.05, 0); K.add(hode);
+  mesh(new THREE.SphereGeometry(0.33, 18, 14), gul, 0, 0, 0, hode);
+  mesh(avrundetBoks(0.34, 0.22, 0.26, 0.08, 2), lys, 0.3, -0.08, 0, hode); mesh(new THREE.SphereGeometry(0.07, 10, 8), svart, 0.47, -0.02, 0, hode);
+  mesh(new THREE.SphereGeometry(0.055, 8, 6), fm(0xe86a7a, 0.6), 0.36, -0.2, 0, hode).scale.set(1, 0.5, 1.2);   /* tunge */
+  [0.14, -0.14].forEach(z => { mesh(new THREE.SphereGeometry(0.055, 10, 8), svart, 0.26, 0.09, z, hode); mesh(new THREE.SphereGeometry(0.018, 6, 5), fm(0xffffff, 0.3), 0.3, 0.11, z, hode); });
+  const orer = [1, -1].map(sd => { const o = new THREE.Group(); o.position.set(-0.02, 0.2, sd * 0.27); hode.add(o); mesh(new THREE.SphereGeometry(0.16, 10, 8), mork, 0, -0.14, sd * 0.03, o).scale.set(0.7, 1.35, 0.4); return o; });
+  mesh(new THREE.TorusGeometry(0.25, 0.045, 8, 18), fm(0xd9362b, 0.6), 0.52, 0.86, 0, K).rotation.y = Math.PI / 2;   /* rødt halsbånd */
+  mesh(new THREE.SphereGeometry(0.06, 8, 6), fm(0xf2c230, 0.4), 0.6, 0.62, 0, K);
+  const hale = new THREE.Group(); hale.position.set(-0.6, 0.9, 0); K.add(hale); const hm = mesh(new THREE.ConeGeometry(0.11, 0.6, 10), gul, -0.16, 0.2, 0, hale); hm.rotation.z = 0.7;
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; } });
+  g.userData = {K, bein: bein2, hode, orer, hale, fase: 0, hund: true}; g.scale.setScalar(1.05); return g;
+}
+function synkHund() {
+  const skal = s.nivaa >= D.hund.nivaa;
+  let hh = ting.get('hundehus');
+  if (skal && !hh) { const g = lagHundehus(); scene.add(g); eierAv(g); klikkbar(g); hh = {type: 'hundehus', id: 'hundehus', gruppe: g, fot: FOT.hundehus, hoyde: 2.4}; ting.set('hundehus', hh); }
+  if (hh) { hh.gruppe.visible = skal; if (skal) { if (s.plasser.hundehus && !hh.plassert && !erLedig(hh, s.plasser.hundehus.x, s.plasser.hundehus.z, 0)) delete s.plasser.hundehus;
+    const ph = s.plasser.hundehus || (() => { const p = finnLedigPlass(hh, ...STANDARD.hundehus) || STANDARD.hundehus; return (s.plasser.hundehus = {x: p[0], z: p[1], r: 0}); })(); plasser(hh, ph.x, ph.z, ph.r || 0); } }
+  if (skal && !hund) { hund = lagHund(); scene.add(hund); eierAv(hund); klikkbar(hund); const p = hh ? [hh.x + 1.6, hh.z + 1.2] : [0, 0]; hund.position.set(p[0], 0, p[1]); hundSpor = []; }
+  if (hund) hund.visible = skal;
+}
+function oppdaterHund(dt, t) {
+  if (!hund || !hund.visible || typeof robot === 'undefined' || !robot) return;
+  const u = hund.userData, p = hund.position, rp = robot.position, siste = hundSpor[hundSpor.length - 1];
+  if (!siste || Math.hypot(rp.x - siste[0], rp.z - siste[1]) > 0.3) hundSpor.push([rp.x, rp.z]);   /* hunden går i robotens spor, så hun går utenom det roboten går utenom */
+  if (Math.hypot(rp.x - p.x, rp.z - p.z) > 28 || hundSpor.length > 160) { p.x = rp.x - 1.2; p.z = rp.z - 0.6; hundSpor = []; }
+  let gaar = false, graver = 0;
+  if (!hundNeste) hundNeste = performance.now() + 45000;   /* første skatt litt etter at hun har kommet */
+  if (!hundJobb && !hundHaug && performance.now() > hundNeste && hundSpor.length <= 5) hundStartGrav();
+  if (hundJobb) { const J = hundJobb; hundSpor = [];
+    if (J.fase === 'kast') { J.t += dt / 0.9; const k = Math.min(1, J.t); hundPinne.position.set(J.fra[0] + (J.x - J.fra[0]) * k, 1.4 + Math.sin(k * Math.PI) * 2.2 - k * 1.3, J.fra[1] + (J.z - J.fra[1]) * k); hundPinne.rotation.y += dt * 12; if (k >= 1) { hundPinne.position.y = Math.max(hoyde(J.x, J.z), 0) + 0.06; J.fase = 'gaar'; } }
+    if (J.fase === 'gaar' || J.fase === 'hjem') { const m = J.vei[0];
+      if (!m) { if (J.type === 'grav') { J.fase = 'graver'; J.t = 0; } else if (J.fase === 'gaar') { scene.remove(hundPinne); u.hode.add(hundPinne); hundPinne.position.set(0.42, -0.14, 0); hundPinne.rotation.set(Math.PI / 2, 0, 0); let v = null; try { v = finnVei({x: p.x, z: p.z}, [rp.x - 0.4, rp.x + 0.4, rp.z - 0.4, rp.z + 0.4], 1.4); } catch (e) {} J.vei = v ? v.map(q => [q.x, q.z]) : []; J.fase = 'hjem'; }
+        else { hundPinne.visible = false; hundJobb = null; hundTrykkHopp(); } }
+      else { const dx = m[0] - p.x, dz = m[1] - p.z, d = Math.hypot(dx, dz), steg = dt * 5.5; if (d <= steg) { p.x = m[0]; p.z = m[1]; J.vei.shift(); } else { p.x += dx / d * steg; p.z += dz / d * steg; hund.rotation.y = snuMot(hund.rotation.y, Math.atan2(-dz, dx), dt * 9); } gaar = true; } }
+    else if (J.fase === 'graver') { J.t += dt; graver = 1; if (J.t > 2.6) { hundHaug = hundLagHaug(J.x, J.z); J.fase = 'venter'; melding('🐶 Syltetøy har funnet noe! Trykk på jordhaugen.', 3200); } }
+  }
+  else {   /* 0.25.1 (Even 17.11: «Syltetøy glitcher»): jevn fart etter hvor langt bak hun er, i stedet for å rykke fra punkt til punkt og stoppe mellom hvert */
+    const ekstra = hundSpor.length - 5, maal = ekstra > 0 ? Math.min(7, 0.8 + ekstra * 1.3) : 0; u.fart = (u.fart || 0) + (maal - (u.fart || 0)) * Math.min(1, dt * 5);
+    if (u.fart > 0.2 && hundSpor.length > 4) { let igjen = u.fart * dt; const x0 = p.x, z0 = p.z;
+      while (igjen > 0 && hundSpor.length > 4) { const m = hundSpor[0], dx = m[0] - p.x, dz = m[1] - p.z, d = Math.hypot(dx, dz); if (d <= igjen) { p.x = m[0]; p.z = m[1]; hundSpor.shift(); igjen -= d; } else { p.x += dx / d * igjen; p.z += dz / d * igjen; igjen = 0; } }
+      const ddx = p.x - x0, ddz = p.z - z0; if (Math.hypot(ddx, ddz) > 1e-4) hund.rotation.y = snuMot(hund.rotation.y, Math.atan2(-ddz, ddx), dt * 6); gaar = true; }
+    else { u.fart = 0; const dx = rp.x - p.x, dz = rp.z - p.z; if (Math.hypot(dx, dz) > 0.5) hund.rotation.y = snuMot(hund.rotation.y, Math.atan2(-dz, dx), dt * 2.5); } }
+  u.gaarT = gaar ? 0.3 : Math.max(0, (u.gaarT || 0) - dt); gaar = u.gaarT > 0;   /* beina stopper ikke og starter ikke for hvert lille opphold */
+  hundSitt = gaar || graver ? 0 : hundSitt + dt; const sitt = THREE.MathUtils.smoothstep(hundSitt, 1.2, 1.8);
+  u.fase += dt * (gaar ? 13 : 0); const sv = gaar ? Math.sin(u.fase) * 0.55 : 0;
+  u.bein[0].rotation.z = sv; u.bein[3].rotation.z = sv; u.bein[1].rotation.z = -sv; u.bein[2].rotation.z = -sv;
+  if (graver) { const gs = Math.sin(t * 22) * 0.7; u.bein[0].rotation.z = 0.5 + gs; u.bein[1].rotation.z = 0.5 - gs; }   /* graver med forbeina */
+  u.bein[2].rotation.z += sitt * 1.2; u.bein[3].rotation.z += sitt * 1.2;
+  u.K.rotation.z = graver ? -0.3 : sitt * 0.42; u.K.position.y = (gaar ? Math.abs(Math.sin(u.fase)) * 0.05 : 0) - sitt * 0.16;
+  u.hale.rotation.y = Math.sin(t * (gaar ? 9 : 13)) * (gaar ? 0.35 : 0.7); u.hode.rotation.z = Math.sin(t * 1.3) * 0.06 - sitt * 0.3; u.orer.forEach((o, i) => { o.rotation.x = (i ? -1 : 1) * (0.1 + Math.abs(Math.sin(u.fase)) * 0.25); });
+  const bakke = Math.max(typeof hoyde === 'function' ? hoyde(p.x, p.z) : 0, window.akerY ? window.akerY(p.x, p.z) : 0); u.bakke = u.bakke === undefined ? bakke : u.bakke + (bakke - u.bakke) * Math.min(1, dt * 10);   /* mykt opp på åkerkanten, som roboten */
+  p.y = u.bakke + (hundHopp > 0 ? Math.sin((0.5 - (hundHopp = Math.max(0, hundHopp - dt))) / 0.5 * Math.PI) * 0.5 : 0);
+}
+function hundTrykk() { if (hundJobb && hundJobb.fase === 'venter') { hundHentSkatt(); return; } if (hundJobb) { hundTrykkHopp(); return; } hundStartPinne(); }
+const revInne = () => !!rev && revSted === 'hjem' && !revGang && s.oppl.steg >= OPPL.length && performance.now() > revUteTil;
 const REV_FART = 1.2, REV_TAKT = 1.3; window.revOpptatt = () => !!revGang;
 let revSted = 'hjem', revGang = null, revFlate = null, revY = 0.044, revKlar = false, revHjemEtter = 0;
-function revVei() { const v = [[stiX(4.6), 4.6]]; for (let z = 6; z <= VEI_Z - 1.2; z += 1.4) v.push([stiX(z), z]); v.push([stiX(VEI_Z - 1.2), VEI_Z - 1.2], [-14.6, VEI_Z - 1.2], [-13.2, VEI_Z + 1.3], [-7.6, VEI_Z + 1.3], [-6.3, VEI_Z - 1.2], [-7.6, 7.7], [-8.0, 4.0], REV_GARD); return v; }   /* 0.15.2 (Even 15.11): ytterst på veien, så han ikke går gjennom bilen til Blomst */
+function revVei() { const v = [[stiX(4.6), 4.6]]; for (let z = 6; z <= VEI_Z - 1.2; z += 1.4) v.push([stiX(z), z]); v.push([stiX(VEI_Z - 1.2), VEI_Z - 1.2], [-14.6, VEI_Z - 1.2], [-13.2, VEI_Z + 1.3], [-7.6, VEI_Z + 1.3], [-6.3, VEI_Z - 1.2], [-5.5, 10.2]);
+  /* 0.17.1 (Even 16.11: «Rebus går gjennom byggene»): inne på gården går han samme vei som roboten ville gått, utenom bygg og åkerkanter. Står noe på plassen hans, stopper han ved siden av */
+  let inn = null; try { inn = finnVei({x: -5.5, z: 10.2}, [REV_GARD[0] - 0.3, REV_GARD[0] + 0.3, REV_GARD[1] - 0.3, REV_GARD[1] + 0.3], 0.8); } catch (e) {}
+  if (inn && inn.length) inn.forEach(q => v.push([q.x, q.z])); else if (inn === null) v.push([-5.5, 8.6]); else v.push(REV_GARD);
+  return v; }   /* 0.15.2 (Even 15.11): ytterst på veien, så han ikke går gjennom bilen til Blomst */
 function revGaa(hjem, straks) {
-  if (!rev) return; const v = revVei(); if (hjem) v.reverse().push(REV_HJEM); else v.unshift(REV_HJEM);
+  if (!rev) return; const v = revVei(), hus = s.oppl.steg >= OPPL.length; if (hjem) { v.reverse().push(REV_HJEM); if (hus) v.push(REV_HUS); } else { v.unshift(REV_HJEM); if (hus && revInne()) v.unshift(REV_HUS); }   /* 0.23.0: ut av og inn i huset */
   if (straks || matchMedia('(prefers-reduced-motion: reduce)').matches) { revSett(...v[v.length - 1]); revSted = hjem ? 'hjem' : 'gard'; revGang = null; rev.rotation.y = hjem ? Math.PI / 2 + 0.35 : Math.PI / 4; return; }
   const p = rev.position; let i = 0, best = 1e9; v.forEach((q, j) => { const d = Math.hypot(q[0] - p.x, q[1] - p.z); if (d < best) { best = d; i = j; } });   /* fra nærmeste punkt, også om han snur midt i */
   revGang = {vei: v, i: Math.min(i + 1, v.length - 1), hjem, tid: 0}; revSted = 'gaar'; revSpill('Walking'); if (revAktiv) revAktiv.timeScale = REV_TAKT;
 }
 function revSett(x, z) { rev.position.set(x, hoyde(x, z) + revY, z); if (!revFlate) revFlate = scene.children.find(o => o.userData.eier === rev && o.geometry && o.geometry.type === 'CylinderGeometry'); if (revFlate) revFlate.position.set(x, rev.position.y + 1.1, z); }
 function oppdaterRev(dt, t) {
-  if (!rev) return;
+  synkRevehus(); synkSnomann(); if (!rev) return;
+  if (vinterSno()) { rev.visible = false; if (revIkon && revIkon.visible && snoG) revIkon.position.set(snoG.position.x, snoG.position.y + 3.3 + Math.sin(t * 3) * 0.12, snoG.position.z); return; }   /* 0.38.0: i desember er det snømannen som har gåtene */
+  { const inne = revInne(); if (rev.visible === inne) { rev.visible = !inne; if (inne) revSett(...REV_HUS); else if (!revGang) { revSett(...REV_HJEM); rev.rotation.y = Math.PI / 2 + 0.35; } } }
   if (revGang) { const m = revGang.vei[revGang.i], dx = m[0] - rev.position.x, dz = m[1] - rev.position.z, d = Math.hypot(dx, dz), steg = dt * REV_FART * Math.min(1, 0.35 + revGang.tid++ * 0.05);
     if (d <= steg) { revSett(m[0], m[1]); if (++revGang.i >= revGang.vei.length) { revSted = revGang.hjem ? 'hjem' : 'gard'; revGang = null; rev.rotation.y = revSted === 'hjem' ? Math.PI / 2 + 0.35 : Math.PI / 4; revSpill('Idle'); if (revSted === 'gard') { revSpill('Wave', false); setTimeout(() => { if (!revGang) revSpill('Idle'); }, 2200); } } }
     else { revSett(rev.position.x + dx / d * steg, rev.position.z + dz / d * steg); rev.rotation.y = snuMot(rev.rotation.y, Math.atan2(dx, dz), dt * 5); } }
   if (revIkon && revIkon.visible) revIkon.position.set(rev.position.x, rev.position.y + 2.9 + Math.sin(t * 3) * 0.12, rev.position.z);
 }
 function visGate() {
-  if (!revGang) { revSpill('Wave', false); setTimeout(() => { if (!revGang) revSpill('Idle'); }, 2200); }
-  aapneHandling(null, '🦊 Rebus\' gåte', () => {
+  const sn = vinterSno();
+  if (!revGang && !sn) { revSpill('Wave', false); setTimeout(() => { if (!revGang) revSpill('Idle'); }, 2200); }
+  aapneHandling(null, sn ? '⛄ Snømannens vintergåte' : '🦊 Rebus\' gåte', () => {
     const t = naa(), g = L.harGate(s, t);
-    if (!g) return `<p>Takk for sist, nabo! Jeg tenker på en ny gåte. Kom tilbake om <b data-slutt="${s.rebus.neste}">${fmtTid(s.rebus.neste - t)}</b>. 🦊</p><p style="font-size:15px">Du har løst ${s.rebus.loste} ${s.rebus.loste === 1 ? 'gåte' : 'gåter'}.</p>`;
+    if (!g) return `<p>${sn ? 'God jul, nabo! Jeg fryser fast i en ny vintergåte.' : 'Takk for sist, nabo! Jeg tenker på en ny gåte.'} Kom tilbake om <b data-slutt="${s.rebus.neste}">${fmtTid(s.rebus.neste - t)}</b>. ${sn ? '⛄' : '🦊'}</p><p style="font-size:15px">Du har løst ${s.rebus.loste} ${s.rebus.loste === 1 ? 'gåte' : 'gåter'}.</p>`;
     /* 0.11.2 (Ivar 13.11: «feil svaralternativ»): det riktige svaret er alltid med, sammen med fem andre ting spilleren kjenner, i fast tilfeldig rekkefølge */
     const l = L.gateLonn(g); let f = [...(g + s.rebus.loste)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7); const rnd2 = () => (f = (Math.imul(f, 1103515245) + 12345) >>> 0) / 4294967296;
     const andre = Object.keys(D.gater).filter(v => v !== g && D.nivaaFor(v) <= s.nivaa).map(v => [v, rnd2()]).sort((a, b) => a[1] - b[1]).map(a => a[0]).slice(0, 5);   /* 0.15.11 (QA 15.11): tilfeldige feilsvar, så svaret ikke skiller seg ut som det eneste du ikke har */
@@ -829,7 +1440,7 @@ function visGate() {
   });
 }
 function synk(alt) {
-  synkGate(); synkGaver();
+  synkGate(); synkGaver(); synkBilknapp(); synkMusikknapp(); synkBildeknapp(); L.selvStart(s, naa()); synkEpletre(); synkBrygge();
   const t = naa();
   for (const f of s.akre) { const u = ting.get(f.id); if (!u) continue; const st = akerStadie(f, t); if (st !== u.stadie || alt) { u.stadie = st; u.plante.visible = !!st; if (st) u.plante.geometry = PROTO[st]; } }
   const honer = s.dyr.hone || []; let klare = 0, sultne = 0;
@@ -840,6 +1451,8 @@ function synk(alt) {
     if (D.bygg[b].dyr) { const l = s.dyr[D.bygg[b].dyr] || []; settIkon(u.ikon, l.some(d => L.dyrStatus(d, t) === 'klar') ? ikon(D.dyr[D.bygg[b].dyr].produkt) : l.some(d => d.slutt === null) ? '🍽️' : null); continue; }
     const klar = sb.ko.find(j => t >= j.slutt); settIkon(u.ikon, klar ? ikon(klar.vare) : sb.ko.length ? '⏳' : null); }
   const si = ting.get('silo'); if (si) settIkon(si.ikon, L.plass(s, 'silo') < 4 ? '⚠️' : null);
+  if (varebilT && bilKo.fase === 0) settIkon(varebilT.ikon, arrNaa && s.lager[D.arr[arrNaa].vare] > 0 ? D.arr[arrNaa].ikon : null);
+  synkDyrehatter(); if (arrNy && startet && !pauset) { arrNy = false; const A = D.arr[arrNaa]; if (A) melding(`${A.ikon} ${A.navn} har startet! Trykk på varebilen for å se hva du kan vinne.`, 5200); }
   const tv = ting.get('tavle'); if (tv) { const kan = s.best.liste.some((o, i) => L.kanLevere(s, i)); settIkon(tv.ikon, kan ? '🚚' : s.best.liste.some((o, i) => L.boerByttes(s, i, t)) ? '🔄' : null); $('tavleKnapp').classList.toggle('klar', kan); }
   { const skjul = s.nivaa < D.bestillinger.nivaa; if ($('tavleKnapp').hidden !== skjul) { $('tavleKnapp').hidden = skjul; layoutHud(); } }
   const m = ting.get('marked'); if (m) settIkon(m.ikon, L.plass(s, 'silo') < 4 || L.plass(s, 'lave') < 4 ? '🪙' : null);
@@ -866,7 +1479,9 @@ function oppdaterHud() {
   if (visteMynter !== null && visteMynter !== s.mynter) { const p = $('pMynter'); p.classList.remove('bump'); void p.offsetWidth; p.classList.add('bump'); }
   visteMynter = s.mynter; $('mynter').textContent = s.mynter;
 }
-function melding(tekst, ms = 2600) { const m = $('melding'); m.textContent = tekst; const rt = $('revTips'), rr = rt ? rt.getBoundingClientRect() : null; m.style.top = rr && rr.height > 0 && rr.top < innerHeight / 2 ? Math.round(rr.bottom + 6) + 'px' : hudBunn ? hudBunn + 'px' : '';   /* 0.8.15: meldingen legger seg under revens tips, ikke oppå */ m.classList.add('vis'); clearTimeout(melding.t); melding.t = setTimeout(() => m.classList.remove('vis'), ms); }
+var meldingVent = [];
+function melding(tekst, ms = 2600) { if (pauset) { meldingVent.push([tekst, ms]); return; }   /* 0.39.2 (QA 21.11): meldinger venter til pausen er over */
+  const m = $('melding'); m.textContent = tekst; const rt = $('revTips'), rr = rt ? rt.getBoundingClientRect() : null; m.style.top = rr && rr.height > 0 && rr.top < innerHeight / 2 ? Math.round(rr.bottom + 6) + 'px' : hudBunn ? hudBunn + 'px' : '';   /* 0.8.15: meldingen legger seg under revens tips, ikke oppå */ m.classList.add('vis'); clearTimeout(melding.t); melding.t = setTimeout(() => m.classList.remove('vis'), ms); }
 const _p = new THREE.Vector3();
 function flyt(tekst, pos, forsink = 0) {
   if (!pos) return;   /* QA 10.11 (K1): uten posisjon vises ingen flytetekst */
@@ -879,7 +1494,7 @@ function midtAv(u, y = 2) { return new THREE.Vector3(u.gruppe.position.x, y, u.g
 // Reglene venter ikke på roboten: det spilleren gjør, skjer med en gang. Roboten går dit og viser det (høyst 5 jobber i kø).
 // Veifinning (Even 9.11: «roboten går gjennom gjerde på hønsegården»): rutenett på 0,5 m over gården. Bygg, gjerder og binger er
 // stengt, åkrene kan roboten gå over. Korteste vei finnes med Dijkstra (8 retninger) og rettes ut der roboten ser fram.
-const RUTENETT = 0.5, ROBOT_R = 0.4, RX0 = GARD_X0_SKOG, NX = Math.round((GARD_X1_ENGA - RX0) / RUTENETT) + 1, NZ = Math.round((GARD.z1 - GARD.z0) / RUTENETT) + 1;   /* rutenettet dekker hele den største gården */
+const RUTENETT = 0.5, ROBOT_R = 0.4, RX0 = GARD_X0_SKOG, NX = Math.round((Math.max(GARD_X1_ENGA, JORD_X1_OST + 0.5) - RX0) / RUTENETT) + 1, NZ = Math.round((JORD_Z1_BAK + 0.4 - GARD.z0) / RUTENETT) + 1;   /* rutenettet dekker hele den største gården */
 const boksCache = new Map();
 function tingRekt(u) {
   if (u.fot) return fotRekt(u, u.x, u.z, u.r);
@@ -895,8 +1510,13 @@ function stengtKart() {
     for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const x = RX0 + i * RUTENETT, z = GARD.z0 + j * RUTENETT;
       if (x > a - ROBOT_R && x < b + ROBOT_R && z > c - ROBOT_R && z < d + ROBOT_R) stengt[i * NZ + j] = 1; }
   }
-  for (let i = 0; i < NX; i++) { const x = RX0 + i * RUTENETT; if (x > GARD.x1 + 0.3 || x < GARD.x0 - 0.3) for (let j = 0; j < NZ; j++) stengt[i * NZ + j] = 1;   /* Enga og Skogkanten er stengt til de er kjøpt */
+  for (let i = 0; i < NX; i++) { const x = RX0 + i * RUTENETT; if (x > GARD.x1 + 0.3 || x < GARD.x0 - 0.3) { for (let j = 0; j < NZ; j++) if (GARD.z0 + j * RUTENETT <= GARD.z1 + 0.3) stengt[i * NZ + j] = 1; }   /* 0.20.0: sør for veien avgjøres under, så Østjordet kan nås */   /* Enga og Skogkanten er stengt til de er kjøpt */
     else if (x < GARD_X0 - 0.3) for (let j = 0; j < NZ; j++) if (GARD.z0 + j * RUTENETT > SKOG_Z1 + 0.3) stengt[i * NZ + j] = 1; }
+  /* 0.17.0: sør for gården er alt stengt, bortsett fra gårdsveien over veien og Jordet når det er kjøpt */
+  const jordet = !!(s.omrader && s.omrader.jordet);
+  for (let i = 0; i < NX; i++) { const x = RX0 + i * RUTENETT; for (let j = 0; j < NZ; j++) { const z = GARD.z0 + j * RUTENETT; if (z <= GARD.z1 + 0.3) continue;
+    const overgang = jordet && Math.abs(x + 5.5) < 1.3 && z < JORD[2] + 0.2, inne = jordet && x > JORD[0] - 0.4 && z > JORD[2] - 0.4 && ((x < jordX1() + 0.4 && z < JORD[3] + 0.4) || (x < JORD[1] + 0.4 && z < jordZ1() + 0.4));
+    if (!overgang && !inne) stengt[i * NZ + j] = 1; } }
   return stengt;
 }
 const avstRekt = (x, z, r) => Math.hypot(Math.max(r[0] - x, 0, x - r[1]), Math.max(r[2] - z, 0, z - r[3]));
@@ -959,10 +1579,12 @@ function nyttTekst(n) {
   if (ECOIN_NIVAA[n.nivaa] && ecoins()) { const m = ecoins().milepael(ECOIN_NIVAA[n.nivaa]); if (m) nytt.push(`🪙 ${m.e} E-coins til roboten`); }
   n.avlinger.forEach(a => (I_SPILLET.avlinger.includes(a) ? nytt : senere).push(ikon(a) + ' ' + navn(a)));
   n.bygg.forEach(b => (I_SPILLET.bygg.includes(b) ? nytt : senere).push(D.bygg[b].ikon + ' ' + D.bygg[b].navn.replace(/^./, c => c.toLowerCase())));
+  if (D.hund && n.nivaa === D.hund.nivaa) nytt.push('🐶 gårdshunden Syltetøy');
   n.dyr.forEach(d => (I_SPILLET.dyr.includes(d) ? nytt : senere).push(D.dyr[d].ikon + ' ' + D.dyr[d].flertall.toLowerCase()));
+  (n.flereDyr || []).forEach(f => nytt.push(D.dyr[f.art].ikon + ' ' + (f.antall === 1 ? 'en ' + D.dyr[f.art].navn.toLowerCase() + ' til' : f.antall + ' ' + D.dyr[f.art].flertall.toLowerCase() + ' til')));
   if (n.akre) nytt.push('🟫 ' + n.akre + ' nye åkre');
   if (n.tavle) nytt.push('📋 bestillinger og varebil');
-  if (s.oppl.steg >= OPPL.length) nytt.push('🎁 en gaveeske ved markedsbua');
+  if (s.oppl.steg >= OPPL.length) nytt.push('🎁 en gaveeske ved låven');
   (n.omrader || []).filter(o => I_SPILLET.omrader.includes(o)).forEach(o => nytt.push('🌿 ' + D.omrader[o].navn + ' kan kjøpes'));
   let t = '+' + n.mynter + ' 🪙'; if (nytt.length) t += ' · Nytt: ' + nytt.join(', ');
   if (senere.length) t += '<br><span style="font-size:15px;opacity:.8">Kommer i neste versjon: ' + senere.join(', ') + '</span>';
@@ -1001,7 +1623,7 @@ function plantPaa(i, avling) {
   const u = ting.get(s.akre[i].id); sprett.push({o: u.gruppe, t: 0}); robotJobb(u); return true;
 }
 const artFor = u => (D.bygg[u.id] && D.bygg[u.id].dyr) || 'hone';
-const FOR_TIPS = {hone: 'Lag hønsefor av hvete i forkvernen. ⚙️', ku: 'Lag kufor av erter og mais i forkvernen. ⚙️', gris: 'Lag grisefor av gulrot og erter i forkvernen. ⚙️'};
+const FOR_TIPS = {hone: 'Lag hønsefor av hvete i forkvernen. ⚙️', ku: 'Lag kufor av erter og mais i forkvernen. ⚙️', gris: 'Lag grisefor av gulrot og erter i forkvernen. ⚙️', sau: 'Lag sauefor av hvete og erter i forkvernen. ⚙️', geit: 'Lag geitefor av mais og gulrot i forkvernen. ⚙️'};
 function mat(u) {
   const art = artFor(u), r = L.mat(s, art, naa());
   if (r.ok) { flyt('🍽️ ×' + r.antall, midtAv(u, 3)); robotJobb(u); (art === 'hone' ? hoener : dyrIHus[u.id] || []).forEach((h, i) => setTimeout(() => { h.userData.hopp = 0.5; visHjerte(h.position.clone().add(new THREE.Vector3(0, art === 'ku' ? 2.6 : 1.8, 0))); }, 300 + i * 200)); gi(null); }
@@ -1099,6 +1721,7 @@ function lukkHandling() { $('handling').classList.remove('vis'); aktivTing = nul
 $('handlingLukk').addEventListener('click', lukkHandling);
 function oppdaterTider() { if (!$('handling').classList.contains('vis')) return; const t = naa();
   $('handlingInnhold').querySelectorAll('[data-slutt]').forEach(e => { const r = +e.dataset.slutt - t; e.textContent = r > 0 ? fmtTid(r) : 'ferdig!'; });
+  $('handlingInnhold').querySelectorAll('[data-ned]').forEach(e => { e.textContent = fmtNed(+e.dataset.ned - t); });   /* 0.38.0 nedtellingen til Vinter i Elvedal */
   if ($('handlingInnhold').querySelector('[data-slutt]') && [...$('handlingInnhold').querySelectorAll('[data-slutt]')].some(e => +e.dataset.slutt <= t && !e.dataset.ferdig)) tegnPaaNytt(); }
 
 function visAker(u) {
@@ -1119,7 +1742,7 @@ function visAker(u) {
 }
 function visDyr(u, art) {   /* hønsehuset og fjøset (0.9.8) bruker samme kort */
   const r = samleEgg(u), A = D.dyr[art], P = A.produkt, F = A.spiser;
-  aapneHandling(u, art === 'ku' ? '🐄 Fjøs og beite' : art === 'gris' ? '🐖 Grisebinge' : '🐔 Hønsehuset', () => {
+  aapneHandling(u, art === 'ku' ? '🐄 Fjøs og beite' : art === 'gris' ? '🐖 Grisebinge' : art === 'sau' ? '🐑 Sauefjøs' : art === 'geit' ? '🐐 Geitefjøs' : '🐔 Hønsehuset', () => {
     const t = naa(), h = s.dyr[art] || [], sultne = h.filter(d => d.slutt === null).length, klare = h.filter(d => L.dyrStatus(d, t) === 'klar').length, fr = s.lager[F] || 0;
     const spiser = h.filter(d => L.dyrStatus(d, t) === 'spiser').map(d => d.slutt).sort((a, b) => a - b), pn = navn(P).toLowerCase();
     let p = `<p>${h.length} ${A.flertall.toLowerCase()}. ${sultne ? `${sultne} er sultne.` : 'Alle har fått mat.'}${spiser.length ? ` Neste ${pn} om <b data-slutt="${spiser[0]}">${fmtTid(spiser[0] - t)}</b>.` : ''}</p>`;
@@ -1133,6 +1756,10 @@ function visDyr(u, art) {   /* hønsehuset og fjøset (0.9.8) bruker samme kort 
 }
 const OMR = {   /* 0.13.0: Enga og Skogkanten bruker samme kjøpskort */
   enga: {ikon: '🌿', midt: [18, 0, -1], tekst: 'En stor eng øst for gården. Da blir gården bredere, og du får plass til fjøs, beite og meieri.', eid: 'Enga er din. Her er det plass til fjøset og meieriet.', takk: 'Enga er din! 🌿 Nå er det plass til fjøs og meieri.'},
+  elvebredden: {ikon: '🎣', midt: [3, 0, -16], tekst: 'Stranda ved elva. Her får du en fiskebrygge, så du kan fiske abbor, ørret og gjedde.', eid: 'Elvebredden er din. Trykk på brygga for å fiske.', takk: 'Elvebredden er din! 🎣 Trykk på brygga for å fiske.'},
+  bakjordet: {ikon: '🌻', midt: [0, 0, 26.5], tekst: 'Mer jorde bak Jordet. Gjerdet imellom tas bort, så det blir dobbelt så dypt.', eid: 'Bakjordet er ditt. Her er det plass til store bygg.', takk: 'Bakjordet er ditt! 🌻 Nå er Jordet dobbelt så stort.'},
+  ostjordet: {ikon: '🌾', midt: [19, 0, 19], tekst: 'Mer jorde, rett øst for Jordet. Gjerdet imellom tas bort, så du får ett stort jorde.', eid: 'Østjordet er ditt. Her er det plass til mer.', takk: 'Østjordet er ditt! 🌾 Nå er jordet enda større.'},
+  jordet: {ikon: '🌻', midt: [0, 0, 19], tekst: 'Et stort jorde på andre siden av veien. Du får et nytt gjerde og plass til flere åkre og bygg.', eid: 'Jordet er ditt. Her er det plass til mer.', takk: 'Jordet er ditt! 🌻 Flytt åkre og bygg hit med ✋ Flytt.'},
   skogkanten: {ikon: '🌲', midt: [-19, 0, -6], tekst: 'Skogen bak låven. Trærne ryddes, gjerdet flyttes, og du får plass til grisebingen og mer.', eid: 'Skogkanten er din. Her er det plass til grisebingen.', takk: 'Skogkanten er din! 🌲 Nå er det plass til grisebingen.'}
 };
 function visOmradeKjop(id) {
@@ -1141,15 +1768,22 @@ function visOmradeKjop(id) {
     const g = L.kanKjopeOmrade(s, id);
     return `<p>${O.tekst}</p>
       <div class="knapper"><button class="knapp gronn" data-g="kjopOmrade" data-o="${id}" ${g ? 'disabled' : ''}>${O.ikon} Kjøp for ${E.pris} 🪙</button></div>
-      ${g === 'laast' ? `<p style="font-size:15px">🔒 ${E.navn} kan kjøpes på nivå ${E.nivaa}.</p>` : g === 'mynter' ? `<p style="font-size:15px">Du har ${s.mynter} 🪙. Selg noe i markedsbua for å få flere.</p>` : ''}`; });
+      ${g === 'krever' ? `<p style="font-size:15px">🔒 Kjøp ${D.omrader[E.krever].navn} først.</p>` : g === 'laast' ? `<p style="font-size:15px">🔒 ${E.navn} kan kjøpes på nivå ${E.nivaa}.</p>` : g === 'mynter' ? `<p style="font-size:15px">Du har ${s.mynter} 🪙. Selg noe i markedsbua for å få flere.</p>` : ''}`; });
 }
 const visEnga = () => visOmradeKjop('enga');
 function visBygg(u) {
   const b = u.id, sb = s.bygg[b], B = D.bygg[b];
   if (!sb.eid) { aapneHandling(u, B.ikon + ' ' + B.navn, () => `<p>Her kan du bygge ${B.navn.toLowerCase()}. Det koster <b>${B.pris} 🪙</b>.</p><div class="knapper"><button class="knapp gronn" data-g="kjop" ${s.mynter >= B.pris ? '' : 'disabled'}>🔨 Bygg for ${B.pris} 🪙</button><button class="knapp lys" data-g="flytt">✋ Flytt</button></div>${s.mynter >= B.pris ? '' : `<p style="font-size:15px">Du har ${s.mynter} 🪙. Selg noe i markedsbua for å få flere.</p>`}`); return; }
-  hent(b);
+  if (B.tre) { visJuletre(u); return; }
+  if (B.kal) { visKalender(u); return; }
+  hent(b); if (L.selvStart(s, naa())) lagre();
+  if (B.selv) { synkEpletre(); aapneHandling(u, B.ikon + ' ' + B.navn, () => { const t = naa(), v = B.selv, o = D.oppskrifter[v], j = sb.ko[0], fl = D.varer[v].flertall || navn(v).toLowerCase();
+    let p = `<p>${B.navn} står her for alltid og gir ${o.ut} ${fl} hver gang, helt av seg selv.</p>`;
+    if (j && t < j.slutt) p += `<p>${ikon(v)} ${B.vent} <b data-slutt="${j.slutt}">${fmtTid(j.slutt - t)}</b>. Du har ${s.lager[v] || 0} ${ikon(v)}.</p>`;
+    else if (j) p += `<p><b>${B.klar}</b> Låven er full, så du må selge noe før du kan hente.</p><div class="knapper"><button class="knapp" data-g="hent">Hent ${ikon(v)}</button></div>`;
+    return p + '<div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt</button></div>'; }); return; }
   aapneHandling(u, B.ikon + ' ' + B.navn, () => {
-    const t = naa(), opp = Object.keys(D.oppskrifter).filter(v => D.oppskrifter[v].bygg === b && D.oppskrifter[v].nivaa <= s.nivaa);
+    const t = naa(), opp = Object.keys(D.oppskrifter).filter(v => { const o = D.oppskrifter[v]; return o.bygg === b && o.nivaa <= s.nivaa && (!o.krever || L.arrTrinn(s, o.krever.arr) >= o.krever.trinn); });
     const plasser = []; for (let k = 0; k < D.koPlasser; k++) { const j = L.uferdige(sb, t)[k]; plasser.push(j ? `<div class="plass full">${ikon(j.vare)} <span data-slutt="${j.slutt}">${fmtTid(j.slutt - t)}</span></div>` : '<div class="plass">ledig</div>'); }
     const klare = sb.ko.filter(j => t >= j.slutt);
     let p = `<div class="ko" aria-label="Køen">${plasser.join('')}</div>`;
@@ -1157,7 +1791,8 @@ function visBygg(u) {
     if (b === 'forkvern' && L.bonusAktiv(s, t)) p += `<p style="font-size:15px">🎁 Gratis forkvern i ${Math.ceil((s.gaver.bonus - t) / 86400000)} dager til. Du trenger ingen varer.</p>`;
     p += opp.map(v => { const o = D.oppskrifter[v], g = L.kanProdusere(s, b, v, t);
       const inn = Object.keys(o.inn).map(k => `${o.inn[k]} ${ikon(k)}`).join(' + '), mangler = Object.keys(o.inn).filter(k => (s.lager[k] || 0) < o.inn[k]);
-      return `<div class="rad"><span class="stort">${ikon(v)}</span><span class="midt">${o.ut > 1 ? o.ut + ' ' : ''}${navn(v)} · ${fmtTid(o.tid * 1000)}${D.produktXP(v) ? ' · +' + D.produktXP(v) + ' XP' : ''}<small class="${mangler.length ? 'mangler' : ''}">${inn}${mangler.length ? ' · du mangler ' + mangler.map(k => (o.inn[k] - (s.lager[k] || 0)) + ' ' + navn(k).toLowerCase()).join(', ') : ''}</small></span><button class="knapp gronn" data-g="lag" data-v="${v}" ${g ? 'disabled' : ''}>Lag</button></div>`; }).join('');
+      return `<div class="rad"><span class="stort">${ikon(v)}</span><span class="midt">${o.ut > 1 ? o.ut + ' ' : ''}${navn(v)} · ${fmtTid(o.tid * 1000)}${D.produktXP(v) ? ' · +' + D.produktXP(v) + ' XP' : ''}<small class="${mangler.length ? 'mangler' : ''}">${inn}${mangler.length ? ' · du mangler ' + mangler.map(k => (o.inn[k] - (s.lager[k] || 0)) + ' ' + navn(k).toLowerCase()).join(', ') : ''}</small></span><button class="knapp gronn" data-g="lag" data-v="${v}" ${g ? 'disabled' : ''}>Lag</button></div>${o.pakk ? pakkRad() : ''}`; }).join('');
+    if (D.bygg[b].arr && D.arr[D.bygg[b].arr].maned !== MANED()) p += `<p style="font-size:15px">🔒 ${D.arr[D.bygg[b].arr].navn} er over for i år. ${D.bygg[b].navn} åpner igjen i ${MANEDER[D.arr[D.bygg[b].arr].maned - 1]}.</p>`;
     if (L.uferdige(sb, t).length >= D.koPlasser) p += '<p style="font-size:15px">Køen er full. Vent til en jobb er ferdig.</p>';
     return p + '<div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt</button></div>';
   });
@@ -1166,8 +1801,8 @@ $('handlingInnhold').addEventListener('click', e => {
   const k = e.target.closest('button'); if (!k || k.disabled) return; const g = k.dataset.g, u = aktivTing; const t = naa();
   if ((g === 'plant') && undertrykkTrykk) return;
   if (g === 'svar') { const r = L.svarGate(s, k.dataset.v, t), p = rev ? rev.position.clone().setY(3) : null;
-    if (r.ok) { lukkHandling(); flyt('+' + r.mynter + ' 🪙', p); hilsRev(false); revHjemEtter = performance.now() + 3000; melding(`Riktig! Det var ${navn(r.vare).toLowerCase()}! 🦊🎉`, 2800); gi(r, p); }
-    else if (r.grunn === 'feil') { melding('Nei, det er ikke ' + navn(k.dataset.v).toLowerCase() + '. Prøv igjen! 🦊', 2600); }
+    if (r.ok) { const sn = vinterSno(), p2 = sn && snoG ? snoG.position.clone().setY(3) : p; lukkHandling(); flyt('+' + r.mynter + ' 🪙', p2); if (!sn) { hilsRev(false); revHjemEtter = performance.now() + 3000; } else if (snoG) sprett.push({o: snoG, t: 0}); melding(`Riktig! Det var ${navn(r.vare).toLowerCase()}! ${sn ? '⛄' : '🦊'}🎉`, 2800); gi(r, p2); }
+    else if (r.grunn === 'feil') { melding('Nei, det er ikke ' + navn(k.dataset.v).toLowerCase() + '. Prøv igjen! ' + (vinterSno() ? '⛄' : '🦊'), 2600); }
     return; }
   if (g === 'gullgard') { s.gaver.gullPaa = !s.gaver.gullPaa; settGullgard(s.gaver.gullPaa); lagre(); tegnPaaNytt(); return; }
   if (g === 'aapneGave') { const r = L.aapneGave(s, t); if (r.ok) { if (gaveT) sprett.push({o: gaveT.gruppe, t: 0}); if (r.mynter) flyt('+' + r.mynter + ' 🪙', midtAv(gaveT, 2)); else if (r.vare) flyt('+' + r.antall + ' ' + ikon(r.vare), midtAv(gaveT, 2)); if (r.pynt) synkPynt(); if (r.bygg || r.gullgard) plasserAlt(); if (r.xp) gi(r, midtAv(gaveT, 2)); lagre(); synkGaver(); synk(true); if (!(r.nye && r.nye.length)) visGave(r); } return; }
@@ -1182,10 +1817,26 @@ $('handlingInnhold').addEventListener('click', e => {
   if (g === 'egg') { samleEgg(u); tegnPaaNytt(); return; }
   if (g === 'mat') { mat(u); tegnPaaNytt(); return; }
   if (g === 'hent') { hent(u.id); tegnPaaNytt(); return; }
-  if (g === 'lag') { const v = k.dataset.v; const r = L.produser(s, u.id, v, t); if (r.ok) { flyt(ikon(v) + ' ⏳', midtAv(u, 3)); robotJobb(u); gi(null); } tegnPaaNytt(); return; }
+  if (g === 'lag') { const v = k.dataset.v; const r = L.produser(s, u.id, v, t, D.oppskrifter[v].pakk ? pakkValg : undefined); if (r.ok) { flyt(ikon(v) + ' ⏳' + (r.pakket ? ' ' + ikon(r.pakket) : ''), midtAv(u, 3)); robotJobb(u); gi(null); } tegnPaaNytt(); return; }
+  if (g === 'luke') { const r = L.aapneLuke(s, +k.dataset.v, t); if (r.ok) { flyt('📅 ' + lukeTekst(r), midtAv(u, 3)); lagre(); if (r.type === 'stjerne' || r.premier.length) plasserAlt(); else { const kt = ting.get('julekalender'); if (kt) { kt.modell = null; plasserAlt(); } } synk(true);
+      melding(r.type === 'stjerne' ? '⭐ Luke 24: ' + lukeTekst(r) : r.premier.length ? '🎉 Ny premie: ' + r.premier.map(x => x.tekst).join(' · ') + '!' : `📅 Luke ${r.dag}: ${lukeTekst(r)}`, r.type === 'stjerne' ? 5200 : 3000); } tegnPaaNytt(); return; }
+  if (g === 'pakkBytt') { const l = L.pakkbare(s); pakkValg = l[(l.indexOf(pakkValg) + 1) % l.length] || null; tegnPaaNytt(); return; }
+  if (g === 'visTre') { const tr = ting.get('juletre'); lukkHandling(); if (tr && tr.plassert) { kameraMaal = tr.gruppe.position.clone(); sprett.push({o: tr.gruppe, t: 0}); visJuletre(tr); } return; }
   if (g === 'kjop') { const r = L.kjopBygg(s, u.id); if (r.ok) { flyt('-' + D.bygg[u.id].pris + ' 🪙', midtAv(u, 3)); lagre(); plasserAlt(); synk(true); robotJobb(ting.get(u.id)); bruk(ting.get(u.id)); if (r.dyr) { const A = D.dyr[D.bygg[u.id].dyr]; melding(`${r.dyr} ${A.flertall.toLowerCase()} flytter inn! Gi dem ${navn(A.spiser).toLowerCase()}. ${A.ikon}`, 3600); } fremOppl(); } return; }
   if (g === 'kjopOmrade') { const id = k.dataset.o, O = OMR[id], r = L.kjopOmrade(s, id); if (r.ok) { lukkHandling(); flyt('-' + D.omrader[id].pris + ' 🪙', new THREE.Vector3(O.midt[0], 3, O.midt[2])); lagre(); plasserAlt(); synk(true); kameraMaal = new THREE.Vector3(...O.midt); melding(O.takk, 3600); } return; }
+  if (g === 'arrSend') { const r = L.arrLever(s, arrNaa, MANED(), t), p = midtAv(u, 3);
+    if (r.ok) { const jul = !!D.arr[arrNaa].tre; flyt('+' + r.mynter + ' 🪙' + (jul ? '  +' + r.antall + ' 🍪' : ''), p); kjorLastebil(); if (r.premier.some(x => x.premie === 'pynt')) synkPynt(); if (jul && r.premier.length) plasserAlt(); gi(r, p);
+      melding(r.premier.length ? '🎉 Ny premie: ' + r.premier.map(x => x.tekst).join(' · ') + '!' : jul ? `🎄 ${r.antall} ${r.antall > 1 ? 'gaver' : 'gave'} under treet! Varebilen kjører ${r.antall > 1 ? 'dem' : 'den'} til naboene. +${r.antall} 🍪` : `🚚 Varebilen kjører ut med ${r.antall} ${navn(D.arr[arrNaa].vare).toLowerCase()}${r.antall > 1 ? 'er' : ''}!`, r.premier.length ? 5200 : 3000); }
+    tegnPaaNytt(); return; }
+  if (g === 'skinn') { if (L.velgSkinn(s, k.dataset.v || null)) { lagre(); if (bilKo.fase === 0) { lukkHandling(); synkVarebil(); synk(true); sprett.push({o: bil, t: 0}); } else { melding('Bilen bytter utseende når den er hjemme igjen. 🚚'); tegnPaaNytt(); } } return; }
+  if (g === 'tavle') { lukkHandling(); visTavle(); return; }
   if (g === 'flytt') { startFlytt(u); return; }
+  if (g === 'nyttBilde') { lukkHandling(); setTimeout(visBilde, 350); return; }
+  if (g === 'mus') { musVelg(k.dataset.m); tegnPaaNytt(); return; }
+  if (g === 'kast') { const r = L.kast(s, naa()); if (r.ok) { lagre(); synkBrygge(); tegnPaaNytt(); melding('🎣 Snøret er ute. Fisken biter om litt.', 2600); } return; }
+  if (g === 'hal') { const r = L.halInn(s, naa()); if (r.ok) { lukkHandling(); gi(r); flyt('+1 ' + ikon(r.vare), brygge.gruppe.position.clone().setY(brygge.gruppe.position.y + 2.2)); melding('🐟 Du fikk en ' + navn(r.vare).toLowerCase() + '!', 2800); lagre(); synkBrygge(); synk(true); } return; }
+  if (g === 'lukk') { lukkHandling(); return; }
+  if (g === 'selgPynt') { const r = L.selgPynt(s, u.e.id); if (r.ok) { flyt('+' + r.mynter + ' 🪙', midtAv(u, 2)); lukkHandling(); synkKjopPynt(); lagre(); synk(true); } return; }
   if (g === 'marked') { lukkHandling(); visMarked(); return; }
   if (g === 'lager') { lukkHandling(); visLager(); return; }
 });
@@ -1260,6 +1911,9 @@ function visByggMeny() {
     return s.omrader[id] ? rad(O.ikon, E.navn, 'Kjøpt ✅', `<button class="knapp lys" data-vis="omr:${id}">Vis</button>`) : E.nivaa > s.nivaa ? rad(O.ikon, E.navn + ' (mer plass)', `🔒 Nivå ${E.nivaa} · ${E.pris} 🪙`, '')
       : rad(O.ikon, E.navn + ' (mer plass)', `${E.pris} 🪙${s.mynter < E.pris ? ' · du har ' + s.mynter : ''}`, `<button class="knapp gronn" data-vis="omr:${id}">Kjøp</button>`); });
   rader.push(...Object.keys(D.bygg).map(b => { const B = D.bygg[b], sb = s.bygg[b];
+    if (B.arr && !sb) return '';   /* festens maskin vises bare når festen har startet */
+    if (B.arr && !treSynlig(b)) return '';
+    if (B.nivaa > D.maksNivaa) return '';   /* 0.39.2 (QA 21.11): bygg over maksnivået vises ikke (geitefjøset på nivå 26) */
     if (sb && sb.eid) return rad(B.ikon, B.navn, 'Bygd ✅', `<button class="knapp lys" data-vis="${b}">Vis</button>`);
     if (B.nivaa > s.nivaa) return rad(B.ikon, B.navn, `🔒 Nivå ${B.nivaa} · ${B.pris} 🪙`, '');
     if (!I_SPILLET.bygg.includes(b)) return rad(B.ikon, B.navn, `${B.pris} 🪙 · kommer i en senere versjon`, '');
@@ -1267,10 +1921,17 @@ function visByggMeny() {
     return rad(B.ikon, B.navn, `${B.pris} 🪙${s.mynter < B.pris ? ' · du har ' + s.mynter : ''}`, `<button class="knapp gronn" data-vis="${b}">Bygg</button>`); }));
   DYREHUS.forEach(h => rader.push(h.bygd && h.bygd() ? rad(h.ikon, h.navn, 'Bygd ✅', '<button class="knapp lys" data-vis="honsehus">Vis</button>')
     : rad(h.ikon, h.navn, h.nivaa <= s.nivaa ? 'Kommer i neste versjon av spillet' : `🔒 Nivå ${h.nivaa}${h.pris ? ' · ' + h.pris + ' 🪙' : ''}`, '')));   /* 0.9.3: ikke vis lås og nivå når nivået er nådd, men bygget ikke er laget ennå */
+  /* 0.26.0: pyntebutikken nederst i byggemenyen */
+  rader.push(`<p style="margin:14px 0 4px"><b>🌷 Pyntebutikken</b>${s.nivaa < D.pyntNivaa ? ` · åpner på nivå ${D.pyntNivaa}` : ` · ${s.pynt.length} av ${D.pyntMaks} ting`}</p>`);
+  if (s.nivaa >= D.pyntNivaa) Object.keys(D.pynt).forEach(p => { const P = D.pynt[p], n = s.pynt.filter(e => e.t === p).length, g = L.kanKjopePynt(s, p);
+    rader.push(rad(P.ikon, P.navn, `${P.pris} 🪙${n ? ' · du har ' + n : ''}${g === 'mynter' ? ' · du har ' + s.mynter + ' 🪙' : g === 'fullt' ? ' · det er fullt' : ''}`, `<button class="knapp gronn" data-pynt="${p}" ${g ? 'disabled' : ''}>Kjøp</button>`)); });
   $('byggListe').innerHTML = rader.join('');
   if (!$('byggMeny').classList.contains('vis')) aapneDialog('byggMeny');
 }
 $('byggKnapp').addEventListener('click', visByggMeny);
+$('byggListe').addEventListener('click', e => { const kp = e.target.closest('[data-pynt]'); if (!kp || kp.disabled) return;
+  const r = L.kjopPynt(s, kp.dataset.pynt); if (!r.ok) return; lukkDialog('byggMeny'); synkKjopPynt(); lagre(); synk(true);
+  const u = ting.get('kp-' + r.pynt.id); if (u) { flyt('-' + D.pynt[r.pynt.t].pris + ' 🪙', midtAv(u, 2)); kameraMaal = u.gruppe.position.clone(); startFlytt(u); } });   /* rett til «sett her», så du bestemmer plassen */
 $('byggListe').addEventListener('click', e => { const k = e.target.closest('[data-vis]'); if (!k) return; if (k.dataset.vis.startsWith('omr:') || k.dataset.vis === 'enga') { const id = k.dataset.vis.replace('omr:', ''); lukkDialog('byggMeny'); kameraMaal = new THREE.Vector3(...OMR[id].midt); visOmradeKjop(id); return; } const u = ting.get(k.dataset.vis); lukkDialog('byggMeny'); if (!u) return;
   kameraMaal = u.gruppe.position.clone(); sprett.push({o: u.gruppe, t: 0}); bruk(u); });
 
@@ -1297,8 +1958,8 @@ function startFlytt(u) {
   lukkHandling(); if (!u.fot) return;
   if (!fotMesh) { const g = new THREE.PlaneGeometry(1, 1); g.rotateX(-Math.PI / 2); fotMesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({color: 0x4cd137, transparent: true, opacity: 0.45, depthWrite: false})); fotMesh.renderOrder = 2; scene.add(fotMesh); }
   flytt = {u, x0: u.x, z0: u.z, r0: u.r, x: u.x, z: u.z, r: u.r};
-  $('flyttSnu').hidden = u.type === 'aker' || u.type === 'silo' || u.type === 'honsehus';
-  $('flyttLinje').classList.add('vis'); $('flyttTekst').textContent = `Dra, eller trykk der du vil ha ${u.type === 'aker' ? 'åkeren' : u.type === 'silo' ? 'siloen' : u.type === 'honsehus' ? 'hønsehuset' : u.type === 'pynt' ? D.gave.pyntNavn[u.pid].toLowerCase() : D.bygg[u.id].navn.toLowerCase()}. Grønt betyr ledig.`;
+  $('flyttSnu').hidden = u.type === 'aker' || u.type === 'silo' || u.type === 'honsehus' || u.type === 'hundehus';
+  $('flyttLinje').classList.add('vis'); $('flyttTekst').textContent = `Dra, eller trykk der du vil ha ${u.type === 'aker' ? 'åkeren' : u.type === 'silo' ? 'siloen' : u.type === 'honsehus' ? 'hønsehuset' : u.type === 'pynt' ? D.gave.pyntNavn[u.pid].toLowerCase() : u.type === 'kpynt' ? D.pynt[u.e.t].navn.toLowerCase() : u.type === 'hundehus' ? 'hundehuset' : D.bygg[u.id].navn.toLowerCase()}. Grønt betyr ledig.`;
   oppdaterFlytt(); $('flyttOk').focus({preventScroll: true});
 }
 function oppdaterFlytt() { const {u} = flytt; u.gruppe.position.set(flytt.x, 0, flytt.z); u.gruppe.rotation.y = flytt.r * Math.PI / 2;
@@ -1308,7 +1969,7 @@ function oppdaterFlytt() { const {u} = flytt; u.gruppe.position.set(flytt.x, 0, 
 function sluttFlytt(behold) {
   const {u} = flytt;
   if (behold && flytt.ok) { plasser(u, flytt.x, flytt.z, flytt.r);
-    if (u.type === 'aker') { const f = s.akre.find(a => a.id === u.id); f.x = u.x; f.z = u.z; } else if (u.type === 'bygg') { Object.assign(s.bygg[u.id], {x: u.x, z: u.z, r: u.r}); if (DYRHUS[u.id]) synkKyr(); } else if (u.type === 'silo') s.plasser.silo = {x: u.x, z: u.z, r: u.r}; else if (u.type === 'honsehus') { s.plasser.honsehus = {x: u.x, z: u.z, r: 0}; flyttHoner(u); } else if (u.type === 'pynt') s.gaver.pynt[u.pid] = {x: u.x, z: u.z, r: u.r};
+    if (u.type === 'aker') { const f = s.akre.find(a => a.id === u.id); f.x = u.x; f.z = u.z; } else if (u.type === 'bygg') { Object.assign(s.bygg[u.id], {x: u.x, z: u.z, r: u.r}); if (DYRHUS[u.id]) synkKyr(); } else if (u.type === 'silo') s.plasser.silo = {x: u.x, z: u.z, r: u.r}; else if (u.type === 'hundehus') s.plasser.hundehus = {x: u.x, z: u.z, r: u.r}; else if (u.type === 'honsehus') { s.plasser.honsehus = {x: u.x, z: u.z, r: 0}; flyttHoner(u); } else if (u.type === 'pynt') s.gaver.pynt[u.pid] = {x: u.x, z: u.z, r: u.r}; else if (u.type === 'kpynt') Object.assign(u.e, {x: u.x, z: u.z, r: u.r});
     lagre(); robotJobb(u); melding('Flyttet! ✋'); }
   else plasser(u, flytt.x0, flytt.z0, flytt.r0);
   flytt = null; fotMesh.visible = false; $('flyttLinje').classList.remove('vis');
@@ -1332,6 +1993,8 @@ function tingFor(o) {
   if (o.userData.art === 'hone' || o.userData.art === 'kylling' || o.userData.kat === 'honsehus') return ting.get('honsehus');
   if (o.userData.art2 === 'ku') return ting.get('fjos');
   if (o.userData.art2 === 'gris') return ting.get('grisebinge');
+  if (o.userData.art2 === 'sau') return ting.get('sauefjos');
+  if (o.userData.art2 === 'geit') return ting.get('geitefjos');
   if (o.userData.kat === 'laave') return ting.get('laave');
   if (o.userData.kat === 'markedsbod') return ting.get('marked');
   return null;
@@ -1344,18 +2007,29 @@ function bruk(u) {
   else if (u.type === 'bygg' && DYRHUS[u.id] && s.bygg[u.id].eid) visDyr(u, DYRHUS[u.id].art);
   else if (u.type === 'bygg') visBygg(u);
   else if (u.type === 'silo' || u.type === 'laave') visLager();
+  else if (u.type === 'hundehus') aapneHandling(u, '🐶 Huset til Syltetøy', () => '<p>Her bor gårdshunden Syltetøy. Hun følger roboten rundt på gården. Trykk på henne, så blir hun glad!</p><div class="knapper"><button class="knapp lys" data-g="flytt">✋ Flytt huset</button></div>');
   else if (u.type === 'marked') { visMarked(); fremOppl('marked'); }
+  else if (u.type === 'varebil' && (arrNaa || Object.keys(s.skinn.eid).length)) visVarebil(u);
   else if (u.type === 'tavle' || (u.type === 'varebil' && ting.get('tavle'))) visTavle();
   else if (u.type === 'varebil') melding(`🚚 Dette er varebilen din. Fra nivå ${D.bestillinger.nivaa} kjører den ut med bestillingene.`, 3200);
   else if (u.type === 'gave') visGave();
+  else if (u.type === 'post') visBrev();
   else if (u.type === 'pynt') visPynt(u);
+  else if (u.type === 'kpynt') visKjopPynt(u);
 }
 window.spillTrykk = (o, t, ray) => {
   if (!startet || pauset || undertrykkTrykk || draModus) return true;   /* et drag håndteres i sluttDra */
   if (flytt) { flyttTil(ray); return true; }
   if (o && o.userData.katt) { kundeTrykk(); return true; }
+  if (o && brygge && o === brygge.gruppe) { kameraMaal = brygge.gruppe.position.clone(); visBrygge(); return true; }
+  if (o && nabo.g && o === nabo.g) { naboTrykk(); return true; }
+  if (o && snoG && o === snoG) { kameraMaal = snoG.position.clone(); snoTrykk(); return true; }
+  if (o && nisseG && o === nisseG) { nisseTrykk(); return true; }
+  if (o && o === hund) { hundTrykk(); return true; }
+  if (o && hundHaug && o === hundHaug) { hundHentSkatt(); return true; }
+  if (o && rev && (o === revehus || o === rev)) { if (revInne()) { revUteTil = performance.now() + 9000; rev.visible = true; revSett(...REV_HJEM); rev.rotation.y = Math.PI / 2 + 0.35; } o = rev; }   /* 0.23.0: et trykk på huset henter Rebus ut */
   if (o === rev) { if (s.oppl.steg >= OPPL.length && s.nivaa >= D.rebus.nivaa) visGate(); else { if (!revGang) hilsRev(false); visOppl(true); } return true; }
-  if (o && o.userData.omrade && (o.userData.omrade.tema === 'eng' || o.userData.omrade.tema === 'skog')) { visOmradeKjop(o.userData.omrade.tema === 'eng' ? 'enga' : 'skogkanten'); return true; }
+  if (o && o.userData.omrade && ['eng', 'skog', 'jorde', 'jorde2', 'jorde3', 'elv'].includes(o.userData.omrade.tema)) { visOmradeKjop({eng: 'enga', skog: 'skogkanten', jorde: 'jordet', jorde2: 'ostjordet', jorde3: 'bakjordet', elv: 'elvebredden'}[o.userData.omrade.tema]); return true; }
   const u = tingFor(o);
   if (u) { if (o && o.userData.art) { o.userData.hopp = 0.4; } bruk(u); return true; }
   lukkHandling();
@@ -1365,7 +2039,7 @@ window.spillTrykk = (o, t, ray) => {
 /* ======================= Tastatur (T2) ======================= */
 // Piltastene velger ting på gården (kameraet følger med), Enter bruker den. L åpner lageret.
 let valgtI = -1;
-function velgbare() { return [...s.akre.map(f => ting.get(f.id)), ...I_SPILLET.bygg.map(b => ting.get(b)), ting.get('honsehus'), ting.get('silo'), ting.get('marked'), ting.get('tavle')].filter(Boolean); }
+function velgbare() { return [...s.akre.map(f => ting.get(f.id)), ...I_SPILLET.bygg.map(b => ting.get(b)), ting.get('honsehus'), ting.get('silo'), ting.get('marked'), ting.get('tavle'), ting.get('varebil')].filter(Boolean); }   /* 0.20.2 (QA 17.11): varebilen kan velges med tastaturet, så festen kan brukes uten mus */
 let kameraMaal = null;
 addEventListener('keydown', e => {
   if (!startet || pauset || dialogApen() || $('evnPause') && $('evnPause').classList.contains('vis') || $('feil').classList.contains('vis')) return;
@@ -1417,7 +2091,8 @@ window.spillOppdater = (dt, t) => {
   for (const u of ikonListe()) u.ikon.position.y = u.ikon.userData.y0 + Math.sin(t * 3 + u.gruppe.position.x) * 0.12;
   if (pil && pil.visible && pil.userData.u) { const p = pil.userData.u.gruppe.position, h = pil.userData.u.hoyde || 3; pil.position.set(p.x, h + 1.2 + Math.abs(Math.sin(t * 4)) * 0.6, p.z); }
   if (kameraMaal) { cam.target.lerp(_p.set(kameraMaal.x, 0, kameraMaal.z), Math.min(1, dt * 5)); plasserKamera(); if (cam.target.distanceTo(_p) < 0.05) kameraMaal = null; }
-  oppdaterBil(dt); oppdaterKunde(dt, t); oppdaterRev(dt, t);
+  oppdaterBil(dt); oppdaterKunde(dt, t); oppdaterNabo(dt, t); oppdaterRev(dt, t); oppdaterNisse(dt, t); oppdaterHund(dt, t); oppdaterBrygge(dt, t); if ((epleTikk += dt) > 1) { epleTikk = 0; synkEpletre(); } oppdaterBier(t);
+  if (ADMIN) { try { oppdaterAdmin(dt, t); } catch (e) { if (!adm.feilVist) { adm.feilVist = true; console.warn('admin', e); } } }   /* 0.24.1: en feil i admin skal aldri stoppe spillet */
   if (gaveVent > 0 && startet && !pauset) { gaveVent -= dt; if (gaveVent <= 0) leverGaver('Blomst'); }   /* kommer hun ikke innen ett minutt, står gaven der likevel */
   synkT += dt; if (synkT > 0.25) { synkT = 0; synk(); oppdaterTider(); }
   lagreT += dt; if (lagreT > 15 && startet) { lagreT = 0; lagre(); }
@@ -1440,11 +2115,16 @@ function borteTekst() {
 }
 $('startBtn').addEventListener('click', () => {
   if (startet) return;
-  startet = true; setTimeout(ecoinAvstem, 1500); $('start').classList.remove('vis'); $('last').style.display = 'none'; $('hud').hidden = false; $('hoyre').hidden = false; layoutHud(); setTimeout(layoutHud, 400);
+  startet = true; setTimeout(ecoinAvstem, 1500);
+  const ryddet = L.arrRydd(s, MANED());   /* 0.21.2. 0.21.3 (QA 18.11): ryddes før «Mens du var borte» telles. Meldingen venter til spillet ikke er pauset */
+   $('start').classList.remove('vis'); $('last').style.display = 'none'; $('hud').hidden = false; $('hoyre').hidden = false; layoutHud(); setTimeout(layoutHud, 400);
   try { document.dispatchEvent(new Event('evn-start')); } catch (e) {}
   lagre(); synk(true);
   if (forste.reddet) melding('Den gamle lagringen kunne ikke leses. Den er tatt vare på, og du starter en ny gård.', 5000);
-  else { const b = borteTekst(); if (b) melding(b, 5000); }
+  else { const b = borteTekst();
+    if (ryddet.antall) { const vis = () => { if (pauset) { setTimeout(vis, 500); return; }   /* venter til pausekortet er borte, og til revens tips har fått plassen sin */
+        melding(`🚚 Festen er over. Bilen hentet ${Object.keys(ryddet.varer).map(v => ryddet.varer[v] + ' ' + (ryddet.varer[v] === 1 ? navn(v).toLowerCase() : (D.varer[v].flertall || navn(v).toLowerCase() + 'er'))).join(' og ')} som var til overs. Du fikk ${ryddet.mynter} mynter.`, 6000); if (b) setTimeout(() => melding(b, 5000), 6300); }; setTimeout(vis, 1500); }
+    else if (b) melding(b, 5000); }
   if (s.oppl.steg < OPPL.length) setTimeout(() => { visOppl(); if (rev && s.oppl.steg === 0) hilsRev(false); }, 600);
   try { renderer.domElement.focus({preventScroll: true}); } catch (e) {}
 });
@@ -1465,8 +2145,8 @@ window.__evnP = EVNPause({
   kanPause: () => startet && !$('feil').classList.contains('vis'),
   // Aktiv spilletid (ST2): ikke i pause, ikke med lageret eller markedsbua åpen, ikke før spillet er startet
   aktiv: () => startet && !pauset && !dialogApen(),
-  pause: () => { pauset = true; if (draModus) { const m = draModus; draModus = null; draIkon(null); undertrykkTrykk = true; if (m.n) gi(m.type === 'host' ? {xp: m.xp, nye: m.nye} : null, midtAv(ting.get(s.akre[[...m.ferdige][0]].id), 2.2)); } lagre(); if (flytt) sluttFlytt(false); dialoger.forEach(id => { if ($(id).classList.contains('vis')) { $(id).classList.remove('vis'); if (window.EVNPauseInert) EVNPauseInert(null); } }); lukkHandling(); },   /* QA 9.11 (T2): pausen legger seg ikke over en åpen dialog */
-  fortsett: () => { pauset = false; undertrykkTrykk = false; L.normaliserTid(s, naa()); synk(true); },
+  pause: () => { { const m = $('melding'); if (m.classList.contains('vis')) { meldingVent.push([m.textContent, 3500]); m.classList.remove('vis'); clearTimeout(melding.t); } } pauset = true; if (draModus) { const m = draModus; draModus = null; draIkon(null); undertrykkTrykk = true; if (m.n) gi(m.type === 'host' ? {xp: m.xp, nye: m.nye} : null, midtAv(ting.get(s.akre[[...m.ferdige][0]].id), 2.2)); } lagre(); if (flytt) sluttFlytt(false); dialoger.forEach(id => { if ($(id).classList.contains('vis')) { $(id).classList.remove('vis'); if (window.EVNPauseInert) EVNPauseInert(null); } }); lukkHandling(); },   /* QA 9.11 (T2): pausen legger seg ikke over en åpen dialog */
+  fortsett: () => { pauset = false; undertrykkTrykk = false; L.normaliserTid(s, naa()); synk(true); if (meldingVent.length) { const ko = meldingVent.slice(-3); meldingVent = []; let ms = 300; ko.forEach(([mt, mm]) => { setTimeout(() => { if (!pauset) melding(mt, Math.min(mm, 3500)); else meldingVent.push([mt, mm]); }, ms); ms += Math.min(mm, 3500) + 200; }); } },   /* 0.39.3: alle meldingene vises etter hverandre, høyst de tre siste */
   lagre,
   styring: () => document.documentElement.classList.contains('touch')
     ? '👆 Trykk på en åker, et dyr eller et hus<br>✋ Dra med én finger for å flytte deg<br>🤏 Knip med to fingre for å zoome<br>📦 Lageret: knappen øverst til høyre<br>🦊 Trykk på Rebus for et tips'
@@ -1494,4 +2174,245 @@ bygg();
 if (innerWidth < innerHeight) { cam.target.set(3.2, 0, -1.2); cam.dist = 74; plasserKamera(); }   /* høykant: hele tunet i bildet */
 lagAkerProto(); finnFasteTing(); finnHinder(); plasserAlt(); lagEgg(); synk(true);
 loop();
+
+/* ======================= Admin (0.18.0, Even 16.11) =======================
+   Bare i den private forhåndsvisningen (window.MB_ADMIN settes av byggeskriptet) og i testmodus med ?test&admin.
+   Finnes ikke for vanlige spillere på evnstudio.no. Det admin gir, er ikke en del av spillets økonomi. */
+function admLagre(f) { const l = admLager(); f(l); try { localStorage.setItem('mb-admin', JSON.stringify(l)); } catch (e) {} }
+const admPlantNivaa = {}; for (const a in D.avlinger) admPlantNivaa[a] = D.avlinger[a].nivaa;   /* de vanlige nivåene, så «Slett» kan sette dem tilbake */
+function admPlanter() { const paa = !!admLager().planter; for (const a in D.avlinger) D.avlinger[a].nivaa = paa ? 1 : admPlantNivaa[a]; }   /* alle plantene kan plantes uansett nivå */
+/* 0.20.3 (Even 17.11): «Slett» tar bort det admin har gitt. Det du har tjent selv, beholder du */
+function admSlettSkinn(id) {
+  admLagre(l => { l.skinn = (l.skinn || []).filter(x => x !== id); });
+  const tjent = Object.keys(D.arr).some(a => D.arr[a].trinn.some((tr, i) => tr.premie === 'skinn' && tr.skinn === id && i < L.arrTrinn(s, a)));
+  if (!tjent) { delete s.skinn.eid[id]; if (s.skinn.valgt === id) s.skinn.valgt = null; }
+  return !tjent;
+}
+function admSlettArr(id) {   /* 0.37.0: felles for Bursdagsfesten og Vinter i Elvedal */
+  const A = D.arr[id], l = admLager(), f = l[id]; if (!f || !s.arr[id]) return false;
+  s.arr[id].levert = Math.min(s.arr[id].levert, f.levert);
+  const n = L.arrTrinn(s, id);
+  A.trinn.forEach((tr, i) => { if (i < n) return; if (tr.premie === 'skinn' && !(l.skinn || []).includes(tr.skinn)) { delete s.skinn.eid[tr.skinn]; if (s.skinn.valgt === tr.skinn) s.skinn.valgt = null; } if (tr.premie === 'pynt') delete s.gaver.pynt[tr.pynt]; });
+  const eide = f.bygg || (f.bord ? [A.bygg] : []);
+  arrBygg(id).forEach(b => { if (!eide.includes(b) && s.bygg[b]) { s.bygg[b].eid = false; s.bygg[b].ko = []; } });
+  s.lager[A.vare] = Math.max(0, (s.lager[A.vare] || 0) - 5);
+  admLagre(x => { delete x[id]; });
+  return true;
+}
+const arrBygg = id => Object.keys(D.bygg).filter(b => D.bygg[b].arr === id && !D.bygg[b].tre);
+function admArr(id) {   /* alle premiene fra en fest, og festens bygg ferdig bygd */
+  const A = D.arr[id];
+  if (!admLager()[id]) admLagre(l => { l[id] = {levert: s.arr[id] ? s.arr[id].levert : 0, bygg: arrBygg(id).filter(b => s.bygg[b] && s.bygg[b].eid)}; });   /* husker hva du hadde fra før */
+  for (let i = 0; i < 400 && s.nivaa < A.nivaa; i++) L.giXP(s, 5, naa());   /* festen krever nivå 3, ellers tas premiene ikke vare på i lagringen */
+  L.arrStart(s, id); s.arr[id].levert = Math.max(s.arr[id].levert, A.trinn[A.trinn.length - 1].n);
+  arrBygg(id).forEach(b => { if (s.bygg[b]) s.bygg[b].eid = true; });
+  A.trinn.forEach(tr => { if (tr.premie === 'skinn') s.skinn.eid[tr.skinn] = true; if (tr.premie === 'pynt' && !s.gaver.pynt[tr.pynt]) s.gaver.pynt[tr.pynt] = {x: null, z: null, r: 0}; });
+  s.lager[A.vare] = (s.lager[A.vare] || 0) + 5; const sk = A.trinn.find(tr => tr.premie === 'skinn'); if (sk) L.velgSkinn(s, sk.skinn);
+}
+function admSkinn() { (admLager().skinn || []).forEach(id => { if (D.skinn[id]) s.skinn.eid[id] = true; }); }
+function visAdmin() {
+  aapneHandling(null, '👑 Admin', () => `<p>Her bestemmer du. Dette finnes bare i testversjonen.</p>
+    <div class="rad"><span class="stort">❄️</span><span class="midt">Vinter i Elvedal<small>${admLager().vinter ? 'Er på: det er desember, med snø og juleevent' : 'Gjør det desember: snø, is på elva og juleeventet'}</small></span><button class="knapp ${admLager().vinter ? 'lys' : 'gronn'}" data-g="adm" data-v="vinter" type="button">${admLager().vinter ? 'Slå av' : 'Slå på'}</button></div>
+    <div class="rad"><span class="stort">🪙</span><span class="midt">Myntregn<small>Det regner mynter over gården</small></span><button class="knapp" data-g="adm" data-v="regn" type="button">Start</button></div>
+    <div class="rad"><span class="stort">🚚</span><span class="midt">Bilkaos<small>Alle bilene kommer på én gang</small></span><button class="knapp" data-g="adm" data-v="biler" type="button">Start</button></div>
+    <div class="rad"><span class="stort">🐔</span><span class="midt">Kjempedyr<small>Dyrene blir kjempestore en liten stund</small></span><button class="knapp" data-g="adm" data-v="kjempe" type="button">Start</button></div>
+    <div class="rad"><span class="stort">⏩</span><span class="midt">Alt ferdig nå<small>Åkre, dyr og bygg blir ferdige med en gang</small></span><button class="knapp" data-g="adm" data-v="ferdig" type="button">Start</button></div>
+    <div class="rad"><span class="stort">✖️</span><span class="midt">5 ganger mynter<small>${adm.x5 ? 'Er på' : 'Er av'}</small></span><button class="knapp" data-g="adm" data-v="x5" type="button">${adm.x5 ? 'Slå av' : 'Slå på'}</button></div>
+    <div class="rad"><span class="stort">👑</span><span class="midt">Premium<small>${admLager().premium ? 'Er på: gullgård, superbonde og premium-pakka' : 'Gullgård, superbonde og premium-pakka. Gratis for deg'}</small></span><button class="knapp ${admLager().premium ? 'lys' : 'gronn'}" data-g="adm" data-v="premium" type="button">${admLager().premium ? 'Slå av' : 'Slå på'}</button></div>
+    <div class="rad"><span class="stort">🚚</span><span class="midt">Biler<small>Få bilene og ta dem på</small></span><button class="knapp" data-g="adm" data-v="visBiler" type="button">Åpne</button></div>
+    <div class="rad"><span class="stort">📦</span><span class="midt">Varer<small>Få varer rett i lageret</small></span><button class="knapp" data-g="adm" data-v="visVarer" type="button">Åpne</button></div>
+    <div class="rad"><span class="stort">🏠</span><span class="midt">Bygg<small>Få byggene uten å betale</small></span><button class="knapp" data-g="adm" data-v="visBygg" type="button">Åpne</button></div>
+    <div class="rad"><span class="stort">🆓</span><span class="midt">Lage uten råvarer<small>${adm.gratis ? 'Er på' : 'Er av'}</small></span><button class="knapp" data-g="adm" data-v="gratis" type="button">${adm.gratis ? 'Slå av' : 'Slå på'}</button></div>
+    <div class="rad"><span class="stort">🎉</span><span class="midt">Alle bursdagstingene<small>Festbordet, hatter, kake, bil og pynt</small></span><button class="knapp" data-g="adm" data-v="bursdag" type="button" ${admLager().bursdag ? 'disabled' : ''}>Få</button><button class="knapp" data-g="adm" data-v="bursdagSlett" type="button" ${admLager().bursdag ? '' : 'disabled'}>Slett</button></div>
+    <div class="rad"><span class="stort">⛄</span><span class="midt">Nedtelling<small>${admLager().ned ? 'Er på: Rebus bygger snømannen i november' : 'Se snømannen og nedtellingen før den siste uka i november'}</small></span><button class="knapp ${admLager().ned ? 'lys' : 'gronn'}" data-g="adm" data-v="ned" type="button">${admLager().ned ? 'Slå av' : 'Slå på'}</button></div>
+    <div class="rad"><span class="stort">📅</span><span class="midt">Alle lukene i julekalenderen<small>Åpner alle 24 luker, med gullstjernen. Slå på vinteren for å se dem</small></span><button class="knapp" data-g="adm" data-v="kal" type="button" ${s.kal.apnet.length >= 24 ? 'disabled' : ''}>Få</button><button class="knapp" data-g="adm" data-v="kalSlett" type="button" ${s.kal.apnet.length || s.kal.stjerne ? '' : 'disabled'}>Slett</button></div>
+    <div class="rad"><span class="stort">🎄</span><span class="midt">Alle juletingene<small>Maskinene, nisseluer, pepperkakehus, juletreet med all pynt og julesleden. Slå på vinteren for å se dem</small></span><button class="knapp" data-g="adm" data-v="jul" type="button" ${admLager().jul ? 'disabled' : ''}>Få</button><button class="knapp" data-g="adm" data-v="julSlett" type="button" ${admLager().jul ? '' : 'disabled'}>Slett</button></div>
+    <div class="rad"><span class="stort">🌱</span><span class="midt">Alle plantene<small>${admLager().planter ? 'Du kan plante alt' : 'Plant alt, uansett nivå'}</small></span><button class="knapp" data-g="adm" data-v="planter" type="button" ${admLager().planter ? 'disabled' : ''}>Få</button><button class="knapp" data-g="adm" data-v="planterSlett" type="button" ${admLager().planter ? '' : 'disabled'}>Slett</button></div>
+    <div class="rad"><span class="stort">💰</span><span class="midt">1000 mynter</span><button class="knapp" data-g="adm" data-v="mynter" type="button">Få</button><button class="knapp" data-g="adm" data-v="mynterSlett" type="button" ${s.mynter > 0 ? '' : 'disabled'}>Slett</button></div>
+    <div class="rad"><span class="stort">⭐</span><span class="midt">Ett nivå opp<small>Du er på nivå ${s.nivaa}</small></span><button class="knapp" data-g="adm" data-v="nivaa" type="button">Få</button></div>`);
+}
+/* 0.21.0 (Even 17.11): bilene. Vanlige spillere ser bilene de har fått, og kan bytte. Admin kan få dem gratis */
+const MANEDER = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+const festFor = id => Object.keys(D.arr).find(a => D.arr[a].trinn.some(tr => tr.premie === 'skinn' && tr.skinn === id));
+function visBiler() {
+  aapneHandling(null, '🚚 Bilene dine', () => {
+    const valgt = s.skinn.valgt || null, tilbake = ADMIN ? '<div class="knapper"><button class="knapp lys" data-g="adm" data-v="tilbake" type="button">← Admin</button></div>' : '';
+    const paa = id => `<button class="knapp ${valgt === id ? '' : 'gronn'}" data-g="skinn" data-v="${id || ''}" type="button" ${valgt === id ? 'disabled aria-pressed="true"' : ''}>${valgt === id ? 'På ✓' : 'Ta på'}</button>`;
+    let p = `<div class="rad"><span class="stort">🚚</span><span class="midt">Vanlig varebil<small>Den røde bilen</small></span>${paa(null)}</div>`;
+    p += Object.keys(D.skinn).map(id => { const a = festFor(id), A = a && D.arr[a], har = !!s.skinn.eid[id], fraAdmin = ADMIN && (admLager().skinn || []).includes(id);
+      const hvor = A ? `Premie i ${A.navn} i ${MANEDER[A.maned - 1]}` : 'Festbil';
+      return `<div class="rad"><span class="stort">${A ? A.ikon : '🚚'}</span><span class="midt">${D.skinn[id]}<small>${har ? 'Du har den' : '🔒 ' + hvor}</small></span>${har ? paa(id) : ADMIN ? `<button class="knapp" data-g="adm" data-v="skinn" data-id="${id}" type="button">Få</button>` : ''}${fraAdmin ? `<button class="knapp lys" data-g="adm" data-v="skinnSlett" data-id="${id}" type="button">Slett</button>` : ''}</div>`; }).join('');
+    Object.keys(D.arr).forEach(a => { const A = D.arr[a], st = s.arr[a]; if (!st) return;
+      p += `<p><b>${A.ikon} Resten av pakka fra ${A.navn}</b></p>` + A.trinn.filter(tr => tr.premie !== 'skinn').map(tr => `<div class="rad"><span class="stort">${st.levert >= tr.n ? '✅' : '🔒'}</span><span class="midt">${tr.tekst}<small>${st.levert >= tr.n ? 'Du har den' : `Send ${tr.n} ${ikon(A.vare)}`}</small></span></div>`).join(''); });
+    return p + tilbake; });
+}
+/* 0.28.0 Musikk (Even 18.11): to egne melodier laget i koden med Web Audio. Ingen lydfiler og ingen lånt musikk.
+   Musikknappen står ved admin- og bilknappen og er for alle. Valget lagres i «mb-musikk». Musikken stopper i pause og når fanen er skjult */
+var epleTikk = 0;
+var MUS = {ctx: null, ut: null, valg: 'gard', timer: null, neste: 0, steg: 0};
+try { const v = localStorage.getItem('mb-musikk'); if (v === 'av' || v === 'gard' || v === 'vinter') MUS.valg = v; } catch (e) {}
+var SANG = {   /* 0.28.2 (Even 18.11: «stygg musikk», både lyd og melodi): nye melodier på fem toner (pentatonisk), mykere klang, lavere tempo og litt ekko */
+  gard: {navn: 'Gårdssangen', ikon: '🌻', stegTid: 60 / 100 / 2, takt: 8,
+    melodi: [76,0,79,0,81,79,76,0, 74,0,76,0,72,0,0,0, 81,0,84,0,81,79,76,0, 79,0,76,0,79,0,0,0, 81,0,84,0,86,84,81,0, 84,0,81,0,79,0,76,0, 74,0,79,0,74,76,79,0, 76,0,74,0,72,0,0,0],
+    akk: [[48,64,67], [48,64,67], [53,65,69], [48,64,67], [45,64,69], [53,65,69], [55,62,67], [48,64,67]]},
+  vinter: {navn: 'Vintersangen', ikon: '❄️', stegTid: 60 / 72 / 2, takt: 6,
+    melodi: [76,0,0,0,72,0, 69,0,0,0,72,0, 76,0,79,0,76,0, 74,0,0,0,0,0, 81,0,0,0,79,0, 76,0,0,0,72,0, 74,0,79,0,74,0, 69,0,0,0,0,0],
+    akk: [[45,60,64], [41,60,65], [48,60,64], [43,59,62], [45,60,64], [41,60,65], [43,59,62], [45,60,64]]}
+};
+function musHz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+function musTone(t, m, type, vol, a, d, over) { const c = MUS.ctx, o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = musHz(m) * (over || 1);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); o.connect(g); g.connect(MUS.ut); o.start(t); o.stop(t + a + d + 0.05); }
+function musSteg(t) { const S = SANG[MUS.valg]; if (!S) return; const n = MUS.steg % S.melodi.length, i = n % S.takt, A = S.akk[Math.floor(n / S.takt) % S.akk.length], m = S.melodi[n];
+  if (MUS.valg === 'gard') {   /* myk marimba, rolig bass og to stille akkordtoner */
+    if (m) { musTone(t, m, 'sine', 0.2, 0.006, 0.42); musTone(t, m, 'sine', 0.025, 0.004, 0.09, 4); }
+    if (i === 0) musTone(t, A[0] - 12, 'sine', 0.26, 0.02, 0.5); if (i === 4) musTone(t, A[0] - 5, 'sine', 0.18, 0.02, 0.4);
+    if (i === 2 || i === 6) { musTone(t, A[1], 'sine', 0.045, 0.01, 0.22); musTone(t, A[2], 'sine', 0.045, 0.01, 0.22); }
+  } else {   /* klokkespill med lang klang over en stille, myk akkord */
+    if (m) { musTone(t, m, 'sine', 0.17, 0.005, 2.0); musTone(t, m, 'sine', 0.035, 0.005, 0.8, 2); }
+    if (i === 0) { musTone(t, A[0] - 12, 'sine', 0.2, 0.08, 2.2); A.forEach(x => musTone(t, x, 'sine', 0.035, 0.5, 2.0)); }
+  }
+  MUS.steg++; }
+function musTikk() { const c = MUS.ctx; if (!c) return;
+  if (pauset || document.hidden || !startet || MUS.valg === 'av') { if (c.state === 'running') c.suspend(); return; }
+  if (c.state === 'suspended') { c.resume(); return; }
+  if (MUS.neste < c.currentTime) MUS.neste = c.currentTime + 0.05;
+  while (MUS.neste < c.currentTime + 0.35) { musSteg(MUS.neste); MUS.neste += SANG[MUS.valg].stegTid; } }
+function musStart() { if (MUS.valg === 'av' || !startet) return;   /* kalles etter et trykk, for nettleseren krever det før lyd */
+  try { if (!MUS.ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; MUS.ctx = new AC(); const c = MUS.ctx, lp = c.createBiquadFilter(), ekko = c.createDelay(1), fb = c.createGain(), vaat = c.createGain(); MUS.ut = c.createGain(); MUS.ut.gain.value = 0.4;
+      lp.type = 'lowpass'; lp.frequency.value = 3200; ekko.delayTime.value = 0.32; fb.gain.value = 0.28; vaat.gain.value = 0.22;   /* demper skarpe toner og gir litt rom */
+      MUS.ut.connect(lp); lp.connect(c.destination); lp.connect(ekko); ekko.connect(fb); fb.connect(ekko); ekko.connect(vaat); vaat.connect(c.destination); }
+    if (!MUS.timer) MUS.timer = setInterval(() => { try { musTikk(); } catch (e) {} }, 100); musTikk(); } catch (e) {} }
+function musVelg(v) { if (v !== 'av' && !SANG[v]) return; MUS.valg = v; MUS.steg = 0; MUS.neste = 0; try { localStorage.setItem('mb-musikk', v); } catch (e) {} musStart(); musTikk(); synkMusikknapp(); }
+function synkMusikknapp() { const kn = $('musikkKnapp'); if (!kn || !MUS) return; kn.hidden = !startet; kn.firstElementChild.textContent = MUS.valg === 'av' ? '🔇' : '🎵'; kn.setAttribute('aria-label', 'Musikk: ' + (MUS.valg === 'av' ? 'av' : SANG[MUS.valg].navn)); }
+function visMusikk() { aapneHandling(null, '🎵 Musikk', () => '<p>Velg hvilken sang du vil høre mens du spiller.</p><div class="knapper">' +
+  ['gard', 'vinter'].map(v => `<button class="knapp ${MUS.valg === v ? 'gronn' : 'lys'}" data-g="mus" data-m="${v}" type="button">${SANG[v].ikon} ${SANG[v].navn}${MUS.valg === v ? ' ✓' : ''}</button>`).join('') +
+  `<button class="knapp ${MUS.valg === 'av' ? 'gronn' : 'lys'}" data-g="mus" data-m="av" type="button">🔇 Ingen musikk${MUS.valg === 'av' ? ' ✓' : ''}</button></div>`); }
+['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, () => { if (!MUS.ctx) musStart(); }, {passive: true, capture: true}));
+/* 0.30.0 Bildeknapp (Even 18.11): ta et bilde av gården og vis det til venner. Bildet lages på enheten og sendes ikke noe sted.
+   Spilleren lagrer det selv. Navnet på spillet og nivået står nederst i bildet */
+let bildeUrl = null;
+function taBilde() {
+  try { renderer.render(scene, camera);   /* tegn og kopier i samme omgang, ellers er lerretet tomt */
+    const k = renderer.domElement, W = Math.min(1600, k.width), H = Math.round(W * k.height / k.width), c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d'); x.drawImage(k, 0, 0, W, H);
+    const h = Math.round(H * 0.075); x.fillStyle = 'rgba(31,74,28,.88)'; x.fillRect(0, H - h, W, h);
+    x.fillStyle = '#fff'; x.textBaseline = 'middle'; x.font = `800 ${Math.round(h * 0.5)}px Nunito, system-ui, sans-serif`; x.fillText('Min Bondegård · nivå ' + s.nivaa, Math.round(h * 0.45), H - h / 2);
+    x.textAlign = 'right'; x.font = `700 ${Math.round(h * 0.4)}px Nunito, system-ui, sans-serif`; x.fillText('evnstudio.no', W - Math.round(h * 0.45), H - h / 2);
+    bildeUrl = c.toDataURL('image/jpeg', 0.9); return true; } catch (e) { bildeUrl = null; return false; } }
+function visBilde() {
+  const ok = taBilde();
+  aapneHandling(null, '📷 Bilde av gården', () => ok ? `<p>Her er bildet av gården din. Du kan lagre det og vise det til noen.</p>
+    <img src="${bildeUrl}" alt="Bilde av gården din" style="width:100%;border-radius:12px;display:block;margin:6px 0 10px">
+    <div class="knapper"><a class="knapp gronn" href="${bildeUrl}" download="min-bondegard.jpg" style="text-decoration:none;text-align:center">💾 Lagre bildet</a><button class="knapp lys" data-g="nyttBilde" type="button">📷 Ta et nytt</button></div>
+    <p style="font-size:14px">Virker ikke «Lagre»? Hold fingeren på bildet, eller høyreklikk, og velg «Lagre bilde».</p>`
+    : '<p>Det gikk ikke å ta bilde akkurat nå. Prøv en gang til.</p>'); }
+function synkBildeknapp() { const kn = $('bildeKnapp'); if (kn) kn.hidden = !startet; }
+function synkBilknapp() { const kn = $('bilKnapp'); if (kn) kn.hidden = ADMIN || !startet || !(arrNaa || Object.keys(s.skinn.eid).length); }
+function visAdmVarer() {
+  aapneHandling(null, '📦 Varer', () => `<p>Trykk «Få» for å få 5 av en vare. «Slett» tar bort 5.</p>` +
+    Object.keys(D.avlinger).concat(Object.keys(D.varer).filter(v => !D.avlinger[v])).map(v => `<div class="rad"><span class="stort">${ikon(v)}</span><span class="midt">${navn(v)}<small>Du har ${s.lager[v] || 0}</small></span><button class="knapp" data-g="adm" data-v="vare" data-id="${v}" type="button">Få</button><button class="knapp lys" data-g="adm" data-v="vareSlett" data-id="${v}" type="button" ${(s.lager[v] || 0) > 0 ? '' : 'disabled'}>Slett</button></div>`).join('') +
+    '<div class="knapper"><button class="knapp lys" data-g="adm" data-v="tilbake" type="button">← Admin</button></div>');
+}
+function visAdmBygg() {
+  aapneHandling(null, '🏠 Bygg', () => { const gitt = admLager().bygg || [], liste = I_SPILLET.bygg.filter(x => s.bygg[x]);
+    return `<p>Her får du byggene du har låst opp, uten å betale. Gå opp i nivå for å låse opp flere.</p>` +
+    liste.map(x => { const B = D.bygg[x], eid = s.bygg[x].eid; return `<div class="rad"><span class="stort">${B.ikon}</span><span class="midt">${B.navn}<small>${eid ? 'Du har det' : B.pris + ' 🪙 vanligvis'}</small></span><button class="knapp" data-g="adm" data-v="bygg" data-id="${x}" type="button" ${eid ? 'disabled' : ''}>Få</button><button class="knapp lys" data-g="adm" data-v="byggSlett" data-id="${x}" type="button" ${gitt.includes(x) && eid ? '' : 'disabled'}>Slett</button></div>`; }).join('') +
+    '<div class="knapper"><button class="knapp lys" data-g="adm" data-v="tilbake" type="button">← Admin</button></div>'; });
+}
+/* 0.23.1 (Even 17.11): Premium i admin, gratis. Tre deler: gullgård med krone, superbonde (alt går dobbelt så fort og gir dobbelt XP) og premium-pakka (alle festbiler og all pynt).
+   Bare i testversjonen. Spillet har ingen premium for vanlige spillere, og ingenting kan kjøpes for ekte penger */
+function admXpSum() { let x = s.xp; for (let n = 1; n < s.nivaa; n++) x += D.xpNeste[n] || 0; return x; }   /* 0.24.1: funksjon, ikke const. Den brukes fra første bilde, før resten av fila er lest */
+function admPremium(paa) {
+  if (paa) {
+    const f = {gull: !!s.gaver.gullgard, gullPaa: !!s.gaver.gullPaa, skinn: [], pynt: []};
+    Object.keys(D.skinn).forEach(id => { if (!s.skinn.eid[id]) { s.skinn.eid[id] = true; f.skinn.push(id); } });
+    D.gave.pynt.concat(D.arrPynt).forEach(id => { if (!s.gaver.pynt[id]) { s.gaver.pynt[id] = {x: null, z: null, r: 0}; f.pynt.push(id); } });
+    s.gaver.gullgard = true; s.gaver.gullPaa = true;
+    admLagre(l => { l.premium = f; l.skinn = [...new Set([...(l.skinn || []), ...f.skinn])]; });
+  } else {
+    const f = admLager().premium; if (!f) return;
+    f.skinn.forEach(id => admSlettSkinn(id)); f.pynt.forEach(id => { delete s.gaver.pynt[id]; });
+    s.gaver.gullgard = f.gull; s.gaver.gullPaa = f.gull && f.gullPaa;
+    admLagre(l => { delete l.premium; });
+  }
+  adm.xpSum = admXpSum(); lagre(); plasserAlt(); if (bilKo.fase === 0) synkVarebil(); synk(true); synkKrone();
+}
+function synkKrone() { const k = $('krone'); if (k) k.hidden = !(ADMIN && admLager().premium); }
+function admSuperbonde(dt) {   /* alt som vokser eller lages, tar halv tid. XP du tjener, dobles */
+  const t0 = naa();
+  s.akre.forEach(f => { if (!f.avling) return; const halv = D.avlinger[f.avling].tid * 500; if (f.slutt - f.start > halv + 1) f.slutt = f.start + halv; });
+  for (const d in s.dyr) { const halv = D.dyr[d].tid * 500; s.dyr[d].forEach(x => { if (x.slutt && x.slutt - t0 > halv) x.slutt = t0 + halv; }); }
+  for (const x in s.bygg) { let forrige = 0; (s.bygg[x].ko || []).forEach(j => { const halv = D.oppskrifter[j.vare].tid * 500; if (j.slutt <= t0) { forrige = j.slutt; return; } const start = Math.max(forrige, Math.min(j.start, t0)); if (j.slutt - start > halv + 1) { j.start = start; j.slutt = start + halv; } forrige = j.slutt; }); }
+  const sum = admXpSum(); if (adm.xpSum === undefined) adm.xpSum = sum;
+  if (sum > adm.xpSum && s.nivaa < D.maksNivaa) { const ekstra = sum - adm.xpSum, nye = L.giXP(s, ekstra, t0); adm.xpSum = admXpSum(); if (nye.length) gi({nye}); } else adm.xpSum = sum;
+}
+function admMyntregn() {
+  const geo = new THREE.CylinderGeometry(0.42, 0.42, 0.1, 16), mat = std({color: SRGB(0xffd23f), emissive: SRGB(0x8a6a00), metalness: 0.4, roughness: 0.3});
+  for (let i = 0; i < 90; i++) { const m = new THREE.Mesh(geo, mat); m.position.set(-14 + Math.random() * 30, 14 + Math.random() * 26, -9 + Math.random() * 19); m.rotation.set(Math.random() * 3, 0, Math.random() * 3); m.userData.v = 7 + Math.random() * 4; scene.add(m); adm.regn.push(m); }
+  adm.regnT = 0; s.mynter += 100; adm.forrige = s.mynter; lagre(); synk(); melding('🪙 Myntregn! +100 mynter', 3200);
+}
+function admBilkaos() {
+  if (adm.biler.length) return;
+  const lag = [() => lagLastebil(), () => lagLastebil('bursdag'), lagKundebil, () => lagLastebil('bursdag'), lagKundebil, () => lagLastebil(), lagKundebil, () => lagLastebil('bursdag')];
+  lag.forEach((f, i) => { const lakk0 = kunde.lakk, b = f(), ret = i % 2 ? -1 : 1; kunde.lakk = lakk0; b.visible = true; b.traverse(o => { const k = klikkbare.indexOf(o); if (k >= 0) klikkbare.splice(k, 1); });   /* bare til pynt: kan ikke trykkes på */ b.userData.ret = ret; b.userData.fart = 7; b.userData.fase = i * 1.3;   /* 0.21.1 (Even 17.11): samme fart og 9 m mellom bilene i hver fil, så de ikke kjører gjennom hverandre */
+    b.position.set(-ret * (40 + Math.floor(i / 2) * 9), 0, VEI_Z + ret * 1.15); b.rotation.y = ret > 0 ? 0 : Math.PI; scene.add(b); adm.biler.push(b); });
+  melding('🚚 Bilkaos! Tut tut!', 3200);
+}
+function oppdaterAdmin(dt, t) {
+  if (admLager().premium) admSuperbonde(dt); else adm.xpSum = undefined;
+  if (adm.forrige === null) adm.forrige = s.mynter;
+  if (adm.x5 && s.mynter > adm.forrige) s.mynter += (s.mynter - adm.forrige) * 4;   /* 5 ganger mynter: det du tjener, ganges med fem */
+  adm.forrige = s.mynter;
+  for (let i = adm.regn.length - 1; i >= 0; i--) { const m = adm.regn[i]; m.position.y -= m.userData.v * dt; m.rotation.x += dt * 5; m.rotation.z += dt * 3; if (m.position.y < 0.1) { scene.remove(m); adm.regn.splice(i, 1); } }
+  if (adm.regn.length === 0 && adm.regnT === 0) adm.regnT = 1;
+  if (adm.kjempeT > 0 || adm.kjempeS > 1) {   /* kjempedyr: vokser mykt opp, og krymper mykt tilbake */
+    adm.kjempeT = Math.max(0, (adm.kjempeT || 0) - dt); const maal = adm.kjempeT > 0 ? 2.4 : 1; adm.kjempeS = (adm.kjempeS || 1) + (maal - (adm.kjempeS || 1)) * Math.min(1, dt * 3); if (Math.abs(adm.kjempeS - maal) < 0.01) adm.kjempeS = maal;
+    const alle = (window.__dyr && window.__dyr.alle) || []; alle.forEach(d => { const g = d.gruppe || d.g || d; if (g && g.scale) g.scale.setScalar((g.userData.admS0 || (g.userData.admS0 = g.scale.x)) * adm.kjempeS); });
+  }
+  for (let i = adm.biler.length - 1; i >= 0; i--) { const b = adm.biler[i], u = b.userData; b.position.x += u.ret * u.fart * dt; b.position.y = Math.abs(Math.sin(t * 6 + u.fase)) * 0.25;
+    if (u.hjul) u.hjul.forEach(w => { w.rotation.z -= u.ret * u.fart * dt / 0.36; });
+    if (u.ret * b.position.x > 46) { scene.remove(b); adm.biler.splice(i, 1); } }
+}
+if (ADMIN) {
+  admSkinn(); admPlanter(); synkKrone(); synkVinterManed(); synkPost();
+  const kn = $('adminKnapp'); if (kn) { kn.hidden = false; kn.addEventListener('click', visAdmin); }
+} else {
+  const kn = $('bilKnapp'); if (kn) kn.addEventListener('click', visBiler);
+}
+{ const mk = $('musikkKnapp'); if (mk) mk.addEventListener('click', visMusikk); const bk = $('bildeKnapp'); if (bk) bk.addEventListener('click', visBilde); }   /* for alle, også admin (0.28.1: knappen virket ikke for admin) */
+if (ADMIN) {
+  $('handlingInnhold').addEventListener('click', e => {
+    const k = e.target.closest('button[data-g="adm"]'); if (!k || k.disabled) return; const v = k.dataset.v;
+    if (v === 'regn') { lukkHandling(); admMyntregn(); }
+    else if (v === 'vinter') { const paa = !admLager().vinter; admLagre(l => { l.vinter = paa; }); settReglerManed(); lagre(); plasserAlt(); if (bilKo.fase === 0) synkVarebil(); synk(true); lukkHandling(); if (paa) admLagre(l => { l.brevLest = false; }); synkPost(); melding(paa ? '❄️ Nå er det desember og vinter i Elvedal!' : 'Vinteren er slått av. Nå er det vanlig måned igjen', 3000); if (paa) setTimeout(() => { if (brevPaa() && !pauset && !$('handling').classList.contains('vis')) visBrev(); }, 1800); }   /* 0.36.0: brevet fra julenissen kommer når vinteren slås på */
+    else if (v === 'premium') { const paa = !admLager().premium; admPremium(paa); tegnPaaNytt(); melding(paa ? '👑 Premium er på! Gullgård, dobbel fart og dobbel XP.' : 'Premium er av', 3400); }
+    else if (v === 'kjempe') { lukkHandling(); adm.kjempeT = 20; melding('🐔 Kjempedyr!', 3200); }
+    else if (v === 'ferdig') { const t0 = naa(); s.akre.forEach(f => { if (f.avling && f.slutt > t0) f.slutt = t0; }); for (const d in s.dyr) s.dyr[d].forEach(x => { if (x.slutt && x.slutt > t0) x.slutt = t0; }); for (const x in s.bygg) (s.bygg[x].ko || []).forEach(j => { if (j.slutt > t0) { j.slutt = t0; j.start = Math.min(j.start, t0); } }); lagre(); synk(true); lukkHandling(); melding('⏩ Alt er ferdig!', 3200); }
+    else if (v === 'biler') { lukkHandling(); admBilkaos(); }
+    else if (v === 'x5') { adm.x5 = !adm.x5; adm.forrige = s.mynter; tegnPaaNytt(); melding(adm.x5 ? '✖️ 5 ganger mynter er på' : '5 ganger mynter er av'); }
+    else if (v === 'skinn') { const id = k.dataset.id; if (!D.skinn[id]) return; s.skinn.eid[id] = true; admLagre(l => { l.skinn = [...new Set([...(l.skinn || []), id])]; });
+      lagre(); synk(true); tegnPaaNytt(); melding('🚚 Du fikk ' + D.skinn[id] + '! Trykk «Ta på».'); }
+    else if (v === 'visBiler') visBiler();
+    else if (v === 'visVarer') visAdmVarer();
+    else if (v === 'visBygg') visAdmBygg();
+    else if (v === 'tilbake') visAdmin();
+    else if (v === 'gratis') { adm.gratis = !adm.gratis; L.settGratis(adm.gratis); tegnPaaNytt(); melding(adm.gratis ? '🆓 Nå kan du lage alt uten råvarer' : 'Nå trenger du råvarer igjen'); }
+    else if (v === 'vare' || v === 'vareSlett') { const id = k.dataset.id; if (!D.varer[id] && !D.avlinger[id]) return; s.lager[id] = Math.max(0, (s.lager[id] || 0) + (v === 'vare' ? 5 : -5)); lagre(); synk(true); tegnPaaNytt(); }
+    else if (v === 'bygg') { const id = k.dataset.id, sb = s.bygg[id]; if (!sb || sb.eid || !D.bygg[id]) return; sb.eid = true; admLagre(l => { l.bygg = [...new Set([...(l.bygg || []), id])]; }); lagre(); plasserAlt(); synk(true); tegnPaaNytt(); melding(D.bygg[id].ikon + ' Du fikk ' + D.bygg[id].navn + '!'); }
+    else if (v === 'byggSlett') { const id = k.dataset.id, sb = s.bygg[id]; if (!sb || !(admLager().bygg || []).includes(id)) return; sb.eid = false; sb.ko = []; admLagre(l => { l.bygg = (l.bygg || []).filter(x => x !== id); }); lagre(); plasserAlt(); synk(true); tegnPaaNytt(); melding('🗑️ ' + D.bygg[id].navn + ' er slettet'); }
+    else if (v === 'ned') { admLagre(l => { l.ned = !l.ned; }); synkSnomann(); tegnPaaNytt(); melding(admLager().ned ? '⛄ Rebus bygger snømannen ved huset sitt. Trykk på den!' : 'Nedtellingen er slått av', 3200); }
+    else if (v === 'kal') { const ekte = MANED() === 12; L.settManed(12); L.settDag(24); for (let d = 1; d <= 24; d++) L.aapneLuke(s, d, naa()); L.settDag(null); settReglerManed(); lagre(); plasserAlt(); synk(true); tegnPaaNytt(); melding('📅 Alle lukene er åpnet, og du fikk gullstjernen!' + (ekte ? '' : ' Slå på vinteren for å se den.'), 3600); }
+    else if (v === 'kalSlett') { s.kal.apnet = []; s.kal.stjerne = false; lagre(); plasserAlt(); synk(true); tegnPaaNytt(); melding('🗑️ Lukene er lukket, og stjernen er tatt bort. Mynter og varer du fikk, beholder du', 3600); }
+    else if (v === 'jul') { admArr('jul'); lagre(); plasserAlt(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding('🎄 Du fikk alle juletingene!' + (arrNaa === 'jul' ? '' : ' Slå på vinteren for å se dem.'), 3600); }
+    else if (v === 'julSlett') { if (admSlettArr('jul')) { lagre(); plasserAlt(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding('🗑️ Juletingene fra admin er slettet', 3200); } }
+    else if (v === 'bursdag') { admArr('bursdag'); lagre(); plasserAlt(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding('🎉 Du fikk alle bursdagstingene!', 3200); }
+    else if (v === 'planter') { admLagre(l => { l.planter = true; }); admPlanter(); synk(true); tegnPaaNytt(); melding('🌱 Nå kan du plante alt!', 3200); }
+    else if (v === 'skinnSlett') { const id = k.dataset.id; const bort = admSlettSkinn(id); lagre(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding(bort ? '🗑️ ' + D.skinn[id] + ' er slettet' : 'Den har du tjent selv, så den beholder du'); }
+    else if (v === 'bursdagSlett') { if (admSlettArr('bursdag')) { lagre(); plasserAlt(); if (bilKo.fase === 0) synkVarebil(); synk(true); tegnPaaNytt(); melding('🗑️ Bursdagstingene fra admin er slettet', 3200); } }
+    else if (v === 'planterSlett') { admLagre(l => { l.planter = false; }); admPlanter(); synk(true); tegnPaaNytt(); melding('🗑️ Plantene følger nivået igjen', 3200); }
+    else if (v === 'mynterSlett') { s.mynter = Math.max(0, s.mynter - 1000); adm.forrige = s.mynter; lagre(); synk(); tegnPaaNytt(); }
+    else if (v === 'mynter') { s.mynter += 1000; adm.forrige = s.mynter; lagre(); synk(); tegnPaaNytt(); }
+    else if (v === 'nivaa') { const n0 = s.nivaa; for (let i = 0; i < 400 && s.nivaa === n0; i++) L.giXP(s, 5, naa()); lagre(); plasserAlt(); synk(true); tegnPaaNytt(); }
+  });
+}
 window.__spill = {finnVei, tingRekt, get s() { return s; }, L, D, ting, erLedig, finnLedigPlass, hinder: () => hinder, synk, lagre, bruk, get startet() { return startet; }, robotJobb, plasserAlt, gi, kunde, kundeTrykk};

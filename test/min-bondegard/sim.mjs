@@ -1,5 +1,5 @@
 // Min Bondegård – simulering på de ekte spillreglene (logikk.js + data.js).
-// Dekker det som er spillbart i versjonen: nivå 1–5 med bestillinger og erter (0.9.0). Kjør: node test/min-bondegard/sim.mjs [antall=100] [målnivå=6]
+// Dekker det som er spillbart i versjonen: nivå 1–20 (0.24.0). Kjør: node test/min-bondegard/sim.mjs [antall=100] [målnivå=6]
 // Måler tid til hvert nivå, fastlåsing, lengste periode uten noe nyttig å gjøre og hvor lenge en bestilling blir stående.
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
@@ -16,12 +16,12 @@ function trenger(v, n, behov) {
 function kjor(profil, frø) {
   let rnd = frø; const r = () => ((rnd = (rnd * 1103515245 + 12345) % 2147483648) / 2147483648);
   const steg = profil === 'aktiv' ? 5 : 20, støy = profil === 'aktiv' ? 0 : 0.3;
-  let naa = 1e12 + frø * 977; const t0 = naa; const s = L.ny(naa); const nivaaTid = {1: 0}; let ledig = 0, maksLedig = 0, fast = false, lengstBest = 0, levert = 0, byttet = 0;
+  let naa = 1e12 + frø * 977; const t0 = naa; const s = L.ny(naa); const nivaaTid = {1: 0}; let ledig = 0, maksLedig = 0, fast = false, lengstBest = 0, levert = 0, byttet = 0; const omrTid = {};
   const notér = nye => nye.forEach(n => nivaaTid[n.nivaa] = (naa - t0) / 60000);
   while (s.nivaa < MAAL && naa - t0 < 4 * 3600 * S) {
     let gjort = false; const g = x => { if (x && x.ok) { gjort = true; if (x.nye) notér(x.nye); } return x; };
     s.akre.forEach((f, i) => g(L.host(s, i, naa)));
-    g(L.samleDyr(s, 'hone', naa)); g(L.samleDyr(s, 'ku', naa)); g(L.samleDyr(s, 'gris', naa));
+    g(L.samleDyr(s, 'hone', naa)); g(L.samleDyr(s, 'ku', naa)); g(L.samleDyr(s, 'gris', naa)); g(L.samleDyr(s, 'sau', naa));
     for (const b in s.bygg) g(L.hentProdukter(s, b, naa));
     // bestillinger: lever det som kan leveres, bytt det som har stått lenge
     for (let i = 0; i < s.best.liste.length; i++) { const o = s.best.liste[i], alder = naa - o.siden;
@@ -29,15 +29,20 @@ function kjor(profil, frø) {
       else if (L.boerByttes(s, i, naa) || (alder > 300 * S && r() < 0.1)) { g(L.byttBestilling(s, i, naa)); byttet++; } }
     // hva bestillingene trenger av varer og råvarer
     const vil = {}, raa = {}; s.best.liste.forEach(o => { for (const v in o.varer) { vil[v] = (vil[v] || 0) + o.varer[v]; trenger(v, o.varer[v], raa); } });
-    g(L.mat(s, 'hone', naa)); g(L.mat(s, 'ku', naa)); g(L.mat(s, 'gris', naa));
+    // 0.22.0: mellomvarer (sukker til pannekaker, popkorn og smør til smørpopkorn) regnes med i det som skal lages
+    for (const v of Object.keys(vil)) { const o = D.oppskrifter[v]; if (o) for (const k in o.inn) if (D.oppskrifter[k]) vil[k] = (vil[k] || 0) + o.inn[k] * Math.ceil(vil[v] / o.ut); }
+    g(L.mat(s, 'hone', naa)); g(L.mat(s, 'ku', naa)); g(L.mat(s, 'gris', naa)); g(L.mat(s, 'sau', naa));
+    if (s.dyr.sau && (s.lager.sauefor || 0) < 2) g(L.produser(s, 'forkvern', 'sauefor', naa));
+    // 0.22.0: Jordet (nivå 8) og Bakjordet (nivå 13) kjøpes når det er råd og byggene er kjøpt
+    for (const o of ['jordet', 'bakjordet', 'ostjordet']) if (D.omrader[o] && !s.omrader[o] && L.kanKjopeOmrade(s, o) === null && s.mynter >= D.omrader[o].pris + 300 && ['fjos', 'meieri', 'sukkerverk', 'popkorn', 'kjokken'].every(x => !s.bygg[x] || s.bygg[x].eid)) { g(L.kjopOmrade(s, o)); omrTid[o] = (naa - t0) / 60000; }
     if (s.nivaa >= 10 && !s.omrader.skogkanten && s.mynter >= 1500 + 800) g(L.kjopOmrade(s, 'skogkanten'));
     if (s.omrader.skogkanten && s.bygg.grisebinge && !s.bygg.grisebinge.eid && s.mynter >= 850) g(L.kjopBygg(s, 'grisebinge'));
     if (s.dyr.gris && (s.lager.grisefor || 0) < 2) g(L.produser(s, 'forkvern', 'grisefor', naa));
     // 0.9.8: Enga, fjøs og meieri kjøpes så snart det er råd, kufôr lages når kyrne trenger det, meieriet lager det bestillingene vil ha
     if (s.nivaa >= 5 && !s.omrader.enga && s.mynter >= 300 + (s.nivaa >= 6 ? 0 : 100)) g(L.kjopOmrade(s, 'enga'));
-    for (const b of ['fjos', 'meieri', 'sukkerverk', 'popkorn', 'kjokken']) if (s.omrader.enga && s.bygg[b] && !s.bygg[b].eid && s.mynter >= D.bygg[b].pris + 50) g(L.kjopBygg(s, b));
+    for (const b of ['fjos', 'meieri', 'sukkerverk', 'popkorn', 'kjokken', 'paibakeri', 'sauefjos', 'vevstol']) if (s.omrader.enga && s.bygg[b] && !s.bygg[b].eid && s.mynter >= D.bygg[b].pris + 50) g(L.kjopBygg(s, b));
     // 0.10.0: lag det bestillingene vil ha i alle produksjonsbygg (først mellomvarer som sukker)
-    for (const v of ['sukker', 'maisbrod', 'popkorn', 'pannekaker', 'ost']) { const o = D.oppskrifter[v], b = s.bygg[o.bygg]; if (b && b.eid && ((vil[v] || 0) + (raa[v] || 0)) > (s.lager[v] || 0) + b.ko.filter(j => j.vare === v).length) g(L.produser(s, o.bygg, v, naa)); }
+    for (const v of ['sukker', 'maisbrod', 'popkorn', 'pannekaker', 'ost', 'sirup', 'omelett', 'smorpopkorn', 'gulrotpai', 'kremkake', 'lue', 'genser', 'gresskarbrod'].filter(x => D.oppskrifter[x])) { const o = D.oppskrifter[v], b = s.bygg[o.bygg]; if (b && b.eid && ((vil[v] || 0) + (raa[v] || 0)) > (s.lager[v] || 0) + b.ko.filter(j => j.vare === v).length) g(L.produser(s, o.bygg, v, naa)); }
     if (s.dyr.ku && (s.lager.kufor || 0) < 2) g(L.produser(s, 'forkvern', 'kufor', naa));
     if (s.bygg.meieri && s.bygg.meieri.eid) for (const v of ['smor', 'flote']) if ((vil[v] || 0) > (s.lager[v] || 0)) g(L.produser(s, 'meieri', v, naa));
     if (s.bygg.bakeri && !s.bygg.bakeri.eid && s.mynter >= D.bygg.bakeri.pris) g(L.kjopBygg(s, 'bakeri'));
@@ -57,12 +62,12 @@ function kjor(profil, frø) {
     if (gjort) ledig = 0; else { ledig += steg; maksLedig = Math.max(maksLedig, ledig); if (ledig > 900) { fast = true; break; } }
     naa += steg * S;
   }
-  return { nivaaTid, maksLedig, fast, lengstBest, levert, byttet, griser: !!(s.bygg.grisebinge && s.bygg.grisebinge.eid), troffel: (s.lager.troffel || 0) > 0 || levert > 0 && !!s.dyr.gris };
+  return { omrTid, mynter: s.mynter, pai: !!(s.bygg.paibakeri && s.bygg.paibakeri.eid), vev: !!(s.bygg.vevstol && s.bygg.vevstol.eid), sau: !!s.dyr.sau, nivaaTid, maksLedig, fast, lengstBest, levert, byttet, griser: !!(s.bygg.grisebinge && s.bygg.grisebinge.eid), troffel: (s.lager.troffel || 0) > 0 || levert > 0 && !!s.dyr.gris };
 }
-const I = ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot'];   // avlingene som finnes i spillet
+const I = ['hvete', 'mais', 'erter', 'sukkerror', 'gulrot', 'gresskar'].filter(a => D.avlinger[a]);   // avlingene som finnes i spillet
 const med = a => { a = a.slice().sort((x, y) => x - y); return a.length ? a[Math.floor(a.length / 2)] : NaN; };
 for (const profil of ['aktiv', 'barn']) {
   const res = Array.from({length: N}, (_, i) => kjor(profil, i + 1));
   const ut = []; for (let n = 2; n <= MAAL; n++) { const ts = res.map(x => x.nivaaTid[n]).filter(x => x !== undefined); ut.push(`nivå ${n}: ${ts.length ? med(ts).toFixed(1) : '–'} min (${ts.length}/${N})`); }
-  console.log(`${profil}: ${ut.join(' · ')} · fastlåst ${res.filter(x => x.fast).length} · grisebinge kjøpt ${res.filter(x => x.griser).length}/${res.length} · lengste venting ${Math.max(...res.map(x => x.maksLedig))} s · bestillinger levert (median) ${med(res.map(x => x.levert))}, byttet ${med(res.map(x => x.byttet))}, lengste ventetid på en levert bestilling ${Math.round(Math.max(...res.map(x => x.lengstBest)))} s`);
+  console.log(`${profil}: ${ut.join(' · ')} · fastlåst ${res.filter(x => x.fast).length} · Jordet kjøpt ${res.filter(x => x.omrTid.jordet !== undefined).length}/${N} etter ${med(res.map(x => x.omrTid.jordet).filter(x => x !== undefined)).toFixed(1)} min · Bakjordet kjøpt ${res.filter(x => x.omrTid.bakjordet !== undefined).length}/${N} · paibakeri kjøpt ${res.filter(x => x.pai).length}/${N} · sauefjøs kjøpt ${res.filter(x => x.sau).length}/${N} · vevstol kjøpt ${res.filter(x => x.vev).length}/${N} · mynter ved slutt (median) ${med(res.map(x => x.mynter))} · grisebinge kjøpt ${res.filter(x => x.griser).length}/${res.length} · lengste venting ${Math.max(...res.map(x => x.maksLedig))} s · bestillinger levert (median) ${med(res.map(x => x.levert))}, byttet ${med(res.map(x => x.byttet))}, lengste ventetid på en levert bestilling ${Math.round(Math.max(...res.map(x => x.lengstBest)))} s`);
 }

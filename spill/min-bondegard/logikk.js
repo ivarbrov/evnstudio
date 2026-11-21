@@ -18,7 +18,10 @@
       omrader: {},
       best: { nr: 0, fro: (Math.floor(naa) % 2147483646) + 1, liste: [] },
       rebus: { gate: null, neste: naa, siste: [], loste: 0 },
-      gaver: { uaapnet: [], dag: '', pynt: {} }
+      gaver: { uaapnet: [], dag: '', pynt: {} },
+      fiske: { slutt: null },   // 0.27.0: snøret er ute til «slutt»
+      pynt: [], pyntNr: 0,   // 0.26.0: pynt fra pyntebutikken, hver med type og plass
+      arr: {}, skinn: { eid: {}, valgt: null }, kal: { aar: 0, apnet: [], stjerne: false }
     };
     for (var k in D.startLager) s.lager[k] = D.startLager[k];
     giNivaa(s, 1, naa);
@@ -27,20 +30,22 @@
 
   // Det som følger med et nivå (også nivå 1 ved start). Returnerer det som er nytt, til feiringen.
   function giNivaa(s, n, naa) {
-    var nytt = { nivaa: n, mynter: 0, avlinger: [], dyr: [], bygg: [], oppskrifter: [], akre: 0 };
+    var nytt = { nivaa: n, mynter: 0, avlinger: [], dyr: [], flereDyr: [], bygg: [], oppskrifter: [], akre: 0 };
     if (n > 1) { var m = D.nivaaMynter(n); s.mynter += m; nytt.mynter = m; }
     var antall = D.ved(D.akre, n);
     while (s.akre.length < antall) { s.akre.push({ id: 'a' + (s.akre.length + 1), x: null, z: null, avling: null, start: 0, slutt: 0 }); nytt.akre++; }
     for (var a in D.avlinger) if (D.avlinger[a].nivaa === n) { nytt.avlinger.push(a); if (n > 1) s.lager[a] = (s.lager[a] || 0) + D.nyAvlingFro; }
     for (var d in D.dyr) if (D.dyr[d].nivaa === n && !s.dyr[d] && !D.dyr[d].hus) {
-      s.dyr[d] = []; for (var i = 0; i < D.dyr[d].start; i++) s.dyr[d].push({ slutt: null });
+      s.dyr[d] = []; for (var i = 0; i < D.dyrAntall(d, n); i++) s.dyr[d].push({ slutt: null });
       nytt.dyr.push(d);
     }
-    for (var b in D.bygg) if (D.bygg[b].nivaa === n && !s.bygg[b]) {
+    // 0.22.0: flere dyr av en art spilleren allerede har (en høne til på nivå 11, en ku til på nivå 13)
+    for (var d2 in s.dyr) { var mer = 0; while (s.dyr[d2].length < D.dyrAntall(d2, n)) { s.dyr[d2].push({ slutt: null }); mer++; } if (mer) nytt.flereDyr.push({ art: d2, antall: mer }); }
+    for (var b in D.bygg) if (D.bygg[b].nivaa === n && !s.bygg[b] && !D.bygg[b].arr) {
       s.bygg[b] = { eid: D.bygg[b].pris === 0, x: null, z: null, r: 0, ko: [] };
       nytt.bygg.push(b);
     }
-    for (var o in D.oppskrifter) if (D.oppskrifter[o].nivaa === n) nytt.oppskrifter.push(o);
+    for (var o in D.oppskrifter) if (D.oppskrifter[o].nivaa === n && !D.oppskrifter[o].krever && !D.bygg[D.oppskrifter[o].bygg].arr) nytt.oppskrifter.push(o);   // festens oppskrifter følger ikke med nivået
     nytt.omrader = []; for (var om in D.omrader) if (D.omrader[om].nivaa === n) nytt.omrader.push(om);
     nytt.tavle = n === D.bestillinger.nivaa; nytt.bestillinger = fyllBestillinger(s, naa);
     return nytt;
@@ -122,23 +127,37 @@
 
   // ---------- Produksjon ----------
   function uferdige(b, naa) { return b.ko.filter(function (j) { return naa < j.slutt; }); }
-  function kanProdusere(s, bygg, vare, naa) {
+  // 0.37.0 Gavemaskinen pakker inn én ting du har laget i et bygg (Even 20.11: «en ting du har laget»). Ikke fôr, ikke eventvarer
+  function pakkbar(v) { return !!D.oppskrifter[v] && !D.erFor(v) && !(D.varer[v] && D.varer[v].arr); }
+  function pakkbare(s) { return Object.keys(s.lager).filter(function (v) { return s.lager[v] > 0 && pakkbar(v); }).sort(function (a, b) { return s.lager[b] - s.lager[a] || (a < b ? -1 : 1); }); }
+  function kanProdusere(s, bygg, vare, naa, pakk) {
     var b = s.bygg[bygg], o = D.oppskrifter[vare];
     if (!b || !o || o.bygg !== bygg) return 'ukjent';
     if (!b.eid) return 'ikke-bygd';
     if (o.nivaa > s.nivaa) return 'laast';
+    // 0.20.2 (QA 17.11): festens bygg lager bare ting mens festen er åpen. Ellers fyller festvarene låven uten å kunne sendes
+    if (D.bygg[bygg] && D.bygg[bygg].arr && D.arr[D.bygg[bygg].arr].maned !== maned(naa)) return 'stengt';
+    if (o.krever && arrTrinn(s, o.krever.arr) < o.krever.trinn) return 'laast';
+    if (D.bygg[bygg] && D.bygg[bygg].selv) return 'selv';   // 0.32.0: treet starter selv
     if (uferdige(b, naa).length >= D.koPlasser) return 'ko-full';
-    if (!(bygg === 'forkvern' && bonusAktiv(s, naa)) && !har(s, o.inn)) return 'mangler';
+    if (!gratis && !(bygg === 'forkvern' && bonusAktiv(s, naa)) && !har(s, o.inn)) return 'mangler';
+    if (o.pakk && !gratis) { if (pakk ? !(pakkbar(pakk) && (s.lager[pakk] || 0) >= o.pakk) : !pakkbare(s).length) return 'mangler-pakk'; }
     return null;
   }
-  function produser(s, bygg, vare, naa) {
-    var g = kanProdusere(s, bygg, vare, naa); if (g) return { ok: false, grunn: g };
+  function produser(s, bygg, vare, naa, pakk) {
+    var g = kanProdusere(s, bygg, vare, naa, pakk); if (g) return { ok: false, grunn: g };
     var b = s.bygg[bygg], o = D.oppskrifter[vare], u = uferdige(b, naa);
     var start = u.length ? u[u.length - 1].slutt : naa;     // jobbene går etter hverandre
-    if (!(bygg === 'forkvern' && bonusAktiv(s, naa))) ta(s, o.inn);
+    if (!gratis && !(bygg === 'forkvern' && bonusAktiv(s, naa))) ta(s, o.inn);
+    var pakket = null; if (o.pakk && !gratis) { pakket = pakk || pakkbare(s)[0]; ta(s, mk(pakket, o.pakk)); }
     b.ko.push({ vare: vare, start: start, slutt: start + o.tid * 1000 });
-    return { ok: true };
+    return { ok: true, pakket: pakket };
   }
+  // 0.32.0 Bygg som lager varen sin selv (epletreet, Even 18.11): når køen er tom, starter en ny runde. Frukten venter til den blir plukket
+  function selvStart(s, naa) { var n = 0;
+    for (var bg in D.bygg) { var v = D.bygg[bg].selv, sb = s.bygg[bg]; if (!v || !sb || !sb.eid || sb.ko.length) continue;
+      sb.ko.push({ vare: v, start: naa, slutt: naa + D.oppskrifter[v].tid * 1000 }); n++; }
+    return n; }
   function hentProdukter(s, bygg, naa) {
     var b = s.bygg[bygg], n = 0, xp = 0, varer = {}, full = false;
     if (!b) return { ok: false, grunn: 'ukjent' };
@@ -151,6 +170,21 @@
     }
     return { ok: n > 0, antall: n, varer: varer, xp: xp, nye: n ? giXP(s, xp, naa) : [], grunn: n ? null : full ? 'lave-full' : 'ingen-klare' };
   }
+  // ---------- Fiskebrygga (0.27.0) ----------
+  function kanKaste(s) { if (!s.omrader.elvebredden) return 'ikke-kjopt'; if (s.fiske.slutt !== null) return 'ute'; return null; }
+  function kast(s, naa) { var g = kanKaste(s); if (g) return { ok: false, grunn: g }; s.fiske.slutt = naa + D.fiske.tid * 1000; return { ok: true }; }
+  function fiskKlar(s, naa) { return s.fiske.slutt !== null && s.fiske.slutt <= naa; }
+  function halInn(s, naa) {
+    if (s.fiske.slutt === null) return { ok: false, grunn: 'ikke-kastet' }; if (s.fiske.slutt > naa) return { ok: false, grunn: 'venter' };
+    if (plass(s, 'lave') < 1) return { ok: false, grunn: 'lave-full' };
+    var sum = 0, i; for (i = 0; i < D.fiske.fisk.length; i++) sum += D.fiske.fisk[i][1]; var r = tilf(s) * sum, vare = D.fiske.fisk[0][0];
+    for (i = 0; i < D.fiske.fisk.length; i++) { r -= D.fiske.fisk[i][1]; if (r < 0) { vare = D.fiske.fisk[i][0]; break; } }
+    s.lager[vare] = (s.lager[vare] || 0) + 1; s.fiske.slutt = null; return { ok: true, vare: vare, xp: D.fiske.xp, nye: giXP(s, D.fiske.xp, naa) };
+  }
+  // ---------- Pyntebutikken (0.26.0) ----------
+  function kanKjopePynt(s, type) { var P = D.pynt[type]; if (!P) return 'ukjent'; if (s.nivaa < D.pyntNivaa) return 'laast'; if (s.pynt.length >= D.pyntMaks) return 'fullt'; if (s.mynter < P.pris) return 'mynter'; return null; }
+  function kjopPynt(s, type) { var g = kanKjopePynt(s, type); if (g) return { ok: false, grunn: g }; s.mynter -= D.pynt[type].pris; s.pyntNr++; var e = { id: 'k' + s.pyntNr, t: type, x: null, z: null, r: 0 }; s.pynt.push(e); return { ok: true, pynt: e }; }
+  function selgPynt(s, id) { for (var i = 0; i < s.pynt.length; i++) if (s.pynt[i].id === id) { var m = Math.floor(D.pynt[s.pynt[i].t].pris * D.pyntRetur); s.mynter += m; s.pynt.splice(i, 1); return { ok: true, mynter: m }; } return { ok: false, grunn: 'ukjent' }; }
   function kjopBygg(s, bygg) {
     var b = s.bygg[bygg], B = D.bygg[bygg];
     if (!b || !B) return { ok: false, grunn: 'laast' };
@@ -161,17 +195,17 @@
     return { ok: true, dyr: nyeDyr };
   }
   // Et dyrehus gir dyrene sine når det er kjøpt (kyrne kommer med fjøset)
-  function giDyr(s, art) { if (s.dyr[art]) return 0; s.dyr[art] = []; for (var i = 0; i < D.dyr[art].start; i++) s.dyr[art].push({ slutt: null }); return D.dyr[art].start; }
+  function giDyr(s, art) { if (s.dyr[art]) return 0; var n = D.dyrAntall(art, s.nivaa); s.dyr[art] = []; for (var i = 0; i < n; i++) s.dyr[art].push({ slutt: null }); return n; }
   // ---------- Områder (Ivar 12.11) ----------
   function kanKjopeOmrade(s, id) {
     var O = D.omrader[id]; if (!O) return 'ukjent';
-    if (s.omrader[id]) return 'eid'; if (s.nivaa < O.nivaa) return 'laast'; if (s.mynter < O.pris) return 'mynter';
+    if (s.omrader[id]) return 'eid'; if (s.nivaa < O.nivaa) return 'laast'; if (O.krever && !s.omrader[O.krever]) return 'krever'; if (s.mynter < O.pris) return 'mynter';
     return null;
   }
   function kjopOmrade(s, id) { var g = kanKjopeOmrade(s, id); if (g) return { ok: false, grunn: g }; s.mynter -= D.omrader[id].pris; s.omrader[id] = true; return { ok: true }; }
 
   // ---------- Markedsbua (progresjonsregel F3) ----------
-  function kanSelge(v) { return !D.erFor(v); }
+  function kanSelge(v) { return !D.erFor(v) && !(D.varer[v] && D.varer[v].arr); }
   function selg(s, v, n) {
     if (!kanSelge(v)) return { ok: false, grunn: 'for' };
     n = Math.min(n, s.lager[v] || 0);
@@ -189,13 +223,14 @@
     if (D.avlinger[v]) return true;
     for (var d in D.dyr) if (D.dyr[d].produkt === v) return !!s.dyr[d] && kanLage(s, D.dyr[d].spiser, (dybde || 0) + 1, naa);
     var o = D.oppskrifter[v]; if (!o) return false;
+    if (o.krever && arrTrinn(s, o.krever.arr) < o.krever.trinn) return false;
     var b = s.bygg[o.bygg]; if (!b || (!b.eid && (naa || D.bygg[o.bygg].pris > s.mynter + 300))) return false;
     for (var k in o.inn) if (!kanLage(s, k, (dybde || 0) + 1, naa)) return false;
     return true;
   }
   function bestPool(s) {
     var alle = Object.keys(D.avlinger).concat(Object.keys(D.varer));
-    return alle.filter(function (v) { return !D.erFor(v) && kanLage(s, v) && D.kjedeTid(v) <= D.bestillinger.maksKjede; });
+    return alle.filter(function (v) { return !D.erFor(v) && !(D.varer[v] && D.varer[v].arr) && kanLage(s, v) && D.kjedeTid(v) <= D.bestillinger.maksKjede; });
   }
   function bestVerdi(varer) { var v = 0; for (var k in varer) v += D.verdi(k) * varer[k]; return v; }
   function nyBestilling(s, naa) {
@@ -249,6 +284,32 @@
     return { ok: true, antall: n, mynter: m };
   }
 
+  // ---------- Naboer på besøk (0.34.0, Even 19.11) ----------
+  // En nabo ber om én, to eller tre ulike varer spilleren kan lage. Prisen regnes ut her, så den alltid følger reglene.
+  function naboPris(liste) { var m = 0; for (var i = 0; i < liste.length; i++) m += Math.round(D.pris(liste[i].vare) * liste[i].antall * D.naboer.faktor); return m; }
+  // 0.35.0: favoritten til en nabo er varer fra bestemte bygg, produktet til et dyr, eller avlinger
+  function naboLiker(hvem, v) { var N = D.naboer.liste[hvem], l = N && N.liker; if (!l) return false;
+    if (D.avlinger[v]) return l.indexOf('avling') >= 0; var o = D.oppskrifter[v]; if (o && l.indexOf(o.bygg) >= 0) return true;
+    for (var a in D.dyr) if (D.dyr[a].produkt === v && l.indexOf(a) >= 0) return true; return false; }
+  function nesteNabo(s) { var ids = Object.keys(D.naboer.liste); return ids[Math.floor(tilf(s) * ids.length)]; }
+  function nyNabo(s, hvem) {
+    if (!D.naboer.liste[hvem] || s.nivaa < D.naboer.nivaa) return null;
+    var pool = bestPool(s).slice(); if (!pool.length) return null;
+    var n = Math.min(pool.length, 1 + Math.floor(tilf(s) * D.naboer.maksTing)), liste = [];
+    for (var i = 0; i < n; i++) { var fav = pool.filter(function (x) { return naboLiker(hvem, x); }), fra = fav.length && tilf(s) < D.naboer.likerSjanse ? fav : pool;
+      var v = fra[Math.floor(tilf(s) * fra.length)]; pool.splice(pool.indexOf(v), 1); liste.push({ vare: v, antall: D.avlinger[v] ? 2 + Math.floor(tilf(s) * 3) : 1 + Math.floor(tilf(s) * 2) }); }
+    return { hvem: hvem, liste: liste, mynter: naboPris(liste) };
+  }
+  function selgTilNabo(s, o) {
+    if (!o || !D.naboer.liste[o.hvem] || !Array.isArray(o.liste) || !o.liste.length || o.liste.length > D.naboer.maksTing) return { ok: false, grunn: 'ukjent' };
+    var liste = [], sett = {}, mangler = [], i;
+    for (i = 0; i < o.liste.length; i++) { var v = o.liste[i].vare; if (sett[v] || !(D.avlinger[v] || D.varer[v]) || D.erFor(v)) return { ok: false, grunn: 'ukjent' }; sett[v] = true;
+      var n = Math.max(1, Math.min(6, Math.floor(o.liste[i].antall) || 1)); liste.push({ vare: v, antall: n }); if ((s.lager[v] || 0) < n) mangler.push({ vare: v, antall: n - (s.lager[v] || 0) }); }
+    if (mangler.length) return { ok: false, grunn: 'mangler', mangler: mangler };
+    for (i = 0; i < liste.length; i++) ta(s, mk(liste[i].vare, liste[i].antall));
+    var m = naboPris(liste); s.mynter += m; s.stat.kunder++; return { ok: true, mynter: m, liste: liste };
+  }
+
   // ---------- Tid ----------
   // Ingen ventetid kan bli lengre enn jobben selv. Det hindrer at en klokke som har gått bakover, låser spillet.
   function normaliserTid(s, naa) {
@@ -272,7 +333,7 @@
     s.nivaa = Math.max(1, Math.min(D.maksNivaa, Math.floor(tall(r.nivaa, 1))));
     // gi alt som følger med nivåene opp til lagret nivå (åkre, dyr, bygg), uten mynter og frø
     for (var n = 2; n <= s.nivaa; n++) { var m = s.mynter; var l = JSON.stringify(s.lager); giNivaa(s, n, naa); s.mynter = m; s.lager = JSON.parse(l); }
-    s.xp = Math.max(0, tall(r.xp, 0)); s.mynter = Math.max(0, Math.floor(tall(r.mynter, D.startMynter)));
+    s.xp = Math.max(0, tall(r.xp, 0)); s.mynter = Math.min(1e9, Math.max(0, Math.floor(tall(r.mynter, D.startMynter))));   // 0.39.2 (QA 21.11): urimelige tall kuttes
     s.seq = Math.max(0, Math.floor(tall(r.seq, 0))); s.opprettet = tall(r.opprettet, naa); s.sist = tall(r.sist, naa);
     s.lager = {};
     if (r.lager && typeof r.lager === 'object') for (var v in r.lager) if ((D.avlinger[v] || D.varer[v]) && tall(r.lager[v], 0) > 0) s.lager[v] = Math.min(9999, Math.floor(r.lager[v]));   // urimelige tall kuttes (QA 9.11)
@@ -281,6 +342,12 @@
       a.x = typeof f.x === 'number' && isFinite(f.x) ? f.x : null; a.z = typeof f.z === 'number' && isFinite(f.z) ? f.z : null;
       if (D.avlinger[f.avling]) { a.avling = f.avling; a.start = tall(f.start, naa); a.slutt = tall(f.slutt, naa); }
     });
+    // Årstidsfester (0.16.0): antall sendt er det eneste som lagres. Premiene regnes ut fra tallet, så lagringen kan ikke gi mer enn reglene.
+    if (r.arr && typeof r.arr === 'object') for (var aid in D.arr) { var ra = r.arr[aid]; if (!ra || typeof ra !== 'object' || s.nivaa < D.arr[aid].nivaa) continue;
+      arrStart(s, aid); s.arr[aid].levert = Math.max(0, Math.min(9999, Math.floor(tall(ra.levert, 0)))); arrPremier(s, aid, 0); }
+    if (r.kal && typeof r.kal === 'object') { s.kal.aar = Math.floor(tall(r.kal.aar, 0)); s.kal.stjerne = r.kal.stjerne === true;   // 0.38.0 julekalenderen
+      if (Array.isArray(r.kal.apnet)) r.kal.apnet.forEach(function (d) { d = Math.floor(tall(d, 0)); if (d >= 1 && d <= 24 && s.kal.apnet.indexOf(d) < 0) s.kal.apnet.push(d); }); }
+    if (r.skinn && typeof r.skinn === 'object' && typeof r.skinn.valgt === 'string' && s.skinn.eid[r.skinn.valgt]) s.skinn.valgt = r.skinn.valgt; else if (r.skinn && r.skinn.valgt === null) s.skinn.valgt = null;
     if (r.bygg && typeof r.bygg === 'object') for (var b in s.bygg) { var rb = r.bygg[b]; if (!rb || typeof rb !== 'object') continue;
       var sb = s.bygg[b]; sb.eid = sb.eid || rb.eid === true;
       sb.x = typeof rb.x === 'number' && isFinite(rb.x) ? rb.x : null; sb.z = typeof rb.z === 'number' && isFinite(rb.z) ? rb.z : null; sb.r = tall(rb.r, 0);
@@ -288,10 +355,12 @@
     }
     // Dyr: dyrehus som er kjøpt, gir dyrene sine. Kyr fra 0.9.x, der fjøset ikke fantes, tas ikke med.
     for (var hb in s.bygg) if (D.bygg[hb].dyr && s.bygg[hb].eid) giDyr(s, D.bygg[hb].dyr);
-    if (r.dyr && typeof r.dyr === 'object') for (var art in s.dyr) if (Array.isArray(r.dyr[art])) r.dyr[art].slice(0, 12).forEach(function (d, i) {
+    for (var da in s.dyr) while (s.dyr[da].length < D.dyrAntall(da, s.nivaa)) s.dyr[da].push({ slutt: null });   // 0.22.0: lagringer fra før får dyrene som hører til nivået
+    if (r.dyr && typeof r.dyr === 'object') for (var art in s.dyr) if (Array.isArray(r.dyr[art])) r.dyr[art].slice(0, D.dyrAntall(art, s.nivaa)).forEach(function (d, i) {
       if (i >= s.dyr[art].length) s.dyr[art].push({ slutt: null });
       s.dyr[art][i].slutt = d && typeof d.slutt === 'number' && isFinite(d.slutt) ? d.slutt : null;
     });
+    if (Array.isArray(r.pynt)) r.pynt.slice(0, D.pyntMaks).forEach(function (e) { if (!e || !D.pynt[e.t]) return; s.pyntNr++; var ok = typeof e.x === 'number' && typeof e.z === 'number' && isFinite(e.x) && isFinite(e.z); s.pynt.push({ id: 'k' + s.pyntNr, t: e.t, x: ok ? e.x : null, z: ok ? e.z : null, r: Math.max(0, Math.min(3, Math.floor(tall(e.r, 0)))) }); });
     if (r.plasser && typeof r.plasser === 'object') for (var p in r.plasser) { var q = r.plasser[p]; if (q && typeof q.x === 'number' && typeof q.z === 'number' && isFinite(q.x) && isFinite(q.z)) s.plasser[p] = { x: q.x, z: q.z, r: tall(q.r, 0) }; }
     // Bestillinger: bare kjente varer og rimelige antall. Mynter og XP regnes ut på nytt, så lagringen kan ikke gi mer enn reglene.
     if (r.best && typeof r.best === 'object') {
@@ -307,6 +376,7 @@
     } else s.best.liste = [];
     fyllBestillinger(s, naa);
     if (r.omrader && typeof r.omrader === 'object') for (var om in D.omrader) if (r.omrader[om] === true && s.nivaa >= D.omrader[om].nivaa) s.omrader[om] = true;
+    if (r.fiske && typeof r.fiske === 'object' && s.omrader.elvebredden && typeof r.fiske.slutt === 'number' && isFinite(r.fiske.slutt)) s.fiske.slutt = Math.min(r.fiske.slutt, naa + D.fiske.tid * 1000);
     if (r.rebus && typeof r.rebus === 'object') {
       if (typeof r.rebus.gate === 'string' && D.gater[r.rebus.gate] && D.nivaaFor(r.rebus.gate) <= s.nivaa) s.rebus.gate = r.rebus.gate;
       s.rebus.neste = Math.min(tall(r.rebus.neste, naa), naa + D.rebus.pause * 1000); s.rebus.loste = Math.max(0, Math.floor(tall(r.rebus.loste, 0)));
@@ -316,7 +386,7 @@
       if (Array.isArray(r.gaver.uaapnet)) s.gaver.uaapnet = r.gaver.uaapnet.filter(function (g) { return g && (g.kilde === 'dag' || g.kilde === 'nivaa'); }).slice(0, 20).map(function (g) { return { kilde: g.kilde, levert: !!g.levert }; });
       if (typeof r.gaver.dag === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.gaver.dag)) s.gaver.dag = r.gaver.dag;
       s.gaver.bonus = Math.min(tall(r.gaver.bonus, 0), naa + (D.gave.bonusDager + 1) * 86400000); s.gaver.gullgard = r.gaver.gullgard === true; s.gaver.gullPaa = s.gaver.gullgard && r.gaver.gullPaa !== false;
-      if (r.gaver.pynt && typeof r.gaver.pynt === 'object') D.gave.pynt.forEach(function (p) { var q = r.gaver.pynt[p]; if (q && typeof q === 'object') s.gaver.pynt[p] = { x: typeof q.x === 'number' && isFinite(q.x) ? q.x : null, z: typeof q.z === 'number' && isFinite(q.z) ? q.z : null, r: [0, 1, 2, 3].indexOf(q.r) >= 0 ? q.r : 0 }; });
+      if (r.gaver.pynt && typeof r.gaver.pynt === 'object') D.gave.pynt.concat(D.arrPynt.filter(function (p) { return !!s.gaver.pynt[p]; })).forEach(function (p) { var q = r.gaver.pynt[p]; if (q && typeof q === 'object') s.gaver.pynt[p] = { x: typeof q.x === 'number' && isFinite(q.x) ? q.x : null, z: typeof q.z === 'number' && isFinite(q.z) ? q.z : null, r: [0, 1, 2, 3].indexOf(q.r) >= 0 ? q.r : 0 }; });
     }
     if (r.oppl && typeof r.oppl === 'object') s.oppl.steg = Math.max(0, Math.floor(tall(r.oppl.steg, 0)));
     if (r.stat && typeof r.stat === 'object') for (var st in s.stat) s.stat[st] = Math.max(0, Math.floor(tall(r.stat[st], 0)));
@@ -361,7 +431,7 @@
     var avl = Object.keys(D.avlinger).filter(function (a) { return D.avlinger[a].nivaa <= s.nivaa; }),
         ferdig = Object.keys(D.gater).filter(function (v) { return !D.avlinger[v] && kanLage(s, v, 0, true); }),
         voksende = s.akre.filter(function (f) { return f.avling && f.slutt > naa; }),
-        bygg = Object.keys(D.bygg).filter(function (b) { var B = D.bygg[b]; return s.bygg[b] && !s.bygg[b].eid && B.nivaa <= Math.min(s.nivaa, D.innholdTil); })
+        bygg = Object.keys(D.bygg).filter(function (b) { var B = D.bygg[b]; return !B.arr && s.bygg[b] && !s.bygg[b].eid && B.nivaa <= Math.min(s.nivaa, D.innholdTil); })
           .sort(function (a, b) { return D.bygg[a].pris - D.bygg[b].pris; });
     function vare(liste, n) { var v = liste[Math.floor(tilf(s) * liste.length)]; if (plass(s, lagerType(v)) >= n) { legg(s, v, n); r.vare = v; r.antall = n; } else r.mynter += D.pris(v) * n; }
     var liste = G.premier.filter(function (p) { return !(gave.kilde === 'nivaa' && p[0] === 'mynter'); }), sum = 0, tot = 0;
@@ -380,6 +450,79 @@
     s.mynter += r.mynter; return r;
   }
 
+  // ---------- Årstidsfester (0.16.0, Even 11.11 og 15.11) ----------
+  // Festen er åpen i sin måned. Spilleren lager festens vare og sender den med varebilen. Premiene kommer trinnvis etter hvor mye som er sendt.
+  // Ingenting går tapt: det som er sendt, står til neste år, og premiene er permanente (hattene på dyrene vises bare i festmåneden).
+  // Måneden (1–12) for et tidspunkt. Testmodus kan overstyre med L.settManed(n)
+  // Admin i testversjonen (0.21.0): lage uten råvarer. Av som standard, og slås bare på fra adminpanelet
+  var gratis = false;
+  function settGratis(b) { gratis = !!b; }
+  var manedTest = null;
+  function maned(naa) { return manedTest || new Date(naa).getMonth() + 1; }
+  function settManed(n) { manedTest = n >= 1 && n <= 12 ? n : null; }
+  function arrId(s, maned) { for (var id in D.arr) if (D.arr[id].maned === maned && s.nivaa >= D.arr[id].nivaa) return id; return null; }
+  function arrStart(s, id) {
+    var A = D.arr[id]; if (!A) return false;
+    if (!s.arr[id]) s.arr[id] = { levert: 0 };
+    for (var b in D.bygg) if (D.bygg[b].arr === id && !s.bygg[b]) s.bygg[b] = { eid: !!(D.bygg[b].tre || D.bygg[b].kal), x: null, z: null, r: 0, ko: [] };   // 0.37.0: alle eventbygg. Juletreet er gratis og står der med en gang
+    return true;
+  }
+  function arrTrinn(s, id) { var a = s.arr && s.arr[id], n = 0; if (!a || !D.arr[id]) return 0; D.arr[id].trinn.forEach(function (t) { if (a.levert >= t.n) n++; }); return n; }
+  function arrHar(s, id, premie) { var A = D.arr[id]; if (!A) return false; var n = arrTrinn(s, id); return A.trinn.some(function (t, i) { return t.premie === premie && i < n; }); }
+  // Gir premiene for trinnene fra og med «fra». Skinn og pynt lagres som eid. Hatter og oppskrift følger av antall sendt.
+  function arrPremier(s, id, fra) {
+    var nye = D.arr[id].trinn.slice(fra, arrTrinn(s, id));
+    nye.forEach(function (t) {
+      if (t.premie === 'skinn') s.skinn.eid[t.skinn] = true;
+      if (t.premie === 'pynt' && !s.gaver.pynt[t.pynt]) s.gaver.pynt[t.pynt] = { x: null, z: null, r: 0 };
+    });
+    return nye;
+  }
+  function arrLever(s, id, maned, naa) {
+    var A = D.arr[id]; if (!A || arrId(s, maned) !== id) return { ok: false, grunn: 'stengt' };
+    arrStart(s, id);
+    var n = s.lager[A.vare] || 0; if (n <= 0) return { ok: false, grunn: 'mangler' };
+    var for0 = arrTrinn(s, id); ta(s, mk(A.vare, n)); s.arr[id].levert = Math.min(9999, s.arr[id].levert + n);
+    var m = D.pris(A.vare) * n; s.mynter += m;
+    var premier = arrPremier(s, id, for0);
+    premier.forEach(function (t) { if (t.premie === 'skinn') s.skinn.valgt = t.skinn; });
+    return { ok: true, antall: n, mynter: m, xp: A.xp * n, premier: premier, nye: giXP(s, A.xp * n, naa) };
+  }
+  // ---------- Julekalenderen (0.38.0, Even 20.11) ----------
+  // 24 luker i desember. Dagens luke og alle tidligere luker kan åpnes, også i romjula, så ingen taper på å stå over en dag (forslag fra Claude).
+  // Innholdet er forslag til en voksen har godkjent det. Luke 24 gir gullstjernen til toppen av juletreet, og den beholdes
+  var dagTest = null;
+  function settDag(n) { dagTest = n >= 1 && n <= 31 ? n : null; }
+  function kalAar(s, naa) { var aar = new Date(naa).getFullYear(); if (s.kal.aar !== aar) { s.kal.aar = aar; s.kal.apnet = []; } }
+  function kanAapneLuke(s, dag, naa) {
+    if (maned(naa) !== 12) return 'stengt'; if (s.nivaa < D.arr.jul.nivaa) return 'laast'; if (!(dag >= 1 && dag <= 24)) return 'ukjent';
+    kalAar(s, naa); if (s.kal.apnet.indexOf(dag) >= 0) return 'apnet'; if (dag > (dagTest || new Date(naa).getDate())) return 'senere';
+    return null;
+  }
+  function aapneLuke(s, dag, naa) {
+    var g = kanAapneLuke(s, dag, naa); if (g) return { ok: false, grunn: g };
+    var L2 = D.kal.luker[dag - 1], r = { ok: true, dag: dag, type: L2[0], antall: L2[1], mynter: 0, premier: [] };
+    s.kal.apnet.push(dag);
+    if (L2[0] === 'mynter') { s.mynter += L2[1]; r.mynter = L2[1]; }
+    else if (L2[0] === 'pepperkaker') { arrStart(s, 'jul'); var f = arrTrinn(s, 'jul'); s.arr.jul.levert = Math.min(9999, s.arr.jul.levert + L2[1]); r.premier = arrPremier(s, 'jul', f); r.premier.forEach(function (t) { if (t.premie === 'skinn') s.skinn.valgt = t.skinn; }); }
+    else if (L2[0] === 'stjerne') { s.kal.stjerne = true; s.mynter += L2[1]; r.mynter = L2[1]; }
+    else { s.lager[L2[0]] = Math.min(9999, (s.lager[L2[0]] || 0) + L2[1]); r.vare = L2[0]; }   // varer i lageret, også om låven er full
+    return r;
+  }
+  /* 0.21.2 (QA 18.11, Even 18.11): festvarer som er til overs når festen er slutt, hentes av bilen. Spilleren får samme pris som i festen,
+     men ingen XP og ingen framgang i festen. Uferdige og ferdige varer i køen på festbyggene regnes med. Da sperrer de ikke låven resten av året.
+     0.39.0: alle varer og bygg som hører til festen (Vinter i Elvedal har gavepapir og julegaver, og to maskiner) */
+  function arrRydd(s, maned) {
+    var antall = 0, mynter = 0, varer = {};
+    for (var id in D.arr) { var A = D.arr[id]; if (A.maned === maned) continue;
+      for (var v in D.varer) { if (D.varer[v].arr !== id) continue; var n = s.lager[v] || 0; if (n > 0) { delete s.lager[v]; varer[v] = (varer[v] || 0) + n; } }
+      for (var b in D.bygg) { var bg = s.bygg[b]; if (D.bygg[b].arr !== id || !bg || !bg.ko || !bg.ko.length) continue;
+        bg.ko.forEach(function (j) { if (j && D.oppskrifter[j.vare]) varer[j.vare] = (varer[j.vare] || 0) + D.oppskrifter[j.vare].ut; }); bg.ko = []; } }
+    for (var w in varer) { antall += varer[w]; mynter += D.pris(w) * varer[w]; }
+    s.mynter += mynter; return { antall: antall, mynter: mynter, varer: varer };
+  }
+  function velgSkinn(s, id) { if (id && !s.skinn.eid[id]) return false; s.skinn.valgt = id || null; return true; }
+
   function mk(v, n) { var o = {}; o[v] = n; return o; }
 
   var L = {
@@ -390,9 +533,10 @@
     uferdige: uferdige, kanProdusere: kanProdusere, produser: produser, hentProdukter: hentProdukter, kjopBygg: kjopBygg,
     kanLage: kanLage, bestPool: bestPool, nyBestilling: nyBestilling, bestPlasser: bestPlasser, fyllBestillinger: fyllBestillinger, kanLevere: kanLevere, lever: lever, byttBestilling: byttBestilling, boerByttes: boerByttes,
     giDyr: giDyr, kanKjopeOmrade: kanKjopeOmrade, kjopOmrade: kjopOmrade,
-    nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris,
+    nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris, nyNabo: nyNabo, selgTilNabo: selgTilNabo, naboLiker: naboLiker, nesteNabo: nesteNabo,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
     nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
+    kanKaste: kanKaste, kast: kast, fiskKlar: fiskKlar, halInn: halInn, kanKjopePynt: kanKjopePynt, kjopPynt: kjopPynt, selgPynt: selgPynt, maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, settDag: settDag, kanAapneLuke: kanAapneLuke, aapneLuke: aapneLuke, pakkbar: pakkbar, pakkbare: pakkbare, arrTrinn: arrTrinn, selvStart: selvStart, arrHar: arrHar, arrLever: arrLever, arrRydd: arrRydd, velgSkinn: velgSkinn,
     giDagsgave: giDagsgave, bonusAktiv: bonusAktiv, leverGaver: leverGaver, klareGaver: klareGaver, aapneGave: aapneGave
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;
