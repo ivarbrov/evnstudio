@@ -1314,6 +1314,18 @@ function renderMenu() {
     } else rows.push({ icon: '🔥', n: 'Bålet: nivå 10', desc: 'Bålet er på maks nivå!', cost: {}, btn: 'Ferdig', act: '', ok: false });
     for (const [id, B] of Object.entries(BUILDINGS))
       rows.push({ icon: B.icon, n: B.n, desc: B.desc, cost: B.cost, btn: 'Bygg', act: 'build:' + id, ok: afford(B.cost) });
+  } else if (menuKind === 'nivaa') {
+    // 2.0.12: trykk på «⭐ Nivå» for å se hvor mye XP som mangler og hva hvert nivå gir (som i Min Bondegård)
+    const lv = heroLevel();
+    $('menuTitle').textContent = `⭐ Nivå ${lv.L}`;
+    pre = `<div class="h2NivaaTopp"><div class="h2XpBar"><i style="width:${lv.need ? Math.round(lv.x / lv.need * 100) : 100}%"></i></div>`
+      + `<p>${lv.need ? `<b>${lv.x} av ${lv.need} XP</b> · ${lv.need - lv.x} XP igjen til nivå ${lv.L + 1}` : '<b>Du har nådd høyeste nivå!</b>'}</p>`
+      + `<p class="h2Liten">Du får XP når du fullfører oppdrag, overlever netter og beseirer farlige fiender.</p></div>`;
+    for (let L = 2; L <= LEVEL_MAX; L++) {
+      const nye = WEAPON_SLOTS.filter(id => WEAPONS[id].lvl === L);
+      const tekst = nye.length ? nye.map(id => `${WEAPONS[id].icon} ${WEAPONS[id].n}${hero.owned.includes(id) ? ' (du har den)' : ''}`).join(', ') + ' kan brukes' : 'Flere XP-poeng mot neste nivå';
+      rows.push({ icon: lv.L >= L ? '✅' : '🔒', n: `Nivå ${L}`, desc: tekst + (L === lv.L + 1 && lv.need ? ` · ${lv.need - lv.x} XP igjen` : ''), cost: {}, btn: '', act: '', ok: false, nobtn: true });
+    }
   } else if (menuKind === 'weapons') {
     const lv = heroLevel();
     $('menuTitle').textContent = 'Ryggsekk 🎒';
@@ -1867,11 +1879,12 @@ function openLootChest(o) {
 }
 
 // ---------- Søvn ----------
-// Om kvelden og natten kan du sove i halmsenga. Natten går da fort (rundt 30 sekunder for en hel natt), og ingen kan skade deg.
+// Om kvelden og natten kan du sove i halmsenga. Som i Minecraft er natten over på et par sekunder (Ivar 19.11.2026), og ingen kan skade deg.
+const SOVETID = 3;   // sekunder i senga før det er morgen, uansett når på kvelden du legger deg
 function goSleep(b) {
   const ph = phaseInfo(g.time), endNight = DAY + DUSK + NIGHT;
   if (ph.p < DAY - 15) { toast('Du er ikke trøtt ennå 🙂 Kom tilbake når det blir kveld 🌙'); g.p.cool = 0.8; return; }
-  const left = endNight + 3 - ph.p, dur = 6 + 24 * left / (DUSK + NIGHT);
+  const left = endNight + 3 - ph.p, dur = SOVETID;
   g.sleep = { b, k: left / dur, t: 0, z: 0 }; g.monsters.forEach(m => m.leave = true);
   toast('😴 God natt … Zzz'); sfx('select');
 }
@@ -6399,6 +6412,8 @@ function mobilKnapper() {
   if (spis) { const h = ved && (g.raw > 0 || g.fish.length) ? '<span class="ai">🍖</span><span class="at">Stek</span>' : '<span class="ai">🍗</span><span class="at">Spis</span>'; if (eb.innerHTML !== h) eb.innerHTML = h; }
   const bb = $('buildBtn'), bygg = !!g.build; if (bb.hidden === bygg) bb.hidden = !bygg;
 }
+window.EVN2_nivaa = () => { if (state === 'play') openMenu('nivaa'); };
+window.EVN2_bygg = () => { if (state !== 'play') return; if (g.build) g.build = null; else openMenu('build'); };
 window.EVN2_kamera = () => { if (R3) { R3.camMode = R3.camMode === 'near' ? 'far' : 'near'; toast(R3.camMode === 'near' ? '🎥 Kamera bak helten' : '🎥 Kamera ovenfra'); } };
 
 const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'jump', KeyE: 'act' };   // venstre musknapp = angrep
