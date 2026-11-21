@@ -127,7 +127,10 @@
 
   // ---------- Produksjon ----------
   function uferdige(b, naa) { return b.ko.filter(function (j) { return naa < j.slutt; }); }
-  function kanProdusere(s, bygg, vare, naa) {
+  // 0.37.0 Gavemaskinen pakker inn én ting du har laget i et bygg (Even 20.11: «en ting du har laget»). Ikke fôr, ikke eventvarer
+  function pakkbar(v) { return !!D.oppskrifter[v] && !D.erFor(v) && !(D.varer[v] && D.varer[v].arr); }
+  function pakkbare(s) { return Object.keys(s.lager).filter(function (v) { return s.lager[v] > 0 && pakkbar(v); }).sort(function (a, b) { return s.lager[b] - s.lager[a] || (a < b ? -1 : 1); }); }
+  function kanProdusere(s, bygg, vare, naa, pakk) {
     var b = s.bygg[bygg], o = D.oppskrifter[vare];
     if (!b || !o || o.bygg !== bygg) return 'ukjent';
     if (!b.eid) return 'ikke-bygd';
@@ -138,15 +141,17 @@
     if (D.bygg[bygg] && D.bygg[bygg].selv) return 'selv';   // 0.32.0: treet starter selv
     if (uferdige(b, naa).length >= D.koPlasser) return 'ko-full';
     if (!gratis && !(bygg === 'forkvern' && bonusAktiv(s, naa)) && !har(s, o.inn)) return 'mangler';
+    if (o.pakk && !gratis) { if (pakk ? !(pakkbar(pakk) && (s.lager[pakk] || 0) >= o.pakk) : !pakkbare(s).length) return 'mangler-pakk'; }
     return null;
   }
-  function produser(s, bygg, vare, naa) {
-    var g = kanProdusere(s, bygg, vare, naa); if (g) return { ok: false, grunn: g };
+  function produser(s, bygg, vare, naa, pakk) {
+    var g = kanProdusere(s, bygg, vare, naa, pakk); if (g) return { ok: false, grunn: g };
     var b = s.bygg[bygg], o = D.oppskrifter[vare], u = uferdige(b, naa);
     var start = u.length ? u[u.length - 1].slutt : naa;     // jobbene går etter hverandre
     if (!gratis && !(bygg === 'forkvern' && bonusAktiv(s, naa))) ta(s, o.inn);
+    var pakket = null; if (o.pakk && !gratis) { pakket = pakk || pakkbare(s)[0]; ta(s, mk(pakket, o.pakk)); }
     b.ko.push({ vare: vare, start: start, slutt: start + o.tid * 1000 });
-    return { ok: true };
+    return { ok: true, pakket: pakket };
   }
   // 0.32.0 Bygg som lager varen sin selv (epletreet, Even 18.11): når køen er tom, starter en ny runde. Frukten venter til den blir plukket
   function selvStart(s, naa) { var n = 0;
@@ -457,7 +462,7 @@
   function arrStart(s, id) {
     var A = D.arr[id]; if (!A) return false;
     if (!s.arr[id]) s.arr[id] = { levert: 0 };
-    if (A.bygg && !s.bygg[A.bygg]) s.bygg[A.bygg] = { eid: false, x: null, z: null, r: 0, ko: [] };
+    for (var b in D.bygg) if (D.bygg[b].arr === id && !s.bygg[b]) s.bygg[b] = { eid: !!D.bygg[b].tre, x: null, z: null, r: 0, ko: [] };   // 0.37.0: alle eventbygg. Juletreet er gratis og står der med en gang
     return true;
   }
   function arrTrinn(s, id) { var a = s.arr && s.arr[id], n = 0; if (!a || !D.arr[id]) return 0; D.arr[id].trinn.forEach(function (t) { if (a.levert >= t.n) n++; }); return n; }
@@ -496,7 +501,7 @@
     nyKunde: nyKunde, selgTilKunde: selgTilKunde, kundePris: kundePris, nyNabo: nyNabo, selgTilNabo: selgTilNabo, naboLiker: naboLiker, nesteNabo: nesteNabo,
     kanSelge: kanSelge, selg: selg, normaliserTid: normaliserTid, valider: valider,
     nyGate: nyGate, harGate: harGate, svarGate: svarGate, byttGate: byttGate, gateLonn: gateLonn,
-    kanKaste: kanKaste, kast: kast, fiskKlar: fiskKlar, halInn: halInn, kanKjopePynt: kanKjopePynt, kjopPynt: kjopPynt, selgPynt: selgPynt, maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, arrTrinn: arrTrinn, selvStart: selvStart, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
+    kanKaste: kanKaste, kast: kast, fiskKlar: fiskKlar, halInn: halInn, kanKjopePynt: kanKjopePynt, kjopPynt: kjopPynt, selgPynt: selgPynt, maned: maned, settManed: settManed, settGratis: settGratis, arrId: arrId, arrStart: arrStart, pakkbar: pakkbar, pakkbare: pakkbare, arrTrinn: arrTrinn, selvStart: selvStart, arrHar: arrHar, arrLever: arrLever, velgSkinn: velgSkinn,
     giDagsgave: giDagsgave, bonusAktiv: bonusAktiv, leverGaver: leverGaver, klareGaver: klareGaver, aapneGave: aapneGave
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else rot.MBLogikk = L;

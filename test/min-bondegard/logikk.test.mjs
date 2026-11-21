@@ -219,7 +219,7 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
 
 // --- Årstidsfester (0.16.0) ---
 { const A = D.arr.bursdag, k = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 3 }), T0);
-  t('Festen er stengt under nivå 3 og utenfor november', L.arrId(L.ny(T0), 11) === null && L.arrId(k, 11) === 'bursdag' && L.arrId(k, 12) === null);
+  t('Festen er stengt under nivå 3 og utenfor november', L.arrId(L.ny(T0), 11) === null && L.arrId(k, 11) === 'bursdag' && L.arrId(k, 12) !== 'bursdag');
   t('Festbordet følger ikke med nivået', !L.valider(JSON.parse(JSON.stringify(Object.assign(L.ny(T0), { nivaa: 5 }))), T0).bygg.festbord);
   L.arrStart(k, 'bursdag');
   t('Festen gir en byggeplass for Festbordet', k.bygg.festbord && k.bygg.festbord.eid === false && k.arr.bursdag.levert === 0);
@@ -302,6 +302,42 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
     t('Spire ber oftest om avlinger, men ikke bare', fav / alle > 0.6 && fav / alle < 0.98, (fav / alle).toFixed(2));
     let dobbel = false; for (let i = 0; i < 300; i++) { const v = L.nyNabo(x, 'gnist').liste.map(l => l.vare); if (new Set(v).size !== v.length) dobbel = true; } t('Favoritter gir aldri samme vare to ganger', !dobbel); }
   t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
+}
+// 0.37.0 Vinter i Elvedal (Even 18.–20.11)
+{
+  const J = D.arr.jul, k = L.ny(T0); k.nivaa = 5; L.settGratis(false);
+  t('Vinter i Elvedal er desember-eventet, fra nivå 3', L.arrId(k, 12) === 'jul' && L.arrId(L.ny(T0), 12) === null && J.maned === 12 && J.nivaa === 3);
+  L.arrStart(k, 'jul');
+  t('Eventet gir byggeplass for begge maskinene, og juletreet står der med en gang', k.bygg.gavepapirmaskin.eid === false && k.bygg.gavemaskin.eid === false && k.bygg.juletre.eid === true && k.arr.jul.levert === 0);
+  k.bygg.gavepapirmaskin.eid = true; k.bygg.gavemaskin.eid = true; k.lager = { hvete: 4 };
+  L.settManed(11);
+  t('Maskinene er stengt utenfor desember', L.kanProdusere(k, 'gavepapirmaskin', 'gavepapir', T0) === 'stengt');
+  L.settManed(12);
+  t('Gavepapir lages av hvete', L.produser(k, 'gavepapirmaskin', 'gavepapir', T0).ok && k.lager.hvete === 2);
+  L.hentProdukter(k, 'gavepapirmaskin', T0 + 3600e3);
+  t('2 hvete gir 2 gavepapir', k.lager.gavepapir === 2);
+  t('Uten noe å pakke inn kan ingen gave lages', L.kanProdusere(k, 'gavemaskin', 'julegave', T0) === 'mangler-pakk');
+  k.lager.hvete = 5;
+  t('Hvete og fôr kan ikke pakkes inn, bare ting du har laget', !L.pakkbar('hvete') && !L.pakkbar('honsefor') && !L.pakkbar('julegave') && !L.pakkbar('gavepapir') && L.pakkbar('brod'));
+  k.lager.brod = 1; k.lager.maisbrod = 3;
+  t('Uten valg pakkes det du har mest av', L.pakkbare(k)[0] === 'maisbrod');
+  t('En ting du ikke har, kan ikke velges', L.kanProdusere(k, 'gavemaskin', 'julegave', T0, 'popkorn') === 'mangler-pakk' && L.kanProdusere(k, 'gavemaskin', 'julegave', T0, 'hvete') === 'mangler-pakk');
+  const r = L.produser(k, 'gavemaskin', 'julegave', T0, 'brod');
+  t('Gaven tar ett gavepapir og tingen du valgte', r.ok && r.pakket === 'brod' && !k.lager.brod && k.lager.gavepapir === 1 && k.lager.maisbrod === 3);
+  L.hentProdukter(k, 'gavemaskin', T0 + 3600e3);
+  t('Julegaver og gavepapir kan ikke selges', k.lager.julegave === 1 && !L.kanSelge('julegave') && !L.kanSelge('gavepapir'));
+  k.lager.julegave = 10; const m0 = k.mynter;
+  const r1 = L.arrLever(k, 'jul', 12, T0);
+  t('10 gaver gir 10 pepperkaker, mynter og nisseluer', r1.ok && k.arr.jul.levert === 10 && k.mynter === m0 + 10 * D.pris('julegave') && L.arrHar(k, 'jul', 'hatter') && !k.lager.julegave);
+  t('Pepperkakehus er låst til 40 pepperkaker', L.kanProdusere(Object.assign(k, { bygg: Object.assign(k.bygg, { bakeri: { eid: true, x: 0, z: 0, r: 0, ko: [] } }) }), 'bakeri', 'pepperkakehus', T0) === 'laast');
+  k.lager.julegave = 90; L.arrLever(k, 'jul', 12, T0);
+  t('Ved 100 er juletreet ditt for alltid', L.arrHar(k, 'jul', 'tre') && L.arrTrinn(k, 'jul') === 3 && !k.skinn.eid.jul);
+  k.lager.julegave = 150; const r2 = L.arrLever(k, 'jul', 12, T0);
+  t('Ved 250 får du julesleden, og den tas på', k.skinn.eid.jul && k.skinn.valgt === 'jul' && r2.premier.some(x => x.skinn === 'jul'));
+  const lagret = L.valider(JSON.parse(JSON.stringify(k)), T0);
+  t('Pepperkakene, treet og sleden overlever lagring', lagret.arr.jul.levert === 250 && lagret.skinn.eid.jul && lagret.bygg.juletre.eid && lagret.bygg.gavemaskin.eid);
+  L.settManed(null);
+  t('Ivar må godkjenne tallene: 10, 40, 100, 250 pepperkaker, maskinene 150 og 250, gaven 18 mynter', J.trinn.map(x => x.n).join() === '10,40,100,250' && D.bygg.gavepapirmaskin.pris === 150 && D.bygg.gavemaskin.pris === 250 && D.pris('julegave') === 18);
 }
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);
 process.exit(feil ? 1 : 0);

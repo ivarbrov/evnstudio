@@ -55,7 +55,11 @@
       omelett:    { navn: 'Omelett',    ikon: '🍳' },
       smorpopkorn: { navn: 'Smørpopkorn', ikon: '🧈🍿' },
       festhatt:   { navn: 'Festhatt', ikon: '🥳', arr: 'bursdag' },   // 0.16.0: lages til Bursdagsfesten og sendes med varebilen. Kan ikke selges eller bestilles
-      bursdagskake: { navn: 'Bursdagskake', ikon: '🎂' }
+      bursdagskake: { navn: 'Bursdagskake', ikon: '🎂' },
+      /* 0.37.0 Vinter i Elvedal (Even 18.–20.11). Gavepapir og julegaver kan ikke selges eller bestilles. Alle tall er forslag til en voksen har godkjent dem */
+      gavepapir:  { navn: 'Gavepapir', ikon: '📜', arr: 'jul' },
+      julegave:   { navn: 'Julegave',  ikon: '🎁', arr: 'jul', verdi: 18, flertall: 'julegaver' },
+      pepperkakehus: { navn: 'Pepperkakehus', ikon: '🏠' }
     },
     // Oppskrifter: bygg, nivå, råvarer, tid (s), antall ut
     oppskrifter: {
@@ -83,7 +87,11 @@
       omelett:    { bygg: 'kjokken',    nivaa: 12, inn: { egg: 3, melk: 1 },              tid: 90,  ut: 1 },
       smorpopkorn: { bygg: 'popkorn',   nivaa: 13, inn: { popkorn: 1, smor: 1 },          tid: 120, ut: 1 },
       festhatt:   { bygg: 'festbord',   nivaa: 3,  inn: { hvete: 2, mais: 1 },            tid: 60,  ut: 1 },
-      bursdagskake: { bygg: 'bakeri',   nivaa: 3,  inn: { hvete: 2, egg: 2 },             tid: 120, ut: 1, krever: { arr: 'bursdag', trinn: 2 } }   // premie i Bursdagsfesten
+      bursdagskake: { bygg: 'bakeri',   nivaa: 3,  inn: { hvete: 2, egg: 2 },             tid: 120, ut: 1, krever: { arr: 'bursdag', trinn: 2 } },   // premie i Bursdagsfesten
+      // 0.37.0 Vinter i Elvedal. «pakk: 1»: gavemaskinen pakker inn én ting du har laget i et bygg, i tillegg til gavepapiret
+      gavepapir:  { bygg: 'gavepapirmaskin', nivaa: 3, inn: { hvete: 2 },                tid: 45,  ut: 2 },
+      julegave:   { bygg: 'gavemaskin', nivaa: 3,  inn: { gavepapir: 1 }, pakk: 1,        tid: 60,  ut: 1 },
+      pepperkakehus: { bygg: 'bakeri',  nivaa: 3,  inn: { hvete: 3, egg: 2 },             tid: 180, ut: 1, krever: { arr: 'jul', trinn: 2 } }   // premie i Vinter i Elvedal
     },
     // Bygg: nivå og pris. Produksjonsbygg har 2 køplasser. «dyr»: bygget er et dyrehus, og dyrene kommer når det er kjøpt.
     bygg: {
@@ -101,7 +109,11 @@
       bikube:     { navn: 'Bikuben',        ikon: '🐝', nivaa: 22, pris: 4000, selv: 'honning', vent: 'Ny honning er klar om', klar: 'Honningen er klar!' },   // 0.33.0 (Even 18.11): gul bikube av halm. Pris er forslag
       epletre:    { navn: 'Epletreet',      ikon: '🍎', nivaa: 21, pris: 3000, selv: 'eple', vent: 'Nye epler er modne om', klar: 'Eplene er modne!' },   // 0.32.0 (Even 18.11): står for alltid og gir nye epler etter en stund. Pris er forslag
       vevstol:    { navn: 'Vevstolen',      ikon: '🧶', nivaa: 17, pris: 6000 },   // 0.24.0
-      festbord:   { navn: 'Festbordet',     ikon: '🎉', nivaa: 3,  pris: 150, arr: 'bursdag' }   // kommer med Bursdagsfesten, ikke med nivået (Even 11.11: første maskin ca. 150)
+      festbord:   { navn: 'Festbordet',     ikon: '🎉', nivaa: 3,  pris: 150, arr: 'bursdag' },   // kommer med Bursdagsfesten, ikke med nivået (Even 11.11: første maskin ca. 150)
+      // 0.37.0 Vinter i Elvedal (Even 18.11). Prisene er forslag. Juletreet er gratis og kommer med eventet. «tre»: står bare i desember, og for alltid når treet er ditt
+      gavepapirmaskin: { navn: 'Gavepapirmaskinen', ikon: '📜', nivaa: 3, pris: 150, arr: 'jul' },
+      gavemaskin:      { navn: 'Gavemaskinen',      ikon: '🎁', nivaa: 3, pris: 250, arr: 'jul' },
+      juletre:         { navn: 'Juletreet',         ikon: '🎄', nivaa: 3, pris: 0,   arr: 'jul', tre: true }
     },
     koPlasser: 2,
     xpNeste: [null, 20, 35, 50, 70, 95, 140, 180, 225, 275, 325, 395, 460, 530, 605, 685, 770, 855, 950, 1050, 1150, 1260],   // XP fra nivået til det neste. 11–19 fra progresjonsplanen kap. 5
@@ -168,9 +180,14 @@
     arr: {
       bursdag: { navn: 'Bursdagsfesten', ikon: '🎂', maned: 11, nivaa: 3, vare: 'festhatt', bygg: 'festbord', xp: 2,
         trinn: [ { n: 5, premie: 'hatter', tekst: 'Dyrene får festhatter i november' }, { n: 15, premie: 'oppskrift', vare: 'bursdagskake', tekst: 'Ny oppskrift: bursdagskake i bakeriet' },
-                 { n: 30, premie: 'skinn', skinn: 'bursdag', tekst: 'Bursdagsbilen: nytt utseende til varebilen' }, { n: 50, premie: 'pynt', pynt: 'bursdagspynt', tekst: 'Pynt til gården: ballonger og kake' } ] }
+                 { n: 30, premie: 'skinn', skinn: 'bursdag', tekst: 'Bursdagsbilen: nytt utseende til varebilen' }, { n: 50, premie: 'pynt', pynt: 'bursdagspynt', tekst: 'Pynt til gården: ballonger og kake' } ] },
+      /* 0.37.0 Vinter i Elvedal (Even 18.11). Du lager gavepapir av hvete, pakker inn en ting du har laget, og legger gaven under juletreet. Hver gave er én pepperkake.
+         Even har bestemt 250 for julesleden og at treet er ditt ved 100. Resten av tallene er Claudes forslag og må godkjennes av en voksen */
+      jul: { navn: 'Vinter i Elvedal', ikon: '🎄', maned: 12, nivaa: 3, vare: 'julegave', bygg: 'gavemaskin', tre: 'juletre', xp: 2, poeng: 'pepperkake',
+        trinn: [ { n: 10, premie: 'hatter', hatt: 'nisse', tekst: 'Dyrene får nisseluer i desember' }, { n: 40, premie: 'oppskrift', vare: 'pepperkakehus', tekst: 'Ny oppskrift: pepperkakehus i bakeriet' },
+                 { n: 100, premie: 'tre', tekst: 'Juletreet er ditt for alltid' }, { n: 250, premie: 'skinn', skinn: 'jul', tekst: 'Julesleden: nytt utseende til varebilen' } ] }
     },
-    skinn: { bursdag: 'Bursdagsbilen' },
+    skinn: { bursdag: 'Bursdagsbilen', jul: 'Julesleden' },
     arrPynt: ['bursdagspynt'],
     rebus: { nivaa: 2, pause: 180, myntFaktor: 1, myntPluss: 10, xp: 4 },   /* 0.15.1 (Even 15.11): du trenger ikke ha svaret på lager. Rebus tar ingen vare, så lønna er varens verdi mindre enn før (samme gevinst som før) */
     gater: {
