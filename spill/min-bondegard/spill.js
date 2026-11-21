@@ -883,7 +883,7 @@ function julStart() { const n = new Date(naa()); return new Date(n.getMonth() ==
 function snoTrinn() {
   if (vinterSno()) return 6; if (MANED() === 12) return -1; if (ADMIN && admLager().ned) return 4;   /* admin kan se nedtellingen før den siste uka */
   if (MANED() !== 11 || s.nivaa < D.arr.jul.nivaa) return -1;
-  const d = Math.ceil((julStart() - naa()) / DAG_MS); return d <= 7 ? Math.min(5, 7 - d) : -1; }   /* admin kan se nedtellingen før den siste uka */
+  const d = Math.ceil((julStart() - naa()) / DAG_MS); return d <= 10 ? Math.min(5, Math.floor((10 - d) * 5 / 9)) : -1; }   /* 0.39.1 (Even og Ivar 21.11): Rebus begynner 21. november, ti dager før */   /* admin kan se nedtellingen før den siste uka */
 function lagSnomann(n) {
   const g = new THREE.Group(), sno = fm(0xffffff, 0.95), kull = fm(0x222226, 0.8), rod = fm(0xd8262f, 0.5);
   const ball = (r, y) => mesh(new THREE.SphereGeometry(r, 18, 14), sno, 0, y, 0, g);
