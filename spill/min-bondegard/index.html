@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- EVN-SIKKERHET slutt -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Min Bondegård 0.15.11 – EVN Studio</title>
+<title>Min Bondegård 0.39.4 – EVN Studio</title>
 <link rel="stylesheet" href="../../fonter/fonter.css">
 <link rel="icon" href="../../favicon.png">
 <style>
@@ -54,6 +54,11 @@
   #hud { left:calc(10px + env(safe-area-inset-left)); flex-wrap:wrap; max-width:calc(100vw - 200px); }
   #hoyre { right:calc(10px + env(safe-area-inset-right)); }
   #hud[hidden], #hoyre[hidden] { display:none !important; }
+  /* 0.18.0 (Even 16.11): admin-knappen, en A i regnbuefarger. Vises bare i testversjonen */
+  #adminKnapp, #bilKnapp, #musikkKnapp, #bildeKnapp { width:48px; height:48px; border-radius:50%; border:2px solid rgba(255,255,255,.3); background:var(--panel); box-shadow:0 2px 8px rgba(0,0,0,.2); cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; }
+  #adminKnapp[hidden], #bilKnapp[hidden], #musikkKnapp[hidden], #bildeKnapp[hidden] { display:none; }
+  #bilKnapp, #musikkKnapp, #bildeKnapp { font-size:24px; }
+  #adminKnapp span { font:400 30px 'Lilita One',system-ui,sans-serif; background:linear-gradient(90deg,#ff4d4d,#ff9f1c,#ffe14d,#4cd964,#3fa9f5,#b36bff); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; filter:drop-shadow(0 1px 0 rgba(0,0,0,.35)); }
   .pille { background:var(--panel); border:2px solid rgba(255,255,255,.3); border-radius:999px; padding:4px 14px 4px 6px; font:800 18px 'Nunito',system-ui,sans-serif; min-height:44px; display:flex; align-items:center; gap:6px; color:#fff; box-shadow:0 2px 8px rgba(0,0,0,.2); }
   .pille .ikon { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-size:20px; background:rgba(255,255,255,.18); }
   .pille.bump { animation:bump .35s; }
@@ -89,6 +94,10 @@
   .knapper { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
   .knapper .knapp { flex:1 1 auto; }
   .ko { display:flex; gap:8px; margin:8px 0 2px; }
+  .kal { display:grid; grid-template-columns:repeat(6, 1fr); gap:6px; margin:10px 0; }   /* 0.38.0 julekalenderen */
+  .luke { min-height:48px; border-radius:10px; border:2px solid #c81f2a; background:#fff; font:700 17px system-ui; color:#7a1018; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2px; }
+  .luke small { font-size:15px; } .luke.klar { background:#ffd23f; border-color:#b8860b; color:#3a2418; cursor:pointer; animation:lukePuls 1.6s ease-in-out infinite; } .luke.apnet { background:#f3e7d3; border-color:#d8c4a4; color:#8a7560; } .luke:disabled { cursor:default; }
+  @keyframes lukePuls { 50% { transform:scale(1.06); } } @media (prefers-reduced-motion: reduce) { .luke.klar { animation:none; } }
   .ko .plass { flex:1; border:2px dashed #d8c494; border-radius:12px; min-height:52px; display:flex; align-items:center; justify-content:center; gap:6px; font-weight:800; color:#7a6142; }
   .ko .plass.full { border-style:solid; background:#fff3c9; color:#5a3d16; }
   .ko .plass.klar { border-style:solid; background:#d9f5c4; color:#1f5a0f; }
@@ -153,9 +162,11 @@
   #tavleKnapp[hidden] { display:none; }   /* QA 10.11: .rund har display:flex, som ellers overstyrer hidden */
   @media (max-width:430px) { .rad.best { flex-wrap:wrap; } .rad.best .midt { flex:1 1 100%; } .rad.best .knapp { flex:1 1 40%; } #tavle h2 { margin-right:44px; font-size:24px; } }
   #tavleKnapp.klar { box-shadow:0 0 0 3px #9ef06b, 0 3px 0 rgba(0,0,0,.25); }
-  #kattBoble { position:fixed; left:0; top:0; will-change:transform; display:none; transform:translate(-50%, -100%); background:#fffdf5; color:#2b2b2b; font:700 16px/1.3 'Nunito',system-ui,sans-serif; padding:10px 14px; border-radius:16px; max-width:220px; text-align:center; box-shadow:0 4px 14px rgba(0,0,0,.25); z-index:5; cursor:pointer; min-height:44px; box-sizing:border-box; border:3px solid #c9a4e8; }
-  #kattBoble small { display:block; font-size:13px; color:#6b4a8a; }
-  #kattBoble::after { content:''; position:absolute; left:50%; bottom:-11px; margin-left:-9px; border:9px solid transparent; border-bottom:0; border-top-color:#c9a4e8; }
+  #kattBoble, #naboBoble { position:fixed; left:0; top:0; will-change:transform; display:none; transform:translate(-50%, -100%); background:#fffdf5; color:#2b2b2b; font:700 16px/1.3 'Nunito',system-ui,sans-serif; padding:10px 14px; border-radius:16px; max-width:220px; text-align:center; box-shadow:0 4px 14px rgba(0,0,0,.25); z-index:5; cursor:pointer; min-height:44px; box-sizing:border-box; border:3px solid #c9a4e8; }
+  #kattBoble small, #naboBoble small { display:block; font-size:13px; color:#6b4a8a; }
+  #kattBoble::after, #naboBoble::after { content:''; position:absolute; left:50%; bottom:-11px; margin-left:-9px; border:9px solid transparent; border-bottom:0; border-top-color:#c9a4e8; }
+  .brev { background:#fffaf0; border:2px dashed #d8372e; border-radius:14px; padding:6px 14px; text-align:left; }
+  .brev ol { margin:6px 0 6px 22px; padding:0; } .brev li { margin:4px 0; }
   #melding { position:fixed; left:50%; top:calc(68px + env(safe-area-inset-top)); transform:translateX(-50%); z-index:26; pointer-events:none; background:rgba(31,74,28,.95); color:#fff; padding:10px 16px; border-radius:16px; font:800 16px 'Nunito',system-ui,sans-serif; display:none; max-width:calc(100vw - 20px); text-align:center; }
   #melding.vis { display:block; }
 
@@ -165,6 +176,8 @@
   #flyttLinje p { width:100%; margin:0 0 2px; text-align:center; font:800 15px 'Nunito',system-ui,sans-serif; color:var(--blekk); }
 
   @media (prefers-reduced-motion: reduce) { .evn-start, .pille.bump, #handling.vis, #nivaaOpp .banner { animation:none; } .flyt { animation-duration:.01s; } }
+  @media (max-height:620px) { #start .maal img { display:none; } #start .maal { margin:4px 0 8px; } #start .styring { margin:4px 0 10px; } }   /* 0.39.2 (QA 21.11): Start synes på 320×568 */
+  @media (max-height:420px) { #start .kort { padding:8px 16px; } #start .kort h1 { font-size:24px; margin:2px 0; } #start .maal p { font-size:15px; } #start .styring { font-size:13px; margin:2px 0 8px; } #start .stor { font-size:22px; min-height:48px; padding:6px 30px; } #start .evn-merke { display:none; } }   /* 0.39.2: «Tilbake» synes i liggende mobil */
   @media (max-height:560px) { .maal img { display:none; } .kort { padding:14px 18px; } .kort h1 { font-size:30px; } #revTips { top:auto; bottom:calc(8px + env(safe-area-inset-bottom)); } }
   @media (max-width:440px) {
     #hud { max-width:calc(100vw - 168px); gap:6px; } #hoyre { gap:6px; }
@@ -182,6 +195,7 @@
 <body>
 <div id="boble"></div>
 <div id="kattBoble" role="button" tabindex="0" aria-live="polite"></div>
+<div id="naboBoble" role="button" tabindex="0" aria-live="polite"></div>
 <div id="omrade" role="dialog" aria-live="polite"><div class="tittel"></div><div class="rad"><span class="laas" aria-hidden="true"></span><span class="nivaa"></span></div><div class="rad"><span class="mynt" aria-hidden="true"></span><span class="pris"></span></div><div class="smaa">Roboten rydder området når du kjøper det.</div><button>OK</button></div>
 <div id="last">Bygger gården …</div>
 <div class="topp">
@@ -210,10 +224,15 @@
 <!-- ======== Min Bondegård: spillets grensesnitt ======== -->
 <div id="hud" hidden>
   <div class="pille" id="pNivaa" title="Nivå og XP. Trykk for å se hva som gir XP" role="button" tabindex="0" style="cursor:pointer">
+    <span id="krone" aria-label="Premium" hidden style="font-size:22px;margin-right:2px">👑</span>
     <span class="stjerne"><b id="nivaa">1</b></span>
     <span><span class="xpbar" role="progressbar" aria-label="XP til neste nivå" aria-valuemin="0" id="xpBar"><i id="xpFyll"></i></span><span class="xptekst" id="xpTekst">0/20 XP</span></span>
   </div>
   <div class="pille" id="pMynter" title="Myntene dine"><span class="ikon" aria-hidden="true">🪙</span><span id="mynter">50</span><span class="vh"> mynter</span></div>
+  <button id="adminKnapp" type="button" title="Admin" aria-label="Admin" hidden><span aria-hidden="true">A</span></button>
+  <button id="musikkKnapp" type="button" title="Musikk" aria-label="Musikk" hidden><span aria-hidden="true">🎵</span></button>
+  <button id="bildeKnapp" type="button" title="Ta bilde av gården" aria-label="Ta bilde av gården" hidden><span aria-hidden="true">📷</span></button>
+  <button id="bilKnapp" type="button" title="Bilene dine" aria-label="Bilene dine" hidden><span aria-hidden="true">🚚</span></button>
 </div>
 <div id="hoyre" hidden>
   <button class="rund" id="tavleKnapp" type="button" title="Bestillinger (T)" aria-label="Bestillinger" hidden>📋</button>
@@ -278,7 +297,7 @@
     </div>
     <button class="stor evn-start" id="startBtn" type="button">▶ Start</button>
     <a class="evn-tilbake" id="evnTilbake" href="../../" hidden>← Tilbake til EVN Studio</a>
-    <div class="evn-ver" id="versjon">Versjon 0.15.11</div>
+    <div class="evn-ver" id="versjon">Versjon 0.39.4</div>
   </div>
 </div>
 
@@ -549,7 +568,7 @@ window.EVNPause = function (cfg) {
 };
 </script>
 
-<script>window.MB_VERSJON = '0.15.11'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
+<script>window.MB_VERSJON = '0.39.4'; window.MB_MYK_VEI = true; window.MB_UTEN_BEITE = true;
 /* B3 (standarden): uten WebGL sier startkortet at 3D ikke virker, i stedet for et generelt feilkort (QA 9.11) */
 window.MB_INGEN_WEBGL = (function () { try { var c = document.createElement('canvas'); return !(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return true; } })();
 if (window.MB_INGEN_WEBGL) { var mbB = document.getElementById('startBtn'), mbP = document.createElement('p'); mbB.hidden = true; mbP.style.cssText = 'font-size:18px;font-weight:800;color:#b23a1f;margin:8px 0';
@@ -786,7 +805,7 @@ function hoyde(x, z) {
     if (vedFiskeplass(x, z) && k > 0) h = Math.min(h, VANN_Y + 0.18 + k * 0.08); // lav og flat strand
   }
   if (Math.abs(z - VEI_Z) < 2.2 && Math.abs(x) < 80) h = Math.min(h, 0.05) * 0.4;
-  { const e = Math.max(engaFlat(x, z), skogFlat(x, z)); if (e > 0) h *= 1 - e; }   /* 0.9.8: Enga er flat, så fjøs og meieri står på bakken */
+  { const e = Math.max(engaFlat(x, z), skogFlat(x, z), jordeFlat(x, z)); if (e > 0) h *= 1 - e; }   /* 0.9.8: Enga er flat, så fjøs og meieri står på bakken */
   for (const [a, b, c, d, L] of FLATE) { const dd = Math.hypot(Math.max(a - x, 0, x - b), Math.max(c - z, 0, z - d)); if (dd < 4) h = THREE.MathUtils.lerp(L, h, THREE.MathUtils.smoothstep(dd, 0, 4)); } // flat platå under kopiene i «Full gård»
   return h;
 }
@@ -840,6 +859,29 @@ function lagTerreng() {
 
 /* Vann: én stripe med egen shader. Fargen følger den faktiske dybden (lyst og grønnblått ved kanten, mørkere blått der det er dypt),
    strømmen er animert langs elva, og kanten tones ut med et lyst skumbånd. Ingen ekstra tegnekall eller teksturer. */
+/* 0.29.0 Vinter i Elvedal, første test (Even 18.11): snø på bakken, takene og trærne, snøfall og is på elva med et hull ved brygga.
+   Bare utseende. Slås på med admin i testversjonen. Sommerfargene lagres og settes tilbake når vinteren slås av */
+let VINTER = false, snoFall = null, isHull = null;
+window.mbVinter = paa => { paa = !!paa; if (paa === VINTER || !TERRENG) return; VINTER = paa;
+  const ca = TERRENG.geometry.attributes.color, pp = TERRENG.geometry.attributes.position, U = TERRENG.userData;
+  if (paa) { U.sommer = ca.array.slice(); U.kart = TERRENG.material.map; TERRENG.material.map = null;
+    for (let i = 0; i < pp.count; i++) { const x = pp.getX(i), z = pp.getZ(i), k = elvKant(x, z); if (k < 0.2) continue;
+      const m = Math.min(1, (k - 0.2) / 1.2) * 0.92, n = 0.9 + vstoy(x * 0.2, 3, z * 0.2) * 0.12;
+      ca.setXYZ(i, ca.getX(i) * 0.6 * (1 - m) + 0.7 * n * m, ca.getY(i) * 0.6 * (1 - m) + 0.74 * n * m, ca.getZ(i) * 0.6 * (1 - m) + 0.83 * n * m); }
+  } else if (U.sommer) { ca.array.set(U.sommer); TERRENG.material.map = U.kart; }
+  ca.needsUpdate = true; TERRENG.material.needsUpdate = true;
+  if (MAT.tak) { if (paa) { MAT.tak.userData.kart = MAT.tak.map; MAT.tak.map = null; MAT.tak.color.setRGB(0.9, 0.93, 0.98); } else { MAT.tak.map = MAT.tak.userData.kart; MAT.tak.color.setRGB(1, 1, 1); } MAT.tak.needsUpdate = true; }
+  if (_bladMat) _bladMat.emissive.setRGB(paa ? 0.42 : 0, paa ? 0.46 : 0, paa ? 0.52 : 0);   /* rim og snø på bladene */
+  if (VANN) { const u = VANN.material.uniforms; if (paa) { U.grunt = u.grunt.value.clone(); U.dyp = u.dyp.value.clone(); u.grunt.value.copy(SRGB(0xe6f4fb)); u.dyp.value.copy(SRGB(0xb5d9ee)); } else if (U.grunt) { u.grunt.value.copy(U.grunt); u.dyp.value.copy(U.dyp); } }
+  if (paa && !snoFall) { const N = KVAL === 'mobil' ? 500 : 1400, pos = new Float32Array(N * 3); for (let i = 0; i < N; i++) { pos[i * 3] = (Math.random() - 0.5) * 80; pos[i * 3 + 1] = Math.random() * 32; pos[i * 3 + 2] = (Math.random() - 0.5) * 80; }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    snoFall = new THREE.Points(g, new THREE.PointsMaterial({color: 0xffffff, size: 0.3, transparent: true, opacity: 0.9, depthWrite: false})); snoFall.frustumCulled = false; scene.add(snoFall);
+    isHull = new THREE.Group(); const hull = new THREE.Mesh(new THREE.CircleGeometry(0.95, 20), new THREE.MeshBasicMaterial({color: 0x1d5c92})), kant = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.2, 20), new THREE.MeshBasicMaterial({color: 0xffffff}));
+    [hull, kant].forEach(m => { m.rotation.x = -Math.PI / 2; m.renderOrder = 3; isHull.add(m); }); scene.add(isHull); }
+  if (snoFall) snoFall.visible = paa; if (isHull) isHull.visible = false; };
+window.mbIsHull = (x, z, vis) => { if (!isHull) return; isHull.visible = VINTER && !!vis; isHull.position.set(x, VANN_Y + 0.03, z); };   /* hullet i isen ved fiskebrygga */
+function oppdaterVinter(dt, t) { if (!snoFall || !snoFall.visible) return; snoFall.position.set(cam.target.x, 0, cam.target.z);
+  const p = snoFall.geometry.attributes.position; for (let i = 0; i < p.count; i++) { let y = p.getY(i) - dt * (1.6 + (i % 7) * 0.22); if (y < 0) y += 32; p.setY(i, y); p.setX(i, p.getX(i) + Math.sin(t * 0.7 + i) * dt * 0.5); } p.needsUpdate = true; }
 function lagVann() {
   const nx = KVAL === 'mobil' ? 180 : 240, nz = 14, L = 220;
   const pos = [], dyb = [], idx = [];
@@ -892,7 +934,21 @@ const OMRADER = [
   /* 0.9.8 (Ivar 12.11): Enga øst for gården kan kjøpes fra nivå 5. Står sist, så tilfeldighetene for de andre områdene er uendret. Vegetasjonen der blir stående til den er kjøpt */
   {nr: 1, navn: 'Enga', nivaa: 5, pris: 300, tema: 'eng', skilt: [15.2, -4.2, Math.PI / 4],
    poly: [[14.25, -11.8], [22.2, -11.8], [22.2, 10.35], [14.25, 10.35]]},
+  /* 0.17.0 (Even 15.11 og 16.11): Jordet på andre siden av veien. Vanlig gress og trær til det kjøpes, som Enga. Nivå og pris står også i data.js */
+  {nr: 4, navn: 'Jordet', nivaa: 8, pris: 1000, tema: 'jorde', skilt: [-2.4, 15.2, 0],
+   poly: [[-14.0, 15.1], [13.8, 15.1], [13.8, 22.9], [-14.0, 22.9]]},
+  /* 0.22.0: Bakjordet, bakre del av Jordet. Kjøpes etter Jordet, fra nivå 13. Nivå og pris står også i data.js */
+  {nr: 6, navn: 'Bakjordet', nivaa: 13, pris: 2500, tema: 'jorde3', skilt: [4.0, 23.9, 0],
+   poly: [[-14.0, 23.3], [13.8, 23.3], [13.8, 29.9], [-14.0, 29.9]]},
+  /* 0.20.0–0.20.1 (Ivar 16.11): Østjordet, rett øst for Jordet. Kjøpes etter Jordet, fra nivå 16. Nivå og pris står også i data.js */
+  {nr: 5, navn: 'Østjordet', nivaa: 16, pris: 4000, tema: 'jorde2', skilt: [19.0, 15.2, 0],
+   poly: [[14.2, 15.1], [23.8, 15.1], [23.8, 22.9], [14.2, 22.9]]},
 ];
+const JORDE = {x0: -14.2, x1: 14.0, z0: 14.9, z1: 23.1}, JORDE2 = {x0: 14.0, x1: 24.0, z0: 14.9, z1: 23.1}, JORDE3 = {x0: -14.2, x1: 14.0, z0: 23.1, z1: 30.1};   /* 0.20.1 (Ivar 16.11): Jordet ca. 28 × 8 m og Østjordet ca. 10 × 8 m. Bakre del kommer som eget kjøp på nivå 13 */
+const iJorde = (x, z) => x > JORDE.x0 - 0.6 && x < JORDE.x1 && z > JORDE.z0 - 0.3 && z < JORDE.z1 + 0.6;
+const iJorde3 = (x, z) => x > JORDE3.x0 - 0.6 && x < JORDE3.x1 + 0.6 && z >= JORDE.z1 + 0.6 && z < JORDE3.z1 + 0.6;   /* 0.22.0: Bakjordet */
+const iJorde2 = (x, z) => x >= JORDE2.x0 && x < JORDE2.x1 + 0.6 && z > JORDE2.z0 - 0.3 && z < JORDE2.z1 + 0.6;
+const jordeFlat = (x, z) => { const dd = Math.hypot(Math.max(JORDE.x0 - x, 0, x - JORDE2.x1), Math.max(JORDE.z0 - z, 0, z - (x < JORDE3.x1 ? JORDE3.z1 : JORDE.z1))); return 1 - THREE.MathUtils.smoothstep(dd, 0, 2.5); };
 const ENGA = {x0: 14, x1: 22.4, z0: -12, z1: 10.6};
 const iEnga = (x, z) => x > ENGA.x0 + 0.3 && x < ENGA.x1 + 0.4 && z > ENGA.z0 - 0.4 && z < ENGA.z1 + 0.2;   /* trær og busker her samles i egne mesher som skjules når Enga er kjøpt */
 const SKOG = {x0: -24.4, x1: -16, z0: -12, z1: -0.6}, SKOG_FARGE = [];   /* 0.13.0: delen av Skogkanten som kjøpes: bak låven, vest for gjerdet. Rebus' lysning er utenfor */
@@ -900,13 +956,16 @@ const iSkog = (x, z, m = 0) => x > SKOG.x0 - 0.4 - m && x < SKOG.x1 - 0.3 + m &&
 const skogFlat = (x, z) => { const dd = Math.hypot(Math.max(SKOG.x0 - x, 0, x - SKOG.x1), Math.max(SKOG.z0 - z, 0, z - SKOG.z1)); return 1 - THREE.MathUtils.smoothstep(dd, 0, 2.5); };
 const engaFlat = (x, z) => { const dd = Math.hypot(Math.max(ENGA.x0 - x, 0, x - ENGA.x1), Math.max(ENGA.z0 - z, 0, z - ENGA.z1)); return 1 - THREE.MathUtils.smoothstep(dd, 0, 2.5); };
 function iPoly(pts, x, z) { let inn = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, zi] = pts[i], [xj, zj] = pts[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) inn = !inn; } return inn; }
-function omradeVed(x, z) { for (const o of OMRADER) if (o.tema !== 'eng' && iPoly(o.poly, x, z)) return o; return null; }   /* Enga er vanlig gress og vegetasjon til den kjøpes */
+function omradeVed(x, z) { for (const o of OMRADER) if (o.tema !== 'eng' && !o.tema.startsWith('jorde') && iPoly(o.poly, x, z)) return o; return null; }   /* Enga er vanlig gress og vegetasjon til den kjøpes */
 const omradePanel = document.getElementById('omrade');
 let omradeVist = null, omradeTid = 0;
 function visOmrade(o) {
   omradePanel.querySelector('.tittel').textContent = 'Område ' + o.nr + ' · ' + o.navn;
-  omradePanel.querySelector('.nivaa').textContent = 'Låses opp på nivå ' + o.nivaa;
-  omradePanel.querySelector('.pris').textContent = o.pris.toLocaleString('nb-NO') + ' mynter';
+  /* 0.26.1 (Ivar 17.11): Elvebredden er ikke laget ennå. Kortet lover ikke lenger nivå og pris for noe som ikke kan kjøpes */
+  const senere = false;   /* 0.27.0: Elvebredden kan kjøpes */
+  omradePanel.querySelector('.nivaa').textContent = senere ? 'Kommer i en senere versjon' : 'Låses opp på nivå ' + o.nivaa;
+  omradePanel.querySelector('.pris').textContent = senere ? 'Her kommer fiskebrygga 🎣' : o.pris.toLocaleString('nb-NO') + ' mynter';
+  omradePanel.querySelector('.smaa').textContent = senere ? 'Du kan ikke kjøpe området ennå.' : 'Roboten rydder området når du kjøper det.';
   omradePanel.style.display = 'block'; OMRADER.forEach(a => { a.kant.material.color.set(a === o ? 0xffd23f : 0xfff6d8); a.kant.material.opacity = 0.32; }); omradeVist = o; omradeTid = 0;
 }
 function skjulOmrade() { omradePanel.style.display = 'none'; OMRADER.forEach(a => { a.kant.material.color.set(0xfff6d8); a.kant.material.opacity = 0.32; }); omradeVist = null; }
@@ -914,8 +973,8 @@ omradePanel.querySelector('button').onclick = skjulOmrade;
 function skiltTekstur(nivaa) { const c = document.createElement('canvas'); c.width = 256; c.height = 150; const x = c.getContext('2d');
   x.fillStyle = '#e9c88f'; x.fillRect(0, 0, 256, 150); x.strokeStyle = '#8a5a32'; x.lineWidth = 10; x.strokeRect(5, 5, 246, 140);
   x.fillStyle = 'rgba(120,80,40,.18)'; for (let i = 0; i < 5; i++) x.fillRect(0, 22 + i * 28, 256, 3);
-  x.fillStyle = '#5a2f14'; x.font = 'bold 44px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('Til salgs', 128, 56);
-  x.fillStyle = '#c0392b'; x.beginPath(); x.roundRect ? x.roundRect(64, 88, 128, 42, 12) : x.rect(64, 88, 128, 42); x.fill(); x.fillStyle = '#fff'; x.font = 'bold 28px system-ui,sans-serif'; x.fillText('Nivå ' + nivaa, 128, 110);
+  x.fillStyle = '#5a2f14'; x.font = 'bold 44px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(nivaa === 'senere' ? 'Kommer' : 'Til salgs', 128, 56);
+  x.fillStyle = '#c0392b'; x.beginPath(); x.roundRect ? x.roundRect(64, 88, 128, 42, 12) : x.rect(64, 88, 128, 42); x.fill(); x.fillStyle = '#fff'; x.font = 'bold 28px system-ui,sans-serif'; x.fillText(nivaa === 'senere' ? 'senere' : 'Nivå ' + nivaa, 128, 110);
   const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t; }
 function lagOmrader() {
   OMRADER.forEach(o => {
@@ -958,11 +1017,11 @@ function plassLedig(x, z) {
   return true;
 }
 const RUTE = 18; const ruter = new Map();
-const ruterBlad = new Map(), bladMesher = [], engaMesher = [], skogMesher = [];
-function iRuteBlad(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterBlad.has(k)) ruterBlad.set(k, []); ruterBlad.get(k).push(...del); }
+const ruterBlad = new Map(), bladMesher = [], engaMesher = [], skogMesher = [], jordeMesher = [], jorde2Mesher = [], jorde3Mesher = [];
+function iRuteBlad(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : iJorde(x, z) ? 'jorde' : iJorde2(x, z) ? 'jorde2' : iJorde3(x, z) ? 'jorde3' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterBlad.has(k)) ruterBlad.set(k, []); ruterBlad.get(k).push(...del); }
 const ruterLett = new Map(); /* 0.8.12 tiltak 1: løvdotter som ikke kaster skygge på mobil */
-function iRuteLett(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterLett.has(k)) ruterLett.set(k, []); ruterLett.get(k).push(...del); }
-function iRute(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruter.has(k)) ruter.set(k, []); ruter.get(k).push(...del); }
+function iRuteLett(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : iJorde(x, z) ? 'jorde' : iJorde2(x, z) ? 'jorde2' : iJorde3(x, z) ? 'jorde3' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruterLett.has(k)) ruterLett.set(k, []); ruterLett.get(k).push(...del); }
+function iRute(x, z, del) { const k = iEnga(x, z) ? 'enga' : iSkog(x, z) ? 'skog' : iJorde(x, z) ? 'jorde' : iJorde2(x, z) ? 'jorde2' : iJorde3(x, z) ? 'jorde3' : Math.floor(x / RUTE) + ',' + Math.floor(z / RUTE); if (!ruter.has(k)) ruter.set(k, []); ruter.get(k).push(...del); }
 const skyggeBlob = [];
 // sveiser like hjørner (sømmen i kule- og dreiegeometri), slik at normalene blir myke uten synlige skjøter
 function sveis(g) { const p = g.attributes.position, kart = new Map(), ny = []; for (let i = 0; i < p.count; i++) { const k = Math.round(p.getX(i) * 1e4) + ',' + Math.round(p.getY(i) * 1e4) + ',' + Math.round(p.getZ(i) * 1e4); if (!kart.has(k)) kart.set(k, i); ny.push(kart.get(k)); }
@@ -1255,9 +1314,9 @@ function lagVegetasjon() {
   for (let z = -11; z < 10; z += rr(2.2, 4.5)) busk(15.3, z, rr(0.6, 0.95), rnd() < 0.25 ? 'baer' : 'rund', j++);
   lagGjengroing();
   lagElvebredd();
-  ruterBlad.forEach((del, k) => { const me = mesh(samleIndeksert(del), bladMat()); bladMesher.push(me); if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = KVAL !== 'mobil' && Math.hypot(bs.x, bs.z) < 34; }); // 0.7.4: på mobil kaster bladkortene ikke skygge; kronenes kjerner gjør det fortsatt
-  ruterLett.forEach((del, k) => { const me = mesh(samle(del), MAT.vertex); me.castShadow = false; if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); });
-  ruter.forEach((del, k) => { const me = mesh(samle(del), MAT.vertex); if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = Math.hypot(bs.x, bs.z) < 34; }); // bare ruter nær gården kaster skygge
+  ruterBlad.forEach((del, k) => { const me = mesh(samleIndeksert(del), bladMat()); bladMesher.push(me); if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); if (k === 'jorde') jordeMesher.push(me); if (k === 'jorde2') jorde2Mesher.push(me); if (k === 'jorde3') jorde3Mesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = KVAL !== 'mobil' && Math.hypot(bs.x, bs.z) < 34; }); // 0.7.4: på mobil kaster bladkortene ikke skygge; kronenes kjerner gjør det fortsatt
+  ruterLett.forEach((del, k) => { const me = mesh(samle(del), MAT.vertex); me.castShadow = false; if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); if (k === 'jorde') jordeMesher.push(me); if (k === 'jorde2') jorde2Mesher.push(me); if (k === 'jorde3') jorde3Mesher.push(me); });
+  ruter.forEach((del, k) => { const me = mesh(samle(del), MAT.vertex); if (k === 'enga') engaMesher.push(me); if (k === 'skog') skogMesher.push(me); if (k === 'jorde') jordeMesher.push(me); if (k === 'jorde2') jorde2Mesher.push(me); if (k === 'jorde3') jorde3Mesher.push(me); me.geometry.computeBoundingSphere(); const bs = me.geometry.boundingSphere.center; me.castShadow = Math.hypot(bs.x, bs.z) < 34; }); // bare ruter nær gården kaster skygge
   lagFjernskog();
   [[-7, -6, 7.5], [6.5, -8, 3.2], [-10.5, 8, 2.6], [-12.9, -1.8, 2.2]].forEach(b => skyggeBlob.push(b));
   const bg = new THREE.PlaneGeometry(1, 1); bg.rotateX(-Math.PI / 2); const blobs = new THREE.InstancedMesh(bg, MAT.blob, skyggeBlob.length); const bm = new THREE.Matrix4();
@@ -1267,7 +1326,7 @@ function lagVegetasjon() {
 }
 /* Gjengroing i utvidelsesområdene: skogkanten får trær, ungskog, busker, stubber og en veltet stokk; elvebredden er åpnere med stein, siv og noen få trær */
 function lagGjengroing() {
-  OMRADER.filter(o => o.tema !== 'eng').forEach(o => { const xs = o.poly.map(p => p[0]), zs = o.poly.map(p => p[1]); const x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs);
+  OMRADER.filter(o => o.tema !== 'eng' && !o.tema.startsWith('jorde')).forEach(o => { const xs = o.poly.map(p => p[0]), zs = o.poly.map(p => p[1]); const x0 = Math.min(...xs), x1 = Math.max(...xs), z0 = Math.min(...zs), z1 = Math.max(...zs);
     const punkt = (marg = 1) => { for (let k = 0; k < 40; k++) { const x = rr(x0, x1), z = rr(z0, z1); if (!iPoly(o.poly, x, z) || revPlass(x, z) || elvKant(x, z) < 0.8 || paVei(x, z) || vedFiskeplass(x, z) && elvKant(x, z) < 4) continue;
       if (o.poly.some(([px, pz]) => Math.hypot(px - x, pz - z) < marg)) continue; return [x, z]; } return null; };
     const klynge = (n, r, fn) => { const s = punkt(2); if (!s) return; for (let i = 0; i < n; i++) { const a = rr(0, 6.28), d = Math.sqrt(rnd()) * r, x = s[0] + Math.cos(a) * d, z = s[1] + Math.sin(a) * d; if (iPoly(o.poly, x, z) && !revPlass(x, z) && elvKant(x, z) > 0.8) fn(x, z, i); } };
@@ -1328,7 +1387,7 @@ function lagGressOgBlomster() {
   for (let x = -40; x < 40; x += 3) { sentre.push([x, VEI_Z - 2.1, 0.7], [x, VEI_Z + 2.1, 0.7]); }
   for (let x = -40; x < 40; x += 2.5) { [-1, 1].forEach(sd => sentre.push([x, elvZ(x) + sd * (elvB(x, sd) + 1.2), 0.9])); }
   skyggeBlob.forEach(([x, z, r]) => sentre.push([x, z, r * 0.9]));
-  OMRADER.filter(o => o.tema !== 'eng').forEach(o => { for (let i = 0; i < 26; i++) { const [px, pz] = o.poly[(rnd() * o.poly.length) | 0], [qx, qz] = o.poly[(rnd() * o.poly.length) | 0]; const x = (px + qx) / 2, z = (pz + qz) / 2; if (iPoly(o.poly, x, z)) sentre.push([x, z, 1.6, 1]); } });
+  OMRADER.filter(o => o.tema !== 'eng' && !o.tema.startsWith('jorde')).forEach(o => { for (let i = 0; i < 26; i++) { const [px, pz] = o.poly[(rnd() * o.poly.length) | 0], [qx, qz] = o.poly[(rnd() * o.poly.length) | 0]; const x = (px + qx) / 2, z = (pz + qz) / 2; if (iPoly(o.poly, x, z)) sentre.push([x, z, 1.6, 1]); } });
   for (let i = 0; i < 18; i++) sentre.push([rr(-14, 12), rr(-11, 10), rr(0.5, 1.0)]);
   for (let i = 0; i < n * 3 && t < n; i++) { const [cx, cz, r, vill] = sentre[(rnd() * sentre.length) | 0]; const a = rr(0, 6.28), d = Math.sqrt(rnd()) * r * 1.5; const x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d; if (forbudt(x, z)) continue;
     const sc = rr(0.45, 1.05) * (vill ? 1.35 : 1); m4.compose(new THREE.Vector3(x, hoyde(x, z), z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rr(0, 6), 0)), new THREE.Vector3(sc, sc * rr(0.8, 1.4), sc)); tuster.setMatrixAt(t, m4);
@@ -1346,13 +1405,21 @@ function lagGressOgBlomster() {
 }
 
 /* ======================= Gjerde ======================= */
-let gjerdeOst = null, gjerdeEnga = null, gjerdeVest = null, gjerdeSkog = null; const rrStd = (a, b) => rr(a, b);
+let gjerdeOst = null, gjerdeEnga = null, gjerdeVest = null, gjerdeSkog = null, gjerdeJorde = null, gjerdeJordeOst = null, gjerdeJorde2 = null, gjerdeJordeSor = null, gjerdeJorde3 = null; const rrStd = (a, b) => rr(a, b);
 /* 0.9.8: spillet sier fra når Enga er kjøpt. Da forsvinner vegetasjonen, skiltet og gjerdet mot gården, og det nye gjerdet kommer */
 window.mbSkog = eid => { eid = !!eid; skogMesher.forEach(m => m.visible = !eid); if (gjerdeVest) gjerdeVest.visible = !eid; if (gjerdeSkog) gjerdeSkog.visible = eid;
   const o = OMRADER.find(a => a.tema === 'skog'); if (o) { [o.skiltG, o.stikk, o.kant].forEach(m => { if (m) m.visible = !eid; });
     [o.flate, o.skiltG].forEach(m => { const i = klikkbare.indexOf(m); if (eid && i >= 0) klikkbare.splice(i, 1); else if (!eid && i < 0 && m) klikkbare.push(m); }); }
   if (TERRENG && SKOG_FARGE.length && TERRENG.userData.skog !== eid) { const ca = TERRENG.geometry.attributes.color; if (!TERRENG.userData.skogFor) TERRENG.userData.skogFor = SKOG_FARGE.map(([i]) => [ca.getX(i), ca.getY(i), ca.getZ(i)]);
     SKOG_FARGE.forEach(([i, r, g, b], k) => { const f = eid ? [r, g, b] : TERRENG.userData.skogFor[k]; ca.setXYZ(i, f[0], f[1], f[2]); }); ca.needsUpdate = true; TERRENG.userData.skog = eid; } };
+/* 0.27.0: Elvebredden er kjøpt: skilt og omriss tas bort. Buskene og sivet blir stående, for området er til brygga og ikke til bygg */
+window.mbElv = eid => { eid = !!eid; const o = OMRADER.find(a => a.tema === 'elv'); if (!o) return; [o.skiltG, o.stikk, o.kant].forEach(m => { if (m) m.visible = !eid; });
+  [o.flate, o.skiltG].forEach(m => { const i = klikkbare.indexOf(m); if (eid && i >= 0) klikkbare.splice(i, 1); else if (!eid && i < 0 && m) klikkbare.push(m); }); };
+window.mbJorde = (eid, eid2, eid3) => { eid = !!eid; eid2 = !!eid2; eid3 = !!eid3; jordeMesher.forEach(m => m.visible = !eid); jorde2Mesher.forEach(m => m.visible = !eid2); jorde3Mesher.forEach(m => m.visible = !eid3);
+  if (gjerdeJordeSor) gjerdeJordeSor.visible = eid && !eid3; if (gjerdeJorde3) gjerdeJorde3.visible = eid3;   /* 0.22.0: gjerdet mot Bakjordet tas bort når det er kjøpt */
+  if (gjerdeJorde) gjerdeJorde.visible = eid; if (gjerdeJordeOst) gjerdeJordeOst.visible = eid && !eid2; if (gjerdeJorde2) gjerdeJorde2.visible = eid2;   /* 0.20.0: gjerdet mellom Jordet og Østjordet tas bort når begge er kjøpt */
+  [['jorde', eid], ['jorde2', eid2], ['jorde3', eid3]].forEach(([tema, e]) => { const o = OMRADER.find(a => a.tema === tema); if (!o) return; [o.skiltG, o.stikk, o.kant].forEach(m => { if (m) m.visible = !e; });
+    [o.flate, o.skiltG].forEach(m => { const i = klikkbare.indexOf(m); if (e && i >= 0) klikkbare.splice(i, 1); else if (!e && i < 0 && m) klikkbare.push(m); }); }); };
 window.mbEnga = eid => { engaMesher.forEach(m => m.visible = !eid); if (gjerdeOst) gjerdeOst.visible = !eid; if (gjerdeEnga) gjerdeEnga.visible = !!eid;
   const o = OMRADER.find(a => a.tema === 'eng'); if (!o) return; [o.skiltG, o.stikk, o.kant].forEach(m => { if (m) m.visible = !eid; });
   [o.flate, o.skiltG].forEach(m => { const i = klikkbare.indexOf(m); if (eid && i >= 0) klikkbare.splice(i, 1); else if (!eid && i < 0 && m) klikkbare.push(m); }); };
@@ -1371,6 +1438,14 @@ function lagGjerde() {
   let f3 = 777; const rr3 = (a, b) => a + (f3 = (f3 * 16807) % 2147483647) / 2147483647 * (b - a), sk = [];
   linje(-16, SKOG.z1, SKOG.x0, SKOG.z1, sk, rr3); linje(SKOG.x0, SKOG.z1, SKOG.x0, -12, sk, rr3); linje(SKOG.x0, -12, -16, -12, sk, rr3);
   gjerdeSkog = mesh(samle(sk), MAT.vertex); gjerdeSkog.visible = false;
+  /* 0.17.0: gjerdet rundt Jordet, med åpning rett over veien for gårdsveien */
+  let f4 = 1616; const rr4 = (a, b) => a + (f4 = (f4 * 16807) % 2147483647) / 2147483647 * (b - a), jo = [];
+  linje(JORDE.x0, JORDE.z0, -7.2, JORDE.z0, jo, rr4); linje(-3.8, JORDE.z0, JORDE.x1, JORDE.z0, jo, rr4); linje(JORDE.x0, JORDE.z1, JORDE.x0, JORDE.z0, jo, rr4);
+  gjerdeJorde = mesh(samle(jo), MAT.vertex); gjerdeJorde.visible = false;
+  const joS = [], jo3 = []; linje(JORDE.x1, JORDE.z1, JORDE.x0, JORDE.z1, joS, rr4); gjerdeJordeSor = mesh(samle(joS), MAT.vertex); gjerdeJordeSor.visible = false;
+  linje(JORDE3.x1, JORDE3.z0, JORDE3.x1, JORDE3.z1, jo3, rr4); linje(JORDE3.x1, JORDE3.z1, JORDE3.x0, JORDE3.z1, jo3, rr4); linje(JORDE3.x0, JORDE3.z1, JORDE3.x0, JORDE3.z0, jo3, rr4); gjerdeJorde3 = mesh(samle(jo3), MAT.vertex); gjerdeJorde3.visible = false;
+  const jo1 = [], jo2 = []; linje(JORDE.x1, JORDE.z0, JORDE.x1, JORDE.z1, jo1, rr4); gjerdeJordeOst = mesh(samle(jo1), MAT.vertex); gjerdeJordeOst.visible = false;
+  linje(JORDE2.x0, JORDE2.z0, JORDE2.x1, JORDE2.z0, jo2, rr4); linje(JORDE2.x1, JORDE2.z0, JORDE2.x1, JORDE2.z1, jo2, rr4); linje(JORDE2.x1, JORDE2.z1, JORDE2.x0, JORDE2.z1, jo2, rr4); gjerdeJorde2 = mesh(samle(jo2), MAT.vertex); gjerdeJorde2.visible = false;
 }
 
 /* ======================= Låve ======================= */
@@ -1624,7 +1699,7 @@ function himmel(farge, hor) { const c = document.createElement('canvas'); c.widt
 function settTid(t) {
   TID = t; const d = TIDER[t];
   scene.background = himmel(d.himmel, d.horisont);
-  scene.fog = new THREE.Fog(SRGB(d.horisont), 75, 175);
+  scene.fog = new THREE.Fog(SRGB(d.horisont), 75, 175); zoomTaake();
   sol.color.copy(SRGB(d.sol)); sol.intensity = d.solI;
   hemi.intensity = d.hemi; hemi.color.copy(SRGB(d.hemiT));
   if (VANN) { VANN.material.uniforms.himmel.value.copy(SRGB(d.horisont)); VANN.material.uniforms.lys.value = 0.62 + 0.38 * d.solI / 1.55; VANN.material.uniforms.tone.value.setRGB(1, 1, 1).lerp(SRGB(d.sol), t === 'dag' ? 0 : 0.45); }
@@ -1718,6 +1793,7 @@ const ART = {
   ku:      {sirk: [[0.62, 0.58], [-0.42, 0.56], [1.15, 0.28]], R: 0.85, fart: 0.5, sving: 1.0, amp: 0.3, vekt: 4, tur: [1.2, 3.5], stå: [4, 10], akt: ['beite', 'beite', 'se', 'tygge']},
   gris:    {sirk: [[0.4, 0.45], [-0.3, 0.44], [0.8, 0.22]], R: 0.65, fart: 0.75, sving: 1.9, amp: 0.5, vekt: 2, tur: [0.8, 3], stå: [2, 6], akt: ['snuse', 'snuse', 'se']},
   sau:     {sirk: [[0.38, 0.5], [-0.25, 0.5], [0.82, 0.18]], R: 0.65, fart: 0.6, sving: 1.5, amp: 0.42, vekt: 2, tur: [1, 3], stå: [3, 8], akt: ['beite', 'beite', 'se']},
+  geit:    {sirk: [[0.38, 0.5], [-0.25, 0.5], [0.82, 0.18]], R: 0.65, fart: 0.8, sving: 1.5, amp: 0.42, vekt: 2, tur: [1, 3], stå: [3, 8], akt: ['beite', 'beite', 'se']},
 };
 // Binger: indre flate (gjerdet trukket fra), hindringer som bokser [x0, x1, z0, z1] og steder dyret liker å gå til (se: retningen det snur seg mot)
 const BINGER = {};
@@ -1726,6 +1802,7 @@ function flyttBinge(b, dx, dz, dy = 0) { return {navn: b.navn + '+', y: (b.y || 
 lagBinge('hone', 2.8, 10.2, -4.8, -0.4, [[8.55, 9.65, -1.625, -1.175], [9.25, 9.95, -4.45, -3.75]], [{x: 8.5, z: -4.1, se: 0, akt: 'hakke'}, {x: 9.1, z: -2.4, se: -Math.PI / 2, akt: 'drikke'}]);
 lagBinge('ku', -15.7, -12.6, -0.2, 5.2, [[-15.2, -13.6, 0.3, 0.9]], [{x: -14.4, z: 2.35, se: Math.PI / 2, akt: 'krybbe'}]);
 lagBinge('gris', -12.6, -9.9, -0.2, 5.2, [], [{x: -11.25, z: 3.6, akt: 'gjorme'}]);
+lagBinge('geit', -9.9, -7.2, -0.2, 5.2, [], []);   /* 0.31.0: bare en reserve. Geitene bor i geitefjøsets egen binge */
 lagBinge('sau', -9.9, -7.2, -0.2, 5.2, [[-9.1, -8.1, 3.9, 4.9]], [{x: -8.6, z: 2.85, se: -Math.PI / 2, akt: 'drikke'}]);
 const alleDyr = [], brukteBinger = new Set();
 function startBevegelse(g, art, binge) {
@@ -1898,7 +1975,7 @@ function oppdaterDyrene(dt, t) {
   oppdaterBein();
   for (let i = hjerter.length - 1; i >= 0; i--) { const h = hjerter[i]; h.t += dt; h.sp.position.y += dt * 0.8; h.sp.material.opacity = 1 - h.t / 1.2; if (h.t > 1.2) { h.sp.visible = false; hjerter.splice(i, 1); } }
 }
-window.__dyr = {penetrasjon, alle: alleDyr, BINGER, oppdater: oppdaterDyrene, lag: (art, x, z, binge) => ({ku: lagKu, gris: lagGris, sau: lagSau})[art](x, z, binge), sirkler: g => sirkler(g, []).slice()};
+window.__dyr = {penetrasjon, alle: alleDyr, BINGER, oppdater: oppdaterDyrene, lag: (art, x, z, binge) => ({ku: lagKu, gris: lagGris, sau: lagSau, geit: lagGeit})[art](x, z, binge), sirkler: g => sirkler(g, []).slice()};
 
 const BEITE = {x0: -15.7, x1: -7.2, z0: -0.2, z1: 5.2}; // 0.5.5: større binger (Even 8.11)
 const dyr = [];
@@ -1912,7 +1989,7 @@ function lagOyne(hode, x, y, z, r, lokkMat) { const hvitO = fm(0xffffff, 0.3), p
 function bein(K, mat, hovMat, pos, h, r) { K.parent.userData.bein = {mat, hovMat, pos, h, r}; } /* 0.6.0: beina lages som animerte instanser i ferdigDyr */
 function dyrGruppe(x, z, rot, art, ekstra) { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g); const kropp = new THREE.Group(); g.add(kropp);
   g.userData = Object.assign({art, kropp, mal: new THREE.Vector3(x, 0, z), venter: rr(1, 4), blunk: rr(1, 4), ore: rr(2, 6), hopp: 0, beite: 0, fase: rr(0, 6)}, ekstra); return g; }
-const DYR_SKALA = {ku: 0.8, gris: 0.85, sau: 0.85};
+const DYR_SKALA = {ku: 0.8, gris: 0.85, sau: 0.85, geit: 0.82};
 function ferdigDyr(g, type, binge) { if (type) { g.scale.setScalar(DYR_SKALA[type]); g.userData.hjerteY *= DYR_SKALA[type]; } bakeDirekte(g.userData.kropp); bakeDirekte(g); const u = g.userData; [...u.orer, u.hale].forEach(d => d.traverse(o => { if (o.isMesh) o.castShadow = false; })); /* små deler kaster ikke skygge (færre tegnekall i skyggepasset) */ g.traverse(o => { if (o.isMesh) o.userData.eier = g; }); klikkbar(g); dyr.push(g);
   u.hodeX = u.hode.position.x; startBevegelse(g, type, binge); const b = u.bein; registrerBein(g, type, firbeinGeo(b.mat, b.hovMat, b.h, b.r), b.pos, b.h + 0.08, GANG4); return g; }
 
@@ -1956,6 +2033,25 @@ function lagGris(x, z, binge = BINGER.gris) {
   u.hale = new THREE.Group(); u.hale.position.set(-0.7, 0.75, 0); K.add(u.hale);
   const krolle = mesh(new THREE.TorusGeometry(0.08, 0.022, 6, 14, Math.PI * 1.7), rosa, -0.06, 0, 0, u.hale); krolle.rotation.y = Math.PI / 2; bakeDirekte(u.hale);
   u.hode = hode; return ferdigDyr(g, 'gris', binge);
+}
+/* 0.31.0 Geit (Even 18.11): samme stil som de andre dyrene. Lys, glatt kropp, to små horn, skjegg og en kort hale som står opp */
+function lagGeit(x, z, binge = BINGER.geit) {
+  const g = dyrGruppe(x, z, 2.6, 'dyr', {hjerteY: 1.9, hodeY: 1.02}); const u = g.userData, K = u.kropp;
+  const pels = fm(0xf1e9da, 0.85), flekk = fm(0xb98e62, 0.85), hov = fm(0x2e2a29, 0.6), kinn = fm(0xff9fa6, 0.6), horn = fm(0xd8c9a6, 0.6), mule = fm(0xe8c9b4, 0.7);
+  mesh(new THREE.SphereGeometry(0.5, 18, 14), pels, 0, 0.9, 0, K).scale.set(1.25, 0.9, 0.85);
+  mesh(new THREE.SphereGeometry(0.3, 12, 10), flekk, -0.22, 1.05, 0.2, K).scale.set(1.1, 0.6, 0.6);
+  bein(K, pels, hov, [[0.34, 0.2], [0.34, -0.2], [-0.34, 0.2], [-0.34, -0.2]], 0.5, 0.065);
+  const hode = new THREE.Group(); hode.position.set(0.74, u.hodeY + 0.12, 0); K.add(hode);
+  mesh(new THREE.SphereGeometry(0.25, 16, 12), pels, 0.04, -0.02, 0, hode).scale.set(1.2, 1.0, 0.88);
+  mesh(new THREE.SphereGeometry(0.13, 12, 10), mule, 0.27, -0.1, 0, hode).scale.set(1.0, 0.8, 0.95);
+  [0.15, -0.15].forEach(s => mesh(new THREE.SphereGeometry(0.05, 8, 6), kinn, 0.2, -0.09, s * 1.05, hode).scale.set(0.5, 0.7, 0.3));
+  [0.1, -0.1].forEach(s => { const h = mesh(new THREE.ConeGeometry(0.045, 0.3, 8), horn, -0.06, 0.3, s, hode); h.rotation.z = 0.55; h.rotation.x = s * 1.2; });
+  mesh(new THREE.ConeGeometry(0.06, 0.22, 8), pels, 0.2, -0.3, 0, hode).rotation.x = Math.PI;   /* skjegg */
+  bakeDirekte(hode);
+  u.orer = [1, -1].map(s => { const o = new THREE.Group(); o.position.set(-0.04, 0.06, s * 0.22); hode.add(o); const m = mesh(new THREE.SphereGeometry(0.11, 10, 8), pels, 0, 0, s * 0.09, o); m.scale.set(0.5, 0.3, 1.3); bakeDirekte(o); o.rotation.x = s * 0.45; return o; });
+  u.oyne = lagOyne(hode, 0.2, 0.07, 0.15, 0.072, pels);
+  u.hale = new THREE.Group(); u.hale.position.set(-0.62, 1.12, 0); K.add(u.hale); mesh(new THREE.SphereGeometry(0.09, 8, 6), pels, -0.04, 0.06, 0, u.hale).scale.set(0.7, 1.3, 0.7);
+  u.hode = hode; return ferdigDyr(g, 'geit', binge);
 }
 function lagSau(x, z, binge = BINGER.sau) {
   const g = dyrGruppe(x, z, 2.6, 'dyr', {hjerteY: 1.9, hodeY: 1.0}); const u = g.userData, K = u.kropp;
@@ -2002,14 +2098,17 @@ let sistHjul = 0; const pek = new Map(); let dra = null, flyttet = 0, knip0 = 0,
 const el = renderer.domElement;
 el.addEventListener('pointerdown', e => { el.setPointerCapture(e.pointerId); pek.set(e.pointerId, {x: e.clientX, y: e.clientY}); flyttet = 0; if (pek.size === 1 && window.spillDraStart && window.spillDraStart(e.clientX, e.clientY)) return; /* 0.8.6: dra over åkre for å høste */ if (pek.size === 1) dra = {x: e.clientX, y: e.clientY, t: cam.target.clone()}; if (pek.size === 2) { const [a, b] = [...pek.values()]; knip0 = Math.hypot(a.x - b.x, a.y - b.y); dist0 = cam.dist; } });
 el.addEventListener('pointermove', e => { if (!pek.has(e.pointerId)) return; pek.set(e.pointerId, {x: e.clientX, y: e.clientY});
-  if (pek.size === 2) { const [a, b] = [...pek.values()]; cam.dist = THREE.MathUtils.clamp(dist0 * knip0 / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), 18, 95); flyttet = 99; plasserKamera(); return; }
+  if (pek.size === 2) { const [a, b] = [...pek.values()]; cam.dist = THREE.MathUtils.clamp(dist0 * knip0 / Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), 18, zoomMaks()); zoomTaake(); flyttet = 99; plasserKamera(); return; }
   if (dra && window.spillDra && window.spillDra(e.clientX, e.clientY)) { flyttet = 99; return; } /* 0.8.4: dra ting som flyttes, ikke kameraet */
   if (dra) { const dx = e.clientX - dra.x, dy = e.clientY - dra.y; flyttet = Math.max(flyttet, Math.hypot(dx, dy)); const k = cam.dist / innerHeight * 0.75;
     const fx = new THREE.Vector3(Math.cos(cam.yaw), 0, -Math.sin(cam.yaw)), fz = new THREE.Vector3(Math.sin(cam.yaw), 0, Math.cos(cam.yaw));
-    cam.target.copy(dra.t).addScaledVector(fx, -dx * k).addScaledVector(fz, -dy * k * 1.35); cam.target.x = THREE.MathUtils.clamp(cam.target.x, -28, 28); cam.target.z = THREE.MathUtils.clamp(cam.target.z, -24, 24); plasserKamera(); } });
+    cam.target.copy(dra.t).addScaledVector(fx, -dx * k).addScaledVector(fz, -dy * k * 1.35); cam.target.x = THREE.MathUtils.clamp(cam.target.x, -28, 32); cam.target.z = THREE.MathUtils.clamp(cam.target.z, -24, 30); plasserKamera(); } });
 el.addEventListener('pointerup', e => { if (pek.size === 1 && flyttet < 8) trykk(e.clientX, e.clientY); pek.delete(e.pointerId); if (!pek.size) dra = null; });
 el.addEventListener('pointercancel', e => { pek.delete(e.pointerId); dra = null; });
-el.addEventListener('wheel', e => { e.preventDefault(); sistHjul = performance.now(); cam.dist = THREE.MathUtils.clamp(cam.dist * (1 + Math.sign(e.deltaY) * 0.1), 18, 95); plasserKamera(); }, {passive: false});
+/* 0.27.1 (Even 18.11): admin kan zoome mye lenger ut. Vanlige spillere har 95 som før. Tåka flyttes utover, så gården ikke blir grå */
+function zoomMaks() { return window.MB_ZOOM_MAKS || 95; }
+function zoomTaake() { if (!scene.fog) return; const e = Math.max(0, cam.dist - 95); scene.fog.near = 75 + e; scene.fog.far = 175 + e * 1.6; }
+el.addEventListener('wheel', e => { e.preventDefault(); sistHjul = performance.now(); cam.dist = THREE.MathUtils.clamp(cam.dist * (1 + Math.sign(e.deltaY) * 0.1), 18, zoomMaks()); zoomTaake(); plasserKamera(); }, {passive: false});
 let sistTrykk = 0;
 function trykk(x, y) { sistTrykk = performance.now(); ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
   const t = ray.intersectObjects(klikkbare, true)[0]; const o = t ? (t.object.userData.eier || t.object) : null;
@@ -2316,7 +2415,8 @@ function loop(ts) {
   if (robot && window.akerY) { const ty = window.akerY(robot.position.x, robot.position.z); robot.position.y += (ty - robot.position.y) * Math.min(1, dt * 12); }   /* 0.15.3 (Even 15.11): roboten står oppå jorda i åkeren, så beina synes */
   oppdaterDyrene(dt, t); if (window.spillOppdater) window.spillOppdater(dt, t);
   for (let i = sprett.length - 1; i >= 0; i--) { const s = sprett[i]; s.t += dt; const k = Math.sin(Math.min(s.t / 0.35, 1) * Math.PI); if (s.o.userData.skala0 === undefined) s.o.userData.skala0 = s.o.scale.x; const base = s.o.userData.skala0; s.o.scale.setScalar(base * (1 + k * 0.08)); if (s.t > 0.35) { s.o.scale.setScalar(base); sprett.splice(i, 1); } }
-  if (VANN) VANN.material.uniforms.tid.value = t;
+  if (VANN && !VINTER) VANN.material.uniforms.tid.value = t;   /* isen står stille */
+  oppdaterVinter(dt, t);
   if (omradeVist) { omradeTid += dt; omradeVist.kant.material.opacity = 0.65 + 0.3 * Math.sin(omradeTid * 5); }
   if (regn && regn.visible) { const p = regn.geometry.attributes.position; for (let i = 0; i < p.count; i += 2) { let y = p.getY(i) - dt * 22; if (y < 0) y += 30; p.setY(i, y); p.setY(i + 1, y - 0.6); } p.needsUpdate = true; regn.position.set(cam.target.x, 0, cam.target.z); }
   if (konfetti.im.visible) { konfetti.t += dt; konfetti.data.forEach((d, i) => { d.v.y -= 9 * dt; d.v.multiplyScalar(0.985); d.p.addScaledVector(d.v, dt); if (d.p.y < 0.05) { d.p.y = 0.05; d.v.set(0, 0, 0); } d.r.x += dt * d.w; d.r.y += dt * d.w * 0.7; m4.makeRotationFromEuler(d.r).setPosition(d.p); konfetti.im.setMatrixAt(i, m4); }); konfetti.im.instanceMatrix.needsUpdate = true; if (konfetti.t > 4.6) konfetti.im.visible = false; }

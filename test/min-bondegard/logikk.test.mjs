@@ -8,8 +8,9 @@ const t = (navn, sant, info = '') => { if (sant) ok++; else { feil++; console.lo
 const S = 1000, T0 = 1_800_000_000_000;
 
 // --- Data ---
-const alleTider = [...Object.values(D.avlinger).map(a => a.tid), ...Object.values(D.dyr).map(a => a.tid), ...Object.values(D.oppskrifter).map(o => o.tid)];
-t('Ingen jobb over 4 min (B1)', Math.max(...alleTider) <= D.maksVentetid, Math.max(...alleTider));
+const tider = f => [...Object.values(D.avlinger).filter(f).map(a => a.tid), ...Object.values(D.dyr).filter(f).map(a => a.tid), ...Object.values(D.oppskrifter).filter(f).map(o => o.tid)];
+t('Ingen jobb over 4 min på nivå 1–10 (B1)', Math.max(...tider(x => x.nivaa <= 10)) <= D.maksVentetid, Math.max(...tider(x => x.nivaa <= 10)));
+t('Ingen jobb over 6 min på nivå 11–20 (progresjonsplanen kap. 3)', Math.max(...tider(x => x.nivaa > 10)) <= 360, Math.max(...tider(x => x.nivaa > 10)));
 t('Brød koster 14 mynter', D.pris('brod') === 14, D.pris('brod'));
 t('Hønsefôr er fôr og gir 0 XP', D.erFor('honsefor') && D.produktXP('honsefor') === 0);
 t('Alle råvarer i oppskrifter finnes', Object.values(D.oppskrifter).every(o => Object.keys(o.inn).every(v => D.avlinger[v] || D.varer[v])));
@@ -72,7 +73,27 @@ t('Brød gir 2 XP', r.ok && r.xp === 2 && s.lager.brod === 1);
 nye = L.giXP(s, 2000, T0);
 t('Stor XP gir flere nivåer på en gang', s.nivaa === 10 || nye.length > 1);
 t('Nivå 3 og 5 gir åkre', s.akre.length === 12);
-t('Maks nivå 10', s.nivaa === 10);
+t('Maks nivå 22 (0.33.0), med 15 åkre og 4 høner', (() => { const x = L.ny(T0); L.giXP(x, 99999, T0); return x.nivaa === 22 && D.maksNivaa === 22 && x.akre.length === 15 && x.dyr.hone.length === 4; })());
+{ const x = L.ny(T0); while (x.nivaa < 16) L.giXP(x, 5, T0); x.mynter = 20000;
+  t('Nivå 14–16: paibakeri og sauefjøs kan bygges, gresskar kan plantes', x.bygg.paibakeri && x.bygg.sauefjos && !x.dyr.sau && L.kanPlante(x, 0, 'gresskar', T0) === null && x.lager.gresskar === D.nyAvlingFro);
+  L.kjopBygg(x, 'paibakeri'); L.kjopBygg(x, 'sauefjos'); x.lager.gulrot = 3; x.lager.egg = 1; x.lager.hvete = 5; x.lager.erter = 1;
+  t('Sauene kommer med sauefjøset, og gulrotpai og sauefor kan lages', x.dyr.sau.length === 2 && L.produser(x, 'paibakeri', 'gulrotpai', T0).ok && L.produser(x, 'forkvern', 'sauefor', T0).ok);
+  x.lager.sauefor = 2; const m = L.mat(x, 'sau', T0), u = L.samleDyr(x, 'sau', T0 + 301 * S);
+  t('Sauer gir ull etter 5 min', m.ok && u.ok && x.lager.ull === 2);
+  t('Låve 125 fra nivå 14, silo 100 og 6 bestillinger fra nivå 15', L.kapasitet(x, 'lave') === 125 && L.kapasitet(x, 'silo') === 100 && D.ved(D.bestillinger.plasser, 16) === 6);
+  const v = L.valider(JSON.parse(JSON.stringify(x)), T0); t('Nivå 16 overlever lagring', v.nivaa === 16 && v.bygg.paibakeri.eid && v.dyr.sau.length === 2);
+  L.kjopOmrade(x, 'enga'); L.kjopOmrade(x, 'skogkanten'); L.kjopBygg(x, 'grisebinge'); while (x.nivaa < 20) L.giXP(x, 5, T0); x.mynter = 20000; L.kjopBygg(x, 'vevstol'); L.kjopBygg(x, 'bakeri'); x.lager.ull = 3; x.lager.gresskar = 1; x.lager.hvete = 2; x.lager.egg = 1;
+  t('Nivå 17–20: vevstol lager lue og genser, bakeriet gresskarbrød', x.nivaa === 20 && L.produser(x, 'vevstol', 'lue', T0).ok && L.produser(x, 'vevstol', 'genser', T0).ok && L.produser(x, 'bakeri', 'gresskarbrod', T0).ok);
+  t('Nivå 18 gir en gris til og låve 150, nivå 19 en sau til og silo 125', x.dyr.gris.length === 3 && x.dyr.sau.length === 3 && L.kapasitet(x, 'lave') === 150 && L.kapasitet(x, 'silo') === 125);
+  t('Syltetøy kommer på nivå 20, og hundehuset kan lagres', D.hund.nivaa === 20 && L.valider(Object.assign(JSON.parse(JSON.stringify(x)), { plasser: { hundehus: { x: 1, z: 2, r: 0 } } }), T0).plasser.hundehus.x === 1);
+  t('Genser er verdt mer enn to ull', D.verdi('genser') > 2 * D.verdi('ull') && D.verdi('lue') > D.verdi('ull')); }
+{ const x = L.ny(T0); while (x.nivaa < 10) L.giXP(x, 5, T0); const h10 = x.dyr.hone.length; x.mynter = 5000; L.kjopOmrade(x, 'enga'); L.kjopBygg(x, 'fjos'); const k10 = x.dyr.ku.length;
+  let n11 = null, n13 = null; while (x.nivaa < 13) { const nye = L.giXP(x, 5, T0); nye.forEach(n => { if (n.nivaa === 11) n11 = n; if (n.nivaa === 13) n13 = n; }); }
+  t('Nivå 11 gir en høne til og sirup, nivå 13 en ku til, smørpopkorn og 3 åkre', h10 === 3 && k10 === 2 && x.dyr.hone.length === 4 && x.dyr.ku.length === 3 && n11.flereDyr[0].art === 'hone' && n11.oppskrifter.includes('sirup') && n13.flereDyr[0].art === 'ku' && n13.oppskrifter.includes('smorpopkorn') && n13.akre === 3);
+  const v = L.valider(JSON.parse(JSON.stringify(x)), T0); t('Nivå 13 overlever lagring', v.nivaa === 13 && v.dyr.hone.length === 4 && v.dyr.ku.length === 3 && v.akre.length === 15);
+  const gml = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 12 }), T0); t('Eldre lagring på nivå 12 får den fjerde høna', gml.dyr.hone.length === 4);
+  t('Bakjordet (nivå 13, 2500) krever Jordet', L.kanKjopeOmrade(x, 'bakjordet') === 'krever' && L.kjopOmrade(x, 'jordet').ok && L.kjopOmrade(x, 'bakjordet').ok);
+  t('Verdier: sirup, omelett og smørpopkorn er verdt mer enn råvarene', D.verdi('sirup') > 24 && D.verdi('omelett') > 38 && D.verdi('smorpopkorn') > D.verdi('popkorn') + D.verdi('smor')); }
 
 // --- Lager (F4) ---
 s = L.ny(T0); s.lager.hvete = 49;
@@ -187,7 +208,7 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
 { const k = L.valider(JSON.parse(JSON.stringify(s)), T0); t('Gavene overlever lagring', k.gaver.uaapnet.length === 3 && k.gaver.dag === '2026-11-15'); }
 
 // --- Nivå 10: Skogkanten og griser (0.13.0) ---
-{ const s5 = L.ny(T0); L.giXP(s5, 2000, T0); s5.mynter = 3000;
+{ const s5 = L.ny(T0); while (s5.nivaa < 10) L.giXP(s5, 5, T0); s5.mynter = 3000;
   t('Nivå 10: grisebinge kan bygges, men ingen griser før den er kjøpt', s5.nivaa === 10 && s5.bygg.grisebinge && !s5.bygg.grisebinge.eid && !s5.dyr.gris);
   t('Skogkanten koster 1500', L.kjopOmrade(s5, 'skogkanten').ok && s5.mynter === 1500);
   const r5 = L.kjopBygg(s5, 'grisebinge'); t('Grisebingen koster 800 og gir 2 griser', r5.ok && r5.dyr === 2 && s5.dyr.gris.length === 2 && s5.mynter === 700);
@@ -195,5 +216,154 @@ L.giXP(s, 20, T0); t('Nytt nivå gir en levert gaveeske', s.gaver.uaapnet.length
   s5.lager.grisefor = 1; L.mat(s5, 'gris', T0); t('Grisen gir trøfler etter 4 minutter', L.samleDyr(s5, 'gris', T0 + 240 * S).ok && s5.lager.troffel === 1);
   const k5 = L.valider(JSON.parse(JSON.stringify(s5)), T0); t('Skogkanten og griser overlever lagring', k5.omrader.skogkanten && k5.dyr.gris.length === 2); }
 
+
+// --- Årstidsfester (0.16.0) ---
+{ const A = D.arr.bursdag, k = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 3 }), T0);
+  t('Festen er stengt under nivå 3 og utenfor november', L.arrId(L.ny(T0), 11) === null && L.arrId(k, 11) === 'bursdag' && L.arrId(k, 12) !== 'bursdag');
+  t('Festbordet følger ikke med nivået', !L.valider(JSON.parse(JSON.stringify(Object.assign(L.ny(T0), { nivaa: 5 }))), T0).bygg.festbord);
+  L.arrStart(k, 'bursdag');
+  t('Festen gir en byggeplass for Festbordet', k.bygg.festbord && k.bygg.festbord.eid === false && k.arr.bursdag.levert === 0);
+  t('Uten hatter kan ingenting sendes', L.arrLever(k, 'bursdag', 11, T0).grunn === 'mangler');
+  k.lager.festhatt = 5; const m0 = k.mynter;
+  t('Utenfor november kan hatter ikke sendes, og de blir liggende', L.arrLever(k, 'bursdag', 12, T0).grunn === 'stengt' && k.lager.festhatt === 5);
+  const r1 = L.arrLever(k, 'bursdag', 11, T0);
+  t('5 hatter gir første premie, mynter og XP', r1.ok && r1.antall === 5 && !k.lager.festhatt && k.mynter === m0 + 5 * D.pris('festhatt') && r1.xp === 5 * A.xp && r1.premier.length === 1 && r1.premier[0].premie === 'hatter' && L.arrHar(k, 'bursdag', 'hatter'));
+  k.bygg.bakeri.eid = true; k.lager.hvete = 4; k.lager.egg = 4;
+  t('Bursdagskaka er låst før trinn 2', L.kanProdusere(k, 'bakeri', 'bursdagskake', T0) === 'laast' && !L.kanLage(k, 'bursdagskake'));
+  k.lager.festhatt = 25; const r2 = L.arrLever(k, 'bursdag', 11, T0);
+  t('30 hatter gir oppskrift og bursdagsbilen i samme sending', r2.premier.map(x => x.premie).join() === 'oppskrift,skinn' && k.skinn.eid.bursdag && k.skinn.valgt === 'bursdag' && L.kanProdusere(k, 'bakeri', 'bursdagskake', T0) === null);
+  k.lager.festhatt = 20; const r3 = L.arrLever(k, 'bursdag', 11, T0);
+  t('50 hatter gir pynten, og ingenting gis to ganger', r3.premier.length === 1 && k.gaver.pynt.bursdagspynt && L.arrTrinn(k, 'bursdag') === 4 && (k.lager.festhatt = 3, L.arrLever(k, 'bursdag', 11, T0).premier.length === 0));
+  t('Skinn kan byttes, men bare til et som er eid', L.velgSkinn(k, null) && k.skinn.valgt === null && !L.velgSkinn(k, 'jul') && L.velgSkinn(k, 'bursdag'));
+  t('Festhatter kan ikke selges eller bestilles', !L.kanSelge('festhatt') && !L.bestPool(k).includes('festhatt') && L.bestPool(k).includes('bursdagskake'));
+  k.bygg.festbord.eid = true; k.bygg.festbord.x = 2; k.bygg.festbord.z = 3; k.gaver.pynt.bursdagspynt.x = 1;
+  const v = L.valider(JSON.parse(JSON.stringify(k)), T0);
+  t('Lagring og lasting beholder festen', v.arr.bursdag.levert === 53 && v.bygg.festbord.eid && v.bygg.festbord.x === 2 && v.skinn.valgt === 'bursdag' && v.skinn.eid.bursdag && v.gaver.pynt.bursdagspynt.x === 1);
+  const juks = JSON.parse(JSON.stringify(L.ny(T0))); juks.nivaa = 5; juks.skinn = { eid: { bursdag: true }, valgt: 'bursdag' }; juks.gaver.pynt = { bursdagspynt: { x: 1, z: 1, r: 0 } }; juks.arr = { bursdag: { levert: 4 } };
+  const vj = L.valider(juks, T0);
+  t('Lagringen kan ikke gi premier som ikke er tjent', !vj.skinn.eid.bursdag && vj.skinn.valgt === null && !vj.gaver.pynt.bursdagspynt && vj.arr.bursdag.levert === 4);
+  t('Feil typer i festen tåles', L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 4, arr: { bursdag: { levert: 'x' } }, skinn: 7 }), T0).arr.bursdag.levert === 0);
+  { const j = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 8, mynter: 1000 }), T0), j7 = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 7, mynter: 5000 }), T0);
+    t('Jordet kan kjøpes på nivå 8 for 1000 og lagres', L.kanKjopeOmrade(j7, 'jordet') === 'laast' && L.kjopOmrade(j, 'jordet').ok && j.mynter === 0 && L.valider(JSON.parse(JSON.stringify(j)), T0).omrader.jordet === true); }
+  { const o = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 10, mynter: 5000 }), T0);
+    t('Østjordet er låst på nivå 10 (kommer på nivå 16)', L.kanKjopeOmrade(o, 'ostjordet') === 'laast' && D.omrader.ostjordet.nivaa === 16 && D.omrader.ostjordet.krever === 'jordet');
+    o.nivaa = 16;
+    t('Østjordet (nivå 16, 4000) krever Jordet først', L.kanKjopeOmrade(o, 'ostjordet') === 'krever' && L.kjopOmrade(o, 'jordet').ok && L.kjopOmrade(o, 'ostjordet').ok && o.mynter === 0); }   /* lagring over nivåtaket (10) prøves når taket heves */
+  { const f = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 3, mynter: 500 }), T0); L.arrStart(f, 'bursdag'); f.bygg.festbord.eid = true; f.lager.hvete = 10; f.lager.mais = 10;
+    L.settManed(12); const des = L.kanProdusere(f, 'festbord', 'festhatt', T0), brod = L.kanProdusere(f, 'bakeri', 'brod', T0);
+    L.settManed(11); const nov = L.kanProdusere(f, 'festbord', 'festhatt', T0); L.settManed(null);
+    t('Festbordet lager hatter i november, men er stengt i desember (QA 17.11)', des === 'stengt' && nov !== 'stengt' && brod !== 'stengt'); }
+  { const f = L.valider(JSON.parse(JSON.stringify(L.ny(T0))), T0); f.lager.hvete = 0;
+    const uten = L.kanProdusere(f, 'forkvern', 'honsefor', T0); L.settGratis(true); const med = L.kanProdusere(f, 'forkvern', 'honsefor', T0), r = L.produser(f, 'forkvern', 'honsefor', T0); L.settGratis(false);
+    t('Lage uten råvarer er av som standard og virker bare når admin slår det på', uten === 'mangler' && med === null && r.ok && f.lager.hvete === 0 && L.kanProdusere(f, 'forkvern', 'honsefor', T0) === 'mangler'); }
+  { const x = L.valider(Object.assign(JSON.parse(JSON.stringify(L.ny(T0))), { nivaa: 2, mynter: 100 }), T0), n1 = L.ny(T0);
+    const laast = L.kanKjopePynt(n1, 'lykt'), k = L.kjopPynt(x, 'lykt'), k2 = L.kjopPynt(x, 'blomsterbed'), raad = L.kanKjopePynt(x, 'fontene');
+    t('Pyntebutikken: åpner på nivå 2, lykt 40 og blomsterbed 30, ikke råd til fontene', laast === 'laast' && k.ok && k2.ok && x.mynter === 30 && x.pynt.length === 2 && raad === 'mynter');
+    x.pynt[0].x = 3; x.pynt[0].z = 4; const v = L.valider(JSON.parse(JSON.stringify(x)), T0);
+    t('Kjøpt pynt overlever lagring med plass', v.pynt.length === 2 && v.pynt[0].t === 'lykt' && v.pynt[0].x === 3 && v.pynt[1].x === null);
+    const sg = L.selgPynt(x, x.pynt[0].id); t('Pynt selges tilbake for halv pris', sg.ok && sg.mynter === 20 && x.mynter === 50 && x.pynt.length === 1);
+    t('Ugyldig pynt i lagringen fjernes', L.valider(Object.assign(JSON.parse(JSON.stringify(x)), { pynt: [{ t: 'tull' }, null, { t: 'benk', x: 'a' }] }), T0).pynt.length === 1); }
+  { const x = L.ny(T0); while (x.nivaa < 18) L.giXP(x, 5, T0); x.mynter = 6000; const for1 = L.kast(x, T0), kj = L.kjopOmrade(x, 'elvebredden'), k1 = L.kast(x, T0), k2 = L.kast(x, T0), tidlig = L.halInn(x, T0 + 30 * S);
+    t('Fiskebrygga: krever Elvebredden (nivå 18, 6000), ett snøre om gangen, 90 s', for1.grunn === 'ikke-kjopt' && kj.ok && x.mynter === 0 && k1.ok && k2.grunn === 'ute' && tidlig.grunn === 'venter' && !L.fiskKlar(x, T0 + 89 * S) && L.fiskKlar(x, T0 + 90 * S));
+    const v = L.valider(JSON.parse(JSON.stringify(x)), T0 + 10 * S); t('Snøret overlever lagring', v.omrader.elvebredden === true && v.fiske.slutt === T0 + 90 * S);
+    const h = L.halInn(x, T0 + 600 * S); t('Fisken venter til du haler inn, og gir 1 fisk og 3 XP', h.ok && ['abbor', 'orret', 'gjedde'].includes(h.vare) && x.lager[h.vare] === 1 && h.xp === 3 && x.fiske.slutt === null);
+    const tell = { abbor: 0, orret: 0, gjedde: 0 }; for (let i = 0; i < 600; i++) { x.lager = {}; L.kast(x, T0); tell[L.halInn(x, T0 + 100 * S).vare]++; }
+    t('Fordeling ca. 60/30/10 over 600 fisk', tell.abbor > 300 && tell.abbor < 420 && tell.orret > 130 && tell.orret < 230 && tell.gjedde > 30 && tell.gjedde < 95, JSON.stringify(tell));
+    t('Fisk kan selges, men kommer ikke i bestillinger', L.kanSelge('gjedde') && !L.bestPool(x).includes('abbor')); }
+  { const paPlan = D.bygg.geitefjos.nivaa === 26 && D.dyr.geit.nivaa === 26 && D.oppskrifter.geitefor.nivaa === 26;
+    D.bygg.geitefjos.nivaa = D.dyr.geit.nivaa = D.oppskrifter.geitefor.nivaa = D.maksNivaa;   /* slik admin har det i testversjonen */
+    const x = L.ny(T0); L.giXP(x, 99999, T0); x.mynter = 8000; const k = L.kjopBygg(x, 'geitefjos'); D.bygg.geitefjos.nivaa = D.dyr.geit.nivaa = D.oppskrifter.geitefor.nivaa = 26;
+    t('Geiter (0.31.0, nivå 26 fra 0.32.0): geitefjøset koster 8000 og gir 2 geiter', paPlan && k.ok && x.mynter === 0 && x.dyr.geit.length === 2 && D.dyr.geit.produkt === 'geitemelk');
+    t('Geitefor lages i forkvernen av mais og gulrot, og geitemelk kan selges', D.oppskrifter.geitefor.bygg === 'forkvern' && D.erFor('geitefor') && L.kanSelge('geitemelk') && !L.kanSelge('geitefor') && !!D.gater.geitemelk); }
+  { const x = L.ny(T0); L.giXP(x, 99999, T0); x.mynter = 3000; const f0 = L.selvStart(x, T0), k = L.kjopBygg(x, 'epletre'), f1 = L.selvStart(x, T0), f2 = L.selvStart(x, T0 + 10 * S);
+    t('Epletreet (0.32.0): nivå 21, 3000 mynter, og starter selv når det er kjøpt', D.bygg.epletre.nivaa === 21 && f0 === 0 && k.ok && x.mynter === 0 && f1 === 1 && f2 === 0 && x.bygg.epletre.ko.length === 1);
+    t('Epletreet kan ikke startes for hånd', L.kanProdusere(x, 'epletre', 'eple', T0) === 'selv');
+    const tidlig = L.hentProdukter(x, 'epletre', T0 + 299 * S), h = L.hentProdukter(x, 'epletre', T0 + 3600 * S);
+    t('Eplene venter på treet, og 2 epler plukkes etter 300 s', !tidlig.ok && h.ok && x.lager.eple === 2 && x.bygg.epletre.ko.length === 0);
+    t('Etter plukking starter en ny runde, og epler kan selges', L.selvStart(x, T0 + 3600 * S) === 1 && x.bygg.epletre.ko[0].slutt === T0 + 3900 * S && L.kanSelge('eple') && !!D.gater.eple); }
+  { const x = L.ny(T0); L.giXP(x, 99999, T0); x.mynter = 4000; const k = L.kjopBygg(x, 'bikube'); L.selvStart(x, T0); const h = L.hentProdukter(x, 'bikube', T0 + 360 * S);
+    t('Bikuben (0.33.0): nivå 22, 4000 mynter, og gir 1 honning etter 360 s', D.bygg.bikube.nivaa === 22 && k.ok && x.mynter === 0 && h.ok && x.lager.honning === 1 && D.pris('honning') === 30 && L.kanSelge('honning') && !!D.gater.honning); }
+  { const x = L.ny(T0), tidlig = L.nyNabo(x, 'bleep'); while (x.nivaa < 6) L.giXP(x, 10, T0);
+    let ok = true, antall = {1: 0, 2: 0, 3: 0}; for (let i = 0; i < 300; i++) { const o = L.nyNabo(x, 'bleep'); antall[o.liste.length]++; const varer = o.liste.map(l => l.vare);
+      if (o.hvem !== 'bleep' || new Set(varer).size !== varer.length || varer.some(v => D.erFor(v) || !L.bestPool(x).includes(v)) || o.mynter !== o.liste.reduce((m, l) => m + D.pris(l.vare) * l.antall, 0)) ok = false; }
+    t('Naboer (0.34.0): Bleep kommer fra nivå 4 og ber om én, to eller tre ulike varer spilleren kan lage', tidlig === null && ok && antall[1] > 40 && antall[2] > 40 && antall[3] > 40 && L.nyNabo(x, 'ukjent') === null, JSON.stringify(antall));
+    const o = { hvem: 'bleep', liste: [{ vare: 'hvete', antall: 3 }, { vare: 'egg', antall: 2 }] }; x.lager = { hvete: 3, egg: 1 }; const m0 = x.mynter, mangler = L.selgTilNabo(x, o);
+    t('Naboen får ingenting før alt er der, og sier hva som mangler', !mangler.ok && mangler.grunn === 'mangler' && mangler.mangler.length === 1 && mangler.mangler[0].vare === 'egg' && mangler.mangler[0].antall === 1 && x.lager.hvete === 3 && x.mynter === m0);
+    x.lager.egg = 2; const r = L.selgTilNabo(x, o);
+    t('Naboen betaler vanlig pris for alt på lista', r.ok && r.mynter === D.pris('hvete') * 3 + D.pris('egg') * 2 && x.mynter === m0 + r.mynter && !x.lager.hvete && !x.lager.egg);
+    t('Naboen tar ikke imot juks: for, samme vare to ganger eller for lang liste', !L.selgTilNabo(x, { hvem: 'bleep', liste: [{ vare: 'honsefor', antall: 1 }] }).ok && !L.selgTilNabo(x, { hvem: 'bleep', liste: [{ vare: 'hvete', antall: 1 }, { vare: 'hvete', antall: 1 }] }).ok && !L.selgTilNabo(x, { hvem: 'bleep', liste: [1, 2, 3, 4].map(() => ({ vare: 'hvete', antall: 1 })) }).ok);
+    t('Blomst har ingen tidsfrist (Even 19.11)', D.kunder.venter === 0);
+    t('Fem naboer (0.35.0): Bleep, Gnist, Dråpe, Bolt og Spire', Object.keys(D.naboer.liste).join() === 'bleep,gnist,drape,bolt,spire' && ['Bleep', 'Gnist', 'Dråpe', 'Bolt', 'Spire'].every((n, i) => Object.values(D.naboer.liste)[i].navn === n));
+    while (x.nivaa < 10) L.giXP(x, 50, T0); const sett = {}; for (let i = 0; i < 400; i++) sett[L.nesteNabo(x)] = 1;
+    t('Alle fem kan komme', Object.keys(sett).length === 5);
+    t('Favoritter: Gnist liker bakeriet, Dråpe melk og meieri, Spire avlinger', L.naboLiker('gnist', 'brod') && !L.naboLiker('gnist', 'hvete') && L.naboLiker('drape', 'melk') && L.naboLiker('drape', 'smor') && !L.naboLiker('drape', 'brod') && L.naboLiker('spire', 'hvete') && !L.naboLiker('spire', 'egg') && !L.naboLiker('bleep', 'hvete') && !L.naboLiker('bolt', 'hvete'));
+    t('Bolt liker ting fra dyrene (0.35.1): egg, melk, ull og honning', ['egg', 'melk', 'ull', 'honning', 'geitemelk'].every(v => L.naboLiker('bolt', v)) && !L.naboLiker('bolt', 'brod') && !L.naboLiker('bolt', 'smor'));
+    let fav = 0, alle = 0; for (let i = 0; i < 400; i++) L.nyNabo(x, 'spire').liste.forEach(l => { alle++; if (D.avlinger[l.vare]) fav++; });
+    t('Spire ber oftest om avlinger, men ikke bare', fav / alle > 0.6 && fav / alle < 0.98, (fav / alle).toFixed(2));
+    let dobbel = false; for (let i = 0; i < 300; i++) { const v = L.nyNabo(x, 'gnist').liste.map(l => l.vare); if (new Set(v).size !== v.length) dobbel = true; } t('Favoritter gir aldri samme vare to ganger', !dobbel); }
+  { const x = L.ny(T0); while (x.nivaa < 3) L.giXP(x, 5, T0); L.arrStart(x, 'bursdag'); x.lager.festhatt = 40; x.bygg.festbord = { ko: [{ vare: 'festhatt', start: T0, slutt: T0 + 60 * S }] };
+    const m0 = x.mynter, xp0 = x.xp, lev0 = x.arr.bursdag.levert, iNov = L.arrRydd(x, 11);
+    t('Til overs: ingenting hentes mens festen er åpen', iNov.antall === 0 && x.lager.festhatt === 40 && x.mynter === m0);
+    const r = L.arrRydd(x, 12);
+    t('Til overs: bilen henter hattene i lager og kø etter festen, til vanlig festpris', r.antall === 41 && r.mynter === 41 * D.pris('festhatt') && x.mynter === m0 + r.mynter && !x.lager.festhatt && x.bygg.festbord.ko.length === 0);
+    t('Til overs: ingen XP og ingen framgang i festen', x.xp === xp0 && x.arr.bursdag.levert === lev0 && L.arrRydd(x, 12).antall === 0); }
+  t('Ivar må godkjenne tallene: 5, 15, 30, 50 hatter og Festbordet 150', A.trinn.map(x => x.n).join() === '5,15,30,50' && D.bygg.festbord.pris === 150 && A.maned === 11);
+}
+// 0.37.0 Vinter i Elvedal (Even 18.–20.11)
+{
+  const J = D.arr.jul, k = L.ny(T0); k.nivaa = 5; L.settGratis(false);
+  t('Vinter i Elvedal er desember-eventet, fra nivå 3', L.arrId(k, 12) === 'jul' && L.arrId(L.ny(T0), 12) === null && J.maned === 12 && J.nivaa === 3);
+  L.arrStart(k, 'jul');
+  t('Eventet gir byggeplass for begge maskinene, og juletreet står der med en gang', k.bygg.gavepapirmaskin.eid === false && k.bygg.gavemaskin.eid === false && k.bygg.juletre.eid === true && k.arr.jul.levert === 0);
+  k.bygg.gavepapirmaskin.eid = true; k.bygg.gavemaskin.eid = true; k.lager = { hvete: 4 };
+  L.settManed(11);
+  t('Maskinene er stengt utenfor desember', L.kanProdusere(k, 'gavepapirmaskin', 'gavepapir', T0) === 'stengt');
+  L.settManed(12);
+  t('Gavepapir lages av hvete', L.produser(k, 'gavepapirmaskin', 'gavepapir', T0).ok && k.lager.hvete === 2);
+  L.hentProdukter(k, 'gavepapirmaskin', T0 + 3600e3);
+  t('2 hvete gir 2 gavepapir', k.lager.gavepapir === 2);
+  t('Uten noe å pakke inn kan ingen gave lages', L.kanProdusere(k, 'gavemaskin', 'julegave', T0) === 'mangler-pakk');
+  k.lager.hvete = 5;
+  t('Hvete og fôr kan ikke pakkes inn, bare ting du har laget', !L.pakkbar('hvete') && !L.pakkbar('honsefor') && !L.pakkbar('julegave') && !L.pakkbar('gavepapir') && L.pakkbar('brod'));
+  k.lager.brod = 1; k.lager.maisbrod = 3;
+  t('Uten valg pakkes det du har mest av', L.pakkbare(k)[0] === 'maisbrod');
+  t('En ting du ikke har, kan ikke velges', L.kanProdusere(k, 'gavemaskin', 'julegave', T0, 'popkorn') === 'mangler-pakk' && L.kanProdusere(k, 'gavemaskin', 'julegave', T0, 'hvete') === 'mangler-pakk');
+  const r = L.produser(k, 'gavemaskin', 'julegave', T0, 'brod');
+  t('Gaven tar ett gavepapir og tingen du valgte', r.ok && r.pakket === 'brod' && !k.lager.brod && k.lager.gavepapir === 1 && k.lager.maisbrod === 3);
+  L.hentProdukter(k, 'gavemaskin', T0 + 3600e3);
+  t('Julegaver og gavepapir kan ikke selges', k.lager.julegave === 1 && !L.kanSelge('julegave') && !L.kanSelge('gavepapir'));
+  k.lager.julegave = 10; const m0 = k.mynter;
+  const r1 = L.arrLever(k, 'jul', 12, T0);
+  t('10 gaver gir 10 pepperkaker, mynter og nisseluer', r1.ok && k.arr.jul.levert === 10 && k.mynter === m0 + 10 * D.pris('julegave') && L.arrHar(k, 'jul', 'hatter') && !k.lager.julegave);
+  t('Pepperkakehus er låst til 40 pepperkaker', L.kanProdusere(Object.assign(k, { bygg: Object.assign(k.bygg, { bakeri: { eid: true, x: 0, z: 0, r: 0, ko: [] } }) }), 'bakeri', 'pepperkakehus', T0) === 'laast');
+  k.lager.julegave = 90; L.arrLever(k, 'jul', 12, T0);
+  t('Ved 100 er juletreet ditt for alltid', L.arrHar(k, 'jul', 'tre') && L.arrTrinn(k, 'jul') === 3 && !k.skinn.eid.jul);
+  k.lager.julegave = 150; const r2 = L.arrLever(k, 'jul', 12, T0);
+  t('Ved 250 får du julesleden, og den tas på', k.skinn.eid.jul && k.skinn.valgt === 'jul' && r2.premier.some(x => x.skinn === 'jul'));
+  const lagret = L.valider(JSON.parse(JSON.stringify(k)), T0);
+  t('Pepperkakene, treet og sleden overlever lagring', lagret.arr.jul.levert === 250 && lagret.skinn.eid.jul && lagret.bygg.juletre.eid && lagret.bygg.gavemaskin.eid);
+  { const y = L.ny(T0); y.nivaa = 5; L.arrStart(y, 'jul'); y.lager = { gavepapir: 3, julegave: 2, brod: 1 }; y.bygg.gavepapirmaskin.ko = [{ vare: 'gavepapir', start: T0, slutt: T0 + 45 * S }]; const m0 = y.mynter;
+    t('Etter desember henter bilen gavepapir og julegaver som er til overs, også i køen', L.arrRydd(y, 12).antall === 0 && (() => { const r = L.arrRydd(y, 1); return r.antall === 7 && r.varer.gavepapir === 5 && r.varer.julegave === 2 && !y.lager.gavepapir && !y.lager.julegave && y.lager.brod === 1 && y.bygg.gavepapirmaskin.ko.length === 0 && y.mynter === m0 + 5 * D.pris('gavepapir') + 2 * D.pris('julegave'); })()); }
+  L.settManed(null);
+  t('Ivar må godkjenne tallene: 10, 40, 100, 250 pepperkaker, maskinene 150 og 250, gaven 18 mynter', J.trinn.map(x => x.n).join() === '10,40,100,250' && D.bygg.gavepapirmaskin.pris === 150 && D.bygg.gavemaskin.pris === 250 && D.pris('julegave') === 18);
+}
+// 0.38.0 Julekalenderen (Even 20.11)
+{
+  const k = L.ny(T0); k.nivaa = 5; const des = Date.UTC(2026, 11, 5, 12), nov = Date.UTC(2026, 10, 30, 12);
+  t('Julekalenderen har 24 luker, og luke 24 gir stjernen', D.kal.luker.length === 24 && D.kal.luker[23][0] === 'stjerne');
+  t('Kalenderen er stengt i november', L.kanAapneLuke(k, 1, nov) === 'stengt');
+  t('Luker etter dagens dato er låst', L.kanAapneLuke(k, 6, des) === 'senere' && L.kanAapneLuke(k, 5, des) === null);
+  const m0 = k.mynter, r = L.aapneLuke(k, 1, des);
+  t('Luke 1 gir mynter, og kan bare åpnes én gang', r.ok && k.mynter === m0 + D.kal.luker[0][1] && L.aapneLuke(k, 1, des).grunn === 'apnet');
+  t('Tidligere luker kan åpnes senere, også i romjula', L.aapneLuke(k, 2, Date.UTC(2026, 11, 28, 12)).ok && k.lager.gavepapir === D.kal.luker[1][1]);
+  const lev = (k.arr.jul && k.arr.jul.levert) || 0; L.aapneLuke(k, 5, des);
+  t('Pepperkaker fra kalenderen teller som gaver under treet', k.arr.jul.levert === lev + D.kal.luker[4][1]);
+  t('Luke 24 åpnes først på julaften, og gir gullstjernen', L.kanAapneLuke(k, 24, Date.UTC(2026, 11, 23, 12)) === 'senere' && L.aapneLuke(k, 24, Date.UTC(2026, 11, 24, 12)).ok && k.kal.stjerne);
+  const lagret = L.valider(JSON.parse(JSON.stringify(k)), T0);
+  t('Lukene og stjernen overlever lagring', lagret.kal.apnet.length === 4 && lagret.kal.stjerne && lagret.kal.aar === 2026);
+  t('Rare luker i lagringen tas bort', L.valider({ v: 1, nivaa: 5, kal: { aar: 2026, apnet: [0, 25, 3, 3, 'x'] } }, T0).kal.apnet.join() === '3');
+  L.aapneLuke(k, 3, Date.UTC(2027, 11, 3, 12));
+  t('Neste år starter kalenderen på nytt, men stjernen blir', k.kal.aar === 2027 && k.kal.apnet.join() === '3' && k.kal.stjerne);
+}
 console.log(`Min Bondegård logikk: ${ok} ok, ${feil} feil`);
 process.exit(feil ? 1 : 0);
