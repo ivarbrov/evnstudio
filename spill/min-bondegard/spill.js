@@ -752,7 +752,7 @@ function plasserAlt() {
   const ps = s.plasser.silo || (() => { const p = finnLedigPlass(si, ...STANDARD.silo) || STANDARD.silo; return (s.plasser.silo = {x: p[0], z: p[1], r: 0}); })();
   plasser(si, ps.x, ps.z, ps.r);
   for (const b in s.bygg) { const sb = s.bygg[b]; if (sb && !sb.eid && sb.x !== null && FOT[b] && overlapp(fotRekt({fot: FOT[b]}, sb.x, sb.z, sb.r), fotRekt(si, si.x, si.z, si.r))) { sb.x = null; sb.z = null; if (ting.has(b)) { const t = ting.get(b); t.plassert = false; } } }   /* 0.15.11 (QA 15.11): en byggeplass som står oppå siloen, får ny plass */
-  for (const b of I_SPILLET.bygg) { const sb = s.bygg[b]; if (!sb) continue; let t = ting.get(b);
+  for (const b of [...I_SPILLET.bygg.filter(x => !D.bygg[x].arr), ...I_SPILLET.bygg.filter(x => D.bygg[x].arr)]) { const sb = s.bygg[b]; if (!sb) continue; let t = ting.get(b);   /* 0.39.4 (QA 22.11): festbyggene plasseres sist, så en ny plass ikke havner oppå et vanlig bygg som ikke er plassert ennå */
     if (D.bygg[b].arr && !treSynlig(b)) { if (t) { t.gruppe.visible = false; t.plassert = false; } continue; }   /* 0.39.2 (QA 21.11): festens bygg står bare i festmåneden */
     if (D.bygg[b].arr && (!t || !t.plassert) && sb.x !== null && festPlassOpptatt(b, sb)) { sb.x = null; sb.z = null; if (t) t.plassert = false; }   /* 0.39.3 (QA 21.11): står noe der nå, også etter omlasting, får bygget ny plass */   /* 0.37.0: juletreet står i desember, og hele året når det er ditt */
     if (!t && sb.x === null && !finnLedigPlass({fot: FOT[b], r: 0}, ...STANDARD[b])) continue;   /* 0.9.8: ingen ledig plass ennå. Byggemenyen foreslår å kjøpe Enga */
@@ -1479,8 +1479,11 @@ function oppdaterHud() {
   if (visteMynter !== null && visteMynter !== s.mynter) { const p = $('pMynter'); p.classList.remove('bump'); void p.offsetWidth; p.classList.add('bump'); }
   visteMynter = s.mynter; $('mynter').textContent = s.mynter;
 }
-var meldingVent = [];
+var meldingVent = [], meldingKo = null;
+function spillKo(ko) { if (ko !== meldingKo) return; if (pauset) { meldingVent.push(...ko); meldingKo = null; return; }   /* 0.39.4 (QA 22.11): neste melding vises først når den forrige er ferdig */
+  const n = ko.shift(); if (!n) { meldingKo = null; return; } const ms = Math.min(n[1], 3500); melding.fraKo = true; melding(n[0], ms); melding.fraKo = false; setTimeout(() => spillKo(ko), ms + 200); }
 function melding(tekst, ms = 2600) { if (pauset) { meldingVent.push([tekst, ms]); return; }   /* 0.39.2 (QA 21.11): meldinger venter til pausen er over */
+  if (meldingKo && !melding.fraKo) { meldingKo.push([tekst, ms]); return; }   /* 0.39.4: nye meldinger stiller seg bak køen */
   const m = $('melding'); m.textContent = tekst; const rt = $('revTips'), rr = rt ? rt.getBoundingClientRect() : null; m.style.top = rr && rr.height > 0 && rr.top < innerHeight / 2 ? Math.round(rr.bottom + 6) + 'px' : hudBunn ? hudBunn + 'px' : '';   /* 0.8.15: meldingen legger seg under revens tips, ikke oppå */ m.classList.add('vis'); clearTimeout(melding.t); melding.t = setTimeout(() => m.classList.remove('vis'), ms); }
 const _p = new THREE.Vector3();
 function flyt(tekst, pos, forsink = 0) {
@@ -2145,8 +2148,8 @@ window.__evnP = EVNPause({
   kanPause: () => startet && !$('feil').classList.contains('vis'),
   // Aktiv spilletid (ST2): ikke i pause, ikke med lageret eller markedsbua åpen, ikke før spillet er startet
   aktiv: () => startet && !pauset && !dialogApen(),
-  pause: () => { { const m = $('melding'); if (m.classList.contains('vis')) { meldingVent.push([m.textContent, 3500]); m.classList.remove('vis'); clearTimeout(melding.t); } } pauset = true; if (draModus) { const m = draModus; draModus = null; draIkon(null); undertrykkTrykk = true; if (m.n) gi(m.type === 'host' ? {xp: m.xp, nye: m.nye} : null, midtAv(ting.get(s.akre[[...m.ferdige][0]].id), 2.2)); } lagre(); if (flytt) sluttFlytt(false); dialoger.forEach(id => { if ($(id).classList.contains('vis')) { $(id).classList.remove('vis'); if (window.EVNPauseInert) EVNPauseInert(null); } }); lukkHandling(); },   /* QA 9.11 (T2): pausen legger seg ikke over en åpen dialog */
-  fortsett: () => { pauset = false; undertrykkTrykk = false; L.normaliserTid(s, naa()); synk(true); if (meldingVent.length) { const ko = meldingVent.slice(-3); meldingVent = []; let ms = 300; ko.forEach(([mt, mm]) => { setTimeout(() => { if (!pauset) melding(mt, Math.min(mm, 3500)); else meldingVent.push([mt, mm]); }, ms); ms += Math.min(mm, 3500) + 200; }); } },   /* 0.39.3: alle meldingene vises etter hverandre, høyst de tre siste */
+  pause: () => { { const m = $('melding'); if (m.classList.contains('vis')) { meldingVent.push([m.textContent, 3500, true]); m.classList.remove('vis'); clearTimeout(melding.t); } if (meldingKo) { meldingVent.push(...meldingKo); meldingKo = null; } } pauset = true; if (draModus) { const m = draModus; draModus = null; draIkon(null); undertrykkTrykk = true; if (m.n) gi(m.type === 'host' ? {xp: m.xp, nye: m.nye} : null, midtAv(ting.get(s.akre[[...m.ferdige][0]].id), 2.2)); } lagre(); if (flytt) sluttFlytt(false); dialoger.forEach(id => { if ($(id).classList.contains('vis')) { $(id).classList.remove('vis'); if (window.EVNPauseInert) EVNPauseInert(null); } }); lukkHandling(); },   /* QA 9.11 (T2): pausen legger seg ikke over en åpen dialog */
+  fortsett: () => { pauset = false; undertrykkTrykk = false; L.normaliserTid(s, naa()); synk(true); if (meldingVent.length) { const syn = meldingVent.filter(x => x[2]).slice(-1), ko = [...syn, ...meldingVent.filter(x => !x[2]).slice(-3)]; meldingVent = []; meldingKo = ko; setTimeout(() => spillKo(ko), 300); } },   /* 0.39.3: meldingene vises etter hverandre, høyst de tre siste. 0.39.4: én om gangen i en kø, og meldingen som var synlig da pausen begynte, kommer først */
   lagre,
   styring: () => document.documentElement.classList.contains('touch')
     ? '👆 Trykk på en åker, et dyr eller et hus<br>✋ Dra med én finger for å flytte deg<br>🤏 Knip med to fingre for å zoome<br>📦 Lageret: knappen øverst til høyre<br>🦊 Trykk på Rebus for et tips'
