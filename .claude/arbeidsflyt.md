@@ -182,3 +182,37 @@ Dette vurderes på nytt hvis en QA-kontroll noen gang endrer filer.
 - **Aktivering:** PR-en fra `kvalitet/felles` legger arbeidsflytene i `.github/workflows/`. Når den er godkjent og slått sammen, settes regelen for `main` opp. Testgrenene `kvalitet/actions-test*` kan slettes etterpå.
 - Spillgrenene (`feature/statistikk`, `feature/morkeskogen-ui` og `feature/fossil-startkort`) henter `main` etter at kvalitetsgrenene er slått sammen. Da kjører testene også for dem.
 - Fossil Zoo v0.7.3 på `main` er gjeldende publisert versjon, og `kvalitet/tester` har hentet den. `feature/statistikk` og `feature/morkeskogen-ui` kan slås sammen med `main` uten konflikt. `feature/fossil-startkort` bruker også versjonsnummeret 0.7.3 og har konflikt i `spill/fossilspillet/index.html`. Den må tilpasses v0.7.3 og få nytt versjonsnummer, med vanlig QA, test hos Even og godkjenning.
+
+## Endringsbasert QA (forslag 6.11.2026, ikke aktivt før eieren har godkjent)
+
+**Mål:** En ny merge-commit fra `main` skal ikke alene utløse full QA. Automatiske tester kjøres fortsatt på hver commit.
+
+**QA-grunnlag.** `test/publiseringssjekk.mjs` deler hver fil i én klasse:
+
+| Klasse | Filer |
+|---|---|
+| Spillkode | `spill/<spill>/` |
+| Felles kode | `statistikk.js`, `vendor/`, `fonter/`, `ecoins/`, `favicon.png`, alle filer et spill viser til med `../../`, og alle ukjente filer |
+| Testgrunnlag | `test/`, `.github/`, standarden og QA-agenten |
+| Nettside | `index.html`, `personvern/`, `sikkerhet/`, `butikk/`, `bilder/` (unntatt det spillene bruker), `prototype/`, `verktoy/` |
+| Dokumentasjon | `.md`-filer i roten og i `.claude/` |
+| Påvirker ikke | `qa/` og `ENDRINGSLOGG.md` |
+
+QA-grunnlaget for et spill er git-hashene til spillets kode, felles kode og testgrunnlaget. For nettsiden er det nettsidens filer, felles kode og testgrunnlaget. For dokumentasjon er det dokumentasjonen, standarden og agenten.
+
+**Gjenbruk.** En QA-rapport for commit Q kan brukes for siste kodeendring K bare når alt dette stemmer:
+1. Q er en commit i PR-ens egen historikk: forfar til HEAD, men ikke til `main`.
+2. QA-grunnlaget for delen er likt på Q og K.
+3. Rapporten er gyldig for Q: full SHA, riktig standard og agent på Q, fullt nivå for spill, konklusjon som ikke er NEI, og testkvitteringen gjelder Q.
+4. Testkjøringen i Actions på K har samme resultat som kvitteringen.
+
+Ellers feiler sjekken. Endres spillkode, felles kode, tester, standard eller agent etter Q, kreves ny full QA.
+
+**Selvtest:** `node test/publiseringssjekk-test.mjs` lager øvingsrepoer og viser at gyldige rapporter gjenbrukes og at utdaterte rapporter avvises (21 tilfeller). Selvtesten kjører i «Automatiske tester».
+
+## Publiseringsansvarlig økt (forslag 6.11.2026)
+
+- Én Claude-økt er publiseringsansvarlig. Bare den slår sammen til `main`, og bare etter «Publiser …».
+- Spilløktene utvikler, tester, kjører QA og åpner PR. De slår ikke sammen og avpubliserer ikke selv. Henvendelser om publisering går til den publiseringsansvarlige økta.
+- Publiseringer tas én om gangen i en fast rekkefølge: endringer i felles kode og tester først, deretter spill. Etter hver sammenslåing oppdateres de neste PR-ene mot `main`. Med endringsbasert QA trenger de bare ny automatisk test, ikke ny full QA, så lenge spillets QA-grunnlag er uendret.
+- Store endringer i felles kode (for eksempel `ecoins/`) bør samles og publiseres sjeldnere, fordi de gjør QA av alle åpne spill-PR-er ugyldig.

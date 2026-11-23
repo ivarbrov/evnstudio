@@ -11,8 +11,9 @@
  * 1. Testene i Actions: --ci-resultat er resultatet av Actions sin egen kjøring av test/kjor.mjs.
  *    Den må gjelde HEAD, være kjørt på et rent arbeidstre, ha kjørt alle suiter og ikke ha feil.
  *    Rådgivende suiter (krav som ikke er gjeldende ennå) gir bare varsel. I Actions er --ci-resultat påkrevd.
- * 2. QA etter siste kodeendring: en rapport i qa/rapporter/ der «Grunnlag» viser full SHA for siste commit
- *    som endrer noe utenfor qa/, standardfilens hash og agentversjonen på den commiten.
+ * 2. QA for hver berørt del (spill, nettside, dokumentasjon). En rapport gjelder siste kodeendring direkte,
+ *    eller den gjenbrukes fra en tidligere commit Q i PR-en når QA-grunnlaget for delen er uendret
+ *    (endringsbasert QA, se «QA-grunnlag» under). Ellers feiler sjekken.
  * 3. Full QA for endrede spill: «Nivå: full», alle gjeldende krav-ID-er for spillet gjort rede for,
  *    konklusjon som ikke er NEI, og en testkvittering fra test/kjor.mjs for samme commit.
  *    Felles kode (statistikk.js, vendor/, fonter/) regnes som endring i alle spill.
@@ -111,11 +112,11 @@ if (ci) {
   if (feil.length === f0) ok.push(`Actions kjørte testene på ${kort(HEAD)}: ${Object.entries(ci.suiter).map(([n, v]) => n + '=' + v).join(', ')}.`);
 }
 
-function kontrollerKvittering(navn, r) {
+function kontrollerKvittering(navn, r, forventet = kode) {
   const k = lesKvittering(r.kvittering);
   if (!k) { feil.push(`${navn}: rapporten mangler testkvittering i formatet fra test/kjor.mjs («Testkvittering: evn1 …»).`); return; }
   const f0 = feil.length;
-  if (k.commit !== kode) feil.push(`${navn}: testkvitteringen gjelder ${kort(k.commit)}, ikke siste kodeendring ${kort(kode)}.`);
+  if (k.commit !== forventet) feil.push(`${navn}: testkvitteringen gjelder ${kort(k.commit)}, ikke ${forventet === kode ? 'siste kodeendring' : 'commiten rapporten gjelder'} ${kort(forventet)}.`);
   if (k.arbeidstre !== 'rent') feil.push(`${navn}: testkvitteringen er laget med endringer som ikke var committet.`);
   const suiter = [...new Set([...KREVDE, ...(ci ? Object.keys(ci.suiter) : Object.keys(k.suiter))])];
   for (const n of suiter) {
@@ -131,7 +132,7 @@ function kontrollerKvittering(navn, r) {
         (RADGIVENDE.has(n) ? varsler : feil).push(`${navn}: suiten ${n} ga «${k.suiter[n]}» lokalt og «${ci.suiter[n]}» i Actions. Forskjellen må undersøkes. Kravene er ikke endret.`);
     }
   }
-  if (feil.length === f0) ok.push(`${navn}: testkvitteringen gjelder ${kort(kode)}${ci ? (varsler.length === v0 ? ' og stemmer med Actions' : ' og stemmer med Actions i de obligatoriske suitene') : ''}.`);
+  if (feil.length === f0) ok.push(`${navn}: testkvitteringen gjelder ${kort(forventet)}${ci ? (varsler.length === v0 ? ' og stemmer med Actions' : ' og stemmer med Actions i de obligatoriske suitene') : ''}.`);
 }
 
 // ---- QA-rapportene som er committet ----
@@ -148,22 +149,79 @@ for (const r of rapporter.filter(r => r.kortSha)) varsler.push(`${r.fil}: «Grun
 const standardHash = git('rev-parse', kode + ':.claude/evn-game-standard.md');
 const agentVersjon = ((/Agentdefinisjon versjon ([\d.]+)/.exec(vis(kode, '.claude/agents/evn-game-qa.md') || '') || [])[1]) || null;
 const kravsett = krav(vis(kode, '.claude/evn-game-standard.md') || '');
-const forKode = rapporter.filter(r => r.grunnlag && r.grunnlag.commit === kode);
-const riktigGrunnlag = r => r.grunnlag.hash === standardHash && r.grunnlag.agent === agentVersjon;
+const riktigGrunnlag = r => r.grunnlag.hash === git('rev-parse', r.grunnlag.commit + ':.claude/evn-game-standard.md')
+  && r.grunnlag.agent === (((/Agentdefinisjon versjon ([\d.]+)/.exec(vis(r.grunnlag.commit, '.claude/agents/evn-game-qa.md') || '') || [])[1]) || null);
 
-// ---- Hvilke spill er endret ----
+// ---- QA-grunnlag: hvilke filer en del avhenger av (endringsbasert QA) ----
+// Hver fil får én klasse. Ukjente filer regnes som felles kode, så noe nytt aldri gjør en gammel QA gyldig.
+// Filer utenfor spill/ som et spill viser til (../../…), regnes også som felles.
+function filer(rev) { return (git('ls-tree', '-r', rev) || '').split('\n').filter(Boolean).map(l => { const m = /^\S+ \S+ (\S+)\t(.+)$/.exec(l); return m && { hash: m[1], sti: m[2] }; }).filter(Boolean); }
+function brukteAvSpill(rev) {
+  const ut = new Set();
+  for (const l of (git('grep', '-h', '-o', '-E', '\\.\\./\\.\\./[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*', rev, '--', 'spill/') || '').split('\n')) if (l) ut.add(l.replace(/^(\.\.\/)+/, ''));
+  return ut;
+}
+function klasse(sti, brukt) {
+  if (sti.startsWith('qa/') || sti === 'ENDRINGSLOGG.md') return 'logg';          // rapporter og endringslogg påvirker ikke koden
+  const m = /^spill\/([^/]+)\//.exec(sti); if (m) return 'spill:' + m[1];
+  if (sti.startsWith('test/') || sti.startsWith('.github/') || sti === '.claude/evn-game-standard.md' || sti.startsWith('.claude/agents/')) return 'grunnlag';
+  if ([...brukt].some(b => sti === b || sti.startsWith(b + '/'))) return 'felles';
+  if (sti === 'statistikk.js' || /^(vendor|fonter|ecoins)\//.test(sti) || sti === 'favicon.png') return 'felles';
+  if (/\.md$/.test(sti) && (!sti.includes('/') || sti.startsWith('.claude/'))) return 'dok';
+  if (/^(index\.html|logo-lys\.png|CNAME|\.nojekyll)$/.test(sti) || /^(personvern|sikkerhet|butikk|bilder|prototype|verktoy|\.well-known)\//.test(sti)) return 'nettside';
+  return 'felles';
+}
+const DELKLASSER = d => d.startsWith('spill:') ? [d, 'felles', 'grunnlag'] : d === 'nettside' ? ['nettside', 'felles', 'grunnlag'] : ['dok', 'grunnlag'];
+const grunnlagCache = new Map();
+function qaGrunnlag(del, rev) {
+  const nokkel = del + '@' + rev; if (grunnlagCache.has(nokkel)) return grunnlagCache.get(nokkel);
+  const brukt = brukteAvSpill(rev), klasser = new Set(DELKLASSER(del));
+  const linjer = filer(rev).filter(f => klasser.has(klasse(f.sti, brukt))).map(f => f.sti + ' ' + f.hash).sort();
+  const sha = (() => { try { return execFileSync('git', ['hash-object', '--stdin'], { cwd: ROT, input: linjer.join('\n'), encoding: 'utf8' }).trim(); } catch { return null; } })();
+  grunnlagCache.set(nokkel, sha); return sha;
+}
+
+// ---- Hvilke deler er berørt ----
+const bruktHer = brukteAvSpill(REF);
 const alleSpill = (git('ls-tree', '--name-only', REF, 'spill/') || '').split('\n').filter(Boolean).map(f => f.replace(/^spill\//, ''));
-const felles = endrede.some(f => f === 'statistikk.js' || f.startsWith('vendor/') || f.startsWith('fonter/'));
-const spill = felles ? alleSpill : [...new Set(endrede.map(f => (/^spill\/([^/]+)\//.exec(f) || [])[1]).filter(Boolean))];
+const klasserEndret = new Set(endrede.map(f => klasse(f, bruktHer)));
+const felles = klasserEndret.has('felles');
+const spill = felles ? alleSpill : [...new Set([...klasserEndret].filter(k => k.startsWith('spill:')).map(k => k.slice(6)))].filter(x => alleSpill.includes(x));
+const andreDeler = [...new Set([...(felles || klasserEndret.has('nettside') ? ['nettside'] : []), ...(klasserEndret.has('dok') || klasserEndret.has('grunnlag') ? ['dok'] : [])])];
 
-console.log(`HEAD: ${HEAD}\nSiste kodeendring: ${kode}\nStandard på den commiten: ${standardHash}\nAgentversjon: ${agentVersjon}\nEndrede spill: ${spill.join(', ') || 'ingen'}${felles ? ' (felles kode er endret)' : ''}\n`);
+console.log(`HEAD: ${HEAD}\nSiste kodeendring: ${kode}\nStandard på den commiten: ${standardHash}\nAgentversjon: ${agentVersjon}\nEndrede spill: ${spill.join(', ') || 'ingen'}${felles ? ' (felles kode er endret)' : ''}\nAndre berørte deler: ${andreDeler.join(', ') || 'ingen'}\n`);
 
-// ---- 2. QA etter siste kodeendring ----
-const gyldige = forKode.filter(riktigGrunnlag);
-if (!forKode.length) feil.push(`Ingen QA-rapport i qa/rapporter/ for siste kodeendring ${kort(kode)} (full SHA i «Grunnlag»). Kjør EVN Game QA på nytt og lagre rapporten uendret.`);
-else if (!gyldige.length) feil.push(`QA-rapporten for ${kort(kode)} er laget mot en annen standard eller agentversjon enn den som ligger på commiten.`);
-else ok.push(`QA-rapport finnes for ${kort(kode)} med riktig standard og agent.`);
-if (!spill.length && gyldige.length) kontrollerKvittering('Rapporten', gyldige[0]);
+// En rapport kan brukes for en del når den gjelder siste kodeendring, eller når den gjelder en commit Q som
+// (1) ligger i PR-ens egen historikk (forfar til HEAD, men ikke til main), og (2) har samme QA-grunnlag for delen som siste kodeendring.
+const iPR = q => git('merge-base', '--is-ancestor', q, REF) !== null && git('merge-base', '--is-ancestor', q, mb) === null;
+function finnRapport(del, passer) {
+  const kandidater = rapporter.filter(r => r.grunnlag && passer(r) && riktigGrunnlag(r));
+  const fersk = kandidater.find(r => r.grunnlag.commit === kode);
+  if (fersk) return { r: fersk, q: kode };
+  const g = qaGrunnlag(del, kode);
+  for (const r of kandidater) {
+    const q = r.grunnlag.commit;
+    if (!git('rev-parse', '--verify', '--quiet', q + '^{commit}')) continue;
+    if (!iPR(q)) continue;
+    if (g && qaGrunnlag(del, q) === g) return { r, q, gjenbrukt: true };
+  }
+  return null;
+}
+const gjenbruktMelding = (navn, x) => ok.push(`${navn}: QA fra ${kort(x.q)} (${x.r.fil}) gjenbrukes. QA-grunnlaget (spillkode/delens filer, felles kode, tester, standard og agent) er uendret fram til ${kort(kode)}.`);
+
+// ---- 2. QA for andre deler enn spill (nettside, dokumentasjon) ----
+for (const del of andreDeler) {
+  if (spill.length && del === 'dok') continue;   // en full spill-QA dekker også dokumentasjon i samme PR, som i dag
+  const x = finnRapport(del, () => true);
+  if (!x) { feil.push(`Ingen gyldig QA-rapport for ${del} ved siste kodeendring ${kort(kode)}, og ingen tidligere rapport i PR-en har uendret QA-grunnlag. Kjør EVN Game QA på nytt og lagre rapporten uendret.`); continue; }
+  if (x.gjenbrukt) gjenbruktMelding(del, x); else ok.push(`QA-rapport finnes for ${kort(kode)} med riktig standard og agent (${del}).`);
+  if (!spill.length) kontrollerKvittering('Rapporten', x.r, x.q);
+}
+if (!spill.length && !andreDeler.length) {
+  const x = finnRapport('dok', () => true);
+  if (!x) feil.push(`Ingen QA-rapport i qa/rapporter/ for siste kodeendring ${kort(kode)} (full SHA i «Grunnlag»). Kjør EVN Game QA på nytt og lagre rapporten uendret.`);
+  else kontrollerKvittering('Rapporten', x.r, x.q);
+}
 
 // ---- 3–5. Full QA, testkvittering og K3 per endret spill ----
 for (const s of spill) {
@@ -171,14 +229,16 @@ for (const s of spill) {
   // Spillnavnet i rapportens tittel sammenlignes uten forskjell på store og små bokstaver, og mappenavnet godtas også.
   const tittelGjelder = x => { const t = x.tittel.toLowerCase(); return t.includes(navn.toLowerCase()) || t.includes(s.toLowerCase()); };
   if (!kravsett.perSpill[s]) varsler.push(`${navn}: spillet står ikke i standardens oversikt over betingede krav, så bare de obligatoriske kravene og ST1–ST8 er sjekket.`);
-  const r = gyldige.find(x => x.niva === 'full' && tittelGjelder(x));
-  if (!r) { feil.push(`${navn}: mangler QA-rapport på fullt nivå for ${kort(kode)}.`); continue; }
+  const x = finnRapport('spill:' + s, r => r.niva === 'full' && tittelGjelder(r));
+  if (!x) { feil.push(`${navn}: mangler QA-rapport på fullt nivå for ${kort(kode)}, og ingen tidligere full QA i PR-en har uendret QA-grunnlag for spillet.`); continue; }
+  const r = x.r;
+  if (x.gjenbrukt) gjenbruktMelding(navn, x);
   const trengs = [...kravsett.obligatorisk, ...(kravsett.perSpill[s] || [])];
   const mangler = trengs.filter(id => !new RegExp('\\b' + id + '\\b').test(r.tekst));
   if (mangler.length) feil.push(`${navn}: rapporten ${r.fil} gjør ikke rede for ${mangler.join(', ')}.`);
   if (r.konklusjon === 'NEI') feil.push(`${navn}: QA-konklusjonen er NEI.`);
   if (!mangler.length && r.konklusjon !== 'NEI') ok.push(`${navn}: full QA i ${r.fil}, alle ${trengs.length} gjeldende krav er gjort rede for.`);
-  kontrollerKvittering(navn, r);
+  kontrollerKvittering(navn, r, x.q);
 
   const ver = rev => ((/class="[^"]*\bevn-ver\b[^"]*"[^>]*>\s*Versjon\s+(\d+(?:\.\d+){1,3})/.exec(vis(rev, `spill/${s}/index.html`) || '') || [])[1]);
   const ny = ver(REF), gammel = ver(mb);
