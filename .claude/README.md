@@ -16,6 +16,7 @@ Til da gjelder dette:
 | `.claude/agents/evn-game-qa.md` | Agentdefinisjonen for EVN Game QA | Claude Code laster den når en økt åpnes i repoet |
 | `CLAUDE.md` | Arbeidsregler for Claude Code: kvalitetskontroll, statistikk, grensesnitt og godkjenning | Claude Code laster den i hver økt, også for EVN Game QA |
 | `.claude/README.md` | Denne filen | Alle |
+| `.claude/evn-ui-standard.md` | EVN UI-standard: felles betjening, navigasjon og symboler på tvers av spillene | Utviklere, EVN Game QA |
 | `.claude/vedtak.md` | Originaltekst og godkjenninger for kravene | Alle som skal kontrollere hva som er vedtatt |
 | `.claude/arbeidsflyt.md` | De fire lagene (tester, QA, Even og godkjenning), GitHub-flyten og testplanen (forslag) | Alle |
 | `test/statistikk/` | Automatisk test av ST1–ST8 (finnes på `feature/statistikk`) | EVN Game QA, senere GitHub Actions |
