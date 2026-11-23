@@ -4,11 +4,12 @@ Denne mappen og `CLAUDE.md` i roten styrer kvalitetskontrollen for alle spill p�
 
 ## Felles og autoritative filer
 
-Når grenen `kvalitet/felles-qa` er godkjent og slått sammen, er den autoritative plassen `main` i `ivarbrov/evnstudio`. I dag har `main` ingen av disse filene.
+Den autoritative plassen er `main` i `ivarbrov/evnstudio`. Den felles strukturen kom inn på `main` med PR #1 (grenen `kvalitet/felles`, trinn 1 godkjent 2. november 2026).
 
-Til da gjelder dette:
-- Gjeldende krav er standard 1.1 (godkjent), som ligger på `feature/statistikk`.
-- Grenen `kvalitet/felles-qa` har utkast 1.2 av standarden og utkast 2.0 av agenten. Det samme gjelder `CLAUDE.md`, der nye regler er merket «(utkast)». De samler alt fra grenene, men nye regler i dem gjelder ikke før en voksen har godkjent dem.
+Status (kontrollert 5. november 2026):
+- Gjeldende krav er standard 1.1 (godkjent 1. og 2. november 2026). `.claude/evn-game-standard.md` på `main` er utkast 1.2 (1.2b) og sier selv hvilke avsnitt som er gjeldende.
+- Utkast 1.2 av standarden og agentdefinisjonen (utkast) er ikke godkjent som gjeldende. Det samme gjelder regler merket «(utkast)» i `CLAUDE.md`.
+- Grenen `feature/statistikk`, med implementasjonen av ST2, ST4 og ST7 og testsiden `test/statistikk/`, finnes ikke på GitHub. Til den er pushet og slått sammen, kan ingen spill oppfylle ST2, ST4, ST7 og ST8 fullt ut.
 
 | Fil | Innhold | Hvem bruker den |
 |---|---|---|
@@ -18,13 +19,13 @@ Til da gjelder dette:
 | `.claude/README.md` | Denne filen | Alle |
 | `.claude/vedtak.md` | Originaltekst og godkjenninger for kravene | Alle som skal kontrollere hva som er vedtatt |
 | `.claude/arbeidsflyt.md` | De fire lagene (tester, QA, Even og godkjenning), GitHub-flyten og testplanen (forslag) | Alle |
-| `test/statistikk/` | Automatisk test av ST1–ST8 (finnes på `feature/statistikk`) | EVN Game QA, senere GitHub Actions |
+| `test/statistikk/` | Automatisk test av ST1–ST8. Finnes ikke på GitHub (skulle komme fra `feature/statistikk`) | EVN Game QA, senere GitHub Actions |
 
 Det finnes bare én standard og én agent for alle spill. Krav som bare gjelder enkelte spill, står i standardens oversikt over betingede krav, ikke i egne filer.
 
 ## Lokale kopier som blir overflødige
 
-Disse kopiene er laget underveis. De skal ikke redigeres mer, og de kan slettes når grenen er slått sammen med `main`. Ingen av dem er slettet ennå.
+Disse kopiene er laget underveis. De skal ikke redigeres mer. Grenene `chore/evn-game-qa`, `feature/fossil-startkort`, `feature/morkeskogen-ui` og `feature/statistikk` finnes ikke på GitHub (kontrollert 5. november 2026). De kan finnes lokalt hos eieren eller i sikkerhetskopien.
 
 | Kopi | Innhold | Hva som skjer |
 |---|---|---|
@@ -58,11 +59,11 @@ Standarden merker hvert krav med kontrollmetode: A (automatisk og objektiv), Q (
 
 | Automatisk test | Krav | Status |
 |---|---|---|
-| `test/statistikk/` | ST1–ST5 (ST8 sier at den skal kjøres) | Finnes på `feature/statistikk`. Kjøres lokalt |
-| `window.EVNUIMaal()` i `prototype/ui/` | UI7, deler av UI8 | Finnes på `feature/morkeskogen-ui`. Måler bare med rektangler. Brukes av suiten `ui` |
+| `test/statistikk/` | ST1–ST5 (ST8 sier at den skal kjøres) | Finnes ikke på GitHub (skulle komme fra `feature/statistikk`) |
+| `window.EVNUIMaal()` i `prototype/ui/` | UI7, deler av UI8 | Skulle ligge på `feature/morkeskogen-ui`, som ikke finnes på GitHub. Suiten `ui` rapporteres derfor som «ikke innført» |
 | `test/index.html` og `test/kjor.mjs`: suitene `statisk`, `royk`, `statistikk` og `ui` | S1, T3, F1, K1, U1, ST1–ST5, UI7 | Laget og prøvd lokalt (trinn 3). Kjøres med `node test/kjor.mjs` |
 | `test/publiseringssjekk.mjs` | QA etter siste kodeendring, full QA, K3 | Laget og prøvd lokalt (trinn 3). Brukes ved PR til `main` |
 | UI-måling per kategori og kjernesone | UI8a–c | Ikke laget. Krever at elementene i prototypen merkes med `data-ui` |
-| GitHub Actions | Alle A-tester | `.github/workflows/kvalitet.yml` («Automatiske tester») og `publisering.yml` («QA før publisering»). Aktive etter sammenslåing med `main` |
+| GitHub Actions | Alle A-tester | `.github/workflows/kvalitet.yml` («Automatiske tester») og `publisering.yml` («QA før publisering»). Ligger på `main` |
 
 Krav merket Q, E eller V kan ikke erstattes av automatiske tester. Even er hovedtester av spillopplevelsen.

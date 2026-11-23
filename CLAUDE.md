@@ -2,7 +2,7 @@
 
 Nettleserspill for barn mellom 7 og 12 år. Felles kvalitetskrav står i `.claude/evn-game-standard.md`. Hvilke filer som er felles, og hvordan de holdes like, står i `.claude/README.md`.
 
-Denne filen er et utkast på kvalitetsgrenene (`kvalitet/…`). Regler merket «(utkast)» er nye og gjelder ikke før en voksen har godkjent dem.
+Denne filen ligger på `main`. Regler merket «(utkast)» er nye og gjelder ikke før en voksen har godkjent dem (se `.claude/vedtak.md`, «Ikke vedtatt ennå»).
 
 ## Kvalitetskontroll
 
